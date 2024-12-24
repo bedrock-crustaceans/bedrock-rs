@@ -11,6 +11,6 @@ bedrockrs_paletted_storage = { path = "../paletted_storage" }
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 
 mojang-leveldb = "0.6"
-thiserror = "1.0"
+thiserror = "2.0"
 byteorder = "1.5"
 uuid = { version = "1.10", features = ["v4"] }
