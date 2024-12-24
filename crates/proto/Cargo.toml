@@ -14,7 +14,7 @@ nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 xuid = "1.0.0"
 
 log = "0.4"
-thiserror = "1.0"
+thiserror = "2.0"
 dyn-clone = "1.0"
 
 jsonwebtoken = "9.3"
