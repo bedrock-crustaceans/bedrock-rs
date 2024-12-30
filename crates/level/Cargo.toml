@@ -17,7 +17,7 @@ len-trait = "0.6.x"
 concat-idents = "1.x.x"
 serde = "1.x.x"
 rusty-leveldb = "3.x.x"
-miniz_oxide = "0.x.x"
+miniz_oxide = "0.8.2"
 vek = "0.17"
 
 [dev-dependencies]
