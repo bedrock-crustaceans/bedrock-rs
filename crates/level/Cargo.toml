@@ -19,6 +19,7 @@ serde = "1.x.x"
 rusty-leveldb = "3.x.x"
 miniz_oxide = "0.x.x"
 vek = "0.17"
+bincode = "1.3"
 
 [dev-dependencies]
 rand = "0.8"

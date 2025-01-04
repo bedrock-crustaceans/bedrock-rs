@@ -53,8 +53,6 @@ pub enum KeyTypeTag {
 
     ActorDigestVersion = 65, // 41  "A"  Actor digest version
 
-    Inventory = 66, // 42 "B" Inventories
-
     LegacyVersion = 118, // 76  "v"  1 byte; moved to Version in v1.16.100
 }
 
@@ -83,7 +81,6 @@ impl KeyTypeTag {
             63 => Some(KeyTypeTag::BlendingBiomeHeight),
             64 => Some(KeyTypeTag::BlendingData),
             65 => Some(KeyTypeTag::ActorDigestVersion),
-            66 => Some(KeyTypeTag::Inventory),
             118 => Some(KeyTypeTag::LegacyVersion),
             _ => None,
         }
