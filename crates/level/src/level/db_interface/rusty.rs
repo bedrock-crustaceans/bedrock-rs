@@ -76,7 +76,6 @@ const COMPRESSION_LEVEL: u8 = CompressionLevel::DefaultLevel as u8;
 pub struct RustyDBInterface<UserState> {
     db: DB,
     phantom_data: PhantomData<UserState>,
-    user_state: UserState,
 }
 
 #[derive(Debug, Error)]
@@ -119,20 +118,23 @@ impl<UserState> RustyDBInterface<UserState> {
 impl<UserState> RustyDBInterface<UserState> {
     pub fn save_inventory(
         &mut self,
-        chunk_key: &ChunkKey,  
+        chunk_key: &ChunkKey,
         inventory: &InventoryData,
+        user_state: &mut UserState,
     ) -> Result<(), DBError> {
-        let user_state = &mut self.user_state;
         let serialized_inventory = bincode::serialize(inventory).map_err(|e| DBError::DatabaseError(Status {
             code: rusty_leveldb::StatusCode::Corruption,
             err: e.to_string(),
         }))?;
-        let user_state = &mut self.user_state;
-        self.set_subchunk_raw(*chunk_key, &serialized_inventory, &mut self.user_state)
+        self.set_subchunk_raw(*chunk_key, &serialized_inventory, user_state)
     }
 
-    pub fn load_inventory(&mut self, chunk_key: &ChunkKey) -> Result<Option<InventoryData>, DBError> {
-        if let Some(data) = self.get_subchunk_raw(*chunk_key, &mut self.user_state)? {
+    pub fn load_inventory(
+        &mut self,
+        chunk_key: &ChunkKey,
+        user_state: &mut UserState,
+    ) -> Result<Option<InventoryData>, DBError> {
+        if let Some(data) = self.get_subchunk_raw(*chunk_key, user_state)? {
             let inventory: InventoryData = bincode::deserialize(&data).map_err(|e| DBError::DatabaseError(Status {
                 code: rusty_leveldb::StatusCode::Corruption,
                 err: e.to_string(),
@@ -145,26 +147,31 @@ impl<UserState> RustyDBInterface<UserState> {
 
     pub fn add_item_to_inventory(
         &mut self,
-        chunk_key: &ChunkKey,  
+        chunk_key: &ChunkKey,
         item: InventoryItem,
+        user_state: &mut UserState,
     ) -> Result<(), DBError> {
-        let mut inventory = self.load_inventory(chunk_key)?.unwrap_or(InventoryData { items: vec![] });
+        let mut inventory = self
+            .load_inventory(chunk_key, user_state)?
+            .unwrap_or_else(|| InventoryData { items: vec![] });
         inventory.items.push(item);
-        self.save_inventory(chunk_key, &inventory)
+        self.save_inventory(chunk_key, &inventory, user_state)
     }
 
     pub fn remove_item_from_inventory(
         &mut self,
-        chunk_key: &ChunkKey,  
+        chunk_key: &ChunkKey,
         item_id: u32,
+        user_state: &mut UserState,
     ) -> Result<(), DBError> {
-        if let Some(mut inventory) = self.load_inventory(chunk_key)? {
+        if let Some(mut inventory) = self.load_inventory(chunk_key, user_state)? {
             inventory.items.retain(|item| item.id != item_id);
-            self.save_inventory(chunk_key, &inventory)?;
+            self.save_inventory(chunk_key, &inventory, user_state)?;
         }
         Ok(())
     }
 }
+
     
 impl<UserState> RawWorldTrait for RustyDBInterface<UserState> {
     type Err = DBError;
@@ -253,7 +260,7 @@ impl<UserState> RawWorldTrait for RustyDBInterface<UserState> {
     fn new(
         path: Box<Path>,
         create_if_missing: bool,
-        user_state: &mut UserState, 
+        _: &mut Self::UserState,
     ) -> Result<Self, Self::Err> {
         let mut opts = mcpe_options(COMPRESSION_LEVEL);
         opts.create_if_missing = create_if_missing;
@@ -261,7 +268,6 @@ impl<UserState> RawWorldTrait for RustyDBInterface<UserState> {
         Ok(Self {
             db,
             phantom_data: PhantomData,
-            user_state,
         })
     }
 
