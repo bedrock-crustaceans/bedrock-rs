@@ -19,7 +19,7 @@ miniz_oxide = "0.8"
 vek = "0.17"
 
 [dev-dependencies]
-rand = "0.8"
+rand = "0.9"
 copy_dir = "0.1.3"
 
 
