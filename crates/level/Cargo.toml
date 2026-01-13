@@ -15,7 +15,7 @@ uuid = { version = "1.11", features = ["v4"] }
 bytemuck = { version = "1.19", features = ["must_cast"] }
 serde = "1.0"
 rusty-leveldb = "3.0"
-miniz_oxide = "0.8"
+miniz_oxide = "0.9"
 vek = "0.17"
 
 [dev-dependencies]
