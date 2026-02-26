@@ -1,23 +1,24 @@
 use bedrockrs::proto::connection::Connection;
 use bedrockrs::proto::listener::Listener;
 use bedrockrs_proto::compression::Compression;
-use bedrockrs_proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
-use bedrockrs_proto::v662::packets::{
+use bedrockrs_proto::v800::enums::{PacketCompressionAlgorithm, PlayStatus};
+use bedrockrs_proto::v800::packets::{
     NetworkSettingsPacket, PlayStatusPacket, ResourcePackStackPacket, ResourcePacksInfoPacket,
 };
-use bedrockrs_proto::v662::types::{BaseGameVersion, Experiments};
-use bedrockrs_proto::v662::GamePackets;
-use bedrockrs_proto::v662::ProtoHelperV662;
-use bedrockrs_proto::v766;
+use bedrockrs_proto::v800::types::{BaseGameVersion, Experiments};
+use bedrockrs_proto::v800::GamePackets;
+use bedrockrs_proto::v800::ProtoHelperV800;
+use bedrockrs_proto::v800;
 use tokio::time::Instant;
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
     let mut listener = Listener::new_raknet(
-        "§5Hot Chickens in Your Area!!!".to_string(),
+        "Bedrock in Rust".to_string(),
         "bedrockrs".to_string(),
-        "1.0".to_string(),
-        v766::info::PROTOCOL_VERSION,
+        v800::info::NETWORK_VERSION.to_string(),
+        v800::info::PROTOCOL_VERSION,
         100,
         10,
         "127.0.0.1:19132".parse().unwrap(),
@@ -41,13 +42,13 @@ async fn handle_login(mut conn: Connection) {
     let time_start = Instant::now();
 
     // NetworkSettingsRequest
-    conn.recv::<ProtoHelperV662>().await.unwrap();
+    conn.recv::<ProtoHelperV800>().await.unwrap();
     println!("NetworkSettingsRequest");
 
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send::<ProtoHelperV662>(&[GamePackets::NetworkSettings(NetworkSettingsPacket {
+    conn.send::<ProtoHelperV800>(&[GamePackets::NetworkSettings(NetworkSettingsPacket {
         compression_threshold: 1,
         compression_algorithm: PacketCompressionAlgorithm::None,
         client_throttle_enabled: false,
@@ -61,21 +62,20 @@ async fn handle_login(mut conn: Connection) {
     conn.compression = Some(compression);
 
     // Login
-    conn.recv::<ProtoHelperV662>().await.unwrap();
+    conn.recv::<ProtoHelperV800>().await.unwrap();
     println!("Login");
 
-    conn.send::<ProtoHelperV662>(&[
-        GamePackets::PlaySatus(PlayStatusPacket {
+    conn.send::<ProtoHelperV800>(&[
+        GamePackets::PlayStatus(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
         }),
         GamePackets::ResourcePacksInfo(ResourcePacksInfoPacket {
             resource_pack_required: false,
             has_addon_packs: false,
             has_scripts: false,
-            force_server_packs_enabled: false,
-            behaviour_packs: vec![],
+            world_template_uuid: Uuid::nil(),
             resource_packs: vec![],
-            cdn_urls: vec![],
+            world_template_version: "".to_string(),
         }),
         GamePackets::ResourcePackStack(ResourcePackStackPacket {
             texture_pack_required: false,
@@ -86,6 +86,7 @@ async fn handle_login(mut conn: Connection) {
                 ever_toggled: false,
             },
             texture_pack_list: vec![],
+            include_editor_packs: false,
         }),
     ])
     .await
@@ -94,9 +95,9 @@ async fn handle_login(mut conn: Connection) {
     println!("ResourcePacksInfo");
     println!("ResourcePackStack");
 
-    println!("{:#?}", conn.recv::<ProtoHelperV662>().await.unwrap());
+    println!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
     println!("ClientCacheStatus");
-    println!("{:#?}", conn.recv::<ProtoHelperV662>().await.unwrap());
+    println!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
     println!("ResourcePackClientResponse");
 
     // conn.send::<ProtoHelperV729>(&[GamePackets::DisconnectPlayer(DisconnectPlayerPacket {
@@ -229,7 +230,7 @@ async fn handle_login(mut conn: Connection) {
     println!("{:?}", time_end.duration_since(time_start));
 
     loop {
-        let res = conn.recv::<ProtoHelperV662>().await;
+        let res = conn.recv::<ProtoHelperV800>().await;
 
         if let Ok(packet) = res {
             println!("{:?}", packet);

@@ -2,7 +2,7 @@ mod common;
 
 use crate::common::logger::setup_logger;
 use bedrockrs::proto::codec::decode_gamepackets;
-use bedrockrs::proto::v729::helper::ProtoHelperV729;
+use bedrockrs::proto::v800::ProtoHelperV800;
 use bedrockrs_proto::compression::Compression;
 
 fn main() {
@@ -16,7 +16,7 @@ fn main() {
         68, 83, 85, 82, 90, 90, 48, 70, 70, 76, 50, 82, 89,
     ];
 
-    let result = decode_gamepackets::<ProtoHelperV729>(bytes, Some(&Compression::None), None);
+    let result = decode_gamepackets::<ProtoHelperv800>(bytes, Some(&Compression::None), None);
 
     println!("{:?}", result);
 }
