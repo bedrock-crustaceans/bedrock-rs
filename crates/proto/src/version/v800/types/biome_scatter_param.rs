@@ -6,10 +6,8 @@ pub struct BiomeScatterParamData {
     #[vec_repr(u32)]
     #[vec_endianness(var)]
     pub coordinates: Vec<BiomeCoordinateData>,
-    // Encoded as VarInt enum ordinal.
     #[endianness(var)]
     pub eval_order: i32,
-    // Encoded as VarInt where -1 means "no expression op".
     #[endianness(var)]
     pub chance_percent_type: i32,
     #[endianness(le)]
@@ -18,7 +16,6 @@ pub struct BiomeScatterParamData {
     pub chance_numerator: i32,
     #[endianness(le)]
     pub change_denominator: i32,
-    // Encoded as VarInt where -1 means "no expression op".
     #[endianness(var)]
     pub iterations_type: i32,
     #[endianness(le)]

@@ -2,12 +2,10 @@ use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Debug, Clone, Copy)]
 pub struct BiomeCoordinateData {
-    // Encoded as VarInt where -1 means "no expression op".
     #[endianness(var)]
     pub min_value_type: i32,
     #[endianness(le)]
     pub min_value: u16,
-    // Encoded as VarInt where -1 means "no expression op".
     #[endianness(var)]
     pub max_value_type: i32,
     #[endianness(le)]
