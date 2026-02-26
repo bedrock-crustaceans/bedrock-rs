@@ -4,17 +4,16 @@ use bedrockrs_macros::ProtoCodec;
 pub struct BiomeCappedSurfaceData {
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub floor_block_runtime_ids: Vec<u32>,
+    #[endianness(le)]
+    pub floor_blocks: Vec<i32>,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub ceiling_block_runtime_ids: Vec<u32>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
-    pub sea_block_runtime_ids: Vec<u32>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
-    pub foundation_block_runtime_ids: Vec<u32>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
-    pub beach_block_runtime_ids: Vec<u32>,
+    #[endianness(le)]
+    pub ceiling_blocks: Vec<i32>,
+    #[endianness(le)]
+    pub sea_block: Option<i32>,
+    #[endianness(le)]
+    pub foundation_block: Option<i32>,
+    #[endianness(le)]
+    pub beach_block: Option<i32>,
 }

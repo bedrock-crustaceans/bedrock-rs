@@ -205,7 +205,6 @@ export!(update_client_input_locks);
 export!(camera_presets);
 export!(unlocked_recipes);
 export!(camera_instruction);
-export!(compressed_biome_definition_list);
 export!(trim_data);
 export!(open_sign);
 export!(agent_animation);

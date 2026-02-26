@@ -1,11 +1,18 @@
-use std::option::Option;
-use crate::v800::types::{BiomeDefinitionChunkGenData, Color};
+use crate::v800::types::BiomeDefinitionChunkGenData;
 use bedrockrs_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct BiomeTagList {
+    #[vec_repr(u32)]
+    #[vec_endianness(var)]
+    #[endianness(le)]
+    pub tags: Vec<u16>,
+}
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BiomeDefinition {
     #[endianness(le)]
-    pub id: Option<i32>,
+    pub id: Option<u16>,
     #[endianness(le)]
     pub temperature: f32,
     #[endianness(le)]
@@ -22,10 +29,9 @@ pub struct BiomeDefinition {
     pub depth: f32,
     #[endianness(le)]
     pub scale: f32,
-    pub map_water_color: Color,
+    #[endianness(le)]
+    pub map_water_color: i32,
     pub rain: bool,
-    #[endianness(le)]
-    pub tags: Option<Vec<i32>>,
-    #[endianness(le)]
-    pub chunk_gen_data: Option<BiomeDefinitionChunkGenData>
+    pub tags: Option<BiomeTagList>,
+    pub chunk_gen_data: Option<BiomeDefinitionChunkGenData>,
 }

@@ -3,7 +3,7 @@ use bedrockrs_macros::ProtoCodec;
 #[derive(ProtoCodec, Debug, Clone, Copy)]
 pub struct BiomeWeightedData {
     #[endianness(le)]
-    pub biome: i32,
+    pub biome: u16,
     #[endianness(le)]
-    pub weight: i64,
+    pub weight: i32,
 }

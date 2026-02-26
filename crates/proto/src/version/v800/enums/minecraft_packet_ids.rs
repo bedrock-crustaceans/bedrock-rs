@@ -206,7 +206,6 @@ pub enum MinecraftPacketIds {
     CameraPresets = 198,
     UnlockedRecipes = 199,
     CameraInstruction = 300,
-    CompressedBiomeDefinitionList = 301,
     TrimData = 302,
     OpenSign = 303,
     AgentAnimation = 304,
@@ -214,4 +213,5 @@ pub enum MinecraftPacketIds {
     PlayerToggleCrafterSlotRequestPacket = 306,
     SetPlayerInventoryOptions = 307,
     SetHudPacket = 308,
+    ClientBoundControlSchemeSet = 327,
 }

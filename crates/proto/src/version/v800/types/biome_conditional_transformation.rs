@@ -7,7 +7,7 @@ pub struct BiomeConditionalTransformationData {
     #[vec_endianness(var)]
     pub weighted_biomes: Vec<BiomeWeightedData>,
     #[endianness(le)]
-    pub condition_json: i32,
+    pub condition_json: u16,
     #[endianness(le)]
-    pub min_passing_neighbors: i64,
+    pub min_passing_neighbors: u32,
 }

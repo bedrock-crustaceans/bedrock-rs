@@ -42,7 +42,7 @@ pub struct CameraPreset {
     pub player_effects: Option<bool>,
     pub align_target_and_camera_forwards: Option<bool>,
     pub aim_assist_preset: Option<CameraAimAssistPreset>,
-    pub control_scheme: ControlScheme,
+    pub control_scheme: Option<ControlScheme>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
