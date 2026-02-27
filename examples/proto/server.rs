@@ -17,7 +17,7 @@ async fn main() {
     let mut listener = Listener::new_raknet(
         "Bedrock in Rust".to_string(),
         "bedrockrs".to_string(),
-        v800::info::NETWORK_VERSION.to_string(),
+        v800::info::GAME_VERSION.to_string(),
         v800::info::PROTOCOL_VERSION,
         100,
         10,

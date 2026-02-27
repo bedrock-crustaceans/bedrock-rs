@@ -11,7 +11,7 @@ pub enum DataItemType {
     Int(#[endianness(var)] i32) = 2,
     Float(#[endianness(le)] f32) = 3,
     String(String) = 4,
-    Nbt(#[nbt] nbtx::Value) = 5,
+    NBT(#[nbt] nbtx::Value) = 5,
     Pos(BlockPos) = 6,
     Int64(#[endianness(var)] i64) = 7,
     Vec3(#[endianness(le)] Vec3<f32>) = 8,
