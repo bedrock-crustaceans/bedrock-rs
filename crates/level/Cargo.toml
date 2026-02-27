@@ -9,7 +9,7 @@ bedrockrs_shared = { path = "../shared" }
 
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 
-thiserror = "1.x"
+thiserror = "2.0"
 byteorder = "1.x"
 uuid = { version = "1.x", features = ["v4"] }
 bytemuck = { version = "1.19.x", features = ["must_cast"] }
