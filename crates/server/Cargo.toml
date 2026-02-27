@@ -11,7 +11,7 @@ bedrockrs_shared = { path = "../shared" }
 bedrockrs_proto = { path = "../proto" }
 
 tokio = { version = "1.40", features = ["full", "tracing"] }
-shipyard = { version = "0.7", features = ["parallel", "proc", "rayon", "tracing"] }
+shipyard = { version = "0.11", features = ["parallel", "proc", "rayon", "tracing"] }
 rayon = "1.10"
 vek = "0.17"
 
