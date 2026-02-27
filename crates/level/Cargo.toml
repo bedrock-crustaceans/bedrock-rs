@@ -21,7 +21,7 @@ miniz_oxide = "0.x.x"
 vek = "0.17"
 
 [dev-dependencies]
-rand = "0.8"
+rand = "0.10"
 
 [profile.release]
 debug = true
