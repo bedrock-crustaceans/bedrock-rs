@@ -1,11 +1,11 @@
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use vek::Vec3;
+use bedrockrs_shared::world::dimension::Dimension;
 
 #[gamepacket(id = 61)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChangeDimensionPacket {
-    #[endianness(var)]
-    pub dimension_id: i32,
+    pub dimension: Dimension,
     #[endianness(le)]
     pub position: Vec3<f32>,
     pub respawn: bool,

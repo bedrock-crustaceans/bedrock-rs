@@ -5,8 +5,8 @@ use bedrockrs_macros::ProtoCodec;
 #[enum_endianness(var)]
 #[repr(u64)]
 pub enum ActorBlockSyncMessageID {
-    NONE = 0,
-    CREATE = 1,
-    DESTROY = 2,
+    None = 0,
+    Create = 1,
+    Destroy = 2,
 }
 

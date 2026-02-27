@@ -16,7 +16,7 @@ fn main() {
         68, 83, 85, 82, 90, 90, 48, 70, 70, 76, 50, 82, 89,
     ];
 
-    let result = decode_gamepackets::<ProtoHelperv800>(bytes, Some(&Compression::None), None);
+    let result = decode_gamepackets::<ProtoHelperV800>(bytes, Some(&Compression::None), None);
 
     println!("{:?}", result);
 }
