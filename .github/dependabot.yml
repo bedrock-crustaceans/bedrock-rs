@@ -8,7 +8,7 @@ updates:
   # Main crate dependencies
   - package-ecosystem: "cargo" # See documentation for possible values
     directory: "/" # Location of main package manifest
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
@@ -17,48 +17,48 @@ updates:
 
   - package-ecosystem: "cargo"
     directory: "/crates/addon" # Location of internal crate "addon"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/core" # Location of internal crate "core"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/form" # Location of internal crate "form"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/proto" # Location of internal crate "proto"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/proto_core" # Location of internal crate "proto_core"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/macros" # Location of internal crate "macros"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/shared" # Location of internal crate "shared"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/crates/level" # Location of internal crate "level"
-    target-branch: "dev"
+    target-branch: "master"
     schedule:
       interval: "daily"
