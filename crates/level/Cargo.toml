@@ -16,7 +16,7 @@ bytemuck = { version = "1.19.x", features = ["must_cast"] }
 len-trait = "0.6.x"
 concat-idents = "1.x.x"
 serde = "1.x.x"
-rusty-leveldb = "3.x.x"
+rusty-leveldb = "4.0.1"
 miniz_oxide = "0.x.x"
 vek = "0.17"
 
