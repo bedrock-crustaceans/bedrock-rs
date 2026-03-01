@@ -19,7 +19,7 @@ log = "0.4"
 vek = "0.17"
 thiserror = "2.0"
 
-jsonwebtoken = "9.3"
+jsonwebtoken = "10.3"
 rand = "0.10"
 base64 = "0.22"
 uuid = { version = "1.11", features = ["v4"] }
