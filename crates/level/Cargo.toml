@@ -10,25 +10,5 @@ bedrockrs_shared = { path = "../shared" }
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 
 thiserror = "2.0"
-byteorder = "1.x"
-uuid = { version = "1.x", features = ["v4"] }
-bytemuck = { version = "1.19.x", features = ["must_cast"] }
-len-trait = "0.6.x"
-concat-idents = "1.x.x"
-serde = "1.x.x"
-rusty-leveldb = "3.x.x"
-miniz_oxide = "0.x.x"
-vek = "0.17"
-
-[dev-dependencies]
-rand = "0.10"
-
-[profile.release]
-debug = true
-
-[[test]]
-name = "api_test"
-required-features = ["default-impl"]
-
-[features]
-default-impl = []
+rusty-leveldb = "4.0.1"
+serde = "1.0.228"
