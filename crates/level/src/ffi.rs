@@ -1,4 +1,7 @@
-use std::{ffi::{c_char, c_int}, os::raw::c_void};
+use std::{
+    ffi::{c_char, c_int},
+    os::raw::c_void,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -10,14 +13,14 @@ pub enum FfiStatus {
     NotSupported,
     InvalidArgument,
     IoError,
-    AllocationFailed
+    AllocationFailed,
 }
 
 #[derive(Debug)]
 #[repr(C)]
 pub struct FfiData {
     pub size: c_int,
-    pub data: *mut c_void
+    pub data: *mut c_void,
 }
 
 #[derive(Debug)]
@@ -25,21 +28,35 @@ pub struct FfiData {
 pub struct FfiResult {
     pub status: FfiStatus,
     pub size: c_int,
-    pub data: *mut c_void
+    pub data: *mut c_void,
 }
 
 extern "C" {
-     /// Open a LevelDB database.
+    /// Open a LevelDB database.
     pub fn bedrockrs_db_open(path: *const c_char) -> FfiResult;
     /// Close a LevelDB database.
     /// This also frees the pointers, it must no longer be used.
     pub fn bedrockrs_db_close(database: *mut c_void);
     /// Loads a value from the database.
-    pub fn bedrockrs_db_get(database: *mut c_void, key: *const c_char, key_size: c_int) -> FfiResult;
+    pub fn bedrockrs_db_get(
+        database: *mut c_void,
+        key: *const c_char,
+        key_size: c_int,
+    ) -> FfiResult;
     /// Writes a value into the database.
-    pub fn bedrockrs_db_put(database: *mut c_void, key: *const c_char, key_size: c_int, value: *const c_char, value_size: c_int) -> FfiResult;
+    pub fn bedrockrs_db_put(
+        database: *mut c_void,
+        key: *const c_char,
+        key_size: c_int,
+        value: *const c_char,
+        value_size: c_int,
+    ) -> FfiResult;
     /// Deletes a key from the database.
-    pub fn bedrockrs_db_remove(database: *mut c_void, key: *const c_char, key_size: c_int) -> FfiResult;
+    pub fn bedrockrs_db_remove(
+        database: *mut c_void,
+        key: *const c_char,
+        key_size: c_int,
+    ) -> FfiResult;
     /// Deallocates a string previously allocated by another function.
     pub fn bedrockrs_buffer_destroy(array: *mut c_char);
     // /// Creates an iterator over the database keys.

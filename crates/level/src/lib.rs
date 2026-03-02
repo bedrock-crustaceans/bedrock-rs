@@ -15,6 +15,4 @@ pub mod rdb;
 #[cfg(feature = "rusty-leveldb")]
 pub use rdb as db;
 
-pub mod prelude {
-
-}
+pub mod prelude {}

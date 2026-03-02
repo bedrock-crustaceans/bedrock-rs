@@ -1,7 +1,15 @@
-use std::{ffi::{CStr, CString, c_char, c_int, c_void}, marker::PhantomData, ops::Deref, ptr::NonNull};
+use std::{
+    ffi::{c_char, c_int, c_void, CStr, CString},
+    marker::PhantomData,
+    ops::Deref,
+    ptr::NonNull,
+};
 
-use crate::{ffi::{self, FfiStatus}, key::Key};
 use crate::error::{Error, Result};
+use crate::{
+    ffi::{self, FfiStatus},
+    key::Key,
+};
 
 /// Smart pointer around a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
@@ -51,8 +59,8 @@ impl<'db> Drop for ExclusiveGuard<'db> {
 
 /// A LevelDB database.
 pub struct Database {
-    /// Pointer to the C++ `Database` struct, containing the database and 
-    ptr: NonNull<c_void>
+    /// Pointer to the C++ `Database` struct, containing the database and
+    ptr: NonNull<c_void>,
 }
 
 impl Database {
@@ -62,18 +70,15 @@ impl Database {
         // Safety:
         //
         //
-        let result = unsafe {
-            ffi::bedrockrs_db_open(ffi_path.as_ptr())
-        };
+        let result = unsafe { ffi::bedrockrs_db_open(ffi_path.as_ptr()) };
 
         if result.status == FfiStatus::Success {
-            let ptr = NonNull::new(result.data).expect("`db_open` pointer was null despite successful status");
+            let ptr = NonNull::new(result.data)
+                .expect("`db_open` pointer was null despite successful status");
 
             Ok(Self { ptr })
         } else {
-            let err = unsafe {
-                translate_ffi_error(result)
-            };
+            let err = unsafe { translate_ffi_error(result) };
 
             Err(err)
         }
@@ -85,7 +90,9 @@ impl Database {
 
         let result = unsafe {
             ffi::bedrockrs_db_get(
-                self.ptr.as_ptr(), raw_key.as_ptr().cast::<c_char>(), raw_key.len() as c_int
+                self.ptr.as_ptr(),
+                raw_key.as_ptr().cast::<c_char>(),
+                raw_key.len() as c_int,
             )
         };
 
@@ -101,18 +108,12 @@ impl Database {
 
                 // Safety: This is safe because `data` was created by a LevelDB allocation and is a valid
                 // Rust slice.
-                let guard = unsafe {
-                    ExclusiveGuard::from_slice(data)
-                };
+                let guard = unsafe { ExclusiveGuard::from_slice(data) };
 
                 Ok(Some(guard))
-            },
-            FfiStatus::NotFound => Ok(None),
-            _ => {
-                Err(unsafe {
-                    translate_ffi_error(result)
-                })
             }
+            FfiStatus::NotFound => Ok(None),
+            _ => Err(unsafe { translate_ffi_error(result) }),
         }
     }
 }
@@ -132,11 +133,11 @@ unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
     let ffi_err = CStr::from_ptr(result.data.cast::<c_char>());
     let str = match ffi_err.to_str() {
         Ok(str) => str,
-        Err(err) => return Error::InvalidUtf8(err)
+        Err(err) => return Error::InvalidUtf8(err),
     };
 
     let owned = str.to_owned();
-    
+
     ffi::bedrockrs_buffer_destroy(result.data.cast::<c_char>());
     Error::LevelDbError(owned)
 }

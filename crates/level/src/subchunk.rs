@@ -199,15 +199,19 @@ impl ChunkLayer {
     fn deserialize_disk(mut reader: &mut Cursor<&[u8]>) -> Result<Self> {
         let indices = match packed::deserialize_array(&mut reader)? {
             PackedResult::Data(data) => data,
-            PackedResult::Empty => return Err(Error::Invalid("chunk layer packed array cannot be empty")),
-            PackedResult::Inherit => return Err(Error::Invalid("chunk layers do not support inheritance")),
+            PackedResult::Empty => {
+                return Err(Error::Invalid("chunk layer packed array cannot be empty"))
+            }
+            PackedResult::Inherit => {
+                return Err(Error::Invalid("chunk layers do not support inheritance"))
+            }
         };
 
         let len = reader.read_u32::<LittleEndian>()? as usize;
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let entry  = nbtx::from_le_bytes(&mut reader)?;
+            let entry = nbtx::from_le_bytes(&mut reader)?;
             palette.push(entry);
         }
 
@@ -243,7 +247,7 @@ where
     type Output = BlockDef;
 
     /// # Panics
-    /// 
+    ///
     /// This function panics if the given position is out of range.
     /// In other words, it requires that `x <= 16`, `y <= 16` and `z <= 16`.
     fn index(&self, position: I) -> &BlockDef {
@@ -264,7 +268,7 @@ where
     I: Into<Vec3<u8>>,
 {
     /// # Panics
-    /// 
+    ///
     /// This function panics if the given position is out of range.
     /// In other words, it requires that `x <= 16`, `y <= 16` and `z <= 16`.
     fn index_mut(&mut self, position: I) -> &mut BlockDef {
@@ -382,9 +386,11 @@ impl SubChunk {
             _ => reader.read_u8()?,
         };
 
-        let index = if version == SubChunkVersion::Limitless { 
+        let index = if version == SubChunkVersion::Limitless {
             reader.read_i8()?
-        } else { 0 };
+        } else {
+            0
+        };
 
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
@@ -392,7 +398,11 @@ impl SubChunk {
             layers.push(ChunkLayer::deserialize_disk(reader)?);
         }
 
-        Ok(Self { version, index, layers })
+        Ok(Self {
+            version,
+            index,
+            layers,
+        })
     }
 
     /// Serialises the sub chunk into the given writer.

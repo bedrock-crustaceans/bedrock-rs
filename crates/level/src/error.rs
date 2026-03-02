@@ -19,7 +19,7 @@ pub enum Error {
     #[error("invalid {0}")]
     Invalid(&'static str),
     #[error("unknown error")]
-    Unknown
+    Unknown,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,6 +1,6 @@
 use bedrockrs_shared::world::dimension::Dimension;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use nbtx::{LittleEndian};
+use nbtx::LittleEndian;
 use vek::Vec2;
 
 use std::io::Cursor;
@@ -13,9 +13,7 @@ pub enum KeyVariant {
     Biome3d = 0x2b,
     ChunkVersion = 0x2c,
     HeightMap = 0x2d,
-    SubChunk {
-        index: i8
-    } = 0x2f,
+    SubChunk { index: i8 } = 0x2f,
     LegacyTerrain = 0x30,
     BlockEntity = 0x31,
     Entity = 0x32,
@@ -24,7 +22,7 @@ pub enum KeyVariant {
     FinalizedState = 0x36,
     BorderBlocks = 0x38,
     HardcodedSpawnAreas = 0x39,
-    RandomTicks = 0x3a
+    RandomTicks = 0x3a,
 }
 
 impl KeyVariant {
@@ -43,7 +41,7 @@ impl KeyVariant {
             KeyVariant::FinalizedState => 0x36,
             KeyVariant::BorderBlocks => 0x38,
             KeyVariant::HardcodedSpawnAreas => 0x39,
-            KeyVariant::RandomTicks => 0x3a
+            KeyVariant::RandomTicks => 0x3a,
         }
     }
 }
@@ -55,7 +53,7 @@ pub struct Key {
     /// The dimension of the requested chunk.
     pub dimension: Dimension,
     /// The data to be requested of this chunk.
-    pub data: KeyVariant
+    pub data: KeyVariant,
 }
 
 impl Key {
@@ -106,7 +104,9 @@ impl Key {
 
         let key_var = reader.read_u8()?;
         let data = match key_var {
-            0x2f => KeyVariant::SubChunk { index: reader.read_i8()? },
+            0x2f => KeyVariant::SubChunk {
+                index: reader.read_i8()?,
+            },
             0x2b => KeyVariant::Biome3d,
             0x2c => KeyVariant::ChunkVersion,
             0x2d => KeyVariant::HeightMap,
@@ -119,11 +119,13 @@ impl Key {
             0x38 => KeyVariant::BorderBlocks,
             0x39 => KeyVariant::HardcodedSpawnAreas,
             0x3a => KeyVariant::RandomTicks,
-            _ => return Err(Error::Invalid("invalid leveldb database key type"))
+            _ => return Err(Error::Invalid("invalid leveldb database key type")),
         };
 
         let key = Self {
-            chunk, dimension, data
+            chunk,
+            dimension,
+            data,
         };
 
         Ok(key)

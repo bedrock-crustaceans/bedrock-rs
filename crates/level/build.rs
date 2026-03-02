@@ -29,7 +29,10 @@ fn main() {
             println!("cargo:rustc-link-lib=shell32");
         }
 
-        println!("Searching for leveldb-ffi and leveldb-mcpe in {}", ffi_dst.display());
+        println!(
+            "Searching for leveldb-ffi and leveldb-mcpe in {}",
+            ffi_dst.display()
+        );
         println!("cargo:rustc-link-search=native={}", ffi_dst.display());
         println!("cargo:rustc-link-search=native={}", leveldb_dst.display());
         println!("cargo:rustc-link-lib=static=leveldb-ffi");
