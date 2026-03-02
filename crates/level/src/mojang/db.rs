@@ -5,7 +5,7 @@ use std::{
     ptr::NonNull,
 };
 
-use crate::error::{Error, Result};
+use crate::{error::{Error, Result}, iter::Keys};
 use crate::{
     ffi::{self, FfiStatus},
     key::Key,
@@ -13,9 +13,9 @@ use crate::{
 
 /// Smart pointer around a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
-pub struct ExclusiveGuard<'db>(&'db mut [u8]);
+pub struct Buffer<'db>(&'db mut [u8]);
 
-impl<'db> ExclusiveGuard<'db> {
+impl<'db> Buffer<'db> {
     /// Creates a `Guard` from the given slice.
     ///
     /// This is not implemented as a `From` trait so that `Guard` can only be constructed
@@ -31,7 +31,7 @@ impl<'db> ExclusiveGuard<'db> {
     }
 }
 
-impl<'db> Deref for ExclusiveGuard<'db> {
+impl<'db> Deref for Buffer<'db> {
     type Target = [u8];
 
     fn deref(&self) -> &[u8] {
@@ -39,13 +39,13 @@ impl<'db> Deref for ExclusiveGuard<'db> {
     }
 }
 
-impl<'db> AsRef<[u8]> for ExclusiveGuard<'db> {
+impl<'db> AsRef<[u8]> for Buffer<'db> {
     fn as_ref(&self) -> &[u8] {
         self.0
     }
 }
 
-impl<'db> Drop for ExclusiveGuard<'db> {
+impl<'db> Drop for Buffer<'db> {
     fn drop(&mut self) {
         // Safety:
         //
@@ -84,7 +84,15 @@ impl Database {
         }
     }
 
-    pub fn get(&self, key: Key) -> Result<Option<ExclusiveGuard<'_>>> {
+    pub fn as_ptr(&self) -> *mut c_void {
+        self.ptr.as_ptr()
+    }
+
+    pub fn iter(&self) -> Keys<'_> {
+        Keys::new(self)
+    }
+
+    pub fn get(&self, key: Key) -> Result<Option<Buffer<'_>>> {
         let mut raw_key = Vec::with_capacity(key.size_hint());
         key.serialize(&mut raw_key)?;
 
@@ -108,7 +116,7 @@ impl Database {
 
                 // Safety: This is safe because `data` was created by a LevelDB allocation and is a valid
                 // Rust slice.
-                let guard = unsafe { ExclusiveGuard::from_slice(data) };
+                let guard = unsafe { Buffer::from_slice(data) };
 
                 Ok(Some(guard))
             }
@@ -126,7 +134,12 @@ impl Drop for Database {
     }
 }
 
+// Safety: This is safe because `leveldb` is internally synchronised. The docs mention explicitly
+// that `leveldb` is thread safe.
 unsafe impl Send for Database {}
+
+// Safety: This is safe because `leveldb` is internally synchronised. The docs mention explicitly
+// that `leveldb` is thread safe.
 unsafe impl Sync for Database {}
 
 unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {

@@ -24,36 +24,17 @@ struct FfiData {
 };
 
 struct FfiResult bedrockrs_db_open(const char* path);
-
 void bedrockrs_db_close(void* db);
-
-struct FfiResult bedrockrs_db_get(
-    void* db, const char* key, int key_size
-);
-
-struct FfiResult bedrockrs_db_put(
-    void* db,
-    const char* key, int key_size,
-    const char* val, int val_size
-);
-
-struct FfiResult bedrockrs_db_remove(
-    void* db, const char* key, int key_size
-);
-
+struct FfiResult bedrockrs_db_get(void* db, const char* key, int key_size);
+struct FfiResult bedrockrs_db_put(void* db, const char* key, int key_size, const char* val, int val_size);
+struct FfiResult bedrockrs_db_remove(void* db, const char* key, int key_size);
 void bedrockrs_buffer_destroy(char* array);
-
-// struct FfiData iter_new(void* db);
-
-// void iter_destroy(void* iter);
-
-// struct FfiData iter_key(const void* iter);
-
-// struct FfiData iter_value(const void* iter);
-
-// bool iter_valid(const void* iter);
-
-// void iter_next(void* iter);
+struct FfiData bedrockrs_iter_new(void* db);
+void bedrockrs_iter_destroy(void* iter);
+struct FfiData bedrockrs_iter_key(const void* iter);
+struct FfiData bedrockrs_iter_value(const void* iter);
+bool bedrockrs_iter_valid(const void* iter);
+void bedrockrs_iter_next(void* iter);
 
 // void* batch_new();
 

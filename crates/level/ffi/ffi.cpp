@@ -156,3 +156,55 @@ FfiResult bedrockrs_db_remove(void* db_ptr, const char* key, int key_size) {
 void bedrockrs_buffer_destroy(char* array) {
     delete[] array;
 }
+
+FfiData bedrockrs_iter_new(void* db_ptr) {
+    Database* db = reinterpret_cast<Database*>(db_ptr);
+
+    leveldb::Iterator* iter = db->db->NewIterator(db->read_options);
+    iter->SeekToFirst();
+
+    FfiData result{};
+    result.size = sizeof(leveldb::Iterator*); // yes this must be the size of the pointer
+    result.data = iter;
+
+    return result;
+}
+
+void bedrockrs_iter_destroy(void* iter_ptr) {
+    leveldb::Iterator* iter = reinterpret_cast<leveldb::Iterator*>(iter_ptr);
+    delete iter;
+}
+
+FfiData bedrockrs_iter_key(const void* iter_ptr) {
+    const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
+    leveldb::Slice key = iter->key();
+
+    FfiData result{};
+    result.size = key.size();
+    result.data = new char[result.size];
+    memcpy(result.data, key.data(), result.size);
+
+    return result;
+}
+
+FfiData bedrockrs_iter_value(const void* iter_ptr) {
+    const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
+    leveldb::Slice value = iter->value();
+
+    FfiData result{};
+    result.size = value.size();
+    result.data = new char[result.size];
+    memcpy(result.data, value.data(), result.size);
+
+    return result;
+}
+
+void bedrockrs_iter_next(void* iter_ptr) {
+    leveldb::Iterator* iter = reinterpret_cast<leveldb::Iterator*>(iter_ptr);
+    iter->Next();
+}
+
+bool bedrockrs_iter_valid(const void* iter_ptr) {
+    const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
+    return iter->Valid();
+}
