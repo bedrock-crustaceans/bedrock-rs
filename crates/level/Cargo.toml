@@ -2,13 +2,26 @@
 name = "bedrockrs_level"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
+
+[features]
+default = ["mojang-leveldb"]
+mojang-leveldb = ["dep:cmake"]
+rusty-leveldb = ["dep:rusty-leveldb"]
 
 [dependencies]
 bedrockrs_core = { path = "../core" }
 bedrockrs_shared = { path = "../shared" }
-
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 
+
+rusty-leveldb = { version = "4.0.1", optional = true }
+
 thiserror = "2.0"
-rusty-leveldb = "4.0.1"
 serde = "1.0.228"
+vek = "0.17.2"
+byteorder = "1.5.0"
+
+[build-dependencies]
+cmake = { version = "0.1.57", optional = true }
+
