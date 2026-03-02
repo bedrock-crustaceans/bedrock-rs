@@ -52,7 +52,7 @@ struct Database {
     }
 };
 
-FfiResult db_open(const char* path) {
+FfiResult bedrockrs_db_open(const char* path) {
     FfiResult result{};
 
     std::unique_ptr<Database> database = std::make_unique<Database>();
@@ -80,12 +80,12 @@ FfiResult db_open(const char* path) {
     return result;
 }
 
-void db_close(void* db_ptr) {
+void bedrockrs_db_close(void* db_ptr) {
     Database* database = reinterpret_cast<Database*>(db_ptr);
     delete database;
 }
 
-FfiResult db_get(void* db_ptr, const char* key, int key_size) {
+FfiResult bedrockrs_db_get(void* db_ptr, const char* key, int key_size) {
     FfiResult result{};
 
     Database* db = reinterpret_cast<Database*>(db_ptr);
@@ -108,7 +108,7 @@ FfiResult db_get(void* db_ptr, const char* key, int key_size) {
     return result;
 }
 
-FfiResult db_put(
+FfiResult bedrockrs_db_put(
     void* db_ptr,
     const char* key, int key_size,
     const char* val, int val_size
@@ -133,7 +133,7 @@ FfiResult db_put(
     return result;
 }
 
-FfiResult db_remove(void* db_ptr, const char* key, int key_size) {
+FfiResult bedrockrs_db_remove(void* db_ptr, const char* key, int key_size) {
     Database* db = reinterpret_cast<Database*>(db_ptr);
     FfiResult result{};
 
@@ -153,6 +153,6 @@ FfiResult db_remove(void* db_ptr, const char* key, int key_size) {
     return result;
 }
 
-void buffer_destroy(char* array) {
+void bedrockrs_buffer_destroy(char* array) {
     delete[] array;
 }

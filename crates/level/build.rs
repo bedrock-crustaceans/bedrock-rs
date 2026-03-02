@@ -25,6 +25,8 @@ fn main() {
             let profile = config.get_profile();
             ffi_dst = ffi_dst.join(profile);
             leveldb_dst = leveldb_dst.join(profile);
+
+            println!("cargo:rustc-link-lib=shell32");
         }
 
         println!("Searching for leveldb-ffi and leveldb-mcpe in {}", ffi_dst.display());
