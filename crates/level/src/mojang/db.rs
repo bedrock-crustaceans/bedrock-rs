@@ -1,11 +1,13 @@
 use std::{
     ffi::{c_char, c_int, c_void, CStr, CString},
-    marker::PhantomData,
     ops::Deref,
     ptr::NonNull,
 };
 
-use crate::{error::{Error, Result}, iter::Keys};
+use crate::{
+    error::{Error, Result},
+    iter::Keys,
+};
 use crate::{
     ffi::{self, FfiStatus},
     key::Key,
@@ -64,12 +66,12 @@ pub struct Database {
 }
 
 impl Database {
+    /// Opens a LevelDB database at the specified `path`. This `path` should point to the `db` directory
+    /// of a world, not the world itself.
     pub fn open<P: AsRef<str>>(path: P) -> Result<Self> {
         let ffi_path = CString::new(path.as_ref())?;
 
-        // Safety:
-        //
-        //
+        // Safety: This is safe to call since `ffi_path` is a valid nul-terminated string.
         let result = unsafe { ffi::bedrockrs_db_open(ffi_path.as_ptr()) };
 
         if result.status == FfiStatus::Success {
@@ -78,29 +80,36 @@ impl Database {
 
             Ok(Self { ptr })
         } else {
+            // Safety: This is safe because the result is a fail and therefore `result.data` contains
+            // a nul-terminated string.
             let err = unsafe { translate_ffi_error(result) };
 
             Err(err)
         }
     }
 
-    pub fn as_ptr(&self) -> *mut c_void {
+    /// Yields the FFI database pointer.
+    pub(crate) fn as_ptr(&self) -> *mut c_void {
         self.ptr.as_ptr()
     }
 
+    /// Creates an iterator over all the keys in this database.
     pub fn iter(&self) -> Keys<'_> {
         Keys::new(self)
     }
 
-    pub fn get(&self, key: Key) -> Result<Option<Buffer<'_>>> {
-        let mut raw_key = Vec::with_capacity(key.size_hint());
-        key.serialize(&mut raw_key)?;
-
+    /// Attempts to retrieve the given key from the database.
+    pub fn get<K>(&self, key: K) -> Result<Option<Buffer<'_>>>
+    where
+        K: AsRef<[u8]>,
+    {
+        // Safety: This is safe to call since `key` is a valid Rust slice and `self.ptr`
+        // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
         let result = unsafe {
             ffi::bedrockrs_db_get(
-                self.ptr.as_ptr(),
-                raw_key.as_ptr().cast::<c_char>(),
-                raw_key.len() as c_int,
+                self.as_ptr(),
+                key.as_ref().as_ptr().cast::<c_char>(),
+                key.as_ref().len() as c_int,
             )
         };
 
@@ -121,6 +130,58 @@ impl Database {
                 Ok(Some(guard))
             }
             FfiStatus::NotFound => Ok(None),
+            // Safety: This is safe because the result is a fail and therefore `result.data` points to a
+            // nul-terminated string.
+            _ => Err(unsafe { translate_ffi_error(result) }),
+        }
+    }
+
+    /// Inserts a key-value pair into the database.
+    pub fn insert<K, V>(&self, key: K, value: V) -> Result<()>
+    where
+        K: AsRef<[u8]>,
+        V: AsRef<[u8]>,
+    {
+        // Safety: This is safe to call since `key` and `value` are valid Rust slices and `self.ptr`
+        // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
+        let result = unsafe {
+            ffi::bedrockrs_db_put(
+                self.as_ptr(),
+                key.as_ref().as_ptr().cast::<c_char>(),
+                key.as_ref().len() as c_int,
+                value.as_ref().as_ptr().cast::<c_char>(),
+                value.as_ref().len() as c_int,
+            )
+        };
+
+        if result.status == FfiStatus::Success {
+            Ok(())
+        } else {
+            // Safety: This is safe because the result is a fail and therefore `result.data` points to a
+            // nul-terminated string.
+            Err(unsafe { translate_ffi_error(result) })
+        }
+    }
+
+    /// Removes a key from the database.
+    pub fn remove<K>(&self, key: K) -> Result<()>
+    where
+        K: AsRef<[u8]>,
+    {
+        // Safety: This is safe to call since `key` is a valid Rust slice and `self.ptr`
+        // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
+        let result = unsafe {
+            ffi::bedrockrs_db_remove(
+                self.as_ptr(),
+                key.as_ref().as_ptr().cast::<c_char>(),
+                key.as_ref().len() as c_int,
+            )
+        };
+
+        match result.status {
+            FfiStatus::Success | FfiStatus::NotFound => Ok(()),
+            // Safety: This is safe because the result is a fail and therefore `result.data` points to a
+            // nul-terminated string.
             _ => Err(unsafe { translate_ffi_error(result) }),
         }
     }
@@ -142,7 +203,13 @@ unsafe impl Send for Database {}
 // that `leveldb` is thread safe.
 unsafe impl Sync for Database {}
 
+/// # Safety
+///
+/// This function must only be called if `result.success` is not `FfiResult::Success` and
+/// `result.data` is a C-style string ending in a nul terminator.
 unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
+    assert_ne!(result.status, FfiStatus::Success);
+
     let ffi_err = CStr::from_ptr(result.data.cast::<c_char>());
     let str = match ffi_err.to_str() {
         Ok(str) => str,
