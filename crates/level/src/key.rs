@@ -3,7 +3,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 use vek::Vec2;
 
-use std::io::Cursor;
+use std::io::{Cursor, Read, Write};
 
 use crate::error::{Error, Result};
 
@@ -73,7 +73,7 @@ impl Key {
         4 + 4 + dim_size + 1 + data_size
     }
 
-    pub fn serialize(&self, writer: &mut Vec<u8>) -> Result<()> {
+    pub fn serialize<W: Write>(&self, mut writer: W) -> Result<()> {
         writer.write_i32::<LittleEndian>(self.chunk.x)?;
         writer.write_i32::<LittleEndian>(self.chunk.y)?;
 
@@ -89,14 +89,17 @@ impl Key {
         Ok(())
     }
 
-    pub fn deserialize(reader: &mut Cursor<&[u8]>) -> Result<Key> {
+    pub fn deserialize<R>(reader: R) -> Result<Key>
+    where
+        R: AsRef<[u8]>, // sadly `std::io::Read` does not have an easy way to check how many bytes are left.
+    {
+        let mut reader = reader.as_ref();
+
         let x = reader.read_i32::<LittleEndian>()?;
         let z = reader.read_i32::<LittleEndian>()?;
 
         let chunk = Vec2::new(x, z);
-        let remaining = reader.get_ref().len() - reader.position() as usize;
-
-        let dimension = if remaining > 6 {
+        let dimension = if reader.len() > 6 {
             Dimension::from(reader.read_u32::<LittleEndian>()? as i32)
         } else {
             Dimension::Overworld

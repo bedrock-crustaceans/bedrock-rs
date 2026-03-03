@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::io::Cursor;
+use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
 use std::ops::{Index, IndexMut};
 
@@ -72,6 +72,7 @@ pub struct BlockDef {
     /// Name of the block.
     pub name: String,
     /// Version of the block.
+    #[serde(default)]
     #[serde(with = "block_version")]
     pub version: Option<[u8; 4]>,
     /// Block-specific properties.
@@ -196,7 +197,7 @@ impl ChunkLayer {
     }
 
     /// Deserializes a single layer from the given buffer.
-    fn deserialize_disk(mut reader: &mut Cursor<&[u8]>) -> Result<Self> {
+    fn deserialize_disk<R: Read>(mut reader: R) -> Result<Self> {
         let indices = match packed::deserialize_array(&mut reader)? {
             PackedResult::Data(data) => data,
             PackedResult::Empty => {
@@ -219,12 +220,12 @@ impl ChunkLayer {
     }
 
     /// Serializes a single layer into the given buffer.
-    fn serialize_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
-        packed::serialize_array(writer, &self.indices, self.palette.len(), false)?;
+    fn serialize_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+        packed::serialize_array(&mut writer, &self.indices, self.palette.len(), false)?;
 
         writer.write_u32::<LittleEndian>(self.palette.len() as u32)?;
         for entry in &self.palette {
-            nbtx::to_le_bytes_in(writer, entry)?;
+            nbtx::to_le_bytes_in(&mut writer, entry)?;
         }
 
         Ok(())
@@ -379,7 +380,7 @@ impl SubChunk {
     }
 
     /// Deserialize a full sub chunk from the given buffer.
-    pub fn deserialize_disk(reader: &mut Cursor<&[u8]>) -> Result<Self> {
+    pub fn deserialize_disk<R: Read>(mut reader: R) -> Result<Self> {
         let version = SubChunkVersion::try_from(reader.read_u8()?)?;
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
@@ -395,7 +396,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(ChunkLayer::deserialize_disk(reader)?);
+            layers.push(ChunkLayer::deserialize_disk(&mut reader)?);
         }
 
         Ok(Self {
@@ -406,7 +407,7 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn serialize_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
+    pub fn serialize_disk<W: Write>(&self, mut writer: W) -> Result<()> {
         writer.write_u8(self.version as u8)?;
         writer.write_u8(self.layers.len() as u8)?;
 
@@ -415,7 +416,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize_disk(writer)?;
+            layer.serialize_disk(&mut writer)?;
         }
 
         Ok(())

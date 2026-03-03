@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
@@ -23,12 +23,15 @@ pub enum PackedResult {
 /// * `array` - Array to serialize into packed form.
 /// * `max_index` - Amount of unique elements of the array.
 /// * `is_network` - Serialize into network format.
-pub fn serialize_array(
-    writer: &mut Vec<u8>,
+pub fn serialize_array<W>(
+    mut writer: W,
     array: &[u16; 4096],
     max_index: usize,
     is_network: bool,
-) -> Result<()> {
+) -> Result<()>
+where
+    W: Write,
+{
     // Determine the required bits per index
     let index_size = {
         let mut bits_per_block = 0;
@@ -75,7 +78,7 @@ pub fn serialize_array(
 ///
 /// # Returns
 /// See [`PackedArrayReturn`].
-pub fn deserialize_array(reader: &mut Cursor<&[u8]>) -> Result<PackedResult> {
+pub fn deserialize_array<R: Read>(mut reader: R) -> Result<PackedResult> {
     let index_size = reader.read_u8()? >> 1;
     if index_size == 0 {
         return Ok(PackedResult::Empty);

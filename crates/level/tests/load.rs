@@ -1,4 +1,8 @@
-use bedrockrs_level::db::Database;
+use bedrockrs_level::{
+    db::Database,
+    key::{Key, KeyVariant},
+    subchunk::SubChunk,
+};
 
 #[test]
 fn open_database() {
@@ -6,9 +10,24 @@ fn open_database() {
     let mut keys = database.iter();
 
     for kv in &mut keys {
-        let key = kv.key();
-        let string = String::from_utf8_lossy(key.as_ref());
+        let mut key_buf = kv.key();
+        let key = Key::deserialize(&mut key_buf).unwrap();
 
-        println!("{string}");
+        match key.data {
+            KeyVariant::SubChunk { .. } => {
+                println!("{key:?}");
+
+                let mut buf = Vec::new();
+                key.serialize(&mut buf).unwrap();
+
+                let val = database.get(buf).unwrap().unwrap();
+                let chunk = SubChunk::deserialize_disk(val.as_ref()).unwrap();
+
+                println!("{chunk:?}");
+
+                break;
+            }
+            _ => {}
+        }
     }
 }
