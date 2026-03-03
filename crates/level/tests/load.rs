@@ -3,7 +3,7 @@ use std::fs::File;
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
-    subchunk::SubChunk,
+    subchunk::{Greedy, SubChunk},
 };
 use flate2::read::GzDecoder;
 use tar::Archive;
@@ -41,7 +41,7 @@ fn open_database() {
                 key.serialize(&mut buf).unwrap();
 
                 let val = database.get(buf).unwrap().unwrap();
-                let chunk = SubChunk::deserialize_disk(val.as_ref()).unwrap();
+                let chunk = SubChunk::deserialize_from_disk::<Greedy, _>(val.as_ref()).unwrap();
 
                 println!("{chunk:?}");
 

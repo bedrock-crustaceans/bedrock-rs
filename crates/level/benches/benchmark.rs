@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use bedrockrs_level::{db::Database, key::{Key, KeyVariant}, subchunk::SubChunk};
+use bedrockrs_level::{db::Database, key::{Key, KeyVariant}, subchunk::{Greedy, Lazy, SubChunk}};
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use flate2::read::GzDecoder;
 use tar::Archive;
@@ -18,12 +18,20 @@ fn extract_test_db() -> tempfile::TempDir {
     tmp
 }
 
-fn paletted_benchmark(data: &[u8]) {
-    let _chunk = SubChunk::deserialize_disk(data).unwrap();
+fn lazy_load_benchmark(data: &[u8]) {
+    let _chunk = SubChunk::deserialize_from_disk::<Lazy, _>(data).unwrap();
 }
 
-fn unpacked_benchmark(data: &[u8]) {
-    let _chunk = SubChunk::deserialize_disk(data).unwrap();
+fn lazy_iter_benchmark(data: &SubChunk) {
+    let _chunk = SubChunk::deserialize_from_disk::<Lazy, _>(data).unwrap();
+}
+
+fn greedy_load_benchmark(data: &[u8]) {
+    let _chunk = SubChunk::deserialize_from_disk::<Greedy, _>(data).unwrap();
+}
+
+fn greedy_iter_benchmark(data: &SubChunk) {
+    for 
 }
 
 fn benchmark(c: &mut Criterion) {
@@ -54,7 +62,7 @@ fn benchmark(c: &mut Criterion) {
             BenchmarkId::from_parameter(key), 
         chunk,
         |b, chunk| {
-            b.iter(|| unpacked_benchmark(chunk))
+            b.iter(|| greedy_load_benchmark(chunk))
         });
     }
 }

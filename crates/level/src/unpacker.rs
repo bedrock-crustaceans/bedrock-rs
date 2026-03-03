@@ -3,9 +3,9 @@ use std::io::{Read, Write};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 
-use crate::{error::{Error, Result}, subchunk::UnpackedLayer};
+use crate::{error::{Error, Result}, subchunk::GreedyLayer};
 
-impl UnpackedLayer {
+impl GreedyLayer {
     pub(crate) fn pack_array<W>(&self, mut writer: W, is_network: bool) -> Result<()> where W: Write {
         // Determine the required bits per index
         let index_size = {

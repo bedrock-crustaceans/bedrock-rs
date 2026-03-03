@@ -94,14 +94,7 @@ impl BlockDef {
     }
 }
 
-pub trait BitArray {
-    const LEN: usize;
-
-    fn get(&self, index: usize) -> u16;
-    fn set(&mut self, index: usize, value: u16);
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackedArray {
     /// Stabilisation of `generic_const_expr` would allow us to put this on the stack.
     bits: u32,
@@ -219,16 +212,12 @@ impl<'a> IntoIterator for &'a PackedArray {
     }
 }
 
-pub struct SingletonLayer {
-    block: BlockDef
-}
-
-pub struct PackedLayerIterator<'l> {
+pub struct LazyLayerIter<'l> {
     idx_iter: PackedArrayIter<'l>,
     palette: &'l [BlockDef]
 }
 
-impl<'l> Iterator for PackedLayerIterator<'l> {
+impl<'l> Iterator for LazyLayerIter<'l> {
     type Item = &'l BlockDef;
 
     fn next(&mut self) -> Option<&'l BlockDef> {
@@ -242,16 +231,16 @@ impl<'l> Iterator for PackedLayerIterator<'l> {
     }
 }
 
-impl<'l> FusedIterator for PackedLayerIterator<'l> {}
+impl<'l> FusedIterator for LazyLayerIter<'l> {}
 
-impl<'l> ExactSizeIterator for PackedLayerIterator<'l> {
+impl<'l> ExactSizeIterator for LazyLayerIter<'l> {
     fn len(&self) -> usize {
         self.idx_iter.len()
     }
 }
 
-impl<'l> From<&'l PackedLayer> for PackedLayerIterator<'l> {
-    fn from(layer: &'l PackedLayer) -> Self {
+impl<'l> From<&'l LazyLayer> for LazyLayerIter<'l> {
+    fn from(layer: &'l LazyLayer) -> Self {
         Self { idx_iter: layer.indices.iter(), palette: &layer.palette }
     }
 }
@@ -265,13 +254,22 @@ pub trait ChunkLayer: Sized {
     fn serialize_to_disk<W>(&self, writer: W) -> Result<()> where W: Write;
 }
 
-#[derive(Debug, Clone)]
-pub struct PackedLayer {
+/// A subchunk layer.
+/// 
+/// This layer unpacks only the parts of the chunk that are requested.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LazyLayer {
     pub indices: PackedArray,
     pub palette: Vec<BlockDef>
 }
 
-impl ChunkLayer for PackedLayer {
+impl LazyLayer {
+    pub fn iter(&self) -> LazyLayerIter<'_> {
+        LazyLayerIter::from(self)
+    }
+}
+
+impl ChunkLayer for LazyLayer {
     fn is_empty(&self) -> bool {
         self.palette.is_empty()
     }
@@ -334,16 +332,19 @@ impl ChunkLayer for PackedLayer {
     }
 }
 
-impl<'l> IntoIterator for &'l PackedLayer {
-    type IntoIter = PackedLayerIterator<'l>;
+impl<'l> IntoIterator for &'l LazyLayer {
+    type IntoIter = LazyLayerIter<'l>;
     type Item = &'l BlockDef;
 
-    fn into_iter(self) -> PackedLayerIterator<'l> {
-        PackedLayerIterator::from(self)
+    fn into_iter(self) -> LazyLayerIter<'l> {
+        LazyLayerIter::from(self)
     }
 }
 
-/// A layer in a sub chunk.
+/// A layer in a sub chunk. 
+/// 
+/// Unlike [`LazyLayer`] this layer immediately unpacks the entire chunk allowing for much faster iteration at
+/// a much higher memory cost.
 ///
 /// Sub chunks can have multiple layers.
 /// The first layer contains plain old block data,
@@ -358,7 +359,7 @@ impl<'l> IntoIterator for &'l PackedLayer {
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
 #[derive(Debug, Clone, PartialEq)]
-pub struct UnpackedLayer {
+pub struct GreedyLayer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
@@ -367,7 +368,7 @@ pub struct UnpackedLayer {
     pub palette: Vec<BlockDef>,
 }
 
-impl ChunkLayer for UnpackedLayer {
+impl ChunkLayer for GreedyLayer {
     fn is_empty(&self) -> bool {
         self.palette.is_empty()
     }
@@ -390,7 +391,7 @@ impl ChunkLayer for UnpackedLayer {
 
     /// Deserializes a single layer from the given buffer.
     fn deserialize_from_disk<R: Read>(mut reader: R) -> Result<Self> {
-        let indices = match UnpackedLayer::unpack_array(&mut reader)? {
+        let indices = match GreedyLayer::unpack_array(&mut reader)? {
             PackedResult::Data(data) => data,
             PackedResult::Empty => {
                 return Err(Error::Invalid("chunk layer packed array cannot be empty"))
@@ -424,12 +425,12 @@ impl ChunkLayer for UnpackedLayer {
     }
 }
 
-impl UnpackedLayer {
+impl GreedyLayer {
     /// Creates an iterator over the blocks in this layer.
     ///
     /// This iterates over every indices
-    pub fn iter(&self) -> UnpackedIter<'_> {
-        UnpackedIter::from(self)
+    pub fn iter(&self) -> GreedyIter<'_> {
+        GreedyIter::from(self)
     }
 
     /// Creates an empty subchunk layer.
@@ -446,16 +447,16 @@ impl UnpackedLayer {
     }
 }
 
-impl<'a> IntoIterator for &'a UnpackedLayer {
-    type IntoIter = UnpackedIter<'a>;
+impl<'a> IntoIterator for &'a GreedyLayer {
+    type IntoIter = GreedyIter<'a>;
     type Item = &'a BlockDef;
 
     fn into_iter(self) -> Self::IntoIter {
-        UnpackedIter::from(self)
+        GreedyIter::from(self)
     }
 }
 
-impl<I> Index<I> for UnpackedLayer
+impl<I> Index<I> for GreedyLayer
 where
     I: Into<Vec3<u8>>,
 {
@@ -478,7 +479,7 @@ where
     }
 }
 
-impl<I> IndexMut<I> for UnpackedLayer
+impl<I> IndexMut<I> for GreedyLayer
 where
     I: Into<Vec3<u8>>,
 {
@@ -499,7 +500,7 @@ where
     }
 }
 
-impl Default for UnpackedLayer {
+impl Default for GreedyLayer {
     fn default() -> Self {
         Self::empty()
     }
@@ -525,10 +526,39 @@ pub const fn from_offset(offset: usize) -> Vec3<u8> {
     Vec3::new(x, y, z)
 }
 
+pub enum PackingType {
+    Greedy(Box<[u16; 4096]>),
+    Lazy(PackedArray)
+}
+
+mod private {
+    pub trait Sealed {}
+}
+
+pub trait PackingMethod: private::Sealed {
+    const IS_GREEDY: bool;
+}
+
+pub enum Greedy {}
+
+impl private::Sealed for Greedy {}
+
+impl PackingMethod for Greedy {
+    const IS_GREEDY: bool = true;
+}
+
+pub enum Lazy {}
+
+impl private::Sealed for Lazy {}
+
+impl PackingMethod for Lazy {
+    const IS_GREEDY: bool = false;
+}
+
 /// A Minecraft sub chunk.
 ///
 /// Every world contains
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
     ///
@@ -543,24 +573,10 @@ pub struct SubChunk {
     /// Layers the sub chunk consists of.
     ///
     /// See [`SubLayer`] for more info.
-    pub layers: Vec<UnpackedLayer>,
+    pub layers: Vec<LayerType>,
 }
 
 impl SubChunk {
-    /// Creates a subchunk filled with air.
-    pub fn empty(index: i8) -> Self {
-        Self {
-            index,
-            layers: vec![UnpackedLayer::empty()],
-            version: SubChunkVersion::Limitless,
-        }
-    }
-
-    /// Whether this subchunk is empty.
-    pub fn is_empty(&self) -> bool {
-        self.layers.is_empty() || self.layers[0].is_empty()
-    }
-
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
     pub fn version(&self) -> SubChunkVersion {
@@ -572,29 +588,12 @@ impl SubChunk {
         self.index
     }
 
-    /// The layers (storage records) contained in this subchunk.
-    pub fn layers(&self) -> &[UnpackedLayer] {
-        &self.layers
-    }
-
-    /// Get an immutable reference to the layer at the specified index.
-    pub fn layer(&self, index: usize) -> Option<&UnpackedLayer> {
-        self.layers.get(index)
-    }
-
-    /// Get a mutable reference to the layer at the specified index.
-    pub fn layer_mut(&mut self, index: usize) -> Option<&mut UnpackedLayer> {
-        self.layers.get_mut(index)
-    }
-
-    /// Takes ownership of the subchunk and returns an owned list of its layers.
-    #[inline]
-    pub fn take_layers(self) -> Vec<UnpackedLayer> {
-        self.layers
+    pub fn layer(&self) -> &LayerType {
+        &self.layers[0]
     }
 
     /// Deserialize a full sub chunk from the given buffer.
-    pub fn deserialize_disk<R: Read>(mut reader: R) -> Result<Self> {
+    pub fn deserialize_from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
         let version = SubChunkVersion::try_from(reader.read_u8()?)?;
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
@@ -610,7 +609,13 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(UnpackedLayer::deserialize_from_disk(&mut reader)?);
+            if M::IS_GREEDY {
+                let layer = GreedyLayer::deserialize_from_disk(&mut reader)?;
+                layers.push(LayerType::Greedy(layer));
+            } else {
+                let layer = LazyLayer::deserialize_from_disk(&mut reader)?;
+                layers.push(LayerType::Lazy(layer));
+            }
         }
 
         Ok(Self {
@@ -621,7 +626,7 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn serialize_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+    pub fn serialize_to_disk<M: PackingMethod, W: Write>(&self, mut writer: W) -> Result<()> {
         writer.write_u8(self.version as u8)?;
         writer.write_u8(self.layers.len() as u8)?;
 
@@ -630,29 +635,18 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize_to_disk(&mut writer)?;
+            match layer {
+                LayerType::Greedy(layer) => layer.serialize_to_disk(&mut writer)?,
+                LayerType::Lazy(layer) => layer.serialize_to_disk(&mut writer)?,
+            }
         }
 
         Ok(())
     }
 }
 
-impl Index<usize> for SubChunk {
-    type Output = UnpackedLayer;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.layers[index]
-    }
-}
-
-impl IndexMut<usize> for SubChunk {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.layers[index]
-    }
-}
-
 /// Iterator over blocks in a layer.
-pub struct UnpackedIter<'l> {
+pub struct GreedyIter<'l> {
     /// Indices in the sub chunk.
     /// While iterating, this is slowly consumed by `std::slice::split_at`.
     indices: std::slice::Iter<'l, u16>,
@@ -660,8 +654,8 @@ pub struct UnpackedIter<'l> {
     palette: &'l [BlockDef],
 }
 
-impl<'l> From<&'l UnpackedLayer> for UnpackedIter<'l> {
-    fn from(layer: &'l UnpackedLayer) -> Self {
+impl<'l> From<&'l GreedyLayer> for GreedyIter<'l> {
+    fn from(layer: &'l GreedyLayer) -> Self {
         Self {
             indices: layer.indices.iter(),
             palette: &layer.palette,
@@ -669,7 +663,7 @@ impl<'l> From<&'l UnpackedLayer> for UnpackedIter<'l> {
     }
 }
 
-impl<'a> Iterator for UnpackedIter<'a> {
+impl<'a> Iterator for GreedyIter<'a> {
     type Item = &'a BlockDef;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -682,9 +676,9 @@ impl<'a> Iterator for UnpackedIter<'a> {
     }
 }
 
-impl FusedIterator for UnpackedIter<'_> {}
+impl FusedIterator for GreedyIter<'_> {}
 
-impl ExactSizeIterator for UnpackedIter<'_> {
+impl ExactSizeIterator for GreedyIter<'_> {
     fn len(&self) -> usize {
         self.indices.len()
     }
