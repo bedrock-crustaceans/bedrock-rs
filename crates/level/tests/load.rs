@@ -10,7 +10,7 @@ use tar::Archive;
 
 pub fn extract_test_db() -> tempfile::TempDir {
     let tmp = tempfile::tempdir().expect("Failed to create temp dir");
-    
+
     let tar_gz = File::open("tests/level.tar.gz").expect("Seed missing");
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
