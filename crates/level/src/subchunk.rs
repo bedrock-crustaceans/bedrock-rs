@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
-use std::ops::{Index, IndexMut};
+use std::ops::{Deref, Index, IndexMut};
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
 use crate::error::{Error, Result};
-use crate::packed::{self, PackedResult};
+use crate::unpacker::{self, PackedResult};
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -66,7 +66,7 @@ mod block_version {
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename = "")]
 pub struct BlockDef {
     /// Name of the block.
@@ -94,6 +94,255 @@ impl BlockDef {
     }
 }
 
+pub trait BitArray {
+    const LEN: usize;
+
+    fn get(&self, index: usize) -> u16;
+    fn set(&mut self, index: usize, value: u16);
+}
+
+#[derive(Debug, Clone)]
+pub struct PackedArray {
+    /// Stabilisation of `generic_const_expr` would allow us to put this on the stack.
+    bits: u32,
+    words: Vec<u32>
+}
+
+impl PackedArray {
+    /// Creates a new array from the given words.
+    pub const fn new(bits: u32, words: Vec<u32>) -> Self {
+        Self { bits, words }
+    }
+
+    /// Returns the amount of words that are in this array.
+    pub const fn words(&self) -> usize {
+        let per_word = 32 / self.bits;
+        4096 / per_word as usize
+    } 
+
+    pub fn iter(&self) -> PackedArrayIter<'_> {
+        PackedArrayIter::from(self)
+    }
+
+    /// Returns the value at `index`.
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if the index is greater than or equal to 4096.
+    pub fn get(&self, index: usize) -> u16 {
+        assert!(index < 4096, "packed array index out of bounds, got 4096 < {index}");
+
+        let blocks_per_word = u32::BITS / self.bits;
+        let mask= !(!0u32 << self.bits);
+
+        let word_index = index as u32 % blocks_per_word;
+        let array_index = index as u32 / blocks_per_word;
+        let word = self.words[array_index as usize];
+        
+        ((word >> self.bits * word_index) & mask) as u16
+    }   
+
+    /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
+    /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if the index is greater than or equal to 4096.
+    pub fn set(&mut self, index: usize, value: u16) {
+        assert!(index < 4096, "packed array index out of bounds, got 4096 < {index}");
+
+        let blocks_per_word = u32::BITS / self.bits;
+        let base_mask = !(!0u32 << self.bits);
+
+        let word_index = index as u32 % blocks_per_word;
+        let array_index = index as u32 / blocks_per_word;
+        let word = self.words[array_index as usize];
+        
+        let mask = base_mask << self.bits * word_index;
+        
+        // Zero all bits in the location
+        let zeroed = word & !mask;
+        // Clamp value to correct amount of bits
+        let clamped = value as u32 & base_mask;
+        // Then set the zeroed bits to the clamped value
+        let set = zeroed | (clamped << self.bits * word_index);
+        
+        self.words[array_index as usize] = set;
+    }
+}
+
+pub struct PackedArrayIter<'a> {
+    index: usize,
+    array: &'a PackedArray
+}
+
+impl<'a> Iterator for PackedArrayIter<'a> {
+    type Item = u16;
+
+    fn next(&mut self) -> Option<u16> {
+        if self.index > 4096 {
+            return None
+        } else {
+            Some(self.array.get(self.index))
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl<'a> FusedIterator for PackedArrayIter<'a> {}
+
+impl<'a> ExactSizeIterator for PackedArrayIter<'a> {
+    fn len(&self) -> usize {
+        4096 - self.index
+    }
+}
+
+impl<'a> From<&'a PackedArray> for PackedArrayIter<'a> {
+    fn from(array: &'a PackedArray) -> Self {
+        PackedArrayIter {
+            index: 0,
+            array
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a PackedArray {
+    type IntoIter = PackedArrayIter<'a>;
+    type Item = u16;
+
+    fn into_iter(self) -> Self::IntoIter {
+        PackedArrayIter::from(self)
+    }
+}
+
+pub struct SingletonLayer {
+    block: BlockDef
+}
+
+pub struct PackedLayerIterator<'l> {
+    idx_iter: PackedArrayIter<'l>,
+    palette: &'l [BlockDef]
+}
+
+impl<'l> Iterator for PackedLayerIterator<'l> {
+    type Item = &'l BlockDef;
+
+    fn next(&mut self) -> Option<&'l BlockDef> {
+        let idx = self.idx_iter.next()?;
+        Some(&self.palette[idx as usize])
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.idx_iter.len();
+        (len, Some(len))
+    }
+}
+
+impl<'l> FusedIterator for PackedLayerIterator<'l> {}
+
+impl<'l> ExactSizeIterator for PackedLayerIterator<'l> {
+    fn len(&self) -> usize {
+        self.idx_iter.len()
+    }
+}
+
+impl<'l> From<&'l PackedLayer> for PackedLayerIterator<'l> {
+    fn from(layer: &'l PackedLayer) -> Self {
+        Self { idx_iter: layer.indices.iter(), palette: &layer.palette }
+    }
+}
+
+pub trait ChunkLayer: Sized {
+    fn is_empty(&self) -> bool;
+    fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>>;
+    fn set<K>(&self, block: K, value: BlockDef) where K: Into<Vec3<u8>>;
+
+    fn deserialize_from_disk<R>(reader: R) -> Result<Self> where R: Read;
+    fn serialize_to_disk<W>(&self, writer: W) -> Result<()> where W: Write;
+}
+
+#[derive(Debug, Clone)]
+pub struct PackedLayer {
+    pub indices: PackedArray,
+    pub palette: Vec<BlockDef>
+}
+
+impl ChunkLayer for PackedLayer {
+    fn is_empty(&self) -> bool {
+        self.palette.is_empty()
+    }
+
+    fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>> {
+        let pos = block.into();
+
+        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
+            return None
+        }
+
+        let offset = to_offset(pos);
+        let index = self.indices.get(offset);
+        Some(&self.palette[index as usize])
+    }
+
+    fn set<K>(&self, block: K, value: BlockDef) where K: Into<Vec3<u8>> {
+        todo!()
+    }
+
+    /// Deserializes a single layer from the given buffer.
+    fn deserialize_from_disk<R: Read>(mut reader: R) -> Result<Self> {
+        let bits = reader.read_u8()?;
+        let indices = match bits {
+            0 => return Err(Error::Invalid("chunk layer packed array cannot be empty")),
+            0x7f => return Err(Error::Invalid("chunk layers do not support inheritance")),
+            bits => {
+                let blocks_per_word = 32 / bits;
+                let word_count = 4096 / blocks_per_word as usize;
+
+                let words = vec![0u32; word_count];
+                PackedArray::new(bits as u32, words)
+            }
+        };
+
+        let len = reader.read_u32::<LittleEndian>()? as usize;
+        let mut palette = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            let entry = nbtx::from_le_bytes(&mut reader)?;
+            palette.push(entry);
+        }
+
+        Ok(Self { indices, palette })
+    }
+
+    /// Serializes a single layer into the given buffer.
+    fn serialize_to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+        writer.write_u8((self.indices.bits << 1) as u8)?;
+
+        let cast = bytemuck::cast_slice::<u32, u8>(&self.indices.words);
+        writer.write_all(cast)?;
+
+        writer.write_u32::<LittleEndian>(self.palette.len() as u32)?;
+        for entry in &self.palette {
+            nbtx::to_le_bytes_in(&mut writer, entry)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<'l> IntoIterator for &'l PackedLayer {
+    type IntoIter = PackedLayerIterator<'l>;
+    type Item = &'l BlockDef;
+
+    fn into_iter(self) -> PackedLayerIterator<'l> {
+        PackedLayerIterator::from(self)
+    }
+}
+
 /// A layer in a sub chunk.
 ///
 /// Sub chunks can have multiple layers.
@@ -108,8 +357,8 @@ impl BlockDef {
 /// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
-#[derive(Debug, PartialEq)]
-pub struct ChunkLayer {
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnpackedLayer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
@@ -118,87 +367,30 @@ pub struct ChunkLayer {
     pub palette: Vec<BlockDef>,
 }
 
-impl ChunkLayer {
-    /// Creates an iterator over the blocks in this layer.
-    ///
-    /// This iterates over every indices
-    pub fn iter(&self) -> BlockIter<'_> {
-        BlockIter::from(self)
-    }
-
-    /// Gets a reference to a block inside the subchunk.
-    pub fn get<V>(&self, pos: V) -> Option<&BlockDef>
-    where
-        V: Into<Vec3<u8>>,
-    {
-        let pos = pos.into();
-
-        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-            return None;
-        }
-
-        let offset = to_offset(pos);
-        assert!(offset < 4096, "Array offset out of range");
-
-        let index = self.indices[offset] as usize;
-        Some(&self.palette[index])
-    }
-
-    // FIXME: Using this method will modify every block with the same index
-    // instead of only the block at the specified position.
-    // pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
-    //     if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-    //         return None;
-    //     }
-
-    //     let offset = to_offset(pos);
-    //     debug_assert!(offset < 4096);
-
-    //     let index = self.indices[offset] as usize;
-    //     Some(&mut self.palette[index])
-    // }
-
-    /// Returns a reference to the block palette.
-    pub fn palette(&self) -> &[BlockDef] {
-        &self.palette
-    }
-
-    /// Returns a mutable reference to the block palette.
-    pub fn palette_mut(&mut self) -> &mut [BlockDef] {
-        &mut self.palette
-    }
-
-    /// Returns a reference to the block indices.
-    pub const fn indices(&self) -> &[u16; 4096] {
-        &self.indices
-    }
-
-    /// Returns a mutable reference to the block indices.
-    pub fn indices_mut(&mut self) -> &mut [u16; 4096] {
-        &mut self.indices
-    }
-
-    /// Takes ownership of the layer and returns the indices.
-    pub fn take_indices(self) -> Box<[u16; 4096]> {
-        self.indices
-    }
-
-    /// Creates an empty subchunk layer.
-    pub fn empty() -> Self {
-        Self {
-            indices: Box::new([0; 4096]),
-            palette: vec![],
-        }
-    }
-
-    /// Whether this subchunk layer is empty.
-    pub fn is_empty(&self) -> bool {
+impl ChunkLayer for UnpackedLayer {
+    fn is_empty(&self) -> bool {
         self.palette.is_empty()
     }
 
+    fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>> {
+        let pos = block.into();
+
+        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
+            return None
+        }
+
+        let offset = to_offset(pos);
+        let index = self.indices[offset];
+        Some(&self.palette[index as usize])
+    }
+
+    fn set<K>(&self, block: K, value: BlockDef) where K: Into<Vec3<u8>> {
+        todo!()
+    }
+
     /// Deserializes a single layer from the given buffer.
-    fn deserialize_disk<R: Read>(mut reader: R) -> Result<Self> {
-        let indices = match packed::deserialize_array(&mut reader)? {
+    fn deserialize_from_disk<R: Read>(mut reader: R) -> Result<Self> {
+        let indices = match UnpackedLayer::unpack_array(&mut reader)? {
             PackedResult::Data(data) => data,
             PackedResult::Empty => {
                 return Err(Error::Invalid("chunk layer packed array cannot be empty"))
@@ -220,8 +412,8 @@ impl ChunkLayer {
     }
 
     /// Serializes a single layer into the given buffer.
-    fn serialize_disk<W: Write>(&self, mut writer: W) -> Result<()> {
-        packed::serialize_array(&mut writer, &self.indices, self.palette.len(), false)?;
+    fn serialize_to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+        self.pack_array(&mut writer, false)?;
 
         writer.write_u32::<LittleEndian>(self.palette.len() as u32)?;
         for entry in &self.palette {
@@ -232,16 +424,38 @@ impl ChunkLayer {
     }
 }
 
-impl<'a> IntoIterator for &'a ChunkLayer {
-    type IntoIter = BlockIter<'a>;
-    type Item = &'a BlockDef;
+impl UnpackedLayer {
+    /// Creates an iterator over the blocks in this layer.
+    ///
+    /// This iterates over every indices
+    pub fn iter(&self) -> UnpackedIter<'_> {
+        UnpackedIter::from(self)
+    }
 
-    fn into_iter(self) -> Self::IntoIter {
-        BlockIter::from(self)
+    /// Creates an empty subchunk layer.
+    pub fn empty() -> Self {
+        Self {
+            indices: Box::new([0; 4096]),
+            palette: vec![],
+        }
+    }
+
+    /// Whether this subchunk layer is empty.
+    pub fn is_empty(&self) -> bool {
+        self.palette.is_empty()
     }
 }
 
-impl<I> Index<I> for ChunkLayer
+impl<'a> IntoIterator for &'a UnpackedLayer {
+    type IntoIter = UnpackedIter<'a>;
+    type Item = &'a BlockDef;
+
+    fn into_iter(self) -> Self::IntoIter {
+        UnpackedIter::from(self)
+    }
+}
+
+impl<I> Index<I> for UnpackedLayer
 where
     I: Into<Vec3<u8>>,
 {
@@ -264,7 +478,7 @@ where
     }
 }
 
-impl<I> IndexMut<I> for ChunkLayer
+impl<I> IndexMut<I> for UnpackedLayer
 where
     I: Into<Vec3<u8>>,
 {
@@ -285,7 +499,7 @@ where
     }
 }
 
-impl Default for ChunkLayer {
+impl Default for UnpackedLayer {
     fn default() -> Self {
         Self::empty()
     }
@@ -329,7 +543,7 @@ pub struct SubChunk {
     /// Layers the sub chunk consists of.
     ///
     /// See [`SubLayer`] for more info.
-    pub layers: Vec<ChunkLayer>,
+    pub layers: Vec<UnpackedLayer>,
 }
 
 impl SubChunk {
@@ -337,7 +551,7 @@ impl SubChunk {
     pub fn empty(index: i8) -> Self {
         Self {
             index,
-            layers: vec![ChunkLayer::empty()],
+            layers: vec![UnpackedLayer::empty()],
             version: SubChunkVersion::Limitless,
         }
     }
@@ -359,23 +573,23 @@ impl SubChunk {
     }
 
     /// The layers (storage records) contained in this subchunk.
-    pub fn layers(&self) -> &[ChunkLayer] {
+    pub fn layers(&self) -> &[UnpackedLayer] {
         &self.layers
     }
 
     /// Get an immutable reference to the layer at the specified index.
-    pub fn layer(&self, index: usize) -> Option<&ChunkLayer> {
+    pub fn layer(&self, index: usize) -> Option<&UnpackedLayer> {
         self.layers.get(index)
     }
 
     /// Get a mutable reference to the layer at the specified index.
-    pub fn layer_mut(&mut self, index: usize) -> Option<&mut ChunkLayer> {
+    pub fn layer_mut(&mut self, index: usize) -> Option<&mut UnpackedLayer> {
         self.layers.get_mut(index)
     }
 
     /// Takes ownership of the subchunk and returns an owned list of its layers.
     #[inline]
-    pub fn take_layers(self) -> Vec<ChunkLayer> {
+    pub fn take_layers(self) -> Vec<UnpackedLayer> {
         self.layers
     }
 
@@ -396,7 +610,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(ChunkLayer::deserialize_disk(&mut reader)?);
+            layers.push(UnpackedLayer::deserialize_from_disk(&mut reader)?);
         }
 
         Ok(Self {
@@ -416,7 +630,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize_disk(&mut writer)?;
+            layer.serialize_to_disk(&mut writer)?;
         }
 
         Ok(())
@@ -424,7 +638,7 @@ impl SubChunk {
 }
 
 impl Index<usize> for SubChunk {
-    type Output = ChunkLayer;
+    type Output = UnpackedLayer;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.layers[index]
@@ -438,7 +652,7 @@ impl IndexMut<usize> for SubChunk {
 }
 
 /// Iterator over blocks in a layer.
-pub struct BlockIter<'l> {
+pub struct UnpackedIter<'l> {
     /// Indices in the sub chunk.
     /// While iterating, this is slowly consumed by `std::slice::split_at`.
     indices: std::slice::Iter<'l, u16>,
@@ -446,8 +660,8 @@ pub struct BlockIter<'l> {
     palette: &'l [BlockDef],
 }
 
-impl<'l> From<&'l ChunkLayer> for BlockIter<'l> {
-    fn from(layer: &'l ChunkLayer) -> Self {
+impl<'l> From<&'l UnpackedLayer> for UnpackedIter<'l> {
+    fn from(layer: &'l UnpackedLayer) -> Self {
         Self {
             indices: layer.indices.iter(),
             palette: &layer.palette,
@@ -455,7 +669,7 @@ impl<'l> From<&'l ChunkLayer> for BlockIter<'l> {
     }
 }
 
-impl<'a> Iterator for BlockIter<'a> {
+impl<'a> Iterator for UnpackedIter<'a> {
     type Item = &'a BlockDef;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -468,9 +682,9 @@ impl<'a> Iterator for BlockIter<'a> {
     }
 }
 
-impl FusedIterator for BlockIter<'_> {}
+impl FusedIterator for UnpackedIter<'_> {}
 
-impl ExactSizeIterator for BlockIter<'_> {
+impl ExactSizeIterator for UnpackedIter<'_> {
     fn len(&self) -> usize {
         self.indices.len()
     }

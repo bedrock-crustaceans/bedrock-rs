@@ -47,6 +47,12 @@ impl<'db> AsRef<[u8]> for Buffer<'db> {
     }
 }
 
+impl<'db> From<Buffer<'db>> for Vec<u8> {
+    fn from(buf: Buffer<'db>) -> Self {
+        buf.0.to_owned()
+    }
+}
+
 impl<'db> Drop for Buffer<'db> {
     fn drop(&mut self) {
         // Safety:
