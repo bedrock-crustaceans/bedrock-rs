@@ -1,12 +1,32 @@
+use std::fs::File;
+
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
     subchunk::SubChunk,
 };
+use flate2::read::GzDecoder;
+use tar::Archive;
+
+pub fn extract_test_db() -> tempfile::TempDir {
+    let tmp = tempfile::tempdir().expect("Failed to create temp dir");
+    
+    let tar_gz = File::open("tests/level.tar.gz").expect("Seed missing");
+    let tar = GzDecoder::new(tar_gz);
+    let mut archive = Archive::new(tar);
+
+    archive.unpack(tmp.path()).expect("Failed to unpack seed");
+
+    tmp
+}
 
 #[test]
 fn open_database() {
-    let database = Database::open("test_level/db").unwrap();
+    let tmp = extract_test_db();
+    let tmp_path = tmp.path().join("test_level/db");
+    let tmp_path = tmp_path.to_str().unwrap();
+
+    let database = Database::open(tmp_path).unwrap();
     let mut keys = database.iter();
 
     for kv in &mut keys {

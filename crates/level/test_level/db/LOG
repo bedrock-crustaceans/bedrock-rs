@@ -1,7 +1,0 @@
-Recovered manifest with next_file=12 manifest_num=11 log_num=9 prev_log_num=0 last_seq=662
-reusing manifest "./test_level\\db\\MANIFEST-000007"
-Recovering log file "\\\\?\\G:\\Projects\\rust\\bedrockrs\\crates\\level\\test_level\\db\\000009.log"
-reusing log file "\\\\?\\G:\\Projects\\rust\\bedrockrs\\crates\\level\\test_level\\db\\000009.log"
-Start write of L0 table 000013
-L0 table 000013 has 1748199 bytes
-Deleting file type=Log num=9
