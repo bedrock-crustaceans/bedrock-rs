@@ -1,4 +1,4 @@
-use crate::v800::types::BiomeDefinitionChunkGenData;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -10,7 +10,7 @@ pub struct BiomeTagList {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct BiomeDefinition {
+pub struct BiomeDefinition<V: ProtoVersion> {
     #[endianness(le)]
     pub id: Option<u16>,
     #[endianness(le)]
@@ -33,5 +33,5 @@ pub struct BiomeDefinition {
     pub map_water_color: i32,
     pub rain: bool,
     pub tags: Option<BiomeTagList>,
-    pub chunk_gen_data: Option<BiomeDefinitionChunkGenData>,
+    pub chunk_gen_data: Option<V::BiomeDefinitionChunkGenData>,
 }

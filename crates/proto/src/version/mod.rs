@@ -1,3 +1,4 @@
+mod proto_version;
 pub mod v662;
 pub mod v671;
 pub mod v685;

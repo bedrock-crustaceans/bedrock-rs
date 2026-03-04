@@ -1,10 +1,10 @@
-use super::super::types::ActorRuntimeID;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use vek::Vec3;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct MoveActorAbsoluteData {
-    pub actor_runtime_id: ActorRuntimeID,
+pub struct MoveActorAbsoluteData<V: ProtoVersion> {
+    pub actor_runtime_id: V::ActorRuntimeID,
     pub header: i8,
     #[endianness(le)]
     pub position: Vec3<f32>,

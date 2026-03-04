@@ -1,10 +1,10 @@
-use vek::Vec3;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
-use super::super::types::ActorRuntimeID;
+use vek::Vec3;
 
 #[gamepacket(id = 322)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct MovementPredictionSyncPacket {
+pub struct MovementPredictionSyncPacket<V: ProtoVersion> {
     #[endianness(var)]
     pub flags: u128,
     #[endianness(le)]
@@ -21,6 +21,6 @@ pub struct MovementPredictionSyncPacket {
     pub health: f32,
     #[endianness(le)]
     pub hunger: f32,
-    pub runtime_entity_id: ActorRuntimeID,
+    pub runtime_entity_id: V::ActorRuntimeID,
     pub is_flying: bool,
 }

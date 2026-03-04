@@ -1,8 +1,8 @@
-use super::super::enums::{AnimatedTextureType, AnimationExpression};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct SerializedSkin {
+pub struct SerializedSkin<V: ProtoVersion> {
     pub skin_id: String,
     pub play_fab_id: String,
     pub skin_resource_patch: String,
@@ -13,7 +13,7 @@ pub struct SerializedSkin {
     pub skin_image_bytes: String,
     #[vec_repr(u32)]
     #[vec_endianness(le)]
-    pub animations: Vec<SerializedSkinAnimationFrame>,
+    pub animations: Vec<SerializedSkinAnimationFrame<V>>,
     #[endianness(le)]
     pub cape_image_width: u32,
     #[endianness(le)]
@@ -40,16 +40,16 @@ pub struct SerializedSkin {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct SerializedSkinAnimationFrame {
+pub struct SerializedSkinAnimationFrame<V: ProtoVersion> {
     #[endianness(le)]
     pub image_width: u32,
     #[endianness(le)]
     pub image_height: u32,
     pub image_bytes: String,
-    pub animation_type: AnimatedTextureType,
+    pub animation_type: V::AnimatedTextureType,
     #[endianness(le)]
     pub frame_count: f32,
-    pub animation_expression: AnimationExpression,
+    pub animation_expression: V::AnimationExpression,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

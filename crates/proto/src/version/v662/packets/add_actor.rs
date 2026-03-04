@@ -1,12 +1,12 @@
-use super::super::types::{ActorLink, ActorRuntimeID, ActorUniqueID, DataItem, PropertySyncData};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use vek::{Vec2, Vec3};
 
 #[gamepacket(id = 13)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct AddActorPacket {
-    pub target_actor_id: ActorUniqueID,
-    pub target_runtime_id: ActorRuntimeID,
+pub struct AddActorPacket<V: ProtoVersion> {
+    pub target_actor_id: V::ActorUniqueID,
+    pub target_runtime_id: V::ActorRuntimeID,
     pub actor_type: String,
     #[endianness(le)]
     pub position: Vec3<f32>,
@@ -23,11 +23,11 @@ pub struct AddActorPacket {
     pub attributes: Vec<AttributeEntry>,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub actor_data: Vec<DataItem>, // VERIFY: vec_repr & vec_endianness
-    pub synced_properties: PropertySyncData,
+    pub actor_data: Vec<V::DataItem>, // TODO: verify vec_repr & vec_endianness
+    pub synced_properties: V::PropertySyncData,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub actor_links: Vec<ActorLink>,
+    pub actor_links: Vec<V::ActorLink>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

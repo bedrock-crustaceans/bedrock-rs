@@ -1,24 +1,24 @@
-use super::super::types::BlockPos;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i32)]
 #[enum_endianness(var)]
 #[repr(i32)]
-pub enum PlayerActionType {
+pub enum PlayerActionType<V: ProtoVersion> {
     Unknown = -1,
     StartDestroyBlock {
-        position: BlockPos,
+        position: V::BlockPos,
         #[endianness(var)]
         facing: i32,
     } = 0,
     AbortDestroyBlock {
-        position: BlockPos,
+        position: V::BlockPos,
         #[endianness(var)]
         facing: i32,
     } = 1,
     StopDestroyBlock {
-        position: BlockPos,
+        position: V::BlockPos,
         #[endianness(var)]
         facing: i32,
     } = 2,
@@ -38,7 +38,7 @@ pub enum PlayerActionType {
     StopGliding = 16,
     DenyDestroyBlock = 17,
     CrackBlock {
-        position: BlockPos,
+        position: V::BlockPos,
         #[endianness(var)]
         facing: i32,
     } = 18,
@@ -50,12 +50,12 @@ pub enum PlayerActionType {
     StopSpinAttack = 24,
     InteractWithBlock = 25,
     PredictDestroyBlock {
-        position: BlockPos,
+        position: V::BlockPos,
         #[endianness(var)]
         facing: i32,
     } = 26,
     ContinueDestroyBlock {
-        position: BlockPos,
+        position: V::BlockPos,
         #[endianness(var)]
         facing: i32,
     } = 27,

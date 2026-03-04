@@ -52,14 +52,14 @@ impl ProtoCodec for PlayerArmorDamagePacket {
     fn get_size_prediction(&self) -> usize {
         self.slot_bitset.get_size_prediction()
             + (0..4)
-            .filter_map(|i| {
-                let flag = 1 << i;
-                if (self.slot_bitset & flag) != 0 {
-                    Some(ProtoCodecVAR::get_size_prediction(&self.damage[i]))
-                } else {
-                    None
-                }
-            })
-            .sum::<usize>()
+                .filter_map(|i| {
+                    let flag = 1 << i;
+                    if (self.slot_bitset & flag) != 0 {
+                        Some(ProtoCodecVAR::get_size_prediction(&self.damage[i]))
+                    } else {
+                        None
+                    }
+                })
+                .sum::<usize>()
     }
 }

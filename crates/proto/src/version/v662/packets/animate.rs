@@ -1,4 +1,4 @@
-use super::super::types::ActorRuntimeID;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
@@ -7,9 +7,9 @@ use varint_rs::{VarintReader, VarintWriter};
 
 #[gamepacket(id = 44)]
 #[derive(Clone, Debug)]
-pub struct AnimatePacket {
+pub struct AnimatePacket<V: ProtoVersion> {
     pub action: Action,
-    pub target_runtime_id: ActorRuntimeID,
+    pub target_runtime_id: V::ActorRuntimeID,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -32,14 +32,14 @@ pub enum Action {
     } = 129,
 }
 
-impl ProtoCodec for AnimatePacket {
+impl<V: ProtoVersion> ProtoCodec for AnimatePacket<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
         <Action as ProtoCodec>::proto_serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
         stream.write_i32_varint(action_cursor.read_i32_varint()?)?;
-        <ActorRuntimeID as ProtoCodec>::proto_serialize(&self.target_runtime_id, stream)?;
+        <V::ActorRuntimeID as ProtoCodec>::proto_serialize(&self.target_runtime_id, stream)?;
         action_cursor.read_to_end(stream)?;
 
         Ok(())
@@ -49,7 +49,7 @@ impl ProtoCodec for AnimatePacket {
         let mut action_stream: Vec<u8> = Vec::new();
 
         action_stream.write_i32_varint(stream.read_i32_varint()?)?;
-        let target_runtime_id = <ActorRuntimeID as ProtoCodec>::proto_deserialize(stream)?;
+        let target_runtime_id = <V::ActorRuntimeID as ProtoCodec>::proto_deserialize(stream)?;
         stream.read_to_end(&mut action_stream)?;
 
         let mut action_cursor = Cursor::new(action_stream.as_slice());
@@ -66,4 +66,4 @@ impl ProtoCodec for AnimatePacket {
     }
 }
 
-// VERIFY: ProtoCodec impl
+// TODO: verify ProtoCodec impl

@@ -1,5 +1,5 @@
-use vek::{Vec2, Vec3};
 use bedrockrs_macros::ProtoCodec;
+use vek::{Vec2, Vec3};
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraPreset {

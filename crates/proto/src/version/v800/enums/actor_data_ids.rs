@@ -1,3 +1,9 @@
+use bedrockrs_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_endianness(var)]
+#[enum_repr(u32)]
+#[repr(u32)]
 pub enum ActorDataIDs {
     Reserved0 = 0,
     StructuralIntegrity = 1,

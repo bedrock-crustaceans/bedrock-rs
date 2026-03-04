@@ -1,5 +1,5 @@
-use uuid::Uuid;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use uuid::Uuid;
 
 #[gamepacket(id = 6)]
 #[derive(ProtoCodec, Clone, Debug)]

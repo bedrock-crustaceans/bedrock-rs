@@ -1,10 +1,10 @@
-use super::super::types::ActorRuntimeID;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 138)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct EmotePacket {
-    pub actor_runtime_id: ActorRuntimeID,
+pub struct EmotePacket<V: ProtoVersion> {
+    pub actor_runtime_id: V::ActorRuntimeID,
     pub emote_id: String,
     pub xuid: String,
     pub platform_id: String,

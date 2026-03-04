@@ -21,7 +21,10 @@ impl ProtoCodec for NetworkItemStackDescriptor {
             _ => {
                 ProtoCodecLE::proto_serialize(self.stack_size.as_ref().unwrap(), stream)?;
                 ProtoCodecVAR::proto_serialize(self.aux_value.as_ref().unwrap(), stream)?;
-                <Option<i32> as ProtoCodecVAR>::proto_serialize(self.net_id_variant.as_ref().unwrap(), stream)?;
+                <Option<i32> as ProtoCodecVAR>::proto_serialize(
+                    self.net_id_variant.as_ref().unwrap(),
+                    stream,
+                )?;
                 ProtoCodecVAR::proto_serialize(self.block_runtime_id.as_ref().unwrap(), stream)?;
                 String::proto_serialize(self.user_data_buffer.as_ref().unwrap(), stream)?;
             }
@@ -42,7 +45,13 @@ impl ProtoCodec for NetworkItemStackDescriptor {
                 let block_runtime_id = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
                 let user_data_buffer = String::proto_deserialize(stream)?;
 
-                (Some(stack_size), Some(aux_value), Some(net_id_variant), Some(block_runtime_id), Some(user_data_buffer))
+                (
+                    Some(stack_size),
+                    Some(aux_value),
+                    Some(net_id_variant),
+                    Some(block_runtime_id),
+                    Some(user_data_buffer),
+                )
             }
         };
 
@@ -57,15 +66,19 @@ impl ProtoCodec for NetworkItemStackDescriptor {
     }
 
     fn get_size_prediction(&self) -> usize {
-        ProtoCodecVAR::get_size_prediction(&self.id) +
-            match &self.id {
+        ProtoCodecVAR::get_size_prediction(&self.id)
+            + match &self.id {
                 0 => 0,
                 _ => {
-                    ProtoCodecLE::get_size_prediction(self.stack_size.as_ref().unwrap()) +
-                        ProtoCodecVAR::get_size_prediction(self.aux_value.as_ref().unwrap()) +
-                        <Option<i32> as ProtoCodecVAR>::get_size_prediction(self.net_id_variant.as_ref().unwrap()) +
-                        ProtoCodecVAR::get_size_prediction(self.block_runtime_id.as_ref().unwrap()) +
-                        String::get_size_prediction(self.user_data_buffer.as_ref().unwrap())
+                    ProtoCodecLE::get_size_prediction(self.stack_size.as_ref().unwrap())
+                        + ProtoCodecVAR::get_size_prediction(self.aux_value.as_ref().unwrap())
+                        + <Option<i32> as ProtoCodecVAR>::get_size_prediction(
+                            self.net_id_variant.as_ref().unwrap(),
+                        )
+                        + ProtoCodecVAR::get_size_prediction(
+                            self.block_runtime_id.as_ref().unwrap(),
+                        )
+                        + String::get_size_prediction(self.user_data_buffer.as_ref().unwrap())
                 }
             }
     }

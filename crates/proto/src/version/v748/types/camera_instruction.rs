@@ -1,30 +1,29 @@
-use super::super::enums::EasingType;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use vek::{Vec2, Vec3};
-use super::super::types::ActorUniqueID;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CameraInstruction {
-    pub set: Option<SetInstruction>,
+pub struct CameraInstruction<V: ProtoVersion> {
+    pub set: Option<SetInstruction<V>>,
     pub clear: Option<bool>,
     pub fade: Option<FadeInstruction>,
-    pub target: Option<TargetInstruction>,
-}    
+    pub target: Option<TargetInstruction<V>>,
+}
 
 // VERIFY: SetInstruction & FadeInstruction
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct EaseData {
-    pub ease_type: EasingType,
+pub struct EaseData<V: ProtoVersion> {
+    pub ease_type: V::EasingType,
     #[endianness(le)]
     pub ease_time: f32,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct SetInstruction {
+pub struct SetInstruction<V: ProtoVersion> {
     #[endianness(le)]
     pub runtime_id: i32,
-    pub ease_data: Option<EaseData>,
+    pub ease_data: Option<EaseData<V>>,
     #[endianness(le)]
     pub position: Option<Vec3<f32>>,
     #[endianness(le)]
@@ -65,9 +64,8 @@ pub struct FadeInstruction {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct TargetInstruction {
+pub struct TargetInstruction<V: ProtoVersion> {
     #[endianness(le)]
     pub target_center_offset: Option<Vec3<f32>>,
-    pub actor_unique_id: ActorUniqueID,
+    pub actor_unique_id: V::ActorUniqueID,
 }
-

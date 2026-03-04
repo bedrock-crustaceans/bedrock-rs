@@ -13,6 +13,6 @@ pub enum AttributeModifierOperation {
 }
 
 impl AttributeModifierOperation {
-    pub const OPERATION_INVALID: AttributeModifierOperation = AttributeModifierOperation::TotalOperations;
+    pub const OPERATION_INVALID: AttributeModifierOperation =
+        AttributeModifierOperation::TotalOperations;
 }
-

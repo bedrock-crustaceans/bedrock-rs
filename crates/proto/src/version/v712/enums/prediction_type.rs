@@ -1,5 +1,5 @@
-use vek::Vec2;
 use bedrockrs_macros::ProtoCodec;
+use vek::Vec2;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]

@@ -1,8 +1,8 @@
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use super::super::types::CameraAimAssistItemSettings;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CameraAimAssistPresetDefinition {
+pub struct CameraAimAssistPresetDefinition<V: ProtoVersion> {
     pub identifier: String,
     #[vec_repr(i32)]
     #[vec_endianness(var)]
@@ -12,7 +12,7 @@ pub struct CameraAimAssistPresetDefinition {
     pub liquid_targeting_list: Vec<String>,
     #[vec_repr(i32)]
     #[vec_endianness(var)]
-    pub item_settings: Vec<CameraAimAssistItemSettings>,
+    pub item_settings: Vec<V::CameraAimAssistItemSettings>,
     pub default_item_settings: Option<String>,
     pub hand_settings: Option<String>,
 }

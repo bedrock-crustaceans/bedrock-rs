@@ -5,7 +5,7 @@ use bedrockrs_macros::{gamepacket, ProtoCodec};
 pub struct ServerBoundLoadingScreenPacket {
     pub packet_type: ServerBoundLoadingScreenPacketType,
     #[endianness(le)]
-    pub loading_screen_id: Option<i32>
+    pub loading_screen_id: Option<i32>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

@@ -1,7 +1,7 @@
-use super::super::enums::InventorySourceType;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct InventorySource {
-    pub source_type: InventorySourceType,
+pub struct InventorySource<V: ProtoVersion> {
+    pub source_type: V::InventorySourceType,
 }

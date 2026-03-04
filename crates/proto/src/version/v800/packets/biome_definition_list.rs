@@ -1,20 +1,20 @@
-use nbtx::Value;
-use super::super::types::BiomeDefinition;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
-
-#[derive(ProtoCodec, Clone, Debug)]
-pub struct BiomeEntry {
-    #[endianness(le)]
-    pub name_index: u16,
-    pub definition: BiomeDefinition,
-}
+use nbtx::Value;
 
 #[gamepacket(id = 122)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct BiomeDefinitionListPacket {
+pub struct BiomeDefinitionListPacket<V: ProtoVersion> {
     #[nbt]
     pub biome_definitions: Value,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub biomes: Vec<BiomeEntry>,
+    pub biomes: Vec<BiomeEntry<V>>,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct BiomeEntry<V: ProtoVersion> {
+    #[endianness(le)]
+    pub name_index: u16,
+    pub definition: V::BiomeDefinition,
 }

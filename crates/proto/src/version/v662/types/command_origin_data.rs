@@ -1,4 +1,4 @@
-use super::super::enums::CommandOriginType;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use std::io::{Cursor, Read};
@@ -6,13 +6,13 @@ use uuid::Uuid;
 use varint_rs::{VarintReader, VarintWriter};
 
 #[derive(Clone, Debug)]
-pub struct CommandOriginData {
-    pub command_type: CommandOriginType,
+pub struct CommandOriginData<V: ProtoVersion> {
+    pub command_type: V::CommandOriginType,
     pub command_uuid: Uuid,
     pub request_id: String,
 }
 
-impl ProtoCodec for CommandOriginData {
+impl<V: ProtoVersion> ProtoCodec for CommandOriginData<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut type_stream: Vec<u8> = Vec::new();
         self.command_type.proto_serialize(&mut type_stream)?;
@@ -34,7 +34,7 @@ impl ProtoCodec for CommandOriginData {
         let request_id = String::proto_deserialize(stream)?;
         stream.read_to_end(&mut type_stream)?;
         let mut type_cursor = Cursor::new(type_stream.as_slice());
-        let command_type = CommandOriginType::proto_deserialize(&mut type_cursor)?;
+        let command_type = V::CommandOriginType::proto_deserialize(&mut type_cursor)?;
 
         Ok(Self {
             command_type,

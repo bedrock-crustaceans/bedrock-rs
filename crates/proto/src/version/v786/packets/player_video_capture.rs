@@ -3,7 +3,7 @@ use bedrockrs_macros::{gamepacket, ProtoCodec};
 #[gamepacket(id = 324)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerVideoCapturePacket {
-    pub action: PlayerVideoCapturePacketAction
+    pub action: PlayerVideoCapturePacketAction,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

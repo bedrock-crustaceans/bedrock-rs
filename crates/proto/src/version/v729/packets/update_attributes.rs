@@ -1,31 +1,30 @@
-use super::super::enums::{AttributeModifierOperation, AttributeOperands};
-use super::super::types::ActorRuntimeID;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 
 #[gamepacket(id = 29)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct UpdateAttributesPacket {
-    pub target_runtime_id: ActorRuntimeID,
+pub struct UpdateAttributesPacket<V: ProtoVersion> {
+    pub target_runtime_id: V::ActorRuntimeID,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub attribute_list: Vec<AttributeData>,
+    pub attribute_list: Vec<AttributeData<V>>,
     #[endianness(var)]
     pub ticks_since_sim_started: u64,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct AttributeModifier {
+pub struct AttributeModifier<V: ProtoVersion> {
     pub id: String,
     pub name: String,
     #[endianness(le)]
     pub amount: f32,
-    pub operation: AttributeModifierOperation,
-    pub operand: AttributeOperands,
+    pub operation: V::AttributeModifierOperation,
+    pub operand: V::AttributeOperands,
     pub is_serializable: bool,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct AttributeData {
+pub struct AttributeData<V: ProtoVersion> {
     #[endianness(le)]
     pub min_value: f32,
     #[endianness(le)]
@@ -41,5 +40,5 @@ pub struct AttributeData {
     pub attribute_name: String,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub attribute_modifiers: Vec<AttributeModifier>,
+    pub attribute_modifiers: Vec<AttributeModifier<V>>,
 }

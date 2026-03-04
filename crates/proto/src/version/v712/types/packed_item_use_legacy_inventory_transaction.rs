@@ -1,7 +1,4 @@
-use super::super::enums::ItemUseInventoryTransactionType;
-use super::super::types::{
-    InventoryTransaction, NetworkBlockPosition, NetworkItemStackDescriptor,
-};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
@@ -9,20 +6,20 @@ use std::io::Cursor;
 use vek::Vec3;
 
 #[derive(Clone, Debug)]
-pub struct PackedItemUseLegacyInventoryTransaction {
+pub struct PackedItemUseLegacyInventoryTransaction<V: ProtoVersion> {
     pub id: i32,
     pub container_slots: Option<Vec<ContainerSlotEntry>>,
-    pub action: InventoryTransaction,
-    pub action_type: ItemUseInventoryTransactionType,
+    pub action: V::InventoryTransaction,
+    pub action_type: V::ItemUseInventoryTransactionType,
     pub trigger_type: TriggerType,
-    pub position: NetworkBlockPosition,
+    pub position: V::NetworkBlockPosition,
     pub face: i32,
     pub slot: i32,
-    pub item: NetworkItemStackDescriptor,
+    pub item: V::NetworkItemStackDescriptor,
     pub from_position: Vec3<f32>,
     pub click_position: Vec3<f32>,
     pub target_block_id: u32,
-    pub predicted_result: PredictedResult
+    pub predicted_result: PredictedResult,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -52,7 +49,7 @@ pub enum TriggerType {
     SimulationTick = 2,
 }
 
-impl ProtoCodec for PackedItemUseLegacyInventoryTransaction {
+impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         ProtoCodecVAR::proto_serialize(&self.id, stream)?;
 
@@ -96,13 +93,13 @@ impl ProtoCodec for PackedItemUseLegacyInventoryTransaction {
                 Some(vec)
             }
         };
-        let action = InventoryTransaction::proto_deserialize(stream)?;
-        let action_type = ItemUseInventoryTransactionType::proto_deserialize(stream)?;
+        let action = V::InventoryTransaction::proto_deserialize(stream)?;
+        let action_type = V::ItemUseInventoryTransactionType::proto_deserialize(stream)?;
         let trigger_type = TriggerType::proto_deserialize(stream)?;
-        let position = NetworkBlockPosition::proto_deserialize(stream)?;
+        let position = V::NetworkBlockPosition::proto_deserialize(stream)?;
         let face = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
         let slot = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
-        let item = NetworkItemStackDescriptor::proto_deserialize(stream)?;
+        let item = V::NetworkItemStackDescriptor::proto_deserialize(stream)?;
         let from_position = <Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?;
         let click_position = <Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?;
         let target_block_id = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
@@ -128,12 +125,12 @@ impl ProtoCodec for PackedItemUseLegacyInventoryTransaction {
     fn get_size_prediction(&self) -> usize {
         ProtoCodecVAR::get_size_prediction(&self.id)
             + match &self.id {
-            0 => 0,
-            _ => {
-                let vec = self.container_slots.as_ref().unwrap();
-                vec.len() + vec.iter().map(|i| i.get_size_prediction()).sum::<usize>()
+                0 => 0,
+                _ => {
+                    let vec = self.container_slots.as_ref().unwrap();
+                    vec.len() + vec.iter().map(|i| i.get_size_prediction()).sum::<usize>()
+                }
             }
-        }
             + self.action.get_size_prediction()
             + self.action_type.get_size_prediction()
             + self.trigger_type.get_size_prediction()

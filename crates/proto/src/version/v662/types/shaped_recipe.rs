@@ -1,4 +1,4 @@
-use super::super::types::{NetworkItemInstanceDescriptor, RecipeIngredient};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::Cursor;
@@ -6,16 +6,17 @@ use std::mem::size_of;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
-pub struct ShapedRecipe {
+pub struct ShapedRecipe<V: ProtoVersion> {
     pub recipe_unique_id: String,
-    pub ingredient_grid: Vec<Vec<RecipeIngredient>>,
-    pub production_list: Vec<NetworkItemInstanceDescriptor>,
+    pub ingredient_grid: Vec<Vec<V::RecipeIngredient>>,
+    pub production_list: Vec<V::NetworkItemInstanceDescriptor>,
     pub recipe_id: Uuid,
     pub recipe_tag: String,
     pub priority: i32,
+    pub network_id: u32,
 }
 
-impl ProtoCodec for ShapedRecipe {
+impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         self.recipe_unique_id.proto_serialize(stream)?;
 
@@ -37,6 +38,7 @@ impl ProtoCodec for ShapedRecipe {
         self.recipe_id.proto_serialize(stream)?;
         self.recipe_tag.proto_serialize(stream)?;
         <i32 as ProtoCodecVAR>::proto_serialize(&self.priority, stream)?;
+        <u32 as ProtoCodecVAR>::proto_serialize(&self.network_id, stream)?;
 
         Ok(())
     }
@@ -51,7 +53,7 @@ impl ProtoCodec for ShapedRecipe {
             for _ in 0..x_len {
                 let mut y_vec = Vec::with_capacity(y_len.try_into()?);
                 for _ in 0..y_len {
-                    y_vec.push(RecipeIngredient::proto_deserialize(stream)?);
+                    y_vec.push(V::RecipeIngredient::proto_deserialize(stream)?);
                 }
                 x_vec.push(y_vec);
             }
@@ -62,7 +64,7 @@ impl ProtoCodec for ShapedRecipe {
             let len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
             let mut vec = Vec::with_capacity(len.try_into()?);
             for _ in 0..len {
-                vec.push(NetworkItemInstanceDescriptor::proto_deserialize(stream)?);
+                vec.push(V::NetworkItemInstanceDescriptor::proto_deserialize(stream)?);
             }
             vec
         };
@@ -70,6 +72,7 @@ impl ProtoCodec for ShapedRecipe {
         let recipe_id = Uuid::proto_deserialize(stream)?;
         let recipe_tag = String::proto_deserialize(stream)?;
         let priority = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+        let network_id = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
 
         Ok(Self {
             recipe_unique_id,
@@ -78,6 +81,7 @@ impl ProtoCodec for ShapedRecipe {
             recipe_id,
             recipe_tag,
             priority,
+            network_id,
         })
     }
 
@@ -86,20 +90,21 @@ impl ProtoCodec for ShapedRecipe {
             + size_of::<u32>()
             + size_of::<u32>()
             + self
-            .ingredient_grid
-            .iter()
-            .map(|y| y
+                .ingredient_grid
                 .iter()
-                .map(|i|
-                    i.get_size_prediction())
-                .sum::<usize>())
-            .sum::<usize>()
+                .map(|y| y.iter().map(|i| i.get_size_prediction()).sum::<usize>())
+                .sum::<usize>()
             + size_of::<u32>()
-            + self.production_list.iter().map(|y| y.get_size_prediction()).sum::<usize>()
+            + self
+                .production_list
+                .iter()
+                .map(|y| y.get_size_prediction())
+                .sum::<usize>()
             + self.recipe_id.get_size_prediction()
             + self.recipe_tag.get_size_prediction()
             + self.priority.get_size_prediction()
+            + self.network_id.get_size_prediction()
     }
 }
 
-// VERIFY: ProtoCodec impl
+// TODO: verify ProtoCodec impl

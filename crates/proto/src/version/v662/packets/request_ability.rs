@@ -1,10 +1,10 @@
-use super::super::enums::AbilitiesIndex;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 184)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct RequestAbilityPacket {
-    pub ability: AbilitiesIndex,
+pub struct RequestAbilityPacket<V: ProtoVersion> {
+    pub ability: V::AbilitiesIndex,
     pub value_type: Type,
 }
 

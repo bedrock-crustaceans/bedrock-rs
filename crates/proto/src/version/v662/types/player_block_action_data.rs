@@ -1,7 +1,7 @@
-use super::super::enums::PlayerActionType;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct PlayerBlockActionData {
-    pub player_action_type: PlayerActionType,
+pub struct PlayerBlockActionData<V: ProtoVersion> {
+    pub player_action_type: V::PlayerActionType,
 }

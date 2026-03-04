@@ -1,10 +1,10 @@
-use super::super::types::ChunkPos;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 58)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct LevelChunkPacket {
-    pub chunk_position: ChunkPos,
+pub struct LevelChunkPacket<V: ProtoVersion> {
+    pub chunk_position: V::ChunkPos,
     #[endianness(var)]
     pub dimension_id: i32,
     // TODO: sub-chunk count stuff

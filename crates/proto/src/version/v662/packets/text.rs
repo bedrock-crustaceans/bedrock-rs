@@ -1,23 +1,23 @@
-use super::super::enums::TextPacketType;
 use bedrockrs_macros::gamepacket;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 9)]
 #[derive(Clone, Debug)]
-pub struct TextPacket {
-    pub message_type: TextPacketType,
+pub struct TextPacket<V: ProtoVersion> {
+    pub message_type: V::TextPacketType,
     pub localize: bool,
     pub sender_xuid: String,
     pub platform_id: String,
 }
 
-impl ProtoCodec for TextPacket {
+impl<V: ProtoVersion> ProtoCodec for TextPacket<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut message_type_stream: Vec<u8> = Vec::new();
-        TextPacketType::proto_serialize(&self.message_type, &mut message_type_stream)?;
+        V::TextPacketType::proto_serialize(&self.message_type, &mut message_type_stream)?;
         let mut message_type_cursor = Cursor::new(message_type_stream.as_slice());
 
         stream.write_i8(message_type_cursor.read_i8()?)?;
@@ -36,7 +36,7 @@ impl ProtoCodec for TextPacket {
         let localize = bool::proto_deserialize(stream)?;
         stream.read_to_end(&mut sub_stream)?;
         let mut sub_cursor = Cursor::new(sub_stream.as_slice());
-        let message_type = TextPacketType::proto_deserialize(&mut sub_cursor)?;
+        let message_type = V::TextPacketType::proto_deserialize(&mut sub_cursor)?;
         let sender_xuid = String::proto_deserialize(&mut sub_cursor)?;
         let platform_id = String::proto_deserialize(&mut sub_cursor)?;
 

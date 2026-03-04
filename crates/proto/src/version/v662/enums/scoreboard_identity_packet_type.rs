@@ -1,25 +1,25 @@
-use super::super::types::ScoreboardId;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
 #[repr(i8)]
-pub enum ScoreboardIdentityPacketType {
+pub enum ScoreboardIdentityPacketType<V: ProtoVersion> {
     Update {
         #[vec_repr(u32)]
         #[vec_endianness(var)]
-        identity_info: Vec<IdentityInfoUpdateEntry>,
+        identity_info: Vec<IdentityInfoUpdateEntry<V>>,
     } = 0,
     Remove {
         #[vec_repr(u32)]
         #[vec_endianness(var)]
-        identity_info: Vec<ScoreboardId>,
+        identity_info: Vec<V::ScoreboardId>,
     } = 1,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct IdentityInfoUpdateEntry {
-    pub scoreboard_id: ScoreboardId,
+pub struct IdentityInfoUpdateEntry<V: ProtoVersion> {
+    pub scoreboard_id: V::ScoreboardId,
     #[endianness(var)]
     pub player_unique_id: i64,
 }

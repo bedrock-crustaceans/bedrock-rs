@@ -1,12 +1,12 @@
-use super::super::enums::{CommandPermissionLevel, PlayerPermissionLevel};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct SerializedAbilitiesData {
+pub struct SerializedAbilitiesData<V: ProtoVersion> {
     #[endianness(le)]
     pub target_player_raw_id: i64,
-    pub player_permissions: PlayerPermissionLevel,
-    pub command_permissions: CommandPermissionLevel,
+    pub player_permissions: V::PlayerPermissionLevel,
+    pub command_permissions: V::CommandPermissionLevel,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
     pub layers: Vec<SerializedLayer>,
@@ -34,6 +34,7 @@ pub struct SerializedLayer {
     #[endianness(le)]
     pub fly_speed: f32,
     #[endianness(le)]
+    pub vertical_fly_speed: f32,
+    #[endianness(le)]
     pub walk_speed: f32,
 }
-

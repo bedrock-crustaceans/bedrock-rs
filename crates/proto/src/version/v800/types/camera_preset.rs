@@ -1,11 +1,9 @@
-use vek::{Vec2, Vec3};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use crate::v800::enums::ControlScheme;
-
-use super::super::types::CameraAimAssistPreset;
+use vek::{Vec2, Vec3};
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CameraPreset {
+pub struct CameraPreset<V: ProtoVersion> {
     pub name: String,
     pub inherit_from: String,
     #[endianness(le)]
@@ -41,8 +39,8 @@ pub struct CameraPreset {
     pub listener: Option<AudioListener>,
     pub player_effects: Option<bool>,
     pub align_target_and_camera_forwards: Option<bool>,
-    pub aim_assist_preset: Option<CameraAimAssistPreset>,
-    pub control_scheme: Option<ControlScheme>,
+    pub aim_assist_preset: Option<V::CameraAimAssistPreset>,
+    pub control_scheme: Option<V::ControlScheme>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

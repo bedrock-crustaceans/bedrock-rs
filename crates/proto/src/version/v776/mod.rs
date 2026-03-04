@@ -8,5 +8,6 @@ pub mod types;
 mod gamepackets;
 mod helper;
 
+pub use crate::version::proto_version::V776;
 pub use gamepackets::*;
 pub use helper::*;

@@ -1,9 +1,9 @@
-use super::super::types::{BaseGameVersion, Experiments};
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 7)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct ResourcePackStackPacket {
+pub struct ResourcePackStackPacket<V: ProtoVersion> {
     pub texture_pack_required: bool,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
@@ -11,8 +11,8 @@ pub struct ResourcePackStackPacket {
     #[vec_repr(u32)]
     #[vec_endianness(var)]
     pub texture_pack_list: Vec<PackEntry>,
-    pub base_game_version: BaseGameVersion,
-    pub experiments: Experiments,
+    pub base_game_version: V::BaseGameVersion,
+    pub experiments: V::Experiments,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

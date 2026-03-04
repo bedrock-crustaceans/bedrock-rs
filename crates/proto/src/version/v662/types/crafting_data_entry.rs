@@ -1,7 +1,7 @@
-use super::super::enums::CraftingDataEntryType;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CraftingDataEntry {
-    pub crafting_type: CraftingDataEntryType,
+pub struct CraftingDataEntry<V: ProtoVersion> {
+    pub crafting_type: V::CraftingDataEntryType,
 }

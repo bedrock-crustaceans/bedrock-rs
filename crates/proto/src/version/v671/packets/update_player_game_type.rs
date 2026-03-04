@@ -1,12 +1,11 @@
-use super::super::enums::GameType;
-use super::super::types::ActorUniqueID;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 
 #[gamepacket(id = 151)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct UpdatePlayerGameTypePacket {
-    pub player_game_type: GameType,
-    pub target_player: ActorUniqueID,
+pub struct UpdatePlayerGameTypePacket<V: ProtoVersion> {
+    pub player_game_type: V::GameType,
+    pub target_player: V::ActorUniqueID,
     #[endianness(var)]
-    pub player_replay_state_component_tick: u32,
+    pub tick: u32,
 }

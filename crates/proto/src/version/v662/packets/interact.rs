@@ -1,15 +1,15 @@
-use super::super::types::ActorRuntimeID;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 33)]
 #[derive(Clone, Debug)]
-pub struct InteractPacket {
+pub struct InteractPacket<V: ProtoVersion> {
     pub action: Action,
-    pub target_runtime_id: ActorRuntimeID,
+    pub target_runtime_id: V::ActorRuntimeID,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -37,14 +37,14 @@ pub enum Action {
     OpenInventory = 6,
 }
 
-impl ProtoCodec for InteractPacket {
+impl<V: ProtoVersion> ProtoCodec for InteractPacket<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
         <Action as ProtoCodec>::proto_serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
         stream.write_i8(action_cursor.read_i8()?)?;
-        <ActorRuntimeID as ProtoCodec>::proto_serialize(&self.target_runtime_id, stream)?;
+        <V::ActorRuntimeID as ProtoCodec>::proto_serialize(&self.target_runtime_id, stream)?;
         action_cursor.read_to_end(stream)?;
 
         Ok(())
@@ -54,7 +54,7 @@ impl ProtoCodec for InteractPacket {
         let mut action_stream: Vec<u8> = Vec::new();
 
         action_stream.write_i8(stream.read_i8()?)?;
-        let target_runtime_id = <ActorRuntimeID as ProtoCodec>::proto_deserialize(stream)?;
+        let target_runtime_id = <V::ActorRuntimeID as ProtoCodec>::proto_deserialize(stream)?;
         stream.read_to_end(&mut action_stream)?;
 
         let mut action_cursor = Cursor::new(action_stream.as_slice());

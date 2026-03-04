@@ -1,31 +1,31 @@
-use super::super::types::NetworkItemInstanceDescriptor;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 
 #[gamepacket(id = 145)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CreativeContentPacket {
+pub struct CreativeContentPacket<V: ProtoVersion> {
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub groups: Vec<CreativeItemGroup>,
+    pub groups: Vec<CreativeItemGroup<V>>,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub contents: Vec<CreativeItemData>,
+    pub contents: Vec<CreativeItemData<V>>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CreativeItemData {
+pub struct CreativeItemData<V: ProtoVersion> {
     #[endianness(var)]
     pub creative_net_id: u32,
-    pub item_instance: NetworkItemInstanceDescriptor,
+    pub item_instance: V::NetworkItemInstanceDescriptor,
     #[endianness(var)]
-    pub group_id: i32,
+    pub group_id: u32,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CreativeItemGroup {
+pub struct CreativeItemGroup<V: ProtoVersion> {
     pub category: CreativeItemCategory,
     pub name: String,
-    pub icon: NetworkItemInstanceDescriptor,
+    pub icon: V::NetworkItemInstanceDescriptor,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

@@ -1,5 +1,4 @@
-use super::super::enums::{ActorDamageCause, ActorType, InteractionType, POIBlockInteractionType};
-use super::super::types::{ActorUniqueID, ActorRuntimeID};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
@@ -8,9 +7,9 @@ use varint_rs::{VarintReader, VarintWriter};
 
 #[gamepacket(id = 65)]
 #[derive(Clone, Debug)]
-pub struct LegacyTelemetryEventPacket {
-    pub target_actor_id: ActorUniqueID,
-    pub event_type: Type,
+pub struct LegacyTelemetryEventPacket<V: ProtoVersion> {
+    pub target_actor_id: V::ActorUniqueID,
+    pub event_type: Type<V>,
     pub use_player_id: i8,
 }
 
@@ -29,15 +28,15 @@ pub enum AgentResult {
 #[enum_repr(i32)]
 #[enum_endianness(var)]
 #[repr(i32)]
-pub enum Type {
+pub enum Type<V: ProtoVersion> {
     Achievement {
         #[endianness(var)]
         achievement_id: i32,
     } = 0,
     Interaction {
-        interacted_entity_id: ActorRuntimeID,
-        interaction_type: InteractionType,
-        interaction_actor_type: ActorType,
+        interacted_entity_id: V::ActorRuntimeID,
+        interaction_type: V::InteractionType,
+        interaction_actor_type: V::ActorType,
         #[endianness(var)]
         interaction_actor_variant: i32,
         interaction_actor_color: i8,
@@ -57,8 +56,8 @@ pub enum Type {
         instigator_actor_id: i64,
         #[endianness(var)]
         target_actor_id: i64,
-        instigator_child_actor_type: ActorType,
-        damage_source: ActorDamageCause,
+        instigator_child_actor_type: V::ActorType,
+        damage_source: V::ActorDamageCause,
         #[endianness(var)]
         trade_tier: i32,
         trader_name: String,
@@ -76,7 +75,7 @@ pub enum Type {
         instigator_actor_id: i32,
         #[endianness(var)]
         instigator_mob_variant: i32,
-        damage_source: ActorDamageCause,
+        damage_source: V::ActorDamageCause,
         died_in_raid: bool,
     } = 6,
     BossKilled {
@@ -84,7 +83,7 @@ pub enum Type {
         boss_actor_id: i64,
         #[endianness(var)]
         party_size: i32,
-        boss_type: ActorType,
+        boss_type: V::ActorType,
     } = 7,
     AgentCommandObsolete {
         result: AgentResult,
@@ -115,12 +114,12 @@ pub enum Type {
     } = 13,
     PetDiedObsolete = 14,
     POICauldronUsed {
-        block_interaction_type: POIBlockInteractionType,
+        block_interaction_type: V::POIBlockInteractionType,
         #[endianness(var)]
         item_id: i32,
     } = 15,
     ComposterUsed {
-        block_interaction_type: POIBlockInteractionType,
+        block_interaction_type: V::POIBlockInteractionType,
         #[endianness(var)]
         item_id: i32,
     } = 16,
@@ -177,13 +176,13 @@ pub enum Type {
     } = 31,
 }
 
-impl ProtoCodec for LegacyTelemetryEventPacket {
+impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut event_type_stream: Vec<u8> = Vec::new();
-        <Type as ProtoCodec>::proto_serialize(&self.event_type, &mut event_type_stream)?;
+        <Type<V> as ProtoCodec>::proto_serialize(&self.event_type, &mut event_type_stream)?;
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
 
-        <ActorUniqueID as ProtoCodec>::proto_serialize(&self.target_actor_id, stream)?;
+        <V::ActorUniqueID as ProtoCodec>::proto_serialize(&self.target_actor_id, stream)?;
         stream.write_i32_varint(event_type_cursor.read_i32_varint()?)?;
         <i8 as ProtoCodec>::proto_serialize(&self.use_player_id, stream)?;
         event_type_cursor.read_to_end(stream)?;
@@ -194,13 +193,13 @@ impl ProtoCodec for LegacyTelemetryEventPacket {
     fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
         let mut event_type_stream: Vec<u8> = Vec::new();
 
-        let target_actor_id = <ActorUniqueID as ProtoCodec>::proto_deserialize(stream)?;
+        let target_actor_id = <V::ActorUniqueID as ProtoCodec>::proto_deserialize(stream)?;
         event_type_stream.write_i32_varint(stream.read_i32_varint()?)?;
         let use_player_id = <i8 as ProtoCodec>::proto_deserialize(stream)?;
         stream.read_to_end(&mut event_type_stream)?;
 
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
-        let event_type = <Type as ProtoCodec>::proto_deserialize(&mut event_type_cursor)?;
+        let event_type = <Type<V> as ProtoCodec>::proto_deserialize(&mut event_type_cursor)?;
 
         Ok(Self {
             target_actor_id,
@@ -216,4 +215,4 @@ impl ProtoCodec for LegacyTelemetryEventPacket {
     }
 }
 
-// VERIFY: ProtoCodec impl
+// TODO: verify ProtoCodec impl

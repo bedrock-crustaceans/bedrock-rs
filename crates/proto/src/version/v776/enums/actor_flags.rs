@@ -1,3 +1,9 @@
+use bedrockrs_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_endianness(var)]
+#[enum_repr(i32)]
+#[repr(i32)]
 pub enum ActorFlags {
     Unknown = -1,
     OnFire = 0,

@@ -5,7 +5,7 @@ use bedrockrs_macros::ProtoCodec;
 #[enum_endianness(var)]
 #[repr(i32)]
 pub enum ItemVersion {
-    Legacy = 0, 
+    Legacy = 0,
     DataDriven = 1,
     None = 2,
 }

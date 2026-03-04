@@ -1,10 +1,10 @@
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
-use super::super::enums::AimAssistAction;
 
 #[gamepacket(id = 321)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CameraAimAssistInstructionPacket {
+pub struct CameraAimAssistInstructionPacket<V: ProtoVersion> {
     pub preset_id: String,
-    pub action: AimAssistAction,
+    pub action: V::AimAssistAction,
     pub allow_aim_assist: bool,
 }

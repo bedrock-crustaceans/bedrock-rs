@@ -1,37 +1,36 @@
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use super::super::enums::ItemDescriptorType;
-use super::super::types::ItemStackRequestSlotInfo;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
 #[repr(i8)]
-pub enum ItemStackRequestActionType {
+pub enum ItemStackRequestActionType<V: ProtoVersion> {
     Take {
         amount: i8,
-        source: ItemStackRequestSlotInfo,
-        destination: ItemStackRequestSlotInfo,
+        source: V::ItemStackRequestSlotInfo,
+        destination: V::ItemStackRequestSlotInfo,
     } = 0,
     Place {
         amount: i8,
-        source: ItemStackRequestSlotInfo,
-        destination: ItemStackRequestSlotInfo,
+        source: V::ItemStackRequestSlotInfo,
+        destination: V::ItemStackRequestSlotInfo,
     } = 1,
     Swap {
-        source: ItemStackRequestSlotInfo,
-        destination: ItemStackRequestSlotInfo,
+        source: V::ItemStackRequestSlotInfo,
+        destination: V::ItemStackRequestSlotInfo,
     } = 2,
     Drop {
         amount: i8,
-        source: ItemStackRequestSlotInfo,
+        source: V::ItemStackRequestSlotInfo,
         randomly: bool,
     } = 3,
     Destroy {
         amount: i8,
-        source: ItemStackRequestSlotInfo,
+        source: V::ItemStackRequestSlotInfo,
     } = 4,
     Consume {
         amount: i8,
-        source: ItemStackRequestSlotInfo,
+        source: V::ItemStackRequestSlotInfo,
     } = 5,
     Create {
         slot: i8,
@@ -62,7 +61,7 @@ pub enum ItemStackRequestActionType {
         recipe_network_id: i32,
         times_crafted: i8,
         #[vec_repr(u8)]
-        ingredients: Vec<ItemDescriptorType>
+        ingredients: Vec<V::ItemDescriptorType>,
     } = 13,
     CraftCreative {
         #[endianness(var)]
@@ -81,11 +80,13 @@ pub enum ItemStackRequestActionType {
         repair_cost: i32,
     } = 16,
     CraftLoom {
-        pattern_id: String
+        pattern_id: String,
     } = 17,
-    #[deprecated = "Ask Tylaing"] CraftNonImplemented = 18,
-    #[deprecated = "Ask Tylaing"] CraftResults {
-        // TODO: 
+    #[deprecated = "Ask Tylaing"]
+    CraftNonImplemented = 18,
+    #[deprecated = "Ask Tylaing"]
+    CraftResults {
+        // TODO:
         // #[vec_repr(i32)]
         // #[vec_endianness(var)]
         // result_items: Vec<Item>

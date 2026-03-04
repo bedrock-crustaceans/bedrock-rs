@@ -1,15 +1,15 @@
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use super::super::types::CameraAimAssistPriority;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct CameraAimAssistCategory {
+pub struct CameraAimAssistCategory<V: ProtoVersion> {
     pub name: String,
     #[vec_repr(i32)]
     #[vec_endianness(var)]
-    pub entity_priorities: Vec<CameraAimAssistPriority>,
+    pub entity_priorities: Vec<V::CameraAimAssistPriority>,
     #[vec_repr(i32)]
     #[vec_endianness(var)]
-    pub block_priorities: Vec<CameraAimAssistPriority>,
+    pub block_priorities: Vec<V::CameraAimAssistPriority>,
     #[endianness(le)]
     pub entity_default_priorities: Option<i32>,
     #[endianness(le)]

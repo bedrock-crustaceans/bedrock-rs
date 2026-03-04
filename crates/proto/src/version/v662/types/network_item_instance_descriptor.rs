@@ -60,14 +60,16 @@ impl ProtoCodec for NetworkItemInstanceDescriptor {
     fn get_size_prediction(&self) -> usize {
         ProtoCodecVAR::get_size_prediction(&self.id)
             + match self.id {
-            0 => 0,
-            _ => {
-                ProtoCodecLE::get_size_prediction(self.stack_size.as_ref().unwrap())
-                    + ProtoCodecVAR::get_size_prediction(self.aux_value.as_ref().unwrap())
-                    + ProtoCodecVAR::get_size_prediction(self.block_runtime_id.as_ref().unwrap())
-                    + ProtoCodec::get_size_prediction(self.user_data_buffer.as_ref().unwrap())
+                0 => 0,
+                _ => {
+                    ProtoCodecLE::get_size_prediction(self.stack_size.as_ref().unwrap())
+                        + ProtoCodecVAR::get_size_prediction(self.aux_value.as_ref().unwrap())
+                        + ProtoCodecVAR::get_size_prediction(
+                            self.block_runtime_id.as_ref().unwrap(),
+                        )
+                        + ProtoCodec::get_size_prediction(self.user_data_buffer.as_ref().unwrap())
+                }
             }
-        }
     }
 }
 

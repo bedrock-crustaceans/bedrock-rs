@@ -1,5 +1,5 @@
-use vek::Vec2;
 use bedrockrs_macros::ProtoCodec;
+use vek::Vec2;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistPreset {
@@ -9,5 +9,5 @@ pub struct CameraAimAssistPreset {
     #[endianness(le)]
     pub angle: Option<Vec2<f32>>,
     #[endianness(le)]
-    pub distance: Option<f32>
+    pub distance: Option<f32>,
 }

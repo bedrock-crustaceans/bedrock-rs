@@ -1,4 +1,3 @@
-use super::super::enums::{ActorType, LevelSoundEventType};
 use bedrockrs_macros::gamepacket;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
@@ -7,31 +6,29 @@ use std::io::Cursor;
 use std::mem::size_of;
 use varint_rs::{VarintReader, VarintWriter};
 use vek::Vec3;
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 24)]
 #[derive(Clone, Debug)]
-pub struct LevelSoundEventPacketV1 {
-    pub event_id: LevelSoundEventType,
+pub struct LevelSoundEventV1Packet<V: ProtoVersion> {
+    pub event_id: V::LevelSoundEventType,
     pub position: Vec3<f32>,
     pub data: i32,
-    pub actor_type: ActorType,
+    pub actor_type: V::ActorType,
     pub baby_mob: bool,
     pub global: bool,
 }
 
-impl ProtoCodec for LevelSoundEventPacketV1 {
+impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV1Packet<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut event_id_stream: Vec<u8> = Vec::new();
-        LevelSoundEventType::proto_serialize(
-            &self.event_id,
-            &mut event_id_stream,
-        )?;
+        V::LevelSoundEventType::proto_serialize(&self.event_id, &mut event_id_stream)?;
         let mut event_id_cursor = Cursor::new(event_id_stream.as_slice());
 
         stream.write_i8(event_id_cursor.read_u32_varint()? as i8)?;
         <Vec3<f32> as ProtoCodecLE>::proto_serialize(&self.position, stream)?;
         <i32 as ProtoCodecVAR>::proto_serialize(&self.data, stream)?;
-        <ActorType as ProtoCodec>::proto_serialize(&self.actor_type, stream)?;
+        <V::ActorType as ProtoCodec>::proto_serialize(&self.actor_type, stream)?;
         <bool as ProtoCodec>::proto_serialize(&self.baby_mob, stream)?;
         <bool as ProtoCodec>::proto_serialize(&self.global, stream)?;
 
@@ -43,11 +40,10 @@ impl ProtoCodec for LevelSoundEventPacketV1 {
         event_id_stream.write_u32_varint(stream.read_i8()? as u32)?;
         let mut event_id_cursor = Cursor::new(event_id_stream.as_slice());
 
-        let event_id =
-            LevelSoundEventType::proto_deserialize(&mut event_id_cursor)?;
+        let event_id = V::LevelSoundEventType::proto_deserialize(&mut event_id_cursor)?;
         let position = <Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?;
         let data = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
-        let actor_type = <ActorType as ProtoCodec>::proto_deserialize(stream)?;
+        let actor_type = <V::ActorType as ProtoCodec>::proto_deserialize(stream)?;
         let baby_mob = <bool as ProtoCodec>::proto_deserialize(stream)?;
         let global = <bool as ProtoCodec>::proto_deserialize(stream)?;
 

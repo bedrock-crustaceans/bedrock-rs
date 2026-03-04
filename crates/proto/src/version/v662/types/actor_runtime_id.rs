@@ -5,7 +5,7 @@ use std::mem::size_of;
 use varint_rs::{VarintReader, VarintWriter};
 
 #[derive(Clone, Debug)]
-pub struct ActorRuntimeID(pub u64);
+pub struct ActorRuntimeID(pub u64); // TODO: consider removing this type and using primitive types directly
 
 impl ProtoCodec for ActorRuntimeID {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {

@@ -1,9 +1,9 @@
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use super::super::enums::ContainerEnumName;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct FullContainerName {
-    container: ContainerEnumName,
+pub struct FullContainerName<V: ProtoVersion> {
+    container: V::ContainerEnumName,
     #[endianness(le)]
     dynamic_id: Option<i32>,
 }

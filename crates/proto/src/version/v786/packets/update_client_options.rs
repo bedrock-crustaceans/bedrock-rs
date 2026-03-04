@@ -3,7 +3,7 @@ use bedrockrs_macros::{gamepacket, ProtoCodec};
 #[gamepacket(id = 323)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateClientOptionsPacket {
-    pub graphics_mode: GraphicsMode,
+    pub graphics_mode: Option<GraphicsMode>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

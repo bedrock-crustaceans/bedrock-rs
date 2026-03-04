@@ -24,4 +24,3 @@ pub struct GameRuleChanged {
     pub can_be_modified_by_player: bool,
     pub rule_type: Type,
 }
-

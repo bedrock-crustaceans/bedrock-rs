@@ -1,11 +1,11 @@
-use super::super::types::ActorUniqueID;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i32)]
 #[enum_endianness(le)]
 #[repr(i32)]
-pub enum BossEventUpdateType {
+pub enum BossEventUpdateType<V: ProtoVersion> {
     Add {
         name: String,
         #[endianness(le)]
@@ -18,11 +18,11 @@ pub enum BossEventUpdateType {
         overlay: u32,
     } = 0,
     PlayerAdded {
-        player_id: ActorUniqueID,
+        player_id: V::ActorUniqueID,
     } = 1,
     Remove = 2,
     PlayerRemoved {
-        player_id: ActorUniqueID,
+        player_id: V::ActorUniqueID,
     } = 3,
     UpdatePercent {
         #[endianness(le)]
@@ -46,6 +46,6 @@ pub enum BossEventUpdateType {
         overlay: u32,
     } = 7,
     Query {
-        player_id: ActorUniqueID,
+        player_id: V::ActorUniqueID,
     } = 8,
 }

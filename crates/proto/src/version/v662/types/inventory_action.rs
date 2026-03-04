@@ -1,11 +1,11 @@
-use super::super::types::{InventorySource, NetworkItemStackDescriptor};
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct InventoryAction {
-    pub source: InventorySource,
+pub struct InventoryAction<V: ProtoVersion> {
+    pub source: V::InventorySource,
     #[endianness(var)]
     pub slot: u32,
-    pub from_item_descriptor: NetworkItemStackDescriptor,
-    pub to_item_descriptor: NetworkItemStackDescriptor,
+    pub from_item_descriptor: V::NetworkItemStackDescriptor,
+    pub to_item_descriptor: V::NetworkItemStackDescriptor,
 }

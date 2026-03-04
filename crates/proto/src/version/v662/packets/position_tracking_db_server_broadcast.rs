@@ -1,11 +1,11 @@
-use super::super::types::PositionTrackingId;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 153)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct PositionTrackingDBServerBroadcastPacket {
+pub struct PositionTrackingDBServerBroadcastPacket<V: ProtoVersion> {
     pub action: Action,
-    pub id: PositionTrackingId,
+    pub id: V::PositionTrackingId,
     #[nbt]
     pub position_tracking_data: nbtx::Value, // TODO: NBT Structure
 }

@@ -1,4 +1,4 @@
-use super::super::enums::BookEditAction;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::gamepacket;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
@@ -8,15 +8,15 @@ use std::mem::size_of;
 
 #[gamepacket(id = 97)]
 #[derive(Clone, Debug)]
-pub struct BookEditPacket {
-    pub action: BookEditAction,
+pub struct BookEditPacket<V: ProtoVersion> {
+    pub action: V::BookEditAction,
     pub book_slot: i8,
 }
 
-impl ProtoCodec for BookEditPacket {
+impl<V: ProtoVersion> ProtoCodec for BookEditPacket<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
-        <BookEditAction as ProtoCodec>::proto_serialize(&self.action, &mut action_stream)?;
+        <V::BookEditAction as ProtoCodec>::proto_serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
         stream.write_i8(action_cursor.read_i8()?)?;
@@ -34,7 +34,7 @@ impl ProtoCodec for BookEditPacket {
         stream.read_to_end(&mut action_stream)?;
 
         let mut action_cursor = Cursor::new(action_stream.as_slice());
-        let action = <BookEditAction as ProtoCodec>::proto_deserialize(&mut action_cursor)?;
+        let action = <V::BookEditAction as ProtoCodec>::proto_deserialize(&mut action_cursor)?;
 
         Ok(Self { action, book_slot })
     }
@@ -44,4 +44,4 @@ impl ProtoCodec for BookEditPacket {
     }
 }
 
-// VERIFY: ProtoCodec impl
+// TODO: verify ProtoCodec impl

@@ -1,4 +1,4 @@
-use super::super::enums::CommandPermissionLevel;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
@@ -7,7 +7,7 @@ use std::mem::size_of;
 
 #[gamepacket(id = 76)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct AvailableCommandsPacket {
+pub struct AvailableCommandsPacket<V: ProtoVersion> {
     #[vec_repr(u32)]
     #[vec_endianness(var)]
     pub enum_values: Vec<String>,
@@ -22,7 +22,7 @@ pub struct AvailableCommandsPacket {
     pub chained_sub_command_data: Vec<ChainedSubCommandDataEntry>,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub commands: Vec<CommandsEntry>,
+    pub commands: Vec<CommandsEntry<V>>,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
     pub soft_enums: Vec<SoftEnumsEntry>,
@@ -97,22 +97,22 @@ pub struct OverloadsEntry {
 }
 
 #[derive(Clone, Debug)]
-pub struct CommandsEntry {
+pub struct CommandsEntry<V: ProtoVersion> {
     pub name: String,
     pub description: String,
     pub flags: u16,
-    pub permission_level: CommandPermissionLevel,
+    pub permission_level: V::CommandPermissionLevel,
     pub alias_enum: i32,
     pub chained_sub_command_indices: Vec<u16>,
     pub overloads: Vec<OverloadsEntry>,
 }
 
-impl ProtoCodec for CommandsEntry {
+impl<V: ProtoVersion> ProtoCodec for CommandsEntry<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         <String as ProtoCodec>::proto_serialize(&self.name, stream)?;
         <String as ProtoCodec>::proto_serialize(&self.description, stream)?;
         <u16 as ProtoCodecLE>::proto_serialize(&self.flags, stream)?;
-        <CommandPermissionLevel as ProtoCodec>::proto_serialize(&self.permission_level, stream)?;
+        <V::CommandPermissionLevel as ProtoCodec>::proto_serialize(&self.permission_level, stream)?;
         <i32 as ProtoCodecLE>::proto_serialize(&self.alias_enum, stream)?;
         {
             let len: u32 = self.chained_sub_command_indices.len().try_into()?;
@@ -136,7 +136,8 @@ impl ProtoCodec for CommandsEntry {
         let name = <String as ProtoCodec>::proto_deserialize(stream)?;
         let description = <String as ProtoCodec>::proto_deserialize(stream)?;
         let flags = <u16 as ProtoCodecLE>::proto_deserialize(stream)?;
-        let permission_level = <CommandPermissionLevel as ProtoCodec>::proto_deserialize(stream)?;
+        let permission_level =
+            <V::CommandPermissionLevel as ProtoCodec>::proto_deserialize(stream)?;
         let alias_enum = <i32 as ProtoCodecLE>::proto_deserialize(stream)?;
         let chained_sub_command_indices = {
             let len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
@@ -173,10 +174,10 @@ impl ProtoCodec for CommandsEntry {
             + self.chained_sub_command_indices.len() * size_of::<u16>()
             + size_of::<u32>()
             + self
-            .overloads
-            .iter()
-            .map(|i| i.get_size_prediction())
-            .sum::<usize>()
+                .overloads
+                .iter()
+                .map(|i| i.get_size_prediction())
+                .sum::<usize>()
     }
 }
 

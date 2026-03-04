@@ -1,4 +1,3 @@
-use super::super::enums::LevelEvent;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use vek::Vec3;
 

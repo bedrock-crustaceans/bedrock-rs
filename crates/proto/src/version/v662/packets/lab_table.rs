@@ -1,13 +1,12 @@
-use super::super::enums::LabTableReactionType;
-use super::super::types::BlockPos;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 109)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct LabTablePacket {
+pub struct LabTablePacket<V: ProtoVersion> {
     pub lab_table_packet_type: Type,
-    pub position: BlockPos,
-    pub reaction: LabTableReactionType,
+    pub position: V::BlockPos,
+    pub reaction: V::LabTableReactionType,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

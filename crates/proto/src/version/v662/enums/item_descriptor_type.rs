@@ -1,7 +1,7 @@
-use std::io::Cursor;
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
+use std::io::Cursor;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
@@ -18,7 +18,7 @@ pub enum ItemDescriptorType {
 #[derive(Clone, Debug)]
 pub struct DefaultDescriptor {
     pub item_id: i16,
-    pub aux_value: i16
+    pub aux_value: i16,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -36,12 +36,12 @@ pub struct ItemTagDescriptor {
 pub struct DeferredDescriptor {
     pub full_name: String,
     #[endianness(le)]
-    pub aux_value: i16
+    pub aux_value: i16,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ComplexAliasDescriptor {
-    pub name: String
+    pub name: String,
 }
 
 impl ProtoCodec for DefaultDescriptor {
@@ -58,7 +58,7 @@ impl ProtoCodec for DefaultDescriptor {
         let item_id = <i16 as ProtoCodecLE>::proto_deserialize(stream)?;
         let aux_value = match item_id != 0 {
             true => <i16 as ProtoCodecLE>::proto_deserialize(stream)?,
-            false => 0
+            false => 0,
         };
 
         Ok(Self { item_id, aux_value })
@@ -67,9 +67,8 @@ impl ProtoCodec for DefaultDescriptor {
     fn get_size_prediction(&self) -> usize {
         size_of::<i16>()
             + match self.aux_value != 0 {
-            true => size_of::<i16>(),
-            false => 0
-        }
+                true => size_of::<i16>(),
+                false => 0,
+            }
     }
 }
-

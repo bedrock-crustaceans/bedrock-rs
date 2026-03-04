@@ -1,14 +1,14 @@
-use super::super::types::ItemStackResponseContainerInfo;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
 #[repr(i8)]
-pub enum ItemStackNetResult {
+pub enum ItemStackNetResult<V: ProtoVersion> {
     Success(
         #[vec_repr(u32)]
         #[vec_endianness(var)]
-        Vec<ItemStackResponseContainerInfo>,
+        Vec<V::ItemStackResponseContainerInfo>,
     ) = 0,
     Error = 1,
     InvalidRequestActionType = 2,

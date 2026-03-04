@@ -1,10 +1,10 @@
-use super::super::enums::MolangVersion;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct BaseDescription {
+pub struct BaseDescription<V: ProtoVersion> {
     pub internal_item_descriptor: InternalItemDescriptor,
-    pub molang_descriptor: MolangDescriptor,
+    pub molang_descriptor: MolangDescriptor<V>,
     pub item_tag_descriptor: ItemTagDescriptor,
     pub deferred_descriptor: DeferredDescriptor,
 }
@@ -17,9 +17,9 @@ pub struct InternalItemDescriptor {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct MolangDescriptor {
+pub struct MolangDescriptor<V: ProtoVersion> {
     pub full_name: String,
-    pub molang_version: MolangVersion,
+    pub molang_version: V::MolangVersion,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

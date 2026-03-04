@@ -7,5 +7,6 @@ use bedrockrs_macros::ProtoCodec;
 pub enum EducationEditionOffer {
     None = 0,
     RestOfWorld = 1,
-    #[deprecated] China = 2,
+    #[deprecated]
+    China = 2,
 }

@@ -1,12 +1,11 @@
-use super::super::enums::ContainerID;
-use super::super::types::NetworkItemStackDescriptor;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 50)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct InventorySlotPacket {
-    pub container_id: ContainerID,
+pub struct InventorySlotPacket<V: ProtoVersion> {
+    pub container_id: V::ContainerID,
     #[endianness(var)]
     pub slot: u32,
-    pub item: NetworkItemStackDescriptor,
+    pub item: V::NetworkItemStackDescriptor,
 }

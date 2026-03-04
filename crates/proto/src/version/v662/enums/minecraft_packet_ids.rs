@@ -42,7 +42,8 @@ pub enum MinecraftPacketIds {
     BlockPickRequest = 34,
     ActorPickRequest = 35,
     PlayerAction = 36,
-    #[deprecated] ActorFall = 37,
+    #[deprecated]
+    ActorFall = 37,
     HurtArmor = 38,
     SetActorData = 39,
     SetActorMotion = 40,
@@ -58,9 +59,11 @@ pub enum MinecraftPacketIds {
     InventorySlot = 50,
     ContainerSetData = 51,
     CraftingData = 52,
-    #[deprecated] CraftingEvent = 53,
+    #[deprecated]
+    CraftingEvent = 53,
     GuiDataPickItem = 54,
-    #[deprecated] AdventureSettings = 55,
+    #[deprecated]
+    AdventureSettings = 55,
     BlockActorData = 56,
     PlayerInput = 57,
     FullChunkData = 58,
@@ -76,7 +79,8 @@ pub enum MinecraftPacketIds {
     MapInfoRequest = 68,
     RequestChunkRadius = 69,
     ChunkRadiusUpdated = 70,
-    #[deprecated] ItemFrameDropItem = 71,
+    #[deprecated]
+    ItemFrameDropItem = 71,
     GameRulesChanged = 72,
     Camera = 73,
     BossEvent = 74,
@@ -131,9 +135,12 @@ pub enum MinecraftPacketIds {
     LevelSoundEvent = 123,
     LevelEventGeneric = 124,
     LecternUpdate = 125,
-    #[deprecated] VideoStreamConnect = 126,
-    #[deprecated] AddEntity = 127,
-    #[deprecated] RemoveEntity = 128,
+    #[deprecated]
+    VideoStreamConnect = 126,
+    #[deprecated]
+    AddEntity = 127,
+    #[deprecated]
+    RemoveEntity = 128,
     ClientCacheStatus = 129,
     OnScreenTextureAnimation = 130,
     MapCreateLockedCopy = 131,
@@ -178,7 +185,8 @@ pub enum MinecraftPacketIds {
     EduUriResourcePacket = 170,
     CreatePhotoPacket = 171,
     UpdateSubChunkBlocks = 172,
-    #[deprecated] PhotoInfoRequest = 173,
+    #[deprecated]
+    PhotoInfoRequest = 173,
     SubChunkPacket = 174,
     SubChunkRequestPacket = 175,
     PlayerStartItemCooldown = 176,
@@ -202,7 +210,8 @@ pub enum MinecraftPacketIds {
     GameTestRequestPacket = 194,
     GameTestResultsPacket = 195,
     PlayerClientInputPermissions = 196,
-    #[deprecated] ClientCheatAbilityPacket = 197,
+    #[deprecated]
+    ClientCheatAbilityPacket = 197,
     CameraPresets = 198,
     UnlockedRecipes = 199,
     CameraInstruction = 300,

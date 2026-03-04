@@ -1,16 +1,16 @@
-use super::super::enums::ItemStackNetResult;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
 
 #[derive(Clone, Debug)]
-pub struct ItemStackResponseInfo {
-    pub result: ItemStackNetResult,
+pub struct ItemStackResponseInfo<V: ProtoVersion> {
+    pub result: V::ItemStackNetResult,
     pub client_request_id: i32,
 }
 
-impl ProtoCodec for ItemStackResponseInfo {
+impl<V: ProtoVersion> ProtoCodec for ItemStackResponseInfo<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut result_stream: Vec<u8> = Vec::new();
 
@@ -32,7 +32,7 @@ impl ProtoCodec for ItemStackResponseInfo {
         stream.read_to_end(&mut result_stream)?;
 
         let mut result_cursor = Cursor::new(result_stream.as_slice());
-        let result = ItemStackNetResult::proto_deserialize(&mut result_cursor)?;
+        let result = V::ItemStackNetResult::proto_deserialize(&mut result_cursor)?;
 
         Ok(Self {
             result,

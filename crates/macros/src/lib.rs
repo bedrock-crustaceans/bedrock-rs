@@ -1,12 +1,15 @@
 use crate::de::{build_de_enum, build_de_struct};
 use crate::ser::{build_ser_enum, build_ser_struct};
+use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse::{Parse, ParseStream};
+use syn::token::Token;
 use syn::{parse_macro_input, Data, DeriveInput, Lit, Token};
 
 mod attr;
 mod de;
+mod proto;
 mod ser;
 mod size;
 
@@ -133,10 +136,13 @@ pub fn gamepacket(
 
     let item = proc_macro2::TokenStream::from(item);
 
+    let generics = derive.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
     let expanded = quote! {
         #item
 
-        impl ::bedrockrs_proto_core::GamePacket for #name {
+        impl #impl_generics ::bedrockrs_proto_core::GamePacket for #name #ty_generics #where_clause {
             const ID: u16 = #id;
             const COMPRESS: bool = #compress;
             const ENCRYPT: bool = #encrypt;
@@ -147,7 +153,7 @@ pub fn gamepacket(
 }
 
 struct GamepacketsInput {
-    packets: Vec<(proc_macro2::Ident, Option<proc_macro2::Ident>)>,
+    packets: Vec<(proc_macro2::Ident, Option<syn::Type>)>,
 }
 
 impl Parse for GamepacketsInput {
@@ -166,7 +172,7 @@ impl Parse for GamepacketsInput {
                 input.parse::<Token![_]>()?;
                 None
             } else {
-                Some(input.parse::<syn::Ident>()?)
+                Some(input.parse::<syn::Type>()?)
             };
 
             vec.push((param_name, param_value));
@@ -348,5 +354,10 @@ pub fn gamepackets(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
     };
 
-    proc_macro::TokenStream::from(expanded)
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+pub fn define_versions(input: TokenStream) -> TokenStream {
+    proto::define_versions_internal(input)
 }

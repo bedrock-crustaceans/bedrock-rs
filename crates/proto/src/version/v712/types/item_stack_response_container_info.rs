@@ -1,11 +1,10 @@
-use super::super::types::ItemStackResponseSlotInfo;
+use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use super::super::types::FullContainerName;
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct ItemStackResponseContainerInfo {
-    pub container_name: FullContainerName,
+pub struct ItemStackResponseContainerInfo<V: ProtoVersion> {
+    pub container_name: V::FullContainerName,
     #[vec_repr(u32)]
     #[vec_endianness(var)]
-    pub slots: Vec<ItemStackResponseSlotInfo>,
+    pub slots: Vec<V::ItemStackResponseSlotInfo>,
 }

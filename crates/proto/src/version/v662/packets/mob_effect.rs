@@ -1,10 +1,10 @@
-use super::super::types::ActorRuntimeID;
 use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 28)]
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct MobEffectPacket {
-    pub target_runtime_id: ActorRuntimeID,
+pub struct MobEffectPacket<V: ProtoVersion> {
+    pub target_runtime_id: V::ActorRuntimeID,
     pub event_id: Event,
     #[endianness(var)]
     pub effect_id: i32,
