@@ -1,9 +1,9 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use std::iter::FusedIterator;
-use std::ops::{Deref, Index, IndexMut};
+use std::ops::{Index};
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
 use crate::error::{Error, Result};
-use crate::unpacker::{self, PackedResult};
+use crate::unpacker::PackedResult;
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -173,11 +173,14 @@ impl<'a> Iterator for PackedArrayIter<'a> {
     type Item = u16;
 
     fn next(&mut self) -> Option<u16> {
-        if self.index > 4096 {
+        let item = if self.index >= 4096 {
             return None
         } else {
             Some(self.array.get(self.index))
-        }
+        };
+
+        self.index += 1;
+        item
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -212,132 +215,62 @@ impl<'a> IntoIterator for &'a PackedArray {
     }
 }
 
-pub struct LazyLayerIter<'l> {
-    idx_iter: PackedArrayIter<'l>,
+#[derive(Debug, Clone, PartialEq)]
+enum PackingType {
+    Greedy(Box<[u16; 4096]>),
+    Lazy(PackedArray)
+}
+
+enum LayerIterInner<'l> {
+    Lazy(PackedArrayIter<'l>),
+    Greedy(std::slice::Iter<'l, u16>)
+}
+
+pub struct LayerIter<'l> {
+    inner: LayerIterInner<'l>,
     palette: &'l [BlockDef]
 }
 
-impl<'l> Iterator for LazyLayerIter<'l> {
+impl<'l> Iterator for LayerIter<'l> {
     type Item = &'l BlockDef;
 
     fn next(&mut self) -> Option<&'l BlockDef> {
-        let idx = self.idx_iter.next()?;
-        Some(&self.palette[idx as usize])
+        let index = match &mut self.inner {
+            LayerIterInner::Greedy(iter) => iter.next().copied(),
+            LayerIterInner::Lazy(iter) => iter.next()
+        }? as usize;
+
+        Some(&self.palette[index])
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.idx_iter.len();
+        let len = self.len();
         (len, Some(len))
     }
 }
 
-impl<'l> FusedIterator for LazyLayerIter<'l> {}
+impl<'l> FusedIterator for LayerIter<'l> {}
 
-impl<'l> ExactSizeIterator for LazyLayerIter<'l> {
+impl<'l> ExactSizeIterator for LayerIter<'l> {
     fn len(&self) -> usize {
-        self.idx_iter.len()
-    }
-}
-
-impl<'l> From<&'l LazyLayer> for LazyLayerIter<'l> {
-    fn from(layer: &'l LazyLayer) -> Self {
-        Self { idx_iter: layer.indices.iter(), palette: &layer.palette }
-    }
-}
-
-pub trait ChunkLayer: Sized {
-    fn is_empty(&self) -> bool;
-    fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>>;
-    fn set<K>(&self, block: K, value: BlockDef) where K: Into<Vec3<u8>>;
-
-    fn deserialize_from_disk<R>(reader: R) -> Result<Self> where R: Read;
-    fn serialize_to_disk<W>(&self, writer: W) -> Result<()> where W: Write;
-}
-
-/// A subchunk layer.
-/// 
-/// This layer unpacks only the parts of the chunk that are requested.
-#[derive(Debug, Clone, PartialEq)]
-pub struct LazyLayer {
-    pub indices: PackedArray,
-    pub palette: Vec<BlockDef>
-}
-
-impl LazyLayer {
-    pub fn iter(&self) -> LazyLayerIter<'_> {
-        LazyLayerIter::from(self)
-    }
-}
-
-impl ChunkLayer for LazyLayer {
-    fn is_empty(&self) -> bool {
-        self.palette.is_empty()
-    }
-
-    fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>> {
-        let pos = block.into();
-
-        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-            return None
+        match &self.inner {
+            LayerIterInner::Greedy(iter) => iter.len(),
+            LayerIterInner::Lazy(iter) => iter.len()
         }
-
-        let offset = to_offset(pos);
-        let index = self.indices.get(offset);
-        Some(&self.palette[index as usize])
     }
+}
 
-    fn set<K>(&self, block: K, value: BlockDef) where K: Into<Vec3<u8>> {
-        todo!()
-    }
-
-    /// Deserializes a single layer from the given buffer.
-    fn deserialize_from_disk<R: Read>(mut reader: R) -> Result<Self> {
-        let bits = reader.read_u8()?;
-        let indices = match bits {
-            0 => return Err(Error::Invalid("chunk layer packed array cannot be empty")),
-            0x7f => return Err(Error::Invalid("chunk layers do not support inheritance")),
-            bits => {
-                let blocks_per_word = 32 / bits;
-                let word_count = 4096 / blocks_per_word as usize;
-
-                let words = vec![0u32; word_count];
-                PackedArray::new(bits as u32, words)
-            }
+impl<'l> From<&'l Layer> for LayerIter<'l> {
+    fn from(layer: &'l Layer) -> LayerIter<'l> {
+        let inner = match &layer.indices {
+            PackingType::Greedy(greedy) => LayerIterInner::Greedy(greedy.iter()),
+            PackingType::Lazy(array) => LayerIterInner::Lazy(array.iter())
         };
 
-        let len = reader.read_u32::<LittleEndian>()? as usize;
-        let mut palette = Vec::with_capacity(len);
-
-        for _ in 0..len {
-            let entry = nbtx::from_le_bytes(&mut reader)?;
-            palette.push(entry);
+        LayerIter {
+            palette: &layer.palette,
+            inner
         }
-
-        Ok(Self { indices, palette })
-    }
-
-    /// Serializes a single layer into the given buffer.
-    fn serialize_to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
-        writer.write_u8((self.indices.bits << 1) as u8)?;
-
-        let cast = bytemuck::cast_slice::<u32, u8>(&self.indices.words);
-        writer.write_all(cast)?;
-
-        writer.write_u32::<LittleEndian>(self.palette.len() as u32)?;
-        for entry in &self.palette {
-            nbtx::to_le_bytes_in(&mut writer, entry)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl<'l> IntoIterator for &'l LazyLayer {
-    type IntoIter = LazyLayerIter<'l>;
-    type Item = &'l BlockDef;
-
-    fn into_iter(self) -> LazyLayerIter<'l> {
-        LazyLayerIter::from(self)
     }
 }
 
@@ -359,20 +292,16 @@ impl<'l> IntoIterator for &'l LazyLayer {
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
 #[derive(Debug, Clone, PartialEq)]
-pub struct GreedyLayer {
+pub struct Layer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
-    pub indices: Box<[u16; 4096]>,
+    indices: PackingType,
     /// List of all different block types in this sub chunk layer.
-    pub palette: Vec<BlockDef>,
+    palette: Vec<BlockDef>,
 }
 
-impl ChunkLayer for GreedyLayer {
-    fn is_empty(&self) -> bool {
-        self.palette.is_empty()
-    }
-
+impl Layer {
     fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>> {
         let pos = block.into();
 
@@ -381,7 +310,11 @@ impl ChunkLayer for GreedyLayer {
         }
 
         let offset = to_offset(pos);
-        let index = self.indices[offset];
+        let index = match &self.indices {
+            PackingType::Greedy(slice) => slice[offset],
+            PackingType::Lazy(array) => array.get(offset)
+        };
+
         Some(&self.palette[index as usize])
     }
 
@@ -389,16 +322,43 @@ impl ChunkLayer for GreedyLayer {
         todo!()
     }
 
+    pub fn palette(&self) -> &[BlockDef] {
+        &self.palette
+    }
+
     /// Deserializes a single layer from the given buffer.
-    fn deserialize_from_disk<R: Read>(mut reader: R) -> Result<Self> {
-        let indices = match GreedyLayer::unpack_array(&mut reader)? {
-            PackedResult::Data(data) => data,
-            PackedResult::Empty => {
-                return Err(Error::Invalid("chunk layer packed array cannot be empty"))
-            }
-            PackedResult::Inherit => {
-                return Err(Error::Invalid("chunk layers do not support inheritance"))
-            }
+    fn deserialize_from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
+        let indices = if M::IS_GREEDY {
+            let indices = match Layer::unpack_array(&mut reader)? {
+                PackedResult::Data(data) => data,
+                PackedResult::Empty => {
+                    return Err(Error::Invalid("chunk layer packed array cannot be empty"))
+                }
+                PackedResult::Inherit => {
+                    return Err(Error::Invalid("chunk layers do not support inheritance"))
+                }
+            };
+
+            PackingType::Greedy(indices)
+        } else {
+            let bits = reader.read_u8()? >> 1;
+            let indices = match bits {
+                0 => return Err(Error::Invalid("chunk layer packed array cannot be empty")),
+                0x7f => return Err(Error::Invalid("chunk layers do not support inheritance")),
+                bits => {
+                    let blocks_per_word = 32 / bits;
+                    let word_count = 4096usize.div_ceil(blocks_per_word as usize);
+
+                    let mut words = Vec::with_capacity(word_count);
+                    for _ in 0..word_count {
+                        words.push(reader.read_u32::<LittleEndian>()?);
+                    }
+
+                    PackedArray::new(bits as u32, words)
+                }
+            };
+
+            PackingType::Lazy(indices)
         };
 
         let len = reader.read_u32::<LittleEndian>()? as usize;
@@ -412,9 +372,60 @@ impl ChunkLayer for GreedyLayer {
         Ok(Self { indices, palette })
     }
 
+    // /// Deserializes a single layer from the given buffer.
+    // fn deserialize_from_disk<R: Read>(mut reader: R) -> Result<Self> {
+    //     let bits = reader.read_u8()?;
+    //     let indices = match bits {
+    //         0 => return Err(Error::Invalid("chunk layer packed array cannot be empty")),
+    //         0x7f => return Err(Error::Invalid("chunk layers do not support inheritance")),
+    //         bits => {
+    //             let blocks_per_word = 32 / bits;
+    //             let word_count = 4096 / blocks_per_word as usize;
+
+    //             let words = vec![0u32; word_count];
+    //             PackedArray::new(bits as u32, words)
+    //         }
+    //     };
+
+    //     let len = reader.read_u32::<LittleEndian>()? as usize;
+    //     let mut palette = Vec::with_capacity(len);
+
+    //     for _ in 0..len {
+    //         let entry = nbtx::from_le_bytes(&mut reader)?;
+    //         palette.push(entry);
+    //     }
+
+    //     Ok(Self { indices, palette })
+    // }
+
+    // /// Serializes a single layer into the given buffer.
+    // fn serialize_to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+    //     writer.write_u8((self.indices.bits << 1) as u8)?;
+
+    //     let cast = bytemuck::cast_slice::<u32, u8>(&self.indices.words);
+    //     writer.write_all(cast)?;
+
+    //     writer.write_u32::<LittleEndian>(self.palette.len() as u32)?;
+    //     for entry in &self.palette {
+    //         nbtx::to_le_bytes_in(&mut writer, entry)?;
+    //     }
+
+    //     Ok(())
+    // }
+
     /// Serializes a single layer into the given buffer.
     fn serialize_to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
-        self.pack_array(&mut writer, false)?;
+        match &self.indices {
+            PackingType::Greedy(array) => {
+                Self::pack_array(&mut writer, array, self.palette.len() - 1, false)?
+            },
+            PackingType::Lazy(array) => {
+                writer.write_u8((array.bits << 1) as u8)?;
+
+                let cast = bytemuck::cast_slice::<u32, u8>(&array.words);
+                writer.write_all(cast)?;
+            }
+        };
 
         writer.write_u32::<LittleEndian>(self.palette.len() as u32)?;
         for entry in &self.palette {
@@ -423,22 +434,21 @@ impl ChunkLayer for GreedyLayer {
 
         Ok(())
     }
-}
 
-impl GreedyLayer {
     /// Creates an iterator over the blocks in this layer.
     ///
     /// This iterates over every indices
-    pub fn iter(&self) -> GreedyIter<'_> {
-        GreedyIter::from(self)
+    pub fn iter(&self) -> LayerIter<'_> {
+        LayerIter::from(self)
     }
 
     /// Creates an empty subchunk layer.
     pub fn empty() -> Self {
-        Self {
-            indices: Box::new([0; 4096]),
-            palette: vec![],
-        }
+        todo!()
+        // Self {
+        //     indices: Box::new([0; 4096]),
+        //     palette: vec![],
+        // }
     }
 
     /// Whether this subchunk layer is empty.
@@ -447,16 +457,16 @@ impl GreedyLayer {
     }
 }
 
-impl<'a> IntoIterator for &'a GreedyLayer {
-    type IntoIter = GreedyIter<'a>;
+impl<'a> IntoIterator for &'a Layer {
+    type IntoIter = LayerIter<'a>;
     type Item = &'a BlockDef;
 
     fn into_iter(self) -> Self::IntoIter {
-        GreedyIter::from(self)
+        LayerIter::from(self)
     }
 }
 
-impl<I> Index<I> for GreedyLayer
+impl<I> Index<I> for Layer
 where
     I: Into<Vec3<u8>>,
 {
@@ -474,33 +484,16 @@ where
         );
 
         let offset = to_offset(position);
-        let index = self.indices[offset] as usize;
+        let index = match &self.indices {
+            PackingType::Greedy(indices) => indices[offset] as usize,
+            PackingType::Lazy(array) => array.get(offset) as usize
+        };
+        
         &self.palette[index]
     }
 }
 
-impl<I> IndexMut<I> for GreedyLayer
-where
-    I: Into<Vec3<u8>>,
-{
-    /// # Panics
-    ///
-    /// This function panics if the given position is out of range.
-    /// In other words, it requires that `x <= 16`, `y <= 16` and `z <= 16`.
-    fn index_mut(&mut self, position: I) -> &mut BlockDef {
-        let position = position.into();
-        assert!(
-            position.x <= 16 && position.y <= 16 && position.z <= 16,
-            "Block position out of sub chunk bounds"
-        );
-
-        let offset = to_offset(position);
-        let index = self.indices[offset] as usize;
-        &mut self.palette[index]
-    }
-}
-
-impl Default for GreedyLayer {
+impl Default for Layer {
     fn default() -> Self {
         Self::empty()
     }
@@ -524,11 +517,6 @@ pub const fn from_offset(offset: usize) -> Vec3<u8> {
     let z = (offset >> 4) as u8 & 0xf;
 
     Vec3::new(x, y, z)
-}
-
-pub enum PackingType {
-    Greedy(Box<[u16; 4096]>),
-    Lazy(PackedArray)
 }
 
 mod private {
@@ -573,7 +561,7 @@ pub struct SubChunk {
     /// Layers the sub chunk consists of.
     ///
     /// See [`SubLayer`] for more info.
-    pub layers: Vec<LayerType>,
+    pub layers: Vec<Layer>,
 }
 
 impl SubChunk {
@@ -588,8 +576,8 @@ impl SubChunk {
         self.index
     }
 
-    pub fn layer(&self) -> &LayerType {
-        &self.layers[0]
+    pub fn layer(&self, index: usize) -> &Layer {
+        &self.layers[index]
     }
 
     /// Deserialize a full sub chunk from the given buffer.
@@ -609,13 +597,8 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            if M::IS_GREEDY {
-                let layer = GreedyLayer::deserialize_from_disk(&mut reader)?;
-                layers.push(LayerType::Greedy(layer));
-            } else {
-                let layer = LazyLayer::deserialize_from_disk(&mut reader)?;
-                layers.push(LayerType::Lazy(layer));
-            }
+            let layer = Layer::deserialize_from_disk::<M, _>(&mut reader)?;
+            layers.push(layer);
         }
 
         Ok(Self {
@@ -635,51 +618,9 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            match layer {
-                LayerType::Greedy(layer) => layer.serialize_to_disk(&mut writer)?,
-                LayerType::Lazy(layer) => layer.serialize_to_disk(&mut writer)?,
-            }
+            layer.serialize_to_disk(&mut writer)?;
         }
 
         Ok(())
-    }
-}
-
-/// Iterator over blocks in a layer.
-pub struct GreedyIter<'l> {
-    /// Indices in the sub chunk.
-    /// While iterating, this is slowly consumed by `std::slice::split_at`.
-    indices: std::slice::Iter<'l, u16>,
-    /// All possible block states in the current chunk.
-    palette: &'l [BlockDef],
-}
-
-impl<'l> From<&'l GreedyLayer> for GreedyIter<'l> {
-    fn from(layer: &'l GreedyLayer) -> Self {
-        Self {
-            indices: layer.indices.iter(),
-            palette: &layer.palette,
-        }
-    }
-}
-
-impl<'a> Iterator for GreedyIter<'a> {
-    type Item = &'a BlockDef;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.indices.next()?;
-        self.palette.get(*index as usize)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.len()))
-    }
-}
-
-impl FusedIterator for GreedyIter<'_> {}
-
-impl ExactSizeIterator for GreedyIter<'_> {
-    fn len(&self) -> usize {
-        self.indices.len()
     }
 }

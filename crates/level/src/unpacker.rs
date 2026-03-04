@@ -3,16 +3,16 @@ use std::io::{Read, Write};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 
-use crate::{error::{Error, Result}, subchunk::GreedyLayer};
+use crate::{error::{Error, Result}, subchunk::Layer};
 
-impl GreedyLayer {
-    pub(crate) fn pack_array<W>(&self, mut writer: W, is_network: bool) -> Result<()> where W: Write {
+impl Layer {
+    pub(crate) fn pack_array<W>(mut writer: W, array: &[u16; 4096], max_index: usize, is_network: bool) -> Result<()> where W: Write {
         // Determine the required bits per index
         let index_size = {
             let mut bits_per_block = 0;
             // Loop over allowed values.
             for b in [1, 2, 3, 4, 5, 6, 8, 16] {
-                if 2usize.pow(b) >= self.palette.len() - 1 {
+                if 2usize.pow(b) >= max_index {
                     bits_per_block = b;
                     break;
                 }
@@ -34,7 +34,7 @@ impl GreedyLayer {
                     break;
                 }
 
-                let index = self.indices[offset] as u32;
+                let index = array[offset] as u32;
                 word |= index << (w * index_size as u32);
 
                 offset += 1;
