@@ -3,7 +3,7 @@ use std::fs::File;
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
-    subchunk::{Greedy, Lazy, SubChunk},
+    subchunk::{Greedy, Lazy, SubChunk}, traits::DatabaseAccess,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use flate2::read::GzDecoder;

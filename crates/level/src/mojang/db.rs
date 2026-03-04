@@ -6,11 +6,10 @@ use std::{
 
 use crate::{
     error::{Error, Result},
-    iter::Keys,
+    iter::Keys, traits::DatabaseAccess,
 };
 use crate::{
-    ffi::{self, FfiStatus},
-    key::Key,
+    ffi::{self, FfiStatus}
 };
 
 /// Smart pointer around a LevelDB buffer, ensuring the buffer is deallocated after use.
@@ -72,9 +71,23 @@ pub struct Database {
 }
 
 impl Database {
+    /// Yields the FFI database pointer.
+    pub(crate) fn as_ptr(&self) -> *mut c_void {
+        self.ptr.as_ptr()
+    }
+
+    /// Creates an iterator over all the keys in this database.
+    pub fn iter(&self) -> Keys<'_> {
+        Keys::new(self)
+    }
+}
+
+impl DatabaseAccess for Database {
+    type Buffer<'a> = Buffer<'a>;
+
     /// Opens a LevelDB database at the specified `path`. This `path` should point to the `db` directory
     /// of a world, not the world itself.
-    pub fn open<P: AsRef<str>>(path: P) -> Result<Self> {
+    fn open<P: AsRef<str>>(path: P) -> Result<Self> {
         let ffi_path = CString::new(path.as_ref())?;
 
         // Safety: This is safe to call since `ffi_path` is a valid nul-terminated string.
@@ -94,18 +107,8 @@ impl Database {
         }
     }
 
-    /// Yields the FFI database pointer.
-    pub(crate) fn as_ptr(&self) -> *mut c_void {
-        self.ptr.as_ptr()
-    }
-
-    /// Creates an iterator over all the keys in this database.
-    pub fn iter(&self) -> Keys<'_> {
-        Keys::new(self)
-    }
-
     /// Attempts to retrieve the given key from the database.
-    pub fn get<K>(&self, key: K) -> Result<Option<Buffer<'_>>>
+    fn get<K>(&self, key: K) -> Result<Option<Buffer<'_>>>
     where
         K: AsRef<[u8]>,
     {
@@ -143,7 +146,7 @@ impl Database {
     }
 
     /// Inserts a key-value pair into the database.
-    pub fn insert<K, V>(&self, key: K, value: V) -> Result<()>
+    fn insert<K, V>(&self, key: K, value: V) -> Result<()>
     where
         K: AsRef<[u8]>,
         V: AsRef<[u8]>,
@@ -170,7 +173,7 @@ impl Database {
     }
 
     /// Removes a key from the database.
-    pub fn remove<K>(&self, key: K) -> Result<()>
+    fn remove<K>(&self, key: K) -> Result<()>
     where
         K: AsRef<[u8]>,
     {
