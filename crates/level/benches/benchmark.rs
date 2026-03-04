@@ -1,7 +1,11 @@
 use std::fs::File;
 
-use bedrockrs_level::{db::Database, key::{Key, KeyVariant}, subchunk::{Greedy, Lazy, SubChunk}};
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use bedrockrs_level::{
+    db::Database,
+    key::{Key, KeyVariant},
+    subchunk::{Greedy, Lazy, SubChunk},
+};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use flate2::read::GzDecoder;
 use tar::Archive;
 use vek::Vec3;
@@ -51,16 +55,19 @@ fn benchmark(c: &mut Criterion) {
     let mut keys = database.iter();
 
     // Find some usable subchunks.
-    let chunks = keys.filter_map(|kv| {
-        let key = Key::deserialize(kv.key()).ok()?;
-        let data = Vec::from(kv.value());
+    let chunks = keys
+        .filter_map(|kv| {
+            let key = Key::deserialize(kv.key()).ok()?;
+            let data = Vec::from(kv.value());
 
-        if let KeyVariant::SubChunk { index } = key.data {
-            Some((Vec3::new(key.chunk.x, index as i32, key.chunk.y), data))
-        } else {
-            None
-        }
-    }).take(1).collect::<Vec<_>>();
+            if let KeyVariant::SubChunk { index } = key.data {
+                Some((Vec3::new(key.chunk.x, index as i32, key.chunk.y), data))
+            } else {
+                None
+            }
+        })
+        .take(1)
+        .collect::<Vec<_>>();
 
     let mut group1 = c.benchmark_group("deserialize_benches");
     for (key, chunk) in &chunks {
@@ -68,22 +75,18 @@ fn benchmark(c: &mut Criterion) {
         group1.bench_with_input(
             BenchmarkId::from_parameter(format!("lazy {key}")),
             chunk,
-            |b, chunk| {
-                b.iter(|| lazy_load_benchmark(chunk))
-            }
+            |b, chunk| b.iter(|| lazy_load_benchmark(chunk)),
         );
         group1.bench_with_input(
-            BenchmarkId::from_parameter(format!("greedy {key}")), 
-        chunk,
-        |b, chunk| {
-                b.iter(|| greedy_load_benchmark(chunk))
-            }
+            BenchmarkId::from_parameter(format!("greedy {key}")),
+            chunk,
+            |b, chunk| b.iter(|| greedy_load_benchmark(chunk)),
         );
     }
     group1.finish();
 
     let mut group2 = c.benchmark_group("iter_benches");
-    for (key, chunk) in &chunks {    
+    for (key, chunk) in &chunks {
         let slice = chunk.as_slice();
         let greedy_chunk = SubChunk::deserialize_from_disk::<Greedy, _>(slice).unwrap();
 
@@ -91,18 +94,14 @@ fn benchmark(c: &mut Criterion) {
 
         group2.throughput(criterion::Throughput::Elements(4096));
         group2.bench_with_input(
-            BenchmarkId::from_parameter(format!("greedy {key}")), 
-        &greedy_chunk,
-        |b, chunk| {
-                b.iter(|| greedy_iter_benchmark(chunk))
-            }
+            BenchmarkId::from_parameter(format!("greedy {key}")),
+            &greedy_chunk,
+            |b, chunk| b.iter(|| greedy_iter_benchmark(chunk)),
         );
         group2.bench_with_input(
             BenchmarkId::from_parameter(format!("lazy {key}")),
             &lazy_chunk,
-            |b, chunk| {
-                b.iter(|| lazy_iter_benchmark(chunk))
-            }
+            |b, chunk| b.iter(|| lazy_iter_benchmark(chunk)),
         );
     }
     group2.finish();

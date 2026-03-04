@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::iter::FusedIterator;
-use std::ops::{Index};
+use std::ops::Index;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
@@ -98,7 +98,7 @@ impl BlockDef {
 pub struct PackedArray {
     /// Stabilisation of `generic_const_expr` would allow us to put this on the stack.
     bits: u32,
-    words: Vec<u32>
+    words: Vec<u32>,
 }
 
 impl PackedArray {
@@ -111,38 +111,44 @@ impl PackedArray {
     pub const fn words(&self) -> usize {
         let per_word = 32 / self.bits;
         4096 / per_word as usize
-    } 
+    }
 
     pub fn iter(&self) -> PackedArrayIter<'_> {
         PackedArrayIter::from(self)
     }
 
     /// Returns the value at `index`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if the index is greater than or equal to 4096.
     pub fn get(&self, index: usize) -> u16 {
-        assert!(index < 4096, "packed array index out of bounds, got 4096 < {index}");
+        assert!(
+            index < 4096,
+            "packed array index out of bounds, got 4096 < {index}"
+        );
 
         let blocks_per_word = u32::BITS / self.bits;
-        let mask= !(!0u32 << self.bits);
+        let mask = !(!0u32 << self.bits);
 
         let word_index = index as u32 % blocks_per_word;
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
-        
+
         ((word >> self.bits * word_index) & mask) as u16
-    }   
+    }
 
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
     /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if the index is greater than or equal to 4096.
     pub fn set(&mut self, index: usize, value: u16) {
-        assert!(index < 4096, "packed array index out of bounds, got 4096 < {index}");
+        assert!(
+            index < 4096,
+            "packed array index out of bounds, got 4096 < {index}"
+        );
 
         let blocks_per_word = u32::BITS / self.bits;
         let base_mask = !(!0u32 << self.bits);
@@ -150,23 +156,23 @@ impl PackedArray {
         let word_index = index as u32 % blocks_per_word;
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
-        
+
         let mask = base_mask << self.bits * word_index;
-        
+
         // Zero all bits in the location
         let zeroed = word & !mask;
         // Clamp value to correct amount of bits
         let clamped = value as u32 & base_mask;
         // Then set the zeroed bits to the clamped value
         let set = zeroed | (clamped << self.bits * word_index);
-        
+
         self.words[array_index as usize] = set;
     }
 }
 
 pub struct PackedArrayIter<'a> {
     index: usize,
-    array: &'a PackedArray
+    array: &'a PackedArray,
 }
 
 impl<'a> Iterator for PackedArrayIter<'a> {
@@ -174,7 +180,7 @@ impl<'a> Iterator for PackedArrayIter<'a> {
 
     fn next(&mut self) -> Option<u16> {
         let item = if self.index >= 4096 {
-            return None
+            return None;
         } else {
             Some(self.array.get(self.index))
         };
@@ -199,10 +205,7 @@ impl<'a> ExactSizeIterator for PackedArrayIter<'a> {
 
 impl<'a> From<&'a PackedArray> for PackedArrayIter<'a> {
     fn from(array: &'a PackedArray) -> Self {
-        PackedArrayIter {
-            index: 0,
-            array
-        }
+        PackedArrayIter { index: 0, array }
     }
 }
 
@@ -218,17 +221,17 @@ impl<'a> IntoIterator for &'a PackedArray {
 #[derive(Debug, Clone, PartialEq)]
 enum PackingType {
     Greedy(Box<[u16; 4096]>),
-    Lazy(PackedArray)
+    Lazy(PackedArray),
 }
 
 enum LayerIterInner<'l> {
     Lazy(PackedArrayIter<'l>),
-    Greedy(std::slice::Iter<'l, u16>)
+    Greedy(std::slice::Iter<'l, u16>),
 }
 
 pub struct LayerIter<'l> {
     inner: LayerIterInner<'l>,
-    palette: &'l [BlockDef]
+    palette: &'l [BlockDef],
 }
 
 impl<'l> Iterator for LayerIter<'l> {
@@ -237,7 +240,7 @@ impl<'l> Iterator for LayerIter<'l> {
     fn next(&mut self) -> Option<&'l BlockDef> {
         let index = match &mut self.inner {
             LayerIterInner::Greedy(iter) => iter.next().copied(),
-            LayerIterInner::Lazy(iter) => iter.next()
+            LayerIterInner::Lazy(iter) => iter.next(),
         }? as usize;
 
         Some(&self.palette[index])
@@ -255,7 +258,7 @@ impl<'l> ExactSizeIterator for LayerIter<'l> {
     fn len(&self) -> usize {
         match &self.inner {
             LayerIterInner::Greedy(iter) => iter.len(),
-            LayerIterInner::Lazy(iter) => iter.len()
+            LayerIterInner::Lazy(iter) => iter.len(),
         }
     }
 }
@@ -264,18 +267,18 @@ impl<'l> From<&'l Layer> for LayerIter<'l> {
     fn from(layer: &'l Layer) -> LayerIter<'l> {
         let inner = match &layer.indices {
             PackingType::Greedy(greedy) => LayerIterInner::Greedy(greedy.iter()),
-            PackingType::Lazy(array) => LayerIterInner::Lazy(array.iter())
+            PackingType::Lazy(array) => LayerIterInner::Lazy(array.iter()),
         };
 
         LayerIter {
             palette: &layer.palette,
-            inner
+            inner,
         }
     }
 }
 
-/// A layer in a sub chunk. 
-/// 
+/// A layer in a sub chunk.
+///
 /// Unlike [`LazyLayer`] this layer immediately unpacks the entire chunk allowing for much faster iteration at
 /// a much higher memory cost.
 ///
@@ -302,23 +305,29 @@ pub struct Layer {
 }
 
 impl Layer {
-    fn get<K>(&self, block: K) -> Option<&BlockDef> where K: Into<Vec3<u8>> {
+    fn get<K>(&self, block: K) -> Option<&BlockDef>
+    where
+        K: Into<Vec3<u8>>,
+    {
         let pos = block.into();
 
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-            return None
+            return None;
         }
 
         let offset = to_offset(pos);
         let index = match &self.indices {
             PackingType::Greedy(slice) => slice[offset],
-            PackingType::Lazy(array) => array.get(offset)
+            PackingType::Lazy(array) => array.get(offset),
         };
 
         Some(&self.palette[index as usize])
     }
 
-    fn set<K>(&self, block: K, value: BlockDef) where K: Into<Vec3<u8>> {
+    fn set<K>(&self, block: K, value: BlockDef)
+    where
+        K: Into<Vec3<u8>>,
+    {
         todo!()
     }
 
@@ -418,7 +427,7 @@ impl Layer {
         match &self.indices {
             PackingType::Greedy(array) => {
                 Self::pack_array(&mut writer, array, self.palette.len() - 1, false)?
-            },
+            }
             PackingType::Lazy(array) => {
                 writer.write_u8((array.bits << 1) as u8)?;
 
@@ -486,9 +495,9 @@ where
         let offset = to_offset(position);
         let index = match &self.indices {
             PackingType::Greedy(indices) => indices[offset] as usize,
-            PackingType::Lazy(array) => array.get(offset) as usize
+            PackingType::Lazy(array) => array.get(offset) as usize,
         };
-        
+
         &self.palette[index]
     }
 }

@@ -3,10 +3,21 @@ use std::io::{Read, Write};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 
-use crate::{error::{Error, Result}, subchunk::Layer};
+use crate::{
+    error::{Error, Result},
+    subchunk::Layer,
+};
 
 impl Layer {
-    pub(crate) fn pack_array<W>(mut writer: W, array: &[u16; 4096], max_index: usize, is_network: bool) -> Result<()> where W: Write {
+    pub(crate) fn pack_array<W>(
+        mut writer: W,
+        array: &[u16; 4096],
+        max_index: usize,
+        is_network: bool,
+    ) -> Result<()>
+    where
+        W: Write,
+    {
         // Determine the required bits per index
         let index_size = {
             let mut bits_per_block = 0;
@@ -46,7 +57,10 @@ impl Layer {
         Ok(())
     }
 
-    pub(crate) fn unpack_array<R>(mut reader: R) -> Result<PackedResult> where R: Read {
+    pub(crate) fn unpack_array<R>(mut reader: R) -> Result<PackedResult>
+    where
+        R: Read,
+    {
         let index_size = reader.read_u8()? >> 1;
         if index_size == 0 {
             return Ok(PackedResult::Empty);

@@ -1,7 +1,7 @@
 pub mod error;
 pub mod key;
-pub mod unpacker;
 pub mod subchunk;
+pub mod unpacker;
 
 #[cfg(feature = "mojang-leveldb")]
 pub mod mojang;
