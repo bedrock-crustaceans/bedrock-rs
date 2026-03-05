@@ -48,21 +48,21 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let expanded = quote! {
         impl #impl_generics ::bedrockrs_proto_core::ProtoCodec for #name #ty_generics #where_clause {
-            fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
+            fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
                 ::log::trace!("ProtoSerialize: {}", stringify!(#name));
                 #ser
                 Ok(())
             }
 
-            fn proto_deserialize(stream: &mut ::std::io::Cursor<&[u8]>) -> Result<Self, ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
+            fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
                 ::log::trace!("ProtoDeserialize: {}", stringify!(#name));
                 #de
                 Ok(val)
             }
 
-            fn get_size_prediction(&self) -> usize {
+            fn size_hint(&self) -> usize {
                 1
             }
         }
@@ -231,7 +231,7 @@ pub fn gamepackets(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let size_prediction = args.packets.clone();
     let size_prediction = size_prediction.iter().map(|(name, value)| {
         if let Some(v) = value {
-            quote! { GamePackets::#name(pk) => <#v as ::bedrockrs_proto_core::GamePacket>::get_size_prediction(pk), }
+            quote! { GamePackets::#name(pk) => <#v as ::bedrockrs_proto_core::GamePacket>::size_hint(pk), }
         } else {
             quote! { GamePackets::#name() => { todo!("impl GamePackets::{}", stringify!(name)); }, }
         }
@@ -244,7 +244,7 @@ pub fn gamepackets(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 GamePackets::#name(pk) => {
                     let mut buf = Vec::new();
 
-                    match <#v as bedrockrs_proto_core::ProtoCodec>::proto_serialize(pk, &mut buf) {
+                    match <#v as bedrockrs_proto_core::ProtoCodec>::serialize(pk, &mut buf) {
                         Ok(_) => {},
                         Err(err) => return Err(err),
                     };
@@ -277,7 +277,7 @@ pub fn gamepackets(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         if let Some(v) = value {
             quote! {
                 <#v as ::bedrockrs_proto_core::GamePacket>::ID => {
-                    match <#v as ::bedrockrs_proto_core::ProtoCodec>::proto_deserialize(stream) {
+                    match <#v as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream) {
                         Ok(pk) => GamePackets::#name(pk),
                         Err(e) => return Err(e),
                     }
@@ -344,7 +344,7 @@ pub fn gamepackets(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
 
             #[inline]
-            fn get_size_prediction(&self) -> usize {
+            fn size_hint(&self) -> usize {
                 let len = match self {
                     #(#size_prediction)*
                 };

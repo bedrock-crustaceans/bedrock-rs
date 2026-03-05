@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
 use crate::ProtoCodec;
@@ -8,28 +6,28 @@ use vek::{Vec2, Vec3};
 macro_rules! impl_proto_vec2 {
     ($name:ident) => {
         impl<T: $name> $name for Vec2<T> {
-            fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError>
+            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
             where
                 Self: Sized,
             {
-                T::proto_serialize(&self.x, stream)?;
-                T::proto_serialize(&self.y, stream)?;
+                T::serialize(&self.x, stream)?;
+                T::serialize(&self.y, stream)?;
 
                 Ok(())
             }
 
-            fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError>
+            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
             where
                 Self: Sized,
             {
                 Ok(Self {
-                    x: T::proto_deserialize(stream)?,
-                    y: T::proto_deserialize(stream)?,
+                    x: T::deserialize(stream)?,
+                    y: T::deserialize(stream)?,
                 })
             }
 
-            fn get_size_prediction(&self) -> usize {
-                self.x.get_size_prediction() * 2
+            fn size_hint(&self) -> usize {
+                self.x.size_hint() * 2
             }
         }
     };
@@ -38,30 +36,30 @@ macro_rules! impl_proto_vec2 {
 macro_rules! impl_proto_vec3 {
     ($name:ident) => {
         impl<T: $name> $name for Vec3<T> {
-            fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError>
+            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
             where
                 Self: Sized,
             {
-                T::proto_serialize(&self.x, stream)?;
-                T::proto_serialize(&self.y, stream)?;
-                T::proto_serialize(&self.z, stream)?;
+                T::serialize(&self.x, stream)?;
+                T::serialize(&self.y, stream)?;
+                T::serialize(&self.z, stream)?;
 
                 Ok(())
             }
 
-            fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError>
+            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
             where
                 Self: Sized,
             {
                 Ok(Self {
-                    x: T::proto_deserialize(stream)?,
-                    y: T::proto_deserialize(stream)?,
-                    z: T::proto_deserialize(stream)?,
+                    x: T::deserialize(stream)?,
+                    y: T::deserialize(stream)?,
+                    z: T::deserialize(stream)?,
                 })
             }
 
-            fn get_size_prediction(&self) -> usize {
-                self.x.get_size_prediction() * 3
+            fn size_hint(&self) -> usize {
+                self.x.size_hint() * 3
             }
         }
     };

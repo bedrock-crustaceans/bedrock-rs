@@ -1,6 +1,6 @@
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 #[derive(Clone, Debug)]
 pub struct Color {
@@ -11,8 +11,8 @@ pub struct Color {
 }
 
 impl ProtoCodec for Color {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        <i32 as ProtoCodecLE>::proto_serialize(
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        <i32 as ProtoCodecLE>::serialize(
             &((self.a as i32)
                 | ((self.r as i32) << 8)
                 | ((self.g as i32) << 16)
@@ -22,8 +22,8 @@ impl ProtoCodec for Color {
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let v = <i32 as ProtoCodecLE>::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let v = <i32 as ProtoCodecLE>::deserialize(stream)?;
         Ok(Color {
             a: v as i8,
             r: (v >> 8) as i8,
@@ -32,7 +32,7 @@ impl ProtoCodec for Color {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<i32>()
     }
 }

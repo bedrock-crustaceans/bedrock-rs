@@ -256,17 +256,17 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
     let proto_version_packets = all_packets
         .iter()
-        .map(|p| quote!(type #p: bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
         .collect::<Vec<_>>();
 
     let proto_version_types = all_types
         .iter()
-        .map(|p| quote!(type #p: bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
         .collect::<Vec<_>>();
 
     let proto_version_enums = all_enums
         .iter()
-        .map(|p| quote!(type #p: bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
         .collect::<Vec<_>>();
 
     let proto_version = quote! {
@@ -305,6 +305,12 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             return e.into_compile_error().into();
         }
 
+        let version = entry.version;
+        let branch = entry.branch.clone();
+        let game_version = entry.game_version.clone();
+
+        let struct_ident = Ident::new(format!("V{}", version).as_str(), Span::call_site());
+
         let proto_version_packets_impl = all_packets
             .iter()
             .map(|k| {
@@ -338,28 +344,141 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             })
             .collect::<Vec<_>>();
 
-        let version = entry.version;
-        let branch = entry.branch.clone();
-        let game_version = entry.game_version.clone();
+        let packet_variants = cumulative_packets.iter().map(|(k, _)| {
+            quote! { #k(<Self as ProtoVersionPackets>::#k), }
+        }).collect::<Vec<_>>();
 
-        let struct_ident = Ident::new(format!("V{}", version).as_str(), Span::call_site());
+        let packet_id = cumulative_packets.iter().map(|(name, _)| {
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ID; }, }
+        });
+
+        let packet_compress = cumulative_packets.iter().map(|(name, _)| {
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::COMPRESS; }, }
+        });
+
+        let packet_encrypt = cumulative_packets.iter().map(|(name, _)| {
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ENCRYPT; }, }
+        });
+
+        let packet_size_prediction = cumulative_packets.iter().map(|(name, _)| {
+            quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::size_hint(pk), }
+        });
+
+        let packet_ser = cumulative_packets.iter().map(|(name, _)| {
+            quote! {
+                #struct_ident::#name(pk) => {
+                    let mut buf = Vec::new();
+
+                    match <<#struct_ident as ProtoVersionPackets>::#name as bedrockrs_proto_core::ProtoCodec>::serialize(pk, &mut buf) {
+                        Ok(_) => {},
+                        Err(err) => return Err(err),
+                    };
+
+                    let len: u32 = match buf.len().try_into() {
+                        Ok(len) => len,
+                        Err(err) => return Err(::bedrockrs_proto_core::error::ProtoCodecError::FromIntError(err)),
+                    };
+
+                    match write_gamepacket_header(stream, len, <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ID, subclient_sender_id, subclient_target_id) {
+                        Ok(_) => {},
+                        Err(err) => return Err(err),
+                    };
+
+                    match stream.write_all(buf.as_slice()) {
+                        Ok(_) => {},
+                        Err(err) => return Err(::bedrockrs_proto_core::error::ProtoCodecError::IOError(err)),
+                    };
+                },
+            }
+        });
+
+        let packet_de = cumulative_packets.iter().map(|(name, _)| {
+            quote! {
+                <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ID => {
+                    match <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream) {
+                        Ok(pk) => #struct_ident::#name(pk),
+                        Err(e) => return Err(e),
+                    }
+                },
+            }
+        });
 
         versions_stream.extend(quote! {
             #[derive(Clone, std::fmt::Debug)]
-            pub struct #struct_ident;
-
+            pub enum #struct_ident {
+                #(#packet_variants)*
+            }
+            
+            impl ::bedrockrs_proto_core::GamePacketsAll for #struct_ident {
+                #[inline]
+                fn id(&self) -> u16 {
+                    match self {
+                        #(#packet_id)*
+                    };
+                }
+                
+                #[inline]
+                fn compress(&self) -> bool {
+                    match self {
+                        #(#packet_compress)*
+                    };
+                }
+    
+                #[inline]
+                fn encrypt(&self) -> bool {
+                    match self {
+                        #(#packet_encrypt)*
+                    };
+                }
+    
+                #[inline]
+                fn pk_serialize(&self, stream: &mut Vec<u8>, subclient_sender_id: SubClientID, subclient_target_id: SubClientID) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                    match self {
+                        #(#packet_ser)*
+                    };
+    
+                    Ok(())
+                }
+    
+                #[inline]
+                fn pk_deserialize(stream: &mut Cursor<&[u8]>) -> Result<(#struct_ident, SubClientID, SubClientID), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                    let (_length, gamepacket_id, subclient_sender_id, subclient_target_id) = match read_gamepacket_header(stream) {
+                        Ok(val) => val,
+                        Err(err) => return Err(err),
+                    };
+    
+                    let gamepacket = match gamepacket_id {
+                        #(#packet_de)*
+                        other => {
+                            return Err(::bedrockrs_proto_core::error::ProtoCodecError::InvalidGamePacketID(other));
+                        },
+                    };
+    
+                    Ok((gamepacket, subclient_sender_id, subclient_target_id))
+                }
+    
+                #[inline]
+                fn size_hint(&self) -> usize {
+                    let len = match self {
+                        #(#packet_size_prediction)*
+                    };
+    
+                    len + get_gamepacket_header_size_prediction()
+                }
+            }
+            
             impl ProtoVersionPackets for #struct_ident {
                 #(#proto_version_packets_impl)*
             }
-
+            
             impl ProtoVersionTypes for #struct_ident {
                 #(#proto_version_types_impl)*
             }
-
+            
             impl ProtoVersionEnums for #struct_ident {
                 #(#proto_version_enums_impl)*
             }
-
+            
             impl ProtoVersion for #struct_ident {
                 const PROTOCOL_VERSION: u32 = #version;
                 const PROTOCOL_BRANCH: &str = #branch;

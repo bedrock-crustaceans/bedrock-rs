@@ -2,46 +2,49 @@ use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
 use crate::ProtoCodec;
 use seq_macro::seq;
-use std::io::Cursor;
 
 macro_rules! impl_proto_tuple {
     ($name:ident, 0) => {
         impl $name for () {
-            fn proto_serialize(&self, _stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+            fn serialize<W: Write>(&self, _stream: &mut W) -> Result<(), ProtoCodecError> {
                 Ok(())
             }
 
-            fn proto_deserialize(_stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+            fn deserialize<R: Read>(_stream: &mut R) -> Result<Self, ProtoCodecError> {
                 Ok(())
             }
 
-            fn get_size_prediction(&self) -> usize {
+            fn size_hint(&self) -> usize {
                 0
             }
         }
     };
     ($name:ident, $size:literal) => {
         impl<T: $name> $name for seq!(N in 0..$size { ( #(T, )* ) }) {
-            fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
                 seq!(N in 0..$size {
-                    self.N.proto_serialize(stream)?;
+                    self.N.serialize(stream)?;
                 });
 
                 Ok(())
             }
 
-            fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
                 seq!(N in 0..$size {
                     let tuple = (
-                        #( T::proto_deserialize(stream)?, )*
+                        #( T::deserialize(stream)?, )*
                     );
                 });
 
                 Ok(tuple)
             }
 
-            fn get_size_prediction(&self) -> usize {
-                self.0.get_size_prediction() * $size
+            fn size_hint(&self) -> usize {
+                let mut size: usize = 0;
+                seq!(N in 0..$size {
+                    size += self.N.size_hint();
+                })
+                size
             }
         }
     };

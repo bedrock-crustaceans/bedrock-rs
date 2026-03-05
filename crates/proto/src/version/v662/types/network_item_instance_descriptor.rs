@@ -1,6 +1,6 @@
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 #[derive(Clone, Debug)]
 pub struct NetworkItemInstanceDescriptor {
@@ -12,32 +12,32 @@ pub struct NetworkItemInstanceDescriptor {
 }
 
 impl ProtoCodec for NetworkItemInstanceDescriptor {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        ProtoCodecVAR::proto_serialize(&self.id, stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        ProtoCodecVAR::serialize(&self.id, stream)?;
 
         match &self.id {
             0 => {}
             _ => {
-                ProtoCodecLE::proto_serialize(self.stack_size.as_ref().unwrap(), stream)?;
-                ProtoCodecVAR::proto_serialize(self.aux_value.as_ref().unwrap(), stream)?;
-                ProtoCodecVAR::proto_serialize(self.block_runtime_id.as_ref().unwrap(), stream)?;
-                ProtoCodec::proto_serialize(self.user_data_buffer.as_ref().unwrap(), stream)?;
+                ProtoCodecLE::serialize(self.stack_size.as_ref().unwrap(), stream)?;
+                ProtoCodecVAR::serialize(self.aux_value.as_ref().unwrap(), stream)?;
+                ProtoCodecVAR::serialize(self.block_runtime_id.as_ref().unwrap(), stream)?;
+                ProtoCodec::serialize(self.user_data_buffer.as_ref().unwrap(), stream)?;
             }
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let id = ProtoCodecVAR::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let id = ProtoCodecVAR::deserialize(stream)?;
 
         let (stack_size, aux_value, block_runtime_id, user_data_buffer) = match &id {
             0 => (None, None, None, None),
             _ => {
-                let stack_size = ProtoCodecLE::proto_deserialize(stream)?;
-                let aux_value = ProtoCodecVAR::proto_deserialize(stream)?;
-                let block_runtime_id = ProtoCodecVAR::proto_deserialize(stream)?;
-                let user_data_buffer = ProtoCodec::proto_deserialize(stream)?;
+                let stack_size = ProtoCodecLE::deserialize(stream)?;
+                let aux_value = ProtoCodecVAR::deserialize(stream)?;
+                let block_runtime_id = ProtoCodecVAR::deserialize(stream)?;
+                let user_data_buffer = ProtoCodec::deserialize(stream)?;
 
                 (
                     Some(stack_size),
@@ -57,17 +57,15 @@ impl ProtoCodec for NetworkItemInstanceDescriptor {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        ProtoCodecVAR::get_size_prediction(&self.id)
+    fn size_hint(&self) -> usize {
+        ProtoCodecVAR::size_hint(&self.id)
             + match self.id {
                 0 => 0,
                 _ => {
-                    ProtoCodecLE::get_size_prediction(self.stack_size.as_ref().unwrap())
-                        + ProtoCodecVAR::get_size_prediction(self.aux_value.as_ref().unwrap())
-                        + ProtoCodecVAR::get_size_prediction(
-                            self.block_runtime_id.as_ref().unwrap(),
-                        )
-                        + ProtoCodec::get_size_prediction(self.user_data_buffer.as_ref().unwrap())
+                    ProtoCodecLE::size_hint(self.stack_size.as_ref().unwrap())
+                        + ProtoCodecVAR::size_hint(self.aux_value.as_ref().unwrap())
+                        + ProtoCodecVAR::size_hint(self.block_runtime_id.as_ref().unwrap())
+                        + ProtoCodec::size_hint(self.user_data_buffer.as_ref().unwrap())
                 }
             }
     }
