@@ -1,3 +1,4 @@
+pub mod biome;
 pub mod error;
 pub mod key;
 pub mod subchunk;

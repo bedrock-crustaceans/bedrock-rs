@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
 use crate::error::{Error, Result};
-use crate::unpacker::PackedResult;
+use crate::unpacker::{ArrayType, PackedArray, PackedArrayIter, PackedResult};
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -92,153 +92,6 @@ impl BlockDef {
         }
 
         hasher.finish()
-    }
-}
-
-/// An array that is still packed. Words are unpacked as needed.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PackedArray {
-    /// The amount of bits per block.
-    bits: u32,
-    /// The words containing block indices.
-    words: Vec<u32>,
-}
-
-impl PackedArray {
-    /// Creates a new array from the given words.
-    pub const fn new(bits: u32, words: Vec<u32>) -> Self {
-        Self { bits, words }
-    }
-
-    /// Returns the amount of words that are in this array.
-    pub const fn words(&self) -> usize {
-        let per_word = 32 / self.bits;
-        4096 / per_word as usize
-    }
-
-    /// Creates an iterator over this array.
-    pub fn iter(&self) -> PackedArrayIter<'_> {
-        PackedArrayIter::from(self)
-    }
-
-    /// Returns the value at `index`.
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the index is greater than or equal to 4096.
-    pub fn get(&self, index: usize) -> Option<u16> {
-        if index >= 4096 {
-            return None
-        }
-
-        let blocks_per_word = u32::BITS / self.bits;
-        let mask = !(!0u32 << self.bits);
-
-        let word_index = index as u32 % blocks_per_word;
-        let array_index = index as u32 / blocks_per_word;
-        let word = self.words[array_index as usize];
-
-        Some(((word >> self.bits * word_index) & mask) as u16)
-    }
-
-    /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
-    /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the index is greater than or equal to 4096.
-    pub fn set(&mut self, index: usize, value: u16) {
-        assert!(
-            index < 4096,
-            "packed array index out of bounds, got 4096 < {index}"
-        );
-
-        let blocks_per_word = u32::BITS / self.bits;
-        let base_mask = !(!0u32 << self.bits);
-
-        let word_index = index as u32 % blocks_per_word;
-        let array_index = index as u32 / blocks_per_word;
-        let word = self.words[array_index as usize];
-
-        let mask = base_mask << self.bits * word_index;
-
-        // Zero all bits in the location
-        let zeroed = word & !mask;
-        // Clamp value to correct amount of bits
-        let clamped = value as u32 & base_mask;
-        // Then set the zeroed bits to the clamped value
-        let set = zeroed | (clamped << self.bits * word_index);
-
-        self.words[array_index as usize] = set;
-    }
-}
-
-/// An iterator over [`PackedArray`].
-pub struct PackedArrayIter<'a> {
-    /// The current index in the array.
-    index: usize,
-    /// The array to iterate over.
-    array: &'a PackedArray,
-}
-
-impl<'a> Iterator for PackedArrayIter<'a> {
-    type Item = u16;
-
-    fn next(&mut self) -> Option<u16> {
-        let item = self.array.get(self.index);
-        self.index += 1;
-        item
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.len();
-        (len, Some(len))
-    }
-}
-
-impl<'a> FusedIterator for PackedArrayIter<'a> {}
-
-impl<'a> ExactSizeIterator for PackedArrayIter<'a> {
-    fn len(&self) -> usize {
-        4096 - self.index
-    }
-}
-
-impl<'a> From<&'a PackedArray> for PackedArrayIter<'a> {
-    fn from(array: &'a PackedArray) -> Self {
-        PackedArrayIter { index: 0, array }
-    }
-}
-
-impl<'a> IntoIterator for &'a PackedArray {
-    type IntoIter = PackedArrayIter<'a>;
-    type Item = u16;
-
-    fn into_iter(self) -> Self::IntoIter {
-        PackedArrayIter::from(self)
-    }
-}
-
-/// The type of array used in the subchunk.
-#[derive(Debug, Clone, PartialEq)]
-enum ArrayType {
-    Greedy(Box<[u16; 4096]>),
-    Lazy(PackedArray),
-}
-
-impl ArrayType {
-    pub fn get(&self, pos: usize) -> Option<u16> {
-        match self {
-            Self::Greedy(array) => array.get(pos).copied(),
-            Self::Lazy(array) => array.get(pos)
-        }
-    }
-
-    pub fn set(&mut self, pos: usize, value: u16) {
-        match self {
-            Self::Greedy(array) => array[pos] = value,
-            Self::Lazy(array) => array.set(pos, value)
-        }
     }
 }
 
@@ -464,9 +317,9 @@ impl Layer {
                 Self::pack_array(&mut writer, array, self.palette.len() - 1, false)?
             }
             ArrayType::Lazy(array) => {
-                writer.write_u8((array.bits << 1) as u8)?;
+                writer.write_u8((array.bits() << 1) as u8)?;
 
-                let cast = bytemuck::cast_slice::<u32, u8>(&array.words);
+                let cast = bytemuck::cast_slice::<u32, u8>(array.words());
                 writer.write_all(cast)?;
             }
         };

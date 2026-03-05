@@ -234,7 +234,7 @@ pub struct LevelSettings {
 }
 
 impl LevelSettings {
-    pub fn write<W: Write>(&self, mut writer: W) -> Result<()> {
+    pub fn write<W: Write>(&self, writer: W) -> Result<()> {
         todo!()
     }
 
