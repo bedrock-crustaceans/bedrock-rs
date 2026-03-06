@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 
-#[gamepacket(id = 9)]
+#[packet(id = 9)]
 #[derive(Clone, Debug)]
 pub struct TextPacket<V: ProtoVersion> {
     pub message_type: V::TextPacketType,
@@ -22,7 +22,7 @@ impl<V: ProtoVersion> ProtoCodec for TextPacket<V> {
 
         stream.write_i8(message_type_cursor.read_i8()?)?;
         bool::serialize(&self.localize, stream)?;
-        message_type_cursor.read_to_end(stream)?;
+        stream.write_all(message_type_cursor.into_inner())?;
         String::serialize(&self.sender_xuid, stream)?;
         String::serialize(&self.platform_id, stream)?;
 

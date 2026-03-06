@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 124)]
+#[packet(id = 124)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelEventGenericPacket<V: ProtoVersion> {
     pub event_id: V::LevelEvent,

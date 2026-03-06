@@ -1,4 +1,4 @@
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -19,7 +19,7 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackResponseInfo<V> {
 
         stream.write_i8(result_cursor.read_i8()?)?;
         <i32 as ProtoCodecVAR>::serialize(&self.client_request_id, stream)?;
-        result_cursor.read_to_end(stream)?;
+        stream.write_all(result_cursor.into_inner())?;
 
         Ok(())
     }

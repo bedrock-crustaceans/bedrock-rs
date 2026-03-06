@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 88)]
+#[packet(id = 88)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetTitlePacket {
     pub title_type: TitleType,

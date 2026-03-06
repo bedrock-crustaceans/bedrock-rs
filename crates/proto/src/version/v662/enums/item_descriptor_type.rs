@@ -1,7 +1,7 @@
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
@@ -47,7 +47,7 @@ pub struct ComplexAliasDescriptor {
 impl ProtoCodec for DefaultDescriptor {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         <i16 as ProtoCodecLE>::serialize(&self.item_id, stream)?;
-        if (self.item_id != 0) {
+        if self.item_id != 0 {
             <i16 as ProtoCodecLE>::serialize(&self.aux_value, stream)?;
         }
 

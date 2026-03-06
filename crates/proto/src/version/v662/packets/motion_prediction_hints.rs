@@ -1,8 +1,8 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
-use crate::version::proto_version::ProtoVersion;
 
-#[gamepacket(id = 157)]
+#[packet(id = 157)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MotionPredictionHintsPacket<V: ProtoVersion> {
     pub runtime_id: V::ActorRuntimeID,

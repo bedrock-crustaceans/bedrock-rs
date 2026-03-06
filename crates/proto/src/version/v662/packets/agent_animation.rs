@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 304)]
+#[packet(id = 304)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AgentAnimationPacket<V: ProtoVersion> {
     pub agent_animation: i8,

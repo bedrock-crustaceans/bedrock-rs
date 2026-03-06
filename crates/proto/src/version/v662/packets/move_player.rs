@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 use vek::{Vec2, Vec3};
 
-#[gamepacket(id = 19)]
+#[packet(id = 19)]
 #[derive(Clone, Debug)]
 pub struct MovePlayerPacket<V: ProtoVersion> {
     pub player_runtime_id: V::ActorRuntimeID,
@@ -32,7 +32,7 @@ impl<V: ProtoVersion> ProtoCodec for MovePlayerPacket<V> {
         stream.write_i8(position_mode_cursor.read_i8()?)?;
         <bool as ProtoCodec>::serialize(&self.on_ground, stream)?;
         <V::ActorRuntimeID as ProtoCodec>::serialize(&self.riding_runtime_id, stream)?;
-        position_mode_cursor.read_to_end(stream)?;
+        stream.write_all(position_mode_cursor.into_inner())?;
         <u64 as ProtoCodecVAR>::serialize(&self.tick, stream)?;
 
         Ok(())

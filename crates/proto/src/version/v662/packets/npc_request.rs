@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 98)]
+#[packet(id = 98)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NpcRequestPacket<V: ProtoVersion> {
     pub npc_runtime_id: V::ActorRuntimeID,

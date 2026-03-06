@@ -1,5 +1,5 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 310)]
+#[packet(id = 310)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundCloseFormPacket {}

@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 75)]
+#[packet(id = 75)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ShowCreditsPacket<V: ProtoVersion> {
     pub player_runtime_id: V::ActorRuntimeID,

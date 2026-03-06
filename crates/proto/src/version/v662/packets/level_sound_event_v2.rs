@@ -1,5 +1,5 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -8,7 +8,7 @@ use std::mem::size_of;
 use varint_rs::{VarintReader, VarintWriter};
 use vek::Vec3;
 
-#[gamepacket(id = 120)]
+#[packet(id = 120)]
 #[derive(Clone, Debug)]
 pub struct LevelSoundEventV2Packet<V: ProtoVersion> {
     pub event_id: V::LevelSoundEventType,

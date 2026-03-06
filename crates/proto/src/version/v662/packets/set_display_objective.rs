@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 107)]
+#[packet(id = 107)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetDisplayObjectivePacket<V: ProtoVersion> {
     pub display_slot_name: String,

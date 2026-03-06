@@ -1,10 +1,10 @@
-use bedrockrs_macros::gamepacket;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 135)]
+#[packet(id = 135)]
 #[derive(Clone, Debug)]
 pub struct ClientCacheBlobStatusPacket {
     pub missing_blobs: Vec<u64>,

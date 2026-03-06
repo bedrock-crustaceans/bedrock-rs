@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 106)]
+#[packet(id = 106)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct RemoveObjectivePacket {
     pub objective_name: String,

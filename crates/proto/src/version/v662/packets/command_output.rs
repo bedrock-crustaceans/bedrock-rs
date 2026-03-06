@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 79)]
+#[packet(id = 79)]
 #[derive(Clone, Debug)]
 pub struct CommandOutputPacket<V: ProtoVersion> {
     pub origin_data: V::CommandOriginData,
@@ -40,7 +40,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOutputPacket<V> {
         for i in &self.output_messages {
             <OutputMessagesEntry as ProtoCodec>::serialize(i, stream)?;
         }
-        output_type_cursor.read_to_end(stream)?;
+        stream.write_all(output_type_cursor.into_inner())?;
 
         Ok(())
     }

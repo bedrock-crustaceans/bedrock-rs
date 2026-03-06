@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 58)]
+#[packet(id = 58)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelChunkPacket<V: ProtoVersion> {
     pub chunk_position: V::ChunkPos,

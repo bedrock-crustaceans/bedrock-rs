@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 323)]
+#[packet(id = 323)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateClientOptionsPacket {
     pub graphics_mode: Option<GraphicsMode>,

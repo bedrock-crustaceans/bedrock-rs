@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 156)]
+#[packet(id = 156)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PacketViolationWarningPacket<V: ProtoVersion> {
     pub violation_type: V::PacketViolationType,

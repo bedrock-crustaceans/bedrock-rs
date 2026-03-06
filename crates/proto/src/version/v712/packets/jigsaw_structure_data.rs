@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 313)]
+#[packet(id = 313)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct JigsawStructureDataPacket {
     #[nbt]

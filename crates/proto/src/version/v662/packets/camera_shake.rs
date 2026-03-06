@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 159)]
+#[packet(id = 159)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraShakePacket<V: ProtoVersion> {
     #[endianness(le)]

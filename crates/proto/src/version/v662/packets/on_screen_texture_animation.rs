@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 130)]
+#[packet(id = 130)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct OnScreenTextureAnimationPacket {
     #[endianness(le)]

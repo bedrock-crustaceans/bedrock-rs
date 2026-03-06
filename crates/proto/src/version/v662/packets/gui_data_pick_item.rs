@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 54)]
+#[packet(id = 54)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GuiDataPickItemPacket {
     pub item_name: String,

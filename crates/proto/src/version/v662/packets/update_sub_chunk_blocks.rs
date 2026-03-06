@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
 use varint_rs::{VarintReader, VarintWriter};
 
-#[gamepacket(id = 172)]
+#[packet(id = 172)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateSubChunkBlocksPacket<V: ProtoVersion> {
     pub sub_chunk_block_position: V::NetworkBlockPosition,

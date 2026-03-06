@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 163)]
+#[packet(id = 163)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct FilterTextPacket {
     pub text: String,

@@ -2,20 +2,20 @@ use crate::compression::Compression;
 use crate::connection::Connection;
 use crate::encryption::Encryption;
 use crate::error::ConnectionError;
-use crate::helper::ProtoHelper;
+use bedrockrs_proto_core::Packets;
 use tokio::select;
 use tokio::sync::watch::Ref;
 use tokio::sync::{mpsc, watch};
 use tokio::time::Interval;
 
-pub async fn shard<'t, T: ProtoHelper + Send + Sync + 't>(
+pub async fn shard<'t, T: Packets + Send + Sync + 't>(
     mut connection: Connection,
     // TODO: Look into making flush_interval optional
     _flush_interval: Interval,
     gamepacket_buffer_size: usize,
 ) -> (ConnectionShardSender<T>, ConnectionShardReceiver<T>)
 where
-    <T as ProtoHelper>::GamePacketType: Send + Sync + 'static,
+    T: Send + Sync + 'static,
 {
     let (gamepacket_tx_task, gamepacket_rx_shard) = mpsc::channel(gamepacket_buffer_size);
     let (gamepacket_tx_shard, mut gamepacket_rx_task) = mpsc::channel(gamepacket_buffer_size);
@@ -95,8 +95,8 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct ConnectionShardSender<T: ProtoHelper + Send + Sync> {
-    gamepacket_sender: mpsc::Sender<T::GamePacketType>,
+pub struct ConnectionShardSender<T: Packets + Send + Sync> {
+    gamepacket_sender: mpsc::Sender<T>,
 
     close_sender: watch::Sender<()>,
 
@@ -109,8 +109,8 @@ pub struct ConnectionShardSender<T: ProtoHelper + Send + Sync> {
     encryption_receiver: watch::Receiver<Option<Encryption>>,
 }
 
-impl<T: ProtoHelper + Send + Sync> ConnectionShardSender<T> {
-    pub async fn send(&mut self, packet: T::GamePacketType) -> Result<(), ConnectionError> {
+impl<T: Packets + Send + Sync> ConnectionShardSender<T> {
+    pub async fn send(&mut self, packet: T) -> Result<(), ConnectionError> {
         self.gamepacket_sender
             .send(packet)
             .await
@@ -168,8 +168,8 @@ impl<T: ProtoHelper + Send + Sync> ConnectionShardSender<T> {
 }
 
 #[derive(Debug)]
-pub struct ConnectionShardReceiver<T: ProtoHelper + Send + Sync> {
-    pub(crate) gamepacket_receiver: mpsc::Receiver<Result<T::GamePacketType, ConnectionError>>,
+pub struct ConnectionShardReceiver<T: Packets + Send + Sync> {
+    pub(crate) gamepacket_receiver: mpsc::Receiver<Result<T, ConnectionError>>,
 
     pub(crate) close_sender: watch::Sender<()>,
 
@@ -177,8 +177,8 @@ pub struct ConnectionShardReceiver<T: ProtoHelper + Send + Sync> {
     pub(crate) encryption_receiver: watch::Receiver<Option<Encryption>>,
 }
 
-impl<T: ProtoHelper + Send + Sync> ConnectionShardReceiver<T> {
-    pub async fn recv(&mut self) -> Result<T::GamePacketType, ConnectionError> {
+impl<T: Packets + Send + Sync> ConnectionShardReceiver<T> {
+    pub async fn recv(&mut self) -> Result<T, ConnectionError> {
         self.gamepacket_receiver
             .recv()
             .await

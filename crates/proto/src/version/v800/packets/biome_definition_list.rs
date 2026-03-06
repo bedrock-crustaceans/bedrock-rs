@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use nbtx::Value;
 
-#[gamepacket(id = 122)]
+#[packet(id = 122)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BiomeDefinitionListPacket<V: ProtoVersion> {
     #[nbt]

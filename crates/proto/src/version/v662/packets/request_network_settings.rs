@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 193)]
+#[packet(id = 193)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct RequestNetworkSettingsPacket {
     #[endianness(be)]

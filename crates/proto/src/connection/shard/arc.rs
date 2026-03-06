@@ -1,11 +1,11 @@
 use crate::connection::Connection;
 use crate::error::ConnectionError;
-use crate::helper::ProtoHelper;
+use bedrockrs_proto_core::Packets;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub fn shard<T: ProtoHelper>(connection: Connection) -> ConnectionShared<T> {
+pub fn shard<T: Packets>(connection: Connection) -> ConnectionShared<T> {
     ConnectionShared::<T> {
         connection: Arc::new(RwLock::new(connection)),
         queue_send: Arc::new(RwLock::new(Vec::new())),
@@ -14,28 +14,28 @@ pub fn shard<T: ProtoHelper>(connection: Connection) -> ConnectionShared<T> {
 }
 
 #[derive(Clone)]
-pub struct ConnectionShared<T: ProtoHelper> {
+pub struct ConnectionShared<T: Packets> {
     connection: Arc<RwLock<Connection>>,
-    queue_send: Arc<RwLock<Vec<T::GamePacketType>>>,
-    queue_recv: Arc<RwLock<VecDeque<T::GamePacketType>>>,
+    queue_send: Arc<RwLock<Vec<T>>>,
+    queue_recv: Arc<RwLock<VecDeque<T>>>,
 }
 
-impl<T: ProtoHelper> ConnectionShared<T> {
-    pub async fn write(&mut self, gamepacket: T::GamePacketType) -> Result<(), ConnectionError> {
+impl<T: Packets> ConnectionShared<T> {
+    pub async fn write(&mut self, packet: T) -> Result<(), ConnectionError> {
         let mut queue_send = self.queue_send.write().await;
 
-        queue_send.push(gamepacket);
+        queue_send.push(packet);
 
         Ok(())
     }
 
-    pub async fn read(&mut self) -> Option<T::GamePacketType> {
+    pub async fn read(&mut self) -> Option<T> {
         let mut queue_recv = self.queue_recv.write().await;
 
         queue_recv.pop_front()
     }
 
-    pub async fn read_all(&mut self) -> Vec<T::GamePacketType> {
+    pub async fn read_all(&mut self) -> Vec<T> {
         let mut queue_recv = self.queue_recv.write().await;
         queue_recv.make_contiguous();
         queue_recv.drain(..).collect::<Vec<_>>()

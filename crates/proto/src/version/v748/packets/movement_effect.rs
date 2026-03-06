@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 318)]
+#[packet(id = 318)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MovementEffectPacket<V: ProtoVersion> {
     pub entity_runtime_id: V::ActorRuntimeID,

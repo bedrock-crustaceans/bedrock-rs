@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 160)]
+#[packet(id = 160)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerFogPacket {
     #[vec_repr(u32)]

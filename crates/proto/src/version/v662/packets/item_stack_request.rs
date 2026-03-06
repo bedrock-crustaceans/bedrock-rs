@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 147)]
+#[packet(id = 147)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ItemStackRequestPacket<V: ProtoVersion> {
     #[vec_repr(u32)]

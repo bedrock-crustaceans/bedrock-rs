@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 154)]
+#[packet(id = 154)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PositionTrackingDBClientRequestPacket<V: ProtoVersion> {
     pub action: Action,

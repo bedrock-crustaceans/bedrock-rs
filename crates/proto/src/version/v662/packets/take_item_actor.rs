@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 17)]
+#[packet(id = 17)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TakeItemActorPacket<V: ProtoVersion> {
     pub item_runtime_id: V::ActorRuntimeID,

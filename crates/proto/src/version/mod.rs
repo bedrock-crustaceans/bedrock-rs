@@ -1,4 +1,3 @@
-mod proto_version;
 pub mod v662;
 pub mod v671;
 pub mod v685;
@@ -10,3 +9,5 @@ pub mod v766;
 pub mod v776;
 pub mod v786;
 pub mod v800;
+mod versions;
+pub use versions::*;

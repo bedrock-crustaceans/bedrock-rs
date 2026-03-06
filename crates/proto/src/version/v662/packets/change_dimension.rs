@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
 
-#[gamepacket(id = 61)]
+#[packet(id = 61)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChangeDimensionPacket {
     #[endianness(var)]

@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
 
-#[gamepacket(id = 196)]
+#[packet(id = 196)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateClientInputLocksPacket {
     #[endianness(var)]

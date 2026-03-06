@@ -1,5 +1,5 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::{
@@ -8,7 +8,7 @@ use player_auth_input_packet::{
 use std::io::{Cursor, Read, Write};
 use vek::{Vec2, Vec3};
 
-#[gamepacket(id = 144)]
+#[packet(id = 144)]
 #[derive(Clone, Debug)]
 pub struct PlayerAuthInputPacket<V: ProtoVersion> {
     pub player_rotation: Vec2<f32>,
@@ -32,7 +32,7 @@ pub struct PlayerAuthInputPacket<V: ProtoVersion> {
 }
 
 pub mod player_auth_input_packet {
-    use crate::version::proto_version::ProtoVersion;
+    use crate::version::versions::ProtoVersion;
     use bedrockrs_macros::ProtoCodec;
     use vek::Vec2;
 

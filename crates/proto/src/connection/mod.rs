@@ -1,11 +1,11 @@
 pub mod shard;
 
-use crate::codec::{decode_gamepackets, encode_gamepackets};
+use crate::codec::{decode_packets, encode_packets};
 use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::error::ConnectionError;
-use crate::helper::ProtoHelper;
 use crate::transport::TransportLayerConnection;
+use bedrockrs_proto_core::Packets;
 use std::net::SocketAddr;
 
 pub struct Connection {
@@ -38,17 +38,11 @@ impl Connection {
         }
     }
 
-    pub async fn send<T: ProtoHelper>(
-        &mut self,
-        gamepackets: &[T::GamePacketType],
-    ) -> Result<(), ConnectionError> {
-        let gamepacket_stream = encode_gamepackets::<T>(
-            gamepackets,
-            self.compression.as_ref(),
-            self.encryption.as_mut(),
-        )?;
+    pub async fn send<T: Packets>(&mut self, packets: &[T]) -> Result<(), ConnectionError> {
+        let packets_stream =
+            encode_packets::<T>(packets, self.compression.as_ref(), self.encryption.as_mut())?;
 
-        self.transport_layer.send(&gamepacket_stream).await?;
+        self.transport_layer.send(&packets_stream).await?;
 
         Ok(())
     }
@@ -59,12 +53,10 @@ impl Connection {
         Ok(())
     }
 
-    pub async fn recv<T: ProtoHelper>(
-        &mut self,
-    ) -> Result<Vec<T::GamePacketType>, ConnectionError> {
+    pub async fn recv<T: Packets>(&mut self) -> Result<Vec<T>, ConnectionError> {
         let gamepacket_stream = self.transport_layer.recv().await?;
 
-        let gamepackets = decode_gamepackets::<T>(
+        let gamepackets = decode_packets::<T>(
             gamepacket_stream,
             self.compression.as_ref(),
             self.encryption.as_mut(),

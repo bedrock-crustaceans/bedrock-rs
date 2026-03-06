@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 325)]
+#[packet(id = 325)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerUpdateEntityOverridesPacket<V: ProtoVersion> {
     pub entity_unique_id: V::ActorUniqueID,

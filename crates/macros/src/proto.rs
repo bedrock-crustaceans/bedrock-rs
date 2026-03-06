@@ -3,8 +3,6 @@ use proc_macro2::{Ident, Span};
 use quote::quote;
 use std::collections::{HashMap, HashSet};
 use syn::parse::ParseStream;
-use syn::spanned::Spanned;
-use syn::token::Token;
 use syn::{
     braced, bracketed, parenthesized, parse::Parse, punctuated::Punctuated, LitInt, LitStr, Path,
     Token,
@@ -16,8 +14,6 @@ mod kw {
     custom_keyword!(packets);
     custom_keyword!(types);
     custom_keyword!(enums);
-    custom_keyword!(raknet);
-    custom_keyword!(header);
 }
 
 struct DefineVersionsInput {
@@ -28,8 +24,6 @@ struct DefineVersionsEntry {
     version: u32,
     branch: LitStr,
     game_version: LitStr,
-    raknet: Option<u32>,
-    header: Option<Path>,
     packets: Option<DefineVersionsDiffList>,
     types: Option<DefineVersionsDiffList>,
     enums: Option<DefineVersionsDiffList>,
@@ -82,25 +76,9 @@ impl Parse for DefineVersionsEntry {
         let mut packets = None;
         let mut types = None;
         let mut enums = None;
-        let mut raknet = None;
-        let mut header = None;
 
         while !brace.is_empty() {
-            if brace.peek(kw::raknet) {
-                brace.parse::<kw::raknet>()?;
-                brace.parse::<Token![:]>()?;
-                if raknet.is_some() {
-                    return Err(brace.error("duplicate `raknet` definition"));
-                }
-                raknet = Some(brace.parse::<LitInt>()?.base10_parse()?);
-            } else if brace.peek(kw::header) {
-                brace.parse::<kw::header>()?;
-                brace.parse::<Token![:]>()?;
-                if header.is_some() {
-                    return Err(brace.error("duplicate `header` definition"));
-                }
-                header = Some(brace.parse()?);
-            } else if brace.peek(kw::packets) {
+            if brace.peek(kw::packets) {
                 brace.parse::<kw::packets>()?;
                 if packets.is_some() {
                     return Err(brace.error("duplicate `packets` section"));
@@ -133,8 +111,6 @@ impl Parse for DefineVersionsEntry {
             version,
             branch,
             game_version,
-            raknet,
-            header,
             packets,
             types,
             enums,
@@ -310,14 +286,9 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             const PROTOCOL_VERSION: u32;
             const PROTOCOL_BRANCH: &str;
             const GAME_VERSION: &str;
-            const RAKNET_VERSION: u32;
-
-            type PacketHeader: ::bedrockrs_proto_core::ProtoCodec + Clone + ::std::fmt::Debug;
         }
     };
 
-    let mut previous_raknet: Option<u32> = None;
-    let mut previous_header: Option<Path> = None;
     let mut previous_packets = HashMap::<Ident, proc_macro2::TokenStream>::new();
     let mut previous_types = HashMap::<Ident, proc_macro2::TokenStream>::new();
     let mut previous_enums = HashMap::<Ident, proc_macro2::TokenStream>::new();
@@ -333,27 +304,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         if let Err(e) = collapse(&entry.enums, &mut previous_enums) {
             return e.into_compile_error().into();
         }
-        if let Some(raknet) = &entry.raknet {
-            previous_raknet = Some(raknet.clone());
-        }
-        if let Some(header) = &entry.header {
-            previous_header = Some(header.clone());
-        }
 
-        let raknet = if let Some(raknet) = &previous_raknet {
-            raknet
-        } else {
-            return syn::Error::new(previous_raknet.span(), "raknet version not defined")
-                .into_compile_error()
-                .into();
-        };
-        let header = if let Some(header) = &previous_header {
-            header
-        } else {
-            return syn::Error::new(previous_raknet.span(), "header type not defined")
-                .into_compile_error()
-                .into();
-        };
         let version = entry.version;
         let branch = entry.branch.clone();
         let game_version = entry.game_version.clone();
@@ -401,44 +352,27 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             .collect::<Vec<_>>();
 
         let packet_id = previous_packets.iter().map(|(name, _)| {
-            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ID; }, }
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ID; }, }
         });
 
         let packet_compress = previous_packets.iter().map(|(name, _)| {
-            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::COMPRESS; }, }
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::COMPRESS; }, }
         });
 
         let packet_encrypt = previous_packets.iter().map(|(name, _)| {
-            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ENCRYPT; }, }
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ENCRYPT; }, }
         });
 
         let packet_size_prediction = previous_packets.iter().map(|(name, _)| {
-            quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::size_hint(pk), }
+            quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::size_hint(pk), }
         });
 
         let packet_ser = previous_packets.iter().map(|(name, _)| {
             quote! {
                 #struct_ident::#name(pk) => {
-                    let mut buf = Vec::new();
-
-                    match <<#struct_ident as ProtoVersionPackets>::#name as bedrockrs_proto_core::ProtoCodec>::serialize(pk, &mut buf) {
+                    match <<#struct_ident as ProtoVersionPackets>::#name as bedrockrs_proto_core::ProtoCodec>::serialize(pk, stream) {
                         Ok(_) => {},
                         Err(err) => return Err(err),
-                    };
-
-                    let len: u32 = match buf.len().try_into() {
-                        Ok(len) => len,
-                        Err(err) => return Err(::bedrockrs_proto_core::error::ProtoCodecError::FromIntError(err)),
-                    };
-
-                    match write_gamepacket_header(stream, len, <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ID, subclient_sender_id, subclient_target_id) {
-                        Ok(_) => {},
-                        Err(err) => return Err(err),
-                    };
-
-                    match stream.write_all(buf.as_slice()) {
-                        Ok(_) => {},
-                        Err(err) => return Err(::bedrockrs_proto_core::error::ProtoCodecError::IOError(err)),
                     };
                 },
             }
@@ -446,7 +380,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
         let packet_de = previous_packets.iter().map(|(name, _)| {
             quote! {
-                <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::GamePacket>::ID => {
+                <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ID => {
                     match <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream) {
                         Ok(pk) => #struct_ident::#name(pk),
                         Err(e) => return Err(e),
@@ -461,7 +395,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 #(#packet_variants)*
             }
 
-            impl ::bedrockrs_proto_core::GamePacketsAll for #struct_ident {
+            impl ::bedrockrs_proto_core::Packets for #struct_ident {
                 #[inline]
                 fn id(&self) -> u16 {
                     match self {
@@ -484,7 +418,8 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 }
 
                 #[inline]
-                fn pk_serialize(&self, stream: &mut Vec<u8>, subclient_sender_id: SubClientID, subclient_target_id: SubClientID) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                fn serialize<W: ::std::io::Write>(&self, header: &::bedrockrs_proto_core::PacketHeader, stream: &mut W) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                    <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::serialize(header, stream)?;
                     match self {
                         #(#packet_ser)*
                     };
@@ -493,29 +428,22 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 }
 
                 #[inline]
-                fn pk_deserialize(stream: &mut Cursor<&[u8]>) -> Result<(#struct_ident, SubClientID, SubClientID), ::bedrockrs_proto_core::error::ProtoCodecError> {
-                    let (_length, gamepacket_id, subclient_sender_id, subclient_target_id) = match read_gamepacket_header(stream) {
-                        Ok(val) => val,
-                        Err(err) => return Err(err),
-                    };
-
-                    let gamepacket = match gamepacket_id {
+                fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<(Self, ::bedrockrs_proto_core::PacketHeader), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                    let header = <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)?;
+                    let packet = match header.packet_id {
                         #(#packet_de)*
                         other => {
-                            return Err(::bedrockrs_proto_core::error::ProtoCodecError::InvalidGamePacketID(other));
+                            return Err(::bedrockrs_proto_core::error::ProtoCodecError::InvalidPacketID(other));
                         },
                     };
-
-                    Ok((gamepacket, subclient_sender_id, subclient_target_id))
+                    Ok((packet, header))
                 }
 
                 #[inline]
-                fn size_hint(&self) -> usize {
-                    let len = match self {
+                fn size_hint(&self, header: &::bedrockrs_proto_core::PacketHeader) -> usize {
+                    <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::size_hint(header) + match self {
                         #(#packet_size_prediction)*
-                    };
-
-                    len + get_gamepacket_header_size_prediction()
+                    }
                 }
             }
 
@@ -535,9 +463,6 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 const PROTOCOL_VERSION: u32 = #version;
                 const PROTOCOL_BRANCH: &str = #branch;
                 const GAME_VERSION: &str = #game_version;
-                const RAKNET_VERSION: u32 = #raknet;
-
-                type PacketHeader = #header;
             }
         };
 

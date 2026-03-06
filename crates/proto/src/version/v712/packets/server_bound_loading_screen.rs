@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 312)]
+#[packet(id = 312)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundLoadingScreenPacket {
     pub packet_type: ServerBoundLoadingScreenPacketType,

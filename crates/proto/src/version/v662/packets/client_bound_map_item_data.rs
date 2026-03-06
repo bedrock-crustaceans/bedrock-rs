@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use std::io::{Cursor, Read, Write};
 use varint_rs::{VarintReader, VarintWriter};
 
-#[gamepacket(id = 67)]
+#[packet(id = 67)]
 #[derive(Clone, Debug)]
 pub struct ClientBoundMapItemDataPacket<V: ProtoVersion> {
     pub map_id: V::ActorUniqueID,
@@ -66,7 +66,7 @@ impl<V: ProtoVersion> ProtoCodec for ClientBoundMapItemDataPacket<V> {
         <i8 as ProtoCodec>::serialize(&self.dimension, stream)?;
         <bool as ProtoCodec>::serialize(&self.is_locked, stream)?;
         <V::BlockPos as ProtoCodec>::serialize(&self.map_origin, stream)?;
-        type_flags_cursor.read_to_end(stream)?;
+        stream.write_all(type_flags_cursor.into_inner())?;
 
         Ok(())
     }

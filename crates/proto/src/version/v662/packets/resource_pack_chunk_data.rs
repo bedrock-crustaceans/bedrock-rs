@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 83)]
+#[packet(id = 83)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePackChunkDataPacket {
     pub resource_name: String,

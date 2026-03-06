@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 138)]
+#[packet(id = 138)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct EmotePacket<V: ProtoVersion> {
     pub actor_runtime_id: V::ActorRuntimeID,

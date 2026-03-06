@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 306)]
+#[packet(id = 306)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerToggleCrafterSlotRequestPacket {
     #[endianness(le)]

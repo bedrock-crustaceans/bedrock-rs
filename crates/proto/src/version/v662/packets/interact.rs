@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 
-#[gamepacket(id = 33)]
+#[packet(id = 33)]
 #[derive(Clone, Debug)]
 pub struct InteractPacket<V: ProtoVersion> {
     pub action: Action,
@@ -45,7 +45,7 @@ impl<V: ProtoVersion> ProtoCodec for InteractPacket<V> {
 
         stream.write_i8(action_cursor.read_i8()?)?;
         <V::ActorRuntimeID as ProtoCodec>::serialize(&self.target_runtime_id, stream)?;
-        action_cursor.read_to_end(stream)?;
+        stream.write_all(action_cursor.into_inner())?;
 
         Ok(())
     }

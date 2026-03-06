@@ -1,5 +1,5 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 102)]
+#[packet(id = 102)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerSettingsRequestPacket {}

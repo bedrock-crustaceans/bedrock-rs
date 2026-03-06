@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 97)]
+#[packet(id = 97)]
 #[derive(Clone, Debug)]
 pub struct BookEditPacket<V: ProtoVersion> {
     pub action: V::BookEditAction,
@@ -21,7 +21,7 @@ impl<V: ProtoVersion> ProtoCodec for BookEditPacket<V> {
 
         stream.write_i8(action_cursor.read_i8()?)?;
         <i8 as ProtoCodec>::serialize(&self.book_slot, stream)?;
-        action_cursor.read_to_end(stream)?;
+        stream.write_all(action_cursor.into_inner())?;
 
         Ok(())
     }

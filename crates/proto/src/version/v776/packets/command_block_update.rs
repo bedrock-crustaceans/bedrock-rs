@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 78)]
+#[packet(id = 78)]
 #[derive(Clone, Debug)]
 pub struct CommandBlockUpdatePacket<V: ProtoVersion> {
     pub is_block: bool, // TODO: probably worth turning this into an enum

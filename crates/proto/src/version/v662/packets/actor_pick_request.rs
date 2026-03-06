@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 35)]
+#[packet(id = 35)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ActorPickRequestPacket {
     #[endianness(le)]

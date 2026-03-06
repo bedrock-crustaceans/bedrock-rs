@@ -1,9 +1,9 @@
-use bedrockrs_macros::gamepacket;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Read, Write};
 
-#[gamepacket(id = 149)]
+#[packet(id = 149)]
 #[derive(Clone, Debug)]
 pub struct PlayerArmorDamagePacket {
     pub slot_bitset: i8,

@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 187)]
+#[packet(id = 187)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateAbilitiesPacket<V: ProtoVersion> {
     pub data: V::SerializedAbilitiesData,

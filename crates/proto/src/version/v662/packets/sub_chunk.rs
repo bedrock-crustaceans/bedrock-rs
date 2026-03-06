@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::cmp::PartialEq;
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 174)]
+#[packet(id = 174)]
 #[derive(Clone, Debug)]
 pub struct SubChunkPacket<V: ProtoVersion> {
     pub cache_enabled: bool,

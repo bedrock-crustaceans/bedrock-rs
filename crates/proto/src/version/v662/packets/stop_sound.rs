@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 87)]
+#[packet(id = 87)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StopSoundPacket {
     pub sound_name: String,

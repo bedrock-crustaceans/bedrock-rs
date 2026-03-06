@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 51)]
+#[packet(id = 51)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ContainerSetDataPacket<V: ProtoVersion> {
     pub container_id: V::ContainerID,

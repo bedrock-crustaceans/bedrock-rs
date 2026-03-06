@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use bedrockrs_proto_core::ProtoCodec;
 
-#[gamepacket(id = 50)]
+#[packet(id = 50)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct InventorySlotPacket<V: ProtoVersion> {
     #[endianness(var)]

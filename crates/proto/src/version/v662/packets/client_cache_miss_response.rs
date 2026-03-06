@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 136)]
+#[packet(id = 136)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientCacheMissResponsePacket {
     #[vec_repr(u32)]

@@ -1,5 +1,5 @@
-use bedrockrs_proto_core::error::ProtoCodecError;
-use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
+use crate::error::ProtoCodecError;
+use crate::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Read, Write};
 
 #[derive(Clone, Debug)]

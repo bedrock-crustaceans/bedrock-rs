@@ -1,4 +1,4 @@
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};

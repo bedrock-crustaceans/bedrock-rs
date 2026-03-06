@@ -1,4 +1,4 @@
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Read, Write};

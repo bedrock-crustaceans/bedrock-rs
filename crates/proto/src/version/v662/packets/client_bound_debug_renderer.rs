@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
 
-#[gamepacket(id = 163)]
+#[packet(id = 163)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDebugRendererPacket {
     pub debug_marker_type: Type,

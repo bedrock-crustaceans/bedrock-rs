@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 309)]
+#[packet(id = 309)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AwardAchievementPacket {
     #[endianness(le)]

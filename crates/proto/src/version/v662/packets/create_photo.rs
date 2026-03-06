@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 171)]
+#[packet(id = 171)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CreatePhotoPacket {
     #[endianness(le)]

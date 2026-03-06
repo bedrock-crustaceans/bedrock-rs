@@ -1,8 +1,8 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
-use crate::version::proto_version::ProtoVersion;
 
-#[gamepacket(id = 45)]
+#[packet(id = 45)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct RespawnPacket<V: ProtoVersion> {
     #[endianness(le)]

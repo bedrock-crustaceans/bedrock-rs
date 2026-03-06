@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
 
-#[gamepacket(id = 123)]
+#[packet(id = 123)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelSoundEventPacket<V: ProtoVersion> {
     pub event_id: V::LevelSoundEventType,
