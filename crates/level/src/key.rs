@@ -3,7 +3,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 use vek::Vec2;
 
-use std::io::{Cursor, Read, Write};
+use std::io::Write;
 
 use crate::error::{Error, Result};
 

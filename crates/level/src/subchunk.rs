@@ -305,6 +305,7 @@ pub struct Layer {
 }
 
 impl Layer {
+    #[allow(dead_code)]
     fn get<K>(&self, block: K) -> Option<&BlockDef>
     where
         K: Into<Vec3<u8>>,
@@ -324,7 +325,8 @@ impl Layer {
         Some(&self.palette[index as usize])
     }
 
-    fn set<K>(&self, block: K, value: BlockDef)
+    #[allow(dead_code)]
+    fn set<K>(&self, _block: K, _value: BlockDef)
     where
         K: Into<Vec3<u8>>,
     {

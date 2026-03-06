@@ -55,13 +55,17 @@ impl Addon for BehaviorPack {
 
         // If dir exists, read all blocks
         if blocks_path.is_dir() {
-            'blocks_walk: for entry in WalkDir::new(&blocks_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }).flatten() {
+            'blocks_walk: for entry in WalkDir::new(&blocks_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
+                    }
+                })
+                .flatten()
+            {
                 let block_path = entry.path();
 
                 let block = fs::read_to_string(block_path)
@@ -88,13 +92,17 @@ impl Addon for BehaviorPack {
 
         // If dir exists, read all items
         if items_path.is_dir() {
-            'items_walk: for entry in WalkDir::new(&items_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }).flatten() {
+            'items_walk: for entry in WalkDir::new(&items_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
+                    }
+                })
+                .flatten()
+            {
                 let item_path = entry.path();
 
                 let item = fs::read_to_string(item_path)
@@ -121,13 +129,17 @@ impl Addon for BehaviorPack {
 
         // If dir exists read all functions
         if functions_path.is_dir() {
-            for entry in WalkDir::new(&functions_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }).flatten() {
+            for entry in WalkDir::new(&functions_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
+                    }
+                })
+                .flatten()
+            {
                 let function_path = entry.path();
 
                 let function = fs::read_to_string(function_path)
@@ -143,13 +155,17 @@ impl Addon for BehaviorPack {
 
         // If dir exists read all scripts
         if scripts_path.is_dir() {
-            for entry in WalkDir::new(&scripts_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }).flatten() {
+            for entry in WalkDir::new(&scripts_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
+                    }
+                })
+                .flatten()
+            {
                 let script_path = entry.path();
 
                 let script = fs::read_to_string(script_path)
