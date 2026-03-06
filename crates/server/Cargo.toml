@@ -9,6 +9,7 @@ thiserror = "2.0"
 bedrockrs_core = { path = "../core" }
 bedrockrs_shared = { path = "../shared" }
 bedrockrs_proto = { path = "../proto" }
+bedrockrs_proto_core = { path = "../proto_core" }
 
 tokio = { version = "1.40", features = ["full", "tracing"] }
 shipyard = { version = "0.11", features = ["parallel", "proc", "rayon", "tracing"] }
