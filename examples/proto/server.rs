@@ -1,14 +1,13 @@
 use bedrockrs::proto::connection::Connection;
 use bedrockrs::proto::listener::Listener;
 use bedrockrs_proto::compression::Compression;
-use bedrockrs_proto::v800;
-use bedrockrs_proto::v800::enums::{PacketCompressionAlgorithm, PlayStatus};
-use bedrockrs_proto::v800::packets::{
-    NetworkSettingsPacket, PlayStatusPacket, ResourcePackStackPacket, ResourcePacksInfoPacket,
-};
-use bedrockrs_proto::v800::types::{BaseGameVersion, Experiments};
-use bedrockrs_proto::v800::GamePackets;
-use bedrockrs_proto::v800::ProtoHelperV800;
+use bedrockrs_proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
+use bedrockrs_proto::v662::packets::{NetworkSettingsPacket, PlayStatusPacket};
+use bedrockrs_proto::v662::types::{BaseGameVersion, Experiments};
+use bedrockrs_proto::v671::packets::ResourcePackStackPacket;
+use bedrockrs_proto::v766::packets::ResourcePacksInfoPacket;
+use bedrockrs_proto::v800::V800;
+use bedrockrs_proto::ProtoVersion;
 use tokio::time::Instant;
 use uuid::Uuid;
 
@@ -17,8 +16,8 @@ async fn main() {
     let mut listener = Listener::new_raknet(
         "Bedrock in Rust".to_string(),
         "bedrockrs".to_string(),
-        v800::info::GAME_VERSION.to_string(),
-        v800::info::PROTOCOL_VERSION,
+        V800::GAME_VERSION.to_string(),
+        V800::PROTOCOL_VERSION.into(),
         100,
         10,
         "127.0.0.1:19132".parse().unwrap(),
@@ -42,13 +41,13 @@ async fn handle_login(mut conn: Connection) {
     let time_start = Instant::now();
 
     // NetworkSettingsRequest
-    conn.recv::<ProtoHelperV800>().await.unwrap();
+    conn.recv::<V800>().await.unwrap();
     println!("NetworkSettingsRequest");
 
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send::<ProtoHelperV800>(&[GamePackets::NetworkSettings(NetworkSettingsPacket {
+    conn.send::<V800>(&[V800::NetworkSettingsPacket(NetworkSettingsPacket {
         compression_threshold: 1,
         compression_algorithm: PacketCompressionAlgorithm::None,
         client_throttle_enabled: false,
@@ -62,14 +61,14 @@ async fn handle_login(mut conn: Connection) {
     conn.compression = Some(compression);
 
     // Login
-    conn.recv::<ProtoHelperV800>().await.unwrap();
+    conn.recv::<V800>().await.unwrap();
     println!("Login");
 
-    conn.send::<ProtoHelperV800>(&[
-        GamePackets::PlayStatus(PlayStatusPacket {
+    conn.send::<V800>(&[
+        V800::PlayStatusPacket(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
         }),
-        GamePackets::ResourcePacksInfo(ResourcePacksInfoPacket {
+        V800::ResourcePacksInfoPacket(ResourcePacksInfoPacket {
             resource_pack_required: false,
             has_addon_packs: false,
             has_scripts: false,
@@ -77,7 +76,7 @@ async fn handle_login(mut conn: Connection) {
             resource_packs: vec![],
             world_template_version: "".to_string(),
         }),
-        GamePackets::ResourcePackStack(ResourcePackStackPacket {
+        V800::ResourcePackStackPacket(ResourcePackStackPacket {
             texture_pack_required: false,
             addon_list: vec![],
             base_game_version: BaseGameVersion(String::from("1.0")),
@@ -95,9 +94,9 @@ async fn handle_login(mut conn: Connection) {
     println!("ResourcePacksInfo");
     println!("ResourcePackStack");
 
-    println!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
+    println!("{:#?}", conn.recv::<V800>().await.unwrap());
     println!("ClientCacheStatus");
-    println!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
+    println!("{:#?}", conn.recv::<V800>().await.unwrap());
     println!("ResourcePackClientResponse");
 
     // conn.send::<ProtoHelperV729>(&[GamePackets::DisconnectPlayer(DisconnectPlayerPacket {
@@ -230,7 +229,7 @@ async fn handle_login(mut conn: Connection) {
     println!("{:?}", time_end.duration_since(time_start));
 
     loop {
-        let res = conn.recv::<ProtoHelperV800>().await;
+        let res = conn.recv::<V800>().await;
 
         if let Ok(packet) = res {
             println!("{:?}", packet);
