@@ -4,8 +4,10 @@ pub mod key;
 pub mod subchunk;
 pub mod bits;
 pub mod traits;
-
+pub mod player;
 pub mod settings;
+pub mod packed;
+pub mod unpacked;
 
 #[cfg(feature = "mojang-leveldb")]
 pub mod mojang;
@@ -14,8 +16,6 @@ pub use mojang::*;
 
 #[cfg(feature = "rusty-leveldb")]
 pub mod rusty;
-mod packed;
-mod unpacked;
 
 #[cfg(feature = "rusty-leveldb")]
 pub use rusty::*;

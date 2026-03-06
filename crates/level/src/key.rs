@@ -6,7 +6,9 @@ use std::io::Write;
 use bedrockrs_shared::world::dimension::Dimension;
 use crate::error::{Error, Result};
 
+pub const AUTONOMOUS_ENTITIES: &'static str = "AutonomousEntities";
 pub const LOCAL_PLAYER: &'static str = "~local_player";
+pub const VILLAGES: &'static str = "mVillages";
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -32,6 +34,7 @@ pub enum KeyVariant {
     ActorDigestVersion = 0x41,
     LegacyVersion = 0x76,
     AabbVolumes = 0x77,
+    LocalPlayer
 }
 
 impl KeyVariant {
@@ -59,6 +62,7 @@ impl KeyVariant {
             KeyVariant::ActorDigestVersion => 0x41,
             KeyVariant::LegacyVersion => 0x76,
             KeyVariant::AabbVolumes => 0x77,
+            KeyVariant::LocalPlayer => u8::MAX
         }
     }
 }
@@ -149,15 +153,13 @@ impl Key {
             0x76 => KeyVariant::LegacyVersion,
             0x77 => KeyVariant::AabbVolumes,
             ty => {
-                println!("Unknown key type: {ty:#0x}");
-
                 // Check whether this was one of the strings
                 let string = str::from_utf8(reader_copy)?;
                 if string == LOCAL_PLAYER {
-                    println!("LOCAL");
+                    KeyVariant::LocalPlayer
+                } else {
+                    return Err(Error::Invalid("invalid leveldb database key type"))
                 }
-
-                return Err(Error::Invalid("invalid leveldb database key type"))
             },
         };
 

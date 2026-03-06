@@ -3,6 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::error::Result;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Abilities {
     #[serde(rename = "attackmobs")]
     pub attack_mobs: bool,
@@ -26,6 +27,8 @@ pub struct Abilities {
     pub fly_speed: f32,
     #[serde(rename = "walkSpeed")]
     pub walk_speed: f32,
+    #[serde(rename = "playerPermissionLevel")]
+    pub permission_level: i32
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]

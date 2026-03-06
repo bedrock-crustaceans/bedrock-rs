@@ -1,5 +1,6 @@
 use std::fs::File;
 
+use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
 use bedrockrs_level::{
     db::Database,
@@ -42,7 +43,7 @@ fn read_level_dat() {
 }
 
 #[test]
-fn read_biome() {
+fn read_local_player() {
     let db = open_test_db();
     let mut keys = db.keys();
 
@@ -50,14 +51,32 @@ fn read_biome() {
         let mut key_buf = kv.key();
         let key = Key::deserialize(&mut key_buf);
 
-        // match key.data {
-        //     KeyVariant::Biome3d => {
-        //         println!("{key:?}");
-        //
-        //         // break
-        //     },
-        //     _ => {}
-        // }
+        let Ok(key) = key else { continue };
+        if matches!(key.data, KeyVariant::LocalPlayer) {
+            let data = kv.value();
+            let nbt: PlayerData = nbtx::from_le_bytes(&mut data.as_ref()).unwrap();
+            println!("{nbt:#?}");
+        }
+    }
+}
+
+#[test]
+fn read_biome() {
+    let db = open_test_db();
+    let mut keys = db.keys();
+
+    for kv in &mut keys {
+        let mut key_buf = kv.key();
+        let key = Key::deserialize(&mut key_buf).unwrap();
+
+        match key.data {
+            KeyVariant::Biome3d => {
+                println!("{key:?}");
+
+                // break
+            }
+            _ => {}
+        }
     }
 }
 
