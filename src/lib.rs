@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub mod core {
     pub use ::bedrockrs_core::*;
 

@@ -1,6 +1,6 @@
+use crate::ProtoCodec;
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
-use crate::ProtoCodec;
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use paste::paste;
 use std::io::Cursor;

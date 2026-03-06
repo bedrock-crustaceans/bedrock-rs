@@ -129,10 +129,11 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             &self.new_interaction_model,
             stream,
         )?;
+        #[allow(clippy::single_match)] // NOTE: Remove after there are more variants than Reality
         match &self.play_mode {
             ClientPlayMode::Reality => {
                 <Vec3<f32> as ProtoCodecLE>::proto_serialize(
-                    &self.vr_gaze_direction.as_ref().unwrap(),
+                    self.vr_gaze_direction.as_ref().unwrap(),
                     stream,
                 )?;
             }
@@ -140,27 +141,27 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         }
         <u64 as ProtoCodecVAR>::proto_serialize(&self.client_tick, stream)?;
         <Vec3<f32> as ProtoCodecLE>::proto_serialize(&self.velocity, stream)?;
-        if &self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
+        if self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
             <V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::proto_serialize(
-                &self.item_use_transaction.as_ref().unwrap(),
+                self.item_use_transaction.as_ref().unwrap(),
                 stream,
             )?;
         }
-        if &self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
+        if self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
             <PerformItemStackRequestData<V> as ProtoCodec>::proto_serialize(
-                &self.item_stack_request.as_ref().unwrap(),
+                self.item_stack_request.as_ref().unwrap(),
                 stream,
             )?;
         }
-        if &self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
+        if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
             <V::PlayerBlockActions as ProtoCodec>::proto_serialize(
-                &self.player_block_actions.as_ref().unwrap(),
+                self.player_block_actions.as_ref().unwrap(),
                 stream,
             )?;
         }
-        if &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
+        if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
             <ClientPredictedVehicleData<V> as ProtoCodec>::proto_serialize(
-                &self.client_predicted_vehicle.as_ref().unwrap(),
+                self.client_predicted_vehicle.as_ref().unwrap(),
                 stream,
             )?;
         }
@@ -179,7 +180,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         let play_mode = <ClientPlayMode as ProtoCodec>::proto_deserialize(stream)?;
         let new_interaction_model =
             <V::NewInteractionModel as ProtoCodec>::proto_deserialize(stream)?;
-        let vr_gaze_direction = match (&play_mode) {
+        let vr_gaze_direction = match &play_mode {
             ClientPlayMode::Reality => {
                 Some(<Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?)
             }
@@ -188,7 +189,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         let client_tick = <u64 as ProtoCodecVAR>::proto_deserialize(stream)?;
         let velocity = <Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?;
         let item_use_transaction =
-            match &input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
+            match input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
                 true => Some(
                     <V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::proto_deserialize(
                         stream,
@@ -197,20 +198,20 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
                 false => None,
             };
         let item_stack_request =
-            match &input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
+            match input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
                 true => {
                     Some(<PerformItemStackRequestData<V> as ProtoCodec>::proto_deserialize(stream)?)
                 }
                 false => None,
             };
         let player_block_actions =
-            match &input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
+            match input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
                 true => Some(<V::PlayerBlockActions as ProtoCodec>::proto_deserialize(
                     stream,
                 )?),
                 false => None,
             };
-        let client_predicted_vehicle = match &input_data
+        let client_predicted_vehicle = match input_data
             & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64
             != 0
         {
@@ -248,7 +249,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             + self.input_mode.get_size_prediction()
             + self.play_mode.get_size_prediction()
             + self.new_interaction_model.get_size_prediction()
-            + match (&self.play_mode) {
+            + match &self.play_mode {
                 ClientPlayMode::Reality => {
                     ProtoCodecLE::get_size_prediction(&self.vr_gaze_direction)
                 }
@@ -256,19 +257,19 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             }
             + ProtoCodecVAR::get_size_prediction(&self.client_tick)
             + ProtoCodecLE::get_size_prediction(&self.velocity)
-            + match &self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
+            + match self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
                 true => self.item_use_transaction.get_size_prediction(),
                 false => 0,
             }
-            + match &self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
+            + match self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
                 true => self.item_stack_request.get_size_prediction(),
                 false => 0,
             }
-            + match &self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
+            + match self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
                 true => self.player_block_actions.get_size_prediction(),
                 false => 0,
             }
-            + match &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0
+            + match self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0
             {
                 true => self.client_predicted_vehicle.get_size_prediction(),
                 false => 0,

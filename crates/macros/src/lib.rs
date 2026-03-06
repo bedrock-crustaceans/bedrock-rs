@@ -4,8 +4,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse::{Parse, ParseStream};
-use syn::token::Token;
-use syn::{parse_macro_input, Data, DeriveInput, Lit, Token};
+use syn::{Data, DeriveInput, Lit, Token, parse_macro_input};
 
 mod attr;
 mod de;
@@ -42,7 +41,7 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
         Data::Union(_) => {
             return proc_macro::TokenStream::from(quote! {
                 compile_error!("ProtoCodec derive macro only supports structs and enums")
-            })
+            });
         }
     };
 

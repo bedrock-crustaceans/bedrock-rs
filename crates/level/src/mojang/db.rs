@@ -1,15 +1,13 @@
 use std::{
-    ffi::{c_char, c_int, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_int, c_void},
     ops::Deref,
     ptr::NonNull,
 };
 
+use crate::ffi::{self, FfiStatus};
 use crate::{
     error::{Error, Result},
-    iter::Keys, traits::DatabaseAccess,
-};
-use crate::{
-    ffi::{self, FfiStatus}
+    iter::Keys,
 };
 
 /// Smart pointer around a LevelDB buffer, ensuring the buffer is deallocated after use.
@@ -71,23 +69,9 @@ pub struct Database {
 }
 
 impl Database {
-    /// Yields the FFI database pointer.
-    pub(crate) fn as_ptr(&self) -> *mut c_void {
-        self.ptr.as_ptr()
-    }
-
-    /// Creates an iterator over all the keys in this database.
-    pub fn iter(&self) -> Keys<'_> {
-        Keys::new(self)
-    }
-}
-
-impl DatabaseAccess for Database {
-    type Buffer<'a> = Buffer<'a>;
-
     /// Opens a LevelDB database at the specified `path`. This `path` should point to the `db` directory
     /// of a world, not the world itself.
-    fn open<P: AsRef<str>>(path: P) -> Result<Self> {
+    pub fn open<P: AsRef<str>>(path: P) -> Result<Self> {
         let ffi_path = CString::new(path.as_ref())?;
 
         // Safety: This is safe to call since `ffi_path` is a valid nul-terminated string.
@@ -107,8 +91,18 @@ impl DatabaseAccess for Database {
         }
     }
 
+    /// Yields the FFI database pointer.
+    pub(crate) fn as_ptr(&self) -> *mut c_void {
+        self.ptr.as_ptr()
+    }
+
+    /// Creates an iterator over all the keys in this database.
+    pub fn iter(&self) -> Keys<'_> {
+        Keys::new(self)
+    }
+
     /// Attempts to retrieve the given key from the database.
-    fn get<K>(&self, key: K) -> Result<Option<Buffer<'_>>>
+    pub fn get<K>(&self, key: K) -> Result<Option<Buffer<'_>>>
     where
         K: AsRef<[u8]>,
     {
@@ -146,7 +140,7 @@ impl DatabaseAccess for Database {
     }
 
     /// Inserts a key-value pair into the database.
-    fn insert<K, V>(&self, key: K, value: V) -> Result<()>
+    pub fn insert<K, V>(&self, key: K, value: V) -> Result<()>
     where
         K: AsRef<[u8]>,
         V: AsRef<[u8]>,
@@ -173,7 +167,7 @@ impl DatabaseAccess for Database {
     }
 
     /// Removes a key from the database.
-    fn remove<K>(&self, key: K) -> Result<()>
+    pub fn remove<K>(&self, key: K) -> Result<()>
     where
         K: AsRef<[u8]>,
     {
@@ -219,7 +213,7 @@ unsafe impl Sync for Database {}
 unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
     assert_ne!(result.status, FfiStatus::Success);
 
-    let ffi_err = CStr::from_ptr(result.data.cast::<c_char>());
+    let ffi_err = unsafe { CStr::from_ptr(result.data.cast::<c_char>()) };
     let str = match ffi_err.to_str() {
         Ok(str) => str,
         Err(err) => return Error::InvalidUtf8(err),
@@ -227,6 +221,6 @@ unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
 
     let owned = str.to_owned();
 
-    ffi::bedrockrs_buffer_destroy(result.data.cast::<c_char>());
+    unsafe { ffi::bedrockrs_buffer_destroy(result.data.cast::<c_char>()) };
     Error::LevelDbError(owned)
 }

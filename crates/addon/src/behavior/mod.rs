@@ -6,13 +6,13 @@ use std::sync::Arc;
 use json_comments::CommentSettings;
 use walkdir::WalkDir;
 
+use crate::Addon;
 use crate::behavior::blocks::AddonBlock;
 use crate::behavior::items::AddonItem;
 use crate::error::AddonError;
 use crate::error::AddonError::{IOError, JsonError};
 use crate::language::Languages;
 use crate::manifest::AddonManifest;
-use crate::Addon;
 
 pub mod blocks;
 pub mod items;
@@ -55,32 +55,34 @@ impl Addon for BehaviorPack {
 
         // If dir exists, read all blocks
         if blocks_path.is_dir() {
-            'blocks_walk: for blocks_entry in WalkDir::new(&blocks_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }) {
-                if let Ok(entry) = blocks_entry {
-                    let block_path = entry.path();
-
-                    let block = fs::read_to_string(block_path)
-                        .map_err(|e| IOError(Arc::new(e), block_path.to_path_buf()))?;
-
-                    // If the file is empty skip it
-                    if block.trim().is_empty() {
-                        continue 'blocks_walk;
+            'blocks_walk: for entry in WalkDir::new(&blocks_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
                     }
+                })
+                .flatten()
+            {
+                let block_path = entry.path();
 
-                    // Strip all c-style comments
-                    let stripper = CommentSettings::c_style().strip_comments(block.as_bytes());
+                let block = fs::read_to_string(block_path)
+                    .map_err(|e| IOError(Arc::new(e), block_path.to_path_buf()))?;
 
-                    let block: AddonBlock = serde_json::from_reader(stripper)
-                        .map_err(|e| JsonError(Arc::new(e), block_path.to_path_buf()))?;
-
-                    blocks.insert(block_path.to_path_buf(), block);
+                // If the file is empty skip it
+                if block.trim().is_empty() {
+                    continue 'blocks_walk;
                 }
+
+                // Strip all c-style comments
+                let stripper = CommentSettings::c_style().strip_comments(block.as_bytes());
+
+                let block: AddonBlock = serde_json::from_reader(stripper)
+                    .map_err(|e| JsonError(Arc::new(e), block_path.to_path_buf()))?;
+
+                blocks.insert(block_path.to_path_buf(), block);
             }
         }
 
@@ -90,32 +92,34 @@ impl Addon for BehaviorPack {
 
         // If dir exists, read all items
         if items_path.is_dir() {
-            'items_walk: for items_entry in WalkDir::new(&items_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }) {
-                if let Ok(entry) = items_entry {
-                    let item_path = entry.path();
-
-                    let item = fs::read_to_string(item_path)
-                        .map_err(|e| IOError(Arc::new(e), item_path.to_path_buf()))?;
-
-                    // If the file is empty skip it
-                    if item.trim().is_empty() {
-                        continue 'items_walk;
+            'items_walk: for entry in WalkDir::new(&items_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
                     }
+                })
+                .flatten()
+            {
+                let item_path = entry.path();
 
-                    // Strip all c-style comments
-                    let stripper = CommentSettings::c_style().strip_comments(item.as_bytes());
+                let item = fs::read_to_string(item_path)
+                    .map_err(|e| IOError(Arc::new(e), item_path.to_path_buf()))?;
 
-                    let item: AddonItem = serde_json::from_reader(stripper)
-                        .map_err(|e| JsonError(Arc::new(e), item_path.to_path_buf()))?;
-
-                    items.insert(item_path.to_path_buf(), item);
+                // If the file is empty skip it
+                if item.trim().is_empty() {
+                    continue 'items_walk;
                 }
+
+                // Strip all c-style comments
+                let stripper = CommentSettings::c_style().strip_comments(item.as_bytes());
+
+                let item: AddonItem = serde_json::from_reader(stripper)
+                    .map_err(|e| JsonError(Arc::new(e), item_path.to_path_buf()))?;
+
+                items.insert(item_path.to_path_buf(), item);
             }
         }
 
@@ -125,21 +129,23 @@ impl Addon for BehaviorPack {
 
         // If dir exists read all functions
         if functions_path.is_dir() {
-            for functions_entry in WalkDir::new(&functions_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }) {
-                if let Ok(entry) = functions_entry {
-                    let function_path = entry.path();
+            for entry in WalkDir::new(&functions_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
+                    }
+                })
+                .flatten()
+            {
+                let function_path = entry.path();
 
-                    let function = fs::read_to_string(function_path)
-                        .map_err(|e| IOError(Arc::new(e), function_path.to_path_buf()))?;
+                let function = fs::read_to_string(function_path)
+                    .map_err(|e| IOError(Arc::new(e), function_path.to_path_buf()))?;
 
-                    functions.insert(function_path.to_path_buf(), function);
-                }
+                functions.insert(function_path.to_path_buf(), function);
             }
         }
 
@@ -149,21 +155,23 @@ impl Addon for BehaviorPack {
 
         // If dir exists read all scripts
         if scripts_path.is_dir() {
-            for scripts_entry in WalkDir::new(&scripts_path).into_iter().filter(|v| {
-                if let Ok(v) = v {
-                    v.file_type().is_file()
-                } else {
-                    false
-                }
-            }) {
-                if let Ok(entry) = scripts_entry {
-                    let script_path = entry.path();
+            for entry in WalkDir::new(&scripts_path)
+                .into_iter()
+                .filter(|v| {
+                    if let Ok(v) = v {
+                        v.file_type().is_file()
+                    } else {
+                        false
+                    }
+                })
+                .flatten()
+            {
+                let script_path = entry.path();
 
-                    let script = fs::read_to_string(script_path)
-                        .map_err(|e| IOError(Arc::new(e), script_path.to_path_buf()))?;
+                let script = fs::read_to_string(script_path)
+                    .map_err(|e| IOError(Arc::new(e), script_path.to_path_buf()))?;
 
-                    scripts.insert(script_path.to_path_buf(), script);
-                }
+                scripts.insert(script_path.to_path_buf(), script);
             }
         }
 

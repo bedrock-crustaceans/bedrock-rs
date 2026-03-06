@@ -75,7 +75,7 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                 }
             }
             if self.cache_enabled {
-                <u64 as ProtoCodecLE>::proto_serialize(&i.blob_id.as_ref().unwrap(), stream)?;
+                <u64 as ProtoCodecLE>::proto_serialize(i.blob_id.as_ref().unwrap(), stream)?;
             }
         }
 
@@ -104,9 +104,9 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                 {
                     true => {
                         let mut height_map: [[i8; 16]; 16] = [[0; 16]; 16];
-                        for x in 0..16 {
-                            for y in 0..16 {
-                                height_map[x][y] = i8::proto_deserialize(stream)?;
+                        for row in &mut height_map {
+                            for value in row {
+                                *value = i8::proto_deserialize(stream)?;
                             }
                         }
 

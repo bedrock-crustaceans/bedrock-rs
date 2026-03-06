@@ -1,7 +1,7 @@
 [package]
 name = "bedrockrs_proto"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bedrockrs_shared = { path = "../shared" }
@@ -34,4 +34,7 @@ x509-cert = "0.2"
 bitflags = "2.6.0"
 serde = { version = "1.0", features = ["derive"] }
 
-rak-rs = { version = "0.3", default-features = false, features = ["async_tokio", "mcpe"] }
+rak-rs = { version = "0.3", default-features = false, features = [
+    "async_tokio",
+    "mcpe",
+] }

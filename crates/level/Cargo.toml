@@ -1,7 +1,7 @@
 [package]
 name = "bedrockrs_level"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 build = "build.rs"
 
 [features]
@@ -37,4 +37,3 @@ criterion = { version = "0.8.2", features = ["html_reports"] }
 
 [build-dependencies]
 cmake = { version = "0.1.57", optional = true }
-

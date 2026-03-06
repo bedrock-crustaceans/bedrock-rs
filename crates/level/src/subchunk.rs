@@ -1,5 +1,5 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::iter::FusedIterator;
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
 use crate::error::{Error, Result};
-use crate::unpacker::{ArrayType, PackedArray, PackedArrayIter, PackedResult};
+use crate::unpacker::PackedResult;
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -39,7 +39,6 @@ impl TryFrom<u8> for SubChunkVersion {
     }
 }
 
-/// Serialisation and deserialisation for block versions.
 mod block_version {
     use serde::{Deserialize, Deserializer, Serializer};
 
@@ -81,7 +80,7 @@ pub struct BlockDef {
 }
 
 impl BlockDef {
-    /// Hashes this block. This bypasses the `Hash` trait because floats do not implement `Eq`.
+    /// Hashes this block.
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
 
@@ -95,13 +94,141 @@ impl BlockDef {
     }
 }
 
-/// Array-agnostic iterators.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackedArray {
+    /// Stabilisation of `generic_const_expr` would allow us to put this on the stack.
+    bits: u32,
+    words: Vec<u32>,
+}
+
+impl PackedArray {
+    /// Creates a new array from the given words.
+    pub const fn new(bits: u32, words: Vec<u32>) -> Self {
+        Self { bits, words }
+    }
+
+    /// Returns the amount of words that are in this array.
+    pub const fn words(&self) -> usize {
+        let per_word = 32 / self.bits;
+        4096 / per_word as usize
+    }
+
+    pub fn iter(&self) -> PackedArrayIter<'_> {
+        PackedArrayIter::from(self)
+    }
+
+    /// Returns the value at `index`.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the index is greater than or equal to 4096.
+    pub fn get(&self, index: usize) -> u16 {
+        assert!(
+            index < 4096,
+            "packed array index out of bounds, got 4096 < {index}"
+        );
+
+        let blocks_per_word = u32::BITS / self.bits;
+        let mask = !(!0u32 << self.bits);
+
+        let word_index = index as u32 % blocks_per_word;
+        let array_index = index as u32 / blocks_per_word;
+        let word = self.words[array_index as usize];
+
+        ((word >> self.bits * word_index) & mask) as u16
+    }
+
+    /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
+    /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the index is greater than or equal to 4096.
+    pub fn set(&mut self, index: usize, value: u16) {
+        assert!(
+            index < 4096,
+            "packed array index out of bounds, got 4096 < {index}"
+        );
+
+        let blocks_per_word = u32::BITS / self.bits;
+        let base_mask = !(!0u32 << self.bits);
+
+        let word_index = index as u32 % blocks_per_word;
+        let array_index = index as u32 / blocks_per_word;
+        let word = self.words[array_index as usize];
+
+        let mask = base_mask << self.bits * word_index;
+
+        // Zero all bits in the location
+        let zeroed = word & !mask;
+        // Clamp value to correct amount of bits
+        let clamped = value as u32 & base_mask;
+        // Then set the zeroed bits to the clamped value
+        let set = zeroed | (clamped << self.bits * word_index);
+
+        self.words[array_index as usize] = set;
+    }
+}
+
+pub struct PackedArrayIter<'a> {
+    index: usize,
+    array: &'a PackedArray,
+}
+
+impl<'a> Iterator for PackedArrayIter<'a> {
+    type Item = u16;
+
+    fn next(&mut self) -> Option<u16> {
+        let item = if self.index >= 4096 {
+            return None;
+        } else {
+            Some(self.array.get(self.index))
+        };
+
+        self.index += 1;
+        item
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl<'a> FusedIterator for PackedArrayIter<'a> {}
+
+impl<'a> ExactSizeIterator for PackedArrayIter<'a> {
+    fn len(&self) -> usize {
+        4096 - self.index
+    }
+}
+
+impl<'a> From<&'a PackedArray> for PackedArrayIter<'a> {
+    fn from(array: &'a PackedArray) -> Self {
+        PackedArrayIter { index: 0, array }
+    }
+}
+
+impl<'a> IntoIterator for &'a PackedArray {
+    type IntoIter = PackedArrayIter<'a>;
+    type Item = u16;
+
+    fn into_iter(self) -> Self::IntoIter {
+        PackedArrayIter::from(self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum PackingType {
+    Greedy(Box<[u16; 4096]>),
+    Lazy(PackedArray),
+}
+
 enum LayerIterInner<'l> {
     Lazy(PackedArrayIter<'l>),
     Greedy(std::slice::Iter<'l, u16>),
 }
 
-/// An iterator over the blocks in a layer.
 pub struct LayerIter<'l> {
     inner: LayerIterInner<'l>,
     palette: &'l [BlockDef],
@@ -139,8 +266,8 @@ impl<'l> ExactSizeIterator for LayerIter<'l> {
 impl<'l> From<&'l Layer> for LayerIter<'l> {
     fn from(layer: &'l Layer) -> LayerIter<'l> {
         let inner = match &layer.indices {
-            ArrayType::Greedy(greedy) => LayerIterInner::Greedy(greedy.iter()),
-            ArrayType::Lazy(array) => LayerIterInner::Lazy(array.iter()),
+            PackingType::Greedy(greedy) => LayerIterInner::Greedy(greedy.iter()),
+            PackingType::Lazy(array) => LayerIterInner::Lazy(array.iter()),
         };
 
         LayerIter {
@@ -172,71 +299,58 @@ pub struct Layer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
-    indices: ArrayType,
+    indices: PackingType,
     /// List of all different block types in this sub chunk layer.
     palette: Vec<BlockDef>,
 }
 
 impl Layer {
-    /// Returns the block at the specified position in the layer.
-    /// 
-    /// This function returns `None` if `pos` was outside of the subchunks [0, 16)^3 range. 
-    pub fn get<K>(&self, pos: K) -> Option<&BlockDef>
-    where
-        K: Into<Vec3<u8>>,
-    {
-        let pos = pos.into();
-
-        let offset = to_offset(pos);
-        let idx = self.indices.get(offset)?;
-
-        self.palette.get(idx as usize)
-    }
-
-    /// Sets the block at the specified position in the layer.
-    /// 
-    /// If the subchunk uses the lazy method, this method might repack the array with more bits
-    /// depending on the amount of unique blocks in the chunk.
-    pub fn set<K>(&mut self, block: K, value: BlockDef)
+    #[allow(dead_code)]
+    fn get<K>(&self, block: K) -> Option<&BlockDef>
     where
         K: Into<Vec3<u8>>,
     {
         let pos = block.into();
-        let offset = to_offset(pos);
-        
-        // Check whether definition exists in palette.
-        let idx = self.palette
-            .iter()
-            .enumerate()
-            .find_map(|(i, d)| value.eq(d).then_some(i));
 
-        if idx.is_none() {
-            self.palette.push(value);
+        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
+            return None;
         }
 
-        let idx = idx.unwrap_or_else(|| self.palette.len() - 1);
-        self.indices.set(offset, idx as u16);
+        let offset = to_offset(pos);
+        let index = match &self.indices {
+            PackingType::Greedy(slice) => slice[offset],
+            PackingType::Lazy(array) => array.get(offset),
+        };
+
+        Some(&self.palette[index as usize])
     }
 
-    /// Returns the block palette of this layer.
+    #[allow(dead_code)]
+    fn set<K>(&self, _block: K, _value: BlockDef)
+    where
+        K: Into<Vec3<u8>>,
+    {
+        todo!()
+    }
+
     pub fn palette(&self) -> &[BlockDef] {
         &self.palette
     }
 
     /// Deserializes a single layer from the given buffer.
-    pub(crate) fn deserialize_from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
+    fn deserialize_from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
         let indices = if M::IS_GREEDY {
             let indices = match Layer::unpack_array(&mut reader)? {
                 PackedResult::Data(data) => data,
                 PackedResult::Empty => {
-                    return Err(Error::Invalid("chunk layer packed array cannot be empty"))
+                    return Err(Error::Invalid("chunk layer packed array cannot be empty"));
                 }
                 PackedResult::Inherit => {
-                    return Err(Error::Invalid("chunk layers do not support inheritance"))
+                    return Err(Error::Invalid("chunk layers do not support inheritance"));
                 }
             };
 
-            ArrayType::Greedy(indices)
+            PackingType::Greedy(indices)
         } else {
             let bits = reader.read_u8()? >> 1;
             let indices = match bits {
@@ -255,7 +369,7 @@ impl Layer {
                 }
             };
 
-            ArrayType::Lazy(indices)
+            PackingType::Lazy(indices)
         };
 
         let len = reader.read_u32::<LittleEndian>()? as usize;
@@ -313,13 +427,13 @@ impl Layer {
     /// Serializes a single layer into the given buffer.
     fn serialize_to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
         match &self.indices {
-            ArrayType::Greedy(array) => {
+            PackingType::Greedy(array) => {
                 Self::pack_array(&mut writer, array, self.palette.len() - 1, false)?
             }
-            ArrayType::Lazy(array) => {
-                writer.write_u8((array.bits() << 1) as u8)?;
+            PackingType::Lazy(array) => {
+                writer.write_u8((array.bits << 1) as u8)?;
 
-                let cast = bytemuck::cast_slice::<u32, u8>(array.words());
+                let cast = bytemuck::cast_slice::<u32, u8>(&array.words);
                 writer.write_all(cast)?;
             }
         };
@@ -373,9 +487,20 @@ where
     ///
     /// This function panics if the given position is out of range.
     /// In other words, it requires that `x <= 16`, `y <= 16` and `z <= 16`.
-    fn index(&self, pos: I) -> &BlockDef {
-        let pos = pos.into();
-        self.get(pos).unwrap()
+    fn index(&self, position: I) -> &BlockDef {
+        let position = position.into();
+        assert!(
+            position.x <= 16 && position.y <= 16 && position.z <= 16,
+            "Block position out of sub chunk bounds"
+        );
+
+        let offset = to_offset(position);
+        let index = match &self.indices {
+            PackingType::Greedy(indices) => indices[offset] as usize,
+            PackingType::Lazy(array) => array.get(offset) as usize,
+        };
+
+        &self.palette[index]
     }
 }
 

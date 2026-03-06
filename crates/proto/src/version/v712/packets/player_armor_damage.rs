@@ -21,10 +21,10 @@ pub enum PlayerArmorDamageFlag {
 impl ProtoCodec for PlayerArmorDamagePacket {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         self.slot_bitset.proto_serialize(stream)?;
-        for i in 0..5 {
+        for (i, value) in self.damage.iter().enumerate() {
             let flag = 1 << i;
             if (self.slot_bitset & flag) != 0 {
-                ProtoCodecVAR::proto_serialize(&self.damage[i], stream)?;
+                ProtoCodecVAR::proto_serialize(value, stream)?;
             }
         }
 
@@ -35,10 +35,10 @@ impl ProtoCodec for PlayerArmorDamagePacket {
         let slot_bitset = i8::proto_deserialize(stream)?;
         let damage = {
             let mut damage = [0; 5];
-            for i in 0..5 {
+            for (i, value) in damage.iter_mut().enumerate() {
                 let flag = 1 << i;
                 if (slot_bitset & flag) != 0 {
-                    damage[i] = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+                    *value = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
                 }
             }
             damage

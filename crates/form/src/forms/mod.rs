@@ -57,14 +57,14 @@ impl TryFrom<Form> for String {
 
 #[cfg(test)]
 mod test {
+    use crate::elems::Element;
     use crate::elems::button::{Button, ButtonImage};
     use crate::elems::dropdown::Dropdown;
     use crate::elems::toggle::Toggle;
-    use crate::elems::Element;
+    use crate::forms::Form;
     use crate::forms::custom::CustomForm;
     use crate::forms::modal::ModalForm;
     use crate::forms::simple::SimpleForm;
-    use crate::forms::Form;
 
     #[test]
     fn custom_form() {

@@ -1,7 +1,7 @@
 [package]
 name = "bedrockrs"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [workspace]
 members = ["crates/*"]
@@ -21,7 +21,7 @@ bedrockrs_proto_core = { path = "crates/proto_core", optional = true }
 
 bedrockrs_server = { path = "crates/server", optional = true }
 
-bedrockrs_level = {path = "crates/level", optional = true}
+bedrockrs_level = { path = "crates/level", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.40", features = ["full"] }
@@ -37,7 +37,11 @@ chrono = "0.4"
 [features]
 
 addon = ["dep:bedrockrs_addon"]
-proto = ["dep:bedrockrs_proto","dep:bedrockrs_proto_core","dep:bedrockrs_macros",]
+proto = [
+    "dep:bedrockrs_proto",
+    "dep:bedrockrs_proto_core",
+    "dep:bedrockrs_macros",
+]
 level = ["dep:bedrockrs_level"]
 full = ["addon", "level", "proto", "server"]
 form = ["dep:bedrockrs_form"]
