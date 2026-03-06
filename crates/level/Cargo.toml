@@ -15,8 +15,6 @@ name = "benchmark"
 harness = false
 
 [dependencies]
-bedrockrs_core = { path = "../core" }
-bedrockrs_proto = { path = "../proto" }
 bedrockrs_shared = { path = "../shared" }
 nbtx = "1.0.0"
 

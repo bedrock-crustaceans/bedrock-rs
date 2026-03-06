@@ -1,12 +1,6 @@
-use std::{io::{Read, Write}, iter::FusedIterator};
-
-use byteorder::{ReadBytesExt, WriteBytesExt};
-use nbtx::LittleEndian;
-
-use crate::{
-    error::{Error, Result},
-    subchunk::Layer,
-};
+use std::io::{Read, Write};
+use std::iter::FusedIterator;
+use crate::error::Result;
 
 /// An array that is still packed. Words are unpacked as needed.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,9 +28,9 @@ impl PackedArray {
         PackedArrayIter::from(self)
     }
 
-    pub const fn bits(&self) -> u32 {
+    pub fn bits(&self) -> u32 {
         self.bits
-    } 
+    }
 
     pub fn words(&self) -> &[u32] {
         &self.words
@@ -92,6 +86,23 @@ impl PackedArray {
 
         self.words[array_index as usize] = set;
     }
+
+    pub fn from_disk<R: Read>(mut reader: R, bits: u8) -> Result<Self> {
+        let per_word = u32::BITS / bits as u32;
+        let word_count = 4096u32.div_ceil(per_word);
+
+        let mut words = vec![0; word_count as usize];
+        reader.read_exact(bytemuck::cast_slice_mut::<u32, u8>(&mut words))?;
+
+        Ok(Self {
+            bits: bits as u32, words
+        })
+    }
+
+    pub fn to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+        writer.write_all(bytemuck::cast_slice::<u32, u8>(&self.words))?;
+        Ok(())
+    }
 }
 
 /// An iterator over [`PackedArray`].
@@ -132,132 +143,10 @@ impl<'a> From<&'a PackedArray> for PackedArrayIter<'a> {
 }
 
 impl<'a> IntoIterator for &'a PackedArray {
-    type IntoIter = PackedArrayIter<'a>;
     type Item = u16;
+    type IntoIter = PackedArrayIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         PackedArrayIter::from(self)
     }
-}
-
-/// The type of array used in the subchunk.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ArrayType {
-    Greedy(Box<[u16; 4096]>),
-    Lazy(PackedArray),
-}
-
-impl ArrayType {
-    pub fn get(&self, pos: usize) -> Option<u16> {
-        match self {
-            Self::Greedy(array) => array.get(pos).copied(),
-            Self::Lazy(array) => array.get(pos)
-        }
-    }
-
-    pub fn set(&mut self, pos: usize, value: u16) {
-        match self {
-            Self::Greedy(array) => array[pos] = value,
-            Self::Lazy(array) => array.set(pos, value)
-        }
-    }
-}
-
-impl Layer {
-    pub(crate) fn pack_array<W>(
-        mut writer: W,
-        array: &[u16; 4096],
-        max_index: usize,
-        is_network: bool,
-    ) -> Result<()>
-    where
-        W: Write,
-    {
-        // Determine the required bits per index
-        let index_size = {
-            let mut bits_per_block = 0;
-            // Loop over allowed values.
-            for b in [1, 2, 3, 4, 5, 6, 8, 16] {
-                if 2usize.pow(b) >= max_index {
-                    bits_per_block = b;
-                    break;
-                }
-            }
-
-            bits_per_block as u8
-        };
-
-        writer.write_u8(index_size << 1 | is_network as u8)?;
-
-        // Amount of indices that fit in a single 32-bit integer.
-        let per_word = u32::BITS / index_size as u32;
-
-        let mut offset = 0;
-        while offset < 4096 {
-            let mut word = 0;
-            for w in 0..per_word {
-                if offset == 4096 {
-                    break;
-                }
-
-                let index = array[offset] as u32;
-                word |= index << (w * index_size as u32);
-
-                offset += 1;
-            }
-
-            writer.write_u32::<LittleEndian>(word)?;
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn unpack_array<R>(mut reader: R) -> Result<PackedResult>
-    where
-        R: Read,
-    {
-        let index_size = reader.read_u8()? >> 1;
-        if index_size == 0 {
-            return Ok(PackedResult::Empty);
-        } else if index_size == 0x7f {
-            return Ok(PackedResult::Inherit);
-        } else if ![1, 2, 3, 4, 5, 6, 8, 16].contains(&index_size) {
-            return Err(Error::InvalidIndexSize(index_size));
-        }
-
-        let per_word = u32::BITS / index_size as u32;
-        let word_count = 4096u32.div_ceil(per_word);
-        let mask = !(!0u32 << index_size);
-
-        let mut indices = Box::new([0u16; 4096]);
-        let mut offset = 0;
-
-        for _ in 0..word_count {
-            let mut word = reader.read_u32::<LittleEndian>()?;
-
-            for _ in 0..per_word {
-                if offset == 4096 {
-                    break;
-                }
-
-                indices[offset] = (word & mask) as u16;
-                word >>= index_size;
-
-                offset += 1;
-            }
-        }
-
-        Ok(PackedResult::Data(indices))
-    }
-}
-
-/// Return value from packed array deserialisation.
-#[derive(Debug, PartialEq, Eq)]
-pub enum PackedResult {
-    /// The packed array was empty.
-    Empty,
-    /// This array inherits from the previously processed array.
-    Inherit,
-    /// New data for the array.
-    Data(Box<[u16; 4096]>),
 }

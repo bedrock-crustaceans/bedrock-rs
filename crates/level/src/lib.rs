@@ -2,7 +2,7 @@ pub mod biome;
 pub mod error;
 pub mod key;
 pub mod subchunk;
-pub mod unpacker;
+pub mod bits;
 pub mod traits;
 
 pub mod settings;
@@ -14,6 +14,8 @@ pub use mojang::*;
 
 #[cfg(feature = "rusty-leveldb")]
 pub mod rusty;
+mod packed;
+mod unpacked;
 
 #[cfg(feature = "rusty-leveldb")]
 pub use rusty::*;

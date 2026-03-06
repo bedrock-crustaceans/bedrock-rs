@@ -3,7 +3,8 @@ use std::fs::File;
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
-    subchunk::{Greedy, Lazy, SubChunk}, traits::DatabaseAccess,
+    subchunk::{Packed, SubChunk, Unpacked},
+    traits::DatabaseAccess,
 };
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use flate2::read::GzDecoder;
@@ -23,7 +24,7 @@ fn extract_test_db() -> tempfile::TempDir {
 }
 
 fn lazy_load_benchmark(data: &[u8]) {
-    let _chunk = SubChunk::deserialize_from_disk::<Lazy, _>(data).unwrap();
+    let _chunk = SubChunk::from_disk::<Packed, _>(data).unwrap();
 }
 
 fn lazy_iter_benchmark(data: &SubChunk) {
@@ -35,7 +36,7 @@ fn lazy_iter_benchmark(data: &SubChunk) {
 }
 
 fn greedy_load_benchmark(data: &[u8]) {
-    let _chunk = SubChunk::deserialize_from_disk::<Greedy, _>(data).unwrap();
+    let _chunk = SubChunk::from_disk::<Unpacked, _>(data).unwrap();
 }
 
 fn greedy_iter_benchmark(data: &SubChunk) {
@@ -88,9 +89,9 @@ fn benchmark(c: &mut Criterion) {
     let mut group2 = c.benchmark_group("iter_benches");
     for (key, chunk) in &chunks {
         let slice = chunk.as_slice();
-        let greedy_chunk = SubChunk::deserialize_from_disk::<Greedy, _>(slice).unwrap();
+        let greedy_chunk = SubChunk::from_disk::<Unpacked, _>(slice).unwrap();
 
-        let lazy_chunk = SubChunk::deserialize_from_disk::<Lazy, _>(slice).unwrap();
+        let lazy_chunk = SubChunk::from_disk::<Packed, _>(slice).unwrap();
 
         group2.throughput(criterion::Throughput::Elements(4096));
         group2.bench_with_input(

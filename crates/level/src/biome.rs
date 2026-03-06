@@ -1,10 +1,11 @@
 use std::io::Read;
 
-use crate::{error::Result, unpacker::ArrayType};
+use crate::{error::Result};
+use crate::bits::BitArray;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BiomeArray {
-    indices: ArrayType,
+    array: BitArray,
     palette: Vec<u32>
 }
 
@@ -40,11 +41,6 @@ impl Biomes {
 
         let heightmap_bytes = bytemuck::cast_slice_mut::<u16, u8>(heightmap.as_mut());
         reader.read_exact(heightmap_bytes)?;
-
-        let mut fragments = Vec::new();
-        loop {
-            todo!()
-        }
 
         todo!()
     }

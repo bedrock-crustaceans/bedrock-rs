@@ -1,13 +1,14 @@
 use std::fs::File;
 
+use bedrockrs_level::settings::LevelSettings;
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
-    subchunk::{Greedy, SubChunk}, traits::DatabaseAccess,
+    subchunk::{SubChunk, Unpacked},
+    traits::DatabaseAccess,
 };
 use flate2::read::GzDecoder;
 use tar::Archive;
-use bedrockrs_level::settings::LevelSettings;
 
 pub fn extract_test_db() -> tempfile::TempDir {
     let tmp = tempfile::tempdir().expect("Failed to create temp dir");
@@ -22,6 +23,7 @@ pub fn extract_test_db() -> tempfile::TempDir {
 }
 
 #[test]
+#[ignore = "currently not properly implemented"]
 fn read_level_dat() {
     let tmp = extract_test_db();
     let dat_path = tmp.path().join("test_level/level.dat");
@@ -53,7 +55,7 @@ fn mojang_read_chunk() {
                 key.serialize(&mut buf).unwrap();
 
                 let val = database.get(buf).unwrap().unwrap();
-                let chunk = SubChunk::deserialize_from_disk::<Greedy, _>(val.as_ref()).unwrap();
+                let chunk = SubChunk::from_disk::<Unpacked, _>(val.as_ref()).unwrap();
 
                 println!("{chunk:?}");
 

@@ -1,10 +1,9 @@
-use bedrockrs_shared::world::dimension::Dimension;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 use vek::Vec2;
 
 use std::io::Write;
-
+use bedrockrs_shared::world::dimension::Dimension;
 use crate::error::{Error, Result};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

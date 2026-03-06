@@ -17,7 +17,7 @@ pub enum Error {
     #[error("{0}")]
     IoError(#[from] std::io::Error),
     #[error("invalid packed array index size: {0}")]
-    InvalidIndexSize(u8),
+    InvalidBitSize(u8),
     #[error("invalid {0}")]
     Invalid(&'static str),
     #[error("unknown error")]
