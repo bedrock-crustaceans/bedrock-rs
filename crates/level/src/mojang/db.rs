@@ -97,7 +97,7 @@ impl Database {
     }
 
     /// Creates an iterator over all the keys in this database.
-    pub fn iter(&self) -> Keys<'_> {
+    pub fn keys(&self) -> Keys<'_> {
         Keys::new(self)
     }
 

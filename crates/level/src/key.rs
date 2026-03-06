@@ -6,6 +6,8 @@ use std::io::Write;
 use bedrockrs_shared::world::dimension::Dimension;
 use crate::error::{Error, Result};
 
+pub const LOCAL_PLAYER: &'static str = "~local_player";
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum KeyVariant {
@@ -22,6 +24,14 @@ pub enum KeyVariant {
     BorderBlocks = 0x38,
     HardcodedSpawnAreas = 0x39,
     RandomTicks = 0x3a,
+    Checksums = 0x3b,
+    MetadataHash = 0x3d,
+    GeneratedBlending = 0x3e,
+    BlendingBiomeHeight = 0x3f,
+    BlendingData = 0x40,
+    ActorDigestVersion = 0x41,
+    LegacyVersion = 0x76,
+    AabbVolumes = 0x77,
 }
 
 impl KeyVariant {
@@ -41,6 +51,14 @@ impl KeyVariant {
             KeyVariant::BorderBlocks => 0x38,
             KeyVariant::HardcodedSpawnAreas => 0x39,
             KeyVariant::RandomTicks => 0x3a,
+            KeyVariant::Checksums => 0x3b,
+            KeyVariant::MetadataHash => 0x3d,
+            KeyVariant::GeneratedBlending => 0x3e,
+            KeyVariant::BlendingBiomeHeight => 0x3f,
+            KeyVariant::BlendingData => 0x40,
+            KeyVariant::ActorDigestVersion => 0x41,
+            KeyVariant::LegacyVersion => 0x76,
+            KeyVariant::AabbVolumes => 0x77,
         }
     }
 }
@@ -93,6 +111,7 @@ impl Key {
         R: AsRef<[u8]>, // sadly `std::io::Read` does not have an easy way to check how many bytes are left.
     {
         let mut reader = reader.as_ref();
+        let reader_copy = reader;
 
         let x = reader.read_i32::<LittleEndian>()?;
         let z = reader.read_i32::<LittleEndian>()?;
@@ -121,7 +140,25 @@ impl Key {
             0x38 => KeyVariant::BorderBlocks,
             0x39 => KeyVariant::HardcodedSpawnAreas,
             0x3a => KeyVariant::RandomTicks,
-            _ => return Err(Error::Invalid("invalid leveldb database key type")),
+            0x3b => KeyVariant::Checksums,
+            0x3d => KeyVariant::MetadataHash,
+            0x3e => KeyVariant::GeneratedBlending,
+            0x3f => KeyVariant::BlendingBiomeHeight,
+            0x40 => KeyVariant::BlendingData,
+            0x41 => KeyVariant::ActorDigestVersion,
+            0x76 => KeyVariant::LegacyVersion,
+            0x77 => KeyVariant::AabbVolumes,
+            ty => {
+                println!("Unknown key type: {ty:#0x}");
+
+                // Check whether this was one of the strings
+                let string = str::from_utf8(reader_copy)?;
+                if string == LOCAL_PLAYER {
+                    println!("LOCAL");
+                }
+
+                return Err(Error::Invalid("invalid leveldb database key type"))
+            },
         };
 
         let key = Self {
