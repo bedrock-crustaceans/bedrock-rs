@@ -6,11 +6,11 @@ use seq_macro::seq;
 macro_rules! impl_proto_tuple {
     ($name:ident, 0) => {
         impl $name for () {
-            fn serialize<W: Write>(&self, _stream: &mut W) -> Result<(), ProtoCodecError> {
+            fn serialize<W: ::std::io::Write>(&self, _stream: &mut W) -> Result<(), ProtoCodecError> {
                 Ok(())
             }
 
-            fn deserialize<R: Read>(_stream: &mut R) -> Result<Self, ProtoCodecError> {
+            fn deserialize<R: ::std::io::Read>(_stream: &mut R) -> Result<Self, ProtoCodecError> {
                 Ok(())
             }
 
@@ -21,7 +21,7 @@ macro_rules! impl_proto_tuple {
     };
     ($name:ident, $size:literal) => {
         impl<T: $name> $name for seq!(N in 0..$size { ( #(T, )* ) }) {
-            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+            fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
                 seq!(N in 0..$size {
                     self.N.serialize(stream)?;
                 });
@@ -29,7 +29,7 @@ macro_rules! impl_proto_tuple {
                 Ok(())
             }
 
-            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+            fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
                 seq!(N in 0..$size {
                     let tuple = (
                         #( T::deserialize(stream)?, )*
@@ -43,7 +43,7 @@ macro_rules! impl_proto_tuple {
                 let mut size: usize = 0;
                 seq!(N in 0..$size {
                     size += self.N.size_hint();
-                })
+                });
                 size
             }
         }

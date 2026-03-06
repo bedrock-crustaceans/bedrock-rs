@@ -6,7 +6,7 @@ use vek::{Vec2, Vec3};
 macro_rules! impl_proto_vec2 {
     ($name:ident) => {
         impl<T: $name> $name for Vec2<T> {
-            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
+            fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
             where
                 Self: Sized,
             {
@@ -16,7 +16,7 @@ macro_rules! impl_proto_vec2 {
                 Ok(())
             }
 
-            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
+            fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
             where
                 Self: Sized,
             {
@@ -36,7 +36,7 @@ macro_rules! impl_proto_vec2 {
 macro_rules! impl_proto_vec3 {
     ($name:ident) => {
         impl<T: $name> $name for Vec3<T> {
-            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
+            fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
             where
                 Self: Sized,
             {
@@ -47,7 +47,7 @@ macro_rules! impl_proto_vec3 {
                 Ok(())
             }
 
-            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
+            fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
             where
                 Self: Sized,
             {
