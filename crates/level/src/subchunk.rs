@@ -1,5 +1,5 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::iter::FusedIterator;
@@ -341,10 +341,10 @@ impl Layer {
             let indices = match Layer::unpack_array(&mut reader)? {
                 PackedResult::Data(data) => data,
                 PackedResult::Empty => {
-                    return Err(Error::Invalid("chunk layer packed array cannot be empty"))
+                    return Err(Error::Invalid("chunk layer packed array cannot be empty"));
                 }
                 PackedResult::Inherit => {
-                    return Err(Error::Invalid("chunk layers do not support inheritance"))
+                    return Err(Error::Invalid("chunk layers do not support inheritance"));
                 }
             };
 

@@ -1,3 +1,5 @@
+#![allow(ambiguous_glob_reexports)]
+
 macro_rules! export {
     ($name:ident) => {
         mod $name;

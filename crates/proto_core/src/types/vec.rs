@@ -1,8 +1,8 @@
 use std::io::Cursor;
 
+use crate::ProtoCodec;
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
-use crate::ProtoCodec;
 use vek::{Vec2, Vec3};
 
 macro_rules! impl_proto_vec2 {

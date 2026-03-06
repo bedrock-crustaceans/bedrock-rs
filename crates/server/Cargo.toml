@@ -1,7 +1,7 @@
 [package]
 name = "bedrockrs_server"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 thiserror = "2.0"
@@ -11,7 +11,12 @@ bedrockrs_shared = { path = "../shared" }
 bedrockrs_proto = { path = "../proto" }
 
 tokio = { version = "1.40", features = ["full", "tracing"] }
-shipyard = { version = "0.11", features = ["parallel", "proc", "rayon", "tracing"] }
+shipyard = { version = "0.11", features = [
+    "parallel",
+    "proc",
+    "rayon",
+    "tracing",
+] }
 rayon = "1.10"
 vek = "0.17"
 

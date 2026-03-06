@@ -1,6 +1,5 @@
 use bedrockrs_macros::{gamepacket, ProtoCodec};
 use vek::Vec3;
-use bedrockrs_shared::world::dimension::Dimension;
 
 #[gamepacket(id = 61)]
 #[derive(ProtoCodec, Clone, Debug)]

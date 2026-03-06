@@ -1,9 +1,9 @@
 use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::helper::ProtoHelper;
+use bedrockrs_proto_core::GamePacketsAll;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::sub_client::SubClientID;
-use bedrockrs_proto_core::GamePacketsAll;
 use std::io::Cursor;
 
 pub fn encode_gamepackets<T: ProtoHelper>(

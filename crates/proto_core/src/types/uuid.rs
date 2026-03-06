@@ -1,5 +1,5 @@
-use crate::error::ProtoCodecError;
 use crate::ProtoCodec;
+use crate::error::ProtoCodecError;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::Cursor;
 use std::mem::size_of;

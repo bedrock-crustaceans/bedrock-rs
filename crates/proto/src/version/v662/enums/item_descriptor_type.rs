@@ -47,7 +47,7 @@ pub struct ComplexAliasDescriptor {
 impl ProtoCodec for DefaultDescriptor {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         <i16 as ProtoCodecLE>::proto_serialize(&self.item_id, stream)?;
-        if (self.item_id != 0) {
+        if self.item_id != 0 {
             <i16 as ProtoCodecLE>::proto_serialize(&self.aux_value, stream)?;
         }
 

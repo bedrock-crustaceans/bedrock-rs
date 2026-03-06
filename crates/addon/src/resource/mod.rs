@@ -2,11 +2,11 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::Addon;
 use crate::error::AddonError;
 use crate::error::AddonError::{IOError, JsonError};
 use crate::language::Languages;
 use crate::manifest::AddonManifest;
-use crate::Addon;
 
 #[derive(Debug, Clone)]
 pub struct ResourcePack {

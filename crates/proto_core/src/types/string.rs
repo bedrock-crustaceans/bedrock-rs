@@ -2,8 +2,8 @@ use std::convert::TryInto;
 use std::io::{Cursor, Read, Write};
 use varint_rs::{VarintReader, VarintWriter};
 
-use crate::error::ProtoCodecError;
 use crate::ProtoCodec;
+use crate::error::ProtoCodecError;
 
 impl ProtoCodec for String {
     fn proto_serialize(&self, buf: &mut Vec<u8>) -> Result<(), ProtoCodecError>

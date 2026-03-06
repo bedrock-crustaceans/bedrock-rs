@@ -5,7 +5,7 @@ use bedrockrs_level::{
     key::{Key, KeyVariant},
     subchunk::{Greedy, Lazy, SubChunk},
 };
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use flate2::read::GzDecoder;
 use tar::Archive;
 use vek::Vec3;

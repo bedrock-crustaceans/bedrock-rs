@@ -3,11 +3,9 @@ use proc_macro2::{Ident, Span};
 use quote::quote;
 use std::collections::{HashMap, HashSet};
 use syn::parse::ParseStream;
-use syn::spanned::Spanned;
-use syn::token::Token;
 use syn::{
-    braced, bracketed, parenthesized, parse::Parse, punctuated::Punctuated, LitInt, LitStr, Path,
-    Token,
+    LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse,
+    punctuated::Punctuated,
 };
 
 mod kw {

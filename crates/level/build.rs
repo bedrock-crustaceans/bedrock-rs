@@ -9,7 +9,7 @@ fn main() {
         if std::fs::read_dir("ffi/leveldb").unwrap().next().is_none() {
             // Submodule does not exist, retrieve it
             Command::new("git")
-                .args(&["submodule", "update", "--init"])
+                .args(["submodule", "update", "--init"])
                 .status()
                 .expect("Failed to download `leveldb` submodule");
         }

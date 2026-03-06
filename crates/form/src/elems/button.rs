@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// [`Button`] signifies a button incorporated into a [`SimpleForm`](crate::forms::simple::SimpleForm)
 /// or [`ModalForm`](crate::forms::modal::ModalForm) form.

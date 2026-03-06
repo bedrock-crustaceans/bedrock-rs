@@ -1,6 +1,6 @@
+use crate::ProtoCodec;
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
-use crate::ProtoCodec;
 use seq_macro::seq;
 use std::io::Cursor;
 

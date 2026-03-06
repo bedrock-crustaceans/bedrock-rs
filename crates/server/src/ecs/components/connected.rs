@@ -1,5 +1,5 @@
-use bedrockrs_proto::connection::shard::arc::ConnectionShared;
 use bedrockrs_proto::ProtoHelper;
+use bedrockrs_proto::connection::shard::arc::ConnectionShared;
 use shipyard::Component;
 
 #[derive(Component)]

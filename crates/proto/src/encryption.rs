@@ -1,10 +1,17 @@
 use bedrockrs_proto_core::error::EncryptionError;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Encryption {
     send_counter: u64,
     buf: [u8; 8],
     key: Vec<u8>,
+}
+
+impl Default for Encryption {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Encryption {

@@ -29,25 +29,25 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
         match &self.is_block {
             false => {
                 <V::ActorRuntimeID as ProtoCodec>::proto_serialize(
-                    &self.target_runtime_id.as_ref().unwrap(),
+                    self.target_runtime_id.as_ref().unwrap(),
                     stream,
                 )?;
             }
             true => {
                 <V::NetworkBlockPosition as ProtoCodec>::proto_serialize(
-                    &self.block_position.as_ref().unwrap(),
+                    self.block_position.as_ref().unwrap(),
                     stream,
                 )?;
                 <V::CommandBlockMode as ProtoCodec>::proto_serialize(
-                    &self.command_block_mode.as_ref().unwrap(),
+                    self.command_block_mode.as_ref().unwrap(),
                     stream,
                 )?;
                 <bool as ProtoCodec>::proto_serialize(
-                    &self.redstone_mode.as_ref().unwrap(),
+                    self.redstone_mode.as_ref().unwrap(),
                     stream,
                 )?;
                 <bool as ProtoCodec>::proto_serialize(
-                    &self.is_conditional.as_ref().unwrap(),
+                    self.is_conditional.as_ref().unwrap(),
                     stream,
                 )?;
             }
@@ -136,10 +136,10 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
                         + size_of::<bool>()
                 }
             }
-            + &self.command.get_size_prediction()
-            + &self.last_output.get_size_prediction()
-            + &self.name.get_size_prediction()
-            + &self.filtered_name.get_size_prediction()
+            + self.command.get_size_prediction()
+            + self.last_output.get_size_prediction()
+            + self.name.get_size_prediction()
+            + self.filtered_name.get_size_prediction()
             + size_of::<bool>()
             + size_of::<u32>()
             + size_of::<bool>()

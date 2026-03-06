@@ -1,5 +1,5 @@
-use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use std::io::Cursor;
 use std::mem::size_of;
 use varint_rs::{VarintReader, VarintWriter};
