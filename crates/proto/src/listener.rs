@@ -1,7 +1,7 @@
 use core::net::SocketAddr;
 
-use rak_rs::mcpe::motd::Gamemode;
 use rak_rs::Motd;
+use rak_rs::mcpe::motd::Gamemode;
 use rand::random;
 
 use crate::connection::Connection;
@@ -9,6 +9,7 @@ use crate::error::{ListenerError, RakNetError, TransportLayerError};
 use crate::info::MINECRAFT_EDITION_MOTD;
 use crate::transport::TransportLayerListener;
 
+#[allow(dead_code)]
 pub struct Listener {
     listener: TransportLayerListener,
     name: String,
@@ -20,6 +21,7 @@ pub struct Listener {
 }
 
 impl Listener {
+    #[allow(clippy::too_many_arguments)]
     pub async fn new_raknet(
         name: String,
         sub_name: String,

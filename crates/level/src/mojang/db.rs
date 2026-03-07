@@ -1,16 +1,13 @@
 use std::{
-    ffi::{c_char, c_int, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_int, c_void},
     ops::Deref,
     ptr::NonNull,
 };
 
+use crate::ffi::{self, FfiStatus};
 use crate::{
     error::{Error, Result},
     iter::Keys,
-};
-use crate::{
-    ffi::{self, FfiStatus},
-    key::Key,
 };
 
 /// Smart pointer around a LevelDB buffer, ensuring the buffer is deallocated after use.
@@ -216,7 +213,7 @@ unsafe impl Sync for Database {}
 unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
     assert_ne!(result.status, FfiStatus::Success);
 
-    let ffi_err = CStr::from_ptr(result.data.cast::<c_char>());
+    let ffi_err = unsafe { CStr::from_ptr(result.data.cast::<c_char>()) };
     let str = match ffi_err.to_str() {
         Ok(str) => str,
         Err(err) => return Error::InvalidUtf8(err),
@@ -224,6 +221,6 @@ unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
 
     let owned = str.to_owned();
 
-    ffi::bedrockrs_buffer_destroy(result.data.cast::<c_char>());
+    unsafe { ffi::bedrockrs_buffer_destroy(result.data.cast::<c_char>()) };
     Error::LevelDbError(owned)
 }

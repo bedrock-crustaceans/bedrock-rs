@@ -1,10 +1,10 @@
 use crate::error::LoginError;
 use bedrockrs_proto::listener::Listener;
 use shipyard::World;
-use std::error::Error;
 
 pub mod builder;
 
+#[allow(dead_code)]
 pub struct Server {
     listeners: Vec<Listener>,
     name: String,

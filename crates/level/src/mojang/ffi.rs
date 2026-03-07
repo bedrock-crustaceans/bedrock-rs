@@ -31,7 +31,7 @@ pub struct FfiResult {
     pub data: *mut c_void,
 }
 
-extern "C" {
+unsafe extern "C" {
     /// Open a LevelDB database.
     ///
     /// # Safety

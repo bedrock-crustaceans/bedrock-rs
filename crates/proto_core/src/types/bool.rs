@@ -2,8 +2,8 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-use crate::error::ProtoCodecError;
 use crate::ProtoCodec;
+use crate::error::ProtoCodecError;
 
 impl ProtoCodec for bool {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>

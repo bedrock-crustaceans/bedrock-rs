@@ -1,4 +1,4 @@
-use crate::attr::{extract_inner_type_from_vec, get_attrs, ProtoCodecEndianness};
+use crate::attr::{ProtoCodecEndianness, extract_inner_type_from_vec, get_attrs};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type};

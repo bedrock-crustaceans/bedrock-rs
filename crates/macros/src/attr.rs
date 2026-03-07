@@ -113,18 +113,15 @@ pub fn get_attrs(attrs: &[Attribute]) -> Result<ProtoCodecFlags, Error> {
 }
 
 pub fn extract_inner_type_from_vec(ty: &Type) -> Option<&Type> {
-    if let Type::Path(type_path) = ty {
-        if let Some(last_segment) = type_path.path.segments.last() {
-            if last_segment.ident == "Vec" {
-                if let PathArguments::AngleBracketed(ref generics) = last_segment.arguments {
-                    if generics.args.len() == 1 {
-                        if let Some(GenericArgument::Type(inner_type)) = generics.args.first() {
-                            return Some(inner_type);
-                        }
-                    }
-                }
-            }
-        }
+    if let Type::Path(type_path) = ty
+        && let Some(last_segment) = type_path.path.segments.last()
+        && last_segment.ident == "Vec"
+        && let PathArguments::AngleBracketed(ref generics) = last_segment.arguments
+        && generics.args.len() == 1
+        && let Some(GenericArgument::Type(inner_type)) = generics.args.first()
+    {
+        return Some(inner_type);
     }
+
     None
 }

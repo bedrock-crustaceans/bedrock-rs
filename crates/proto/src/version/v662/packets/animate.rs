@@ -16,6 +16,7 @@ pub struct AnimatePacket<V: ProtoVersion> {
 #[enum_repr(i32)]
 #[enum_endianness(var)]
 #[repr(i32)]
+#[allow(clippy::enum_variant_names)]
 pub enum Action {
     NoAction = 0,
     Swing = 1,
