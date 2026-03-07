@@ -5,6 +5,9 @@ on:
 
 name: Continuous integration
 
+env:
+  RUSTFLAGS: "-Dwarnings"
+
 permissions:
   contents: read
   pull-requests: write
@@ -73,4 +76,4 @@ jobs:
       - run: rustup component add clippy
       - uses: actions-rs/cargo@v1
         with:
-          command: clippy
+          command: clippy --all-targets --all-features -D warnings
