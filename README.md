@@ -84,13 +84,10 @@ Want to join this incredible group? Check out our Contributing Guide and make yo
 
 ## Contributing
 
-We welcome contributions of all kinds! Whether you're fixing bugs, adding new features, or proposing entirely new modules, your efforts are highly appreciated. Here’s how you can get involved:  
+We welcome contributions of all kinds, including bug fixes, new features, docs updates, and improvements across crates.  
+Please read the full contribution guide here: **[CONTRIBUTING.md](CONTRIBUTING.md)**  
 
-1. **Get Familiar with the Codebase:** Explore the existing modules and documentation.  
-2. **Pick an Issue:** Check out the repository’s issue tracker for tasks you can work on.  
-3. **Add Your Touch:** Feel free to innovate and bring new ideas to the table.  
-
-For guidance or collaboration, feel free to connect with the community on Discord.  
+For guidance or collaboration, connect with the community on Discord.  
 
 If you find **bedrock-rs** helpful, don’t forget to give the repository a ⭐ on GitHub.  
 
