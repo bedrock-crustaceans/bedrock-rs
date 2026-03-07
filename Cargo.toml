@@ -71,8 +71,8 @@ bedrockrs_level = { path = "crates/level", optional = true }
 [dev-dependencies]
 tokio = { workspace = true }
 
-nbtx = { workspace = true }
-uuid = { git = "https://github.com/bedrock-crustaceans/nbtx" }
+nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
+uuid = { workspace = true }
 
 fern = { version = "0.7", features = ["colored"] }
 log = { workspace = true }
