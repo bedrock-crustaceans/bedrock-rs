@@ -46,7 +46,7 @@ quote = { version = "1.0" }
 
 jsonwebtoken = "10.3"
 base64 = "0.22"
-nbtx = "1.0.0"
+nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" } #Note: move to 2.0.0 when released
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
@@ -71,7 +71,7 @@ bedrockrs_level = { path = "crates/level", optional = true }
 [dev-dependencies]
 tokio = { workspace = true }
 
-nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
+nbtx = { workspace = true }
 uuid = { workspace = true }
 
 fern = { version = "0.7", features = ["colored"] }
