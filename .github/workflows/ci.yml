@@ -1,12 +1,8 @@
-on:
-  push:
-    branches-ignore:
-      - main
-  pull_request:
+on: [ push, pull_request ]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+if: |
+  github.event_name == 'pull_request' ||
+  (github.event_name == 'push' && github.event.pull_request = null)
 
 name: Continuous integration
 
