@@ -8,7 +8,7 @@ env:
   WORKFLOW_NAME: ${{ github.workflow }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref ||  }}
+  group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
