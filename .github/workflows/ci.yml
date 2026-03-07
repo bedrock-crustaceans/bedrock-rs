@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - uses: dtolnay/rust-toolchain@stable
   
       - uses: Swatinem/rust-cache@v2
         with:
@@ -22,8 +20,15 @@ jobs:
           shared-key: "bedrock-rs-cache"
           cache-on-failure: false
 
-      - name: Test all crates
-        run: cargo test --all
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all
 
   fmt:
     name: Check formatting
@@ -31,25 +36,22 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: dtolnay/rust-toolchain@stable
-  
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/toolchain@v1
         with:
-          add-job-id-key: false
-          add-rust-environment-hash-key: false
-          shared-key: "bedrock-rs-cache"
-          cache-on-failure: false
-
-      - name: Test all crates
-        run: cargo fmt --all -- --check
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
 
   clippy:
     name: Analyze with Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - uses: dtolnay/rust-toolchain@stable
   
       - uses: Swatinem/rust-cache@v2
         with:
@@ -58,5 +60,12 @@ jobs:
           shared-key: "bedrock-rs-cache"
           cache-on-failure: false
 
-      - name: Test all crates
-        run: cargo clippy --all
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
