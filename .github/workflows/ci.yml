@@ -2,76 +2,52 @@ on: [ push, pull_request ]
 
 name: Continuous integration
 
-jobs:
-  check:
-    name: Check
-    permissions:
-      contents: read
-      pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all
+permissions:
+  contents: read
+  pull-requests: write
 
+jobs:
   test:
-    name: Test Suite
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Test crates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+
+      - uses: dtolnay/rust-toolchain@stable
+  
+      - uses: Swatinem/rust-cache@v2
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all
+          shared-key: "bedrock-rs-cache"
+
+      - name: Test all crates
+        run: cargo test --all
 
   fmt:
-    name: Rustfmt
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Check formatting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+
+      - uses: dtolnay/rust-toolchain@stable
+  
+      - uses: Swatinem/rust-cache@v2
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+          shared-key: "bedrock-rs-cache"
+
+      - name: Test all crates
+        run: cargo fmt --all -- --check
 
   clippy:
-    name: Clippy
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Analyze with Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+
+      - uses: dtolnay/rust-toolchain@stable
+  
+      - uses: Swatinem/rust-cache@v2
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+          shared-key: "bedrock-rs-cache"
+
+      - name: Test all crates
+        run: cargo clippy --all
