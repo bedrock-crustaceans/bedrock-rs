@@ -1,5 +1,6 @@
 use shipyard::Component;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct Health {
     pub current: f32,

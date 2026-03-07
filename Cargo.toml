@@ -16,7 +16,7 @@ varint-rs = "2.2"
 bytemuck = "1.25.0"
 bitflags = "2.6.0"
 
-tokio = { version = "1.40", features = ["full", "tracing"] } #TODO: Make tokio feature list for less dependencies
+tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
 shipyard = { version = "0.11" }
 
 rayon = "1.10"
@@ -41,12 +41,12 @@ criterion = "0.8.2"
 
 seq-macro = "0.3"
 proc-macro2 = "1.0"
-syn = { version = "2.0", features = ["full"] } #TODO: Make syn feature list for less dependencies
+syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
 
 jsonwebtoken = "10.3"
 base64 = "0.22"
-nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
+nbtx = "1.0.0"
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
@@ -72,7 +72,7 @@ bedrockrs_level = { path = "crates/level", optional = true }
 tokio = { workspace = true }
 
 nbtx = { workspace = true }
-uuid = { workspace = true }
+uuid = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 
 fern = { version = "0.7", features = ["colored"] }
 log = { workspace = true }
