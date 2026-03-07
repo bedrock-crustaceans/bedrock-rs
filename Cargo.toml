@@ -6,6 +6,51 @@ edition = "2024"
 [workspace]
 members = ["crates/*"]
 
+[workspace.dependencies]
+thiserror = "2.0"
+vek = "0.17"
+log = "0.4"
+
+byteorder = "1.5.0"
+varint-rs = "2.2"
+bytemuck = "1.25.0"
+bitflags = "2.6.0"
+
+tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
+shipyard = { version = "0.11" }
+
+rayon = "1.10"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+paste = "1.0"
+semver = { version = "1.0", features = ["serde"] }
+json_comments = "0.2"
+
+image = "0.25"
+tar = "0.4.44"
+tempfile = "3.26.0"
+walkdir = "2.5"
+
+flate2 = "1.0"
+snap = "1.1"
+
+x509-cert = "0.2"
+
+criterion = "0.8.2"
+
+seq-macro = "0.3"
+proc-macro2 = "1.0"
+syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
+quote = { version = "1.0" }
+
+jsonwebtoken = "10.3"
+base64 = "0.22"
+nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" } #Note: move to 2.0.0 when released
+xuid = "1.0"
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
+rand = "0.10"
+
 [dependencies]
 bedrockrs_core = { path = "crates/core" }
 bedrockrs_shared = { path = "crates/shared" }
@@ -24,14 +69,13 @@ bedrockrs_server = { path = "crates/server", optional = true }
 bedrockrs_level = { path = "crates/level", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.40", features = ["full"] }
+tokio = { workspace = true }
 
-nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
-uuid = { version = "1.11.0", features = ["v4"] }
-
+nbtx = { workspace = true }
+uuid = { workspace = true }
 
 fern = { version = "0.7", features = ["colored"] }
-log = "0.4"
+log = { workspace = true }
 chrono = "0.4"
 
 [features]

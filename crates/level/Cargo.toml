@@ -16,21 +16,21 @@ harness = false
 [dependencies]
 bedrockrs_core = { path = "../core" }
 bedrockrs_shared = { path = "../shared" }
-nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
+nbtx = { workspace = true }
 
 rusty-leveldb = { version = "4.0.1", optional = true }
 
-thiserror = "2.0"
-serde = "1.0.228"
-vek = "0.17.2"
-byteorder = "1.5.0"
-bytemuck = "1.25.0"
+thiserror = { workspace = true }
+serde = { workspace = true }
+vek = { workspace = true }
+byteorder = { workspace = true }
+bytemuck = { workspace = true }
 
 [dev-dependencies]
-tar = "0.4.44"
-flate2 = "1.1.9"
-tempfile = "3.26.0"
-criterion = "0.8.2"
+tar = { workspace = true }
+flate2 = { workspace = true }
+tempfile = { workspace = true }
+criterion = { workspace = true }
 
 [build-dependencies]
 cmake = { version = "0.1.57", optional = true }
