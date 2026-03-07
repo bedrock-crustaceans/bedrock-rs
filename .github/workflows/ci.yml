@@ -17,8 +17,8 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: test thing
-        run: 'echo "NAME $CONCURRENCY_NAME"'
+      - name: dump context
+        run: 'echo "${{ toJson(github) }}'
 
   check:
     name: Check
