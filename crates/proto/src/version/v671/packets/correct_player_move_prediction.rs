@@ -2,7 +2,7 @@ use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 use vek::Vec3;
 
 #[packet(id = 161)]
@@ -34,7 +34,7 @@ impl<V: ProtoVersion> ProtoCodec for CorrectPlayerMovePredictionPacket<V> {
         <Vec3<f32> as ProtoCodecLE>::serialize(&self.position, stream)?;
         <Vec3<f32> as ProtoCodecLE>::serialize(&self.velocity, stream)?;
 
-        stream.write_all(prediction_type_cursor.into_inner())?;
+        copy(&mut prediction_type_cursor, stream)?;
 
         <bool as ProtoCodec>::serialize(&self.on_ground, stream)?;
         <u64 as ProtoCodecVAR>::serialize(&self.tick, stream)?;

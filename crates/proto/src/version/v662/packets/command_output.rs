@@ -1,9 +1,9 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 use std::mem::size_of;
 
 #[packet(id = 79)]
@@ -40,7 +40,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOutputPacket<V> {
         for i in &self.output_messages {
             <OutputMessagesEntry as ProtoCodec>::serialize(i, stream)?;
         }
-        stream.write_all(output_type_cursor.into_inner())?;
+        copy(&mut output_type_cursor, stream)?;
 
         Ok(())
     }

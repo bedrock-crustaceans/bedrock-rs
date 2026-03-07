@@ -1,8 +1,8 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
-use bedrockrs_proto_core::error::ProtoCodecError;
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::ProtoCodec;
-use std::io::{Cursor, Read, Write};
+use bedrockrs_proto_core::error::ProtoCodecError;
+use std::io::{Cursor, Read, Write, copy};
 use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 67)]
@@ -66,7 +66,7 @@ impl<V: ProtoVersion> ProtoCodec for ClientBoundMapItemDataPacket<V> {
         <i8 as ProtoCodec>::serialize(&self.dimension, stream)?;
         <bool as ProtoCodec>::serialize(&self.is_locked, stream)?;
         <V::BlockPos as ProtoCodec>::serialize(&self.map_origin, stream)?;
-        stream.write_all(type_flags_cursor.into_inner())?;
+        copy(&mut type_flags_cursor, stream)?;
 
         Ok(())
     }

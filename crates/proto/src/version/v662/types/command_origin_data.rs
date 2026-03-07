@@ -1,7 +1,7 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
-use std::io::{Cursor, Read, Write};
+use bedrockrs_proto_core::error::ProtoCodecError;
+use std::io::{Cursor, Read, Write, copy};
 use uuid::Uuid;
 use varint_rs::{VarintReader, VarintWriter};
 
@@ -21,7 +21,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOriginData<V> {
         stream.write_u32_varint(type_cursor.read_u32_varint()?)?;
         self.command_uuid.serialize(stream)?;
         self.request_id.serialize(stream)?;
-        stream.write_all(&type_cursor.into_inner())?;
+        copy(&mut type_cursor, stream)?;
 
         Ok(())
     }

@@ -2,7 +2,7 @@ use crate::version::versions::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 
 #[derive(Clone, Debug)]
 pub struct ItemStackResponseInfo<V: ProtoVersion> {
@@ -19,7 +19,7 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackResponseInfo<V> {
 
         stream.write_i8(result_cursor.read_i8()?)?;
         <i32 as ProtoCodecVAR>::serialize(&self.client_request_id, stream)?;
-        stream.write_all(result_cursor.into_inner())?;
+        copy(&mut result_cursor, stream)?;
 
         Ok(())
     }

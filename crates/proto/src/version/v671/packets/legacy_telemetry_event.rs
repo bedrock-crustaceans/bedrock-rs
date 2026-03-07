@@ -1,8 +1,8 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
-use bedrockrs_proto_core::error::ProtoCodecError;
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::ProtoCodec;
-use std::io::{Cursor, Read, Write};
+use bedrockrs_proto_core::error::ProtoCodecError;
+use std::io::{Cursor, Read, Write, copy};
 use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 65)]
@@ -175,7 +175,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         <V::ActorUniqueID as ProtoCodec>::serialize(&self.target_actor_id, stream)?;
         stream.write_i32_varint(event_type_cursor.read_i32_varint()?)?;
         <i8 as ProtoCodec>::serialize(&self.use_player_id, stream)?;
-        stream.write_all(event_type_cursor.into_inner())?;
+        copy(&mut event_type_cursor, stream)?;
 
         Ok(())
     }

@@ -3,7 +3,7 @@ use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 use vek::{Vec2, Vec3};
 
 #[packet(id = 19)]
@@ -32,7 +32,7 @@ impl<V: ProtoVersion> ProtoCodec for MovePlayerPacket<V> {
         stream.write_i8(position_mode_cursor.read_i8()?)?;
         <bool as ProtoCodec>::serialize(&self.on_ground, stream)?;
         <V::ActorRuntimeID as ProtoCodec>::serialize(&self.riding_runtime_id, stream)?;
-        stream.write_all(position_mode_cursor.into_inner())?;
+        copy(&mut position_mode_cursor, stream)?;
         <u64 as ProtoCodecVAR>::serialize(&self.tick, stream)?;
 
         Ok(())

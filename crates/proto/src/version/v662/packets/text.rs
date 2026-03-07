@@ -1,9 +1,9 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::packet;
-use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 
 #[packet(id = 9)]
 #[derive(Clone, Debug)]
@@ -22,7 +22,7 @@ impl<V: ProtoVersion> ProtoCodec for TextPacket<V> {
 
         stream.write_i8(message_type_cursor.read_i8()?)?;
         bool::serialize(&self.localize, stream)?;
-        stream.write_all(message_type_cursor.into_inner())?;
+        copy(&mut message_type_cursor, stream)?;
         String::serialize(&self.sender_xuid, stream)?;
         String::serialize(&self.platform_id, stream)?;
 

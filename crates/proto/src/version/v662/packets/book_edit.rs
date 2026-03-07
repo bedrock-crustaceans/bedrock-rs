@@ -1,9 +1,9 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::packet;
-use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 use std::mem::size_of;
 
 #[packet(id = 97)]
@@ -21,7 +21,7 @@ impl<V: ProtoVersion> ProtoCodec for BookEditPacket<V> {
 
         stream.write_i8(action_cursor.read_i8()?)?;
         <i8 as ProtoCodec>::serialize(&self.book_slot, stream)?;
-        stream.write_all(action_cursor.into_inner())?;
+        copy(&mut action_cursor, stream)?;
 
         Ok(())
     }
