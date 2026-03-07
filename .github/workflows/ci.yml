@@ -22,6 +22,7 @@ jobs:
           add-rust-environment-hash-key: false
           shared-key: "bedrock-rs-cache"
           cache-on-failure: false
+          cache-all-crates: true
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -62,6 +63,7 @@ jobs:
           add-rust-environment-hash-key: false
           shared-key: "bedrock-rs-cache"
           cache-on-failure: false
+          cache-all-crates: true
 
       - uses: actions-rs/toolchain@v1
         with:

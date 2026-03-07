@@ -34,6 +34,7 @@ jobs:
         add-rust-environment-hash-key: false
         shared-key: "bedrock-rs-cache"
         cache-on-failure: false
+        cache-all-crates: true
 
     - name: Generate documentation
       run: cargo doc --no-deps --all-features
