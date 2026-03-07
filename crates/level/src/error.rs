@@ -11,7 +11,7 @@ pub enum Error {
     #[error("leveldb error: {0}")]
     LevelDbError(String),
     #[error("{0}")]
-    NbtError(#[from] nbtx::NbtError),
+    NbtError(#[from] nbtx::Error),
     #[error("{0}")]
     IoError(#[from] std::io::Error),
     #[error("invalid packed array index size: {0}")]

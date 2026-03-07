@@ -16,7 +16,7 @@ harness = false
 [dependencies]
 bedrockrs_core = { path = "../core" }
 bedrockrs_shared = { path = "../shared" }
-nbtx = "1.0.0"
+nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 
 rusty-leveldb = { version = "4.0.1", optional = true }
 
