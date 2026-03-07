@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: dump context
-        run: 'echo "${{ toJson(github) }}'
+        run: 'echo "${{ toJson(github) }}"'
 
   check:
     name: Check
