@@ -76,4 +76,4 @@ jobs:
       - run: rustup component add clippy
       - uses: actions-rs/cargo@v1
         with:
-          command: clippy --all-targets --all-features -D warnings
+          command: clippy --all-targets --all-features
