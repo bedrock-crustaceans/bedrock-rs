@@ -2,9 +2,6 @@ on: [ push, pull_request ]
 
 name: Continuous integration
 
-env:
-  CONCURRENCY_NAME: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
