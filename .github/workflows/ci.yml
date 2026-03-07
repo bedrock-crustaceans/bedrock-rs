@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: test thing
-        run: 'echo "NAME $CONCURRENCY_NAME'
+        run: 'echo "NAME $CONCURRENCY_NAME"'
 
   check:
     name: Check
