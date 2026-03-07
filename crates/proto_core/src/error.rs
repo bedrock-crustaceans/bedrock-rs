@@ -6,7 +6,7 @@ use std::string::FromUtf8Error;
 
 use base64::DecodeError as Base64DecodeError;
 use jsonwebtoken::errors::Error as JwtError;
-use nbtx::NbtError;
+use nbtx::Error as NbtError;
 use serde_json::error::Error as JsonError;
 use thiserror::Error;
 use uuid::Error as UuidError;
