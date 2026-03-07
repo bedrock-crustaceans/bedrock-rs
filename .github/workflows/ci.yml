@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: test thing
-        run: echo "BASE_REF $BASE_REF, REF_NAME $REF_NAME, WORKFLOW: $WORKFLOW_NAME"
+        run: 'echo "BASE_REF $BASE_REF, REF_NAME $REF_NAME, WORKFLOW: $WORKFLOW_NAME"'
 
   check:
     name: Check
