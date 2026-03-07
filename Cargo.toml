@@ -16,7 +16,7 @@ varint-rs = "2.2"
 bytemuck = "1.25.0"
 bitflags = "2.6.0"
 
-tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
+tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
 shipyard = { version = "0.11" }
 
 rayon = "1.10"
