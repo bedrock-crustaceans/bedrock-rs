@@ -1,4 +1,16 @@
-on: [ pull_request ]
+on: [ push, pull_request ]
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 name: Continuous integration
 
