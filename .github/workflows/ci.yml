@@ -1,10 +1,10 @@
 on: [ push, pull_request ]
 
-if: |
-  github.event_name == 'pull_request' ||
-  (github.event_name == 'push' && github.event.pull_request = null)
-
 name: Continuous integration
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.base_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   check:
