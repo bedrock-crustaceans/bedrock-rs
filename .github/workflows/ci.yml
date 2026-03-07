@@ -3,12 +3,10 @@ on: [ push, pull_request ]
 name: Continuous integration
 
 env:
-  HEAD_REF: ${{ github.head_ref }}
-  REF_NAME: ${{ github.ref_name }}
-  WORKFLOW_NAME: ${{ github.workflow }}
+  CONCURRENCY_NAME: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -20,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: test thing
-        run: 'echo "HEAD_REF $HEAD_REF, REF_NAME $REF_NAME, WORKFLOW: $WORKFLOW_NAME"'
+        run: 'echo "NAME $CONCURRENCY_NAME'
 
   check:
     name: Check
