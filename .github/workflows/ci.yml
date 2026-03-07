@@ -17,7 +17,10 @@ jobs:
   
       - uses: Swatinem/rust-cache@v2
         with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
           shared-key: "bedrock-rs-cache"
+          cache-on-failure: false
 
       - name: Test all crates
         run: cargo test --all
@@ -32,7 +35,10 @@ jobs:
   
       - uses: Swatinem/rust-cache@v2
         with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
           shared-key: "bedrock-rs-cache"
+          cache-on-failure: false
 
       - name: Test all crates
         run: cargo fmt --all -- --check
@@ -47,7 +53,10 @@ jobs:
   
       - uses: Swatinem/rust-cache@v2
         with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
           shared-key: "bedrock-rs-cache"
+          cache-on-failure: false
 
       - name: Test all crates
         run: cargo clippy --all
