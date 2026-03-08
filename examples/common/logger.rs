@@ -1,28 +1,13 @@
-use chrono::Local;
-use fern::colors::{Color, ColoredLevelConfig};
+use tracing::Level;
+use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 
-pub fn setup_logger() -> Result<(), log::SetLoggerError> {
-    // Create dispatch
-    let dispatch = fern::Dispatch::new();
+pub fn setup_logger() {
+    let fmt_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stdout);
 
-    // Set colors
-    let colors = ColoredLevelConfig::new()
-        .info(Color::Green)
-        .warn(Color::Yellow)
-        .error(Color::Red);
+    let filter_layer = filter::LevelFilter::from_level(Level::TRACE); //maybe env filter
 
-    // Set dispatch formatting
-    dispatch
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "[{} {} {}] {}",
-                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
-                colors.color(record.level()),
-                record.target(),
-                message
-            ))
-        })
-        .level(log::LevelFilter::Trace)
-        .chain(std::io::stdout())
-        .apply()
+    tracing_subscriber::registry()
+        .with(fmt_layer)
+        .with(filter_layer)
+        .init();
 }

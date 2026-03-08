@@ -9,7 +9,8 @@ members = ["crates/*"]
 [workspace.dependencies]
 thiserror = "2.0"
 vek = "0.17"
-log = "0.4"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
 
 byteorder = "1.5.0"
 varint-rs = "2.2"
@@ -74,9 +75,8 @@ tokio = { workspace = true }
 nbtx = { workspace = true }
 uuid = { workspace = true }
 
-fern = { version = "0.7", features = ["colored"] }
-log = { workspace = true }
-chrono = "0.4"
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [features]
 

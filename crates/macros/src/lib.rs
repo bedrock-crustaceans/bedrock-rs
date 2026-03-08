@@ -49,14 +49,14 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
         impl #impl_generics ::bedrockrs_proto_core::ProtoCodec for #name #ty_generics #where_clause {
             fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
-                ::log::trace!("ProtoSerialize: {}", stringify!(#name));
+                ::tracing::trace!("ProtoSerialize: {}", stringify!(#name));
                 #ser
                 Ok(())
             }
 
             fn proto_deserialize(stream: &mut ::std::io::Cursor<&[u8]>) -> Result<Self, ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
-                ::log::trace!("ProtoDeserialize: {}", stringify!(#name));
+                ::tracing::trace!("ProtoDeserialize: {}", stringify!(#name));
                 #de
                 Ok(val)
             }
