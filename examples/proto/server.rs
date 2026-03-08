@@ -43,7 +43,7 @@ async fn handle_login(mut conn: Connection) {
 
     // NetworkSettingsRequest
     conn.recv::<ProtoHelperV800>().await.unwrap();
-    println!("NetworkSettingsRequest");
+    tracing::trace!("NetworkSettingsRequest");
 
     let compression = Compression::None;
 
@@ -57,13 +57,13 @@ async fn handle_login(mut conn: Connection) {
     })])
     .await
     .unwrap();
-    println!("NetworkSettings");
+    tracing::trace!("NetworkSettings");
 
     conn.compression = Some(compression);
 
     // Login
     conn.recv::<ProtoHelperV800>().await.unwrap();
-    println!("Login");
+    tracing::trace!("Login");
 
     conn.send::<ProtoHelperV800>(&[
         GamePackets::PlayStatus(PlayStatusPacket {
@@ -91,14 +91,14 @@ async fn handle_login(mut conn: Connection) {
     ])
     .await
     .unwrap();
-    println!("PlayStatus (LoginSuccess)");
-    println!("ResourcePacksInfo");
-    println!("ResourcePackStack");
+    tracing::trace!("PlayStatus (LoginSuccess)");
+    tracing::trace!("ResourcePacksInfo");
+    tracing::trace!("ResourcePackStack");
 
-    println!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
-    println!("ClientCacheStatus");
-    println!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
-    println!("ResourcePackClientResponse");
+    tracing::trace!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
+    tracing::trace!("ClientCacheStatus");
+    tracing::trace!("{:#?}", conn.recv::<ProtoHelperV800>().await.unwrap());
+    tracing::trace!("ResourcePackClientResponse");
 
     // conn.send::<ProtoHelperV729>(&[GamePackets::DisconnectPlayer(DisconnectPlayerPacket {
     //     reason: DisconnectReason::Unknown,
@@ -225,15 +225,13 @@ async fn handle_login(mut conn: Connection) {
     //     .await.unwrap();
     // println!("PlayStatusPacket (PlayerSpawn)");
 
-    let time_end = Instant::now();
-
-    println!("{:?}", time_end.duration_since(time_start));
+    tracing::trace!("Finished request in {:?}", time_start.elapsed());
 
     loop {
         let res = conn.recv::<ProtoHelperV800>().await;
 
         if let Ok(packet) = res {
-            println!("{:?}", packet);
+            tracing::trace!("Found packet: {:?}", packet);
         } else {
             break;
         }

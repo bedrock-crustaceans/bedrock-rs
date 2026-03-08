@@ -18,5 +18,5 @@ fn main() {
 
     let result = decode_gamepackets::<ProtoHelperV800>(bytes, Some(&Compression::None), None);
 
-    println!("{:?}", result);
+    tracing::trace!("Decoded game packets: {:?}", result);
 }
