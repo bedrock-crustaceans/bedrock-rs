@@ -1,34 +1,32 @@
-on: [ push, pull_request ]
+on:
+  push:
+    branches: main
+  pull_request:
 
 name: Continuous integration
 
-jobs:
-  check:
-    name: Check
-    permissions:
-      contents: read
-      pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all
+env:
+  RUSTFLAGS: "-Dwarnings"
 
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
   test:
-    name: Test Suite
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Test crates
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+  
+      - uses: Swatinem/rust-cache@v2
+        with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
+          shared-key: "bedrock-rs-cache"
+          cache-on-failure: false
+          cache-all-crates: true
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -40,13 +38,11 @@ jobs:
           args: --all
 
   fmt:
-    name: Rustfmt
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Check formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -59,13 +55,19 @@ jobs:
           args: --all -- --check
 
   clippy:
-    name: Clippy
-    permissions:
-      contents: read
-      pull-requests: write
+    name: Analyze with Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+  
+      - uses: Swatinem/rust-cache@v2
+        with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
+          shared-key: "bedrock-rs-cache"
+          cache-on-failure: false
+          cache-all-crates: true
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -75,3 +77,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
+          args: --all-targets --all-features

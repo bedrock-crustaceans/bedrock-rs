@@ -135,7 +135,8 @@ impl PackedArray {
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        ((word >> self.bits * word_index) & mask) as u16
+        let shift = self.bits * word_index;
+        ((word >> shift) & mask) as u16
     }
 
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
@@ -157,14 +158,15 @@ impl PackedArray {
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        let mask = base_mask << self.bits * word_index;
+        let shift = self.bits * word_index;
+        let mask = base_mask << shift;
 
         // Zero all bits in the location
         let zeroed = word & !mask;
         // Clamp value to correct amount of bits
         let clamped = value as u32 & base_mask;
         // Then set the zeroed bits to the clamped value
-        let set = zeroed | (clamped << self.bits * word_index);
+        let set = zeroed | (clamped << shift);
 
         self.words[array_index as usize] = set;
     }

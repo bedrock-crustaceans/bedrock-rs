@@ -6,7 +6,6 @@ use std::string::FromUtf8Error;
 
 use base64::DecodeError as Base64DecodeError;
 use jsonwebtoken::errors::Error as JwtError;
-use nbtx::Error as NbtError;
 use serde_json::error::Error as JsonError;
 use thiserror::Error;
 use uuid::Error as UuidError;
@@ -18,7 +17,7 @@ pub enum ProtoCodecError {
     #[error("Unread bytes remaining: {0} bytes left")]
     LeftOvers(usize),
     #[error("NbtError: {0}")]
-    NbtError(#[from] NbtError),
+    NbtError(#[from] nbtx::Error),
     #[error("Error while reading UTF8 encoded String: {0}")]
     UTF8Error(#[from] FromUtf8Error),
     #[error("Error while converting integers: {0}")]

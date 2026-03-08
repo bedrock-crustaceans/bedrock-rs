@@ -6,19 +6,19 @@ edition = "2024"
 [dependencies]
 bedrockrs_macros = { path = "../macros" }
 
-nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
-xuid = "1.0"
+nbtx = { workspace = true }
+xuid = { workspace = true }
 
-paste = "1.0"
-seq-macro = "0.3"
+paste = { workspace = true }
+seq-macro = { workspace = true }
 
-byteorder = "1.5"
-varint-rs = "2.2"
+byteorder = { workspace = true }
+varint-rs = { workspace = true }
 
-vek = "0.17"
-thiserror = "2.0"
+vek = { workspace = true }
+thiserror = { workspace = true }
 
-serde_json = "1.0"
-jsonwebtoken = "10.3"
-base64 = "0.22"
-uuid = { version = "1.11", features = ["v4"] }
+serde_json = { workspace = true }
+jsonwebtoken = { workspace = true }
+base64 = { workspace = true }
+uuid = { workspace = true }
