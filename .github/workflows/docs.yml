@@ -24,27 +24,24 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
-#    - name: Install Rust
-#      run: rustup toolchain install 1.90.0 --profile minimal
-
-#    - name: Configure sccache
-#      uses: actions/github-script@v7
-#      with:
-#        script: |
-#          core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULT_URL || '');
-#          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-#
-#    - name: Run sccache-cache
-#      uses: mozilla-actions/sccache-action@v0.0.3
-    
-    - name: Configure Pages
-      id: pages
-      uses: actions/configure-pages@v5
+    - uses: dtolnay/rust-toolchain@stable
+  
+    - uses: Swatinem/rust-cache@v2
+      with:
+        add-job-id-key: false
+        add-rust-environment-hash-key: false
+        shared-key: "bedrock-rs-cache"
+        cache-on-failure: false
+        cache-all-crates: true
 
     - name: Generate documentation
       run: cargo doc --no-deps --all-features
+
+    - name: Configure Pages
+      id: pages
+      uses: actions/configure-pages@v5
       
     - name: Add root index
       run: |

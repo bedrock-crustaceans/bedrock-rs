@@ -46,7 +46,7 @@ quote = { version = "1.0" }
 
 jsonwebtoken = "10.3"
 base64 = "0.22"
-nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" } #Note: move to 2.0.0 when released
+nbtx = "2.0"
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"

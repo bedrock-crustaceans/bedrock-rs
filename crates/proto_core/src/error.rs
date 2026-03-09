@@ -16,8 +16,8 @@ pub enum ProtoCodecError {
     IOError(#[from] IOError),
     #[error("Unread bytes remaining: {0} bytes left")]
     LeftOvers(usize),
-    #[error("{0}")]
-    NbtError(#[from] nbtx::NbtError),
+    #[error("NBT Error: {0}")]
+    NbtError(#[from] nbtx::Error),
     #[error("Error while reading UTF8 encoded String: {0}")]
     UTF8Error(#[from] FromUtf8Error),
     #[error("Error while converting integers: {0}")]

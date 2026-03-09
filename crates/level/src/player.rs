@@ -83,7 +83,7 @@ pub struct PlayerData {
     pub invulnerable: bool,
     pub is_angry: bool,
     pub active_effects: Vec<StatusEffect>,
-    pub mainhand: InventoryItem,
+    // pub mainhand: i16,
     pub natural_spawn: bool,
     pub death_time: i16,
     pub is_baby: bool,
