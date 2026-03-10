@@ -6,3 +6,4 @@ macro_rules! export {
 }
 
 export!(animate);
+export!(available_commands);

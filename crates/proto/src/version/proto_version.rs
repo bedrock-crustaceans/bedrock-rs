@@ -678,6 +678,7 @@ define_versions![
     (898, "r/21_u13", "1.21.130"): {
         packets: [
             % AnimatePacket: AnimatePacket^,
+            % AvailableCommandsPacket: AvailableCommandsPacket,
         ] in crate::version::v898::packets,
         types: [
             % CommandOriginData: CommandOriginData^,
