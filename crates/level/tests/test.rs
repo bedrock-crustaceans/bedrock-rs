@@ -1,13 +1,13 @@
 use std::fs::File;
 
-use bedrockrs_level::{Packed, Unpacked};
 use bedrockrs_level::biome::Biomes;
 use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
+use bedrockrs_level::{Packed, Unpacked};
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
-    subchunk::{SubChunk},
+    subchunk::SubChunk,
 };
 use flate2::read::GzDecoder;
 use tar::Archive;
@@ -70,7 +70,7 @@ fn read_biome() {
     for kv in &mut keys {
         let mut key_buf = kv.key();
         let Ok(key) = Key::deserialize(&mut key_buf) else {
-            continue
+            continue;
         };
 
         match key.data {
@@ -102,7 +102,7 @@ fn read_subchunk() {
     for kv in &mut keys {
         let mut key_buf = kv.key();
         let Ok(key) = Key::deserialize(&mut key_buf) else {
-            continue
+            continue;
         };
 
         match key.data {

@@ -1,7 +1,11 @@
 use std::fs::File;
 
 use bedrockrs_level::{
-    Packed, Unpacked, db::Database, key::{Key, KeyVariant}, subchunk::SubChunk, traits::DatabaseAccess
+    Packed, Unpacked,
+    db::Database,
+    key::{Key, KeyVariant},
+    subchunk::SubChunk,
+    traits::DatabaseAccess,
 };
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use flate2::read::GzDecoder;
