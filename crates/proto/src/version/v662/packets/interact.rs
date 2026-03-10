@@ -1,9 +1,9 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use bedrockrs_proto_core::error::ProtoCodecError;
+use crate::version::proto_version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
-use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 33)]
 #[derive(Clone, Debug)]
@@ -17,6 +17,8 @@ pub struct InteractPacket<V: ProtoVersion> {
 #[repr(i8)]
 pub enum Action {
     Invalid = 0,
+    Interact = 1,
+    Damage = 2,
     StopRiding {
         #[endianness(le)]
         position_x: f32,

@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use uuid::Uuid;
 use vek::{Vec2, Vec3};
 
@@ -23,11 +23,9 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub current_level_time: u64,
     #[endianness(var)]
     pub enchantment_seed: i32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub block_properties: Vec<BlockProperty>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub item_list: Vec<V::ItemData>,
     pub multiplayer_correlation_id: String,
     pub enable_item_stack_net_manager: bool,

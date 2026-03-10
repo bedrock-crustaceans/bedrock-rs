@@ -66,8 +66,6 @@ pub struct LevelSettings<V: ProtoVersion> {
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GameRuleLegacyData {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub rules_list: Vec<GameRuleLegacyChanged>,
 }
 

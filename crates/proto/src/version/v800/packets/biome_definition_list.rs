@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use nbtx::Value;
 
 #[gamepacket(id = 122)]
@@ -7,8 +7,7 @@ use nbtx::Value;
 pub struct BiomeDefinitionListPacket<V: ProtoVersion> {
     #[nbt]
     pub biome_definitions: Value,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub biomes: Vec<BiomeEntry<V>>,
 }
 

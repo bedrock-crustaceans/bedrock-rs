@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use vek::Vec3;
 
 #[gamepacket(id = 15)]
@@ -12,8 +12,7 @@ pub struct AddItemActorPacket<V: ProtoVersion> {
     pub position: Vec3<f32>,
     #[endianness(le)]
     pub velocity: Vec3<f32>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub entity_data: Vec<V::DataItem>, // TODO: verify vec_repr & vec_endianness
     pub from_fishing: bool,
 }

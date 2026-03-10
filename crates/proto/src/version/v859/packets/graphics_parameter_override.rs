@@ -4,8 +4,6 @@ use vek::Vec3;
 #[gamepacket(id = 331)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GraphicsParameterOverridePacket {
-    #[vec_repr(i32)]
-    #[vec_endianness(var)]
     pub values: Vec<GraphicsParameterOverrideKeyFrame>,
     pub biome_identifier: String,
     pub parameter_type: GraphicsParameterOverrideType,

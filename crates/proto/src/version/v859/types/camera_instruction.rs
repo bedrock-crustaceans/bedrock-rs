@@ -90,15 +90,12 @@ pub struct SplineInstruction<V: ProtoVersion> {
     #[endianness(le)]
     pub total_time: f32,
     pub spline_type: V::CameraSplineType,
-    #[vec_repr(i32)]
-    #[vec_endianness(var)]
+
     #[endianness(le)]
     pub curve: Vec<Vec3<f32>>,
-    #[vec_repr(i32)]
-    #[vec_endianness(var)]
+
     pub progress_key_frames: Vec<ProgressKeyFrame>,
-    #[vec_repr(i32)]
-    #[vec_endianness(var)]
+
     pub rotation_option: Vec<RotationOption>,
 }
 

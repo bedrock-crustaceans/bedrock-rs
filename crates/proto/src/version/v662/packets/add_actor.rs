@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use vek::{Vec2, Vec3};
 
 #[gamepacket(id = 13)]
@@ -18,15 +18,12 @@ pub struct AddActorPacket<V: ProtoVersion> {
     pub y_head_rotation: f32,
     #[endianness(le)]
     pub y_body_rotation: f32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub attributes: Vec<AttributeEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub actor_data: Vec<V::DataItem>, // TODO: verify vec_repr & vec_endianness
     pub synced_properties: V::PropertySyncData,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub actor_links: Vec<V::ActorLink>,
 }
 

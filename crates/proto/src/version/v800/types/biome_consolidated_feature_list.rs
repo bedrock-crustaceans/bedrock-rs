@@ -15,7 +15,5 @@ pub struct BiomeConsolidatedFeatureData<V: ProtoVersion> {
 
 #[derive(ProtoCodec, Debug, Clone)]
 pub struct BiomeConsolidatedFeatureList<V: ProtoVersion> {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub entries: Vec<BiomeConsolidatedFeatureData<V>>,
 }

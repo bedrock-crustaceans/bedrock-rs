@@ -3,8 +3,6 @@ use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BiomeTagList {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     #[endianness(le)]
     pub tags: Vec<u16>,
 }

@@ -23,8 +23,6 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub current_level_time: u64,
     #[endianness(var)]
     pub enchantment_seed: i32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub block_properties: Vec<BlockProperty>,
     pub multiplayer_correlation_id: String,
     pub enable_item_stack_net_manager: bool,

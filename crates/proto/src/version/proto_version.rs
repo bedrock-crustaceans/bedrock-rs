@@ -674,5 +674,33 @@ define_versions![
             % ActorEvent: ActorEvent,
             % ActorFlags: ActorFlags,
         ] in crate::version::v859::enums,
+    },
+    (898, "r/21_u13", "1.21.130"): {
+        packets: [
+            + ClientBoundDataStorePacket: ClientBoundDataStorePacket,
+            + ServerBoundDataStorePacket: ServerBoundDataStorePacket,
+            % AnimatePacket: AnimatePacket^,
+            % AvailableCommandsPacket: AvailableCommandsPacket,
+            % CommandOutputPacket: CommandOutputPacket^,
+            % CommandRequestPacket: CommandRequestPacket^,
+            % InteractPacket: InteractPacket^,
+            % LegacyTelemetryEventPacket: LegacyTelemetryEventPacket^,
+            % MobEffectPacket: MobEffectPacket^,
+            % ResourcePackStackPacket: ResourcePackStackPacket^,
+            % StartGamePacket: StartGamePacket^,
+            % TextPacket: TextPacket^,
+        ] in crate::version::v898::packets,
+        types: [
+            % CameraAimAssistCategory: CameraAimAssistCategory^,
+            % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
+            % CommandOriginData: CommandOriginData^,
+        ] in crate::version::v898::types,
+        enums: [
+            % ActorEvent: ActorEvent,
+            % CommandOriginType: CommandOriginType,
+            % CommandOutputType: CommandOutputType,
+            % LevelSoundEventType: LevelSoundEventType,
+            % TextPacketType: TextPacketType,
+        ] in crate::version::v898::enums,
     }
 ];

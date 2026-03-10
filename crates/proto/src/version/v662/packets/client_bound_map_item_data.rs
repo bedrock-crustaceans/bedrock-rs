@@ -1,7 +1,7 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use bedrockrs_proto_core::error::ProtoCodecError;
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use std::io::{Cursor, Read};
 use varint_rs::{VarintReader, VarintWriter};
 
@@ -36,21 +36,15 @@ pub enum Type<V: ProtoVersion> {
         x_tex_coordinate: i32,
         #[endianness(var)]
         y_tex_coordinate: i32,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         pixels: Vec<PixelsEntry>,
     } = 0x2,
     DecorationUpdate {
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         actor_ids: Vec<V::MapItemTrackedActorUniqueID>,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         decoration_list: Vec<V::MapDecoration>,
     } = 0x4,
     Creation {
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         map_id_list: Vec<V::ActorUniqueID>,
     } = 0x8,
 }

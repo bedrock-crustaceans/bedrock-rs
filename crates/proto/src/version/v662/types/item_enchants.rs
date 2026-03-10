@@ -5,8 +5,7 @@ use bedrockrs_macros::ProtoCodec;
 pub struct ItemEnchants<V: ProtoVersion> {
     #[endianness(le)]
     pub slot: i32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub enchants_for_given_activation: Vec<ItemEnchant<V>>,
 }
 
