@@ -1,7 +1,6 @@
-use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_proto_core::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
-use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::Cursor;
 
 #[gamepacket(id = 76)]
