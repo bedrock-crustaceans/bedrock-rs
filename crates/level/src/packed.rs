@@ -58,15 +58,14 @@ impl PackedArray {
 
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
     /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the index is greater than or equal to 4096.
-    pub fn set(&mut self, index: usize, value: u16) {
-        assert!(
-            index < 4096,
-            "packed array index out of bounds, got 4096 < {index}"
-        );
+    /// 
+    /// # Returns
+    /// 
+    /// This function returns whether the change was successful.
+    pub fn set(&mut self, index: usize, value: u16) -> bool {
+        if index >= 4096 {
+            return false
+        }
 
         let blocks_per_word = u32::BITS / self.bits;
         let base_mask = !(!0u32 << self.bits);
@@ -85,6 +84,8 @@ impl PackedArray {
         let set = zeroed | (clamped << self.bits * word_index);
 
         self.words[array_index as usize] = set;
+
+        true
     }
 
     pub fn from_disk<R: Read>(mut reader: R, bits: u8) -> Result<Self> {

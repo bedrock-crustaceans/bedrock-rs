@@ -12,9 +12,12 @@ impl UnpackedArray {
         self.array.get(index).copied()
     }
 
-    pub fn set(&mut self, index: usize, value: u16) {
+    pub fn set(&mut self, index: usize, value: u16) -> bool {
         if let Some(index) = self.array.get_mut(index) {
             *index = value;
+            true
+        } else {
+            false
         }
     }
 

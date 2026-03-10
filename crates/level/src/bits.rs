@@ -121,7 +121,7 @@ impl BitArray {
     }
 
     /// Sets the value at the specified index.
-    pub fn set(&mut self, pos: usize, value: u16) {
+    pub fn set(&mut self, pos: usize, value: u16) -> bool {
         match self {
             Self::Unpacked(array) => array.set(pos, value),
             Self::Packed(array) => array.set(pos, value)
