@@ -674,5 +674,18 @@ define_versions![
             % ActorEvent: ActorEvent,
             % ActorFlags: ActorFlags,
         ] in crate::version::v859::enums,
+    },
+    (898, "r/21_u13", "1.21.130"): {
+        packets: [
+            % AnimatePacket: AnimatePacket^,
+        ] in crate::version::v898::packets,
+        types: [
+            % CommandOriginData: CommandOriginData^,
+        ] in crate::version::v898::types,
+        enums: [
+            % ActorEvent: ActorEvent,
+            % CommandOriginType: CommandOriginType,
+            % LevelSoundEventType: LevelSoundEventType,
+        ] in crate::version::v898::enums,
     }
 ];
