@@ -7,6 +7,5 @@ pub struct CommandRequestPacket<V: ProtoVersion> {
     pub command: String,
     pub command_origin: V::CommandOriginData,
     pub internal: bool,
-    #[endianness(var)]
-    pub version: i32,
+    pub version: String,
 }

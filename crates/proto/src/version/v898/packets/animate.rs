@@ -7,7 +7,7 @@ use std::io::Cursor;
 #[gamepacket(id = 44)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AnimatePacket<V: ProtoVersion> {
-    pub action: Action,
+    pub action: AnimatePacketAction,
     pub target_runtime_id: V::ActorRuntimeID,
     #[endianness(le)]
     pub data: f32,
@@ -17,7 +17,7 @@ pub struct AnimatePacket<V: ProtoVersion> {
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
 #[repr(i8)]
-pub enum Action {
+pub enum AnimatePacketAction {
     NoAction = 0,
     Swing = 1,
     WakeUp = 3,
