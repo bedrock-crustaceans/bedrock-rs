@@ -2,10 +2,9 @@ use std::{io::{Read, Write}, slice};
 use std::iter::{Copied, FusedIterator};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use crate::{
-    error::{Error, Result},
+    PackingMethod, error::{Error, Result}
 };
 use crate::packed::{PackedArray, PackedArrayIter};
-use crate::subchunk::PackingMethod;
 use crate::unpacked::UnpackedArray;
 
 /// Valid bit sizes to use for indices.
@@ -45,6 +44,12 @@ impl ExactSizeIterator for BitArrayIter<'_> {
 
 impl FusedIterator for BitArrayIter<'_> {}
 
+pub enum IndicesType {
+    Data(BitArray),
+    Empty,
+    Inherit
+}
+
 /// The type of array used in the subchunk. This can either be an unpacked array that is
 /// expanded on subchunk deserialization or a packed array that is expanded lazily.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,24 +64,35 @@ impl BitArray {
         self.into_iter()
     }
 
+    fn data_from_disk<M: PackingMethod, R: Read>(mut reader: R, bits: u8) -> Result<Self> {
+        if !VALID_BITS.contains(&bits) {
+            return Err(Error::InvalidBitSize(bits));
+        }
+
+        Ok(if M::IS_PACKED {
+            BitArray::Packed(PackedArray::from_disk(&mut reader, bits)?)
+        } else {
+            BitArray::Unpacked(UnpackedArray::from_disk(&mut reader, bits)?)
+        })
+    }
+
     /// Deserializes this array in disk format.
     pub fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
         let bits = reader.read_u8()? >> 1;
         match bits {
             0x00 => Err(Error::Invalid("chunk layer packed array cannot be empty")),
             0x7f => Err(Error::Invalid("chunk layers do not support inheritance")),
-            bits => {
-                if !VALID_BITS.contains(&bits) {
-                    return Err(Error::InvalidBitSize(bits));
-                }
-
-                Ok(if M::IS_PACKED {
-                    BitArray::Packed(PackedArray::from_disk(&mut reader, bits)?)
-                } else {
-                    BitArray::Unpacked(UnpackedArray::from_disk(&mut reader, bits)?)
-                })
-            }
+            bits => BitArray::data_from_disk::<M, _>(&mut reader, bits)
         }
+    }
+
+    pub fn from_disk_typed<M: PackingMethod, R: Read>(mut reader: R) -> Result<IndicesType> {
+        let bits = reader.read_u8()? >> 1;
+        Ok(match bits {
+            0x00 => IndicesType::Empty,
+            0x7f => IndicesType::Inherit,
+            bits => IndicesType::Data(BitArray::data_from_disk::<M, _>(&mut reader, bits)?)
+        })
     }
 
     /// Serializes this array in disk format.

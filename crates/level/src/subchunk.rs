@@ -10,6 +10,7 @@ use nbtx::LittleEndian;
 use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
+use crate::PackingMethod;
 use crate::error::{Error, Result};
 use crate::bits::{BitArray, BitArrayIter};
 
@@ -182,6 +183,7 @@ impl Layer {
         let len = reader.read_u32::<LittleEndian>()? as usize;
         let mut palette = Vec::with_capacity(len);
 
+        println!("PALETTE LEN: {len}");
         for _ in 0..len {
             let entry = nbtx::from_le_bytes(&mut reader)?;
             palette.push(entry);
@@ -263,30 +265,6 @@ pub const fn from_offset(offset: usize) -> Vec3<u8> {
     let z = (offset >> 4) as u8 & 0xf;
 
     Vec3::new(x, y, z)
-}
-
-mod private {
-    pub trait Sealed {}
-}
-
-pub trait PackingMethod: private::Sealed {
-    const IS_PACKED: bool;
-}
-
-pub enum Unpacked {}
-
-impl private::Sealed for Unpacked {}
-
-impl PackingMethod for Unpacked {
-    const IS_PACKED: bool = true;
-}
-
-pub enum Packed {}
-
-impl private::Sealed for Packed {}
-
-impl PackingMethod for Packed {
-    const IS_PACKED: bool = false;
 }
 
 /// A Minecraft sub chunk.
