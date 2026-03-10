@@ -94,6 +94,7 @@ void bedrockrs_db_close(void* db_ptr) {
     } catch(...) {
         // If we're unable to destroy the database then there's no point in retrying.
         // Just leak it
+        std::cout << "exception occurred while freeing database" << std::endl;
     }
 }
 
@@ -194,6 +195,7 @@ void bedrockrs_buffer_destroy(char* array) {
     } catch(...) {
         // If this fails, there is no point in retrying.
         // Just leak it.
+        std::cout << "exception occurred while freeing buffer" << std::endl;
     }
 }
 
@@ -225,6 +227,7 @@ void bedrockrs_iter_destroy(void* iter_ptr) {
         delete iter;
     } catch(...) {
         // If this fails there is no point in retrying, just leak it.
+        std::cout << "exception occurred while freeing iterator" << std::endl;
     }
 }
 
@@ -277,6 +280,7 @@ void bedrockrs_iter_next(void* iter_ptr) {
         iter->Next();
     } catch(...) {
         // Fail will be caught by `bedrockrs_iter_valid`.
+        std::cout << "exception occurred in `Iterator->next`" << std::endl;
     }
 }
 
