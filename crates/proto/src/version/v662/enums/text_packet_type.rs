@@ -11,20 +11,17 @@ pub enum TextPacketType {
     } = 1,
     Translate {
         message: String,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         parameter_list: Vec<String>,
     } = 2,
     Popup {
         message: String,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         parameter_list: Vec<String>,
     } = 3,
     JukeboxPopup {
         message: String,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         parameter_list: Vec<String>,
     } = 4,
     Tip(String) = 5,

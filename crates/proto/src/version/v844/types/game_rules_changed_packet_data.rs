@@ -2,8 +2,6 @@ use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GameRulesChangedPacketData {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub rules_list: Vec<GameRuleChanged>,
 }
 

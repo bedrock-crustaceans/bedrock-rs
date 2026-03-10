@@ -24,7 +24,7 @@ mod size;
         str
     )
 )]
-pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
 
     let name = input.ident;
@@ -39,7 +39,7 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
             build_de_enum(&v, input.attrs.as_slice(), name.clone()),
         ),
         Data::Union(_) => {
-            return proc_macro::TokenStream::from(quote! {
+            return TokenStream::from(quote! {
                 compile_error!("ProtoCodec derive macro only supports structs and enums")
             });
         }
@@ -67,7 +67,7 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
         }
     };
 
-    proc_macro::TokenStream::from(expanded)
+    TokenStream::from(expanded)
 }
 
 struct GamepacketInput {
@@ -111,10 +111,7 @@ impl Parse for GamepacketInput {
 }
 
 #[proc_macro_attribute]
-pub fn gamepacket(
-    args: proc_macro::TokenStream,
-    item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
+pub fn gamepacket(args: TokenStream, item: TokenStream) -> TokenStream {
     // Parse the arguments passed to the attribute
     let args = parse_macro_input!(args as GamepacketInput);
     let item_de = item.clone();
@@ -148,7 +145,7 @@ pub fn gamepacket(
         }
     };
 
-    proc_macro::TokenStream::from(expanded)
+    TokenStream::from(expanded)
 }
 
 struct GamepacketsInput {

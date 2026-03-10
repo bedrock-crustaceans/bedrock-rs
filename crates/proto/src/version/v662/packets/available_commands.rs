@@ -152,8 +152,7 @@ pub struct ParameterDataEntry {
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct OverloadsEntry {
     pub is_chaining: bool,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub parameter_data: Vec<ParameterDataEntry>,
 }
 
@@ -166,20 +165,17 @@ pub struct CommandsEntry<V: ProtoVersion> {
     pub permission_level: V::CommandPermissionLevel,
     #[endianness(le)]
     pub alias_enum: i32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     #[endianness(le)]
     pub chained_sub_command_indices: Vec<u16>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub overloads: Vec<OverloadsEntry>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SoftEnumsEntry {
     pub enum_name: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub enum_options: Vec<String>,
 }
 
@@ -189,15 +185,13 @@ pub struct ConstraintsEntry {
     pub enum_value_symbol: u32,
     #[endianness(le)]
     pub enum_symbol: u32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub constraint_indices: Vec<i8>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChainedSubCommandDataEntry {
     pub sub_command_name: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub sub_command_values: Vec<SubCommandValues>,
 }

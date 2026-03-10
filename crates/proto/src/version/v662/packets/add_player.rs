@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use uuid::Uuid;
 use vek::{Vec2, Vec3};
 
@@ -20,13 +20,11 @@ pub struct AddPlayerPacket<V: ProtoVersion> {
     pub y_head_rotation: f32,
     pub carried_item: V::NetworkItemStackDescriptor,
     pub player_game_type: V::GameType,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub entity_data: Vec<V::DataItem>, // VERIFY: vec_repr & vec_endianness
     pub synced_properties: V::PropertySyncData,
     pub abilities_data: V::SerializedAbilitiesData,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub actor_links: Vec<V::ActorLink>,
     pub device_id: String,
     pub build_platform: V::BuildPlatform,

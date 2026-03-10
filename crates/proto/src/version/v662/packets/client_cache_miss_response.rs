@@ -1,10 +1,8 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 
 #[gamepacket(id = 136)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientCacheMissResponsePacket {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub missing_blobs: Vec<MissingBlobEntry>,
 }
 

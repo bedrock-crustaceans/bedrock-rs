@@ -7,37 +7,27 @@ use std::io::Cursor;
 #[gamepacket(id = 76)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AvailableCommandsPacket {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub enum_values: Vec<String>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub sub_command_values: Vec<String>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub post_fixes: Vec<String>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub enum_data: Vec<EnumDataEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub chained_sub_command_data: Vec<ChainedSubCommandDataEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub commands: Vec<CommandsEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub soft_enums: Vec<SoftEnumsEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub constraints: Vec<ConstraintsEntry>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct EnumDataEntry {
     name: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     #[endianness(le)]
     values: Vec<u32>,
 }
@@ -62,8 +52,7 @@ pub struct ParameterDataEntry {
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct OverloadsEntry {
     pub is_chaining: bool,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub parameter_data: Vec<ParameterDataEntry>,
 }
 
@@ -76,20 +65,17 @@ pub struct CommandsEntry {
     pub permission_level: CommandPermissionLevelString,
     #[endianness(le)]
     pub alias_enum: i32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     #[endianness(le)]
     pub chained_sub_command_indices: Vec<i32>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub overloads: Vec<OverloadsEntry>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SoftEnumsEntry {
     pub enum_name: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub enum_options: Vec<String>,
 }
 
@@ -99,16 +85,14 @@ pub struct ConstraintsEntry {
     pub enum_value_symbol: u32,
     #[endianness(le)]
     pub enum_symbol: u32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub constraint_indices: Vec<i8>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChainedSubCommandDataEntry {
     pub sub_command_name: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub sub_command_values: Vec<SubCommandValues>,
 }
 

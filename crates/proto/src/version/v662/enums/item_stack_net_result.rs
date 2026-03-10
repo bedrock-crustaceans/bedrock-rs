@@ -5,11 +5,7 @@ use bedrockrs_macros::ProtoCodec;
 #[enum_repr(i8)]
 #[repr(i8)]
 pub enum ItemStackNetResult<V: ProtoVersion> {
-    Success(
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
-        Vec<V::ItemStackResponseContainerInfo>,
-    ) = 0,
+    Success(Vec<V::ItemStackResponseContainerInfo>) = 0,
     Error = 1,
     InvalidRequestActionType = 2,
     ActionRequestNotAllowed = 3,

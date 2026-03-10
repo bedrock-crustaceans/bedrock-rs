@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 
 #[gamepacket(id = 158)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -11,7 +11,6 @@ pub struct AnimateEntityPacket<V: ProtoVersion> {
     pub controller: String,
     #[endianness(le)]
     pub blend_out_time: f32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub runtime_ids: Vec<V::ActorRuntimeID>,
 }

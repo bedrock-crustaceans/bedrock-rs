@@ -25,8 +25,7 @@ pub struct PackedItemUseLegacyInventoryTransaction<V: ProtoVersion> {
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ContainerSlotEntry {
     pub container_enum_name: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub slots: Vec<i8>,
 }
 

@@ -4,11 +4,8 @@ use bedrockrs_macros::{ProtoCodec, gamepacket};
 #[gamepacket(id = 320)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistPresetsPacket<V: ProtoVersion> {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub category_definitions: Vec<V::CameraAimAssistCategory>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub presets: Vec<V::CameraAimAssistPresetDefinition>,
     pub operation: V::CameraAimAssistOperation,
 }

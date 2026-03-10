@@ -7,10 +7,8 @@ pub struct ItemInstanceUserData {
     pub serialization_version: i8,
     #[nbt]
     pub tags: nbtx::Value, // TODO: NBT Structure
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub can_place_on: Vec<String>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub can_break: Vec<String>,
 }

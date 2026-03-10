@@ -10,8 +10,7 @@ pub struct ShapedChemistryRecipe<V: ProtoVersion> {
     #[endianness(var)]
     pub height: i32,
     pub ingredient: V::RecipeIngredient,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub result_items: Vec<V::NetworkItemInstanceDescriptor>,
     pub id: Uuid,
     pub tag: String,

@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -19,8 +19,7 @@ pub struct CommandOutputPacket<V: ProtoVersion> {
 pub struct OutputMessagesEntry {
     pub successful: bool,
     pub message_id: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub parameters: Vec<String>,
 }
 

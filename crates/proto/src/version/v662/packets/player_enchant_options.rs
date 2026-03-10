@@ -1,11 +1,9 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
 use crate::version::proto_version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 
 #[gamepacket(id = 146)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerEnchantOptionsPacket<V: ProtoVersion> {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub options: Vec<OptionsEntry<V>>,
 }
 

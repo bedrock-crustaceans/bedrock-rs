@@ -1,5 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::{
@@ -118,11 +118,9 @@ pub mod player_auth_input_packet {
     pub struct PerformItemStackRequestData<V: ProtoVersion> {
         #[endianness(var)]
         pub client_request_id: u32,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         pub actions: Vec<ActionsEntry<V>>,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
+
         pub strings_to_filter: Vec<String>,
         pub strings_to_filter_origin: V::TextProcessingEventOrigin,
     }
