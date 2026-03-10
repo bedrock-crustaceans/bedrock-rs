@@ -7,7 +7,7 @@ edition = "2024"
 bedrockrs_proto_core = { path = "../proto_core" }
 bedrockrs_macros = { path = "../macros" }
 
-log = { workspace = true }
+tracing = { workspace = true }
 
 byteorder = { workspace = true }
 varint-rs = { workspace = true }

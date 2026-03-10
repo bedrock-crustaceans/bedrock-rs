@@ -1,10 +1,9 @@
-name: Continuous deployment
+name: CD
 
 on:
   push:
-    branches: [ "main" ]
-    
-  # Allow triggering manual builds
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -20,7 +19,7 @@ env:
 
 jobs:
   build:
-    name: Generate docs
+    name: Generate
     runs-on: ubuntu-latest
     
     steps:
@@ -36,26 +35,26 @@ jobs:
         cache-on-failure: false
         cache-all-crates: true
 
-    - name: Generate documentation
+    - name: Generate Documentation
       run: cargo doc --no-deps --all-features
 
     - name: Configure Pages
       id: pages
       uses: actions/configure-pages@v5
       
-    - name: Add root index
+    - name: Add Root
       run: |
         cd target/doc
         touch index.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url=https://bedrock-crustaceans.github.io/bedrock-rs/bedrockrs/index.html\">" > index.html
 
-    - name: Upload docs artifact
+    - name: Upload Artifact
       uses: actions/upload-pages-artifact@v4
       with:
         path: target/doc
     
   deploy:
-    name: Deploy docs
+    name: Deploy
     needs: build
 
     permissions:

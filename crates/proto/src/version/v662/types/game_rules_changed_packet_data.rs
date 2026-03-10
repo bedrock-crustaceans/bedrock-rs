@@ -12,10 +12,9 @@ pub struct GameRulesChangedPacketData {
 #[enum_endianness(var)]
 #[repr(u32)]
 pub enum Type {
-    Invalid = 0,
     Bool(bool) = 1,
-    Int = 2,
-    Float = 3,
+    Int(#[endianness(var)] u32) = 2,
+    Float(#[endianness(le)] f32) = 3,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

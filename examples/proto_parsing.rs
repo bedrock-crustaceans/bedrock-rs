@@ -6,7 +6,7 @@ use bedrockrs::proto::v800::ProtoHelperV800;
 use bedrockrs_proto::compression::Compression;
 
 fn main() {
-    setup_logger().unwrap();
+    setup_logger();
 
     let bytes = vec![
         1, 0, 0, 2, 254, 243, 252, 35, 32, 10, 0, 0, 123, 34, 99, 104, 97, 105, 110, 34, 58, 91,
@@ -18,5 +18,5 @@ fn main() {
 
     let result = decode_gamepackets::<ProtoHelperV800>(bytes, Some(&Compression::None), None);
 
-    println!("{:?}", result);
+    tracing::trace!("Decoded game packets: {:?}", result);
 }
