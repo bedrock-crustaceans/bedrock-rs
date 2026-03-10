@@ -10,6 +10,9 @@ pub struct CameraAimAssistCategory<V: ProtoVersion> {
     #[vec_repr(u32)]
     #[vec_endianness(var)]
     pub block_priorities: Vec<V::CameraAimAssistPriority>,
+    #[vec_repr(u32)]
+    #[vec_endianness(var)]
+    pub block_tag_priorities: Vec<V::CameraAimAssistPriority>,
     #[endianness(le)]
     pub entity_default_priorities: Option<i32>,
     #[endianness(le)]

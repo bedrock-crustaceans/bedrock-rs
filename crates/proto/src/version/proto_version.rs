@@ -681,6 +681,8 @@ define_versions![
             % AvailableCommandsPacket: AvailableCommandsPacket,
         ] in crate::version::v898::packets,
         types: [
+            % CameraAimAssistCategory: CameraAimAssistCategory^,
+            % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
             % CommandOriginData: CommandOriginData^,
         ] in crate::version::v898::types,
         enums: [
