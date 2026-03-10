@@ -47,7 +47,7 @@ impl Biomes {
     // will be larger than this estimate while chunks with many inherited biome fragments will be smaller.
     pub fn size_hint(&self) -> usize {
         const HEIGHTMAP_SIZE: usize = 256 * 2;        
-        return HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>();
+        HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>()
     }
     
     pub fn to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
