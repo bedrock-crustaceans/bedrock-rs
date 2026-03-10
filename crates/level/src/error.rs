@@ -1,4 +1,4 @@
-use std::{ffi::NulError, str::Utf8Error, sync::PoisonError};
+use std::{backtrace::Backtrace, ffi::NulError, str::Utf8Error, sync::PoisonError};
 
 use thiserror::Error;
 

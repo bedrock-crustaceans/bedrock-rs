@@ -57,8 +57,6 @@ impl UnpackedArray {
         let mut words = vec![0; word_count as usize];
         reader.read_exact(bytemuck::cast_slice_mut::<u32, u8>(&mut words))?;
 
-        println!("MASK IS: {mask:#0b}");
-
         for mut word in words {
             for _ in 0..per_word {
                 if offset == 4096 {

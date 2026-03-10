@@ -63,7 +63,6 @@ fn read_local_player() {
 }
 
 #[test]
-#[ignore]
 fn read_biome() {
     let db = open_test_db();
     let mut keys = db.keys();
@@ -74,14 +73,12 @@ fn read_biome() {
             continue
         };
 
-        println!("key is {key:?}");
-
         match key.data {
             KeyVariant::Biome3d => {
                 let value = kv.value();
                 let biome = Biomes::from_disk::<Unpacked, _>(value.as_ref()).unwrap();
 
-                dbg!(biome);
+                println!("{biome:?}");
 
                 // break
             }
