@@ -34,7 +34,6 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub world_template_id: Uuid,
     pub server_enabled_client_side_generation: bool,
     pub block_network_ids_are_hashes: bool,
-    pub tick_death_systems_enabled: bool,
     pub network_permissions: V::NetworkPermissions,
 }
 

@@ -1,16 +1,16 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use bedrockrs_proto_core::error::ProtoCodecError;
+use crate::version::proto_version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, gamepacket};
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use std::io::{Cursor, Read};
 use varint_rs::{VarintReader, VarintWriter};
-use crate::version::proto_version::ProtoVersion;
 
 #[gamepacket(id = 65)]
 #[derive(Clone, Debug)]
 pub struct LegacyTelemetryEventPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
     pub event_type: Type<V>,
-    pub use_player_id: i8,
+    pub use_player_id: bool,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -173,7 +173,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
 
         <V::ActorUniqueID as ProtoCodec>::proto_serialize(&self.target_actor_id, stream)?;
         stream.write_i32_varint(event_type_cursor.read_i32_varint()?)?;
-        <i8 as ProtoCodec>::proto_serialize(&self.use_player_id, stream)?;
+        <bool as ProtoCodec>::proto_serialize(&self.use_player_id, stream)?;
         event_type_cursor.read_to_end(stream)?;
 
         Ok(())
@@ -184,7 +184,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
 
         let target_actor_id = <V::ActorUniqueID as ProtoCodec>::proto_deserialize(stream)?;
         event_type_stream.write_i32_varint(stream.read_i32_varint()?)?;
-        let use_player_id = <i8 as ProtoCodec>::proto_deserialize(stream)?;
+        let use_player_id = <bool as ProtoCodec>::proto_deserialize(stream)?;
         stream.read_to_end(&mut event_type_stream)?;
 
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());

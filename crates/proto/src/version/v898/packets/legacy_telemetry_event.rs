@@ -1,7 +1,7 @@
 use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, gamepacket};
-use bedrockrs_proto_core::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
+use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Cursor, Read};
 use varint_rs::{VarintReader, VarintWriter};
 
@@ -9,7 +9,7 @@ use varint_rs::{VarintReader, VarintWriter};
 #[derive(Clone, Debug)]
 pub struct LegacyTelemetryEventPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
-    pub event_type: Type<V>,
+    pub event_type: LegacyTelemetryEventType<V>,
     pub use_player_id: bool,
 }
 
@@ -28,7 +28,7 @@ pub enum AgentResult {
 #[enum_repr(i32)]
 #[enum_endianness(var)]
 #[repr(i32)]
-pub enum Type<V: ProtoVersion> {
+pub enum LegacyTelemetryEventType<V: ProtoVersion> {
     Achievement {
         #[endianness(var)]
         achievement_id: i32,
@@ -164,18 +164,34 @@ pub enum Type<V: ProtoVersion> {
     StriderRiddenInLavaInOverworld = 28,
     SneakCloseToSculkSensor = 29,
     CarefulRestoration = 30,
+    ItemUsed {
+        #[endianness(le)]
+        item_id: i16,
+        #[endianness(le)]
+        item_aux: i32,
+        #[endianness(le)]
+        use_method: i32,
+        #[endianness(le)]
+        use_count: i32,
+    } = 31,
 }
 
 impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
     fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
         let mut event_type_stream: Vec<u8> = Vec::new();
-        <Type<V> as ProtoCodec>::proto_serialize(&self.event_type, &mut event_type_stream)?;
+        <LegacyTelemetryEventType<V> as ProtoCodec>::proto_serialize(
+            &self.event_type,
+            &mut event_type_stream,
+        )?;
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
 
+        let event_type_discriminant = event_type_cursor.read_i32_varint()?;
+
         <V::ActorUniqueID as ProtoCodec>::proto_serialize(&self.target_actor_id, stream)?;
-        stream.write_i32_varint(event_type_cursor.read_i32_varint()?)?;
+        <i32 as ProtoCodecVAR>::proto_serialize(&event_type_discriminant, stream)?;
         <bool as ProtoCodec>::proto_serialize(&self.use_player_id, stream)?;
         event_type_cursor.read_to_end(stream)?;
+        <u32 as ProtoCodecVAR>::proto_serialize(&(event_type_discriminant as u32), stream)?;
 
         Ok(())
     }
@@ -189,7 +205,9 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         stream.read_to_end(&mut event_type_stream)?;
 
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
-        let event_type = <Type<V> as ProtoCodec>::proto_deserialize(&mut event_type_cursor)?;
+        let event_type =
+            <LegacyTelemetryEventType<V> as ProtoCodec>::proto_deserialize(&mut event_type_cursor)?;
+        <u32 as ProtoCodecVAR>::proto_deserialize(&mut event_type_cursor)?;
 
         Ok(Self {
             target_actor_id,
@@ -202,7 +220,6 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         self.event_type.get_size_prediction()
             + self.target_actor_id.get_size_prediction()
             + self.use_player_id.get_size_prediction()
+            + 1
     }
 }
-
-// TODO: verify ProtoCodec impl
