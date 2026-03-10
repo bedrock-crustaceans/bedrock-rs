@@ -8,28 +8,20 @@ use std::io::Cursor;
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AvailableCommandsPacket {
     pub enum_values: Vec<String>,
-
     pub sub_command_values: Vec<String>,
-
     pub post_fixes: Vec<String>,
-
     pub enum_data: Vec<EnumDataEntry>,
-
     pub chained_sub_command_data: Vec<ChainedSubCommandDataEntry>,
-
     pub commands: Vec<CommandsEntry>,
-
     pub soft_enums: Vec<SoftEnumsEntry>,
-
     pub constraints: Vec<ConstraintsEntry>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct EnumDataEntry {
-    name: String,
-
+    pub name: String,
     #[endianness(le)]
-    values: Vec<u32>,
+    pub values: Vec<u32>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -52,7 +44,6 @@ pub struct ParameterDataEntry {
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct OverloadsEntry {
     pub is_chaining: bool,
-
     pub parameter_data: Vec<ParameterDataEntry>,
 }
 
@@ -65,17 +56,14 @@ pub struct CommandsEntry {
     pub permission_level: CommandPermissionLevelString,
     #[endianness(le)]
     pub alias_enum: i32,
-
     #[endianness(le)]
     pub chained_sub_command_indices: Vec<i32>,
-
     pub overloads: Vec<OverloadsEntry>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SoftEnumsEntry {
     pub enum_name: String,
-
     pub enum_options: Vec<String>,
 }
 
@@ -85,14 +73,12 @@ pub struct ConstraintsEntry {
     pub enum_value_symbol: u32,
     #[endianness(le)]
     pub enum_symbol: u32,
-
     pub constraint_indices: Vec<i8>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChainedSubCommandDataEntry {
     pub sub_command_name: String,
-
     pub sub_command_values: Vec<SubCommandValues>,
 }
 
