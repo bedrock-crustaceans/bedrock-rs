@@ -78,7 +78,14 @@ fn read_biome() {
                 let value = kv.value();
                 let biome = Biomes::from_disk::<Unpacked, _>(value.as_ref()).unwrap();
 
-                println!("{biome:?}");
+                let mut writer = Vec::new();
+                biome.to_disk(&mut writer).unwrap();
+
+                let biome2 = Biomes::from_disk::<Unpacked, _>(writer.as_slice()).unwrap();
+
+                assert_eq!(biome, biome2);
+
+                // println!("{biome:?}");
 
                 // break
             }

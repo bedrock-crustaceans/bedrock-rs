@@ -1,7 +1,7 @@
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Write};
 use std::io::Read;
 
-use byteorder::ReadBytesExt;
+use byteorder::{ReadBytesExt, WriteBytesExt};
 use byteorder::LittleEndian;
 use smallvec::SmallVec;
 
@@ -41,6 +41,40 @@ pub struct Biomes {
 impl Biomes {
     pub fn heightmap(&self) -> &[u16; 256] {
         &self.heightmap
+    }
+    
+    // This roughly estimates the size of the output buffer. Chunks with many paletted fragments
+    // will be larger than this estimate while chunks with many inherited biome fragments will be smaller.
+    pub fn size_hint(&self) -> usize {
+        const HEIGHTMAP_SIZE: usize = 256 * 2;        
+        return HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>();
+    }
+    
+    pub fn to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+        const EMPTY_FLAG: u8 = 0x00;
+        const INHERIT_FLAG: u8 = 0x7f;
+
+        writer.write_all(bytemuck::cast_slice::<u16, u8>(self.heightmap.as_slice()))?;
+
+        for fragment in &self.fragments {
+            match fragment {
+                BiomeEncoding::Inherit => writer.write_u8(INHERIT_FLAG << 1)?,
+                BiomeEncoding::Single(v) => {
+                    writer.write_u8(EMPTY_FLAG << 1)?;
+                    writer.write_u32::<LittleEndian>(*v)?;
+                },
+                BiomeEncoding::Palette(v) => {
+                    v.array.to_disk(&mut writer, v.palette.len())?;
+                    writer.write_u32::<LittleEndian>(v.palette.len() as u32)?;
+                    
+                    for entry in &v.palette {
+                        writer.write_u32::<LittleEndian>(*entry)?;
+                    }
+                }
+            }
+        }
+        
+        Ok(())
     }
 
     pub fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Biomes> {
