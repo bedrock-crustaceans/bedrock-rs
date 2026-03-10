@@ -47,8 +47,8 @@ impl TryFrom<String> for SwingSource {
             "interact" => Ok(SwingSource::Interact),
             "attack" => Ok(SwingSource::Attack),
             "useitem" => Ok(SwingSource::UseItem),
-            "throwitem" => Ok(SwingSource::DropItem),
-            "dropitem" => Ok(SwingSource::Event),
+            "throwitem" => Ok(SwingSource::ThrowItem),
+            "dropitem" => Ok(SwingSource::DropItem),
             "event" => Ok(SwingSource::Event),
             invalid => Err(ProtoCodecError::InvalidEnumID(
                 invalid.to_string(),
@@ -66,8 +66,8 @@ impl From<SwingSource> for String {
             SwingSource::Interact => "interact",
             SwingSource::Attack => "attack",
             SwingSource::UseItem => "useitem",
-            SwingSource::DropItem => "dropitem",
             SwingSource::ThrowItem => "throwitem",
+            SwingSource::DropItem => "dropitem",
             SwingSource::Event => "event",
         }
         .to_string()
