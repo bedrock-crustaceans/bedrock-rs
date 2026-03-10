@@ -1,10 +1,5 @@
 use crate::version::proto_version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, gamepacket};
-use bedrockrs_proto_core::error::ProtoCodecError;
-use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
-use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read};
-use std::mem::size_of;
 
 #[gamepacket(id = 79)]
 #[derive(ProtoCodec, Clone, Debug)]
