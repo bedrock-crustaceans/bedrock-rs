@@ -58,7 +58,7 @@ impl TryFrom<String> for CommandOriginType {
             "scripting" => Ok(CommandOriginType::Scripting),
             "executecontext" => Ok(CommandOriginType::ExecuteContext),
             invalid => Err(ProtoCodecError::InvalidEnumID(
-                format!("{invalid}"),
+                invalid.to_string(),
                 "CommandOriginType",
             )),
         }

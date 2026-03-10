@@ -51,7 +51,7 @@ impl TryFrom<String> for SwingSource {
             "dropitem" => Ok(SwingSource::Event),
             "event" => Ok(SwingSource::Event),
             invalid => Err(ProtoCodecError::InvalidEnumID(
-                format!("{invalid}"),
+                invalid.to_string(),
                 "SwingSource",
             )),
         }
