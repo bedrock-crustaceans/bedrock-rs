@@ -20,6 +20,8 @@ pub enum Error {
     InvalidBitSize(u8),
     #[error("invalid {0}")]
     Invalid(&'static str),
+    #[error("an exception occurred within LevelDB")]
+    Exception,
     #[error("unknown error")]
     Unknown,
 }
