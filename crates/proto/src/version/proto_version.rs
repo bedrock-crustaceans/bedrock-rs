@@ -702,5 +702,38 @@ define_versions![
             % LevelSoundEventType: LevelSoundEventType,
             % TextPacketType: TextPacketType,
         ] in crate::version::v898::enums,
+    },
+    (924, "r/26_u0", "1.26.0"): {
+        packets: [
+            + CameraAimAssistActorPriorityPacket: CameraAimAssistActorPriorityPacket,
+            + CameraSplinePacket: CameraSplinePacket^,
+            + ClientBoundDataDrivenUICloseAllScreensPacket: ClientBoundDataDrivenUICloseAllScreensPacket,
+            + ClientBoundDataDrivenUIReloadPacket: ClientBoundDataDrivenUIReloadPacket,
+            + ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
+            + ClientBoundTextureShiftPacket: ClientBoundTextureShiftPacket,
+            + VoxelShapesPacket: VoxelShapesPacket,
+            % BookEditPacket: BookEditPacket^,
+            % ClientBoundDataStorePacket: ClientBoundDataStorePacket,
+            % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
+            % ServerBoundDataStorePacket: ServerBoundDataStorePacket,
+            % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
+            % StartGamePacket: StartGamePacket^,
+        ] in crate::version::v924::packets,
+        types: [
+            + CameraSplineInstruction: CameraSplineInstruction^,
+            % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
+            % CameraAimAssistCategory: CameraAimAssistCategory^,
+            % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
+            % CameraInstruction: CameraInstruction^,
+            % DebugShape: DebugShape^,
+            % LevelSettings: LevelSettings^,
+        ] in crate::version::v924::types,
+        enums: [
+            + CameraSplineEaseType: CameraSplineEaseType,
+            % ActorDataIDs: ActorDataIDs,
+            % BookEditAction: BookEditAction,
+            % LevelSoundEventType: LevelSoundEventType,
+            % TextPacketType: TextPacketType,
+        ] in crate::version::v924::enums,
     }
 ];
