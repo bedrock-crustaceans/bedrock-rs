@@ -1,7 +1,4 @@
 use bedrockrs_macros::ProtoCodec;
-use bedrockrs_proto_core::ProtoCodec;
-use bedrockrs_proto_core::error::ProtoCodecError;
-use std::io::Cursor;
 
 // ########## PROTOCOL HACK ##########
 //
