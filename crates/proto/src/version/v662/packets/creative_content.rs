@@ -4,8 +4,6 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[packet(id = 145)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CreativeContentPacket<V: ProtoVersion> {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub write_entries: Vec<WriteEntry<V>>,
 }
 

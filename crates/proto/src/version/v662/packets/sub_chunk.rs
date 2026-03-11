@@ -42,10 +42,10 @@ pub enum SubChunkRequestResult {
 pub struct SubChunkDataEntry<V: ProtoVersion> {
     pub sub_chunk_pos_offset: V::SubChunkPosOffset,
     pub sub_chunk_request_result: SubChunkRequestResult,
-    pub serialized_sub_chunk: Option<String>, // If sub_chunk_request_result == SuccessAllAir, or cache_enabled == false
+    pub serialized_sub_chunk: Option<String>, // If sub_chunk_request_result != SuccessAllAir, or cache_enabled == false
     pub height_map_data_type: HeightMapDataType,
-    pub sub_chunk_height_map: Option<[[i8; 16]; 16]>, // If height_map_data_type == HasData (vec sizes are i8)
-    pub blob_id: Option<u64>,                         // If cache_enabled == true
+    pub height_map_data: Option<[[i8; 16]; 16]>, // If height_map_data_type == HasData (vec sizes are i8)
+    pub blob_id: Option<u64>,                    // If cache_enabled == true
 }
 
 impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
@@ -57,14 +57,14 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
         for i in &self.sub_chunk_data {
             i.sub_chunk_pos_offset.serialize(stream)?;
             i.sub_chunk_request_result.serialize(stream)?;
-            if i.sub_chunk_request_result == SubChunkRequestResult::SuccessAllAir
+            if i.sub_chunk_request_result != SubChunkRequestResult::SuccessAllAir
                 || !self.cache_enabled
             {
                 i.serialized_sub_chunk.as_ref().unwrap().serialize(stream)?;
             }
             i.height_map_data_type.serialize(stream)?;
             if i.height_map_data_type == HeightMapDataType::HasData {
-                let height_map = i.sub_chunk_height_map.as_ref().unwrap();
+                let height_map = i.height_map_data.as_ref().unwrap();
                 for x in height_map {
                     for y in x {
                         y.serialize(stream)?;
@@ -90,8 +90,8 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                 let sub_chunk_pos_offset = V::SubChunkPosOffset::deserialize(stream)?;
                 let sub_chunk_request_result = SubChunkRequestResult::deserialize(stream)?;
                 let serialized_sub_chunk = match sub_chunk_request_result
-                    == SubChunkRequestResult::SuccessAllAir
-                    || cache_enabled
+                    != SubChunkRequestResult::SuccessAllAir
+                    || !cache_enabled
                 {
                     true => Some(String::deserialize(stream)?),
                     false => None,
@@ -121,7 +121,7 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                     sub_chunk_request_result,
                     serialized_sub_chunk,
                     height_map_data_type,
-                    sub_chunk_height_map,
+                    height_map_data: sub_chunk_height_map,
                     blob_id,
                 })
             }
@@ -147,8 +147,8 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                 .map(|i| {
                     i.sub_chunk_pos_offset.size_hint()
                         + i.sub_chunk_request_result.size_hint()
-                        + match i.sub_chunk_request_result == SubChunkRequestResult::SuccessAllAir
-                            || self.cache_enabled
+                        + match i.sub_chunk_request_result != SubChunkRequestResult::SuccessAllAir
+                            || !self.cache_enabled
                         {
                             true => i.serialized_sub_chunk.as_ref().unwrap().size_hint(),
                             false => 0,
@@ -156,7 +156,7 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                         + i.height_map_data_type.size_hint()
                         + match i.height_map_data_type == HeightMapDataType::HasData {
                             true => {
-                                let height_map = i.sub_chunk_height_map.as_ref().unwrap();
+                                let height_map = i.height_map_data.as_ref().unwrap();
                                 height_map.len() * height_map[0].len() * size_of::<i8>()
                             }
                             false => 0,

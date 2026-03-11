@@ -36,6 +36,4 @@ pub enum EasingType {
     InElastic = 29,
     OutElastic = 30,
     InOutElastic = 31,
-    Count = 32,
-    Invalid = 33,
 }

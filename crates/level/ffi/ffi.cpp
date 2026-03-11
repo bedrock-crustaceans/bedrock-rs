@@ -14,8 +14,8 @@
 #include <leveldb/zlib_compressor.h>
 #include <leveldb/write_batch.h>
 
-enum DbStatus translate_status(const leveldb::Status& status) noexcept {
-    return static_cast<DbStatus>(status.code());
+enum FfiStatus translate_status(const leveldb::Status& status) noexcept {
+    return static_cast<FfiStatus>(status.code());
 }
 
 void copy_string(FfiResult* result, const std::string& error) {
@@ -54,58 +54,78 @@ struct Database {
 
 FfiResult bedrockrs_db_open(const char* path) {
     FfiResult result{};
+    try {
+        std::unique_ptr<Database> database = std::make_unique<Database>();
 
-    std::unique_ptr<Database> database = std::make_unique<Database>();
+        database->options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+        database->options.block_cache = leveldb::NewLRUCache(40 * 1024 * 1024);
+        database->options.info_log = new EmptyLogger();
+        database->options.compressors[0] = new leveldb::ZlibCompressorRaw();
+        database->options.compressors[1] = new leveldb::ZlibCompressor();
+        
+        database->read_options.decompress_allocator = new leveldb::DecompressAllocator();
 
-    database->options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-    database->options.block_cache = leveldb::NewLRUCache(40 * 1024 * 1024);
-    database->options.info_log = new EmptyLogger();
-    database->options.compressors[0] = new leveldb::ZlibCompressorRaw();
-    database->options.compressors[1] = new leveldb::ZlibCompressor();
-    
-    database->read_options.decompress_allocator = new leveldb::DecompressAllocator();
+        leveldb::Status status = leveldb::DB::Open(database->options, path, &database->db);
 
-    leveldb::Status status = leveldb::DB::Open(database->options, path, &database->db);
+        result.status = translate_status(status);
 
-    result.status = translate_status(status);
+        if(status.ok()) {
+            result.size = sizeof(Database);
+            result.data = database.release();
+        } else {    
+            std::string error = status.ToString();
+            copy_string(&result, error);
+        }
 
-    if(status.ok()) {
-        result.size = sizeof(Database);
-        result.data = database.release();
-    } else {    
-        std::string error = status.ToString();
-        copy_string(&result, error);
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
+        result.data = nullptr;
+        result.size = 0;
+
+        return result;
     }
-
-    return result;
 }
 
 void bedrockrs_db_close(void* db_ptr) {
-    Database* database = reinterpret_cast<Database*>(db_ptr);
-    delete database;
+    try {
+        Database* database = reinterpret_cast<Database*>(db_ptr);
+        delete database;
+    } catch(...) {
+        // If we're unable to destroy the database then there's no point in retrying.
+        // Just leak it
+        std::cout << "exception occurred while freeing database" << std::endl;
+    }
 }
 
 FfiResult bedrockrs_db_get(void* db_ptr, const char* key, int key_size) {
     FfiResult result{};
+    try {
+        Database* db = reinterpret_cast<Database*>(db_ptr);
 
-    Database* db = reinterpret_cast<Database*>(db_ptr);
+        std::string value;
+        leveldb::Status status = db->db->Get(db->read_options, leveldb::Slice(key, key_size), &value);
 
-    std::string value;
-    leveldb::Status status = db->db->Get(db->read_options, leveldb::Slice(key, key_size), &value);
+        result.status = translate_status(status);
+        if(status.ok()) {
+            result.size = static_cast<int>(value.size());
+            result.data = new char[value.size()];
 
-    result.status = translate_status(status);
-    if(status.ok()) {
-        result.size = static_cast<int>(value.size());
-        result.data = new char[value.size()];
+            // TODO: This memcpy can probably be removed.
+            memcpy(result.data, value.data(), value.size());
+        } else {
+            std::string error = status.ToString();
+            copy_string(&result, error);
+        }
 
-        // TODO: This memcpy can probably be removed.
-        memcpy(result.data, value.data(), value.size());
-    } else {
-        std::string error = status.ToString();
-        copy_string(&result, error);
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
+        result.data = nullptr;
+        result.size = 0;
+
+        return result;
     }
-
-    return result;
 }
 
 FfiResult bedrockrs_db_put(
@@ -116,95 +136,159 @@ FfiResult bedrockrs_db_put(
     Database* db = reinterpret_cast<Database*>(db_ptr);
     FfiResult result{};
 
-    leveldb::Slice key_slice(key, key_size);
-    leveldb::Slice val_slice(val, val_size);
+    try {
+        leveldb::Slice key_slice(key, key_size);
+        leveldb::Slice val_slice(val, val_size);
 
-    leveldb::Status status = db->db->Put(db->write_options, key_slice, val_slice);
-    result.status = translate_status(status);
+        leveldb::Status status = db->db->Put(db->write_options, key_slice, val_slice);
+        result.status = translate_status(status);
 
-    if(status.ok()) {
+        if(status.ok()) {
+            result.data = nullptr;
+            result.size = 0;
+        } else {
+            std::string error = status.ToString();
+            copy_string(&result, error);
+        }
+
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
         result.data = nullptr;
         result.size = 0;
-    } else {
-        std::string error = status.ToString();
-        copy_string(&result, error);
-    }
 
-    return result;
+        return result;
+    }
 }
 
 FfiResult bedrockrs_db_remove(void* db_ptr, const char* key, int key_size) {
     Database* db = reinterpret_cast<Database*>(db_ptr);
     FfiResult result{};
 
-    leveldb::Slice key_slice(key, key_size);
+    try {
+        leveldb::Slice key_slice(key, key_size);
 
-    leveldb::Status status = db->db->Delete(db->write_options, key_slice);
+        leveldb::Status status = db->db->Delete(db->write_options, key_slice);
 
-    result.status = translate_status(status);
-    if(status.ok()) {
+        result.status = translate_status(status);
+        if(status.ok()) {
+            result.data = nullptr;
+            result.size = 0;
+        } else {
+            std::string error = status.ToString();
+            copy_string(&result, error);
+        }
+
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
         result.data = nullptr;
         result.size = 0;
-    } else {
-        std::string error = status.ToString();
-        copy_string(&result, error);
-    }
 
-    return result;
+        return result;
+    }
 }
 
 void bedrockrs_buffer_destroy(char* array) {
-    delete[] array;
+    try {
+        delete[] array;
+    } catch(...) {
+        // If this fails, there is no point in retrying.
+        // Just leak it.
+        std::cout << "exception occurred while freeing buffer" << std::endl;
+    }
 }
 
-FfiData bedrockrs_iter_new(void* db_ptr) {
+FfiResult bedrockrs_iter_new(void* db_ptr) {
     Database* db = reinterpret_cast<Database*>(db_ptr);
 
-    leveldb::Iterator* iter = db->db->NewIterator(db->read_options);
-    iter->SeekToFirst();
+    FfiResult result{};    
+    try {
+        leveldb::Iterator* iter = db->db->NewIterator(db->read_options);
+        iter->SeekToFirst();
 
-    FfiData result{};
-    result.size = sizeof(leveldb::Iterator*); // yes this must be the size of the pointer
-    result.data = iter;
+        result.status = FfiStatus::Success;
+        result.size = sizeof(leveldb::Iterator*); // yes this must be the size of the pointer
+        result.data = iter;
 
-    return result;
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
+        result.data = nullptr;
+        result.size = 0;
+
+        return result;
+    }
 }
 
 void bedrockrs_iter_destroy(void* iter_ptr) {
-    leveldb::Iterator* iter = reinterpret_cast<leveldb::Iterator*>(iter_ptr);
-    delete iter;
+    try {
+        leveldb::Iterator* iter = reinterpret_cast<leveldb::Iterator*>(iter_ptr);
+        delete iter;
+    } catch(...) {
+        // If this fails there is no point in retrying, just leak it.
+        std::cout << "exception occurred while freeing iterator" << std::endl;
+    }
 }
 
-FfiData bedrockrs_iter_key(const void* iter_ptr) {
-    const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
-    leveldb::Slice key = iter->key();
+FfiResult bedrockrs_iter_key(const void* iter_ptr) {
+    FfiResult result{};
+    try {
+        const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
+        leveldb::Slice key = iter->key();
 
-    FfiData result{};
-    result.size = key.size();
-    result.data = new char[result.size];
-    memcpy(result.data, key.data(), result.size);
+        result.status = FfiStatus::Success;
+        result.size = key.size();
+        result.data = new char[result.size];
+        memcpy(result.data, key.data(), result.size);
 
-    return result;
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
+        result.data = nullptr;
+        result.size = 0;
+
+        return result;
+    }
 }
 
-FfiData bedrockrs_iter_value(const void* iter_ptr) {
+FfiResult bedrockrs_iter_value(const void* iter_ptr) {
     const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
-    leveldb::Slice value = iter->value();
 
-    FfiData result{};
-    result.size = value.size();
-    result.data = new char[result.size];
-    memcpy(result.data, value.data(), result.size);
+    FfiResult result{};
+    try {
+        leveldb::Slice value = iter->value();
 
-    return result;
+        result.status = FfiStatus::Success;
+        result.size = value.size();
+        result.data = new char[result.size];
+        memcpy(result.data, value.data(), result.size);
+
+        return result;
+    } catch(...) {
+        result.status = FfiStatus::Exception;
+        result.data = nullptr;
+        result.size = 0;
+
+        return result;
+    }
 }
 
 void bedrockrs_iter_next(void* iter_ptr) {
-    leveldb::Iterator* iter = reinterpret_cast<leveldb::Iterator*>(iter_ptr);
-    iter->Next();
+    try {
+        leveldb::Iterator* iter = reinterpret_cast<leveldb::Iterator*>(iter_ptr);
+        iter->Next();
+    } catch(...) {
+        // Fail will be caught by `bedrockrs_iter_valid`.
+        std::cout << "exception occurred in `Iterator->next`" << std::endl;
+    }
 }
 
 bool bedrockrs_iter_valid(const void* iter_ptr) {
     const leveldb::Iterator* iter = reinterpret_cast<const leveldb::Iterator*>(iter_ptr);
-    return iter->Valid();
+    try {
+        return iter->Valid();
+    } catch(...) {
+        return false;
+    }
 }

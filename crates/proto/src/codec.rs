@@ -9,7 +9,7 @@ pub fn encode_packets<T: Packets>(
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
 ) -> Result<Vec<u8>, ProtoCodecError> {
-    log::trace!("Encoding packets");
+    tracing::trace!("Encoding packets");
 
     let mut packets_stream = batch_packets::<T>(packets)?;
     packets_stream = compress_packets(packets_stream, compression)?;
@@ -23,7 +23,7 @@ pub fn decode_packets<T: Packets>(
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
 ) -> Result<Vec<T>, ProtoCodecError> {
-    log::trace!("Decoding packets");
+    tracing::trace!("Decoding packets");
 
     packets_stream = decrypt_packets(packets_stream, encryption)?;
     packets_stream = decompress_packets(packets_stream, compression)?;

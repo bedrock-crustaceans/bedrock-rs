@@ -2,23 +2,19 @@
 extern "C" {
 #endif __cplusplus
 
-enum DbStatus {
+enum FfiStatus {
     Success,
     NotFound,
     Corrupted,
     NotSupported,
     InvalidArgument,
     IoError,
-    AllocationFailed
+    AllocationFailed,
+    Exception
 };
 
 struct FfiResult {
-    enum DbStatus status;
-    int size;
-    void* data;
-};
-
-struct FfiData {
+    enum FfiStatus status;
     int size;
     void* data;
 };
@@ -29,10 +25,10 @@ struct FfiResult bedrockrs_db_get(void* db, const char* key, int key_size);
 struct FfiResult bedrockrs_db_put(void* db, const char* key, int key_size, const char* val, int val_size);
 struct FfiResult bedrockrs_db_remove(void* db, const char* key, int key_size);
 void bedrockrs_buffer_destroy(char* array);
-struct FfiData bedrockrs_iter_new(void* db);
+struct FfiResult bedrockrs_iter_new(void* db);
 void bedrockrs_iter_destroy(void* iter);
-struct FfiData bedrockrs_iter_key(const void* iter);
-struct FfiData bedrockrs_iter_value(const void* iter);
+struct FfiResult bedrockrs_iter_key(const void* iter);
+struct FfiResult bedrockrs_iter_value(const void* iter);
 bool bedrockrs_iter_valid(const void* iter);
 void bedrockrs_iter_next(void* iter);
 

@@ -14,6 +14,7 @@ pub enum FfiStatus {
     InvalidArgument,
     IoError,
     AllocationFailed,
+    Exception,
 }
 
 #[derive(Debug)]
@@ -93,7 +94,7 @@ unsafe extern "C" {
     /// # Safety
     ///
     /// `db` must be a pointer previously returned by a call to [`bedrockrs_db_open`].
-    pub fn bedrockrs_iter_new(db: *mut c_void) -> FfiData;
+    pub fn bedrockrs_iter_new(db: *mut c_void) -> FfiResult;
 
     /// Destroys an iterator previously created with [`level_iter`].
     ///
@@ -114,14 +115,14 @@ unsafe extern "C" {
     /// # Safety
     ///
     /// `iter` must be a pointer previously returned by a call to [`bedrockrs_iter_new`].
-    pub fn bedrockrs_iter_key(iter: *const c_void) -> FfiData;
+    pub fn bedrockrs_iter_key(iter: *const c_void) -> FfiResult;
 
     /// The current value the iterator is on.
     ///
     /// # Safety
     ///
     /// `iter` must be a pointer previously returned by a call to [`bedrockrs_iter_new`].
-    pub fn bedrockrs_iter_value(iter: *const c_void) -> FfiData;
+    pub fn bedrockrs_iter_value(iter: *const c_void) -> FfiResult;
 
     /// Moves the iterator to the next position.
     ///

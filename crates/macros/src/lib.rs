@@ -24,7 +24,7 @@ mod size;
         str
     )
 )]
-pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
 
     let name = input.ident;
@@ -39,7 +39,7 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
             build_de_enum(&v, input.attrs.as_slice(), name.clone()),
         ),
         Data::Union(_) => {
-            return proc_macro::TokenStream::from(quote! {
+            return TokenStream::from(quote! {
                 compile_error!("ProtoCodec derive macro only supports structs and enums")
             })
         }
@@ -49,14 +49,14 @@ pub fn proto_codec_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStr
         impl #impl_generics ::bedrockrs_proto_core::ProtoCodec for #name #ty_generics #where_clause {
             fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
-                ::log::trace!("ProtoSerialize: {}", stringify!(#name));
+                ::tracing::trace!("ProtoSerialize: {}", stringify!(#name));
                 #ser
                 Ok(())
             }
 
             fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
-                ::log::trace!("ProtoDeserialize: {}", stringify!(#name));
+                ::tracing::trace!("ProtoDeserialize: {}", stringify!(#name));
                 #de
                 Ok(val)
             }

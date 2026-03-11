@@ -10,11 +10,7 @@ use varint_rs::{VarintReader, VarintWriter};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateSubChunkBlocksPacket<V: ProtoVersion> {
     pub sub_chunk_block_position: V::NetworkBlockPosition,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub standard_blocks_changed: Vec<BlocksChangedEntry<V>>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub extra_blocks_changed: Vec<BlocksChangedEntry<V>>,
 }
 

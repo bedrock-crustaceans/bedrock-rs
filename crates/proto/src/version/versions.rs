@@ -417,7 +417,7 @@ define_versions![
             % ParticleType: ParticleType,
         ] in crate::version::v685::enums,
     },
-    (686, "r/21_u1", "1.21.2"): {
+    (686, "r/21_u0", "1.21.2"): {
         packets: [
             + ClientBoundCloseFormPacket: ClientBoundCloseFormPacket,
         ] in crate::version::v686::packets,
@@ -598,5 +598,142 @@ define_versions![
             % LevelSoundEventType: LevelSoundEventType,
             % PlayerListPacketType: PlayerListPacketType^,
         ] in crate::version::v800::enums,
+    },
+    (818, "r/21_u9", "1.21.90"): {
+        packets: [
+            + DebugDrawerPacket: DebugDrawerPacket^,
+            % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
+            % SubChunkPacket: SubChunkPacket^,
+            - SetMovementAuthorityPacket,
+        ] in crate::version::v818::packets,
+        types: [
+            + DebugShape: DebugShape^,
+            % CameraInstruction: CameraInstruction^,
+            % CameraPreset: CameraPreset^,
+            % LevelSettings: LevelSettings^,
+            % SyncedPlayerMovementSettings: SyncedPlayerMovementSettings,
+        ] in crate::version::v818::types,
+        enums: [
+            % ActorFlags: ActorFlags,
+            % LevelSoundEventType: LevelSoundEventType,
+            - ServerAuthMovementMode,
+        ] in crate::version::v818::enums,
+    },
+    (819, "r/21_u9", "1.21.93"): {
+        enums: [
+            % LevelSoundEventType: LevelSoundEventType,
+        ] in crate::version::v819::enums,
+    },
+    (827, "r/21_u10", "1.21.100"): {
+        packets: [
+            % CameraAimAssistPacket: CameraAimAssistPacket^,
+            % CorrectPlayerMovePredictionPacket: CorrectPlayerMovePredictionPacket^,
+            % StartGamePacket: StartGamePacket^,
+        ] in crate::version::v827::packets,
+        types: [
+            % BiomeDefinition: BiomeDefinition^,
+            % CameraInstruction: CameraInstruction^,
+        ] in crate::version::v827::types,
+        enums: [
+            % LevelSoundEventType: LevelSoundEventType,
+            % PredictionType: PredictionType,
+        ] in crate::version::v827::enums,
+    },
+    (844, "r/21_u11", "1.21.111"): {
+        packets: [
+            + ServerBoundPackSettingChangePacket: ServerBoundPackSettingChangePacket,
+            % PlayerArmorDamagePacket: PlayerArmorDamagePacket,
+        ] in crate::version::v844::packets,
+        types: [
+            % BiomeClimateData: BiomeClimateData,
+            % BiomeDefinition: BiomeDefinition^,
+            % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
+            % GameRulesChangedPacketData: GameRulesChangedPacketData,
+            % LevelSettings: LevelSettings^,
+        ] in crate::version::v844::types,
+        enums: [
+            % ActorFlags: ActorFlags,
+            % LevelSoundEventType: LevelSoundEventType,
+            % ParticleType: ParticleType,
+        ] in crate::version::v844::enums,
+    },
+    (859, "r/21_u12", "1.21.120"): {
+        packets: [
+            + GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
+            % AnimatePacket: AnimatePacket^,
+            % ShowStoreOfferPacket: ShowStoreOfferPacket^,
+        ] in crate::version::v859::packets,
+        types: [
+            + BiomeReplacementData: BiomeReplacementData,
+            % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
+            % CameraInstruction: CameraInstruction^,
+            % DebugShape: DebugShape^,
+        ] in crate::version::v859::types,
+        enums: [
+            + CameraSplineType: CameraSplineType,
+            % ActorEvent: ActorEvent,
+            % ActorFlags: ActorFlags,
+        ] in crate::version::v859::enums,
+    },
+    (898, "r/21_u13", "1.21.130"): {
+        packets: [
+            + ClientBoundDataStorePacket: ClientBoundDataStorePacket,
+            + ServerBoundDataStorePacket: ServerBoundDataStorePacket,
+            % AnimatePacket: AnimatePacket^,
+            % AvailableCommandsPacket: AvailableCommandsPacket,
+            % CommandOutputPacket: CommandOutputPacket^,
+            % CommandRequestPacket: CommandRequestPacket^,
+            % InteractPacket: InteractPacket^,
+            % LegacyTelemetryEventPacket: LegacyTelemetryEventPacket^,
+            % MobEffectPacket: MobEffectPacket^,
+            % ResourcePackStackPacket: ResourcePackStackPacket^,
+            % StartGamePacket: StartGamePacket^,
+            % TextPacket: TextPacket^,
+        ] in crate::version::v898::packets,
+        types: [
+            % CameraAimAssistCategory: CameraAimAssistCategory^,
+            % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
+            % CommandOriginData: CommandOriginData^,
+        ] in crate::version::v898::types,
+        enums: [
+            % ActorEvent: ActorEvent,
+            % CommandOriginType: CommandOriginType,
+            % CommandOutputType: CommandOutputType,
+            % LevelSoundEventType: LevelSoundEventType,
+            % TextPacketType: TextPacketType,
+        ] in crate::version::v898::enums,
+    },
+    (924, "r/26_u0", "1.26.0"): {
+        packets: [
+            + CameraAimAssistActorPriorityPacket: CameraAimAssistActorPriorityPacket,
+            + CameraSplinePacket: CameraSplinePacket^,
+            + ClientBoundDataDrivenUICloseAllScreensPacket: ClientBoundDataDrivenUICloseAllScreensPacket,
+            + ClientBoundDataDrivenUIReloadPacket: ClientBoundDataDrivenUIReloadPacket,
+            + ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
+            + ClientBoundTextureShiftPacket: ClientBoundTextureShiftPacket,
+            + VoxelShapesPacket: VoxelShapesPacket,
+            % BookEditPacket: BookEditPacket^,
+            % ClientBoundDataStorePacket: ClientBoundDataStorePacket,
+            % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
+            % ServerBoundDataStorePacket: ServerBoundDataStorePacket,
+            % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
+            % StartGamePacket: StartGamePacket^,
+        ] in crate::version::v924::packets,
+        types: [
+            + CameraSplineInstruction: CameraSplineInstruction^,
+            % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
+            % CameraAimAssistCategory: CameraAimAssistCategory^,
+            % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
+            % CameraInstruction: CameraInstruction^,
+            % DebugShape: DebugShape^,
+            % LevelSettings: LevelSettings^,
+        ] in crate::version::v924::types,
+        enums: [
+            + CameraSplineEaseType: CameraSplineEaseType,
+            % ActorDataIDs: ActorDataIDs,
+            % BookEditAction: BookEditAction,
+            % LevelSoundEventType: LevelSoundEventType,
+            % TextPacketType: TextPacketType,
+        ] in crate::version::v924::enums,
     }
 ];

@@ -18,15 +18,9 @@ pub struct AddActorPacket<V: ProtoVersion> {
     pub y_head_rotation: f32,
     #[endianness(le)]
     pub y_body_rotation: f32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub attributes: Vec<AttributeEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
-    pub actor_data: Vec<V::DataItem>, // TODO: verify vec_repr & vec_endianness
+    pub actor_data: Vec<V::DataItem>,
     pub synced_properties: V::PropertySyncData,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub actor_links: Vec<V::ActorLink>,
 }
 

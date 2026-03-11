@@ -6,13 +6,9 @@ use bedrockrs_macros::ProtoCodec;
 #[repr(i8)]
 pub enum ScoreboardIdentityPacketType<V: ProtoVersion> {
     Update {
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         identity_info: Vec<IdentityInfoUpdateEntry<V>>,
     } = 0,
     Remove {
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         identity_info: Vec<V::ScoreboardId>,
     } = 1,
 }

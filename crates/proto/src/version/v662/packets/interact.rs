@@ -17,6 +17,8 @@ pub struct InteractPacket<V: ProtoVersion> {
 #[repr(i8)]
 pub enum Action {
     Invalid = 0,
+    Interact = 1,
+    Damage = 2,
     StopRiding {
         #[endianness(le)]
         position_x: f32,

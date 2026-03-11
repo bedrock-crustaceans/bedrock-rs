@@ -7,8 +7,6 @@ use nbtx::Value;
 pub struct BiomeDefinitionListPacket<V: ProtoVersion> {
     #[nbt]
     pub biome_definitions: Value,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub biomes: Vec<BiomeEntry<V>>,
 }
 

@@ -99,11 +99,7 @@ pub mod player_auth_input_packet {
     pub struct PerformItemStackRequestData<V: ProtoVersion> {
         #[endianness(var)]
         pub client_request_id: u32,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         pub actions: Vec<ActionsEntry<V>>,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         pub strings_to_filter: Vec<String>,
         pub strings_to_filter_origin: V::TextProcessingEventOrigin,
     }
@@ -258,9 +254,8 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
                 true => self.player_block_actions.size_hint(),
                 false => 0,
             }
-            + match &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0
-            {
-                true => self.client_predicted_vehicle.size_hint(),
+            + match &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
+                true => self.client_predicted_vehicle.get_size_prediction(),
                 false => 0,
             }
             + ProtoCodecLE::size_hint(&self.analog_move_vector)

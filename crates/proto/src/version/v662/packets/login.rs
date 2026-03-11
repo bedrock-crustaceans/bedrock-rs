@@ -5,5 +5,5 @@ use bedrockrs_macros::{packet, ProtoCodec};
 pub struct LoginPacket {
     #[endianness(be)]
     pub client_network_version: i32,
-    pub connection_request: String,
+    pub connection_request: String, // TODO: parse auth jwt here? (changed in v818)
 }

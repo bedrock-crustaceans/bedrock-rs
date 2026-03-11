@@ -19,8 +19,6 @@ pub struct CommandOutputPacket<V: ProtoVersion> {
 pub struct OutputMessagesEntry {
     pub successful: bool,
     pub message_id: String,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub parameters: Vec<String>,
 }
 

@@ -3,8 +3,6 @@ use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Debug, Clone)]
 pub struct BiomeScatterParamData<V: ProtoVersion> {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub coordinates: Vec<V::BiomeCoordinateData>,
     #[endianness(var)]
     pub eval_order: i32,

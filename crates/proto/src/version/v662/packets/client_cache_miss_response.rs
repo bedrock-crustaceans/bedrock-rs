@@ -3,8 +3,6 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[packet(id = 136)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientCacheMissResponsePacket {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub missing_blobs: Vec<MissingBlobEntry>,
 }
 

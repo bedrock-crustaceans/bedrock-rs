@@ -8,7 +8,7 @@ use bedrockrs_proto::{ProtoVersion, ProtoVersionPackets};
 use bedrockrs_proto_core::{Packets, ProtoCodec};
 
 fn main() {
-    setup_logger().unwrap();
+    setup_logger();
 
     let login = V800::LoginPacket(LoginPacket {
         client_network_version: 800,
@@ -26,5 +26,5 @@ fn main() {
 
     let result = decode_packets::<V800>(bytes, None, None);
 
-    println!("{:?}", result);
+    tracing::trace!("Decoded game packets: {:?}", result);
 }

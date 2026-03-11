@@ -11,7 +11,5 @@ pub struct AnimateEntityPacket<V: ProtoVersion> {
     pub controller: String,
     #[endianness(le)]
     pub blend_out_time: f32,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub runtime_ids: Vec<V::ActorRuntimeID>,
 }

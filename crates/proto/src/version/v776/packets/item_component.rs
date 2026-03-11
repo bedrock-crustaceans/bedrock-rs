@@ -4,8 +4,6 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[packet(id = 162)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ItemComponentPacket<V: ProtoVersion> {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub items: Vec<ItemsEntry<V>>,
 }
 

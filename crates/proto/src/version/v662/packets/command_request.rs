@@ -6,7 +6,7 @@ use bedrockrs_macros::{packet, ProtoCodec};
 pub struct CommandRequestPacket<V: ProtoVersion> {
     pub command: String,
     pub command_origin: V::CommandOriginData,
-    pub is_internal_source: bool,
+    pub internal: bool,
     #[endianness(var)]
     pub version: i32,
 }

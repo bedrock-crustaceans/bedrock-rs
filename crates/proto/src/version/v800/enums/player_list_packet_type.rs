@@ -7,14 +7,10 @@ use uuid::Uuid;
 #[repr(i8)]
 pub enum PlayerListPacketType<V: ProtoVersion> {
     Add {
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         add_player_list: Vec<AddPlayerListEntry<V>>,
         is_trusted_skin: bool,
     } = 0,
     Remove {
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         remove_player_list: Vec<Uuid>,
     } = 1,
 }

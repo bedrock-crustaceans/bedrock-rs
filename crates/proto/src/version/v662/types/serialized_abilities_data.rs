@@ -7,8 +7,7 @@ pub struct SerializedAbilitiesData<V: ProtoVersion> {
     pub target_player_raw_id: i64,
     pub player_permissions: V::PlayerPermissionLevel,
     pub command_permissions: V::CommandPermissionLevel,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
+
     pub layers: Vec<SerializedLayer>,
 }
 

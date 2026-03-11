@@ -3,11 +3,7 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[packet(id = 302)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TrimDataPacket {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub trim_pattern_list: Vec<TrimPattern>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub trim_material_list: Vec<TrimMaterial>,
 }
 

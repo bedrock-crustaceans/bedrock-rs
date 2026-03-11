@@ -6,13 +6,13 @@ use bedrockrs_macros::ProtoCodec;
 pub enum BookEditAction {
     ReplacePage {
         page_index: i8,
-        text_a: String,
-        text_b: String,
+        text: String,
+        photo_name: String,
     } = 0,
     AddPage {
         page_index: i8,
-        text_a: String,
-        text_b: String,
+        text: String,
+        photo_name: String,
     } = 1,
     DeletePage {
         page_index: i8,
@@ -22,8 +22,8 @@ pub enum BookEditAction {
         page_index_b: i8,
     } = 3,
     Finalize {
-        text_a: String,
-        text_b: String,
+        title: String,
+        author: String,
         xuid: String,
     } = 4,
 }

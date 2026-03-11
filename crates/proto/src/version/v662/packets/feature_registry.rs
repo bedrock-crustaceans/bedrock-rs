@@ -3,8 +3,6 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[packet(id = 191)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct FeatureRegistryPacket {
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub features_data_list: Vec<FeaturesDataListEntry>,
 }
 

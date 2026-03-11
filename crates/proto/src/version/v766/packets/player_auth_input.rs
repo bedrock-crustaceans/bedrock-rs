@@ -118,11 +118,7 @@ pub mod player_auth_input_packet {
     pub struct PerformItemStackRequestData<V: ProtoVersion> {
         #[endianness(var)]
         pub client_request_id: u32,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         pub actions: Vec<ActionsEntry<V>>,
-        #[vec_repr(u32)]
-        #[vec_endianness(var)]
         pub strings_to_filter: Vec<String>,
         pub strings_to_filter_origin: V::TextProcessingEventOrigin,
     }
@@ -244,20 +240,20 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         })
     }
 
-    fn size_hint(&self) -> usize {
-        ProtoCodecLE::size_hint(&self.player_rotation)
-            + ProtoCodecLE::size_hint(&self.player_position)
-            + ProtoCodecLE::size_hint(&self.move_vector)
-            + ProtoCodecLE::size_hint(&self.player_head_rotation)
-            + ProtoCodecVAR::size_hint(&self.input_data)
-            + self.input_mode.size_hint()
-            + self.play_mode.size_hint()
-            + self.new_interaction_model.size_hint()
-            + ProtoCodecLE::size_hint(&self.interact_rotation)
-            + ProtoCodecVAR::size_hint(&self.client_tick)
-            + ProtoCodecLE::size_hint(&self.velocity)
-            + match &self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u128 != 0 {
-                true => self.item_use_transaction.size_hint(),
+    fn get_size_prediction(&self) -> usize {
+        ProtoCodecLE::get_size_prediction(&self.player_rotation)
+            + ProtoCodecLE::get_size_prediction(&self.player_position)
+            + ProtoCodecLE::get_size_prediction(&self.move_vector)
+            + ProtoCodecLE::get_size_prediction(&self.player_head_rotation)
+            + ProtoCodecVAR::get_size_prediction(&self.input_data)
+            + self.input_mode.get_size_prediction()
+            + self.play_mode.get_size_prediction()
+            + self.new_interaction_model.get_size_prediction()
+            + ProtoCodecLE::get_size_prediction(&self.interact_rotation)
+            + ProtoCodecVAR::get_size_prediction(&self.client_tick)
+            + ProtoCodecLE::get_size_prediction(&self.velocity)
+            + match self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u128 != 0 {
+                true => self.item_use_transaction.get_size_prediction(),
                 false => 0,
             }
             + match &self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u128 != 0 {

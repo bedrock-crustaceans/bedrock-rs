@@ -9,5 +9,13 @@ pub mod v766;
 pub mod v776;
 pub mod v786;
 pub mod v800;
+pub mod v818;
+pub mod v819;
+pub mod v827;
+pub mod v844;
+pub mod v859;
+pub mod v898;
+pub mod v924;
+
 mod versions;
 pub use versions::*;

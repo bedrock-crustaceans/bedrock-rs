@@ -13,8 +13,6 @@ pub struct ResourcePacksInfoPacket {
     #[vec_repr(u16)]
     #[vec_endianness(le)]
     pub resource_packs: Vec<ResourcePackEntry>,
-    #[vec_repr(u32)]
-    #[vec_endianness(var)]
     pub cdn_urls: Vec<CDNUrl>,
 }
 
