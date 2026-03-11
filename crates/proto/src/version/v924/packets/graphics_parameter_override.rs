@@ -1,7 +1,7 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 use vek::Vec3;
 
-#[gamepacket(id = 331)]
+#[packet(id = 331)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GraphicsParameterOverridePacket {
     pub values: Vec<GraphicsParameterOverrideKeyFrame>,

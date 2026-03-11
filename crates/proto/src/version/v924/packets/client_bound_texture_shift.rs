@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 336)]
+#[packet(id = 336)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundTextureShiftPacket {
     pub action: ClientBoundTextureShiftAction,

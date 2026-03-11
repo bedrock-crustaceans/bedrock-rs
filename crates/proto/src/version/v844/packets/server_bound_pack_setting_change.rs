@@ -1,7 +1,7 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 use uuid::Uuid;
 
-#[gamepacket(id = 329)]
+#[packet(id = 329)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundPackSettingChangePacket {
     pub pack_id: Uuid,

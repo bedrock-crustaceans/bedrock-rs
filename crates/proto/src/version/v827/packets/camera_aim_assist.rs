@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 use vek::Vec2;
 
-#[gamepacket(id = 316)]
+#[packet(id = 316)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistPacket<V: ProtoVersion> {
     pub preset_id: String,

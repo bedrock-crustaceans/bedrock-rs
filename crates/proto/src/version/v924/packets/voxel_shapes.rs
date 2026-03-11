@@ -1,7 +1,7 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 use vek::Vec3;
 
-#[gamepacket(id = 337)]
+#[packet(id = 337)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct VoxelShapesPacket {
     pub shapes: Vec<VoxelShape>,

@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 79)]
+#[packet(id = 79)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CommandOutputPacket<V: ProtoVersion> {
     pub origin_data: V::CommandOriginData,

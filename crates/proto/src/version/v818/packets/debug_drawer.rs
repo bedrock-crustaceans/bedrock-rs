@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 328)]
+#[packet(id = 328)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct DebugDrawerPacket<V: ProtoVersion> {
     pub shapes: Vec<V::DebugShape>,

@@ -1,4 +1,4 @@
-use crate::version::proto_version::ProtoVersion;
+use crate::version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use uuid::Uuid;
 

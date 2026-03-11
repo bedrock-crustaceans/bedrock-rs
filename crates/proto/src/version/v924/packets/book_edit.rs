@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 97)]
+#[packet(id = 97)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BookEditPacket<V: ProtoVersion> {
     #[endianness(var)]

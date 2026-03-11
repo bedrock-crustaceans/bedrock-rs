@@ -1,6 +1,6 @@
 use bedrockrs_proto_core::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 #[derive(Clone, Debug)]
 pub enum CommandOriginType {
@@ -23,16 +23,16 @@ pub enum CommandOriginType {
 }
 
 impl ProtoCodec for CommandOriginType {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        String::proto_serialize(&String::from(self.clone()), stream)
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        String::serialize(&String::from(self.clone()), stream)
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        Self::try_from(String::proto_deserialize(stream)?)
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        Self::try_from(String::deserialize(stream)?)
     }
 
-    fn get_size_prediction(&self) -> usize {
-        String::from(self.clone()).get_size_prediction()
+    fn size_hint(&self) -> usize {
+        String::from(self.clone()).size_hint()
     }
 }
 

@@ -1,34 +1,31 @@
+use crate::ProtoCodec;
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
-use crate::ProtoCodec;
 use vek::{Vec2, Vec3};
 
 macro_rules! impl_proto_vec {
     ($name:ident) => {
         impl<T: $name> $name for Vec<T> {
-            fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-                <u32 as ProtoCodecVAR>::proto_serialize(&(self.len() as u32), stream)?;
+            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+                <u32 as ProtoCodecVAR>::serialize(&(self.len() as u32), stream)?;
                 for i in self {
-                    T::proto_serialize(i, stream)?;
+                    T::serialize(i, stream)?;
                 }
                 Ok(())
             }
 
-            fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-                let len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+                let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
                 let mut vec = Vec::with_capacity(len as usize);
                 for _ in 0..len {
-                    vec.push(T::proto_deserialize(stream)?);
+                    vec.push(T::deserialize(stream)?);
                 }
                 Ok(vec)
             }
 
-            fn get_size_prediction(&self) -> usize {
-                <u32 as ProtoCodecVAR>::get_size_prediction(&(self.len() as u32))
-                    + self
-                        .iter()
-                        .map(|i| T::get_size_prediction(i))
-                        .sum::<usize>()
+            fn size_hint(&self) -> usize {
+                <u32 as ProtoCodecVAR>::size_hint(&(self.len() as u32))
+                    + self.iter().map(|i| T::size_hint(i)).sum::<usize>()
             }
         }
     };

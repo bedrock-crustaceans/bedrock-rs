@@ -42,12 +42,12 @@ impl<T: Packets> ConnectionShared<T> {
     }
 
     pub async fn send(&mut self) -> Result<(), ConnectionError> {
-        let mut gamepackets = self.queue_send.write().await;
+        let mut packets = self.queue_send.write().await;
         let mut conn = self.connection.write().await;
 
-        conn.send::<T>(gamepackets.as_slice()).await?;
+        conn.send::<T>(packets.as_slice()).await?;
 
-        gamepackets.clear();
+        packets.clear();
 
         Ok(())
     }
@@ -55,13 +55,13 @@ impl<T: Packets> ConnectionShared<T> {
     pub async fn recv(&mut self) -> Result<(), ConnectionError> {
         let mut conn = self.connection.write().await;
 
-        let gamepackets = conn.recv::<T>().await?;
+        let packets = conn.recv::<T>().await?;
 
-        if !gamepackets.is_empty() {
+        if !packets.is_empty() {
             let mut queue_recv = self.queue_recv.write().await;
 
-            for gamepacket in gamepackets {
-                queue_recv.push_back(gamepacket);
+            for packet in packets {
+                queue_recv.push_back(packet);
             }
         }
 

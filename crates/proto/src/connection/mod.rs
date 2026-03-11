@@ -54,15 +54,15 @@ impl Connection {
     }
 
     pub async fn recv<T: Packets>(&mut self) -> Result<Vec<T>, ConnectionError> {
-        let gamepacket_stream = self.transport_layer.recv().await?;
+        let packet_stream = self.transport_layer.recv().await?;
 
-        let gamepackets = decode_packets::<T>(
-            gamepacket_stream,
+        let packets = decode_packets::<T>(
+            packet_stream,
             self.compression.as_ref(),
             self.encryption.as_mut(),
         )?;
 
-        Ok(gamepackets)
+        Ok(packets)
     }
 
     pub async fn recv_raw(&mut self) -> Result<Vec<u8>, ConnectionError> {

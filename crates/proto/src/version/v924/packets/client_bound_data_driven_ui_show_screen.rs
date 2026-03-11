@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 333)]
+#[packet(id = 333)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDataDrivenUIShowScreenPacket {
     pub screen_id: String,

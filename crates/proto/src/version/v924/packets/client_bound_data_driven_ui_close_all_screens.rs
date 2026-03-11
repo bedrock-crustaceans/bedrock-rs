@@ -1,5 +1,5 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 334)]
+#[packet(id = 334)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDataDrivenUICloseAllScreensPacket {}

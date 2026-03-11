@@ -1,5 +1,5 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::{
@@ -240,20 +240,20 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        ProtoCodecLE::get_size_prediction(&self.player_rotation)
-            + ProtoCodecLE::get_size_prediction(&self.player_position)
-            + ProtoCodecLE::get_size_prediction(&self.move_vector)
-            + ProtoCodecLE::get_size_prediction(&self.player_head_rotation)
-            + ProtoCodecVAR::get_size_prediction(&self.input_data)
-            + self.input_mode.get_size_prediction()
-            + self.play_mode.get_size_prediction()
-            + self.new_interaction_model.get_size_prediction()
-            + ProtoCodecLE::get_size_prediction(&self.interact_rotation)
-            + ProtoCodecVAR::get_size_prediction(&self.client_tick)
-            + ProtoCodecLE::get_size_prediction(&self.velocity)
+    fn size_hint(&self) -> usize {
+        ProtoCodecLE::size_hint(&self.player_rotation)
+            + ProtoCodecLE::size_hint(&self.player_position)
+            + ProtoCodecLE::size_hint(&self.move_vector)
+            + ProtoCodecLE::size_hint(&self.player_head_rotation)
+            + ProtoCodecVAR::size_hint(&self.input_data)
+            + self.input_mode.size_hint()
+            + self.play_mode.size_hint()
+            + self.new_interaction_model.size_hint()
+            + ProtoCodecLE::size_hint(&self.interact_rotation)
+            + ProtoCodecVAR::size_hint(&self.client_tick)
+            + ProtoCodecLE::size_hint(&self.velocity)
             + match self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u128 != 0 {
-                true => self.item_use_transaction.get_size_prediction(),
+                true => self.item_use_transaction.size_hint(),
                 false => 0,
             }
             + match &self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u128 != 0 {

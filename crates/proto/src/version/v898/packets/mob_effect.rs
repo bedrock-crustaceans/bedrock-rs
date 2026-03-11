@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 28)]
+#[packet(id = 28)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MobEffectPacket<V: ProtoVersion> {
     pub target_runtime_id: V::ActorRuntimeID,

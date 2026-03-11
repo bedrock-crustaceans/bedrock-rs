@@ -1,5 +1,5 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::{
@@ -254,8 +254,9 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
                 true => self.player_block_actions.size_hint(),
                 false => 0,
             }
-            + match &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
-                true => self.client_predicted_vehicle.get_size_prediction(),
+            + match &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0
+            {
+                true => self.client_predicted_vehicle.size_hint(),
                 false => 0,
             }
             + ProtoCodecLE::size_hint(&self.analog_move_vector)
