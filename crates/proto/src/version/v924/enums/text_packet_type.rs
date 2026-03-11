@@ -3,7 +3,7 @@ use bedrockrs_proto_core::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use std::io::Cursor;
 
-// ########## PROTOCOL QUIRK / COMPATIBILITY HACK ##########
+// ########## PROTOCOL HACK ##########
 //
 // Vanilla writes two separate bytes:
 //
@@ -27,34 +27,34 @@ use std::io::Cursor;
 #[enum_endianness(be)]
 #[repr(u16)]
 pub enum TextPacketType {
-    Raw(String) = (0 << 8) | 0,
+    Raw(String) = 0,
     Chat {
         player_name: String,
         message: String,
-    } = (1 << 8) | 1,
+    } = 257, // category 1
     Translate {
         message: String,
         parameter_list: Vec<String>,
-    } = (2 << 8) | 2,
+    } = 514, // category 2
     Popup {
         message: String,
         parameter_list: Vec<String>,
-    } = (2 << 8) | 3,
+    } = 515, // category 2
     JukeboxPopup {
         message: String,
         parameter_list: Vec<String>,
-    } = (2 << 8) | 4,
-    Tip(String) = (0 << 8) | 5,
-    SystemMessage(String) = (0 << 8) | 6,
+    } = 516, // category 2
+    Tip(String) = 5,
+    SystemMessage(String) = 6,
     Whisper {
         player_name: String,
         message: String,
-    } = (1 << 8) | 7,
+    } = 263, // category 1
     Announcement {
         player_name: String,
         message: String,
-    } = (1 << 8) | 8,
-    TextObjectWhisper(String) = (0 << 8) | 9,
-    TextObject(String) = (0 << 8) | 10,
-    TextObjectAnnouncement(String) = (0 << 8) | 11,
+    } = 264, // category 1
+    TextObjectWhisper(String) = 9,
+    TextObject(String) = 10,
+    TextObjectAnnouncement(String) = 11,
 }
