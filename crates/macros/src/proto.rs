@@ -346,28 +346,28 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
         let packet_variants = previous_packets
             .keys()
-            .map(|(k)| {
+            .map(|k| {
                 quote! { #k(<Self as ProtoVersionPackets>::#k), }
             })
             .collect::<Vec<_>>();
 
-        let packet_id = previous_packets.keys().map(|(name)| {
+        let packet_id = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ID; }, }
         });
 
-        let packet_compress = previous_packets.keys().map(|(name)| {
+        let packet_compress = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::COMPRESS; }, }
         });
 
-        let packet_encrypt = previous_packets.keys().map(|(name)| {
+        let packet_encrypt = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ENCRYPT; }, }
         });
 
-        let packet_size_prediction = previous_packets.keys().map(|(name)| {
+        let packet_size_prediction = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::size_hint(pk), }
         });
 
-        let packet_ser = previous_packets.keys().map(|(name)| {
+        let packet_ser = previous_packets.keys().map(|name| {
             quote! {
                 #struct_ident::#name(pk) => {
                     match <<#struct_ident as ProtoVersionPackets>::#name as bedrockrs_proto_core::ProtoCodec>::serialize(pk, stream) {
@@ -378,7 +378,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             }
         });
 
-        let packet_de = previous_packets.keys().map(|(name)| {
+        let packet_de = previous_packets.keys().map(|name| {
             quote! {
                 <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ID => {
                     match <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream) {
