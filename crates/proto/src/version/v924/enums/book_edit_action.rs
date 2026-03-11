@@ -1,25 +1,31 @@
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
-#[enum_repr(i8)]
-#[repr(i8)]
+#[enum_repr(u32)]
+#[enum_endianness(var)]
+#[repr(u32)]
 pub enum BookEditAction {
     ReplacePage {
-        page_index: i8,
+        #[endianness(var)]
+        page_index: i32,
         text: String,
         photo_name: String,
     } = 0,
     AddPage {
-        page_index: i8,
+        #[endianness(var)]
+        page_index: i32,
         text: String,
         photo_name: String,
     } = 1,
     DeletePage {
-        page_index: i8,
+        #[endianness(var)]
+        page_index: i32,
     } = 2,
     SwapPages {
-        page_index_a: i8,
-        page_index_b: i8,
+        #[endianness(var)]
+        page_index_a: i32,
+        #[endianness(var)]
+        page_index_b: i32,
     } = 3,
     Finalize {
         title: String,
