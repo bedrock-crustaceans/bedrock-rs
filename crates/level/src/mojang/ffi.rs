@@ -14,7 +14,7 @@ pub enum FfiStatus {
     InvalidArgument,
     IoError,
     AllocationFailed,
-    Exception
+    Exception,
 }
 
 #[derive(Debug)]

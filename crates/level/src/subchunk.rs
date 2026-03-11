@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
 use crate::PackingMethod;
-use crate::error::{Error, Result};
 use crate::bits::{BitArray, BitArrayIter};
+use crate::error::{Error, Result};
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -130,7 +130,7 @@ impl<'l> From<&'l Layer> for LayerIter<'l> {
 
         LayerIter {
             palette: &layer.palette,
-            array_iter
+            array_iter,
         }
     }
 }
@@ -170,7 +170,9 @@ impl Layer {
         Some(&self.palette[index as usize])
     }
 
-    pub fn set<K: Into<Vec3<u8>>>(&self, _block: K, _value: BlockDef) { todo!() }
+    pub fn set<K: Into<Vec3<u8>>>(&self, _block: K, _value: BlockDef) {
+        todo!()
+    }
 
     pub fn palette(&self) -> &[BlockDef] {
         &self.palette

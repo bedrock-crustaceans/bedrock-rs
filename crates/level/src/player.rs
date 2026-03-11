@@ -1,6 +1,6 @@
+use crate::settings::Abilities;
 use serde::{Deserialize, Serialize};
 use vek::{Vec2, Vec3};
-use crate::settings::Abilities;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
@@ -9,7 +9,7 @@ pub struct InventoryItemWithSlot {
     pub slot: i8,
     #[serde(rename = "id")]
     pub id: i16,
-    pub count: i8
+    pub count: i8,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,7 +18,7 @@ pub struct InventoryItem {
     pub damage: i16,
     #[serde(rename = "id")]
     pub id: i16,
-    pub count: i8
+    pub count: i8,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,7 +31,7 @@ pub struct StatusEffect {
     pub duration_hard: i32,
     pub ambient: bool,
     pub amplifier: i8,
-    pub show_particles: bool
+    pub show_particles: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -42,7 +42,7 @@ pub struct Attribute {
     pub name: String,
     pub base: f32,
     /// TODO: Figure out what this is supposed to be. It seems to be linked to `minecraft:attack_damage`
-    pub modifiers: Option<Vec<usize>>
+    pub modifiers: Option<Vec<usize>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -131,5 +131,5 @@ pub struct PlayerData {
     pub portal_cooldown: i32,
     pub spawn_x: i32,
     pub sitting: bool,
-    pub player_level_progress: f32
+    pub player_level_progress: f32,
 }

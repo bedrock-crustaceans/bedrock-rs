@@ -2,7 +2,7 @@ use std::{ffi::c_void, marker::PhantomData, ptr::NonNull};
 
 use crate::{
     db::{Buffer, Database},
-    ffi
+    ffi,
 };
 
 /// A key-value tuple returned by the [`Keys`] iterator.

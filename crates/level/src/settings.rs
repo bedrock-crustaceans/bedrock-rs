@@ -1,6 +1,6 @@
-use std::io::{Read, Write};
-use byteorder::{LittleEndian, ReadBytesExt};
 use crate::error::Result;
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::{Read, Write};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -28,7 +28,7 @@ pub struct Abilities {
     #[serde(rename = "walkSpeed")]
     pub walk_speed: f32,
     #[serde(rename = "playerPermissionLevel")]
-    pub permission_level: i32
+    pub permission_level: i32,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
@@ -233,11 +233,11 @@ pub struct LevelSettings {
     #[serde(rename = "XBLBroadcast")]
     pub xbl_broadcast: i8,
     #[serde(rename = "XBLBroadcastMode")]
-    pub xbl_broadcast_mode: i32
+    pub xbl_broadcast_mode: i32,
 }
 
 impl LevelSettings {
-    pub fn write<W: Write>(&self, writer: W) -> Result<()> {
+    pub fn write<W: Write>(&self, _writer: W) -> Result<()> {
         todo!()
     }
 

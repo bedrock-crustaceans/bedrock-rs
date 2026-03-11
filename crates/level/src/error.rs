@@ -1,4 +1,4 @@
-use std::{backtrace::Backtrace, ffi::NulError, str::Utf8Error, sync::PoisonError};
+use std::{ffi::NulError, str::Utf8Error, sync::PoisonError};
 
 use thiserror::Error;
 
@@ -32,11 +32,11 @@ impl<T> From<PoisonError<T>> for Error {
     }
 }
 
-#[cfg(feature = "rusty-leveldb")]
-impl From<rusty_leveldb::Status> for Error {
-    fn from(err: rusty_leveldb::Status) -> Error {
-        Error::LevelDbError(err.err)
-    }
-}
+// #[cfg(feature = "rusty-leveldb")]
+// impl From<rusty_leveldb::Status> for Error {
+//     fn from(err: rusty_leveldb::Status) -> Error {
+//         Error::LevelDbError(err.err)
+//     }
+// }
 
 pub type Result<T> = std::result::Result<T, Error>;

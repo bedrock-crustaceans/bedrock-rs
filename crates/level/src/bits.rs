@@ -1,18 +1,22 @@
-use std::{io::{Read, Write}, slice};
-use std::iter::{Copied, FusedIterator};
-use byteorder::{ReadBytesExt, WriteBytesExt};
-use crate::{
-    PackingMethod, error::{Error, Result}
-};
 use crate::packed::{PackedArray, PackedArrayIter};
 use crate::unpacked::UnpackedArray;
+use crate::{
+    PackingMethod,
+    error::{Error, Result},
+};
+use byteorder::{ReadBytesExt, WriteBytesExt};
+use std::iter::{Copied, FusedIterator};
+use std::{
+    io::{Read, Write},
+    slice,
+};
 
 /// Valid bit sizes to use for indices.
 const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 
 pub enum BitArrayIter<'a> {
     Unpacked(Copied<slice::Iter<'a, u16>>),
-    Packed(PackedArrayIter<'a>)
+    Packed(PackedArrayIter<'a>),
 }
 
 impl Iterator for BitArrayIter<'_> {
@@ -28,7 +32,7 @@ impl Iterator for BitArrayIter<'_> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         match self {
             BitArrayIter::Unpacked(iter) => iter.size_hint(),
-            BitArrayIter::Packed(iter) => iter.size_hint()
+            BitArrayIter::Packed(iter) => iter.size_hint(),
         }
     }
 }
@@ -47,7 +51,7 @@ impl FusedIterator for BitArrayIter<'_> {}
 pub enum IndicesType {
     Data(BitArray),
     Empty,
-    Inherit
+    Inherit,
 }
 
 /// The type of array used in the subchunk. This can either be an unpacked array that is
@@ -82,7 +86,7 @@ impl BitArray {
         match bits {
             0x00 => Err(Error::Invalid("chunk layer packed array cannot be empty")),
             0x7f => Err(Error::Invalid("chunk layers do not support inheritance")),
-            bits => BitArray::data_from_disk::<M, _>(&mut reader, bits)
+            bits => BitArray::data_from_disk::<M, _>(&mut reader, bits),
         }
     }
 
@@ -91,7 +95,7 @@ impl BitArray {
         Ok(match bits {
             0x00 => IndicesType::Empty,
             0x7f => IndicesType::Inherit,
-            bits => IndicesType::Data(BitArray::data_from_disk::<M, _>(&mut reader, bits)?)
+            bits => IndicesType::Data(BitArray::data_from_disk::<M, _>(&mut reader, bits)?),
         })
     }
 
@@ -102,13 +106,13 @@ impl BitArray {
             if 2usize.pow(b as u32) >= palette_size {
                 bits = b;
             }
-        };
+        }
 
-        writer.write_u8((bits << 1) as u8)?;
+        writer.write_u8(bits << 1)?;
 
         match self {
             BitArray::Unpacked(array) => array.to_disk(writer, bits as u32),
-            BitArray::Packed(array) => array.to_disk(writer)
+            BitArray::Packed(array) => array.to_disk(writer),
         }
     }
 
@@ -116,7 +120,7 @@ impl BitArray {
     pub fn get(&self, index: usize) -> Option<u16> {
         match self {
             Self::Unpacked(array) => array.get(index),
-            Self::Packed(array) => array.get(index)
+            Self::Packed(array) => array.get(index),
         }
     }
 
@@ -124,7 +128,7 @@ impl BitArray {
     pub fn set(&mut self, pos: usize, value: u16) -> bool {
         match self {
             Self::Unpacked(array) => array.set(pos, value),
-            Self::Packed(array) => array.set(pos, value)
+            Self::Packed(array) => array.set(pos, value),
         }
     }
 }

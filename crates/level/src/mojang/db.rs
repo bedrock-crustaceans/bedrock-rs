@@ -211,10 +211,14 @@ unsafe impl Sync for Database {}
 /// This function must only be called if `result.success` is not `FfiResult::Success` and
 /// `result.data` is a C-style string ending in a nul terminator.
 unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
-    assert_ne!(result.status, FfiStatus::Success, "cannot translate success status");
+    assert_ne!(
+        result.status,
+        FfiStatus::Success,
+        "cannot translate success status"
+    );
 
     if result.status == FfiStatus::Exception {
-        return Error::Exception
+        return Error::Exception;
     }
 
     assert!(!result.data.is_null(), "result data pointer is null");

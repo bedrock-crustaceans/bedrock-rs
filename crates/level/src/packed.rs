@@ -1,6 +1,6 @@
+use crate::error::Result;
 use std::io::{Read, Write};
 use std::iter::FusedIterator;
-use crate::error::Result;
 
 /// An array that is still packed. Words are unpacked as needed.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,7 +43,7 @@ impl PackedArray {
     /// This function panics if the index is greater than or equal to 4096.
     pub fn get(&self, index: usize) -> Option<u16> {
         if index >= 4096 {
-            return None
+            return None;
         }
 
         let blocks_per_word = u32::BITS / self.bits;
@@ -53,18 +53,20 @@ impl PackedArray {
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        Some(((word >> self.bits * word_index) & mask) as u16)
+        let shift = self.bits * word_index;
+
+        Some(((word >> shift) & mask) as u16)
     }
 
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
     /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// This function returns whether the change was successful.
     pub fn set(&mut self, index: usize, value: u16) -> bool {
         if index >= 4096 {
-            return false
+            return false;
         }
 
         let blocks_per_word = u32::BITS / self.bits;
@@ -74,14 +76,14 @@ impl PackedArray {
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        let mask = base_mask << self.bits * word_index;
+        let mask = base_mask << (self.bits * word_index);
 
         // Zero all bits in the location
         let zeroed = word & !mask;
         // Clamp value to correct amount of bits
         let clamped = value as u32 & base_mask;
         // Then set the zeroed bits to the clamped value
-        let set = zeroed | (clamped << self.bits * word_index);
+        let set = zeroed | (clamped << (self.bits * word_index));
 
         self.words[array_index as usize] = set;
 
@@ -96,7 +98,8 @@ impl PackedArray {
         reader.read_exact(bytemuck::cast_slice_mut::<u32, u8>(&mut words))?;
 
         Ok(Self {
-            bits: bits as u32, words
+            bits: bits as u32,
+            words,
         })
     }
 

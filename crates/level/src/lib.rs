@@ -1,12 +1,12 @@
 pub mod biome;
+pub mod bits;
 pub mod error;
 pub mod key;
-pub mod subchunk;
-pub mod bits;
-pub mod traits;
+pub mod packed;
 pub mod player;
 pub mod settings;
-pub mod packed;
+pub mod subchunk;
+pub mod traits;
 pub mod unpacked;
 
 #[cfg(feature = "mojang-leveldb")]
@@ -14,11 +14,11 @@ pub mod mojang;
 #[cfg(feature = "mojang-leveldb")]
 pub use mojang::*;
 
-#[cfg(feature = "rusty-leveldb")]
-pub mod rusty;
+// #[cfg(feature = "rusty-leveldb")]
+// pub mod rusty;
 
-#[cfg(feature = "rusty-leveldb")]
-pub use rusty::*;
+// #[cfg(feature = "rusty-leveldb")]
+// pub use rusty::*;
 
 mod private {
     pub trait Sealed {}
@@ -44,6 +44,4 @@ impl PackingMethod for Packed {
     const IS_PACKED: bool = true;
 }
 
-pub mod prelude {
-    
-}
+pub mod prelude {}

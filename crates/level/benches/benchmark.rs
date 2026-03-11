@@ -5,7 +5,6 @@ use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
     subchunk::SubChunk,
-    traits::DatabaseAccess,
 };
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use flate2::read::GzDecoder;

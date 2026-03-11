@@ -1,10 +1,10 @@
-use std::io::{Read, Write};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use crate::error::Result;
+use byteorder::{LittleEndian, WriteBytesExt};
+use std::io::{Read, Write};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnpackedArray {
-    array: Box<[u16; 4096]>
+    array: Box<[u16; 4096]>,
 }
 
 impl UnpackedArray {
@@ -21,11 +21,7 @@ impl UnpackedArray {
         }
     }
 
-    pub fn to_disk<W: Write>(
-        &self,
-        mut writer: W,
-        bits: u32
-    ) -> Result<()> {
+    pub fn to_disk<W: Write>(&self, mut writer: W, bits: u32) -> Result<()> {
         // Amount of indices that fit in a single 32-bit integer.
         let per_word = u32::BITS / bits;
 
@@ -63,7 +59,7 @@ impl UnpackedArray {
         for mut word in words {
             for _ in 0..per_word {
                 if offset == 4096 {
-                    break
+                    break;
                 }
 
                 indices[offset] = (word & mask) as u16;
@@ -72,9 +68,7 @@ impl UnpackedArray {
             }
         }
 
-        Ok(Self {
-            array: indices
-        })
+        Ok(Self { array: indices })
     }
 }
 
@@ -82,5 +76,7 @@ impl<'a> IntoIterator for &'a UnpackedArray {
     type Item = u16;
     type IntoIter = std::iter::Copied<std::slice::Iter<'a, u16>>;
 
-    fn into_iter(self) -> Self::IntoIter { self.array.iter().copied() }
+    fn into_iter(self) -> Self::IntoIter {
+        self.array.iter().copied()
+    }
 }

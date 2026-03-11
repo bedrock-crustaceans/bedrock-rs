@@ -2,13 +2,13 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 use vek::Vec2;
 
-use std::io::Write;
-use bedrockrs_shared::world::dimension::Dimension;
 use crate::error::{Error, Result};
+use bedrockrs_shared::world::dimension::Dimension;
+use std::io::Write;
 
-pub const AUTONOMOUS_ENTITIES: &'static str = "AutonomousEntities";
-pub const LOCAL_PLAYER: &'static str = "~local_player";
-pub const VILLAGES: &'static str = "mVillages";
+pub const AUTONOMOUS_ENTITIES: &str = "AutonomousEntities";
+pub const LOCAL_PLAYER: &str = "~local_player";
+pub const VILLAGES: &str = "mVillages";
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -34,7 +34,7 @@ pub enum KeyVariant {
     ActorDigestVersion = 0x41,
     LegacyVersion = 0x76,
     AabbVolumes = 0x77,
-    LocalPlayer
+    LocalPlayer,
 }
 
 impl KeyVariant {
@@ -62,7 +62,7 @@ impl KeyVariant {
             KeyVariant::ActorDigestVersion => 0x41,
             KeyVariant::LegacyVersion => 0x76,
             KeyVariant::AabbVolumes => 0x77,
-            KeyVariant::LocalPlayer => u8::MAX
+            KeyVariant::LocalPlayer => u8::MAX,
         }
     }
 }
@@ -152,15 +152,15 @@ impl Key {
             0x41 => KeyVariant::ActorDigestVersion,
             0x76 => KeyVariant::LegacyVersion,
             0x77 => KeyVariant::AabbVolumes,
-            ty => {
+            _ => {
                 // Check whether this was one of the strings
                 let string = str::from_utf8(reader_copy)?;
                 if string == LOCAL_PLAYER {
                     KeyVariant::LocalPlayer
                 } else {
-                    return Err(Error::Invalid("invalid leveldb database key type"))
+                    return Err(Error::Invalid("invalid leveldb database key type"));
                 }
-            },
+            }
         };
 
         let key = Self {
