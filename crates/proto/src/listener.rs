@@ -23,13 +23,14 @@ pub struct Listener {
 impl Listener {
     #[allow(clippy::too_many_arguments)]
     pub async fn new_raknet(
+        socket_addr: SocketAddr,
         name: String,
         sub_name: String,
         display_version: String,
         protocol: i32,
+        rak_version: u8,
         player_max: u32,
         player_count: u32,
-        socket_addr: SocketAddr,
         nintendo_limited: bool,
     ) -> Result<Self, ListenerError> {
         let mut rak_listener = rak_rs::Listener::bind(socket_addr).await.map_err(|err| {
@@ -40,6 +41,9 @@ impl Listener {
 
         // generate a random guid
         let guid: u64 = random::<u64>();
+
+        // Set the RakNet version
+        rak_listener.versions = Box::leak(Box::new([rak_version])); // Currently rak_rs gave an array to us, but obviously we won't use multi rak versions
 
         // Set up the motd
         rak_listener.motd = Motd {
