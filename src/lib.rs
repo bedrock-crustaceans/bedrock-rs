@@ -22,8 +22,8 @@ pub mod proto {
     pub use ::bedrockrs_proto_core::*;
 
     pub mod error {
-        pub use ::bedrockrs_proto::error::*;
         pub use ::bedrockrs_proto_core::error::*;
+        pub use bedrockrs_network::error::*;
     }
 }
 

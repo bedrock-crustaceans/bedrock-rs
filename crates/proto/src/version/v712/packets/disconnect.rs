@@ -1,8 +1,8 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
-use bedrockrs_proto_core::error::ProtoCodecError;
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::ProtoCodec;
-use std::io::{Cursor, Read, Write};
+use bedrockrs_proto_core::error::ProtoCodecError;
+use std::io::{Read, Write};
 
 #[packet(id = 5)]
 #[derive(Clone, Debug)]

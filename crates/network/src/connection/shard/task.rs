@@ -1,7 +1,7 @@
-use crate::compression::Compression;
 use crate::connection::Connection;
-use crate::encryption::Encryption;
 use crate::error::ConnectionError;
+use bedrockrs_proto::compression::Compression;
+use bedrockrs_proto::encryption::Encryption;
 use bedrockrs_proto_core::Packets;
 use tokio::select;
 use tokio::sync::watch::Ref;
@@ -169,12 +169,12 @@ impl<T: Packets + Send + Sync> ConnectionShardSender<T> {
 
 #[derive(Debug)]
 pub struct ConnectionShardReceiver<T: Packets + Send + Sync> {
-    pub(crate) packet_receiver: mpsc::Receiver<Result<T, ConnectionError>>,
+    pub packet_receiver: mpsc::Receiver<Result<T, ConnectionError>>,
 
-    pub(crate) close_sender: watch::Sender<()>,
+    pub close_sender: watch::Sender<()>,
 
-    pub(crate) compression_receiver: watch::Receiver<Option<Compression>>,
-    pub(crate) encryption_receiver: watch::Receiver<Option<Encryption>>,
+    pub compression_receiver: watch::Receiver<Option<Compression>>,
+    pub encryption_receiver: watch::Receiver<Option<Encryption>>,
 }
 
 impl<T: Packets + Send + Sync> ConnectionShardReceiver<T> {

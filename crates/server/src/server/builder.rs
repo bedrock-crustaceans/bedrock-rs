@@ -1,5 +1,5 @@
 use crate::server::Server;
-use bedrockrs_proto::listener::Listener;
+use bedrockrs_network::listener::Listener;
 use bedrockrs_proto::v766;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 

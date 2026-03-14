@@ -1,5 +1,4 @@
-use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, packet};
 use vek::Vec3;
 
 #[packet(id = 326)]

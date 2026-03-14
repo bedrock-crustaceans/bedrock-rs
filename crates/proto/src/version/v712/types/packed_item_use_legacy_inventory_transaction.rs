@@ -2,7 +2,7 @@ use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use vek::Vec3;
 
 #[derive(Clone, Debug)]

@@ -5,7 +5,7 @@ use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::{
     ClientPredictedVehicleData, PerformItemStackRequestData, PlayerAuthInputFlags,
 };
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use vek::{Vec2, Vec3};
 
 #[packet(id = 144)]

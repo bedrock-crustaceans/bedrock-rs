@@ -2,7 +2,7 @@ use crate::version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Write, copy};
 use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 44)]
@@ -43,7 +43,7 @@ impl<V: ProtoVersion> ProtoCodec for AnimatePacket<V> {
         stream.write_i32_varint(action_cursor.read_i32_varint()?)?;
         <V::ActorRuntimeID as ProtoCodec>::serialize(&self.target_runtime_id, stream)?;
         <f32 as ProtoCodecLE>::serialize(&self.data, stream)?;
-        action_cursor.read_to_end(stream)?;
+        copy(&mut action_cursor, stream)?;
 
         Ok(())
     }

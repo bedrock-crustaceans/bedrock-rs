@@ -4,7 +4,7 @@ use std::io;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use thiserror::Error;
 
-use crate::info::RAKNET_GAMEPACKET_ID;
+use bedrockrs_proto::info::RAKNET_GAMEPACKET_ID;
 
 #[derive(Error, Debug)]
 pub enum ListenerError {

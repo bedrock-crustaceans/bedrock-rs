@@ -3,7 +3,7 @@ use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::cmp::PartialEq;
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use std::mem::size_of;
 
 #[packet(id = 174)]

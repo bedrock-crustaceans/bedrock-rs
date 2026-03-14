@@ -1,6 +1,5 @@
 use crate::version::versions::ProtoVersion;
-use bedrockrs_macros::{packet, ProtoCodec};
-use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_macros::{ProtoCodec, packet};
 
 #[packet(id = 50)]
 #[derive(ProtoCodec, Clone, Debug)]

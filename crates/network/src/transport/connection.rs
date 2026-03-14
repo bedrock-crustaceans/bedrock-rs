@@ -1,5 +1,5 @@
 use crate::error::{RakNetError, TransportLayerError};
-use crate::info::RAKNET_GAMEPACKET_ID;
+use bedrockrs_proto::info::RAKNET_GAMEPACKET_ID;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Write};
 

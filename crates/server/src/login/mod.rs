@@ -2,8 +2,8 @@ mod handler;
 
 use crate::error::LoginError;
 use crate::login::handler::LoginHandler;
-use bedrockrs_proto::connection::shard::arc::shard;
-use bedrockrs_proto::connection::Connection;
+use bedrockrs_network::connection::Connection;
+use bedrockrs_network::connection::shard::arc::shard;
 use bedrockrs_proto::V729;
 use shipyard::World;
 

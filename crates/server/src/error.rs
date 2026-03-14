@@ -1,4 +1,4 @@
-use bedrockrs_proto::error::ConnectionError;
+use bedrockrs_network::error::ConnectionError;
 use thiserror::Error;
 
 pub enum StartError {}

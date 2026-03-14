@@ -33,8 +33,3 @@ x509-cert = { workspace = true }
 
 bitflags = { workspace = true }
 serde = { workspace = true }
-
-rak-rs = { version = "0.3", default-features = false, features = [
-    "async_tokio",
-    "mcpe",
-] }

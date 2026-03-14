@@ -5,7 +5,7 @@ use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::{
     ClientPredictedVehicleData, PerformItemStackRequestData, PlayerAuthInputFlags,
 };
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use vek::{Vec2, Vec3};
 
 #[packet(id = 144)]
@@ -171,7 +171,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         let input_mode = <V::InputMode as ProtoCodec>::deserialize(stream)?;
         let play_mode = <ClientPlayMode as ProtoCodec>::deserialize(stream)?;
         let new_interaction_model = <V::NewInteractionModel as ProtoCodec>::deserialize(stream)?;
-        let vr_gaze_direction = match (&play_mode) {
+        let vr_gaze_direction = match &play_mode {
             ClientPlayMode::Reality => Some(<Vec3<f32> as ProtoCodecLE>::deserialize(stream)?),
             _ => None,
         };
@@ -236,7 +236,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             + self.input_mode.size_hint()
             + self.play_mode.size_hint()
             + self.new_interaction_model.size_hint()
-            + match (&self.play_mode) {
+            + match &self.play_mode {
                 ClientPlayMode::Reality => ProtoCodecLE::size_hint(&self.vr_gaze_direction),
                 _ => 0,
             }
