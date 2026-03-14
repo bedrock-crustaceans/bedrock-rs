@@ -144,27 +144,27 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         <Vec3<f32> as ProtoCodecLE>::serialize(&self.interact_rotation, stream)?;
         <u64 as ProtoCodecVAR>::serialize(&self.client_tick, stream)?;
         <Vec3<f32> as ProtoCodecLE>::serialize(&self.velocity, stream)?;
-        if &self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u128 != 0 {
+        if self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u128 != 0 {
             <V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::serialize(
-                &self.item_use_transaction.as_ref().unwrap(),
+                self.item_use_transaction.as_ref().unwrap(),
                 stream,
             )?;
         }
-        if &self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u128 != 0 {
+        if self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u128 != 0 {
             <PerformItemStackRequestData<V> as ProtoCodec>::serialize(
-                &self.item_stack_request.as_ref().unwrap(),
+                self.item_stack_request.as_ref().unwrap(),
                 stream,
             )?;
         }
-        if &self.input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
+        if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
             <V::PlayerBlockActions as ProtoCodec>::serialize(
-                &self.player_block_actions.as_ref().unwrap(),
+                self.player_block_actions.as_ref().unwrap(),
                 stream,
             )?;
         }
-        if &self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u128 != 0 {
+        if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u128 != 0 {
             <ClientPredictedVehicleData<V> as ProtoCodec>::serialize(
-                &self.client_predicted_vehicle.as_ref().unwrap(),
+                self.client_predicted_vehicle.as_ref().unwrap(),
                 stream,
             )?;
         }

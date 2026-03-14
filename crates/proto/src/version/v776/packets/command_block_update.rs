@@ -120,10 +120,10 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
                         + size_of::<bool>()
                 }
             }
-            + &self.command.size_hint()
-            + &self.last_output.size_hint()
-            + &self.name.size_hint()
-            + &self.filtered_name.size_hint()
+            + self.command.size_hint()
+            + self.last_output.size_hint()
+            + self.name.size_hint()
+            + self.filtered_name.size_hint()
             + size_of::<bool>()
             + size_of::<u32>()
             + size_of::<bool>()

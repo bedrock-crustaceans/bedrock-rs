@@ -34,10 +34,10 @@ impl ProtoCodec for PlayerArmorDamagePacket {
         let slot_bitset = i8::deserialize(stream)?;
         let damage = {
             let mut damage = [0; 4];
-            for i in 0..4 {
+            for (i, slot) in damage.iter_mut().enumerate() {
                 let flag = 1 << i;
                 if (slot_bitset & flag) != 0 {
-                    damage[i] = <i32 as ProtoCodecVAR>::deserialize(stream)?;
+                    *slot = <i32 as ProtoCodecVAR>::deserialize(stream)?;
                 }
             }
             damage
