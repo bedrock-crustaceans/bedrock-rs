@@ -13,10 +13,7 @@ pub async fn shard<'t, T: Packets + Send + Sync + 't>(
     // TODO: Look into making flush_interval optional
     _flush_interval: Interval,
     packet_buffer_size: usize,
-) -> (ConnectionShardSender<T>, ConnectionShardReceiver<T>)
-where
-    T: Send + Sync + 'static,
-{
+) -> (ConnectionShardSender<T>, ConnectionShardReceiver<T>) {
     let (packet_tx_task, packet_rx_shard) = mpsc::channel(packet_buffer_size);
     let (packet_tx_shard, mut packet_rx_task) = mpsc::channel(packet_buffer_size);
     let (close_tx, mut close_rx) = watch::channel(());

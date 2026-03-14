@@ -29,21 +29,21 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
         match &self.is_block {
             false => {
                 <V::ActorRuntimeID as ProtoCodec>::serialize(
-                    &self.target_runtime_id.as_ref().unwrap(),
+                    self.target_runtime_id.as_ref().unwrap(),
                     stream,
                 )?;
             }
             true => {
                 <V::NetworkBlockPosition as ProtoCodec>::serialize(
-                    &self.block_position.as_ref().unwrap(),
+                    self.block_position.as_ref().unwrap(),
                     stream,
                 )?;
                 <V::CommandBlockMode as ProtoCodec>::serialize(
-                    &self.command_block_mode.as_ref().unwrap(),
+                    self.command_block_mode.as_ref().unwrap(),
                     stream,
                 )?;
-                <bool as ProtoCodec>::serialize(&self.redstone_mode.as_ref().unwrap(), stream)?;
-                <bool as ProtoCodec>::serialize(&self.is_conditional.as_ref().unwrap(), stream)?;
+                <bool as ProtoCodec>::serialize(self.redstone_mode.as_ref().unwrap(), stream)?;
+                <bool as ProtoCodec>::serialize(self.is_conditional.as_ref().unwrap(), stream)?;
             }
         }
         <String as ProtoCodec>::serialize(&self.command, stream)?;
