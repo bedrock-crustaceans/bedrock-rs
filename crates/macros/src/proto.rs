@@ -85,7 +85,7 @@ impl Parse for DefineVersionsEntry {
                 brace.parse::<kw::raknet_version>()?;
                 brace.parse::<Token![:]>()?;
                 if raknet_version.is_some() {
-                    return Err(brace.error("duplicate `packets` section"));
+                    return Err(brace.error("duplicate `raknet_version` definition"));
                 }
                 raknet_version = Some(brace.parse::<LitInt>()?.base10_parse()?);
             } else if brace.peek(kw::packets) {
