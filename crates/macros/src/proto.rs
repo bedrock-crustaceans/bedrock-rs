@@ -108,7 +108,7 @@ impl Parse for DefineVersionsEntry {
                 enums = Some(brace.parse()?);
             } else {
                 return Err(
-                    brace.error("expected `packets`, `types`, `enums`, `raknet`, or `header`")
+                    brace.error("expected `raknet_version`, `packets`, `types`, or `enums`")
                 );
             }
 
