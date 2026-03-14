@@ -1,5 +1,6 @@
 use crate::de::{build_de_enum, build_de_struct};
 use crate::ser::{build_ser_enum, build_ser_struct};
+use crate::size::{build_size_enum, build_size_struct};
 use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::HashMap;
@@ -32,11 +33,16 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
     let generics = input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let (ser, de) = match input.data {
-        Data::Struct(v) => (build_ser_struct(&v), build_de_struct(&v)),
+    let (ser, de, size) = match input.data {
+        Data::Struct(v) => (
+            build_ser_struct(&v),
+            build_de_struct(&v),
+            build_size_struct(&v),
+        ),
         Data::Enum(v) => (
             build_ser_enum(&v, input.attrs.as_slice()),
             build_de_enum(&v, input.attrs.as_slice(), name.clone()),
+            build_size_enum(&v, input.attrs.as_slice()),
         ),
         Data::Union(_) => {
             return TokenStream::from(quote! {
@@ -62,7 +68,7 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
             }
 
             fn size_hint(&self) -> usize {
-                1
+                #size
             }
         }
     };
