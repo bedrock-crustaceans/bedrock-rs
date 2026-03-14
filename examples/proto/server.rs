@@ -54,7 +54,7 @@ async fn handle_login(mut conn: Connection) {
 
     // RequestNetworkSettings
     conn.recv::<V924>().await.unwrap();
-    tracing::trace!("RequestNetworkSettings");
+    println!("RequestNetworkSettings");
 
     let compression = Compression::None;
 
@@ -68,13 +68,13 @@ async fn handle_login(mut conn: Connection) {
     })])
     .await
     .unwrap();
-    tracing::trace!("NetworkSettings");
+    println!("NetworkSettings");
 
     conn.compression = Some(compression);
 
     // Login
     conn.recv::<V924>().await.unwrap();
-    tracing::trace!("Login");
+    println!("Login");
 
     conn.send::<V924>(&[
         V924::PlayStatusPacket(PlayStatusPacket {
@@ -102,14 +102,14 @@ async fn handle_login(mut conn: Connection) {
     ])
     .await
     .unwrap();
-    tracing::trace!("PlayStatus (LoginSuccess)");
-    tracing::trace!("ResourcePacksInfo");
-    tracing::trace!("ResourcePackStack");
+    println!("PlayStatus (LoginSuccess)");
+    println!("ResourcePacksInfo");
+    println!("ResourcePackStack");
 
-    tracing::trace!("{:#?}", conn.recv::<V924>().await.unwrap());
-    tracing::trace!("ClientCacheStatus");
-    tracing::trace!("{:#?}", conn.recv::<V924>().await.unwrap());
-    tracing::trace!("ResourcePackClientResponse");
+    println!("{:#?}", conn.recv::<V924>().await.unwrap());
+    println!("ClientCacheStatus");
+    println!("{:#?}", conn.recv::<V924>().await.unwrap());
+    println!("ResourcePackClientResponse");
 
     conn.send::<V924>(&[V924::VoxelShapesPacket(VoxelShapesPacket {
         shapes: vec![],
@@ -117,7 +117,7 @@ async fn handle_login(mut conn: Connection) {
     })])
     .await
     .unwrap();
-    tracing::trace!("VoxelShapes");
+    println!("VoxelShapes");
 
     let packet1 = StartGamePacket {
         target_actor_id: ActorUniqueID(609),
@@ -230,13 +230,13 @@ async fn handle_login(mut conn: Connection) {
     .unwrap();
     println!("PlayStatusPacket (PlayerSpawn)");
 
-    tracing::trace!("Finished request in {:?}", time_start.elapsed());
+    println!("Finished request in {:?}", time_start.elapsed());
 
     loop {
         let res = conn.recv::<V924>().await;
 
         if let Ok(packet) = res {
-            tracing::trace!("Found packet: {:?}", packet);
+            println!("Found packet: {:?}", packet);
         } else {
             break;
         }
