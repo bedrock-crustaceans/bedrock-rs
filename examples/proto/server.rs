@@ -1,6 +1,5 @@
 use bedrockrs_network::connection::Connection;
 use bedrockrs_network::listener::Listener;
-use bedrockrs_proto::{ProtoVersion, V924};
 use bedrockrs_proto::compression::Compression;
 use bedrockrs_proto::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting,
@@ -18,6 +17,7 @@ use bedrockrs_proto::v898::packets::ResourcePackStackPacket;
 use bedrockrs_proto::v924;
 use bedrockrs_proto::v924::packets::{StartGamePacket, VoxelShapesPacket};
 use bedrockrs_proto::v924::types::{GameRuleLegacyData, LevelSettings};
+use bedrockrs_proto::{ProtoVersion, V924};
 use bedrockrs_shared::world::dimension::Dimension;
 use std::collections::HashMap;
 use tokio::time::Instant;
@@ -29,9 +29,9 @@ async fn main() {
         "127.0.0.1:19132".parse().unwrap(),
         "Bedrock in Rust".to_string(),
         "bedrockrs".to_string(),
-        v924::info::GAME_VERSION.to_string(),
-        v924::info::PROTOCOL_VERSION,
-        v924::info::RAK_VERSION,
+        V924::GAME_VERSION.to_string(),
+        V924::PROTOCOL_VERSION,
+        V924::RAKNET_VERSION,
         100,
         10,
         false,
@@ -178,7 +178,7 @@ async fn handle_login(mut conn: Connection) {
             persona_disabled: false,
             custom_skins_disabled: false,
             emote_chat_muted: false,
-            base_game_version: BaseGameVersion(v924::info::GAME_VERSION.to_string()),
+            base_game_version: BaseGameVersion(V924::GAME_VERSION.to_string()),
             limited_world_width: 16,
             limited_world_depth: 16,
             nether_type: true,
@@ -203,7 +203,7 @@ async fn handle_login(mut conn: Connection) {
         block_properties: vec![],
         multiplayer_correlation_id: String::from("c5d3d2cc-27fd-4221-9de6-d22c4d423d53"),
         enable_item_stack_net_manager: false,
-        server_version: v924::info::GAME_VERSION.to_string(),
+        server_version: V924::GAME_VERSION.to_string(),
         player_property_data: nbtx::Value::Compound(HashMap::new()),
         server_block_type_registry_checksum: 0,
         world_template_id: Uuid::nil(),

@@ -4,8 +4,8 @@ use quote::quote;
 use std::collections::{HashMap, HashSet};
 use syn::parse::ParseStream;
 use syn::{
-    LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse,
-    punctuated::Punctuated,
+    braced, bracketed, parenthesized, parse::Parse, punctuated::Punctuated, LitInt, LitStr, Path,
+    Token,
 };
 
 mod kw {
@@ -14,6 +14,7 @@ mod kw {
     custom_keyword!(packets);
     custom_keyword!(types);
     custom_keyword!(enums);
+    custom_keyword!(raknet_version);
 }
 
 struct DefineVersionsInput {
@@ -24,6 +25,7 @@ struct DefineVersionsEntry {
     version: u32,
     branch: LitStr,
     game_version: LitStr,
+    raknet_version: Option<u8>,
     packets: Option<DefineVersionsDiffList>,
     types: Option<DefineVersionsDiffList>,
     enums: Option<DefineVersionsDiffList>,
@@ -73,12 +75,20 @@ impl Parse for DefineVersionsEntry {
         input.parse::<Token![:]>()?;
         braced!(brace in input);
 
+        let mut raknet_version = None;
         let mut packets = None;
         let mut types = None;
         let mut enums = None;
 
         while !brace.is_empty() {
-            if brace.peek(kw::packets) {
+            if brace.peek(kw::raknet_version) {
+                brace.parse::<kw::raknet_version>()?;
+                brace.parse::<Token![:]>()?;
+                if raknet_version.is_some() {
+                    return Err(brace.error("duplicate `packets` section"));
+                }
+                raknet_version = Some(brace.parse::<LitInt>()?.base10_parse()?);
+            } else if brace.peek(kw::packets) {
                 brace.parse::<kw::packets>()?;
                 if packets.is_some() {
                     return Err(brace.error("duplicate `packets` section"));
@@ -110,6 +120,7 @@ impl Parse for DefineVersionsEntry {
         Ok(Self {
             version,
             branch,
+            raknet_version,
             game_version,
             packets,
             types,
@@ -286,9 +297,11 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             const PROTOCOL_VERSION: u32;
             const PROTOCOL_BRANCH: &str;
             const GAME_VERSION: &str;
+            const RAKNET_VERSION: u8;
         }
     };
 
+    let mut previous_raknet_version: Option<u8> = None;
     let mut previous_packets = HashMap::<Ident, proc_macro2::TokenStream>::new();
     let mut previous_types = HashMap::<Ident, proc_macro2::TokenStream>::new();
     let mut previous_enums = HashMap::<Ident, proc_macro2::TokenStream>::new();
@@ -304,6 +317,16 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         if let Err(e) = collapse(&entry.enums, &mut previous_enums) {
             return e.into_compile_error().into();
         }
+
+        if let Some(raknet_version) = entry.raknet_version {
+            previous_raknet_version = Some(raknet_version);
+        }
+
+        let Some(raknet_version) = previous_raknet_version else {
+            return syn::Error::new(Span::call_site(), "raknet_version not defined")
+                .into_compile_error()
+                .into();
+        };
 
         let version = entry.version;
         let branch = entry.branch.clone();
@@ -463,6 +486,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 const PROTOCOL_VERSION: u32 = #version;
                 const PROTOCOL_BRANCH: &str = #branch;
                 const GAME_VERSION: &str = #game_version;
+                const RAKNET_VERSION: u8 = #raknet_version;
             }
         };
 

@@ -1,7 +1,7 @@
 use core::net::SocketAddr;
 
-use rak_rs::Motd;
 use rak_rs::mcpe::motd::Gamemode;
+use rak_rs::Motd;
 use rand::random;
 
 use crate::connection::Connection;
@@ -27,7 +27,7 @@ impl Listener {
         name: String,
         sub_name: String,
         display_version: String,
-        protocol: i32,
+        protocol: u32,
         rak_version: u8,
         player_max: u32,
         player_count: u32,
