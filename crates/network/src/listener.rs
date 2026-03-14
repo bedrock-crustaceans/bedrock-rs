@@ -1,7 +1,7 @@
 use core::net::SocketAddr;
 
-use rak_rs::mcpe::motd::Gamemode;
 use rak_rs::Motd;
+use rak_rs::mcpe::motd::Gamemode;
 use rand::random;
 
 use crate::connection::Connection;

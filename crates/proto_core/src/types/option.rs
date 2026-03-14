@@ -1,6 +1,6 @@
+use crate::ProtoCodec;
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
-use crate::ProtoCodec;
 use std::io::{Read, Write};
 use std::mem::size_of;
 

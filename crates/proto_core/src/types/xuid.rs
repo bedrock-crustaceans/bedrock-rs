@@ -1,5 +1,5 @@
-use crate::error::ProtoCodecError;
 use crate::ProtoCodec;
+use crate::error::ProtoCodecError;
 use std::io::{Read, Write};
 use std::mem::size_of;
 use xuid::Xuid;
