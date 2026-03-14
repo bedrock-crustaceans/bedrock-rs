@@ -14,7 +14,6 @@ use bedrockrs_proto::v662::types::{
 use bedrockrs_proto::v818::packets::ResourcePacksInfoPacket;
 use bedrockrs_proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs_proto::v898::packets::ResourcePackStackPacket;
-use bedrockrs_proto::v924;
 use bedrockrs_proto::v924::packets::{StartGamePacket, VoxelShapesPacket};
 use bedrockrs_proto::v924::types::{GameRuleLegacyData, LevelSettings};
 use bedrockrs_proto::{ProtoVersion, V924};

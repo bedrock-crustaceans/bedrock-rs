@@ -10,7 +10,7 @@ semver = { workspace = true }
 image = { workspace = true }
 
 vek = { workspace = true }
-thiserror = { workspace = true}
+thiserror = { workspace = true }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
