@@ -10,8 +10,9 @@ fn main() {
 
     let login = V800::LoginPacket(LoginPacket {
         client_network_version: 800,
-        connection_request: "{ \"chain\": [\"feels like something is missing here...\"] }"
-            .to_string(),
+        connection_request: Vec::from(
+            "{ \"chain\": [\"feels like something is missing here...\"] }",
+        ),
     });
 
     let bytes = match encode_packets(&[login], None, None) {
