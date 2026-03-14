@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 58)]
+#[packet(id = 58)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelChunkPacket<V: ProtoVersion> {
     pub chunk_position: V::ChunkPos,
@@ -9,7 +9,6 @@ pub struct LevelChunkPacket<V: ProtoVersion> {
     pub dimension_id: i32,
     // TODO: sub-chunk count stuff
     pub cache_enabled: bool,
-
     pub cache_blobs: Vec<CacheBlobEntry>,
     pub serialized_chunk_data: String,
 }

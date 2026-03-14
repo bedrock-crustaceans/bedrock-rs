@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 68)]
+#[packet(id = 68)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MapInfoRequestPacket<V: ProtoVersion> {
     pub map_unique_id: V::ActorUniqueID,

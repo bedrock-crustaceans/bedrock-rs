@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 150)]
+#[packet(id = 150)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CodeBuilderPacket {
     pub url: String,

@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 162)]
+#[packet(id = 162)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ItemComponentPacket {
     pub items: Vec<ItemsEntry>,

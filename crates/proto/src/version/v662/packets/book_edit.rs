@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
-use bedrockrs_proto_core::error::ProtoCodecError;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Write, copy};
 use std::mem::size_of;
 
-#[gamepacket(id = 97)]
+#[packet(id = 97)]
 #[derive(Clone, Debug)]
 pub struct BookEditPacket<V: ProtoVersion> {
     pub action: V::BookEditAction,
@@ -14,33 +14,33 @@ pub struct BookEditPacket<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for BookEditPacket<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
-        <V::BookEditAction as ProtoCodec>::proto_serialize(&self.action, &mut action_stream)?;
+        <V::BookEditAction as ProtoCodec>::serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
         stream.write_i8(action_cursor.read_i8()?)?;
-        <i8 as ProtoCodec>::proto_serialize(&self.book_slot, stream)?;
-        action_cursor.read_to_end(stream)?;
+        <i8 as ProtoCodec>::serialize(&self.book_slot, stream)?;
+        copy(&mut action_cursor, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
 
         action_stream.write_i8(stream.read_i8()?)?;
-        let book_slot = <i8 as ProtoCodec>::proto_deserialize(stream)?;
+        let book_slot = <i8 as ProtoCodec>::deserialize(stream)?;
         stream.read_to_end(&mut action_stream)?;
 
         let mut action_cursor = Cursor::new(action_stream.as_slice());
-        let action = <V::BookEditAction as ProtoCodec>::proto_deserialize(&mut action_cursor)?;
+        let action = <V::BookEditAction as ProtoCodec>::deserialize(&mut action_cursor)?;
 
         Ok(Self { action, book_slot })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.action.get_size_prediction() + size_of::<i8>()
+    fn size_hint(&self) -> usize {
+        self.action.size_hint() + size_of::<i8>()
     }
 }
 

@@ -1,10 +1,9 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 199)]
+#[packet(id = 199)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UnlockedRecipesPacket {
     #[endianness(le)]
     pub packet_type: u32,
-
     pub unlocked_recipes_list: Vec<String>,
 }

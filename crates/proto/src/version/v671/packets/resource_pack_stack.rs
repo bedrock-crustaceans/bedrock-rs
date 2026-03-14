@@ -1,13 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 7)]
+#[packet(id = 7)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePackStackPacket<V: ProtoVersion> {
     pub texture_pack_required: bool,
-
     pub addon_list: Vec<PackEntry>,
-
     pub texture_pack_list: Vec<PackEntry>,
     pub base_game_version: V::BaseGameVersion,
     pub experiments: V::Experiments,

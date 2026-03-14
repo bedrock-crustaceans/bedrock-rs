@@ -1,11 +1,10 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 29)]
+#[packet(id = 29)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateAttributesPacket<V: ProtoVersion> {
     pub target_runtime_id: V::ActorRuntimeID,
-
     pub attribute_list: Vec<AttributeData<V>>,
     #[endianness(var)]
     pub ticks_since_sim_started: u64,
@@ -37,6 +36,5 @@ pub struct AttributeData<V: ProtoVersion> {
     #[endianness(le)]
     pub default_value: f32,
     pub attribute_name: String,
-
     pub attribute_modifiers: Vec<AttributeModifier<V>>,
 }

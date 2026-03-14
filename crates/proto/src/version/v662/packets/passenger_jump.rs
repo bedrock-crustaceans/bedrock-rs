@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 20)]
+#[packet(id = 20)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PassengerJumpPacket {
     #[endianness(var)]

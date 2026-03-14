@@ -9,6 +9,8 @@ thiserror = { workspace = true }
 bedrockrs_core = { path = "../core" }
 bedrockrs_shared = { path = "../shared" }
 bedrockrs_proto = { path = "../proto" }
+bedrockrs_proto_core = { path = "../proto_core" }
+bedrockrs_network = { path = "../network" }
 
 tokio = { workspace = true }
 shipyard = { workspace = true, features = [

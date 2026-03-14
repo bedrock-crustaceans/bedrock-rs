@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 85)]
+#[packet(id = 85)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TransferPlayerPacket {
     pub server_address: String,

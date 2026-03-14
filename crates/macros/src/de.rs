@@ -6,16 +6,16 @@ use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type};
 fn build_de_instance(endianness: Option<ProtoCodecEndianness>, f_type: &Type) -> TokenStream {
     match endianness {
         None => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodec>::proto_deserialize(stream)? }
+            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)? }
         }
         Some(ProtoCodecEndianness::Le) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecLE>::proto_deserialize(stream)? }
+            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecLE>::deserialize(stream)? }
         }
         Some(ProtoCodecEndianness::Be) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecBE>::proto_deserialize(stream)? }
+            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecBE>::deserialize(stream)? }
         }
         Some(ProtoCodecEndianness::Var) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecVAR>::proto_deserialize(stream)? }
+            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecVAR>::deserialize(stream)? }
         }
     }
 }
@@ -58,7 +58,7 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
             if flags.str {
                 return quote! {
                     let #name: #ty = {
-                        let string = <String as ::bedrockrs_proto_core::ProtoCodec>::proto_deserialize(stream)?;
+                        let string = <String as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)?;
                         let str = string.as_str();
                         #ty::try_from(str)?
                     };

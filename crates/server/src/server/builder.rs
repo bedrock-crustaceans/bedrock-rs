@@ -1,6 +1,6 @@
 use crate::server::Server;
-use bedrockrs_proto::listener::Listener;
-use bedrockrs_proto::v766;
+use bedrockrs_network::listener::Listener;
+use bedrockrs_proto::{ProtoVersion, V924};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 pub struct ServerBuilder {
@@ -43,13 +43,14 @@ impl ServerBuilder {
         for addr in self.listeners_info {
             listeners.push(
                 Listener::new_raknet(
+                    addr,
                     self.name.clone(),
                     self.sub_name.clone(),
-                    String::from("1.21.0"),
-                    v766::info::PROTOCOL_VERSION,
+                    V924::GAME_VERSION.to_string(),
+                    V924::PROTOCOL_VERSION,
+                    V924::RAKNET_VERSION,
                     self.max_player,
                     0,
-                    addr,
                     false,
                 )
                 .await

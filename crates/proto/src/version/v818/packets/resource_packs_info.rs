@@ -1,7 +1,7 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 use uuid::Uuid;
 
-#[gamepacket(id = 6)]
+#[packet(id = 6)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePacksInfoPacket {
     pub resource_pack_required: bool,

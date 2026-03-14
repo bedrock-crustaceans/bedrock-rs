@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 190)]
+#[packet(id = 190)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct EditorNetworkPacket {
     pub route_to_manager: bool,

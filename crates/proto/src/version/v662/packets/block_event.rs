@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 26)]
+#[packet(id = 26)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BlockEventPacket<V: ProtoVersion> {
     pub block_position: V::NetworkBlockPosition,

@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 186)]
+#[packet(id = 186)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ToastRequestPacket {
     pub title: String,

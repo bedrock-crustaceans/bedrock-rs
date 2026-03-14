@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 147)]
+#[packet(id = 147)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ItemStackRequestPacket<V: ProtoVersion> {
     pub requests: Vec<RequestsEntry<V>>,
@@ -11,9 +11,7 @@ pub struct ItemStackRequestPacket<V: ProtoVersion> {
 pub struct RequestsEntry<V: ProtoVersion> {
     #[endianness(var)]
     pub client_request_id: u32,
-
     pub actions: Vec<V::ItemStackRequestActionType>,
-
     pub strings_to_filter: Vec<String>,
     pub strings_to_filter_origin: V::TextProcessingEventOrigin,
 }

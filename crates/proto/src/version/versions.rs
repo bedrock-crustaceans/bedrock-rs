@@ -2,6 +2,7 @@ use bedrockrs_macros::define_versions;
 
 define_versions![
     (662, "r/20_u7", "1.20.70"): {
+        raknet_version: 11,
         packets: [
             + ActorEventPacket: ActorEventPacket^,
             + ActorPickRequestPacket: ActorPickRequestPacket,

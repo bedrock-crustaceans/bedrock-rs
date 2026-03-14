@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 338)]
+#[packet(id = 338)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraSplinePacket<V: ProtoVersion> {
     pub splines: Vec<CameraSplineDefinition<V>>,

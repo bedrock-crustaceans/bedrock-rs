@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 332)]
+#[packet(id = 332)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundDataStorePacket {
     pub data_store_name: String,

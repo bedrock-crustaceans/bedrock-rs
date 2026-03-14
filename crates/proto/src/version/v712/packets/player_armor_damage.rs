@@ -1,9 +1,9 @@
-use bedrockrs_macros::gamepacket;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
-use std::io::Cursor;
+use std::io::{Read, Write};
 
-#[gamepacket(id = 149)]
+#[packet(id = 149)]
 #[derive(Clone, Debug)]
 pub struct PlayerArmorDamagePacket {
     pub slot_bitset: i8,
@@ -19,26 +19,26 @@ pub enum PlayerArmorDamageFlag {
 }
 
 impl ProtoCodec for PlayerArmorDamagePacket {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        self.slot_bitset.proto_serialize(stream)?;
-        for (i, value) in self.damage.iter().enumerate() {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        self.slot_bitset.serialize(stream)?;
+        for i in 0..5 {
             let flag = 1 << i;
             if (self.slot_bitset & flag) != 0 {
-                ProtoCodecVAR::proto_serialize(value, stream)?;
+                ProtoCodecVAR::serialize(&self.damage[i], stream)?;
             }
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let slot_bitset = i8::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let slot_bitset = i8::deserialize(stream)?;
         let damage = {
             let mut damage = [0; 5];
-            for (i, value) in damage.iter_mut().enumerate() {
+            for (i, slot) in damage.iter_mut().enumerate() {
                 let flag = 1 << i;
                 if (slot_bitset & flag) != 0 {
-                    *value = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+                    *slot = <i32 as ProtoCodecVAR>::deserialize(stream)?;
                 }
             }
             damage
@@ -50,13 +50,13 @@ impl ProtoCodec for PlayerArmorDamagePacket {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.slot_bitset.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.slot_bitset.size_hint()
             + (0..5)
                 .filter_map(|i| {
                     let flag = 1 << i;
                     if (self.slot_bitset & flag) != 0 {
-                        Some(ProtoCodecVAR::get_size_prediction(&self.damage[i]))
+                        Some(ProtoCodecVAR::size_hint(&self.damage[i]))
                     } else {
                         None
                     }

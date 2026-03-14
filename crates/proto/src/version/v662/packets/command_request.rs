@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 77)]
+#[packet(id = 77)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CommandRequestPacket<V: ProtoVersion> {
     pub command: String,

@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 132)]
+#[packet(id = 132)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StructureDataRequestPacket<V: ProtoVersion> {
     pub structure_name: String,

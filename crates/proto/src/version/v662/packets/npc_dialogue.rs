@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 169)]
+#[packet(id = 169)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NpcDialoguePacket {
     #[endianness(le)]

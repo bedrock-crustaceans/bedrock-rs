@@ -1,9 +1,9 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 use uuid::Uuid;
 use vek::{Vec2, Vec3};
 
-#[gamepacket(id = 11)]
+#[packet(id = 11)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StartGamePacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,

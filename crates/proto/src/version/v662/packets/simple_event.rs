@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 64)]
+#[packet(id = 64)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SimpleEventPacket {
     pub simple_event_type: Subtype,

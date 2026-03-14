@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 113)]
+#[packet(id = 113)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetLocalPlayerAsInitializedPacket<V: ProtoVersion> {
     pub player_id: V::ActorRuntimeID,

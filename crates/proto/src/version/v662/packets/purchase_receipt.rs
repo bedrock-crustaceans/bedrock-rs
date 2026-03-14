@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 92)]
+#[packet(id = 92)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PurchaseReceiptPacket {
     pub purchase_receipts: Vec<String>,

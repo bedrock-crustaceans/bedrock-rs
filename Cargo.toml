@@ -65,6 +65,8 @@ bedrockrs_form = { path = "crates/form", optional = true }
 bedrockrs_proto = { path = "crates/proto", optional = true }
 bedrockrs_proto_core = { path = "crates/proto_core", optional = true }
 
+bedrockrs_network = { path = "crates/network", optional = true }
+
 bedrockrs_server = { path = "crates/server", optional = true }
 
 bedrockrs_level = { path = "crates/level", optional = true }
@@ -86,6 +88,7 @@ proto = [
     "dep:bedrockrs_proto_core",
     "dep:bedrockrs_macros",
 ]
+network = ["dep:bedrockrs_network", "proto"]
 level = ["dep:bedrockrs_level"]
 full = ["addon", "level", "proto", "server"]
 form = ["dep:bedrockrs_form"]
@@ -94,7 +97,7 @@ server = ["dep:bedrockrs_server", "proto", "level", "form"]
 [[example]]
 name = "proto_server"
 path = "examples/proto/server.rs"
-required-features = ["proto"]
+required-features = ["network"]
 
 [[example]]
 name = "proto_parsing"

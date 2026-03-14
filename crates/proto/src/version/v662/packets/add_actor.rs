@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::{Vec2, Vec3};
 
-#[gamepacket(id = 13)]
+#[packet(id = 13)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AddActorPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
@@ -18,12 +18,9 @@ pub struct AddActorPacket<V: ProtoVersion> {
     pub y_head_rotation: f32,
     #[endianness(le)]
     pub y_body_rotation: f32,
-
     pub attributes: Vec<AttributeEntry>,
-
-    pub actor_data: Vec<V::DataItem>, // TODO: verify vec_repr & vec_endianness
+    pub actor_data: Vec<V::DataItem>,
     pub synced_properties: V::PropertySyncData,
-
     pub actor_links: Vec<V::ActorLink>,
 }
 

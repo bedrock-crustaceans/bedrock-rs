@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Write, copy};
 use varint_rs::{VarintReader, VarintWriter};
 
-#[gamepacket(id = 65)]
+#[packet(id = 65)]
 #[derive(Clone, Debug)]
 pub struct LegacyTelemetryEventPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
@@ -177,9 +177,9 @@ pub enum LegacyTelemetryEventType<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut event_type_stream: Vec<u8> = Vec::new();
-        <LegacyTelemetryEventType<V> as ProtoCodec>::proto_serialize(
+        <LegacyTelemetryEventType<V> as ProtoCodec>::serialize(
             &self.event_type,
             &mut event_type_stream,
         )?;
@@ -187,27 +187,27 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
 
         let event_type_discriminant = event_type_cursor.read_i32_varint()?;
 
-        <V::ActorUniqueID as ProtoCodec>::proto_serialize(&self.target_actor_id, stream)?;
-        <i32 as ProtoCodecVAR>::proto_serialize(&event_type_discriminant, stream)?;
-        <bool as ProtoCodec>::proto_serialize(&self.use_player_id, stream)?;
-        event_type_cursor.read_to_end(stream)?;
-        <u32 as ProtoCodecVAR>::proto_serialize(&(event_type_discriminant as u32), stream)?;
+        <V::ActorUniqueID as ProtoCodec>::serialize(&self.target_actor_id, stream)?;
+        <i32 as ProtoCodecVAR>::serialize(&event_type_discriminant, stream)?;
+        <bool as ProtoCodec>::serialize(&self.use_player_id, stream)?;
+        copy(&mut event_type_cursor, stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&(event_type_discriminant as u32), stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut event_type_stream: Vec<u8> = Vec::new();
 
-        let target_actor_id = <V::ActorUniqueID as ProtoCodec>::proto_deserialize(stream)?;
+        let target_actor_id = <V::ActorUniqueID as ProtoCodec>::deserialize(stream)?;
         event_type_stream.write_i32_varint(stream.read_i32_varint()?)?;
-        let use_player_id = <bool as ProtoCodec>::proto_deserialize(stream)?;
+        let use_player_id = <bool as ProtoCodec>::deserialize(stream)?;
         stream.read_to_end(&mut event_type_stream)?;
 
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
         let event_type =
-            <LegacyTelemetryEventType<V> as ProtoCodec>::proto_deserialize(&mut event_type_cursor)?;
-        <u32 as ProtoCodecVAR>::proto_deserialize(&mut event_type_cursor)?;
+            <LegacyTelemetryEventType<V> as ProtoCodec>::deserialize(&mut event_type_cursor)?;
+        <u32 as ProtoCodecVAR>::deserialize(&mut event_type_cursor)?;
 
         Ok(Self {
             target_actor_id,
@@ -216,10 +216,10 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.event_type.get_size_prediction()
-            + self.target_actor_id.get_size_prediction()
-            + self.use_player_id.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.event_type.size_hint()
+            + self.target_actor_id.size_hint()
+            + self.use_player_id.size_hint()
             + 1
     }
 }

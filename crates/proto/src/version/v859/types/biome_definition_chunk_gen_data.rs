@@ -1,6 +1,6 @@
 use bedrockrs_macros::ProtoCodec;
 
-use crate::version::proto_version::ProtoVersion;
+use crate::version::ProtoVersion;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BiomeDefinitionChunkGenData<V: ProtoVersion> {

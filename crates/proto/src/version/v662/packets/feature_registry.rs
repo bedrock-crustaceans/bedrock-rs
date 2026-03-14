@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 191)]
+#[packet(id = 191)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct FeatureRegistryPacket {
     pub features_data_list: Vec<FeaturesDataListEntry>,

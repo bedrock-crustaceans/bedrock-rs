@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 145)]
+#[packet(id = 145)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CreativeContentPacket<V: ProtoVersion> {
     pub write_entries: Vec<WriteEntry<V>>,

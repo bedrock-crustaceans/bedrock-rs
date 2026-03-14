@@ -1,10 +1,9 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 302)]
+#[packet(id = 302)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TrimDataPacket {
     pub trim_pattern_list: Vec<TrimPattern>,
-
     pub trim_material_list: Vec<TrimMaterial>,
 }
 

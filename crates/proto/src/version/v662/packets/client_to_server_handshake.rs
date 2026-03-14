@@ -1,5 +1,5 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 4)]
+#[packet(id = 4)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientToServerHandshakePacket {}

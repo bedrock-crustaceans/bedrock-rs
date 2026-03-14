@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_proto_core::error::ProtoCodecError;
+use crate::version::versions::ProtoVersion;
 use bedrockrs_proto_core::ProtoCodec;
-use std::io::{Cursor, Read};
+use bedrockrs_proto_core::error::ProtoCodecError;
+use std::io::{Cursor, Read, Write, copy};
 use uuid::Uuid;
 use varint_rs::{VarintReader, VarintWriter};
 
@@ -13,28 +13,28 @@ pub struct CommandOriginData<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for CommandOriginData<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut type_stream: Vec<u8> = Vec::new();
-        self.command_type.proto_serialize(&mut type_stream)?;
+        self.command_type.serialize(&mut type_stream)?;
         let mut type_cursor = Cursor::new(type_stream.as_slice());
 
         stream.write_u32_varint(type_cursor.read_u32_varint()?)?;
-        self.command_uuid.proto_serialize(stream)?;
-        self.request_id.proto_serialize(stream)?;
-        type_cursor.read_to_end(stream)?;
+        self.command_uuid.serialize(stream)?;
+        self.request_id.serialize(stream)?;
+        copy(&mut type_cursor, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut type_stream: Vec<u8> = Vec::new();
         type_stream.write_u32_varint(stream.read_u32_varint()?)?;
 
-        let command_uuid = Uuid::proto_deserialize(stream)?;
-        let request_id = String::proto_deserialize(stream)?;
+        let command_uuid = Uuid::deserialize(stream)?;
+        let request_id = String::deserialize(stream)?;
         stream.read_to_end(&mut type_stream)?;
         let mut type_cursor = Cursor::new(type_stream.as_slice());
-        let command_type = V::CommandOriginType::proto_deserialize(&mut type_cursor)?;
+        let command_type = V::CommandOriginType::deserialize(&mut type_cursor)?;
 
         Ok(Self {
             command_type,
@@ -43,9 +43,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOriginData<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.command_type.get_size_prediction()
-            + self.command_uuid.get_size_prediction()
-            + self.request_id.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.command_type.size_hint() + self.command_uuid.size_hint() + self.request_id.size_hint()
     }
 }

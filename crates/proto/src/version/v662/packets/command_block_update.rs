@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::gamepacket;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
-use std::io::Cursor;
+use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 78)]
+#[packet(id = 78)]
 #[derive(Clone, Debug)]
 pub struct CommandBlockUpdatePacket<V: ProtoVersion> {
     pub is_block: bool,
@@ -23,63 +23,55 @@ pub struct CommandBlockUpdatePacket<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        <bool as ProtoCodec>::proto_serialize(&self.is_block, stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        <bool as ProtoCodec>::serialize(&self.is_block, stream)?;
         match &self.is_block {
             false => {
-                <V::ActorRuntimeID as ProtoCodec>::proto_serialize(
+                <V::ActorRuntimeID as ProtoCodec>::serialize(
                     self.target_runtime_id.as_ref().unwrap(),
                     stream,
                 )?;
             }
             true => {
-                <V::NetworkBlockPosition as ProtoCodec>::proto_serialize(
+                <V::NetworkBlockPosition as ProtoCodec>::serialize(
                     self.block_position.as_ref().unwrap(),
                     stream,
                 )?;
-                <V::CommandBlockMode as ProtoCodec>::proto_serialize(
+                <V::CommandBlockMode as ProtoCodec>::serialize(
                     self.command_block_mode.as_ref().unwrap(),
                     stream,
                 )?;
-                <bool as ProtoCodec>::proto_serialize(
-                    self.redstone_mode.as_ref().unwrap(),
-                    stream,
-                )?;
-                <bool as ProtoCodec>::proto_serialize(
-                    self.is_conditional.as_ref().unwrap(),
-                    stream,
-                )?;
+                <bool as ProtoCodec>::serialize(self.redstone_mode.as_ref().unwrap(), stream)?;
+                <bool as ProtoCodec>::serialize(self.is_conditional.as_ref().unwrap(), stream)?;
             }
         }
-        <String as ProtoCodec>::proto_serialize(&self.command, stream)?;
-        <String as ProtoCodec>::proto_serialize(&self.last_output, stream)?;
-        <String as ProtoCodec>::proto_serialize(&self.name, stream)?;
-        <bool as ProtoCodec>::proto_serialize(&self.track_output, stream)?;
-        <u32 as ProtoCodecLE>::proto_serialize(&self.tick_delay, stream)?;
-        <bool as ProtoCodec>::proto_serialize(&self.should_execute_on_first_tick, stream)?;
+        <String as ProtoCodec>::serialize(&self.command, stream)?;
+        <String as ProtoCodec>::serialize(&self.last_output, stream)?;
+        <String as ProtoCodec>::serialize(&self.name, stream)?;
+        <bool as ProtoCodec>::serialize(&self.track_output, stream)?;
+        <u32 as ProtoCodecLE>::serialize(&self.tick_delay, stream)?;
+        <bool as ProtoCodec>::serialize(&self.should_execute_on_first_tick, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let is_block = <bool as ProtoCodec>::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let is_block = <bool as ProtoCodec>::deserialize(stream)?;
         let (target_runtime_id, block_position, command_block_mode, redstone_mode, is_conditional) =
             match &is_block {
                 false => {
-                    let target_runtime_id = Some(
-                        <V::ActorRuntimeID as ProtoCodec>::proto_deserialize(stream)?,
-                    );
+                    let target_runtime_id =
+                        Some(<V::ActorRuntimeID as ProtoCodec>::deserialize(stream)?);
                     (target_runtime_id, None, None, None, None)
                 }
                 true => {
                     let block_position = Some(
-                        <V::NetworkBlockPosition as ProtoCodec>::proto_deserialize(stream)?,
+                        <V::NetworkBlockPosition as ProtoCodec>::deserialize(stream)?,
                     );
-                    let command_block_mode = Some(
-                        <V::CommandBlockMode as ProtoCodec>::proto_deserialize(stream)?,
-                    );
-                    let redstone_mode = Some(<bool as ProtoCodec>::proto_deserialize(stream)?);
-                    let is_conditional = Some(<bool as ProtoCodec>::proto_deserialize(stream)?);
+                    let command_block_mode =
+                        Some(<V::CommandBlockMode as ProtoCodec>::deserialize(stream)?);
+                    let redstone_mode = Some(<bool as ProtoCodec>::deserialize(stream)?);
+                    let is_conditional = Some(<bool as ProtoCodec>::deserialize(stream)?);
                     (
                         None,
                         block_position,
@@ -90,12 +82,12 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
                 }
             };
 
-        let command = <String as ProtoCodec>::proto_deserialize(stream)?;
-        let last_output = <String as ProtoCodec>::proto_deserialize(stream)?;
-        let name = <String as ProtoCodec>::proto_deserialize(stream)?;
-        let track_output = <bool as ProtoCodec>::proto_deserialize(stream)?;
-        let tick_delay = <u32 as ProtoCodecLE>::proto_deserialize(stream)?;
-        let should_execute_on_first_tick = <bool as ProtoCodec>::proto_deserialize(stream)?;
+        let command = <String as ProtoCodec>::deserialize(stream)?;
+        let last_output = <String as ProtoCodec>::deserialize(stream)?;
+        let name = <String as ProtoCodec>::deserialize(stream)?;
+        let track_output = <bool as ProtoCodec>::deserialize(stream)?;
+        let tick_delay = <u32 as ProtoCodecLE>::deserialize(stream)?;
+        let should_execute_on_first_tick = <bool as ProtoCodec>::deserialize(stream)?;
 
         Ok(Self {
             is_block,
@@ -113,28 +105,20 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<bool>()
             + match &self.is_block {
-                true => self
-                    .target_runtime_id
-                    .as_ref()
-                    .unwrap()
-                    .get_size_prediction(),
-                false => {
-                    self.block_position.as_ref().unwrap().get_size_prediction()
-                        + self
-                            .command_block_mode
-                            .as_ref()
-                            .unwrap()
-                            .get_size_prediction()
+                false => self.target_runtime_id.as_ref().unwrap().size_hint(),
+                true => {
+                    self.block_position.as_ref().unwrap().size_hint()
+                        + self.command_block_mode.as_ref().unwrap().size_hint()
                         + size_of::<bool>()
                         + size_of::<bool>()
                 }
             }
-            + self.command.get_size_prediction()
-            + self.last_output.get_size_prediction()
-            + self.name.get_size_prediction()
+            + self.command.size_hint()
+            + self.last_output.size_hint()
+            + self.name.size_hint()
             + size_of::<bool>()
             + size_of::<u32>()
             + size_of::<bool>()

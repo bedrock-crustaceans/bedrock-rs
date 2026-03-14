@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 307)]
+#[packet(id = 307)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetPlayerInventoryOptionsPacket<V: ProtoVersion> {
     pub left_inventory_tab: V::InventoryLeftTabIndex,

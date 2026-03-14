@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 91)]
+#[packet(id = 91)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ShowStoreOfferPacket<V: ProtoVersion> {
     pub product_id: String,

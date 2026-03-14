@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
 
-#[gamepacket(id = 16)]
+#[packet(id = 16)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerPlayerPostMovePositionPacket {
     #[endianness(le)]

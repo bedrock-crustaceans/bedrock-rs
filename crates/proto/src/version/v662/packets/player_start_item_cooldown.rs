@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 176)]
+#[packet(id = 176)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerStartItemCooldownPacket {
     pub item_category: String,

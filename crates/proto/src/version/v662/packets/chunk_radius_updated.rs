@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 70)]
+#[packet(id = 70)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChunkRadiusUpdatedPacket {
     #[endianness(var)]

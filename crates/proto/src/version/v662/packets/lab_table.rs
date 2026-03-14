@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 109)]
+#[packet(id = 109)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LabTablePacket<V: ProtoVersion> {
     pub lab_table_packet_type: Type,

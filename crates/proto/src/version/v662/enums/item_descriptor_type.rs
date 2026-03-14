@@ -1,7 +1,7 @@
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE};
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
@@ -45,26 +45,26 @@ pub struct ComplexAliasDescriptor {
 }
 
 impl ProtoCodec for DefaultDescriptor {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        <i16 as ProtoCodecLE>::proto_serialize(&self.item_id, stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        <i16 as ProtoCodecLE>::serialize(&self.item_id, stream)?;
         if self.item_id != 0 {
-            <i16 as ProtoCodecLE>::proto_serialize(&self.aux_value, stream)?;
+            <i16 as ProtoCodecLE>::serialize(&self.aux_value, stream)?;
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let item_id = <i16 as ProtoCodecLE>::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let item_id = <i16 as ProtoCodecLE>::deserialize(stream)?;
         let aux_value = match item_id != 0 {
-            true => <i16 as ProtoCodecLE>::proto_deserialize(stream)?,
+            true => <i16 as ProtoCodecLE>::deserialize(stream)?,
             false => 0,
         };
 
         Ok(Self { item_id, aux_value })
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<i16>()
             + match self.aux_value != 0 {
                 true => size_of::<i16>(),

@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 108)]
+#[packet(id = 108)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetScorePacket<V: ProtoVersion> {
     pub score_packet_type: V::ScorePacketType,

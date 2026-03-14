@@ -2,46 +2,46 @@ use crate::ProtoCodec;
 use crate::endian::{ProtoCodecBE, ProtoCodecLE, ProtoCodecVAR};
 use crate::error::ProtoCodecError;
 use seq_macro::seq;
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 macro_rules! impl_proto_slice {
     ($name:ident, 0) => {
         impl<T> $name for [T; 0] {
-            fn proto_serialize(&self, _stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+            fn serialize<W: Write>(&self, _stream: &mut W) -> Result<(), ProtoCodecError> {
                 Ok(())
             }
 
-            fn proto_deserialize(_stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+            fn deserialize<R: Read>(_stream: &mut R) -> Result<Self, ProtoCodecError> {
                 Ok([])
             }
 
-            fn get_size_prediction(&self) -> usize {
+            fn size_hint(&self) -> usize {
                 0
             }
         }
     };
     ($name:ident, $size:literal) => {
         impl<T: $name> $name for [T; $size] {
-            fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+            fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
                 seq!(N in 0..$size {
-                    self[N].proto_serialize(stream)?;
+                    self[N].serialize(stream)?;
                 });
 
                 Ok(())
             }
 
-            fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+            fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
                 seq!(N in 0..$size {
                     let buf = [
-                        #( T::proto_deserialize(stream)?, )*
+                        #( T::deserialize(stream)?, )*
                     ];
                 });
 
                 Ok(buf)
             }
 
-            fn get_size_prediction(&self) -> usize {
-                self[0].get_size_prediction() * $size
+            fn size_hint(&self) -> usize {
+                self.iter().fold(0, |acc, x| acc + x.size_hint())
             }
         }
     };

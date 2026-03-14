@@ -14,6 +14,7 @@ mod kw {
     custom_keyword!(packets);
     custom_keyword!(types);
     custom_keyword!(enums);
+    custom_keyword!(raknet_version);
 }
 
 struct DefineVersionsInput {
@@ -24,6 +25,7 @@ struct DefineVersionsEntry {
     version: u32,
     branch: LitStr,
     game_version: LitStr,
+    raknet_version: Option<u8>,
     packets: Option<DefineVersionsDiffList>,
     types: Option<DefineVersionsDiffList>,
     enums: Option<DefineVersionsDiffList>,
@@ -73,12 +75,20 @@ impl Parse for DefineVersionsEntry {
         input.parse::<Token![:]>()?;
         braced!(brace in input);
 
+        let mut raknet_version = None;
         let mut packets = None;
         let mut types = None;
         let mut enums = None;
 
         while !brace.is_empty() {
-            if brace.peek(kw::packets) {
+            if brace.peek(kw::raknet_version) {
+                brace.parse::<kw::raknet_version>()?;
+                brace.parse::<Token![:]>()?;
+                if raknet_version.is_some() {
+                    return Err(brace.error("duplicate `raknet_version` definition"));
+                }
+                raknet_version = Some(brace.parse::<LitInt>()?.base10_parse()?);
+            } else if brace.peek(kw::packets) {
                 brace.parse::<kw::packets>()?;
                 if packets.is_some() {
                     return Err(brace.error("duplicate `packets` section"));
@@ -97,7 +107,9 @@ impl Parse for DefineVersionsEntry {
                 }
                 enums = Some(brace.parse()?);
             } else {
-                return Err(brace.error("expected `packets`, `types`, or `enums`"));
+                return Err(
+                    brace.error("expected `raknet_version`, `packets`, `types`, or `enums`")
+                );
             }
 
             if !brace.is_empty() {
@@ -108,6 +120,7 @@ impl Parse for DefineVersionsEntry {
         Ok(Self {
             version,
             branch,
+            raknet_version,
             game_version,
             packets,
             types,
@@ -254,17 +267,17 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
     let proto_version_packets = all_packets
         .iter()
-        .map(|p| quote!(type #p: bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrockrs_proto_core::ProtoCodec + Clone + ::std::fmt::Debug;))
         .collect::<Vec<_>>();
 
     let proto_version_types = all_types
         .iter()
-        .map(|p| quote!(type #p: bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrockrs_proto_core::ProtoCodec + Clone + ::std::fmt::Debug;))
         .collect::<Vec<_>>();
 
     let proto_version_enums = all_enums
         .iter()
-        .map(|p| quote!(type #p: bedrockrs_proto_core::ProtoCodec + Clone + std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrockrs_proto_core::ProtoCodec + Clone + ::std::fmt::Debug;))
         .collect::<Vec<_>>();
 
     let proto_version = quote! {
@@ -284,29 +297,47 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             const PROTOCOL_VERSION: u32;
             const PROTOCOL_BRANCH: &str;
             const GAME_VERSION: &str;
+            const RAKNET_VERSION: u8;
         }
     };
 
-    let mut cumulative_packets = HashMap::<Ident, proc_macro2::TokenStream>::new();
-    let mut cumulative_types = HashMap::<Ident, proc_macro2::TokenStream>::new();
-    let mut cumulative_enums = HashMap::<Ident, proc_macro2::TokenStream>::new();
+    let mut previous_raknet_version: Option<u8> = None;
+    let mut previous_packets = HashMap::<Ident, proc_macro2::TokenStream>::new();
+    let mut previous_types = HashMap::<Ident, proc_macro2::TokenStream>::new();
+    let mut previous_enums = HashMap::<Ident, proc_macro2::TokenStream>::new();
 
     let mut versions_stream = proc_macro2::TokenStream::new();
     for entry in &versions_vec {
-        if let Err(e) = collapse(&entry.packets, &mut cumulative_packets) {
+        if let Err(e) = collapse(&entry.packets, &mut previous_packets) {
             return e.into_compile_error().into();
         }
-        if let Err(e) = collapse(&entry.types, &mut cumulative_types) {
+        if let Err(e) = collapse(&entry.types, &mut previous_types) {
             return e.into_compile_error().into();
         }
-        if let Err(e) = collapse(&entry.enums, &mut cumulative_enums) {
+        if let Err(e) = collapse(&entry.enums, &mut previous_enums) {
             return e.into_compile_error().into();
         }
+
+        if let Some(raknet_version) = entry.raknet_version {
+            previous_raknet_version = Some(raknet_version);
+        }
+
+        let Some(raknet_version) = previous_raknet_version else {
+            return syn::Error::new(Span::call_site(), "raknet_version not defined")
+                .into_compile_error()
+                .into();
+        };
+
+        let version = entry.version;
+        let branch = entry.branch.clone();
+        let game_version = entry.game_version.clone();
+
+        let struct_ident = Ident::new(format!("V{}", version).as_str(), Span::call_site());
 
         let proto_version_packets_impl = all_packets
             .iter()
             .map(|k| {
-                if let Some(v) = cumulative_packets.get(k) {
+                if let Some(v) = previous_packets.get(k) {
                     quote!(type #k = #v;)
                 } else {
                     quote!(type #k = ();)
@@ -317,7 +348,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         let proto_version_types_impl = all_types
             .iter()
             .map(|k| {
-                if let Some(v) = cumulative_types.get(k) {
+                if let Some(v) = previous_types.get(k) {
                     quote!(type #k = #v;)
                 } else {
                     quote!(type #k = ();)
@@ -328,7 +359,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         let proto_version_enums_impl = all_enums
             .iter()
             .map(|k| {
-                if let Some(v) = cumulative_enums.get(k) {
+                if let Some(v) = previous_enums.get(k) {
                     quote!(type #k = #v;)
                 } else {
                     quote!(type #k = ();)
@@ -336,15 +367,108 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             })
             .collect::<Vec<_>>();
 
-        let version = entry.version;
-        let branch = entry.branch.clone();
-        let game_version = entry.game_version.clone();
+        let packet_variants = previous_packets
+            .keys()
+            .map(|k| {
+                quote! { #k(<Self as ProtoVersionPackets>::#k), }
+            })
+            .collect::<Vec<_>>();
 
-        let struct_ident = Ident::new(format!("V{}", version).as_str(), Span::call_site());
+        let packet_id = previous_packets.keys().map(|name| {
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ID; }, }
+        });
 
-        versions_stream.extend(quote! {
+        let packet_compress = previous_packets.keys().map(|name| {
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::COMPRESS; }, }
+        });
+
+        let packet_encrypt = previous_packets.keys().map(|name| {
+            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ENCRYPT; }, }
+        });
+
+        let packet_size_prediction = previous_packets.keys().map(|name| {
+            quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::size_hint(pk), }
+        });
+
+        let packet_ser = previous_packets.keys().map(|name| {
+            quote! {
+                #struct_ident::#name(pk) => {
+                    match <<#struct_ident as ProtoVersionPackets>::#name as bedrockrs_proto_core::ProtoCodec>::serialize(pk, stream) {
+                        Ok(_) => {},
+                        Err(err) => return Err(err),
+                    };
+                },
+            }
+        });
+
+        let packet_de = previous_packets.keys().map(|name| {
+            quote! {
+                <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::Packet>::ID => {
+                    match <<#struct_ident as ProtoVersionPackets>::#name as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream) {
+                        Ok(pk) => #struct_ident::#name(pk),
+                        Err(e) => return Err(e),
+                    }
+                },
+            }
+        });
+
+        let version_tokens = quote! {
             #[derive(Clone, std::fmt::Debug)]
-            pub struct #struct_ident;
+            pub enum #struct_ident {
+                #(#packet_variants)*
+            }
+
+            impl ::bedrockrs_proto_core::Packets for #struct_ident {
+                #[inline]
+                fn id(&self) -> u16 {
+                    match self {
+                        #(#packet_id)*
+                    };
+                }
+
+                #[inline]
+                fn compress(&self) -> bool {
+                    match self {
+                        #(#packet_compress)*
+                    };
+                }
+
+                #[inline]
+                fn encrypt(&self) -> bool {
+                    match self {
+                        #(#packet_encrypt)*
+                    };
+                }
+
+                #[inline]
+                fn serialize<W: ::std::io::Write>(&self, header: &::bedrockrs_proto_core::PacketHeader, stream: &mut W) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                    <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::serialize(header, stream)?;
+                    match self {
+                        #(#packet_ser)*
+                    };
+
+                    Ok(())
+                }
+
+                #[inline]
+                fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<(Self, ::bedrockrs_proto_core::PacketHeader), ::bedrockrs_proto_core::error::ProtoCodecError> {
+                    let header = <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)?;
+                    let packet = match header.packet_id {
+                        #(#packet_de)*
+                        other => {
+                            return Err(::bedrockrs_proto_core::error::ProtoCodecError::InvalidPacketID(other));
+                        },
+                    };
+                    Ok((packet, header))
+                }
+
+                #[inline]
+                fn size_hint(&self, header: &::bedrockrs_proto_core::PacketHeader) -> usize {
+                    <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::size_hint(header) + match self {
+                        #(#packet_size_prediction)*
+                    }
+                }
+            }
 
             impl ProtoVersionPackets for #struct_ident {
                 #(#proto_version_packets_impl)*
@@ -362,8 +486,11 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 const PROTOCOL_VERSION: u32 = #version;
                 const PROTOCOL_BRANCH: &str = #branch;
                 const GAME_VERSION: &str = #game_version;
+                const RAKNET_VERSION: u8 = #raknet_version;
             }
-        })
+        };
+
+        versions_stream.extend(version_tokens);
     }
 
     quote! {

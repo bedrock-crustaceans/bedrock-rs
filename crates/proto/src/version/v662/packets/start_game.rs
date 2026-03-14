@@ -1,9 +1,9 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use uuid::Uuid;
 use vek::{Vec2, Vec3};
 
-#[gamepacket(id = 11)]
+#[packet(id = 11)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StartGamePacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
@@ -23,9 +23,7 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub current_level_time: u64,
     #[endianness(var)]
     pub enchantment_seed: i32,
-
     pub block_properties: Vec<BlockProperty>,
-
     pub item_list: Vec<V::ItemData>,
     pub multiplayer_correlation_id: String,
     pub enable_item_stack_net_manager: bool,

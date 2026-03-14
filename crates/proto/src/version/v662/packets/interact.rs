@@ -1,11 +1,11 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Write, copy};
 
-#[gamepacket(id = 33)]
+#[packet(id = 33)]
 #[derive(Clone, Debug)]
 pub struct InteractPacket<V: ProtoVersion> {
     pub action: Action,
@@ -40,27 +40,27 @@ pub enum Action {
 }
 
 impl<V: ProtoVersion> ProtoCodec for InteractPacket<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
-        <Action as ProtoCodec>::proto_serialize(&self.action, &mut action_stream)?;
+        <Action as ProtoCodec>::serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
         stream.write_i8(action_cursor.read_i8()?)?;
-        <V::ActorRuntimeID as ProtoCodec>::proto_serialize(&self.target_runtime_id, stream)?;
-        action_cursor.read_to_end(stream)?;
+        <V::ActorRuntimeID as ProtoCodec>::serialize(&self.target_runtime_id, stream)?;
+        copy(&mut action_cursor, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
 
         action_stream.write_i8(stream.read_i8()?)?;
-        let target_runtime_id = <V::ActorRuntimeID as ProtoCodec>::proto_deserialize(stream)?;
+        let target_runtime_id = <V::ActorRuntimeID as ProtoCodec>::deserialize(stream)?;
         stream.read_to_end(&mut action_stream)?;
 
         let mut action_cursor = Cursor::new(action_stream.as_slice());
-        let action = <Action as ProtoCodec>::proto_deserialize(&mut action_cursor)?;
+        let action = <Action as ProtoCodec>::deserialize(&mut action_cursor)?;
 
         Ok(Self {
             action,
@@ -68,8 +68,8 @@ impl<V: ProtoVersion> ProtoCodec for InteractPacket<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.action.get_size_prediction() + self.target_runtime_id.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.action.size_hint() + self.target_runtime_id.size_hint()
     }
 }
 

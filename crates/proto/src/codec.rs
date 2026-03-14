@@ -1,119 +1,133 @@
 use crate::compression::Compression;
 use crate::encryption::Encryption;
-use crate::helper::ProtoHelper;
-use bedrockrs_proto_core::GamePacketsAll;
 use bedrockrs_proto_core::error::ProtoCodecError;
-use bedrockrs_proto_core::sub_client::SubClientID;
-use std::io::Cursor;
+use bedrockrs_proto_core::{PacketHeader, Packets, ProtoCodecVAR};
+use std::io::{Cursor, Read, Write};
 
-pub fn encode_gamepackets<T: ProtoHelper>(
-    gamepackets: &[T::GamePacketType],
+pub fn encode_packets<T: Packets>(
+    packets: &[T],
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
 ) -> Result<Vec<u8>, ProtoCodecError> {
-    tracing::trace!("Encoding gamepackets");
+    tracing::trace!("Encoding packets");
 
-    let mut gamepacket_stream = batch_gamepackets::<T>(gamepackets)?;
-    gamepacket_stream = compress_gamepackets::<T>(gamepacket_stream, compression)?;
-    gamepacket_stream = encrypt_gamepackets::<T>(gamepacket_stream, encryption)?;
+    let mut packets_stream = batch_packets::<T>(packets)?;
+    packets_stream = compress_packets(packets_stream, compression)?;
+    packets_stream = encrypt_packets(packets_stream, encryption)?;
 
-    Ok(gamepacket_stream)
+    Ok(packets_stream)
 }
 
-pub fn decode_gamepackets<T: ProtoHelper>(
-    mut gamepacket_stream: Vec<u8>,
+pub fn decode_packets<T: Packets>(
+    mut packets_stream: Vec<u8>,
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
-) -> Result<Vec<T::GamePacketType>, ProtoCodecError> {
-    tracing::trace!("Decoding gamepackets");
+) -> Result<Vec<T>, ProtoCodecError> {
+    tracing::trace!("Decoding packets");
 
-    gamepacket_stream = decrypt_gamepackets::<T>(gamepacket_stream, encryption)?;
-    gamepacket_stream = decompress_gamepackets::<T>(gamepacket_stream, compression)?;
-    let gamepackets = separate_gamepackets::<T>(gamepacket_stream)?;
+    packets_stream = decrypt_packets(packets_stream, encryption)?;
+    packets_stream = decompress_packets(packets_stream, compression)?;
+    let packets = separate_packets::<T>(packets_stream)?;
 
-    Ok(gamepackets)
+    Ok(packets)
 }
 
-fn batch_gamepackets<T: ProtoHelper>(
-    gamepackets: &[T::GamePacketType],
-) -> Result<Vec<u8>, ProtoCodecError> {
-    let gamepacket_stream_size = gamepackets
+fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, ProtoCodecError> {
+    let packets_stream_size = packets
         .iter()
-        .map(T::GamePacketType::get_size_prediction)
+        .map(|p| {
+            let packet_size = p.size_hint(&PacketHeader {
+                packet_id: p.id(),
+                sender_sub_client_id: 0,
+                target_sub_client_id: 0,
+            });
+
+            <i32 as ProtoCodecVAR>::size_hint(&(packet_size as i32)) + packet_size
+        })
         .sum::<usize>();
 
-    // Create a Vector with the predicted size
-    let mut gamepacket_stream = Vec::with_capacity(gamepacket_stream_size);
+    let mut packets_stream = Vec::with_capacity(packets_stream_size);
 
-    // Batch all gamepackets together
-    gamepackets.iter().try_for_each(|gamepacket| {
-        gamepacket.pk_serialize(
-            &mut gamepacket_stream,
-            SubClientID::PrimaryClient,
-            SubClientID::PrimaryClient,
-        )
-    })?;
+    packets
+        .iter()
+        .try_for_each(|packet| -> Result<(), ProtoCodecError> {
+            let header = PacketHeader {
+                packet_id: packet.id(),
+                sender_sub_client_id: 0,
+                target_sub_client_id: 0,
+            };
 
-    Ok(gamepacket_stream)
+            let mut buf = Vec::with_capacity(packet.size_hint(&header));
+
+            packet.serialize(&header, &mut buf)?;
+
+            <u32 as ProtoCodecVAR>::serialize(&(buf.len() as u32), &mut packets_stream)?;
+            packets_stream.write_all(&buf)?;
+
+            Ok(())
+        })?;
+
+    Ok(packets_stream)
 }
 
-fn separate_gamepackets<T: ProtoHelper>(
-    gamepacket_stream: Vec<u8>,
-) -> Result<Vec<T::GamePacketType>, ProtoCodecError> {
-    let mut gamepacket_stream = Cursor::new(gamepacket_stream.as_slice());
-    let mut gamepackets = vec![];
+fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, ProtoCodecError> {
+    let mut packets_stream = Cursor::new(packets_stream.as_slice());
+    let mut packets = vec![];
 
     loop {
-        if gamepacket_stream.position() == gamepacket_stream.get_ref().len() as u64 {
+        if packets_stream.position() == packets_stream.get_ref().len() as u64 {
             break;
         }
 
-        gamepackets.push(T::GamePacketType::pk_deserialize(&mut gamepacket_stream)?.0);
+        let buf_len = <u32 as ProtoCodecVAR>::deserialize(&mut packets_stream)?;
+        let mut buf = packets_stream.by_ref().take(buf_len as u64);
+
+        packets.push(T::deserialize(&mut buf)?.0);
     }
 
-    Ok(gamepackets)
+    Ok(packets)
 }
 
-pub fn compress_gamepackets<T: ProtoHelper>(
-    mut gamepacket_stream: Vec<u8>,
+pub fn compress_packets(
+    mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
 ) -> Result<Vec<u8>, ProtoCodecError> {
     if let Some(compression) = compression {
-        gamepacket_stream = compression.compress(gamepacket_stream)?;
+        packet_stream = compression.compress(packet_stream)?;
     }
 
-    Ok(gamepacket_stream)
+    Ok(packet_stream)
 }
 
-pub fn decompress_gamepackets<T: ProtoHelper>(
-    mut gamepacket_stream: Vec<u8>,
+pub fn decompress_packets(
+    mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
 ) -> Result<Vec<u8>, ProtoCodecError> {
     if let Some(compression) = compression {
-        gamepacket_stream = compression.decompress(gamepacket_stream)?;
+        packet_stream = compression.decompress(packet_stream)?;
     }
 
-    Ok(gamepacket_stream)
+    Ok(packet_stream)
 }
 
-pub fn encrypt_gamepackets<T: ProtoHelper>(
-    mut gamepacket_stream: Vec<u8>,
+pub fn encrypt_packets(
+    mut packet_stream: Vec<u8>,
     encryption: Option<&mut Encryption>,
 ) -> Result<Vec<u8>, ProtoCodecError> {
     if let Some(encryption) = encryption {
-        gamepacket_stream = encryption.encrypt(gamepacket_stream)?;
+        packet_stream = encryption.encrypt(packet_stream)?;
     }
 
-    Ok(gamepacket_stream)
+    Ok(packet_stream)
 }
 
-pub fn decrypt_gamepackets<T: ProtoHelper>(
-    mut gamepacket_stream: Vec<u8>,
+pub fn decrypt_packets(
+    mut packet_stream: Vec<u8>,
     encryption: Option<&mut Encryption>,
 ) -> Result<Vec<u8>, ProtoCodecError> {
     if let Some(encryption) = encryption {
-        gamepacket_stream = encryption.decrypt(gamepacket_stream)?;
+        packet_stream = encryption.decrypt(packet_stream)?;
     }
 
-    Ok(gamepacket_stream)
+    Ok(packet_stream)
 }

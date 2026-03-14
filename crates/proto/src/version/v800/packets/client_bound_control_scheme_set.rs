@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 327)]
+#[packet(id = 327)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundControlSchemeSetPacket<V: ProtoVersion> {
     pub scheme: V::ControlScheme,

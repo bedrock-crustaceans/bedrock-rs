@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 149)]
+#[packet(id = 149)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerArmorDamagePacket {
     pub list: Vec<PlayerArmorDamageEntry>,

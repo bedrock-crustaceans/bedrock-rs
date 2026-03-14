@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 339)]
+#[packet(id = 339)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistActorPriorityPacket {
     pub priority_data: Vec<CameraAimAssistActorPriorityData>,

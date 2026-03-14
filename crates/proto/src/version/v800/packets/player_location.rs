@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{ProtoCodec, packet};
 use vek::Vec3;
 
-#[gamepacket(id = 326)]
+#[packet(id = 326)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerLocationPacket {
     pub update: PlayerLocationType,

@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec2;
 
-#[gamepacket(id = 316)]
+#[packet(id = 316)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistPacket<V: ProtoVersion> {
     #[endianness(le)]

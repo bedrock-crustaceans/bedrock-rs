@@ -1,12 +1,12 @@
 use std::convert::TryInto;
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use varint_rs::{VarintReader, VarintWriter};
 
 use crate::ProtoCodec;
 use crate::error::ProtoCodecError;
 
 impl ProtoCodec for String {
-    fn proto_serialize(&self, buf: &mut Vec<u8>) -> Result<(), ProtoCodecError>
+    fn serialize<W: Write>(&self, buf: &mut W) -> Result<(), ProtoCodecError>
     where
         Self: Sized,
     {
@@ -18,7 +18,7 @@ impl ProtoCodec for String {
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError>
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
     where
         Self: Sized,
     {
@@ -30,7 +30,7 @@ impl ProtoCodec for String {
         Ok(String::from_utf8(string_buf)?)
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         // 4 = u32 String size
         self.len() + 4
     }

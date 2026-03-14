@@ -35,8 +35,8 @@ pub enum ProtoCodecError {
     /// TODO: This likely hurts performance, but it is *kinda* good for debugging
     #[error("parse value `{0}` to enum variant for {1} enum")]
     InvalidEnumID(String, &'static str),
-    #[error("Got an unknown/invalid game packet id: {0}")]
-    InvalidGamePacketID(u16),
+    #[error("Got an unknown/invalid packet id: {0}")]
+    InvalidPacketID(u16),
     #[error("Expected format got mismatched: {0}")]
     FormatMismatch(&'static str),
     #[error("Compression Error: {0}")]

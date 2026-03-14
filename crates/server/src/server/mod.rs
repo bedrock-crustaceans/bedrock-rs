@@ -1,5 +1,5 @@
 use crate::error::LoginError;
-use bedrockrs_proto::listener::Listener;
+use bedrockrs_network::listener::Listener;
 use shipyard::World;
 
 pub mod builder;

@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
-use std::io::Cursor;
+use std::io::{Read, Write};
 use vek::Vec3;
 
 #[derive(Clone, Debug)]
@@ -28,56 +28,56 @@ pub struct ContainerSlotEntry {
 }
 
 impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        ProtoCodecVAR::proto_serialize(&self.id, stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        ProtoCodecVAR::serialize(&self.id, stream)?;
 
         match &self.id {
             0 => {}
             _ => {
                 let vec = self.container_slots.as_ref().unwrap();
                 let len: u32 = vec.len().try_into()?;
-                ProtoCodecVAR::proto_serialize(&len, stream)?;
+                ProtoCodecVAR::serialize(&len, stream)?;
                 for i in vec {
-                    i.proto_serialize(stream)?
+                    i.serialize(stream)?
                 }
             }
         }
 
-        self.action.proto_serialize(stream)?;
-        self.action_type.proto_serialize(stream)?;
-        self.position.proto_serialize(stream)?;
-        ProtoCodecVAR::proto_serialize(&self.face, stream)?;
-        ProtoCodecVAR::proto_serialize(&self.slot, stream)?;
-        self.item.proto_serialize(stream)?;
-        ProtoCodecLE::proto_serialize(&self.from_position, stream)?;
-        ProtoCodecLE::proto_serialize(&self.click_position, stream)?;
-        ProtoCodecVAR::proto_serialize(&self.target_block_id, stream)?;
+        self.action.serialize(stream)?;
+        self.action_type.serialize(stream)?;
+        self.position.serialize(stream)?;
+        ProtoCodecVAR::serialize(&self.face, stream)?;
+        ProtoCodecVAR::serialize(&self.slot, stream)?;
+        self.item.serialize(stream)?;
+        ProtoCodecLE::serialize(&self.from_position, stream)?;
+        ProtoCodecLE::serialize(&self.click_position, stream)?;
+        ProtoCodecVAR::serialize(&self.target_block_id, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let id = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let id = <i32 as ProtoCodecVAR>::deserialize(stream)?;
         let container_slots = match id {
             0 => None,
             _ => {
-                let len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+                let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
                 let mut vec = Vec::with_capacity(len.try_into()?);
                 for _ in 0..len {
-                    vec.push(ContainerSlotEntry::proto_deserialize(stream)?);
+                    vec.push(ContainerSlotEntry::deserialize(stream)?);
                 }
                 Some(vec)
             }
         };
-        let action = V::InventoryTransaction::proto_deserialize(stream)?;
-        let action_type = V::ItemUseInventoryTransactionType::proto_deserialize(stream)?;
-        let position = V::NetworkBlockPosition::proto_deserialize(stream)?;
-        let face = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
-        let slot = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
-        let item = V::NetworkItemStackDescriptor::proto_deserialize(stream)?;
-        let from_position = <Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?;
-        let click_position = <Vec3<f32> as ProtoCodecLE>::proto_deserialize(stream)?;
-        let target_block_id = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+        let action = V::InventoryTransaction::deserialize(stream)?;
+        let action_type = V::ItemUseInventoryTransactionType::deserialize(stream)?;
+        let position = V::NetworkBlockPosition::deserialize(stream)?;
+        let face = <i32 as ProtoCodecVAR>::deserialize(stream)?;
+        let slot = <i32 as ProtoCodecVAR>::deserialize(stream)?;
+        let item = V::NetworkItemStackDescriptor::deserialize(stream)?;
+        let from_position = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
+        let click_position = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
+        let target_block_id = <u32 as ProtoCodecVAR>::deserialize(stream)?;
 
         Ok(Self {
             id,
@@ -94,23 +94,23 @@ impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> 
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        ProtoCodecVAR::get_size_prediction(&self.id)
+    fn size_hint(&self) -> usize {
+        ProtoCodecVAR::size_hint(&self.id)
             + match &self.id {
                 0 => 0,
                 _ => {
                     let vec = self.container_slots.as_ref().unwrap();
-                    vec.len() + vec.iter().map(|i| i.get_size_prediction()).sum::<usize>()
+                    vec.len() + vec.iter().map(|i| i.size_hint()).sum::<usize>()
                 }
             }
-            + self.action.get_size_prediction()
-            + self.action_type.get_size_prediction()
-            + self.position.get_size_prediction()
-            + ProtoCodecVAR::get_size_prediction(&self.face)
-            + ProtoCodecVAR::get_size_prediction(&self.slot)
-            + self.item.get_size_prediction()
-            + ProtoCodecLE::get_size_prediction(&self.from_position)
-            + ProtoCodecLE::get_size_prediction(&self.click_position)
-            + ProtoCodecVAR::get_size_prediction(&self.target_block_id)
+            + self.action.size_hint()
+            + self.action_type.size_hint()
+            + self.position.size_hint()
+            + ProtoCodecVAR::size_hint(&self.face)
+            + ProtoCodecVAR::size_hint(&self.slot)
+            + self.item.size_hint()
+            + ProtoCodecLE::size_hint(&self.from_position)
+            + ProtoCodecLE::size_hint(&self.click_position)
+            + ProtoCodecVAR::size_hint(&self.target_block_id)
     }
 }

@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 50)]
+#[packet(id = 50)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct InventorySlotPacket<V: ProtoVersion> {
     pub container_id: V::ContainerID,

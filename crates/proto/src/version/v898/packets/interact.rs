@@ -1,8 +1,8 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 use vek::Vec3;
 
-#[gamepacket(id = 33)]
+#[packet(id = 33)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct InteractPacket<V: ProtoVersion> {
     pub action: InteractPacketAction,

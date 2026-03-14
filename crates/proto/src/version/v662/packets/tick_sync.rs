@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 23)]
+#[packet(id = 23)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TickSyncPacket {
     #[endianness(le)]

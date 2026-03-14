@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 6)]
+#[packet(id = 6)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePacksInfoPacket {
     pub resource_pack_required: bool,
@@ -9,7 +9,6 @@ pub struct ResourcePacksInfoPacket {
     #[vec_repr(u16)]
     #[vec_endianness(le)]
     pub resource_packs: Vec<ResourcePackEntry>,
-
     pub cdn_urls: Vec<CDNUrl>,
 }
 

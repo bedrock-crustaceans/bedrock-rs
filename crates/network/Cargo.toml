@@ -1,0 +1,19 @@
+[package]
+name = "bedrockrs_network"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bedrockrs_proto = { path = "../proto" }
+bedrockrs_proto_core = { path = "../proto_core" }
+
+tokio = { workspace = true }
+byteorder = { workspace = true }
+thiserror = { workspace = true }
+rand = { workspace = true }
+
+rak-rs = { version = "0.3", default-features = false, features = [
+    "async_tokio",
+    "mcpe",
+] }
+

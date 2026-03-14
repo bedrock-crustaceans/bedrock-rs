@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 177)]
+#[packet(id = 177)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ScriptMessagePacket {
     pub message_id: String,

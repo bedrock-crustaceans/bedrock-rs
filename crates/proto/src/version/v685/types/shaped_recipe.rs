@@ -1,7 +1,7 @@
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecVAR};
-use std::io::Cursor;
+use std::io::{Read, Write};
 use std::mem::size_of;
 use uuid::Uuid;
 
@@ -19,45 +19,45 @@ pub struct ShapedRecipe<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        self.recipe_unique_id.proto_serialize(stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        self.recipe_unique_id.serialize(stream)?;
 
         let x_len: u32 = self.ingredient_grid.len().try_into()?;
         let y_len: u32 = self.ingredient_grid[0].len().try_into()?;
-        <u32 as ProtoCodecVAR>::proto_serialize(&x_len, stream)?;
-        <u32 as ProtoCodecVAR>::proto_serialize(&y_len, stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&x_len, stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&y_len, stream)?;
         for y in &self.ingredient_grid {
             for recipe in y {
-                recipe.proto_serialize(stream)?;
+                recipe.serialize(stream)?;
             }
         }
 
-        <u32 as ProtoCodecVAR>::proto_serialize(&self.production_list.len().try_into()?, stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&self.production_list.len().try_into()?, stream)?;
         for p in &self.production_list {
-            p.proto_serialize(stream)?;
+            p.serialize(stream)?;
         }
 
-        self.recipe_id.proto_serialize(stream)?;
-        self.recipe_tag.proto_serialize(stream)?;
-        <i32 as ProtoCodecVAR>::proto_serialize(&self.priority, stream)?;
-        self.assume_symmetry.proto_serialize(stream)?;
-        self.unlocking_requirement.proto_serialize(stream)?;
-        <u32 as ProtoCodecVAR>::proto_serialize(&self.network_id, stream)?;
+        self.recipe_id.serialize(stream)?;
+        self.recipe_tag.serialize(stream)?;
+        <i32 as ProtoCodecVAR>::serialize(&self.priority, stream)?;
+        self.assume_symmetry.serialize(stream)?;
+        self.unlocking_requirement.serialize(stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&self.network_id, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let recipe_unique_id = String::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let recipe_unique_id = String::deserialize(stream)?;
 
         let ingredient_grid = {
-            let x_len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
-            let y_len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+            let x_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
+            let y_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
             let mut x_vec = Vec::with_capacity(x_len.try_into()?);
             for _ in 0..x_len {
                 let mut y_vec = Vec::with_capacity(y_len.try_into()?);
                 for _ in 0..y_len {
-                    y_vec.push(V::RecipeIngredient::proto_deserialize(stream)?);
+                    y_vec.push(V::RecipeIngredient::deserialize(stream)?);
                 }
                 x_vec.push(y_vec);
             }
@@ -65,20 +65,20 @@ impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
         };
 
         let production_list = {
-            let len = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+            let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
             let mut vec = Vec::with_capacity(len.try_into()?);
             for _ in 0..len {
-                vec.push(V::NetworkItemInstanceDescriptor::proto_deserialize(stream)?);
+                vec.push(V::NetworkItemInstanceDescriptor::deserialize(stream)?);
             }
             vec
         };
 
-        let recipe_id = Uuid::proto_deserialize(stream)?;
-        let recipe_tag = String::proto_deserialize(stream)?;
-        let priority = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
-        let assume_symmetry = bool::proto_deserialize(stream)?;
-        let unlocking_requirement = V::RecipeUnlockingRequirement::proto_deserialize(stream)?;
-        let network_id = <u32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+        let recipe_id = Uuid::deserialize(stream)?;
+        let recipe_tag = String::deserialize(stream)?;
+        let priority = <i32 as ProtoCodecVAR>::deserialize(stream)?;
+        let assume_symmetry = bool::deserialize(stream)?;
+        let unlocking_requirement = V::RecipeUnlockingRequirement::deserialize(stream)?;
+        let network_id = <u32 as ProtoCodecVAR>::deserialize(stream)?;
 
         Ok(Self {
             recipe_unique_id,
@@ -93,27 +93,27 @@ impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.recipe_unique_id.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.recipe_unique_id.size_hint()
             + size_of::<u32>()
             + size_of::<u32>()
             + self
                 .ingredient_grid
                 .iter()
-                .map(|y| y.iter().map(|i| i.get_size_prediction()).sum::<usize>())
+                .map(|y| y.iter().map(|i| i.size_hint()).sum::<usize>())
                 .sum::<usize>()
             + size_of::<u32>()
             + self
                 .production_list
                 .iter()
-                .map(|y| y.get_size_prediction())
+                .map(|y| y.size_hint())
                 .sum::<usize>()
-            + self.recipe_id.get_size_prediction()
-            + self.recipe_tag.get_size_prediction()
-            + self.priority.get_size_prediction()
-            + self.assume_symmetry.get_size_prediction()
-            + self.unlocking_requirement.get_size_prediction()
-            + self.network_id.get_size_prediction()
+            + self.recipe_id.size_hint()
+            + self.recipe_tag.size_hint()
+            + self.priority.size_hint()
+            + self.assume_symmetry.size_hint()
+            + self.unlocking_requirement.size_hint()
+            + self.network_id.size_hint()
     }
 }
 

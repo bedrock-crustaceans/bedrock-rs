@@ -1,6 +1,6 @@
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use bedrockrs_macros::{ProtoCodec, packet};
 
-#[gamepacket(id = 330)]
+#[packet(id = 330)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDataStorePacket {
     pub updates: Vec<ClientBoundDataStoreUpdate>,

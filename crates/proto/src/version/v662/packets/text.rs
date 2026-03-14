@@ -1,11 +1,11 @@
-use bedrockrs_macros::gamepacket;
-use bedrockrs_proto_core::error::ProtoCodecError;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::packet;
 use bedrockrs_proto_core::ProtoCodec;
+use bedrockrs_proto_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Read};
-use crate::version::proto_version::ProtoVersion;
+use std::io::{Cursor, Read, Write, copy};
 
-#[gamepacket(id = 9)]
+#[packet(id = 9)]
 #[derive(Clone, Debug)]
 pub struct TextPacket<V: ProtoVersion> {
     pub message_type: V::TextPacketType,
@@ -15,30 +15,30 @@ pub struct TextPacket<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for TextPacket<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut message_type_stream: Vec<u8> = Vec::new();
-        V::TextPacketType::proto_serialize(&self.message_type, &mut message_type_stream)?;
+        V::TextPacketType::serialize(&self.message_type, &mut message_type_stream)?;
         let mut message_type_cursor = Cursor::new(message_type_stream.as_slice());
 
         stream.write_i8(message_type_cursor.read_i8()?)?;
-        bool::proto_serialize(&self.localize, stream)?;
-        message_type_cursor.read_to_end(stream)?;
-        String::proto_serialize(&self.sender_xuid, stream)?;
-        String::proto_serialize(&self.platform_id, stream)?;
+        bool::serialize(&self.localize, stream)?;
+        copy(&mut message_type_cursor, stream)?;
+        String::serialize(&self.sender_xuid, stream)?;
+        String::serialize(&self.platform_id, stream)?;
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut sub_stream: Vec<u8> = Vec::new();
 
         sub_stream.write_i8(stream.read_i8()?)?;
-        let localize = bool::proto_deserialize(stream)?;
+        let localize = bool::deserialize(stream)?;
         stream.read_to_end(&mut sub_stream)?;
         let mut sub_cursor = Cursor::new(sub_stream.as_slice());
-        let message_type = V::TextPacketType::proto_deserialize(&mut sub_cursor)?;
-        let sender_xuid = String::proto_deserialize(&mut sub_cursor)?;
-        let platform_id = String::proto_deserialize(&mut sub_cursor)?;
+        let message_type = V::TextPacketType::deserialize(&mut sub_cursor)?;
+        let sender_xuid = String::deserialize(&mut sub_cursor)?;
+        let platform_id = String::deserialize(&mut sub_cursor)?;
 
         Ok(Self {
             message_type,
@@ -48,11 +48,11 @@ impl<V: ProtoVersion> ProtoCodec for TextPacket<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.message_type.get_size_prediction()
-            + self.localize.get_size_prediction()
-            + self.sender_xuid.get_size_prediction()
-            + self.platform_id.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.message_type.size_hint()
+            + self.localize.size_hint()
+            + self.sender_xuid.size_hint()
+            + self.platform_id.size_hint()
     }
 }
 

@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 38)]
+#[packet(id = 38)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct HurtArmorPacket {
     #[endianness(var)]

@@ -1,12 +1,12 @@
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::Cursor;
+use std::io::{Read, Write};
 use std::mem::size_of;
 
 use crate::ProtoCodec;
 use crate::error::ProtoCodecError;
 
 impl ProtoCodec for bool {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError>
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
     where
         Self: Sized,
     {
@@ -18,14 +18,14 @@ impl ProtoCodec for bool {
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError>
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>
     where
         Self: Sized,
     {
         Ok(!matches!(stream.read_u8()?, 0))
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<u8>()
     }
 }

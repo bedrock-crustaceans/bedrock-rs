@@ -1,50 +1,44 @@
 extern crate core;
 
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 use crate::error::ProtoCodecError;
 
 mod endian;
-use crate::sub_client::SubClientID;
-pub use endian::*;
-
 pub mod error;
+mod header;
 pub mod sub_client;
 pub mod types;
 
+pub use endian::*;
+pub use header::*;
+
 pub trait ProtoCodec: Sized {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError>;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>;
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError>;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>;
 
-    fn get_size_prediction(&self) -> usize;
+    fn size_hint(&self) -> usize;
 }
 
-pub trait GamePacket: Sized + ProtoCodec {
+pub trait Packet: Sized + ProtoCodec {
     const ID: u16;
     const COMPRESS: bool;
     const ENCRYPT: bool;
-
-    #[inline]
-    fn get_size_prediction(&self) -> usize {
-        <Self as ProtoCodec>::get_size_prediction(self)
-    }
 }
 
-pub trait GamePacketsAll: Sized {
+pub trait Packets: Sized {
     fn id(&self) -> u16;
     fn compress(&self) -> bool;
     fn encrypt(&self) -> bool;
 
-    fn pk_serialize(
+    fn serialize<W: Write>(
         &self,
-        stream: &mut Vec<u8>,
-        subclient_sender_id: SubClientID,
-        subclient_target_id: SubClientID,
+        header: &PacketHeader,
+        stream: &mut W,
     ) -> Result<(), ProtoCodecError>;
-    fn pk_deserialize(
-        stream: &mut Cursor<&[u8]>,
-    ) -> Result<(Self, SubClientID, SubClientID), ProtoCodecError>;
 
-    fn get_size_prediction(&self) -> usize;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<(Self, PacketHeader), ProtoCodecError>;
+
+    fn size_hint(&self, header: &PacketHeader) -> usize;
 }

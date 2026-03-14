@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 324)]
+#[packet(id = 324)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerVideoCapturePacket {
     pub action: PlayerVideoCapturePacketAction,

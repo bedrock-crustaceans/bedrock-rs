@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
-use crate::version::proto_version::ProtoVersion;
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 194)]
+#[packet(id = 194)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GameTestRequestPacket<V: ProtoVersion> {
     #[endianness(var)]

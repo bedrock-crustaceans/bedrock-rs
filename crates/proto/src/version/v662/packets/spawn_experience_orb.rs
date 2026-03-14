@@ -1,7 +1,7 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 use vek::Vec3;
 
-#[gamepacket(id = 66)]
+#[packet(id = 66)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SpawnExperienceOrbPacket {
     #[endianness(le)]

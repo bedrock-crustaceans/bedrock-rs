@@ -1,12 +1,12 @@
-use crate::version::proto_version::ProtoVersion;
-use bedrockrs_macros::{ProtoCodec, gamepacket};
+use crate::version::versions::ProtoVersion;
+use bedrockrs_macros::{ProtoCodec, packet};
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::cmp::PartialEq;
-use std::io::Cursor;
+use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[gamepacket(id = 174)]
+#[packet(id = 174)]
 #[derive(Clone, Debug)]
 pub struct SubChunkPacket<V: ProtoVersion> {
     pub cache_enabled: bool,
@@ -49,64 +49,61 @@ pub struct SubChunkDataEntry<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        self.cache_enabled.proto_serialize(stream)?;
-        <i32 as ProtoCodecVAR>::proto_serialize(&self.dimension_type, stream)?;
-        self.center_pos.proto_serialize(stream)?;
-        <u32 as ProtoCodecLE>::proto_serialize(&self.sub_chunk_data.len().try_into()?, stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        self.cache_enabled.serialize(stream)?;
+        <i32 as ProtoCodecVAR>::serialize(&self.dimension_type, stream)?;
+        self.center_pos.serialize(stream)?;
+        <u32 as ProtoCodecLE>::serialize(&self.sub_chunk_data.len().try_into()?, stream)?;
         for i in &self.sub_chunk_data {
-            i.sub_chunk_pos_offset.proto_serialize(stream)?;
-            i.sub_chunk_request_result.proto_serialize(stream)?;
+            i.sub_chunk_pos_offset.serialize(stream)?;
+            i.sub_chunk_request_result.serialize(stream)?;
             if i.sub_chunk_request_result != SubChunkRequestResult::SuccessAllAir
                 || !self.cache_enabled
             {
-                i.serialized_sub_chunk
-                    .as_ref()
-                    .unwrap()
-                    .proto_serialize(stream)?;
+                i.serialized_sub_chunk.as_ref().unwrap().serialize(stream)?;
             }
-            i.height_map_data_type.proto_serialize(stream)?;
+            i.height_map_data_type.serialize(stream)?;
             if i.height_map_data_type == HeightMapDataType::HasData {
                 let height_map = i.height_map_data.as_ref().unwrap();
                 for x in height_map {
                     for y in x {
-                        y.proto_serialize(stream)?;
+                        y.serialize(stream)?;
                     }
                 }
             }
             if self.cache_enabled {
-                <u64 as ProtoCodecLE>::proto_serialize(i.blob_id.as_ref().unwrap(), stream)?;
+                <u64 as ProtoCodecLE>::serialize(i.blob_id.as_ref().unwrap(), stream)?;
             }
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let cache_enabled = bool::proto_deserialize(stream)?;
-        let dimension_type = ProtoCodecVAR::proto_deserialize(stream)?;
-        let center_pos = V::SubChunkPos::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let cache_enabled = bool::deserialize(stream)?;
+        let dimension_type = ProtoCodecVAR::deserialize(stream)?;
+        let center_pos = V::SubChunkPos::deserialize(stream)?;
         let sub_chunk_data = {
-            let len = <u32 as ProtoCodecLE>::proto_deserialize(stream)?;
+            let len = <u32 as ProtoCodecLE>::deserialize(stream)?;
             let mut vec = Vec::with_capacity(len.try_into()?);
             for _ in 0..len {
-                let sub_chunk_pos_offset = V::SubChunkPosOffset::proto_deserialize(stream)?;
-                let sub_chunk_request_result = SubChunkRequestResult::proto_deserialize(stream)?;
+                let sub_chunk_pos_offset = V::SubChunkPosOffset::deserialize(stream)?;
+                let sub_chunk_request_result = SubChunkRequestResult::deserialize(stream)?;
                 let serialized_sub_chunk = match sub_chunk_request_result
                     != SubChunkRequestResult::SuccessAllAir
                     || !cache_enabled
                 {
-                    true => Some(String::proto_deserialize(stream)?),
+                    true => Some(String::deserialize(stream)?),
                     false => None,
                 };
-                let height_map_data_type = HeightMapDataType::proto_deserialize(stream)?;
+                let height_map_data_type = HeightMapDataType::deserialize(stream)?;
                 let sub_chunk_height_map = match height_map_data_type == HeightMapDataType::HasData
                 {
                     true => {
                         let mut height_map: [[i8; 16]; 16] = [[0; 16]; 16];
-                        for row in &mut height_map {
-                            for value in row {
-                                *value = i8::proto_deserialize(stream)?;
+                        for x in &mut height_map {
+                            for y in x {
+                                *y = i8::deserialize(stream)?;
                             }
                         }
 
@@ -115,7 +112,7 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
                     false => None,
                 };
                 let blob_id = match cache_enabled {
-                    true => Some(ProtoCodecLE::proto_deserialize(stream)?),
+                    true => Some(ProtoCodecLE::deserialize(stream)?),
                     false => None,
                 };
 
@@ -139,28 +136,24 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
         })
     }
 
-    fn get_size_prediction(&self) -> usize {
-        self.cache_enabled.get_size_prediction()
-            + <i32 as ProtoCodecVAR>::get_size_prediction(&self.dimension_type)
-            + self.center_pos.get_size_prediction()
+    fn size_hint(&self) -> usize {
+        self.cache_enabled.size_hint()
+            + <i32 as ProtoCodecVAR>::size_hint(&self.dimension_type)
+            + self.center_pos.size_hint()
             + size_of::<u32>()
             + self
                 .sub_chunk_data
                 .iter()
                 .map(|i| {
-                    i.sub_chunk_pos_offset.get_size_prediction()
-                        + i.sub_chunk_request_result.get_size_prediction()
+                    i.sub_chunk_pos_offset.size_hint()
+                        + i.sub_chunk_request_result.size_hint()
                         + match i.sub_chunk_request_result != SubChunkRequestResult::SuccessAllAir
                             || !self.cache_enabled
                         {
-                            true => i
-                                .serialized_sub_chunk
-                                .as_ref()
-                                .unwrap()
-                                .get_size_prediction(),
+                            true => i.serialized_sub_chunk.as_ref().unwrap().size_hint(),
                             false => 0,
                         }
-                        + i.height_map_data_type.get_size_prediction()
+                        + i.height_map_data_type.size_hint()
                         + match i.height_map_data_type == HeightMapDataType::HasData {
                             true => {
                                 let height_map = i.height_map_data.as_ref().unwrap();

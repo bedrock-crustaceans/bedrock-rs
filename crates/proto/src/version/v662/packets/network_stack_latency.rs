@@ -1,6 +1,6 @@
-use bedrockrs_macros::{gamepacket, ProtoCodec};
+use bedrockrs_macros::{packet, ProtoCodec};
 
-#[gamepacket(id = 115)]
+#[packet(id = 115)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NetworkStackLatencyPacket {
     #[endianness(le)]
