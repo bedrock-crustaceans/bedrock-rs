@@ -41,7 +41,7 @@ async fn main() {
     listener.start().await.unwrap();
 
     loop {
-        let conn = listener.accept().await.unwrap();
+        let conn = listener.accept::<V924>().await.unwrap();
 
         tokio::spawn(async move {
             handle_login(conn).await;
@@ -49,17 +49,17 @@ async fn main() {
     }
 }
 
-async fn handle_login(mut conn: Connection) {
+async fn handle_login(mut conn: Connection<V924>) {
     let time_start = Instant::now();
 
     // RequestNetworkSettings
-    conn.recv::<V924>().await.unwrap();
+    conn.recv().await.unwrap();
     println!("RequestNetworkSettings");
 
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send::<V924>(&[V924::NetworkSettingsPacket(NetworkSettingsPacket {
+    conn.send(&[V924::NetworkSettingsPacket(NetworkSettingsPacket {
         compression_threshold: 1,
         compression_algorithm: PacketCompressionAlgorithm::None,
         client_throttle_enabled: false,
@@ -73,10 +73,10 @@ async fn handle_login(mut conn: Connection) {
     conn.compression = Some(compression);
 
     // Login
-    conn.recv::<V924>().await.unwrap();
+    conn.recv().await.unwrap();
     println!("Login");
 
-    conn.send::<V924>(&[
+    conn.send(&[
         V924::PlayStatusPacket(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
         }),
@@ -106,12 +106,12 @@ async fn handle_login(mut conn: Connection) {
     println!("ResourcePacksInfo");
     println!("ResourcePackStack");
 
-    println!("{:#?}", conn.recv::<V924>().await.unwrap());
+    println!("{:#?}", conn.recv().await.unwrap());
     println!("ClientCacheStatus");
-    println!("{:#?}", conn.recv::<V924>().await.unwrap());
+    println!("{:#?}", conn.recv().await.unwrap());
     println!("ResourcePackClientResponse");
 
-    conn.send::<V924>(&[V924::VoxelShapesPacket(VoxelShapesPacket {
+    conn.send(&[V924::VoxelShapesPacket(VoxelShapesPacket {
         shapes: vec![],
         names: vec![],
     })])
@@ -218,12 +218,10 @@ async fn handle_login(mut conn: Connection) {
         owner_id: "".to_string(),
     };
 
-    conn.send::<V924>(&[V924::StartGamePacket(packet1)])
-        .await
-        .unwrap();
+    conn.send(&[V924::StartGamePacket(packet1)]).await.unwrap();
     println!("StartGame");
 
-    conn.send::<V924>(&[V924::PlayStatusPacket(PlayStatusPacket {
+    conn.send(&[V924::PlayStatusPacket(PlayStatusPacket {
         status: PlayStatus::PlayerSpawn,
     })])
     .await
@@ -233,7 +231,7 @@ async fn handle_login(mut conn: Connection) {
     println!("Finished request in {:?}", time_start.elapsed());
 
     loop {
-        let res = conn.recv::<V924>().await;
+        let res = conn.recv().await;
 
         if let Ok(packet) = res {
             println!("Found packet: {:?}", packet);

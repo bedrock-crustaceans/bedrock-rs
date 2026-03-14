@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, watch};
 use tokio::time::Interval;
 
 pub async fn shard<'t, T: Packets + Send + Sync + 't + 'static>(
-    mut connection: Connection,
+    mut connection: Connection<T>,
     // TODO: Look into making flush_interval optional
     _flush_interval: Interval,
     packet_buffer_size: usize,
@@ -51,11 +51,11 @@ pub async fn shard<'t, T: Packets + Send + Sync + 't + 'static>(
                         break 'select;
                     }
 
-                    connection.send::<T>(packets.as_slice()).await.unwrap();
+                    connection.send(packets.as_slice()).await.unwrap();
                     //println!("Sent {packets:#?}");
                     packets.clear();
                 },
-                res = connection.recv::<T>() => {
+                res = connection.recv() => {
                     match res {
                         Ok(packets) => for packet in packets {
                             //println!("Received {packet:#?}");

@@ -8,6 +8,7 @@ use crate::connection::Connection;
 use crate::error::{ListenerError, RakNetError, TransportLayerError};
 use crate::transport::TransportLayerListener;
 use bedrockrs_proto::info::MINECRAFT_EDITION_MOTD;
+use bedrockrs_proto_core::Packets;
 
 #[allow(dead_code)]
 pub struct Listener {
@@ -82,7 +83,7 @@ impl Listener {
         Ok(())
     }
 
-    pub async fn accept(&mut self) -> Result<Connection, ListenerError> {
+    pub async fn accept<V: Packets>(&mut self) -> Result<Connection<V>, ListenerError> {
         let rak_conn = self.listener.accept().await?;
 
         Ok(Connection::from_transport_conn(rak_conn))
