@@ -108,8 +108,8 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
     fn size_hint(&self) -> usize {
         size_of::<bool>()
             + match &self.is_block {
-                true => self.target_runtime_id.as_ref().unwrap().size_hint(),
-                false => {
+                false => self.target_runtime_id.as_ref().unwrap().size_hint(),
+                true => {
                     self.block_position.as_ref().unwrap().size_hint()
                         + self.command_block_mode.as_ref().unwrap().size_hint()
                         + size_of::<bool>()
