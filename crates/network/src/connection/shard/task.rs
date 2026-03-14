@@ -8,7 +8,7 @@ use tokio::sync::watch::Ref;
 use tokio::sync::{mpsc, watch};
 use tokio::time::Interval;
 
-pub async fn shard<'t, T: Packets + Send + Sync + 't>(
+pub async fn shard<'t, T: Packets + Send + Sync + 't + 'static>(
     mut connection: Connection,
     // TODO: Look into making flush_interval optional
     _flush_interval: Interval,
