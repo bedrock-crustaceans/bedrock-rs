@@ -97,7 +97,7 @@ server = ["dep:bedrockrs_server", "proto", "level", "form"]
 [[example]]
 name = "proto_server"
 path = "examples/proto/server.rs"
-required-features = ["proto"]
+required-features = ["network"]
 
 [[example]]
 name = "proto_parsing"

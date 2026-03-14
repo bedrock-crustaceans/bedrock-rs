@@ -23,7 +23,14 @@ pub mod proto {
 
     pub mod error {
         pub use ::bedrockrs_proto_core::error::*;
-        pub use bedrockrs_network::error::*;
+    }
+}
+
+#[cfg(feature = "network")]
+pub mod network {
+    pub use ::bedrockrs_network::*;
+    pub mod error {
+        pub use ::bedrockrs_network::error::*;
     }
 }
 

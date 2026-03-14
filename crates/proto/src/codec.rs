@@ -1,8 +1,8 @@
 use crate::compression::Compression;
 use crate::encryption::Encryption;
 use bedrockrs_proto_core::error::ProtoCodecError;
-use bedrockrs_proto_core::{PacketHeader, Packets};
-use std::io::Cursor;
+use bedrockrs_proto_core::{PacketHeader, Packets, ProtoCodecVAR};
+use std::io::{Cursor, Read, Write};
 
 pub fn encode_packets<T: Packets>(
     packets: &[T],
@@ -36,26 +36,36 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, ProtoCodecError> 
     let packets_stream_size = packets
         .iter()
         .map(|p| {
-            p.size_hint(&PacketHeader {
+            let packet_size = p.size_hint(&PacketHeader {
                 packet_id: p.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
-            })
+            });
+
+            <i32 as ProtoCodecVAR>::size_hint(&(packet_size as i32)) + packet_size
         })
         .sum::<usize>();
 
     let mut packets_stream = Vec::with_capacity(packets_stream_size);
 
-    packets.iter().try_for_each(|packet| {
-        packet.serialize(
-            &PacketHeader {
+    packets
+        .iter()
+        .try_for_each(|packet| -> Result<(), ProtoCodecError> {
+            let header = PacketHeader {
                 packet_id: packet.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
-            },
-            &mut packets_stream,
-        )
-    })?;
+            };
+
+            let mut buf = Vec::with_capacity(packet.size_hint(&header));
+
+            packet.serialize(&header, &mut buf)?;
+
+            <u32 as ProtoCodecVAR>::serialize(&(buf.len() as u32), &mut packets_stream)?;
+            packets_stream.write_all(&buf)?;
+
+            Ok(())
+        })?;
 
     Ok(packets_stream)
 }
@@ -69,7 +79,10 @@ fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, Proto
             break;
         }
 
-        packets.push(T::deserialize(&mut packets_stream)?.0);
+        let buf_len = <u32 as ProtoCodecVAR>::deserialize(&mut packets_stream)?;
+        let mut buf = packets_stream.by_ref().take(buf_len as u64);
+
+        packets.push(T::deserialize(&mut buf)?.0);
     }
 
     Ok(packets)
