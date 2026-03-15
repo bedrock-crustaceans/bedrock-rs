@@ -1,6 +1,12 @@
 use bedrockrs_macros::define_versions;
 
 define_versions![
+    (0, "r/0_u0", "0.0.0"): {
+        raknet_version: 10,
+        packets: [
+            + RequestNetworkSettingsPacket: RequestNetworkSettingsPacket,
+        ] in crate::version::unknown::packets,
+    } as Unknown,
     (662, "r/20_u7", "1.20.70"): {
         raknet_version: 11,
         packets: [
@@ -131,7 +137,6 @@ define_versions![
             + RemoveVolumeEntityPacket: RemoveVolumeEntityPacket^,
             + RequestAbilityPacket: RequestAbilityPacket^,
             + RequestChunkRadiusPacket: RequestChunkRadiusPacket,
-            + RequestNetworkSettingsPacket: RequestNetworkSettingsPacket,
             + RequestPermissionsPacket: RequestPermissionsPacket^,
             + ResourcePackChunkDataPacket: ResourcePackChunkDataPacket,
             + ResourcePackChunkRequestPacket: ResourcePackChunkRequestPacket,
@@ -200,6 +205,7 @@ define_versions![
             + UpdateSoftEnumPacket: UpdateSoftEnumPacket^,
             + UpdateSubChunkBlocksPacket: UpdateSubChunkBlocksPacket^,
             + UpdateTradePacket: UpdateTradePacket^,
+            % RequestNetworkSettingsPacket: RequestNetworkSettingsPacket,
         ] in crate::version::v662::packets,
         types: [
             + ActorLink: ActorLink^,
