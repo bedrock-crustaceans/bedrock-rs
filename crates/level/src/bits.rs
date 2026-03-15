@@ -100,7 +100,7 @@ impl BitArray {
     }
 
     /// Serializes this array in disk format.
-    pub fn to_disk<W: Write>(&self, mut writer: W, palette_size: usize) -> Result<()> {
+    pub fn to_disk(&self, writer: &mut Vec<u8>, palette_size: usize) -> Result<()> {
         let mut bits = 0;
         for b in VALID_BITS {
             if 2usize.pow(b as u32) >= palette_size {
