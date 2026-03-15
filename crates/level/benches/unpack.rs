@@ -20,14 +20,19 @@ fn extract_test_db() -> tempfile::TempDir {
     tmp
 }
 
-fn unpack_regular(packed: &PackedArray) {
+fn unpack_regular(bits: u32, packed: &PackedArray) {
     let mut indices = [0; 4096];
-    UnpackedArray::unpack_nonsimd(packed.bits() as u8, packed.words(), &mut indices);
+    UnpackedArray::unpack_nonsimd(bits as u8, packed.words(), &mut indices);
 }
 
-fn unpack_oct1(packed: &PackedArray) {
+fn unpack_oct(bits: u32, packed: &PackedArray) {
     let mut indices = [0; 4096];
-    unsafe { UnpackedArray::unpack_oct::<1>(packed.words(), &mut indices); }
+    match bits {
+        1 => unsafe { UnpackedArray::unpack_oct::<1>(packed.words(), &mut indices); },
+        2 => unsafe { UnpackedArray::unpack_oct::<2>(packed.words(), &mut indices); },
+        4 => unsafe { UnpackedArray::unpack_oct::<4>(packed.words(), &mut indices); },
+        _ => unimplemented!()
+    }
 }
 
 fn benchmark(c: &mut Criterion) {
@@ -44,27 +49,29 @@ fn benchmark(c: &mut Criterion) {
         0b11111111000000000000000000000000
     ];
 
-    words.resize(128, 0b11111111000000000000000000000000);
+    words.resize(4096, 0b11111111000000000000000000000000);
 
     let array = PackedArray::new(
         1, words
     );
 
     let mut group = c.benchmark_group("unpack");
-    group.throughput(Throughput::ElementsAndBytes {
-        bytes: array.word_count() as u64,
-        elements: 4096
-    });
-    group.bench_with_input(
-        BenchmarkId::new("nonvectorized", array.word_count()),
-        &array,
-        |b, i| b.iter(|| unpack_regular(i))
-    );
-    group.bench_with_input(
-        BenchmarkId::new("vectorized_oct1bit", array.word_count()),
-        &array,
-        |b, i| b.iter(|| unpack_oct1(i))
-    );
+    for bits in [1, 2, 4] {
+        group.throughput(Throughput::ElementsAndBytes {
+            bytes: 4096 / (32 / bits as u64),
+            elements: 4096
+        });
+        group.bench_with_input(
+            BenchmarkId::new("nonvectorized", bits),
+            &array,
+            |b, i| b.iter(|| unpack_regular(bits, i))
+        );
+        group.bench_with_input(
+            BenchmarkId::new("vectorized_simd256", bits),
+            &array,
+            |b, i| b.iter(|| unpack_oct(bits, i))
+        );
+    }
     group.finish();
 }
 

@@ -15,7 +15,7 @@ name = "subchunk"
 harness = false
 
 [[bench]]
-name = "packed_array"
+name = "unpack"
 harness = false
 
 [dependencies]

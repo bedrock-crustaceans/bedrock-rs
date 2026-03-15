@@ -81,38 +81,45 @@ impl UnpackedArray {
 
     #[inline]
     #[target_feature(enable = "avx2")]
-    pub fn unpack_oct<const BITS: u8>(words: &[u32], indices: &mut [u16; 4096]) {
+    pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm256_set_epi32, _mm256_set1_epi32, _mm256_srlv_epi32,
-            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
-            _mm
+            __m256i, _mm256_loadu_si256, _mm256_set_epi32, _mm256_set1_epi32, _mm256_srlv_epi32,
+            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64
         };
 
-        let blocks_per_word = u32::BITS / BITS as u32;
+        const SIMD_LANES: u32 = 8;
 
-        let mut w = 0;
-        let mut i = 0;
+        let blocks_per_word = u32::BITS / BITS as u32;
+        let sets_per_word = blocks_per_word / SIMD_LANES;
+
+        // Limit words to max size for these bits
+        let max_len = 4096 / blocks_per_word;
+        words = &words[..max_len as usize];
 
         match BITS {
-            1 => {
+            1 | 2 | 4 => {
                 let bits = BITS as i32;
 
                 let vmask = _mm256_set1_epi32(!(!0u32 << bits) as i32);
 
                 // Shifts each of the 8 lanes to their respective location in the word
+                // This is in reverse because the first argument is for the last line, etc.
                 let vshift = _mm256_set_epi32(
-                    0,
-                    bits,
-                    2 * bits,
-                    3 * bits,
-                    4 * bits,
-                    5 * bits,
+                    7 * bits,
                     6 * bits,
-                    7 * bits
+                    5 * bits,
+                    4 * bits,
+                    3 * bits,
+                    2 * bits,
+                    bits,
+                    0
                 );
 
                 // Shifts all lanes to their next location in the word.
                 let vshiftall = _mm256_set1_epi32(8 * bits);
+
+                let mut w = 0;
+                let mut offset = 0;
 
                 // Decode 32 blocks per word.
                 // We do this in 4 sets of 8
@@ -120,14 +127,13 @@ impl UnpackedArray {
                     let mut vword = _mm256_set1_epi32(words[w] as i32);
                     vword = _mm256_srlv_epi32(vword, vshift);
 
-                    while i + 8 < blocks_per_word as usize {
-                        // println!("at set {i}");
-
+                    let mut s = 0;
+                    while s < sets_per_word - 1 {
                         let vmasked = _mm256_and_si256(vword, vmask);
                         let vpack = _mm256_packus_epi32(vmasked, vmasked);
                         let vshorts = unsafe { _mm256_permutex_epi64(vpack, 0b11011000) };
-                        let offset = w * blocks_per_word as usize + i;
 
+                        debug_assert!(offset <= 4080);
                         unsafe {
                             std::ptr::copy_nonoverlapping(
                                 &vshorts as *const __m256i as *const u16,
@@ -136,16 +142,18 @@ impl UnpackedArray {
                             );
                         }
 
-                        i += 8;
                         vword = _mm256_srlv_epi32(vword, vshiftall);
+
+                        offset += 8;
+                        s += 1;
                     }
 
                     // Last set does not need a shift all at the end
                     let vmasked = _mm256_and_si256(vword, vmask);
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
                     let vshorts = unsafe { _mm256_permutex_epi64(vpack, 0b11011000) };
-                    let offset = (w + 1) * blocks_per_word as usize - 8;
 
+                    debug_assert!(offset <= 4088);
                     unsafe {
                         std::ptr::copy_nonoverlapping(
                             &vshorts as *const __m256i as *const u16,
@@ -154,7 +162,7 @@ impl UnpackedArray {
                         );
                     }
 
-                    i = 0;
+                    offset += 8;
                     w += 1;
                 }
             },
@@ -162,63 +170,12 @@ impl UnpackedArray {
         }
     }
 
-    // #[inline]
-    // #[target_feature(enable = "avx2")]
-    // fn unpack_eight(bits: u8, words: &[u32], indices: &mut [u16; 4096]) {
-    //     const SIMD_LANES: u32 = 8;
-
-    //     // Use specialised decoding functions for specific bit sizes.
-
-    //     Bits	BPB	    SIMD lanes
-    //     1	    32	    8		
-    //     2	    16	    8		
-    //     3 	    10	    8		
-    //     4	    8	    8		
-    //     5	    6	
-    //     6	    5	
-    //     8	    4	    4		
-    //     16	    2	    None		
-    // }
-
-    /// This function should only be called when the amount of blocks per word is greater than or equal to 4
-    /// and less than 8 (or in Rust range notation 4..8), otherwise it will give incorrect results.
     #[inline]
-    #[target_feature(enable = "avx2")]
-    fn unpack_quad(bits: u8, words: &[u32], indices: &mut [u16; 4096]) {
-        use std::arch::x86_64::{
-            __m128i, _mm_set_epi32, _mm_set1_epi32, _mm_srl_epi32, _mm_and_si128
-        };
-
-        const SIMD_LANES: u32 = 4;
-
+    pub fn unpack_nonsimd(bits: u8, mut words: &[u32], indices: &mut [u16]) {
         let per_word = u32::BITS / bits as u32;
-        let simd_iters = per_word / SIMD_LANES;
-        let rem_iters = per_word - SIMD_LANES * simd_iters;
+        let max_len = 4096 / per_word;
+        words = &words[..max_len as usize];
 
-        let mask = !(!0u32 << bits);
-
-        let vmask = _mm_set1_epi32(mask as i32);
-        let vshift = _mm_set_epi32(
-            0,
-            bits as i32,
-            2 * bits as i32,
-            3 * bits as i32
-        );
-
-        for word in words.iter().copied() {
-            let vword = _mm_set1_epi32(word as i32);
-            let vbits = _mm_srl_epi32(vword, vshift);
-            let vmasked = _mm_and_si128(vbits, vmask);
-
-            for _ in 0..rem_iters {
-                
-            }
-        }
-    }
-
-    #[inline]
-    pub fn unpack_nonsimd(bits: u8, words: &[u32], indices: &mut [u16]) {
-        let per_word = u32::BITS / bits as u32;
         let mask = !(!0u32 << bits);
 
         let mut offset = 0;
