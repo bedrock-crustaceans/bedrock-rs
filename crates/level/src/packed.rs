@@ -18,7 +18,7 @@ impl PackedArray {
     }
 
     /// Returns the amount of words that are in this array.
-    pub fn words_count(&self) -> usize {
+    pub fn word_count(&self) -> usize {
         self.words.len()
     }
 

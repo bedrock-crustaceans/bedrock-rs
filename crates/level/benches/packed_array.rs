@@ -21,71 +21,50 @@ fn extract_test_db() -> tempfile::TempDir {
 }
 
 fn unpack_regular(packed: &PackedArray) {
-    let mut indices = Box::new([0; 4096]);
-    UnpackedArray::unpack_nonsimd(packed.bits() as u8, packed.words(), indices.as_mut());
-
-    println!("regular indices: {indices:?}");
+    let mut indices = [0; 4096];
+    UnpackedArray::unpack_nonsimd(packed.bits() as u8, packed.words(), &mut indices);
 }
 
-fn unpack_vectorized(packed: &PackedArray) {
-    let mut indices = Box::new([0; 4096]);
-    unsafe { UnpackedArray::unpack_avx(packed.bits() as u8, packed.words(), indices.as_mut()); }
-
-    println!("regular indices: {indices:?}");
+fn unpack_oct1(packed: &PackedArray) {
+    let mut indices = [0; 4096];
+    unsafe { UnpackedArray::unpack_oct::<1>(packed.words(), &mut indices); }
 }
 
 fn benchmark(c: &mut Criterion) {
-    let tmp = extract_test_db();
-    let tmp_path = tmp.path().join("test_level/db");
-    let tmp_path = tmp_path.to_str().unwrap();
+    // Generate some fake data with a recognisable pattern.
+    let mut words = vec![
+        0b10101010101010101010101010101010,
+        0b10000000000000000000000000000000,
+        0b11000000000000000000000000000000,
+        0b11100000000000000000000000000000,
+        0b11110000000000000000000000000000,
+        0b11111000000000000000000000000000,
+        0b11111100000000000000000000000000,
+        0b11111110000000000000000000000000,
+        0b11111111000000000000000000000000
+    ];
 
-    let database = Database::open(tmp_path).unwrap();
-    let mut keys = database.keys();
+    words.resize(128, 0b11111111000000000000000000000000);
 
-    // Find some usable subchunks.
-    let chunks = keys
-        .filter_map(|kv| {
-            let key = Key::deserialize(kv.key()).ok()?;
-            let data = Vec::from(kv.value());
+    let array = PackedArray::new(
+        1, words
+    );
 
-            if let KeyVariant::SubChunk { index } = key.data {
-                Some((Vec3::new(key.chunk.x, index as i32, key.chunk.y), data))
-            } else {
-                None
-            }
-        })
-        .take(1)
-        .collect::<Vec<_>>();
-
-    let mut group = c.benchmark_group("packed_array");
-    for (key, chunk) in &chunks {
-        let subchunk = SubChunk::from_disk::<Packed, _>(chunk.as_slice()).unwrap();
-        let layer = subchunk.layer(0);
-        let array = layer.indices();
-        let BitArray::Packed(array) = array else { unreachable!() };
-        
-        unsafe { unpack_vectorized(array) };
-        unpack_regular(array);
-
-        // group.throughput(Throughput::ElementsAndBytes {
-        //     bytes: 4 * array.words_count() as u64,
-        //     elements: 4096
-        // });
-
-        // group.bench_with_input(
-        //     BenchmarkId::new("unpack_regular", key),
-        //     array,
-        //     |b, i| b.iter(|| unpack_regular(i))
-        // );
-
-        // assert!(is_x86_feature_detected!("avx2"), "this benchmark requires AVX2 support");
-
-        // group.bench_with_input(
-        //     BenchmarkId::new("unpack_vectorized", key),
-        //     array,
-        //     |b, i| b.iter(|| unpack_vectorized(i))
-        // );
-    }
+    let mut group = c.benchmark_group("unpack");
+    group.throughput(Throughput::ElementsAndBytes {
+        bytes: array.word_count() as u64,
+        elements: 4096
+    });
+    group.bench_with_input(
+        BenchmarkId::new("nonvectorized", array.word_count()),
+        &array,
+        |b, i| b.iter(|| unpack_regular(i))
+    );
+    group.bench_with_input(
+        BenchmarkId::new("vectorized_oct1bit", array.word_count()),
+        &array,
+        |b, i| b.iter(|| unpack_oct1(i))
+    );
     group.finish();
 }
 
