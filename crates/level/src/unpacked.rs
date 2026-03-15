@@ -1,6 +1,6 @@
 use crate::{error::Result, packed::PackedArray};
 use byteorder::{LittleEndian, WriteBytesExt};
-use std::io::{Read, Write};
+use std::io::Read;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnpackedArray {
@@ -128,9 +128,8 @@ impl UnpackedArray {
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+            __m256i, _mm_set1_epi32, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
             _mm256_set_epi32, _mm256_set1_epi32, _mm256_srl_epi32, _mm256_srlv_epi32,
-            _mm_set1_epi32
         };
 
         const SIMD_LANES: u32 = 8;
@@ -140,6 +139,7 @@ impl UnpackedArray {
 
         // Limit words to max size for these bits
         let max_len = 4096 / blocks_per_word;
+        assert!(words.len() >= max_len as usize);
         words = &words[..max_len as usize];
 
         match BITS {
@@ -222,6 +222,11 @@ impl UnpackedArray {
                 }
             }
             8 => {
+                // When BITS = 8 we load two words per iteration. Since each word has 4 blocks,
+                // we put the first word in the lower 4 lanes and the second word in the upper 4 lanes.
+                // Then we perform the regular unpack algorithm on both words at the same time, unpacking
+                // 8 blocks from 64 bits in a single operation.
+
                 use std::arch::x86_64::{
                     _mm_set_epi32, _mm_set1_epi32, _mm256_and_si256, _mm256_packus_epi32,
                     _mm256_permutex_epi64, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srlv_epi32,
@@ -230,7 +235,9 @@ impl UnpackedArray {
                 let vmask = _mm256_set1_epi32(!(!0u32 << BITS as u32) as i32);
 
                 let bits = BITS as i32;
+                // Create a 128-bit vector with the correct shifts...
                 let vshift_half = _mm_set_epi32(3 * bits, 2 * bits, bits, 0);
+                // ... and then make another copy of
                 let vshift = _mm256_set_m128i(vshift_half, vshift_half);
 
                 let mut offset = 0;
