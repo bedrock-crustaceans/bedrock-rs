@@ -16,7 +16,7 @@ use bedrockrs_proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs_proto::v898::packets::ResourcePackStackPacket;
 use bedrockrs_proto::v924::packets::{StartGamePacket, VoxelShapesPacket};
 use bedrockrs_proto::v924::types::{GameRuleLegacyData, LevelSettings};
-use bedrockrs_proto::{ProtoVersion, V924};
+use bedrockrs_proto::{ProtoVersion, Unknown, V924};
 use bedrockrs_shared::world::dimension::Dimension;
 use std::collections::HashMap;
 use tokio::time::Instant;
@@ -41,7 +41,7 @@ async fn main() {
     listener.start().await.unwrap();
 
     loop {
-        let conn = listener.accept::<V924>().await.unwrap();
+        let conn = listener.accept().await.unwrap();
 
         tokio::spawn(async move {
             handle_login(conn).await;
@@ -49,11 +49,24 @@ async fn main() {
     }
 }
 
-async fn handle_login(mut conn: Connection<V924>) {
+async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let time_start = Instant::now();
 
     // RequestNetworkSettings
-    conn.recv().await.unwrap();
+    let packets = unknown_conn.recv().await.unwrap();
+    let mut conn = if let Some(packet) = packets.first() {
+        match packet {
+            Unknown::RequestNetworkSettingsPacket(request) => {
+                if request.client_network_version == 924 {
+                    unknown_conn.into_ver::<V924>()
+                } else {
+                    return;
+                }
+            }
+        }
+    } else {
+        return;
+    };
     println!("RequestNetworkSettings");
 
     let compression = Compression::None;

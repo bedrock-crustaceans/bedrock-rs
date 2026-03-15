@@ -2,6 +2,7 @@ pub mod shard;
 
 use crate::error::ConnectionError;
 use crate::transport::TransportLayerConnection;
+use bedrockrs_proto::Unknown;
 use bedrockrs_proto::codec::{decode_packets, encode_packets};
 use bedrockrs_proto::compression::Compression;
 use bedrockrs_proto::encryption::Encryption;
@@ -19,6 +20,17 @@ pub struct Connection<V: Packets> {
     /// login process, if encryption is enabled
     pub encryption: Option<Encryption>,
     _version_marker: PhantomData<V>,
+}
+
+impl Connection<Unknown> {
+    pub fn into_ver<V: Packets>(self) -> Connection<V> {
+        Connection::<V> {
+            transport_layer: self.transport_layer,
+            compression: self.compression,
+            encryption: self.encryption,
+            _version_marker: PhantomData,
+        }
+    }
 }
 
 impl<V: Packets> Connection<V> {
