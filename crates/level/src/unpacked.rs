@@ -1,3 +1,4 @@
+use std::arch::x86_64::{_mm256_castsi256_si128, _mm_set1_epi32};
 use crate::{error::Result, packed::PackedArray};
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Read, Write};
@@ -75,16 +76,67 @@ impl UnpackedArray {
         match bits {
             1 => Self::unpack_oct::<1>(words, indices),
             2 => Self::unpack_oct::<2>(words, indices),
-            _ => todo!()
+            4 => Self::unpack_oct::<4>(words, indices),
+            // TODO: Implement for other bit sizes
+            _ => Self::unpack_nonsimd(bits, words, indices)
         }
     }
+
+    // TODO: This function is even faster but the output format makes it difficult to use.
+    // #[inline]
+    // #[target_feature(enable = "avx2")]
+    // pub unsafe fn unpack_oct_interleaved<const BITS: i32>(mut words: &[u32], indices: &mut [u16; 4096]) {
+    //     use std::arch::x86_64::{
+    //         __m256i, _mm256_loadu_si256, _mm256_set1_epi32, _mm256_srlv_epi32,
+    //         _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+    //         _mm256_castsi256_si128, _mm256_srli_epi32
+    //     };
+    //
+    //     const SIMD_LANES: u32 = 8;
+    //
+    //     let blocks_per_word = u32::BITS / BITS as u32;
+    //     let word_count = 4096 / blocks_per_word;
+    //     words = &words[..word_count as usize];
+    //
+    //     let vmask = _mm256_set1_epi32(!(!0u32 << BITS as u32) as i32);
+    //     let vshift = _mm256_set1_epi32(BITS as i32);
+    //
+    //     let mut offset = 0;
+    //     let (chunks, rem) = words.as_chunks::<8>();
+    //     for chunk in chunks {
+    //         let mut vwords = unsafe {
+    //             _mm256_loadu_si256(chunk.as_ptr().cast::<__m256i>())
+    //         };
+    //
+    //         for _ in 0..blocks_per_word {
+    //             let vmasked = _mm256_and_si256(vwords, vmask);
+    //             let vpacked = _mm256_packus_epi32(vmasked, vmasked);
+    //             let vperm = unsafe { _mm256_permutex_epi64::<0b11011000>(vpacked) };
+    //
+    //             let vtrunc = _mm256_castsi256_si128(vperm);
+    //             debug_assert!(offset <= 4088);
+    //             unsafe {
+    //                 std::ptr::copy_nonoverlapping(
+    //                     (&raw const vtrunc).cast::<u16>(),
+    //                     indices.as_mut_ptr().add(offset),
+    //                     8
+    //                 );
+    //             }
+    //
+    //             offset += 8;
+    //
+    //             vwords = _mm256_srli_epi32::<BITS>(vwords);
+    //         }
+    //     }
+    // }
 
     #[inline]
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm256_loadu_si256, _mm256_set_epi32, _mm256_set1_epi32, _mm256_srlv_epi32,
-            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64
+            __m256i, _mm256_set_epi32, _mm256_set1_epi32, _mm256_srlv_epi32,
+            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+            _mm256_srl_epi32
         };
 
         const SIMD_LANES: u32 = 8;
@@ -116,21 +168,27 @@ impl UnpackedArray {
                 );
 
                 // Shifts all lanes to their next location in the word.
-                let vshiftall = _mm256_set1_epi32(8 * bits);
+                let vshiftall = _mm_set1_epi32(8 * bits);
 
                 let mut w = 0;
                 let mut offset = 0;
 
                 // Decode 32 blocks per word.
-                // We do this in 4 sets of 8
+                // We do this in 4 sets of 8 for BITS = 1
+                // or 2 sets of 8 for BITS = 2
+                // or 1 set of 8 for BITS = 4
                 while w < words.len() {
                     let mut vword = _mm256_set1_epi32(words[w] as i32);
+
+                    // Use variable shifts since each lane needs to be shifted by a different amount.
                     vword = _mm256_srlv_epi32(vword, vshift);
 
                     let mut s = 0;
                     while s < sets_per_word - 1 {
+                        // Applies the mask to extract the bits
                         let vmasked = _mm256_and_si256(vword, vmask);
                         let vpack = _mm256_packus_epi32(vmasked, vmasked);
+                        // Fix the ordering of the lanes.
                         let vshorts = unsafe { _mm256_permutex_epi64(vpack, 0b11011000) };
 
                         debug_assert!(offset <= 4080);
@@ -142,7 +200,10 @@ impl UnpackedArray {
                             );
                         }
 
-                        vword = _mm256_srlv_epi32(vword, vshiftall);
+                        // This uses an `srl` intrinsics instead of an `srlv` one because
+                        // `vshiftall` is the same for all lanes. This gives a 24% performance
+                        // boost for BITS = 1 and 15% for BITS = 2.
+                        vword = _mm256_srl_epi32(vword, vshiftall);
 
                         offset += 8;
                         s += 1;
@@ -151,7 +212,7 @@ impl UnpackedArray {
                     // Last set does not need a shift all at the end
                     let vmasked = _mm256_and_si256(vword, vmask);
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
-                    let vshorts = unsafe { _mm256_permutex_epi64(vpack, 0b11011000) };
+                    let vshorts = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
 
                     debug_assert!(offset <= 4088);
                     unsafe {
@@ -166,6 +227,55 @@ impl UnpackedArray {
                     w += 1;
                 }
             },
+            8 => {
+                use std::arch::x86_64::{
+                    _mm_set1_epi32, _mm256_set_m128i, _mm256_set1_epi32, _mm_set_epi32,
+                    _mm256_and_si256, _mm256_srlv_epi32, _mm256_packus_epi32,
+                    _mm256_permutex_epi64
+                };
+
+                let vmask = _mm256_set1_epi32(!(!0u32 << BITS as u32) as i32);
+
+                let bits = BITS as i32;
+                let vshift_half = _mm_set_epi32(
+                    3 * bits, 2 * bits, bits, 0
+                );
+                let vshift = _mm256_set_m128i(vshift_half, vshift_half);
+
+                let mut offset = 0;
+
+                // 4 blocks per word so we load two words at once
+                // Safety: This is safe because 4096 / (32 / 8) = 128 is divisible by 2
+                // so we have no remainder.
+                let chunks = unsafe { words.as_chunks_unchecked::<2>() };
+                for chunk in chunks {
+                    let [a, b] = chunk;
+
+                    // Broadcast the first word into 4 lanes
+                    let vlo = _mm_set1_epi32(*a as i32);
+                    // Broadcast the second word into 4 lanes
+                    let vhi = _mm_set1_epi32(*b as i32);
+
+                    // Then combine these two into one larger vector
+                    let vwords = _mm256_set_m128i(vhi, vlo);
+
+                    let vshifted = _mm256_srlv_epi32(vwords, vshift);
+                    let vmasked = _mm256_and_si256(vshifted, vmask);
+
+                    let vpack = _mm256_packus_epi32(vmasked, vmasked);
+                    let vperm = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
+
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(
+                            &vperm as *const __m256i as *const u16,
+                            indices.as_mut_ptr().add(offset),
+                            8
+                        );
+                    }
+
+                    offset += 8;
+                }
+            }
             _ => unreachable!("invalid BITS generic for `unpack_oct`")
         }
     }

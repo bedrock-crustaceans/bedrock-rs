@@ -2,9 +2,6 @@ use bedrockrs_level::unpacked::UnpackedArray;
 
 #[test]
 fn simd_test() {
-    const BITS: u32 = 1;
-    const BLOCKS_PER_WORD: u32 = u32::BITS / BITS;
-
     // let mut words: Vec<u32> = vec![0b10101010101010101010101010101010; 4096 / BLOCKS_PER_WORD as usize];
     let mut words = vec![
         0b10101010101010101010101010101010,
@@ -25,9 +22,9 @@ fn simd_test() {
     let mut indices_regular = Box::new([0; 4096]);
 
     unsafe {
-        UnpackedArray::unpack_oct::<4>(&words, &mut indices_simd);
+        UnpackedArray::unpack_oct::<8>(&words, &mut indices_simd);
     }
 
-    UnpackedArray::unpack_nonsimd(4, &words, indices_regular.as_mut_slice());
+    UnpackedArray::unpack_nonsimd(8, &words, indices_regular.as_mut_slice());
     assert_eq!(indices_simd, indices_regular);
 }
