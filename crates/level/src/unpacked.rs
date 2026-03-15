@@ -1,4 +1,3 @@
-use std::arch::x86_64::{_mm256_castsi256_si128, _mm_set1_epi32};
 use crate::{error::Result, packed::PackedArray};
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Read, Write};
@@ -67,18 +66,13 @@ impl UnpackedArray {
 
     #[target_feature(enable = "avx2")]
     pub fn unpack_avx(bits: u8, words: &[u32], indices: &mut [u16; 4096]) {
-        use std::arch::x86_64::{
-            __m256i, __m128i, _mm256_loadu_si256, _mm256_set1_epi32, _mm256_and_si256, 
-            _mm256_srl_epi32, _mm_cvtsi32_si128, _mm256_packus_epi32, _mm256_permute4x64_epi64, 
-            _mm_storeu_si128, _mm256_castsi256_si128
-        };
-
         match bits {
             1 => Self::unpack_oct::<1>(words, indices),
             2 => Self::unpack_oct::<2>(words, indices),
             4 => Self::unpack_oct::<4>(words, indices),
+            8 => Self::unpack_oct::<8>(words, indices),
             // TODO: Implement for other bit sizes
-            _ => Self::unpack_nonsimd(bits, words, indices)
+            _ => Self::unpack_nonsimd(bits, words, indices),
         }
     }
 
@@ -134,9 +128,9 @@ impl UnpackedArray {
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm256_set_epi32, _mm256_set1_epi32, _mm256_srlv_epi32,
-            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
-            _mm256_srl_epi32
+            __m256i, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+            _mm256_set_epi32, _mm256_set1_epi32, _mm256_srl_epi32, _mm256_srlv_epi32,
+            _mm_set1_epi32
         };
 
         const SIMD_LANES: u32 = 8;
@@ -164,7 +158,7 @@ impl UnpackedArray {
                     3 * bits,
                     2 * bits,
                     bits,
-                    0
+                    0,
                 );
 
                 // Shifts all lanes to their next location in the word.
@@ -196,7 +190,7 @@ impl UnpackedArray {
                             std::ptr::copy_nonoverlapping(
                                 &vshorts as *const __m256i as *const u16,
                                 indices.as_mut_ptr().add(offset),
-                                8
+                                8,
                             );
                         }
 
@@ -219,27 +213,24 @@ impl UnpackedArray {
                         std::ptr::copy_nonoverlapping(
                             &vshorts as *const __m256i as *const u16,
                             indices.as_mut_ptr().add(offset),
-                            8
+                            8,
                         );
                     }
 
                     offset += 8;
                     w += 1;
                 }
-            },
+            }
             8 => {
                 use std::arch::x86_64::{
-                    _mm_set1_epi32, _mm256_set_m128i, _mm256_set1_epi32, _mm_set_epi32,
-                    _mm256_and_si256, _mm256_srlv_epi32, _mm256_packus_epi32,
-                    _mm256_permutex_epi64
+                    _mm_set_epi32, _mm_set1_epi32, _mm256_and_si256, _mm256_packus_epi32,
+                    _mm256_permutex_epi64, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srlv_epi32,
                 };
 
                 let vmask = _mm256_set1_epi32(!(!0u32 << BITS as u32) as i32);
 
                 let bits = BITS as i32;
-                let vshift_half = _mm_set_epi32(
-                    3 * bits, 2 * bits, bits, 0
-                );
+                let vshift_half = _mm_set_epi32(3 * bits, 2 * bits, bits, 0);
                 let vshift = _mm256_set_m128i(vshift_half, vshift_half);
 
                 let mut offset = 0;
@@ -269,14 +260,14 @@ impl UnpackedArray {
                         std::ptr::copy_nonoverlapping(
                             &vperm as *const __m256i as *const u16,
                             indices.as_mut_ptr().add(offset),
-                            8
+                            8,
                         );
                     }
 
                     offset += 8;
                 }
             }
-            _ => unreachable!("invalid BITS generic for `unpack_oct`")
+            _ => unreachable!("invalid BITS generic for `unpack_oct`"),
         }
     }
 
