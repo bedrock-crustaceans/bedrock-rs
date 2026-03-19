@@ -46,7 +46,7 @@ jobs:
       run: |
         cd target/doc
         touch index.html
-        echo "<meta http-equiv=\"refresh\" content=\"0; url=https://bedrock-crustaceans.github.io/bedrock-rs/bedrockrs/index.html\">" > index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=bedrockrs/index.html\">" > index.html
 
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v4
