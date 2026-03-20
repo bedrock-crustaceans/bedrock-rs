@@ -22,9 +22,13 @@ fn simd_test() {
     let mut indices_regular = Box::new([0; 4096]);
 
     unsafe {
-        UnpackedArray::unpack_oct::<8>(&words, &mut indices_simd);
+        UnpackedArray::unpack_oct::<16>(&words, &mut indices_simd);
     }
 
-    UnpackedArray::unpack_nonsimd(8, &words, indices_regular.as_mut_slice());
+    UnpackedArray::unpack_nonsimd(16, &words, indices_regular.as_mut_slice());
+
+    println!("{indices_regular:?}");
+    println!("{indices_simd:?}");
+
     assert_eq!(indices_simd, indices_regular);
 }

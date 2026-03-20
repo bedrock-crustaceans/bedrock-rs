@@ -85,7 +85,7 @@ impl UnpackedArray {
             5 => todo!(),
             6 => todo!(),
             8 => Self::unpack_oct::<8>(words, indices),
-            16 => todo!(),
+            16 => Self::unpack_oct::<16>(words, indices),
             _ => unimplemented!(),
         }
     }
@@ -152,8 +152,9 @@ impl UnpackedArray {
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm_set1_epi32, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
-            _mm256_set_epi32, _mm256_set1_epi32, _mm256_srl_epi32, _mm256_srlv_epi32,
+            __m256i, _mm_loadu_epi32, _mm_set_epi32, _mm_set1_epi32, _mm_storeu_epi16,
+            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64, _mm256_set_epi32,
+            _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32, _mm256_srlv_epi32,
         };
 
         const SIMD_LANES: u32 = 8;
@@ -251,11 +252,6 @@ impl UnpackedArray {
                 // Then we perform the regular unpack algorithm on both words at the same time, unpacking
                 // 8 blocks from 64 bits in a single operation.
 
-                use std::arch::x86_64::{
-                    _mm_set_epi32, _mm_set1_epi32, _mm256_and_si256, _mm256_packus_epi32,
-                    _mm256_permutex_epi64, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srlv_epi32,
-                };
-
                 let vmask = _mm256_set1_epi32(!(!0u32 << BITS as u32) as i32);
 
                 let bits = BITS as i32;
@@ -294,6 +290,33 @@ impl UnpackedArray {
                             8,
                         );
                     }
+
+                    offset += 8;
+                }
+            }
+            16 => {
+                // When `BITS = 16` we load 4 words and them immediately store them into the indices array.
+                // This is done using SIMD because it can load and store multiple words at the same time.
+
+                // Safety: The length of `words` is explicitly set to 4096 / (32 / 16) = 2048 above,
+                // which is divisible by 4.
+                let chunks = unsafe { words.as_chunks_unchecked::<4>() };
+
+                let mut offset = 0;
+                for chunk in chunks {
+                    // Safety: This is safe because `chunk` is valid and always has 4 words of data.
+                    // This is an unaligned load so we do not care about alignment.
+                    let vwords = unsafe { _mm_loadu_epi32(chunk.as_ptr().cast::<i32>()) };
+
+                    // Then immediately write to the output array because the data is already in the correct other.
+
+                    // Safety: This is safe because `chunks` contains the exact amount of chunks to reach 4096 shorts
+                    // and does not leave the allocation.
+                    let arr_ptr = unsafe { indices.as_mut_ptr().add(offset).cast::<i16>() };
+
+                    // Safety: By the evaluation above we know that `arr_ptr` points to a valid array with enough
+                    // range lef to write into. This is an unaligned store so we do not core about alignment.
+                    unsafe { _mm_storeu_epi16(arr_ptr, vwords) };
 
                     offset += 8;
                 }

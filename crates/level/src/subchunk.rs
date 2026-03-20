@@ -199,7 +199,7 @@ impl Layer {
     }
 
     /// Serializes a single layer into the given buffer.
-    fn to_disk(&self, mut writer: &mut Vec<u8>) -> Result<()> {
+    fn to_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
         let plen = self.palette.len();
 
         self.array.to_disk(writer, plen)?;
