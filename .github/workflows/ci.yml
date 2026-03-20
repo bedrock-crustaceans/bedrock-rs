@@ -9,9 +9,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  
-env:
-  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   test:
@@ -19,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-  
+
       - uses: Swatinem/rust-cache@v2
         with:
           add-job-id-key: false
@@ -58,9 +55,11 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-Dwarnings"
     steps:
       - uses: actions/checkout@v6
-  
+
       - uses: Swatinem/rust-cache@v2
         with:
           add-job-id-key: false

@@ -9,7 +9,22 @@ use crate::error::{ListenerError, RakNetError, TransportLayerError};
 use crate::transport::TransportLayerListener;
 use bedrockrs_proto::info::MINECRAFT_EDITION_MOTD;
 
-#[allow(dead_code)]
+pub struct ListenerBuilder {
+    address: SocketAddress,
+}
+
+impl ListenerBuilder {
+    pub fn new() -> Self {}
+
+    pub fn build(self) -> Result<Listener, ListenerError> {}
+}
+
+impl Default for ListenerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Listener {
     listener: TransportLayerListener,
     name: String,
