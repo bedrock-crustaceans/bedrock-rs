@@ -202,7 +202,7 @@ impl Layer {
     fn to_disk(&self, mut writer: &mut Vec<u8>) -> Result<()> {
         let plen = self.palette.len();
 
-        self.array.to_disk(&mut writer, plen)?;
+        self.array.to_disk(writer, plen)?;
 
         writer.write_u32::<LittleEndian>(plen as u32)?;
         for entry in &self.palette {
@@ -340,7 +340,7 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn to_disk<M: PackingMethod>(&self, mut writer: &mut Vec<u8>) -> Result<()> {
+    pub fn to_disk<M: PackingMethod>(&self, writer: &mut Vec<u8>) -> Result<()> {
         writer.write_u8(self.version as u8)?;
         writer.write_u8(self.layers.len() as u8)?;
 
