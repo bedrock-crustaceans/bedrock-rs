@@ -90,7 +90,7 @@ proto = [
 ]
 network = ["dep:bedrockrs_network", "proto"]
 level = ["dep:bedrockrs_level"]
-full = ["addon", "level", "proto", "server"]
+full = ["addon", "level", "network", "proto", "server"]
 form = ["dep:bedrockrs_form"]
 server = ["dep:bedrockrs_server", "proto", "level", "form"]
 
