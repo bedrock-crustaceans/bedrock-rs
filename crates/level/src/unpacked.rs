@@ -64,15 +64,29 @@ impl UnpackedArray {
         Self { array }
     }
 
+    /// # Safety
+    ///
+    ///
+    /// This function must only be called if the host CPU supports the `avx2` feature. Calling this function
+    /// otherwise will result in an abort due to illegal instructions.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `words` is too small for `bits`. In other words, `words.len() >= 4096 / (32 / bits)`.
+    /// Furthermore, `BITS` must be valid, i.e. it is either 1, 2, 3, 4, 5, 6, 8 or 16.
     #[target_feature(enable = "avx2")]
     pub fn unpack_avx(bits: u8, words: &[u32], indices: &mut [u16; 4096]) {
+        // Bits are compile-time constants using generics to enable more bitsize-specific optimisations.
         match bits {
             1 => Self::unpack_oct::<1>(words, indices),
             2 => Self::unpack_oct::<2>(words, indices),
+            3 => todo!(),
             4 => Self::unpack_oct::<4>(words, indices),
+            5 => todo!(),
+            6 => todo!(),
             8 => Self::unpack_oct::<8>(words, indices),
-            // TODO: Implement for other bit sizes
-            _ => Self::unpack_nonsimd(bits, words, indices),
+            16 => todo!(),
+            _ => unimplemented!(),
         }
     }
 
@@ -124,6 +138,16 @@ impl UnpackedArray {
     //     }
     // }
 
+    /// # Safety
+    ///
+    ///
+    /// This function must only be called if the host CPU supports the `avx2` feature. Calling this function
+    /// otherwise will result in an abort due to illegal instructions.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `words` is too small for `BITS`. In other words, `words.len() >= 4096 / (32 / BITS)`.
+    /// Furthermore, `BITS` must be valid, i.e. it is either 1, 2, 4 or 8.
     #[inline]
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
@@ -274,7 +298,7 @@ impl UnpackedArray {
                     offset += 8;
                 }
             }
-            _ => unreachable!("invalid BITS generic for `unpack_oct`"),
+            _ => unimplemented!("invalid BITS generic for `unpack_oct`"),
         }
     }
 
