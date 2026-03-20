@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::io::{Read, Write};
+use std::io::Read;
 use std::iter::FusedIterator;
 use std::ops::Index;
 
@@ -206,7 +206,7 @@ impl Layer {
 
         writer.write_u32::<LittleEndian>(plen as u32)?;
         for entry in &self.palette {
-            nbtx::to_le_bytes_in(&mut writer, entry)?;
+            nbtx::to_le_bytes_in(writer, entry)?;
         }
 
         Ok(())
@@ -349,7 +349,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.to_disk(&mut writer)?;
+            layer.to_disk(writer)?;
         }
 
         Ok(())

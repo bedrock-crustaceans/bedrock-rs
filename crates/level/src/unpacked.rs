@@ -56,9 +56,9 @@ impl UnpackedArray {
         let mut array = Box::new([0u16; 4096]);
 
         if is_x86_feature_detected!("avx2") {
-            unsafe { Self::unpack_avx(bits, &words, &mut array) };
+            unsafe { Self::unpack_avx(bits, words, &mut array) };
         } else {
-            Self::unpack_nonsimd(bits, &words, array.as_mut());
+            Self::unpack_nonsimd(bits, words, array.as_mut());
         }
 
         Self { array }
