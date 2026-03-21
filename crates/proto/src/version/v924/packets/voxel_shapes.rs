@@ -10,7 +10,7 @@ pub struct VoxelShapesPacket {
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct VoxelShape {
-    pub cells: Vec<VoxelShapeCell>,
+    pub cells: VoxelShapeCells,
     #[endianness(le)]
     pub x_coordinates: Vec<f32>,
     #[endianness(le)]
@@ -20,7 +20,7 @@ pub struct VoxelShape {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct VoxelShapeCell {
+pub struct VoxelShapeCells {
     pub size: Vec3<u8>,
     pub storage: Vec<u8>,
 }
