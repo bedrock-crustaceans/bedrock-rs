@@ -736,5 +736,16 @@ define_versions![
             % LevelSoundEventType: LevelSoundEventType,
             % TextPacketType: TextPacketType,
         ] in crate::version::v924::enums,
+    },
+    (944, "r/26_u1", "1.26.10"): {
+        types: [
+            % NetworkBlockPosition: NetworkBlockPosition,
+            % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
+        ] in crate::version::v944::types,
+        enums: [
+            % ContainerEnumName: ContainerEnumName,
+            % LevelSoundEventType: LevelSoundEventType,
+            % ParticleType: ParticleType,
+        ] in crate::version::v944::enums,
     }
 ];
