@@ -82,7 +82,7 @@ impl LazyArray {
             .unwrap_or(16); // Clamp the bit size to at most 16.
 
         // Unpack the whole array and repack it again
-        let greedy = GreedyArray::unpack(self.words(), self.bits as u8);
+        let greedy = GreedyArray::unpack(self.words(), self.bits);
 
         let blocks_per_word = 32 / bits;
         let total_words = 4096 / blocks_per_word as usize;
@@ -90,7 +90,7 @@ impl LazyArray {
         self.words.resize(total_words, 0);
         self.bits = bits;
 
-        greedy.pack_into(&mut self.words, bits as u8);
+        greedy.pack_into(&mut self.words, bits);
     }
 
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
@@ -108,7 +108,7 @@ impl LazyArray {
         let required_bits = value.ilog2() as u8 + 1;
         if required_bits > self.bits {
             // Needs re-encoding. The function will automatically select a proper bit size that fits the value.
-            self.repack(required_bits as u8);
+            self.repack(required_bits);
         }
 
         let blocks_per_word = 32 / self.bits as u32;

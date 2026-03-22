@@ -39,16 +39,15 @@ impl GreedyArray {
         let word_count = 4096 / per_word as usize;
 
         let mut offset = 0;
-        for word_index in 0..word_count {
+        for out in words.iter_mut().take(word_count) {
             let mut word = 0;
             for w in 0..per_word {
                 let index = self.array[offset] as u32;
                 word |= index << (w * bits as u32);
-
                 offset += 1;
             }
 
-            words[word_index] = word;
+            *out = word;
         }
     }
 
@@ -452,6 +451,6 @@ impl From<Box<[u16; 4096]>> for GreedyArray {
 impl From<&LazyArray> for GreedyArray {
     fn from(array: &LazyArray) -> GreedyArray {
         let words = array.words();
-        GreedyArray::unpack(words, array.bits() as u8)
+        GreedyArray::unpack(words, array.bits())
     }
 }

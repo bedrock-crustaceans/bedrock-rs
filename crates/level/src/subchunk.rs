@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
@@ -7,7 +7,7 @@ use std::ops::Index;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
 use nohash_hasher::BuildNoHashHasher;
-use rustc_hash::{FxBuildHasher, FxHasher};
+use rustc_hash::FxHasher;
 use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
@@ -195,18 +195,6 @@ impl Layer {
 
         let index = to_offset(position.into());
         self.array.set(index, palette_index);
-    }
-
-    /// Inserts the block into the palette.
-    pub(crate) fn insert(&mut self, block: BlockDef) -> u16 {
-        let mut state = FxHasher::with_seed(Self::HASH_SEED);
-        block.hash(&mut state);
-        self.palette.push(block);
-
-        let index = self.palette.len() as u16 - 1;
-
-        self.hashes.insert(state.finish(), index);
-        index
     }
 
     /// Computes the hash of the block.

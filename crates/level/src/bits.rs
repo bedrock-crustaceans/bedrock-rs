@@ -71,16 +71,15 @@ pub enum BitArray {
 
 impl BitArray {
     /// Creates an iterator over this array.
+    #[inline]
     pub fn iter(&self) -> BitArrayIter<'_> {
         self.into_iter()
     }
 
     /// Whether this array uses the lazy unpacking strategy.
+    #[inline]
     pub fn is_lazy(&self) -> bool {
-        match self {
-            BitArray::Lazy(_) => true,
-            _ => false,
-        }
+        matches!(self, BitArray::Lazy(_))
     }
 
     /// Deserializes a data bit array.
