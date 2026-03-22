@@ -21,6 +21,29 @@ impl GreedyArray {
         }
     }
 
+    pub(crate) fn pack_into(&self, words: &mut [u32], bits: u8) {
+        // Amount of indices that fit in a single 32-bit integer.
+        let per_word = u32::BITS / bits as u32;
+        let word_count = 4096u32.div_ceil(per_word) as usize;
+
+        println!("words: {word_count} per_word: {per_word}");
+
+        let mut offset = 0;
+        for word_index in 0..word_count {
+            let mut word = 0;
+            for w in 0..per_word {
+                let index = self.array[offset] as u32;
+                word |= index << (w * bits as u32);
+
+                todo!("offset goes past 4096?");
+
+                offset += 1;
+            }
+
+            words[word_index] = word;
+        }
+    }
+
     /// Serializes the packed array to disk
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, bits: u32) -> Result<()>
     where
@@ -64,8 +87,10 @@ impl GreedyArray {
         let mut array = Box::new([0u16; 4096]);
 
         if is_x86_feature_detected!("avx2") {
+            // Safety: The condition above ensures that the host supports AVX-2. Therefore this function is safe to call.
             unsafe { Self::unpack_avx(bits, words, &mut array) };
         } else {
+            // Fall back to regular implementation if AVX-2 is not supported.
             Self::unpack_nonsimd(bits, words, array.as_mut());
         }
 
@@ -155,7 +180,7 @@ impl GreedyArray {
     /// # Panics
     ///
     /// This function panics if `words` is too small for `BITS`. In other words, `words.len() >= 4096 / (32 / BITS)`.
-    /// Furthermore, `BITS` must be valid, i.e. it is either 1, 2, 4 or 8.
+    /// Furthermore, `BITS` must be valid, i.e. it is either 1, 2, 4, 8 or 16.
     #[inline]
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {

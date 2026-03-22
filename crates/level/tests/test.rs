@@ -118,25 +118,22 @@ fn read_subchunk() {
                 key.serialize(&mut buf).unwrap();
 
                 let mut val = Cursor::new(db.get(buf).unwrap().unwrap());
-                let mut chunk = SubChunk::from_disk_greedy(&mut val).unwrap();
+                let mut chunk = SubChunk::from_disk_lazy(&mut val).unwrap();
 
                 let layer = chunk.get_layer_mut(0).unwrap();
-                layer.set(
-                    vek::Vec3::new(0, 0, 0),
-                    BlockDef {
-                        name: "test".to_string(),
-                        states: HashMap::from([(String::from("test"), nbtx::Value::Byte(0))]),
-                        version: Some([1, 2, 3, 4]),
-                    },
-                );
-                layer.set(
-                    vek::Vec3::new(0, 1, 0),
-                    BlockDef {
-                        name: "test".to_string(),
-                        states: HashMap::from([(String::from("test2"), nbtx::Value::Byte(0))]),
-                        version: Some([1, 2, 3, 4]),
-                    },
-                );
+                for i in 0..9 {
+                    layer.set(
+                        vek::Vec3::new(0, i, 0),
+                        BlockDef {
+                            name: "test".to_string(),
+                            states: HashMap::from([(
+                                String::from("test2"),
+                                nbtx::Value::Byte(i as i8),
+                            )]),
+                            version: Some([1, 2, 3, 4]),
+                        },
+                    );
+                }
 
                 println!("{chunk:?}");
 

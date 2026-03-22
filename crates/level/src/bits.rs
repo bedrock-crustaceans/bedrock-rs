@@ -1,5 +1,5 @@
 use crate::greedy::GreedyArray;
-use crate::lazy::{LazyArray, PackedArrayIter};
+use crate::lazy::{LazyArray, LazyArrayIter};
 use crate::{
     UnpackingMethod,
     error::{Error, Result},
@@ -15,7 +15,7 @@ const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 /// An iterator over a bit array.
 pub enum BitArrayIter<'a> {
     Greedy(Copied<slice::Iter<'a, u16>>),
-    Lazy(PackedArrayIter<'a>),
+    Lazy(LazyArrayIter<'a>),
 }
 
 impl Iterator for BitArrayIter<'_> {

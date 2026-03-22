@@ -4,6 +4,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("requested {requested} bits for array, but requires at least {required}")]
+    TooFewBits { requested: u32, required: u32 },
     #[error("failed to acquire database lock")]
     DatabaseLockError,
     #[error("failed to convert Rust string to C string: {0}")]

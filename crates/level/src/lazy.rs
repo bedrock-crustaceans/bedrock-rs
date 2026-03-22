@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::greedy::GreedyArray;
 use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
 
@@ -23,8 +24,8 @@ impl LazyArray {
     }
 
     /// Creates an iterator over this array.
-    pub fn iter(&self) -> PackedArrayIter<'_> {
-        PackedArrayIter::from(self)
+    pub fn iter(&self) -> LazyArrayIter<'_> {
+        LazyArrayIter::from(self)
     }
 
     /// The amount of bits that are currently being used by this array.
@@ -59,6 +60,22 @@ impl LazyArray {
         Some(((word >> shift) & mask) as u16)
     }
 
+    /// Unpacks and then packs the array to use the new bit size. The indices will saturate if the bit size is too small for the array.
+    pub fn repack(&mut self, bits: u32) {
+        // Unpack the whole array and repack it again
+        let greedy = GreedyArray::unpack(self.words(), self.bits as u8);
+
+        let blocks_per_word = 32 / bits;
+        let total_words = 4096 / blocks_per_word as usize;
+
+        self.words.resize(total_words, 0);
+        self.bits = bits;
+
+        greedy.pack_into(&mut self.words, bits as u8);
+
+        println!("repacked to {bits}");
+    }
+
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
     /// I.e. passing 42 to a 4-bit packed array will set result in the value being set to 16.
     ///
@@ -70,10 +87,11 @@ impl LazyArray {
             return false;
         }
 
-        // Convert to u32 because u16 overflows.
-        if value as u32 >= 2u32.pow(value as u32) {
+        let required_bits = value.ilog2() as u32 + 1;
+        println!("required bits: {required_bits} vs. {}", self.bits);
+        if required_bits > self.bits {
             // Needs re-encoding.
-            todo!("Bit array needs to be resized");
+            self.repack(required_bits);
         }
 
         let blocks_per_word = u32::BITS / self.bits;
@@ -122,15 +140,15 @@ impl LazyArray {
     }
 }
 
-/// An iterator over [`PackedArray`].
-pub struct PackedArrayIter<'a> {
+/// An iterator over a [`LazyArray`].
+pub struct LazyArrayIter<'a> {
     /// The current index in the array.
     index: usize,
     /// The array to iterate over.
     array: &'a LazyArray,
 }
 
-impl<'a> Iterator for PackedArrayIter<'a> {
+impl<'a> Iterator for LazyArrayIter<'a> {
     type Item = u16;
 
     fn next(&mut self) -> Option<u16> {
@@ -145,25 +163,25 @@ impl<'a> Iterator for PackedArrayIter<'a> {
     }
 }
 
-impl<'a> FusedIterator for PackedArrayIter<'a> {}
+impl<'a> FusedIterator for LazyArrayIter<'a> {}
 
-impl<'a> ExactSizeIterator for PackedArrayIter<'a> {
+impl<'a> ExactSizeIterator for LazyArrayIter<'a> {
     fn len(&self) -> usize {
         4096 - self.index
     }
 }
 
-impl<'a> From<&'a LazyArray> for PackedArrayIter<'a> {
+impl<'a> From<&'a LazyArray> for LazyArrayIter<'a> {
     fn from(array: &'a LazyArray) -> Self {
-        PackedArrayIter { index: 0, array }
+        LazyArrayIter { index: 0, array }
     }
 }
 
 impl<'a> IntoIterator for &'a LazyArray {
     type Item = u16;
-    type IntoIter = PackedArrayIter<'a>;
+    type IntoIter = LazyArrayIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        PackedArrayIter::from(self)
+        LazyArrayIter::from(self)
     }
 }

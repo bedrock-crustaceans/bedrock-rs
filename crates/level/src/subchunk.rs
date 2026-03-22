@@ -362,8 +362,6 @@ pub const fn from_offset(offset: usize) -> Vec3<u8> {
 }
 
 /// A Minecraft sub chunk.
-///
-/// Every world contains
 #[derive(Debug, Clone, PartialEq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
@@ -413,6 +411,12 @@ impl SubChunk {
     }
 
     /// Deserialize a full sub chunk from the given buffer.
+    ///
+    /// The generic `M` is the unpacking method to use. See [`from_disk_lazy`] and [`from_disk_greedy`]
+    /// for more information.
+    ///
+    /// [`from_disk_lazy`]: Self::from_disk_lazy
+    /// [`from_disk_greedy`]: Self::from_disk_greedy
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
     where
         Cursor<R>: Read,
@@ -443,6 +447,11 @@ impl SubChunk {
         })
     }
 
+    /// Lazily unpacks the subchunk. This means the the internal indices array is only unpacked when you actually access those blocks.
+    ///
+    /// This makes deserialising slightly faster but iteration a lot slower. This method is unable to make use of SIMD while [`from_disk_greedy`]
+    /// uses a SIMD-accelerated deserializer. Additionally using this method means that editing the subchunk might cause the bit array to be repacked
+    /// to accomodate the larger palette size.
     #[inline]
     pub fn from_disk_lazy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -451,6 +460,9 @@ impl SubChunk {
         Self::from_disk::<Lazy, _>(reader)
     }
 
+    /// Greedily unpacks the subchunk. This means that the entire index array is unpacked immediately. This allows the deserialisation process to be
+    /// accelerated with SIMD which makes it about 2.5x faster. Additionally this means the chunk does not have to be re-encoded whenever the bit size changes.
+    /// It however uses more memory.
     #[inline]
     pub fn from_disk_greedy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
