@@ -1,27 +1,13 @@
-use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i32)]
 #[enum_endianness(var)]
 #[repr(i32)]
-pub enum PlayerActionType<V: ProtoVersion> {
-    Unknown = -1,
-    StartDestroyBlock {
-        position: V::BlockPos,
-        #[endianness(var)]
-        facing: i32,
-    } = 0,
-    AbortDestroyBlock {
-        position: V::BlockPos,
-        #[endianness(var)]
-        facing: i32,
-    } = 1,
-    StopDestroyBlock {
-        position: V::BlockPos,
-        #[endianness(var)]
-        facing: i32,
-    } = 2,
+pub enum PlayerActionType {
+    StartDestroyBlock = 0,
+    AbortDestroyBlock = 1,
+    StopDestroyBlock = 2,
     GetUpdatedBlock = 3,
     DropItem = 4,
     StartSleeping = 5,
@@ -37,11 +23,7 @@ pub enum PlayerActionType<V: ProtoVersion> {
     StartGliding = 15,
     StopGliding = 16,
     DenyDestroyBlock = 17,
-    CrackBlock {
-        position: V::BlockPos,
-        #[endianness(var)]
-        facing: i32,
-    } = 18,
+    CrackBlock = 18,
     ChangeSkin = 19,
     DeprecatedUpdatedEnchantingSeed = 20,
     StartSwimming = 21,
@@ -49,16 +31,8 @@ pub enum PlayerActionType<V: ProtoVersion> {
     StartSpinAttack = 23,
     StopSpinAttack = 24,
     InteractWithBlock = 25,
-    PredictDestroyBlock {
-        position: V::BlockPos,
-        #[endianness(var)]
-        facing: i32,
-    } = 26,
-    ContinueDestroyBlock {
-        position: V::BlockPos,
-        #[endianness(var)]
-        facing: i32,
-    } = 27,
+    PredictDestroyBlock = 26,
+    ContinueDestroyBlock = 27,
     StartItemUseOn = 28,
     StopItemUseOn = 29,
     HandledTeleport = 30,
@@ -68,5 +42,5 @@ pub enum PlayerActionType<V: ProtoVersion> {
     StartFlying = 34,
     StopFlying = 35,
     ClientAckServerData = 36,
-    Count = 37,
+    StartItemUse = 37,
 }

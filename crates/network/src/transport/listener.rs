@@ -3,9 +3,9 @@ use crate::transport::TransportLayerConnection;
 
 pub enum TransportLayerListener {
     RakNet(rak_rs::Listener),
-    // TODO NetherNet(...),
-    // TODO Quic(s2n_quic::server::Server),
-    // TODO Tcp(...),
+    // TODO: NetherNet(...),
+    // TODO: Quic(s2n_quic::server::Server),
+    // TODO: Tcp(...),
 }
 
 impl TransportLayerListener {

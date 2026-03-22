@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub fn shard<T: Packets>(connection: Connection) -> ConnectionShared<T> {
+pub fn shard<T: Packets>(connection: Connection<T>) -> ConnectionShared<T> {
     ConnectionShared::<T> {
         connection: Arc::new(RwLock::new(connection)),
         queue_send: Arc::new(RwLock::new(Vec::new())),
@@ -15,7 +15,7 @@ pub fn shard<T: Packets>(connection: Connection) -> ConnectionShared<T> {
 
 #[derive(Clone)]
 pub struct ConnectionShared<T: Packets> {
-    connection: Arc<RwLock<Connection>>,
+    connection: Arc<RwLock<Connection<T>>>,
     queue_send: Arc<RwLock<Vec<T>>>,
     queue_recv: Arc<RwLock<VecDeque<T>>>,
 }
@@ -45,7 +45,7 @@ impl<T: Packets> ConnectionShared<T> {
         let mut packets = self.queue_send.write().await;
         let mut conn = self.connection.write().await;
 
-        conn.send::<T>(packets.as_slice()).await?;
+        conn.send(packets.as_slice()).await?;
 
         packets.clear();
 
@@ -55,7 +55,7 @@ impl<T: Packets> ConnectionShared<T> {
     pub async fn recv(&mut self) -> Result<(), ConnectionError> {
         let mut conn = self.connection.write().await;
 
-        let packets = conn.recv::<T>().await?;
+        let packets = conn.recv().await?;
 
         if !packets.is_empty() {
             let mut queue_recv = self.queue_recv.write().await;

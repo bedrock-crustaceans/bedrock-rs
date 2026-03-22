@@ -43,6 +43,8 @@ pub enum ProtoCodecError {
     CompressError(#[from] CompressionError),
     #[error("Encryption Error: {0}")]
     EncryptionError(#[from] EncryptionError),
+    #[error("Expected Some in: {0}")]
+    ExpectedSome(&'static str),
 }
 
 impl From<Infallible> for ProtoCodecError {

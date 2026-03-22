@@ -29,6 +29,7 @@ struct DefineVersionsEntry {
     packets: Option<DefineVersionsDiffList>,
     types: Option<DefineVersionsDiffList>,
     enums: Option<DefineVersionsDiffList>,
+    ident: Option<Ident>,
 }
 
 struct DefineVersionsDiffList {
@@ -117,6 +118,13 @@ impl Parse for DefineVersionsEntry {
             }
         }
 
+        let ident = if input.peek(Token![as]) {
+            input.parse::<Token![as]>()?;
+            Some(input.parse::<Ident>()?)
+        } else {
+            None
+        };
+
         Ok(Self {
             version,
             branch,
@@ -125,6 +133,7 @@ impl Parse for DefineVersionsEntry {
             packets,
             types,
             enums,
+            ident,
         })
     }
 }
@@ -332,7 +341,10 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         let branch = entry.branch.clone();
         let game_version = entry.game_version.clone();
 
-        let struct_ident = Ident::new(format!("V{}", version).as_str(), Span::call_site());
+        let struct_ident = entry.ident.clone().unwrap_or(Ident::new(
+            format!("V{}", version).as_str(),
+            Span::call_site(),
+        ));
 
         let proto_version_packets_impl = all_packets
             .iter()

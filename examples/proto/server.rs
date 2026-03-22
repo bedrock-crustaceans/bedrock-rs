@@ -16,7 +16,7 @@ use bedrockrs_proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs_proto::v898::packets::ResourcePackStackPacket;
 use bedrockrs_proto::v924::packets::{StartGamePacket, VoxelShapesPacket};
 use bedrockrs_proto::v924::types::{GameRuleLegacyData, LevelSettings};
-use bedrockrs_proto::{ProtoVersion, V924};
+use bedrockrs_proto::{ProtoVersion, Unknown, V924};
 use bedrockrs_shared::world::dimension::Dimension;
 use std::collections::HashMap;
 use tokio::time::Instant;
@@ -49,17 +49,26 @@ async fn main() {
     }
 }
 
-async fn handle_login(mut conn: Connection) {
+async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let time_start = Instant::now();
 
     // RequestNetworkSettings
-    conn.recv::<V924>().await.unwrap();
+    let packets = unknown_conn.recv().await.unwrap();
+    let mut conn = match packets.first() {
+        Some(Unknown::RequestNetworkSettingsPacket(request))
+            if request.client_network_version == 924 =>
+        {
+            unknown_conn.into_ver::<V924>()
+        }
+        _ => return,
+    };
+
     println!("RequestNetworkSettings");
 
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send::<V924>(&[V924::NetworkSettingsPacket(NetworkSettingsPacket {
+    conn.send(&[V924::NetworkSettingsPacket(NetworkSettingsPacket {
         compression_threshold: 1,
         compression_algorithm: PacketCompressionAlgorithm::None,
         client_throttle_enabled: false,
@@ -73,10 +82,10 @@ async fn handle_login(mut conn: Connection) {
     conn.compression = Some(compression);
 
     // Login
-    conn.recv::<V924>().await.unwrap();
+    conn.recv().await.unwrap();
     println!("Login");
 
-    conn.send::<V924>(&[
+    conn.send(&[
         V924::PlayStatusPacket(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
         }),
@@ -106,12 +115,12 @@ async fn handle_login(mut conn: Connection) {
     println!("ResourcePacksInfo");
     println!("ResourcePackStack");
 
-    println!("{:#?}", conn.recv::<V924>().await.unwrap());
+    println!("{:#?}", conn.recv().await.unwrap());
     println!("ClientCacheStatus");
-    println!("{:#?}", conn.recv::<V924>().await.unwrap());
+    println!("{:#?}", conn.recv().await.unwrap());
     println!("ResourcePackClientResponse");
 
-    conn.send::<V924>(&[V924::VoxelShapesPacket(VoxelShapesPacket {
+    conn.send(&[V924::VoxelShapesPacket(VoxelShapesPacket {
         shapes: vec![],
         names: vec![],
     })])
@@ -218,12 +227,10 @@ async fn handle_login(mut conn: Connection) {
         owner_id: "".to_string(),
     };
 
-    conn.send::<V924>(&[V924::StartGamePacket(packet1)])
-        .await
-        .unwrap();
+    conn.send(&[V924::StartGamePacket(packet1)]).await.unwrap();
     println!("StartGame");
 
-    conn.send::<V924>(&[V924::PlayStatusPacket(PlayStatusPacket {
+    conn.send(&[V924::PlayStatusPacket(PlayStatusPacket {
         status: PlayStatus::PlayerSpawn,
     })])
     .await
@@ -233,7 +240,7 @@ async fn handle_login(mut conn: Connection) {
     println!("Finished request in {:?}", time_start.elapsed());
 
     loop {
-        let res = conn.recv::<V924>().await;
+        let res = conn.recv().await;
 
         if let Ok(packet) = res {
             println!("Found packet: {:?}", packet);

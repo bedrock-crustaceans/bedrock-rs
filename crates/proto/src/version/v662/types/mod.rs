@@ -49,7 +49,6 @@ export!(network_item_stack_descriptor);
 export!(network_permissions);
 export!(packed_item_use_legacy_inventory_transaction);
 export!(player_block_action_data);
-export!(player_block_actions);
 export!(position_tracking_id);
 export!(potion_mix_data_entry);
 export!(property_sync_data);
