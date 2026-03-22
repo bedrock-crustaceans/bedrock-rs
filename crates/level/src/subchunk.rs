@@ -188,12 +188,10 @@ impl Layer {
         // Check whether the block is in the palette
         let hash = Self::hash_def(&block);
         let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
-            println!("does not exist, inserting into palette");
-
+            // Block does not exist in palette, push it.
             self.palette.push(block);
             self.palette.len() as u16 - 1
         });
-        println!("inserted, index {palette_index}");
 
         let index = to_offset(position.into());
         self.array.set(index, palette_index);

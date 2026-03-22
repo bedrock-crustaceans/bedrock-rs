@@ -1,3 +1,4 @@
+use crate::bits::VALID_BITS;
 use crate::error::Result;
 use crate::greedy::GreedyArray;
 use std::io::{Cursor, Read, Write};
@@ -7,14 +8,14 @@ use std::iter::FusedIterator;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LazyArray {
     /// The amount of bits per block.
-    bits: u32,
+    bits: u8,
     /// The words containing block indices.
     words: Vec<u32>,
 }
 
 impl LazyArray {
     /// Creates a new array from the given words.
-    pub const fn new(bits: u32, words: Vec<u32>) -> Self {
+    pub const fn new(bits: u8, words: Vec<u32>) -> Self {
         Self { bits, words }
     }
 
@@ -29,7 +30,7 @@ impl LazyArray {
     }
 
     /// The amount of bits that are currently being used by this array.
-    pub fn bits(&self) -> u32 {
+    pub fn bits(&self) -> u8 {
         self.bits
     }
 
@@ -48,20 +49,38 @@ impl LazyArray {
             return None;
         }
 
-        let blocks_per_word = u32::BITS / self.bits;
+        let blocks_per_word = 32 / self.bits as u32;
         let mask = !(!0u32 << self.bits);
 
         let word_index = index as u32 % blocks_per_word;
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        let shift = self.bits * word_index;
+        let shift = self.bits as u32 * word_index;
 
         Some(((word >> shift) & mask) as u16)
     }
 
     /// Unpacks and then packs the array to use the new bit size. The indices will saturate if the bit size is too small for the array.
-    pub fn repack(&mut self, bits: u32) {
+    ///
+    /// This function may decide to use a different bit size to create a valid packed array.
+    pub fn repack(&mut self, mut bits: u8) {
+        // Ensure the bit size is valid.
+        bits = VALID_BITS
+            .iter()
+            .find_map(|&b| {
+                if b == bits {
+                    // If the requested size is valid, leave it unchanged.
+                    Some(bits)
+                } else if b > bits {
+                    // If the requested bit size was not found, take the first one larger than it.
+                    Some(b)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(16); // Clamp the bit size to at most 16.
+
         // Unpack the whole array and repack it again
         let greedy = GreedyArray::unpack(self.words(), self.bits as u8);
 
@@ -72,8 +91,6 @@ impl LazyArray {
         self.bits = bits;
 
         greedy.pack_into(&mut self.words, bits as u8);
-
-        println!("repacked to {bits}");
     }
 
     /// Sets the value at `index`. Note that the passed value will be clamped to the bit size.
@@ -87,28 +104,28 @@ impl LazyArray {
             return false;
         }
 
-        let required_bits = value.ilog2() as u32 + 1;
-        println!("required bits: {required_bits} vs. {}", self.bits);
+        // The amount of bits required to store the given value. This is not necessarily a valid bit size.
+        let required_bits = value.ilog2() as u8 + 1;
         if required_bits > self.bits {
-            // Needs re-encoding.
-            self.repack(required_bits);
+            // Needs re-encoding. The function will automatically select a proper bit size that fits the value.
+            self.repack(required_bits as u8);
         }
 
-        let blocks_per_word = u32::BITS / self.bits;
+        let blocks_per_word = 32 / self.bits as u32;
         let base_mask = !(!0u32 << self.bits);
 
         let word_index = index as u32 % blocks_per_word;
         let array_index = index as u32 / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        let mask = base_mask << (self.bits * word_index);
+        let mask = base_mask << (self.bits as u32 * word_index);
 
         // Zero all bits in the location
         let zeroed = word & !mask;
         // Clamp value to correct amount of bits
         let clamped = value as u32 & base_mask;
         // Then set the zeroed bits to the clamped value
-        let set = zeroed | (clamped << (self.bits * word_index));
+        let set = zeroed | (clamped << (self.bits as u32 * word_index));
 
         self.words[array_index as usize] = set;
 
@@ -125,10 +142,7 @@ impl LazyArray {
         let mut words = vec![0; word_count as usize];
         reader.read_exact(bytemuck::cast_slice_mut::<u32, u8>(&mut words))?;
 
-        Ok(Self {
-            bits: bits as u32,
-            words,
-        })
+        Ok(Self { bits, words })
     }
 
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>

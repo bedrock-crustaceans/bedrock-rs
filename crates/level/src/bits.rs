@@ -10,7 +10,7 @@ use std::iter::{Copied, FusedIterator};
 use std::{io::Read, slice};
 
 /// Valid bit sizes to use for indices.
-const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
+pub const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 
 /// An iterator over a bit array.
 pub enum BitArrayIter<'a> {

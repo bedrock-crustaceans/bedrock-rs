@@ -21,12 +21,11 @@ impl GreedyArray {
         }
     }
 
+    /// Packs the array into a given array of words using the given amount of bits per block.
     pub(crate) fn pack_into(&self, words: &mut [u32], bits: u8) {
         // Amount of indices that fit in a single 32-bit integer.
         let per_word = u32::BITS / bits as u32;
-        let word_count = 4096u32.div_ceil(per_word) as usize;
-
-        println!("words: {word_count} per_word: {per_word}");
+        let word_count = 4096 / per_word as usize;
 
         let mut offset = 0;
         for word_index in 0..word_count {
@@ -35,8 +34,6 @@ impl GreedyArray {
                 let index = self.array[offset] as u32;
                 word |= index << (w * bits as u32);
 
-                todo!("offset goes past 4096?");
-
                 offset += 1;
             }
 
@@ -44,7 +41,7 @@ impl GreedyArray {
         }
     }
 
-    /// Serializes the packed array to disk
+    /// Serializes the array to disk using the given amount of bits per block.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, bits: u32) -> Result<()>
     where
         Cursor<W>: Write,

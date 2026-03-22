@@ -121,7 +121,7 @@ fn read_subchunk() {
                 let mut chunk = SubChunk::from_disk_lazy(&mut val).unwrap();
 
                 let layer = chunk.get_layer_mut(0).unwrap();
-                for i in 0..9 {
+                for i in 0..40 {
                     layer.set(
                         vek::Vec3::new(0, i, 0),
                         BlockDef {
@@ -134,8 +134,6 @@ fn read_subchunk() {
                         },
                     );
                 }
-
-                println!("{chunk:?}");
 
                 break;
             }
