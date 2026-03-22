@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use bedrockrs_level::{
-    Packed, Unpacked,
+    Greedy, Lazy,
     bits::BitArray,
     db::Database,
     greedy::GreedyArray,

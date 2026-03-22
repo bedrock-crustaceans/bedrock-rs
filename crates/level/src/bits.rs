@@ -1,7 +1,7 @@
 use crate::greedy::GreedyArray;
 use crate::lazy::{LazyArray, PackedArrayIter};
 use crate::{
-    PackingMethod,
+    UnpackingMethod,
     error::{Error, Result},
 };
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -12,9 +12,10 @@ use std::{io::Read, slice};
 /// Valid bit sizes to use for indices.
 const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 
+/// An iterator over a bit array.
 pub enum BitArrayIter<'a> {
-    Unpacked(Copied<slice::Iter<'a, u16>>),
-    Packed(PackedArrayIter<'a>),
+    Greedy(Copied<slice::Iter<'a, u16>>),
+    Lazy(PackedArrayIter<'a>),
 }
 
 impl Iterator for BitArrayIter<'_> {
@@ -22,15 +23,15 @@ impl Iterator for BitArrayIter<'_> {
 
     fn next(&mut self) -> Option<u16> {
         match self {
-            BitArrayIter::Unpacked(iter) => iter.next(),
-            BitArrayIter::Packed(iter) => iter.next(),
+            BitArrayIter::Greedy(iter) => iter.next(),
+            BitArrayIter::Lazy(iter) => iter.next(),
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         match self {
-            BitArrayIter::Unpacked(iter) => iter.size_hint(),
-            BitArrayIter::Packed(iter) => iter.size_hint(),
+            BitArrayIter::Greedy(iter) => iter.size_hint(),
+            BitArrayIter::Lazy(iter) => iter.size_hint(),
         }
     }
 }
@@ -38,17 +39,21 @@ impl Iterator for BitArrayIter<'_> {
 impl ExactSizeIterator for BitArrayIter<'_> {
     fn len(&self) -> usize {
         match self {
-            BitArrayIter::Unpacked(iter) => iter.len(),
-            BitArrayIter::Packed(iter) => iter.len(),
+            BitArrayIter::Greedy(iter) => iter.len(),
+            BitArrayIter::Lazy(iter) => iter.len(),
         }
     }
 }
 
 impl FusedIterator for BitArrayIter<'_> {}
 
+/// The method by which the indices are encoded.
 pub enum IndicesType {
+    /// This chunk contains regular data.
     Data(BitArray),
+    /// This chunk contains no data
     Empty,
+    /// Inherits data from the previous chunk.
     Inherit,
 }
 
@@ -56,8 +61,8 @@ pub enum IndicesType {
 /// expanded on subchunk deserialization or a packed array that is expanded lazily.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BitArray {
-    Unpacked(GreedyArray),
-    Packed(LazyArray),
+    Greedy(GreedyArray),
+    Lazy(LazyArray),
 }
 
 impl BitArray {
@@ -66,8 +71,17 @@ impl BitArray {
         self.into_iter()
     }
 
+    /// Whether this array uses the lazy unpacking strategy.
+    pub fn is_lazy(&self) -> bool {
+        match self {
+            BitArray::Lazy(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Deserializes a data bit array.
     #[inline]
-    fn from_disk_helper<M: PackingMethod, R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
+    fn from_data_helper<M: UnpackingMethod, R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
     where
         Cursor<R>: Read,
     {
@@ -75,14 +89,15 @@ impl BitArray {
             return Err(Error::InvalidBitSize(bits));
         }
 
-        Ok(if M::IS_PACKED {
-            BitArray::Packed(LazyArray::from_disk(reader, bits)?)
+        Ok(if M::IS_LAZY {
+            BitArray::Lazy(LazyArray::from_disk(reader, bits)?)
         } else {
-            BitArray::Unpacked(GreedyArray::from_disk(reader, bits)?)
+            BitArray::Greedy(GreedyArray::from_disk(reader, bits)?)
         })
     }
 
-    pub fn from_disk<M: PackingMethod, R>(reader: &mut Cursor<R>) -> Result<IndicesType>
+    /// Deserializes an array from disk format.
+    pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<IndicesType>
     where
         Cursor<R>: Read,
     {
@@ -90,7 +105,7 @@ impl BitArray {
         Ok(match bits {
             0x00 => IndicesType::Empty,
             0x7f => IndicesType::Inherit,
-            bits => IndicesType::Data(BitArray::from_disk_helper::<M, _>(reader, bits)?),
+            bits => IndicesType::Data(BitArray::from_data_helper::<M, _>(reader, bits)?),
         })
     }
 
@@ -109,24 +124,24 @@ impl BitArray {
         writer.write_u8(bits << 1)?;
 
         match self {
-            BitArray::Unpacked(array) => array.to_disk(writer, bits as u32),
-            BitArray::Packed(array) => array.to_disk(writer),
+            BitArray::Greedy(array) => array.to_disk(writer, bits as u32),
+            BitArray::Lazy(array) => array.to_disk(writer),
         }
     }
 
     /// Gets the value at the specified index.
     pub fn get(&self, index: usize) -> Option<u16> {
         match self {
-            Self::Unpacked(array) => array.get(index),
-            Self::Packed(array) => array.get(index),
+            Self::Greedy(array) => array.get(index),
+            Self::Lazy(array) => array.get(index),
         }
     }
 
     /// Sets the value at the specified index.
     pub fn set(&mut self, pos: usize, value: u16) -> bool {
         match self {
-            Self::Unpacked(array) => array.set(pos, value),
-            Self::Packed(array) => array.set(pos, value),
+            Self::Greedy(array) => array.set(pos, value),
+            Self::Lazy(array) => array.set(pos, value),
         }
     }
 }
@@ -137,8 +152,8 @@ impl<'a> IntoIterator for &'a BitArray {
 
     fn into_iter(self) -> Self::IntoIter {
         match self {
-            BitArray::Packed(array) => BitArrayIter::Packed(array.into_iter()),
-            BitArray::Unpacked(array) => BitArrayIter::Unpacked(array.into_iter()),
+            BitArray::Lazy(array) => BitArrayIter::Lazy(array.into_iter()),
+            BitArray::Greedy(array) => BitArrayIter::Greedy(array.into_iter()),
         }
     }
 }

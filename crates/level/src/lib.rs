@@ -1,3 +1,5 @@
+pub use vek;
+
 pub mod biome;
 pub mod bits;
 pub mod error;
@@ -24,24 +26,24 @@ mod private {
     pub trait Sealed {}
 }
 
-pub trait PackingMethod: private::Sealed {
-    const IS_PACKED: bool;
+pub trait UnpackingMethod: private::Sealed {
+    const IS_LAZY: bool;
 }
 
-pub enum Unpacked {}
+pub enum Greedy {}
 
-impl private::Sealed for Unpacked {}
+impl private::Sealed for Greedy {}
 
-impl PackingMethod for Unpacked {
-    const IS_PACKED: bool = false;
+impl UnpackingMethod for Greedy {
+    const IS_LAZY: bool = false;
 }
 
-pub enum Packed {}
+pub enum Lazy {}
 
-impl private::Sealed for Packed {}
+impl private::Sealed for Lazy {}
 
-impl PackingMethod for Packed {
-    const IS_PACKED: bool = true;
+impl UnpackingMethod for Lazy {
+    const IS_LAZY: bool = true;
 }
 
 pub mod prelude {}

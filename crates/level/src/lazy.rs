@@ -70,6 +70,12 @@ impl LazyArray {
             return false;
         }
 
+        // Convert to u32 because u16 overflows.
+        if value as u32 >= 2u32.pow(value as u32) {
+            // Needs re-encoding.
+            todo!("Bit array needs to be resized");
+        }
+
         let blocks_per_word = u32::BITS / self.bits;
         let base_mask = !(!0u32 << self.bits);
 

@@ -5,7 +5,7 @@ use byteorder::LittleEndian;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use smallvec::SmallVec;
 
-use crate::PackingMethod;
+use crate::UnpackingMethod;
 use crate::bits::{BitArray, IndicesType};
 use crate::error::Error;
 use crate::error::Result;
@@ -39,6 +39,8 @@ pub struct Biomes {
 }
 
 impl Biomes {
+    /// This chunk's heightmap.
+    #[inline]
     pub fn heightmap(&self) -> &[u16; 256] {
         &self.heightmap
     }
@@ -80,7 +82,7 @@ impl Biomes {
         Ok(())
     }
 
-    pub fn from_disk<M: PackingMethod, R>(reader: &mut Cursor<R>) -> Result<Biomes>
+    pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Biomes>
     where
         Cursor<R>: Read,
     {

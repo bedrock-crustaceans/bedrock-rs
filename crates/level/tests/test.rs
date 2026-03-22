@@ -1,10 +1,12 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Cursor;
 
 use bedrockrs_level::biome::Biomes;
 use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
-use bedrockrs_level::{Packed, Unpacked};
+use bedrockrs_level::subchunk::BlockDef;
+use bedrockrs_level::{Greedy, Lazy};
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
@@ -77,14 +79,14 @@ fn read_biome() {
         match key.data {
             KeyVariant::Biome3d => {
                 let mut value = Cursor::new(kv.value());
-                let biome = Biomes::from_disk::<Unpacked, _>(&mut value).unwrap();
+                let biome = Biomes::from_disk::<Greedy, _>(&mut value).unwrap();
 
                 let mut writer = Cursor::new(Vec::new());
                 biome.to_disk(&mut writer).unwrap();
 
                 let value = writer.into_inner();
                 let mut reader = Cursor::new(value.as_slice());
-                let biome2 = Biomes::from_disk::<Unpacked, _>(&mut reader).unwrap();
+                let biome2 = Biomes::from_disk::<Greedy, _>(&mut reader).unwrap();
 
                 assert_eq!(biome, biome2);
 
@@ -116,7 +118,25 @@ fn read_subchunk() {
                 key.serialize(&mut buf).unwrap();
 
                 let mut val = Cursor::new(db.get(buf).unwrap().unwrap());
-                let chunk = SubChunk::from_disk::<Packed, _>(&mut val).unwrap();
+                let mut chunk = SubChunk::from_disk_greedy(&mut val).unwrap();
+
+                let layer = chunk.get_layer_mut(0).unwrap();
+                layer.set(
+                    vek::Vec3::new(0, 0, 0),
+                    BlockDef {
+                        name: "test".to_string(),
+                        states: HashMap::from([(String::from("test"), nbtx::Value::Byte(0))]),
+                        version: Some([1, 2, 3, 4]),
+                    },
+                );
+                layer.set(
+                    vek::Vec3::new(0, 1, 0),
+                    BlockDef {
+                        name: "test".to_string(),
+                        states: HashMap::from([(String::from("test2"), nbtx::Value::Byte(0))]),
+                        version: Some([1, 2, 3, 4]),
+                    },
+                );
 
                 println!("{chunk:?}");
 

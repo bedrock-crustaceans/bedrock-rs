@@ -88,10 +88,10 @@ impl GreedyArray {
         match bits {
             1 => Self::unpack_oct::<1>(words, indices),
             2 => Self::unpack_oct::<2>(words, indices),
-            3 => todo!(),
+            3 => Self::unpack_nonsimd(bits, words, indices), // TODO: Maybe accelerate with SIMD?
             4 => Self::unpack_oct::<4>(words, indices),
-            5 => todo!(),
-            6 => todo!(),
+            5 => Self::unpack_nonsimd(bits, words, indices), // TODO: Maybe accelerate with SIMD?
+            6 => Self::unpack_nonsimd(bits, words, indices), // TODO: Maybe accelerate with SIMD?
             8 => Self::unpack_oct::<8>(words, indices),
             16 => Self::unpack_oct::<16>(words, indices),
             _ => unimplemented!(),
