@@ -54,19 +54,13 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
 
     // RequestNetworkSettings
     let packets = unknown_conn.recv().await.unwrap();
-    let mut conn = if let Some(packet) = packets.first() {
-        match packet {
-            Unknown::RequestNetworkSettingsPacket(request) => {
-                if request.client_network_version == 924 {
-                    unknown_conn.into_ver::<V924>()
-                } else {
-                    return;
-                }
-            }
+    let mut conn = match packets.first() {
+        Some(Unknown::RequestNetworkSettingsPacket(request)) if request.client_network_version == 924 => {
+            unknown_conn.into_ver::<V924>()
         }
-    } else {
-        return;
+        _ => return
     };
+    
     println!("RequestNetworkSettings");
 
     let compression = Compression::None;
