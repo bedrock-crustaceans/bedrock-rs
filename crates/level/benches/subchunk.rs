@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{fs::File, io::Cursor};
 
 use bedrockrs_level::{
     Packed, Unpacked,
@@ -24,7 +24,8 @@ fn extract_test_db() -> tempfile::TempDir {
 }
 
 fn lazy_load_benchmark(data: &[u8]) {
-    let _chunk = SubChunk::from_disk::<Packed, _>(data).unwrap();
+    let mut cursor = Cursor::new(data);
+    let _chunk = SubChunk::from_disk::<Packed, _>(&mut cursor).unwrap();
 }
 
 fn lazy_iter_benchmark(data: &SubChunk) {
@@ -36,7 +37,8 @@ fn lazy_iter_benchmark(data: &SubChunk) {
 }
 
 fn greedy_load_benchmark(data: &[u8]) {
-    let _chunk = SubChunk::from_disk::<Unpacked, _>(data).unwrap();
+    let mut cursor = Cursor::new(data);
+    let _chunk = SubChunk::from_disk::<Unpacked, _>(&mut cursor).unwrap();
 }
 
 fn greedy_iter_benchmark(data: &SubChunk) {
@@ -58,7 +60,8 @@ fn benchmark(c: &mut Criterion) {
     // Find some usable subchunks.
     let chunks = keys
         .filter_map(|kv| {
-            let key = Key::deserialize(kv.key()).ok()?;
+            let mut cursor = Cursor::new(kv.key());
+            let key = Key::deserialize(&mut cursor).ok()?;
             let data = Vec::from(kv.value());
 
             if let KeyVariant::SubChunk { index } = key.data {
@@ -88,10 +91,11 @@ fn benchmark(c: &mut Criterion) {
 
     let mut group2 = c.benchmark_group("iter_benches");
     for (key, chunk) in &chunks {
-        let slice = chunk.as_slice();
-        let greedy_chunk = SubChunk::from_disk::<Unpacked, _>(slice).unwrap();
+        let mut slice = Cursor::new(chunk.as_slice());
+        let greedy_chunk = SubChunk::from_disk::<Unpacked, _>(&mut slice).unwrap();
 
-        let lazy_chunk = SubChunk::from_disk::<Packed, _>(slice).unwrap();
+        let mut slice2 = Cursor::new(chunk.as_slice());
+        let lazy_chunk = SubChunk::from_disk::<Packed, _>(&mut slice2).unwrap();
 
         group2.throughput(criterion::Throughput::Elements(4096));
         group2.bench_with_input(

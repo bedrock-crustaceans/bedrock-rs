@@ -1,17 +1,17 @@
 use crate::error::Result;
-use std::io::{Read, Write};
+use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
 
-/// An array that is still packed. Words are unpacked as needed.
+/// An array that is still packed. Words are unpacked only as needed.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PackedArray {
+pub struct LazyArray {
     /// The amount of bits per block.
     bits: u32,
     /// The words containing block indices.
     words: Vec<u32>,
 }
 
-impl PackedArray {
+impl LazyArray {
     /// Creates a new array from the given words.
     pub const fn new(bits: u32, words: Vec<u32>) -> Self {
         Self { bits, words }
@@ -27,10 +27,12 @@ impl PackedArray {
         PackedArrayIter::from(self)
     }
 
+    /// The amount of bits that are currently being used by this array.
     pub fn bits(&self) -> u32 {
         self.bits
     }
 
+    /// The packed words that this array consists of.
     pub fn words(&self) -> &[u32] {
         &self.words
     }
@@ -89,7 +91,10 @@ impl PackedArray {
         true
     }
 
-    pub fn from_disk<R: Read>(mut reader: R, bits: u8) -> Result<Self> {
+    pub fn from_disk<R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
         let per_word = u32::BITS / bits as u32;
         let word_count = 4096u32.div_ceil(per_word);
 
@@ -102,7 +107,10 @@ impl PackedArray {
         })
     }
 
-    pub fn to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+    pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         writer.write_all(bytemuck::cast_slice::<u32, u8>(&self.words))?;
         Ok(())
     }
@@ -113,7 +121,7 @@ pub struct PackedArrayIter<'a> {
     /// The current index in the array.
     index: usize,
     /// The array to iterate over.
-    array: &'a PackedArray,
+    array: &'a LazyArray,
 }
 
 impl<'a> Iterator for PackedArrayIter<'a> {
@@ -139,13 +147,13 @@ impl<'a> ExactSizeIterator for PackedArrayIter<'a> {
     }
 }
 
-impl<'a> From<&'a PackedArray> for PackedArrayIter<'a> {
-    fn from(array: &'a PackedArray) -> Self {
+impl<'a> From<&'a LazyArray> for PackedArrayIter<'a> {
+    fn from(array: &'a LazyArray) -> Self {
         PackedArrayIter { index: 0, array }
     }
 }
 
-impl<'a> IntoIterator for &'a PackedArray {
+impl<'a> IntoIterator for &'a LazyArray {
     type Item = u16;
     type IntoIter = PackedArrayIter<'a>;
 

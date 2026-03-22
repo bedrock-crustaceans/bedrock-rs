@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::io::Read;
+use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
 use std::ops::Index;
 
@@ -10,9 +10,9 @@ use nbtx::LittleEndian;
 use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
-use crate::PackingMethod;
-use crate::bits::{BitArray, BitArrayIter};
+use crate::bits::{BitArray, BitArrayIter, IndicesType};
 use crate::error::{Error, Result};
+use crate::{Packed, PackingMethod, Unpacked};
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -98,7 +98,9 @@ impl BlockDef {
 
 /// Iterates over all blocks in a layer.
 pub struct LayerIter<'l> {
+    /// An iterator over the indices
     array_iter: BitArrayIter<'l>,
+    /// The palette.
     palette: &'l [BlockDef],
 }
 
@@ -163,35 +165,56 @@ pub struct Layer {
 }
 
 impl Layer {
-    pub fn get<K: Into<Vec3<u8>>>(&self, block: K) -> Option<&BlockDef> {
-        let pos = block.into();
+    pub fn get<K: Into<Vec3<u8>>>(&self, position: K) -> Option<&BlockDef> {
+        let pos = position.into();
         let offset = to_offset(pos);
         let index = self.array.get(offset)?;
         Some(&self.palette[index as usize])
     }
 
-    pub fn set<K: Into<Vec3<u8>>>(&self, _block: K, _value: BlockDef) {
+    /// Sets the block at `position` to `block`.
+    ///
+    ///
+    pub fn set<K: Into<Vec3<u8>>>(&self, position: K, block: BlockDef) {
         todo!()
     }
 
+    /// Returns the palette used for this chunk
+    #[inline]
     pub fn palette(&self) -> &[BlockDef] {
         &self.palette
     }
 
+    /// Returns the indices
     #[inline]
     pub fn indices(&self) -> &BitArray {
         &self.array
     }
 
     /// Deserializes a single layer from the given buffer.
-    fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
-        let array = BitArray::from_disk::<M, _>(&mut reader)?;
+    fn from_disk<M: PackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
+        let array = match BitArray::from_disk::<M, _>(reader)? {
+            IndicesType::Empty => {
+                return Err(Error::Invalid(
+                    "found empty bit array while deserializing chunk, expected data",
+                ));
+            }
+            IndicesType::Inherit => {
+                return Err(Error::Invalid(
+                    "chunks do not support inheriting bit arrays",
+                ));
+            }
+            IndicesType::Data(array) => array,
+        };
 
         let len = reader.read_u32::<LittleEndian>()? as usize;
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let entry = nbtx::from_le_bytes(&mut reader)?;
+            let entry = nbtx::from_le_bytes(reader)?;
             palette.push(entry);
         }
 
@@ -199,7 +222,10 @@ impl Layer {
     }
 
     /// Serializes a single layer into the given buffer.
-    fn to_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
+    fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         let plen = self.palette.len();
 
         self.array.to_disk(writer, plen)?;
@@ -312,7 +338,10 @@ impl SubChunk {
     }
 
     /// Deserialize a full sub chunk from the given buffer.
-    pub fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
+    pub fn from_disk<M: PackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
         let version = SubChunkVersion::try_from(reader.read_u8()?)?;
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
@@ -328,7 +357,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            let layer = Layer::from_disk::<M, _>(&mut reader)?;
+            let layer = Layer::from_disk::<M, _>(reader)?;
             layers.push(layer);
         }
 
@@ -339,8 +368,27 @@ impl SubChunk {
         })
     }
 
+    #[inline]
+    pub fn from_disk_lazy<R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
+        Self::from_disk::<Packed, _>(reader)
+    }
+
+    #[inline]
+    pub fn from_disk_greedy<R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
+        Self::from_disk::<Unpacked, _>(reader)
+    }
+
     /// Serialises the sub chunk into the given writer.
-    pub fn to_disk<M: PackingMethod>(&self, writer: &mut Vec<u8>) -> Result<()> {
+    pub fn to_disk<M: PackingMethod, W>(&self, writer: &mut Cursor<W>) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         writer.write_u8(self.version as u8)?;
         writer.write_u8(self.layers.len() as u8)?;
 

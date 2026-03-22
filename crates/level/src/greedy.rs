@@ -1,13 +1,13 @@
-use crate::{error::Result, packed::PackedArray};
+use crate::{error::Result, lazy::LazyArray};
 use byteorder::{LittleEndian, WriteBytesExt};
-use std::io::Read;
+use std::io::{Cursor, Read, Write};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UnpackedArray {
+pub struct GreedyArray {
     array: Box<[u16; 4096]>,
 }
 
-impl UnpackedArray {
+impl GreedyArray {
     pub fn get(&self, index: usize) -> Option<u16> {
         self.array.get(index).copied()
     }
@@ -21,7 +21,11 @@ impl UnpackedArray {
         }
     }
 
-    pub fn to_disk(&self, writer: &mut Vec<u8>, bits: u32) -> Result<()> {
+    /// Serializes the packed array to disk
+    pub fn to_disk<W>(&self, writer: &mut Cursor<W>, bits: u32) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         // Amount of indices that fit in a single 32-bit integer.
         let per_word = u32::BITS / bits;
 
@@ -41,7 +45,11 @@ impl UnpackedArray {
         Ok(())
     }
 
-    pub(crate) fn from_disk<R: Read>(mut reader: R, bits: u8) -> Result<Self> {
+    /// Deserializers the packed array from disk.
+    pub fn from_disk<R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
         let per_word = u32::BITS / bits as u32;
         let word_count = 4096u32.div_ceil(per_word);
 
@@ -348,7 +356,7 @@ impl UnpackedArray {
     }
 }
 
-impl<'a> IntoIterator for &'a UnpackedArray {
+impl<'a> IntoIterator for &'a GreedyArray {
     type Item = u16;
     type IntoIter = std::iter::Copied<std::slice::Iter<'a, u16>>;
 
@@ -357,9 +365,9 @@ impl<'a> IntoIterator for &'a UnpackedArray {
     }
 }
 
-impl From<&PackedArray> for UnpackedArray {
-    fn from(array: &PackedArray) -> UnpackedArray {
+impl From<&LazyArray> for GreedyArray {
+    fn from(array: &LazyArray) -> GreedyArray {
         let words = array.words();
-        UnpackedArray::unpack(words, array.bits() as u8)
+        GreedyArray::unpack(words, array.bits() as u8)
     }
 }

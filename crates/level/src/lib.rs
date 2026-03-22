@@ -1,13 +1,13 @@
 pub mod biome;
 pub mod bits;
 pub mod error;
+pub mod greedy;
 pub mod key;
-pub mod packed;
+pub mod lazy;
 pub mod player;
 pub mod settings;
 pub mod subchunk;
 pub mod traits;
-pub mod unpacked;
 
 #[cfg(feature = "mojang-leveldb")]
 pub mod mojang;

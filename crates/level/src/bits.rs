@@ -1,10 +1,11 @@
-use crate::packed::{PackedArray, PackedArrayIter};
-use crate::unpacked::UnpackedArray;
+use crate::greedy::GreedyArray;
+use crate::lazy::{LazyArray, PackedArrayIter};
 use crate::{
     PackingMethod,
     error::{Error, Result},
 };
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use std::io::{Cursor, Write};
 use std::iter::{Copied, FusedIterator};
 use std::{io::Read, slice};
 
@@ -55,8 +56,8 @@ pub enum IndicesType {
 /// expanded on subchunk deserialization or a packed array that is expanded lazily.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BitArray {
-    Unpacked(UnpackedArray),
-    Packed(PackedArray),
+    Unpacked(GreedyArray),
+    Packed(LazyArray),
 }
 
 impl BitArray {
@@ -65,39 +66,39 @@ impl BitArray {
         self.into_iter()
     }
 
-    fn data_from_disk<M: PackingMethod, R: Read>(mut reader: R, bits: u8) -> Result<Self> {
+    #[inline]
+    fn from_disk_helper<M: PackingMethod, R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
         if !VALID_BITS.contains(&bits) {
             return Err(Error::InvalidBitSize(bits));
         }
 
         Ok(if M::IS_PACKED {
-            BitArray::Packed(PackedArray::from_disk(&mut reader, bits)?)
+            BitArray::Packed(LazyArray::from_disk(reader, bits)?)
         } else {
-            BitArray::Unpacked(UnpackedArray::from_disk(&mut reader, bits)?)
+            BitArray::Unpacked(GreedyArray::from_disk(reader, bits)?)
         })
     }
 
-    /// Deserializes this array in disk format.
-    pub fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
-        let bits = reader.read_u8()? >> 1;
-        match bits {
-            0x00 => Err(Error::Invalid("chunk layer packed array cannot be empty")),
-            0x7f => Err(Error::Invalid("chunk layers do not support inheritance")),
-            bits => BitArray::data_from_disk::<M, _>(&mut reader, bits),
-        }
-    }
-
-    pub fn from_disk_typed<M: PackingMethod, R: Read>(mut reader: R) -> Result<IndicesType> {
+    pub fn from_disk<M: PackingMethod, R>(reader: &mut Cursor<R>) -> Result<IndicesType>
+    where
+        Cursor<R>: Read,
+    {
         let bits = reader.read_u8()? >> 1;
         Ok(match bits {
             0x00 => IndicesType::Empty,
             0x7f => IndicesType::Inherit,
-            bits => IndicesType::Data(BitArray::data_from_disk::<M, _>(&mut reader, bits)?),
+            bits => IndicesType::Data(BitArray::from_disk_helper::<M, _>(reader, bits)?),
         })
     }
 
     /// Serializes this array in disk format.
-    pub fn to_disk(&self, writer: &mut Vec<u8>, palette_size: usize) -> Result<()> {
+    pub fn to_disk<W>(&self, writer: &mut Cursor<W>, palette_size: usize) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         let mut bits = 0;
         for b in VALID_BITS {
             if 2usize.pow(b as u32) >= palette_size {
