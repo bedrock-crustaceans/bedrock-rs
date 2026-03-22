@@ -1,17 +1,28 @@
 use crate::{error::Result, lazy::LazyArray};
 use byteorder::{LittleEndian, WriteBytesExt};
-use std::io::{Cursor, Read, Write};
+use std::{
+    io::{Cursor, Read, Write},
+    iter::FusedIterator,
+};
 
+/// An array that has fully been unpacked.
+///
+/// This array will always allocate 4096 shorts. For more efficient memory usage at the cost of performance,
+/// consider using [`LazyArray`] which only unpacks on demand.
+///
+/// [`LazyArray`]: crate::lazy::LazyArray
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GreedyArray {
     array: Box<[u16; 4096]>,
 }
 
 impl GreedyArray {
+    /// Returns the item at the given index.
     pub fn get(&self, index: usize) -> Option<u16> {
         self.array.get(index).copied()
     }
 
+    /// Sets the item at the given index.
     pub fn set(&mut self, index: usize, value: u16) -> bool {
         if let Some(index) = self.array.get_mut(index) {
             *index = value;
@@ -168,8 +179,10 @@ impl GreedyArray {
     //     }
     // }
 
-    /// # Safety
+    /// Unpacks the array using AVX-2 instructions. This function uses SIMD to unpack 8 words per iteration instead of unpacking
+    /// them one by one. It only supports bit sizes that are a power of 2. Other bit sizes must still be unpacked normally.
     ///
+    /// # Safety
     ///
     /// This function must only be called if the host CPU supports the `avx2` feature. Calling this function
     /// otherwise will result in an abort due to illegal instructions.
@@ -194,10 +207,12 @@ impl GreedyArray {
 
         // Limit words to max size for these bits
         let max_len = 4096 / blocks_per_word;
+
         assert!(words.len() >= max_len as usize);
         words = &words[..max_len as usize];
 
         match BITS {
+            // These all just process at most one word at a time.
             1 | 2 | 4 => {
                 let bits = BITS as i32;
 
@@ -277,7 +292,7 @@ impl GreedyArray {
                 }
             }
             8 => {
-                // When BITS = 8 we load two words per iteration. Since each word has 4 blocks,
+                // When BITS = 8 we instead load two words per iteration. Since each word has 4 blocks,
                 // we put the first word in the lower 4 lanes and the second word in the upper 4 lanes.
                 // Then we perform the regular unpack algorithm on both words at the same time, unpacking
                 // 8 blocks from 64 bits in a single operation.
@@ -287,7 +302,7 @@ impl GreedyArray {
                 let bits = BITS as i32;
                 // Create a 128-bit vector with the correct shifts...
                 let vshift_half = _mm_set_epi32(3 * bits, 2 * bits, bits, 0);
-                // ... and then make another copy of
+                // ... and then duplicate it.
                 let vshift = _mm256_set_m128i(vshift_half, vshift_half);
 
                 let mut offset = 0;
@@ -313,6 +328,14 @@ impl GreedyArray {
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
                     let vperm = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
 
+                    debug_assert!(
+                        indices.len() - offset > 8,
+                        "unpack_oct<8> buffer overflow, this is a bug"
+                    );
+
+                    // Safety: `vperm` and `indices` do not overlap. `vperm` has enough memory to copy
+                    // 16 shorts (16x16 = 256) but we only use the first half of this. There are also still 8 indices
+                    // left to write to.
                     unsafe {
                         std::ptr::copy_nonoverlapping(
                             &vperm as *const __m256i as *const u16,
@@ -378,12 +401,51 @@ impl GreedyArray {
     }
 }
 
+pub struct GreedyArrayIter<'a> {
+    // Right now this is just a newtype around the standard library slice iterators,
+    // but making this a newtype allows us to change it in the future without breaking anything.
+    iter: std::iter::Copied<std::slice::Iter<'a, u16>>,
+}
+
+impl Iterator for GreedyArrayIter<'_> {
+    type Item = u16;
+
+    #[inline]
+    fn next(&mut self) -> Option<u16> {
+        self.iter.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl ExactSizeIterator for GreedyArrayIter<'_> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+}
+
+impl FusedIterator for GreedyArrayIter<'_> {}
+
 impl<'a> IntoIterator for &'a GreedyArray {
     type Item = u16;
-    type IntoIter = std::iter::Copied<std::slice::Iter<'a, u16>>;
+    type IntoIter = GreedyArrayIter<'a>;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.array.iter().copied()
+    #[inline]
+    fn into_iter(self) -> GreedyArrayIter<'a> {
+        GreedyArrayIter {
+            iter: self.array.iter().copied(),
+        }
+    }
+}
+
+impl From<Box<[u16; 4096]>> for GreedyArray {
+    #[inline]
+    fn from(array: Box<[u16; 4096]>) -> GreedyArray {
+        Self { array }
     }
 }
 

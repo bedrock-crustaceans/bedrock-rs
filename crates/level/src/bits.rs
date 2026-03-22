@@ -1,20 +1,22 @@
-use crate::greedy::GreedyArray;
+use crate::greedy::{GreedyArray, GreedyArrayIter};
 use crate::lazy::{LazyArray, LazyArrayIter};
 use crate::{
     UnpackingMethod,
     error::{Error, Result},
 };
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use std::io::Read;
 use std::io::{Cursor, Write};
-use std::iter::{Copied, FusedIterator};
-use std::{io::Read, slice};
+use std::iter::FusedIterator;
 
 /// Valid bit sizes to use for indices.
 pub const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 
 /// An iterator over a bit array.
 pub enum BitArrayIter<'a> {
-    Greedy(Copied<slice::Iter<'a, u16>>),
+    /// See [`GreedyArray`].
+    Greedy(GreedyArrayIter<'a>),
+    /// See [`LazyArray`].
     Lazy(LazyArrayIter<'a>),
 }
 
@@ -61,7 +63,9 @@ pub enum IndicesType {
 /// expanded on subchunk deserialization or a packed array that is expanded lazily.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BitArray {
+    /// See [`GreedyArray`].
     Greedy(GreedyArray),
+    /// See [`LazyArray`].
     Lazy(LazyArray),
 }
 
