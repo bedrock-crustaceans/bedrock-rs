@@ -739,6 +739,7 @@ define_versions![
     },
     (944, "r/26_u1", "1.26.10"): {
         types: [
+            % CameraSplineInstruction: CameraSplineInstruction^,
             % NetworkBlockPosition: NetworkBlockPosition,
             % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
         ] in crate::version::v944::types,

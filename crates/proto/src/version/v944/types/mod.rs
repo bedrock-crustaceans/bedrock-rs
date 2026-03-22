@@ -5,5 +5,6 @@ macro_rules! export {
     };
 }
 
+export!(camera_spline_instruction);
 export!(network_block_position);
 export!(packed_item_use_legacy_inventory_transaction);
