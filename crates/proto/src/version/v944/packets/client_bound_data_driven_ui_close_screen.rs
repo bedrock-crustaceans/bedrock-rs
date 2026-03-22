@@ -4,5 +4,5 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDataDrivenUICloseScreenPacket {
     #[endianness(le)]
-    pub screen_id: u32
+    pub form_id: u32
 }

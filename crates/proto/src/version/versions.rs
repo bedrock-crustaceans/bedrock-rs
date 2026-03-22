@@ -741,6 +741,9 @@ define_versions![
         packets: [
             + ClientBoundAttributeLayerSyncPacket: ClientBoundAttributeLayerSyncPacket,
             + ClientBoundDataDrivenUICloseScreenPacket: ClientBoundDataDrivenUICloseScreenPacket,
+            + PartyChangedPacket: PartyChangedPacket,
+            % ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
+            % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             - ClientBoundDataDrivenUICloseAllScreensPacket
         ] in crate::version::v944::packets,
         types: [
