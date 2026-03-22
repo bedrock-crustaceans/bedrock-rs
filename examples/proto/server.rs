@@ -212,7 +212,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         multiplayer_correlation_id: String::from("c5d3d2cc-27fd-4221-9de6-d22c4d423d53"),
         enable_item_stack_net_manager: false,
         server_version: V924::GAME_VERSION.to_string(),
-        player_property_data: nbtx::Value::Compound(HashMap::new()),
+        player_property_data: HashMap::new(),
         server_block_type_registry_checksum: 0,
         world_template_id: Uuid::nil(),
         server_enabled_client_side_generation: false,

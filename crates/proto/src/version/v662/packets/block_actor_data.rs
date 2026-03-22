@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
 
@@ -6,5 +7,5 @@ use bedrockrs_macros::{packet, ProtoCodec};
 pub struct BlockActorDataPacket<V: ProtoVersion> {
     pub block_position: V::NetworkBlockPosition,
     #[nbt]
-    pub actor_data_tags: nbtx::Value, // TODO: NBT Structure
+    pub actor_data_tags: HashMap<String, nbtx::Value>,
 }

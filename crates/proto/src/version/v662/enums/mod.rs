@@ -85,8 +85,6 @@ export!(player_respawn_state);
 export!(level_sound_event_type);
 export!(resource_pack_response);
 export!(rotation);
-export!(score_packet_type);
-export!(scoreboard_identity_packet_type);
 export!(server_auth_movement_mode);
 export!(show_store_offer_redirect_type);
 export!(simulation_type);

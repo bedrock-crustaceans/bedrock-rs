@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
 
@@ -7,7 +8,7 @@ pub struct PositionTrackingDBServerBroadcastPacket<V: ProtoVersion> {
     pub action: Action,
     pub id: V::PositionTrackingId,
     #[nbt]
-    pub position_tracking_data: nbtx::Value, // TODO: NBT Structure
+    pub position_tracking_data: HashMap<String, nbtx::Value>
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

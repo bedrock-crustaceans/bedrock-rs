@@ -4,5 +4,5 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct EditorNetworkPacket {
     #[nbt]
-    pub binary_payload: nbtx::Value, // TODO: NBT Structure
+    pub binary_payload: nbtx::Value,
 }
