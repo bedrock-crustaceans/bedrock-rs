@@ -4,8 +4,8 @@ use quote::quote;
 use std::collections::{HashMap, HashSet};
 use syn::parse::ParseStream;
 use syn::{
-    braced, bracketed, parenthesized, parse::Parse, punctuated::Punctuated, LitInt, LitStr, Path,
-    Token,
+    LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse,
+    punctuated::Punctuated,
 };
 
 mod kw {
