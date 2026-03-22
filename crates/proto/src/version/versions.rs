@@ -742,6 +742,7 @@ define_versions![
             + ClientBoundAttributeLayerSyncPacket: ClientBoundAttributeLayerSyncPacket,
             + ClientBoundDataDrivenUICloseScreenPacket: ClientBoundDataDrivenUICloseScreenPacket,
             + PartyChangedPacket: PartyChangedPacket,
+            + ServerBoundDataDrivenClosedPacket: ServerBoundDataDrivenClosedPacket,
             % ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             - ClientBoundDataDrivenUICloseAllScreensPacket

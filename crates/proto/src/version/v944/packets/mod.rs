@@ -10,3 +10,4 @@ export!(client_bound_data_driven_ui_close_screen);
 export!(client_bound_data_driven_ui_show_screen);
 export!(graphics_parameter_override);
 export!(party_changed);
+export!(server_bound_data_driven_closed);
