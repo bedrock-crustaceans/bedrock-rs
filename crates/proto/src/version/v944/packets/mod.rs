@@ -4,3 +4,5 @@ macro_rules! export {
         pub use $name::*;
     };
 }
+
+export!(client_bound_attribute_layer_sync);

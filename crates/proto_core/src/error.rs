@@ -9,6 +9,7 @@ use jsonwebtoken::errors::Error as JwtError;
 use serde_json::error::Error as JsonError;
 use thiserror::Error;
 use uuid::Error as UuidError;
+use strum::ParseError;
 
 #[derive(Error, Debug)]
 pub enum ProtoCodecError {
@@ -43,6 +44,8 @@ pub enum ProtoCodecError {
     CompressError(#[from] CompressionError),
     #[error("Encryption Error: {0}")]
     EncryptionError(#[from] EncryptionError),
+    #[error("Strum Parse Error: {0}")]
+    StrumParseError(#[from] ParseError),
 }
 
 impl From<Infallible> for ProtoCodecError {

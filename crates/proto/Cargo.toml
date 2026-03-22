@@ -33,3 +33,6 @@ x509-cert = { workspace = true }
 
 bitflags = { workspace = true }
 serde = { workspace = true }
+
+strum = { workspace = true }
+strum_macros = { workspace = true }

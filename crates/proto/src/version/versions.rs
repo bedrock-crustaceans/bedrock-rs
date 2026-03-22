@@ -738,6 +738,9 @@ define_versions![
         ] in crate::version::v924::enums,
     },
     (944, "r/26_u1", "1.26.10"): {
+        packets: [
+            + ClientBoundAttributeLayerSyncPacket: ClientBoundAttributeLayerSyncPacket,
+        ] in crate::version::v944::packets,
         types: [
             % CameraSplineInstruction: CameraSplineInstruction^,
             % NetworkBlockPosition: NetworkBlockPosition,

@@ -52,6 +52,9 @@ xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
 
+strum = "0.28.0"
+strum_macros = "0.28.0"
+
 [dependencies]
 bedrockrs_core = { path = "crates/core" }
 bedrockrs_shared = { path = "crates/shared" }
