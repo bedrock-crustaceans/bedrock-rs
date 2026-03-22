@@ -6,3 +6,4 @@ macro_rules! export {
 }
 
 export!(client_bound_attribute_layer_sync);
+export!(client_bound_ddui_close_screen);
