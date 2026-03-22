@@ -38,7 +38,7 @@ snap = "1.1"
 
 x509-cert = "0.2"
 
-criterion = "0.8.2"
+criterion = { version = "0.8.2", features = ["html_reports"] }
 
 seq-macro = "0.3"
 proc-macro2 = "1.0"
@@ -90,7 +90,7 @@ proto = [
 ]
 network = ["dep:bedrockrs_network", "proto"]
 level = ["dep:bedrockrs_level"]
-full = ["addon", "level", "proto", "server"]
+full = ["addon", "level", "network", "proto", "server"]
 form = ["dep:bedrockrs_form"]
 server = ["dep:bedrockrs_server", "proto", "level", "form"]
 

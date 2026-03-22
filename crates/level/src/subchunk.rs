@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::io::{Read, Write};
+use std::io::Read;
 use std::iter::FusedIterator;
 use std::ops::Index;
 
@@ -178,6 +178,11 @@ impl Layer {
         &self.palette
     }
 
+    #[inline]
+    pub fn indices(&self) -> &BitArray {
+        &self.array
+    }
+
     /// Deserializes a single layer from the given buffer.
     fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
         let array = BitArray::from_disk::<M, _>(&mut reader)?;
@@ -185,7 +190,6 @@ impl Layer {
         let len = reader.read_u32::<LittleEndian>()? as usize;
         let mut palette = Vec::with_capacity(len);
 
-        println!("PALETTE LEN: {len}");
         for _ in 0..len {
             let entry = nbtx::from_le_bytes(&mut reader)?;
             palette.push(entry);
@@ -195,14 +199,14 @@ impl Layer {
     }
 
     /// Serializes a single layer into the given buffer.
-    fn to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+    fn to_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
         let plen = self.palette.len();
 
-        self.array.to_disk(&mut writer, plen)?;
+        self.array.to_disk(writer, plen)?;
 
         writer.write_u32::<LittleEndian>(plen as u32)?;
         for entry in &self.palette {
-            nbtx::to_le_bytes_in(&mut writer, entry)?;
+            nbtx::to_le_bytes_in(writer, entry)?;
         }
 
         Ok(())
@@ -336,7 +340,7 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn to_disk<M: PackingMethod, W: Write>(&self, mut writer: W) -> Result<()> {
+    pub fn to_disk<M: PackingMethod>(&self, writer: &mut Vec<u8>) -> Result<()> {
         writer.write_u8(self.version as u8)?;
         writer.write_u8(self.layers.len() as u8)?;
 
@@ -345,7 +349,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.to_disk(&mut writer)?;
+            layer.to_disk(writer)?;
         }
 
         Ok(())

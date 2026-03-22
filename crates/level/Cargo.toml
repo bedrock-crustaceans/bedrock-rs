@@ -11,7 +11,11 @@ mojang-leveldb = ["dep:cmake"]
 # rusty-leveldb = ["dep:rusty-leveldb", "dep:miniz_oxide"]
 
 [[bench]]
-name = "benchmark"
+name = "subchunk"
+harness = false
+
+[[bench]]
+name = "unpack"
 harness = false
 
 [dependencies]

@@ -6,10 +6,7 @@ use crate::{
 };
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::iter::{Copied, FusedIterator};
-use std::{
-    io::{Read, Write},
-    slice,
-};
+use std::{io::Read, slice};
 
 /// Valid bit sizes to use for indices.
 const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
@@ -100,7 +97,7 @@ impl BitArray {
     }
 
     /// Serializes this array in disk format.
-    pub fn to_disk<W: Write>(&self, mut writer: W, palette_size: usize) -> Result<()> {
+    pub fn to_disk(&self, writer: &mut Vec<u8>, palette_size: usize) -> Result<()> {
         let mut bits = 0;
         for b in VALID_BITS {
             if 2usize.pow(b as u32) >= palette_size {

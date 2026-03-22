@@ -18,9 +18,8 @@ impl PackedArray {
     }
 
     /// Returns the amount of words that are in this array.
-    pub const fn words_count(&self) -> usize {
-        let per_word = 32 / self.bits;
-        4096 / per_word as usize
+    pub fn word_count(&self) -> usize {
+        self.words.len()
     }
 
     /// Creates an iterator over this array.

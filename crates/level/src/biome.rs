@@ -50,7 +50,7 @@ impl Biomes {
         HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>()
     }
 
-    pub fn to_disk<W: Write>(&self, mut writer: W) -> Result<()> {
+    pub fn to_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
         const EMPTY_FLAG: u8 = 0x00;
         const INHERIT_FLAG: u8 = 0x7f;
 
@@ -64,7 +64,7 @@ impl Biomes {
                     writer.write_u32::<LittleEndian>(*v)?;
                 }
                 BiomeEncoding::Palette(v) => {
-                    v.array.to_disk(&mut writer, v.palette.len())?;
+                    v.array.to_disk(writer, v.palette.len())?;
                     writer.write_u32::<LittleEndian>(v.palette.len() as u32)?;
 
                     for entry in &v.palette {
