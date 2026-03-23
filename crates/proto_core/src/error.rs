@@ -7,9 +7,9 @@ use std::string::FromUtf8Error;
 use base64::DecodeError as Base64DecodeError;
 use jsonwebtoken::errors::Error as JwtError;
 use serde_json::error::Error as JsonError;
+use strum::ParseError;
 use thiserror::Error;
 use uuid::Error as UuidError;
-use strum::ParseError;
 
 #[derive(Error, Debug)]
 pub enum ProtoCodecError {

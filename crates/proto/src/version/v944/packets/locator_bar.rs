@@ -16,9 +16,8 @@ pub struct LocatorBarPayload {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-#[enum_endianness(var)]
-#[enum_repr(u32)]
-#[repr(u32)]
+#[enum_repr(u8)]
+#[repr(u8)]
 pub enum LocatorBarPayloadAction {
     None = 0,
     Add = 1,
