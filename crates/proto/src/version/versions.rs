@@ -750,6 +750,7 @@ define_versions![
             % ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             % StartGamePacket: StartGamePacket^,
+            % UpdateClientInputLocksPacket: UpdateClientInputLocksPacket,
             - ClientBoundDataDrivenUICloseAllScreensPacket
         ] in crate::version::v944::packets,
         types: [

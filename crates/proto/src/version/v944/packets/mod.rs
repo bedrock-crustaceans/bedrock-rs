@@ -15,3 +15,5 @@ export!(resource_packs_ready_for_validation);
 export!(server_bound_data_driven_closed);
 export!(start_game);
 export!(sync_world_clocks);
+export!(update_client_input_locks);
+export!(voxel_shapes);
