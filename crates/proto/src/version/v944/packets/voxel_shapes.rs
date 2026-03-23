@@ -1,5 +1,4 @@
 use bedrockrs_macros::{ProtoCodec, packet};
-use vek::Vec3;
 
 #[packet(id = 337)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -23,7 +22,7 @@ pub struct VoxelShape {
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct VoxelShapeCells {
-    pub size: Vec3<u8>,
+    pub size: (u8, u8, u8),
     pub storage: Vec<u8>,
 }
 
