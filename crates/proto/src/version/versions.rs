@@ -744,7 +744,9 @@ define_versions![
             + ClientBoundDataDrivenUICloseScreenPacket: ClientBoundDataDrivenUICloseScreenPacket,
             + LocatorBarPacket: LocatorBarPacket,
             + PartyChangedPacket: PartyChangedPacket,
+            + ResourcePacksReadyForValidationPacket: ResourcePacksReadyForValidationPacket,
             + ServerBoundDataDrivenClosedPacket: ServerBoundDataDrivenClosedPacket,
+            + SyncWorldClocksPacket: SyncWorldClocksPacket,
             % ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             - ClientBoundDataDrivenUICloseAllScreensPacket
