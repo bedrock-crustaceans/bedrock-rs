@@ -1,6 +1,6 @@
 use bedrockrs_macros::{packet, ProtoCodec};
 
-#[packet(id = 342)]
+#[packet(id = 343)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundDataDrivenClosedPacket {
     #[endianness(le)]
