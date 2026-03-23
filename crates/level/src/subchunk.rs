@@ -1,18 +1,19 @@
 use std::collections::HashMap;
-use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::io::Read;
+use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
 use std::ops::Index;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
+use nohash_hasher::BuildNoHashHasher;
+use rustc_hash::FxHasher;
 use serde::{Deserialize, Serialize};
 use vek::Vec3;
 
-use crate::PackingMethod;
-use crate::bits::{BitArray, BitArrayIter};
+use crate::bits::{BitArray, BitArrayIter, IndicesType};
 use crate::error::{Error, Result};
+use crate::{Greedy, Lazy, UnpackingMethod};
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -81,24 +82,22 @@ pub struct BlockDef {
     pub states: HashMap<String, nbtx::Value>,
 }
 
-impl BlockDef {
+impl Hash for BlockDef {
     /// Hashes this block.
-    pub fn hash(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-
-        hasher.write(self.name.as_bytes());
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(self.name.as_bytes());
         for (k, v) in &self.states {
-            hasher.write(k.as_bytes());
-            v.hash(&mut hasher);
+            state.write(k.as_bytes());
+            v.hash(state);
         }
-
-        hasher.finish()
     }
 }
 
 /// Iterates over all blocks in a layer.
 pub struct LayerIter<'l> {
+    /// An iterator over the indices
     array_iter: BitArrayIter<'l>,
+    /// The palette.
     palette: &'l [BlockDef],
 }
 
@@ -160,46 +159,121 @@ pub struct Layer {
     array: BitArray,
     /// List of all different block types in this sub chunk layer.
     palette: Vec<BlockDef>,
+    /// Used to check which blocks are already in the palette. Block definitions are hashed manually and compared with their hash in this set.
+    /// This is because `BlockDef` does not implement `Eq` and we also prevent cloning the entire block definition on each insertion.
+    hashes: HashMap<u64, u16, BuildNoHashHasher<u64>>,
 }
 
 impl Layer {
-    pub fn get<K: Into<Vec3<u8>>>(&self, block: K) -> Option<&BlockDef> {
-        let pos = block.into();
+    const HASH_SEED: usize = 0;
+
+    /// Whether this layer uses the lazy unpacking strategy.
+    #[inline]
+    pub fn is_lazy(&self) -> bool {
+        self.array.is_lazy()
+    }
+
+    /// Retrieves the block at `position`.
+    pub fn get<K: Into<Vec3<u8>>>(&self, position: K) -> Option<&BlockDef> {
+        let pos = position.into();
         let offset = to_offset(pos);
         let index = self.array.get(offset)?;
         Some(&self.palette[index as usize])
     }
 
-    pub fn set<K: Into<Vec3<u8>>>(&self, _block: K, _value: BlockDef) {
-        todo!()
+    /// Sets the block at `position` to `block`.
+    ///
+    ///
+    pub fn set<K: Into<Vec3<u8>>>(&mut self, position: K, block: BlockDef) {
+        // Check whether the block is in the palette
+        let hash = Self::hash_def(&block);
+        let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
+            // Block does not exist in palette, push it.
+            self.palette.push(block);
+            self.palette.len() as u16 - 1
+        });
+
+        let index = to_offset(position.into());
+        self.array.set(index, palette_index);
     }
 
+    /// Computes the hash of the block.
+    pub(crate) fn hash_def(block: &BlockDef) -> u64 {
+        let mut state = FxHasher::with_seed(Self::HASH_SEED);
+        block.hash(&mut state);
+        state.finish()
+    }
+
+    /// Determines the index in the palette of the block.
+    pub fn palette_index(&self, block: &BlockDef) -> Option<u16> {
+        let hash = Self::hash_def(block);
+        self.hashes.get(&hash).copied()
+    }
+
+    /// Whether the palette contains the given block.
+    pub fn contains(&self, block: &BlockDef) -> bool {
+        let hash = Self::hash_def(block);
+        self.hashes.contains_key(&hash)
+    }
+
+    /// Returns the palette used for this chunk
+    #[inline]
     pub fn palette(&self) -> &[BlockDef] {
         &self.palette
     }
 
+    /// Returns the indices
     #[inline]
     pub fn indices(&self) -> &BitArray {
         &self.array
     }
 
     /// Deserializes a single layer from the given buffer.
-    fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
-        let array = BitArray::from_disk::<M, _>(&mut reader)?;
+    fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
+        let array = match BitArray::from_disk::<M, _>(reader)? {
+            IndicesType::Empty => {
+                return Err(Error::Invalid(
+                    "found empty bit array while deserializing chunk, expected data",
+                ));
+            }
+            IndicesType::Inherit => {
+                return Err(Error::Invalid(
+                    "chunks do not support inheriting bit arrays",
+                ));
+            }
+            IndicesType::Data(array) => array,
+        };
 
         let len = reader.read_u32::<LittleEndian>()? as usize;
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let entry = nbtx::from_le_bytes(&mut reader)?;
+            let entry = nbtx::from_le_bytes(reader)?;
             palette.push(entry);
         }
 
-        Ok(Self { array, palette })
+        let mut hashes =
+            HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
+        hashes.extend(palette.iter().enumerate().map(|(i, block)| {
+            let hash = Self::hash_def(block);
+            (hash, i as u16)
+        }));
+
+        Ok(Self {
+            array,
+            hashes,
+            palette,
+        })
     }
 
     /// Serializes a single layer into the given buffer.
-    fn to_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
+    fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         let plen = self.palette.len();
 
         self.array.to_disk(writer, plen)?;
@@ -274,8 +348,6 @@ pub const fn from_offset(offset: usize) -> Vec3<u8> {
 }
 
 /// A Minecraft sub chunk.
-///
-/// Every world contains
 #[derive(Debug, Clone, PartialEq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
@@ -297,22 +369,44 @@ pub struct SubChunk {
 impl SubChunk {
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
+    #[inline]
     pub fn version(&self) -> SubChunkVersion {
         self.version
     }
 
     /// Vertical index of this subchunk
+    #[inline]
     pub fn index(&self) -> i8 {
         self.index
     }
 
     /// Gets the `n`-th layer of this chunk. Usually chunks will only have one layer or two layers.
-    pub fn layer(&self, index: usize) -> &Layer {
-        &self.layers[index]
+    ///
+    /// Returns `None` if the layer does not exist.
+    #[inline]
+    pub fn get_layer(&self, index: usize) -> Option<&Layer> {
+        self.layers.get(index)
+    }
+
+    /// Gets the `n`-th layer of this chunk mutably. Usually chunks only have one layer or two layers.
+    ///
+    /// Returns `None` if the layer does not exist.
+    #[inline]
+    pub fn get_layer_mut(&mut self, index: usize) -> Option<&mut Layer> {
+        self.layers.get_mut(index)
     }
 
     /// Deserialize a full sub chunk from the given buffer.
-    pub fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Self> {
+    ///
+    /// The generic `M` is the unpacking method to use. See [`from_disk_lazy`] and [`from_disk_greedy`]
+    /// for more information.
+    ///
+    /// [`from_disk_lazy`]: Self::from_disk_lazy
+    /// [`from_disk_greedy`]: Self::from_disk_greedy
+    pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
         let version = SubChunkVersion::try_from(reader.read_u8()?)?;
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
@@ -328,7 +422,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            let layer = Layer::from_disk::<M, _>(&mut reader)?;
+            let layer = Layer::from_disk::<M, _>(reader)?;
             layers.push(layer);
         }
 
@@ -339,8 +433,35 @@ impl SubChunk {
         })
     }
 
+    /// Lazily unpacks the subchunk. This means the the internal indices array is only unpacked when you actually access those blocks.
+    ///
+    /// This makes deserialising slightly faster but iteration a lot slower. This method is unable to make use of SIMD while [`from_disk_greedy`]
+    /// uses a SIMD-accelerated deserializer. Additionally using this method means that editing the subchunk might cause the bit array to be repacked
+    /// to accomodate the larger palette size.
+    #[inline]
+    pub fn from_disk_lazy<R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
+        Self::from_disk::<Lazy, _>(reader)
+    }
+
+    /// Greedily unpacks the subchunk. This means that the entire index array is unpacked immediately. This allows the deserialisation process to be
+    /// accelerated with SIMD which makes it about 2.5x faster. Additionally this means the chunk does not have to be re-encoded whenever the bit size changes.
+    /// It however uses more memory.
+    #[inline]
+    pub fn from_disk_greedy<R>(reader: &mut Cursor<R>) -> Result<Self>
+    where
+        Cursor<R>: Read,
+    {
+        Self::from_disk::<Greedy, _>(reader)
+    }
+
     /// Serialises the sub chunk into the given writer.
-    pub fn to_disk<M: PackingMethod>(&self, writer: &mut Vec<u8>) -> Result<()> {
+    pub fn to_disk<M: UnpackingMethod, W>(&self, writer: &mut Cursor<W>) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         writer.write_u8(self.version as u8)?;
         writer.write_u8(self.layers.len() as u8)?;
 

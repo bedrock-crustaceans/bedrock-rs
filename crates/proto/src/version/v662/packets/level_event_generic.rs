@@ -6,5 +6,5 @@ use bedrockrs_macros::{packet, ProtoCodec};
 pub struct LevelEventGenericPacket<V: ProtoVersion> {
     pub event_id: V::LevelEvent,
     #[nbt]
-    pub event_data: nbtx::Value, // TODO: NBT Structure
+    pub event_data: nbtx::Value
 }

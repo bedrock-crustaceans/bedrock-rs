@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, packet};
 use uuid::Uuid;
@@ -28,7 +29,7 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub enable_item_stack_net_manager: bool,
     pub server_version: String,
     #[nbt]
-    pub player_property_data: nbtx::Value, // TODO: NBT Structure,
+    pub player_property_data: HashMap<String, nbtx::Value>,
     #[endianness(le)]
     pub server_block_type_registry_checksum: u64,
     pub world_template_id: Uuid,
@@ -42,5 +43,5 @@ pub struct StartGamePacket<V: ProtoVersion> {
 pub struct BlockProperty {
     pub block_name: String,
     #[nbt]
-    pub block_definition: nbtx::Value, // TODO: NBT Structure
+    pub block_definition: HashMap<String, nbtx::Value>,
 }

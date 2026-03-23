@@ -3,8 +3,9 @@ use nbtx::LittleEndian;
 use vek::Vec2;
 
 use crate::error::{Error, Result};
+use bedrockrs_shared::read::SeekExt;
 use bedrockrs_shared::world::dimension::Dimension;
-use std::io::Write;
+use std::io::{Cursor, Read, Seek, Write};
 
 pub const AUTONOMOUS_ENTITIES: &str = "AutonomousEntities";
 pub const LOCAL_PLAYER: &str = "~local_player";
@@ -110,18 +111,18 @@ impl Key {
         Ok(())
     }
 
-    pub fn deserialize<R>(reader: R) -> Result<Key>
+    pub fn deserialize<R>(reader: &mut Cursor<R>) -> Result<Key>
     where
-        R: AsRef<[u8]>, // sadly `std::io::Read` does not have an easy way to check how many bytes are left.
+        Cursor<R>: Seek + Read,
     {
-        let mut reader = reader.as_ref();
-        let reader_copy = reader;
+        let start_position = reader.position();
+        let len = reader.stream_len_ext()?;
 
         let x = reader.read_i32::<LittleEndian>()?;
         let z = reader.read_i32::<LittleEndian>()?;
 
         let chunk = Vec2::new(x, z);
-        let dimension = if reader.len() > 6 {
+        let dimension = if len > 10 {
             Dimension::from(reader.read_u32::<LittleEndian>()? as i32)
         } else {
             Dimension::Overworld
@@ -154,7 +155,11 @@ impl Key {
             0x77 => KeyVariant::AabbVolumes,
             _ => {
                 // Check whether this was one of the strings
-                let string = str::from_utf8(reader_copy)?;
+                reader.set_position(start_position);
+
+                let mut string = String::with_capacity(len as usize);
+                reader.read_to_string(&mut string)?;
+
                 if string == LOCAL_PLAYER {
                     KeyVariant::LocalPlayer
                 } else {

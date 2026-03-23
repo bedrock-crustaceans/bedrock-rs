@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
 
@@ -6,7 +7,7 @@ use bedrockrs_macros::{packet, ProtoCodec};
 pub struct AddVolumeEntityPacket<V: ProtoVersion> {
     pub entity_network_id: V::EntityNetID,
     #[nbt]
-    pub components: nbtx::Value, // TODO: NBT Structure
+    pub components: HashMap<String, nbtx::Value>,
     pub json_identifier: String,
     pub instance_name: String,
     pub min_bounds: V::NetworkBlockPosition,

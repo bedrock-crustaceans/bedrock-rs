@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
 
@@ -10,5 +11,5 @@ pub struct UpdateEquipPacket<V: ProtoVersion> {
     pub size: i32,
     pub target_actor_id: V::ActorUniqueID,
     #[nbt]
-    pub data_tags: nbtx::Value, // TODO: NBT Structure
+    pub data_tags: HashMap<String, nbtx::Value>,
 }

@@ -5,5 +5,5 @@ use bedrockrs_macros::{packet, ProtoCodec};
 pub struct EditorNetworkPacket {
     pub route_to_manager: bool,
     #[nbt]
-    pub binary_payload: nbtx::Value, // TODO: NBT Structure
+    pub binary_payload: nbtx::Value,
 }

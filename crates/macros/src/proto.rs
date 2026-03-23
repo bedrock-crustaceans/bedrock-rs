@@ -29,6 +29,7 @@ struct DefineVersionsEntry {
     packets: Option<DefineVersionsDiffList>,
     types: Option<DefineVersionsDiffList>,
     enums: Option<DefineVersionsDiffList>,
+    ident: Option<Ident>,
 }
 
 struct DefineVersionsDiffList {
@@ -117,6 +118,13 @@ impl Parse for DefineVersionsEntry {
             }
         }
 
+        let ident = if input.peek(Token![as]) {
+            input.parse::<Token![as]>()?;
+            Some(input.parse::<Ident>()?)
+        } else {
+            None
+        };
+
         Ok(Self {
             version,
             branch,
@@ -125,6 +133,7 @@ impl Parse for DefineVersionsEntry {
             packets,
             types,
             enums,
+            ident,
         })
     }
 }
@@ -332,7 +341,10 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         let branch = entry.branch.clone();
         let game_version = entry.game_version.clone();
 
-        let struct_ident = Ident::new(format!("V{}", version).as_str(), Span::call_site());
+        let struct_ident = entry.ident.clone().unwrap_or(Ident::new(
+            format!("V{}", version).as_str(),
+            Span::call_site(),
+        ));
 
         let proto_version_packets_impl = all_packets
             .iter()
@@ -416,6 +428,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             #[derive(Clone, std::fmt::Debug)]
             pub enum #struct_ident {
                 #(#packet_variants)*
+                Unknown(u16, Box<[u8]>),
             }
 
             impl ::bedrockrs_proto_core::Packets for #struct_ident {
@@ -423,6 +436,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn id(&self) -> u16 {
                     match self {
                         #(#packet_id)*
+                        #struct_ident::Unknown(id, _) => { return *id; },
                     };
                 }
 
@@ -430,6 +444,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn compress(&self) -> bool {
                     match self {
                         #(#packet_compress)*
+                        #struct_ident::Unknown(_, _) => { return true; },
                     };
                 }
 
@@ -437,6 +452,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn encrypt(&self) -> bool {
                     match self {
                         #(#packet_encrypt)*
+                        #struct_ident::Unknown(_, _) => { return true; },
                     };
                 }
 
@@ -445,6 +461,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                     <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::serialize(header, stream)?;
                     match self {
                         #(#packet_ser)*
+                        #struct_ident::Unknown(_, buf) => stream.write_all(buf)?,
                     };
 
                     Ok(())
@@ -455,8 +472,10 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                     let header = <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)?;
                     let packet = match header.packet_id {
                         #(#packet_de)*
-                        other => {
-                            return Err(::bedrockrs_proto_core::error::ProtoCodecError::InvalidPacketID(other));
+                        unknown => {
+                            let mut buf = Vec::new();
+                            stream.read_to_end(&mut buf)?;
+                            #struct_ident::Unknown(unknown, buf.into_boxed_slice())
                         },
                     };
                     Ok((packet, header))
@@ -466,6 +485,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn size_hint(&self, header: &::bedrockrs_proto_core::PacketHeader) -> usize {
                     <::bedrockrs_proto_core::PacketHeader as ::bedrockrs_proto_core::ProtoCodec>::size_hint(header) + match self {
                         #(#packet_size_prediction)*
+                        #struct_ident::Unknown(_, buf) => buf.len(),
                     }
                 }
             }

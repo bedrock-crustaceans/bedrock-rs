@@ -1,11 +1,11 @@
-use std::io::Read;
+use std::io::{Cursor, Read};
 use std::io::{ErrorKind, Write};
 
 use byteorder::LittleEndian;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use smallvec::SmallVec;
 
-use crate::PackingMethod;
+use crate::UnpackingMethod;
 use crate::bits::{BitArray, IndicesType};
 use crate::error::Error;
 use crate::error::Result;
@@ -39,6 +39,8 @@ pub struct Biomes {
 }
 
 impl Biomes {
+    /// This chunk's heightmap.
+    #[inline]
     pub fn heightmap(&self) -> &[u16; 256] {
         &self.heightmap
     }
@@ -50,7 +52,10 @@ impl Biomes {
         HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>()
     }
 
-    pub fn to_disk(&self, writer: &mut Vec<u8>) -> Result<()> {
+    pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
+    where
+        Cursor<W>: Write,
+    {
         const EMPTY_FLAG: u8 = 0x00;
         const INHERIT_FLAG: u8 = 0x7f;
 
@@ -77,7 +82,10 @@ impl Biomes {
         Ok(())
     }
 
-    pub fn from_disk<M: PackingMethod, R: Read>(mut reader: R) -> Result<Biomes> {
+    pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Biomes>
+    where
+        Cursor<R>: Read,
+    {
         let mut heightmap: Box<[u16; 256]> = Box::new([0; 256]);
 
         let heightmap_bytes = bytemuck::cast_slice_mut::<u16, u8>(heightmap.as_mut());
@@ -85,7 +93,7 @@ impl Biomes {
 
         let mut fragments = SmallVec::new();
         loop {
-            let indices = match BitArray::from_disk_typed::<M, _>(&mut reader) {
+            let indices = match BitArray::from_disk::<M, _>(reader) {
                 Ok(indices) => indices,
                 Err(err) => {
                     if let Error::IoError(io) = &err

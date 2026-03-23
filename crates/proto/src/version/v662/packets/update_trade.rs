@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
 
@@ -16,5 +17,5 @@ pub struct UpdateTradePacket<V: ProtoVersion> {
     pub use_new_trade_ui: bool,
     pub using_economy_trade: bool,
     #[nbt]
-    pub data_tags: nbtx::Value, // TODO: NBT Structure
+    pub data_tags: HashMap<String, nbtx::Value>,
 }

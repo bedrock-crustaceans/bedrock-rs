@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::fs::File;
+use std::io::Cursor;
 
 use bedrockrs_level::biome::Biomes;
 use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
-use bedrockrs_level::{Packed, Unpacked};
+use bedrockrs_level::subchunk::BlockDef;
+use bedrockrs_level::{Greedy, Lazy};
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
@@ -50,7 +53,7 @@ fn read_local_player() {
     let mut keys = db.keys();
 
     for kv in &mut keys {
-        let mut key_buf = kv.key();
+        let mut key_buf = Cursor::new(kv.key());
         let key = Key::deserialize(&mut key_buf);
 
         let Ok(key) = key else { continue };
@@ -68,20 +71,22 @@ fn read_biome() {
     let mut keys = db.keys();
 
     for kv in &mut keys {
-        let mut key_buf = kv.key();
+        let mut key_buf = Cursor::new(kv.key());
         let Ok(key) = Key::deserialize(&mut key_buf) else {
             continue;
         };
 
         match key.data {
             KeyVariant::Biome3d => {
-                let value = kv.value();
-                let biome = Biomes::from_disk::<Unpacked, _>(value.as_ref()).unwrap();
+                let mut value = Cursor::new(kv.value());
+                let biome = Biomes::from_disk::<Greedy, _>(&mut value).unwrap();
 
-                let mut writer = Vec::new();
+                let mut writer = Cursor::new(Vec::new());
                 biome.to_disk(&mut writer).unwrap();
 
-                let biome2 = Biomes::from_disk::<Unpacked, _>(writer.as_slice()).unwrap();
+                let value = writer.into_inner();
+                let mut reader = Cursor::new(value.as_slice());
+                let biome2 = Biomes::from_disk::<Greedy, _>(&mut reader).unwrap();
 
                 assert_eq!(biome, biome2);
 
@@ -100,7 +105,7 @@ fn read_subchunk() {
     let mut keys = db.keys();
 
     for kv in &mut keys {
-        let mut key_buf = kv.key();
+        let mut key_buf = Cursor::new(kv.key());
         let Ok(key) = Key::deserialize(&mut key_buf) else {
             continue;
         };
@@ -112,10 +117,23 @@ fn read_subchunk() {
                 let mut buf = Vec::new();
                 key.serialize(&mut buf).unwrap();
 
-                let val = db.get(buf).unwrap().unwrap();
-                let chunk = SubChunk::from_disk::<Packed, _>(val.as_ref()).unwrap();
+                let mut val = Cursor::new(db.get(buf).unwrap().unwrap());
+                let mut chunk = SubChunk::from_disk_lazy(&mut val).unwrap();
 
-                println!("{chunk:?}");
+                let layer = chunk.get_layer_mut(0).unwrap();
+                for i in 0..40 {
+                    layer.set(
+                        vek::Vec3::new(0, i, 0),
+                        BlockDef {
+                            name: "test".to_string(),
+                            states: HashMap::from([(
+                                String::from("test2"),
+                                nbtx::Value::Byte(i as i8),
+                            )]),
+                            version: Some([1, 2, 3, 4]),
+                        },
+                    );
+                }
 
                 break;
             }

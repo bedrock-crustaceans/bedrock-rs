@@ -46,6 +46,8 @@ pub enum ProtoCodecError {
     EncryptionError(#[from] EncryptionError),
     #[error("Strum Parse Error: {0}")]
     StrumParseError(#[from] ParseError),
+    #[error("Expected Some in: {0}")]
+    ExpectedSome(&'static str),
 }
 
 impl From<Infallible> for ProtoCodecError {

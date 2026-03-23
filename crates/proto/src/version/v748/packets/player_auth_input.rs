@@ -24,7 +24,7 @@ pub struct PlayerAuthInputPacket<V: ProtoVersion> {
     pub velocity: Vec3<f32>,
     pub item_use_transaction: Option<V::PackedItemUseLegacyInventoryTransaction>, // If input_data has PlayerAuthInputPacket<V>::InputData::PerformItemInteraction set.
     pub item_stack_request: Option<PerformItemStackRequestData<V>>, // If input data has PlayerAuthInputPacket<V>::InputData::PerformItemStackRequest set.
-    pub player_block_actions: Option<V::PlayerBlockActions>, // If input data has PlayerAuthInputPacket<V>::InputData::PerformBlockActions set.
+    pub player_block_actions: Option<Vec<V::PlayerBlockActionData>>, // If input data has PlayerAuthInputPacket<V>::InputData::PerformBlockActions set.
     pub client_predicted_vehicle: Option<ClientPredictedVehicleData<V>>, // If input data has PlayerAuthInputPacket<V>::InputData::IsInClientPredictedVehicle set.
     pub analog_move_vector: Vec2<f32>,
     pub camera_orientation: Vec3<f32>,
@@ -149,7 +149,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
-            <V::PlayerBlockActions as ProtoCodec>::serialize(
+            <Vec<V::PlayerBlockActionData> as ProtoCodec>::serialize(
                 self.player_block_actions.as_ref().unwrap(),
                 stream,
             )?;
@@ -196,7 +196,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             };
         let player_block_actions =
             match input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
-                true => Some(<V::PlayerBlockActions as ProtoCodec>::deserialize(stream)?),
+                true => Some(<Vec<V::PlayerBlockActionData> as ProtoCodec>::deserialize(stream)?),
                 false => None,
             };
         let client_predicted_vehicle =
