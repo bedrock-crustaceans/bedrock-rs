@@ -145,5 +145,6 @@ impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> 
             + ProtoCodecLE::size_hint(&self.click_position)
             + ProtoCodecVAR::size_hint(&self.target_block_id)
             + self.predicted_result.size_hint()
+            + self.cooldown_state.size_hint()
     }
 }

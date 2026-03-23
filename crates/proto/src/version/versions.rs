@@ -751,6 +751,7 @@ define_versions![
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             % StartGamePacket: StartGamePacket^,
             % UpdateClientInputLocksPacket: UpdateClientInputLocksPacket,
+            % VoxelShapesPacket: VoxelShapesPacket,
             - ClientBoundDataDrivenUICloseAllScreensPacket
         ] in crate::version::v944::packets,
         types: [
