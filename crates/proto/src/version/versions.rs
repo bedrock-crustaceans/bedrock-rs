@@ -749,6 +749,7 @@ define_versions![
             + SyncWorldClocksPacket: SyncWorldClocksPacket,
             % ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
+            % StartGamePacket: StartGamePacket^,
             - ClientBoundDataDrivenUICloseAllScreensPacket
         ] in crate::version::v944::packets,
         types: [

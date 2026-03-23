@@ -13,4 +13,5 @@ export!(locator_bar);
 export!(party_changed);
 export!(resource_packs_ready_for_validation);
 export!(server_bound_data_driven_closed);
+export!(start_game);
 export!(sync_world_clocks);
