@@ -3,14 +3,13 @@ use bedrockrs_macros::packet;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write, copy};
-use vek::Vec3;
 
 #[packet(id = 161)]
 #[derive(Clone, Debug)]
 pub struct CorrectPlayerMovePredictionPacket<V: ProtoVersion> {
     pub prediction_type: V::PredictionType,
-    pub position: Vec3<f32>,
-    pub velocity: Vec3<f32>,
+    pub position: (f32, f32, f32),
+    pub velocity: (f32, f32, f32),
     pub on_ground: bool,
     pub tick: u64,
 }
@@ -31,8 +30,8 @@ impl<V: ProtoVersion> ProtoCodec for CorrectPlayerMovePredictionPacket<V> {
             stream,
         )?;
 
-        <Vec3<f32> as ProtoCodecLE>::serialize(&self.position, stream)?;
-        <Vec3<f32> as ProtoCodecLE>::serialize(&self.velocity, stream)?;
+        <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.position, stream)?;
+        <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.velocity, stream)?;
 
         copy(&mut prediction_type_cursor, stream)?;
 
@@ -46,8 +45,8 @@ impl<V: ProtoVersion> ProtoCodec for CorrectPlayerMovePredictionPacket<V> {
 
         <u8 as ProtoCodec>::serialize(&<u8 as ProtoCodec>::deserialize(stream)?, &mut buffer)?;
 
-        let position: Vec3<f32> = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
-        let velocity: Vec3<f32> = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
+        let position: (f32, f32, f32) = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
+        let velocity: (f32, f32, f32) = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
 
         stream.read_to_end(&mut buffer)?;
         let stream = &mut Cursor::new(buffer.as_slice());

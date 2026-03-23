@@ -4,14 +4,13 @@ use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write, copy};
-use vek::{Vec2, Vec3};
 
 #[packet(id = 19)]
 #[derive(Clone, Debug)]
 pub struct MovePlayerPacket<V: ProtoVersion> {
     pub player_runtime_id: V::ActorRuntimeID,
-    pub position: Vec3<f32>,
-    pub rotation: Vec2<f32>,
+    pub position: (f32, f32, f32),
+    pub rotation: (f32, f32),
     pub y_head_rotation: f32,
     pub position_mode: V::PlayerPositionMode,
     pub on_ground: bool,
@@ -26,8 +25,8 @@ impl<V: ProtoVersion> ProtoCodec for MovePlayerPacket<V> {
         let mut position_mode_cursor = Cursor::new(position_mode_stream.as_slice());
 
         <V::ActorRuntimeID as ProtoCodec>::serialize(&self.player_runtime_id, stream)?;
-        <Vec3<f32> as ProtoCodecLE>::serialize(&self.position, stream)?;
-        <Vec2<f32> as ProtoCodecLE>::serialize(&self.rotation, stream)?;
+        <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.position, stream)?;
+        <(f32, f32) as ProtoCodecLE>::serialize(&self.rotation, stream)?;
         <f32 as ProtoCodecLE>::serialize(&self.y_head_rotation, stream)?;
         stream.write_i8(position_mode_cursor.read_i8()?)?;
         <bool as ProtoCodec>::serialize(&self.on_ground, stream)?;
@@ -42,8 +41,8 @@ impl<V: ProtoVersion> ProtoCodec for MovePlayerPacket<V> {
         let mut sub_stream = Vec::<u8>::new();
 
         let player_runtime_id = <V::ActorRuntimeID as ProtoCodec>::deserialize(stream)?;
-        let position = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
-        let rotation = <Vec2<f32> as ProtoCodecLE>::deserialize(stream)?;
+        let position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
+        let rotation = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let y_head_rotation = <f32 as ProtoCodecLE>::deserialize(stream)?;
         sub_stream.write_i8(stream.read_i8()?)?;
         let on_ground = <bool as ProtoCodec>::deserialize(stream)?;

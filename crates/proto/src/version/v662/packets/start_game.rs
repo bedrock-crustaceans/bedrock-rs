@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
 use uuid::Uuid;
-use vek::{Vec2, Vec3};
 
 #[packet(id = 11)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -11,9 +10,9 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub target_runtime_id: V::ActorRuntimeID,
     pub actor_game_type: V::GameType,
     #[endianness(le)]
-    pub position: Vec3<f32>,
+    pub position: (f32, f32, f32),
     #[endianness(le)]
-    pub rotation: Vec2<f32>,
+    pub rotation: (f32, f32),
     pub settings: V::LevelSettings,
     pub level_id: String,
     pub level_name: String,

@@ -1,5 +1,4 @@
 use bedrockrs_macros::{packet, ProtoCodec};
-use vek::Vec3;
 
 #[packet(id = 163)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -17,7 +16,7 @@ pub enum Type {
     AddDebugMarkerCube {
         text: String,
         #[endianness(le)]
-        position: Vec3<f32>,
+        position: (f32, f32, f32),
         #[endianness(le)]
         r: f32,
         #[endianness(le)]

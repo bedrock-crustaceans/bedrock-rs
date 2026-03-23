@@ -16,7 +16,6 @@ byteorder = { workspace = true }
 varint-rs = { workspace = true }
 
 tracing = { workspace = true }
-vek = { workspace = true }
 thiserror = { workspace = true }
 
 jsonwebtoken = { workspace = true }
