@@ -742,6 +742,7 @@ define_versions![
         packets: [
             + ClientBoundAttributeLayerSyncPacket: ClientBoundAttributeLayerSyncPacket,
             + ClientBoundDataDrivenUICloseScreenPacket: ClientBoundDataDrivenUICloseScreenPacket,
+            + LocatorBarPacket: LocatorBarPacket,
             + PartyChangedPacket: PartyChangedPacket,
             + ServerBoundDataDrivenClosedPacket: ServerBoundDataDrivenClosedPacket,
             % ClientBoundDataDrivenUIShowScreenPacket: ClientBoundDataDrivenUIShowScreenPacket,
