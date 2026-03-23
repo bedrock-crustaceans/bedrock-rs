@@ -11,8 +11,8 @@ pub struct CameraSplineInstruction<V: ProtoVersion> {
     pub curve: Vec<Vec3<f32>>,
     pub progress_key_frames: Vec<ProgressKeyFrame<V>>,
     pub rotation_option: Vec<RotationOption<V>>,
-    pub spline_identifier: String,
-    pub load_from_json: bool,
+    pub spline_identifier: Option<String>,
+    pub load_from_json: Option<bool>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
