@@ -1,3 +1,0 @@
-[submodule "crates/level/ffi/leveldb"]
-	path = crates/level/ffi/leveldb
-	url = https://github.com/bedrock-crustaceans/leveldb
