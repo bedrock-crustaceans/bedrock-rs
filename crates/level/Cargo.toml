@@ -2,12 +2,11 @@
 name = "bedrockrs_level"
 version = "0.1.0"
 edition = "2024"
-build = "build.rs"
 
 [features]
 # default = ["rusty-leveldb"]
 default = ["mojang-leveldb"]
-mojang-leveldb = ["dep:cmake"]
+mojang-leveldb = ["dep:leveldb-sys"]
 # rusty-leveldb = ["dep:rusty-leveldb", "dep:miniz_oxide"]
 
 [[bench]]
@@ -19,6 +18,8 @@ name = "unpack"
 harness = false
 
 [dependencies]
+leveldb-sys = { git = "https://github.com/bedrock-crustaceans/leveldb-sys", optional = true }
+
 bedrockrs_shared = { path = "../shared" }
 nbtx = { workspace = true }
 
@@ -39,6 +40,3 @@ tar = { workspace = true }
 flate2 = { workspace = true }
 tempfile = { workspace = true }
 criterion = { workspace = true }
-
-[build-dependencies]
-cmake = { version = "0.1.57", optional = true }
