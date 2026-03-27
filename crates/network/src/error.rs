@@ -43,11 +43,11 @@ pub enum TransportLayerError {
 #[derive(Error, Debug, Clone)]
 pub enum RakNetError {
     #[error("Receive Error: {0}")]
-    RecvError(#[from] rak_rs::connection::RecvError),
+    RecvError(#[from] raknet::connection::RecvError),
     #[error("Send Error: {0}")]
-    SendError(#[from] rak_rs::connection::queue::SendQueueError),
+    SendError(#[from] raknet::connection::queue::SendQueueError),
     #[error("Server Error: {0}")]
-    ServerError(#[from] rak_rs::error::server::ServerError),
+    ServerError(#[from] raknet::error::server::ServerError),
     #[error("Invalid RakNet Header (expected: {RAKNET_GAMEPACKET_ID}, got: {0})")]
     InvalidRakNetHeader(u8),
     #[error("Format Error: {0}")]

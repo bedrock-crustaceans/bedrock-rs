@@ -4,7 +4,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Write};
 
 pub enum TransportLayerConnection {
-    RakNet(rak_rs::connection::Connection),
+    RakNet(raknet::connection::Connection),
     // TODO: NetherNet(nethernet::connection::Connection),
     // TODO: Quic(s2n_quic::stream::BidirectionalStream),
     // TODO: Tcp(net::TcpStream),
@@ -22,7 +22,7 @@ impl TransportLayerConnection {
                 str.write_all(stream)?;
 
                 // TODO Find out if immediate: true should be used
-                conn.send(str.as_slice(), true)
+                conn.send(str.as_slice())
                     .await
                     .map_err(|err| TransportLayerError::RakNetError(RakNetError::SendError(err)))?;
             }

@@ -2,7 +2,7 @@ use crate::error::{RakNetError, TransportLayerError};
 use crate::transport::TransportLayerConnection;
 
 pub enum TransportLayerListener {
-    RakNet(rak_rs::Listener),
+    RakNet(raknet::Listener),
     // TODO: NetherNet(...),
     // TODO: Quic(s2n_quic::server::Server),
     // TODO: Tcp(...),

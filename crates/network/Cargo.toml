@@ -12,8 +12,5 @@ byteorder = { workspace = true }
 thiserror = { workspace = true }
 rand = { workspace = true }
 
-rak-rs = { version = "0.3", default-features = false, features = [
-    "async_tokio",
-    "mcpe",
-] }
+raknet = { git = "https://github.com/bedrock-crustaceans/raknet-rs.git" }
 
