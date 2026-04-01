@@ -76,9 +76,9 @@ impl Compression {
 
                 encoder
                     .write_all(src.as_slice())
-                    .map_err(CompressionError::SnappyError)?;
+                    .map_err(CompressionError::ZlibError)?;
 
-                encoder.finish().map_err(CompressionError::SnappyError)?
+                encoder.finish().map_err(CompressionError::ZlibError)?
             }
             Compression::Snappy { .. } => {
                 dst.write_u8(Self::ID_SNAPPY)?;
