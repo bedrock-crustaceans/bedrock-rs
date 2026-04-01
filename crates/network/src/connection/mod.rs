@@ -1,11 +1,11 @@
 pub mod shard;
 
-use crate::error::ConnectionError;
-use crate::transport::TransportLayerConnection;
-use bedrockrs_proto::Unknown;
 use crate::codec::{decode_packets, encode_packets};
 use crate::compression::Compression;
 use crate::encryption::Encryption;
+use crate::error::ConnectionError;
+use crate::transport::TransportLayerConnection;
+use bedrockrs_proto::Unknown;
 use bedrockrs_proto_core::Packets;
 use std::marker::PhantomData;
 use std::net::SocketAddr;

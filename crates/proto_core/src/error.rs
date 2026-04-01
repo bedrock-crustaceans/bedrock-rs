@@ -1,5 +1,4 @@
 use std::convert::Infallible;
-use std::error::Error;
 use std::io::Error as IOError;
 use std::num::{ParseIntError, TryFromIntError};
 use std::string::FromUtf8Error;
@@ -59,9 +58,9 @@ impl From<Infallible> for ProtoCodecError {
 #[derive(Error, Debug)]
 pub enum CompressionError {
     #[error("Zlib Error: {0}")]
-    ZlibError(#[from] Box<dyn Error + Send + Sync>),
+    ZlibError(IOError),
     #[error("Snappy Error: {0}")]
-    SnappyError(#[from] IOError),
+    SnappyError(IOError),
     #[error("Unknown Compression Method: {0}")]
     UnknownCompressionMethod(u8),
     #[error("IO Error: {0}")]
