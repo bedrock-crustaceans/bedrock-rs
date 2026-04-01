@@ -2,7 +2,7 @@ mod common;
 
 use crate::common::logger::setup_logger;
 use bedrockrs_proto::V800;
-use bedrockrs_proto::codec::{decode_packets, encode_packets};
+use bedrockrs_network::codec::{decode_packets, encode_packets};
 use bedrockrs_proto::v662::packets::LoginPacket;
 
 fn main() {

@@ -1,7 +1,7 @@
 use crate::connection::Connection;
 use crate::error::ConnectionError;
-use bedrockrs_proto::compression::Compression;
-use bedrockrs_proto::encryption::Encryption;
+use crate::compression::Compression;
+use crate::encryption::Encryption;
 use bedrockrs_proto_core::Packets;
 use tokio::select;
 use tokio::sync::watch::Ref;

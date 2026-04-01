@@ -65,11 +65,15 @@ pub enum CompressionError {
     #[error("Unknown Compression Method: {0}")]
     UnknownCompressionMethod(u8),
     #[error("IO Error: {0}")]
-    IOError(IOError),
+    IOError(#[from] IOError),
 }
 
 #[derive(Error, Debug)]
 pub enum EncryptionError {
+    #[error("Encrypted data length invalid (len={0}, expected > 8 bytes)")]
+    InvalidLength(usize),
+    #[error("Encrypted data trailer invalid")]
+    InvalidTrailer,
     #[error("IO Error: {0}")]
-    IOError(IOError),
+    IOError(#[from] IOError),
 }

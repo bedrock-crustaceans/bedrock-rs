@@ -1,6 +1,6 @@
 use bedrockrs_network::connection::Connection;
 use bedrockrs_network::listener::Listener;
-use bedrockrs_proto::compression::Compression;
+use bedrockrs_network::compression::Compression;
 use bedrockrs_proto::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting,
     GameType, GeneratorType, PacketCompressionAlgorithm, PlayStatus, PlayerPermissionLevel,
