@@ -1,4 +1,4 @@
-use bedrockrs_proto_core::error::CompressionError;
+use crate::error::CompressionError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use flate2::Compression as CompressionLevel;
 use flate2::{read::DeflateDecoder, write::DeflateEncoder};

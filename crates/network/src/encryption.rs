@@ -1,5 +1,5 @@
+use crate::error::EncryptionError;
 use aes::Aes256;
-use bedrockrs_proto_core::error::EncryptionError;
 use ctr::cipher::StreamCipher;
 use ctr::{Ctr128BE, cipher::KeyIvInit};
 use p384::{PublicKey, SecretKey};
@@ -42,16 +42,15 @@ impl Encryption {
     }
 
     pub fn encrypt(&mut self, buf: Vec<u8>) -> Result<Vec<u8>, EncryptionError> {
-        let counter = self.encrypt_counter;
-        self.encrypt_counter += 1;
-
-        let trailer = self.trailer(&buf, counter);
+        let trailer = self.trailer(&buf, self.encrypt_counter);
 
         let mut out = Vec::<u8>::with_capacity(buf.len() + trailer.len());
         out.extend_from_slice(&buf);
         out.extend_from_slice(&trailer);
 
         self.encrypt_cipher.apply_keystream(&mut out);
+
+        self.encrypt_counter += 1;
 
         Ok(out)
     }
@@ -61,20 +60,18 @@ impl Encryption {
             return Err(EncryptionError::InvalidLength(buf.len()));
         }
 
-        let counter = self.decrypt_counter;
-        self.decrypt_counter += 1;
-
         let mut out = buf;
         self.decrypt_cipher.apply_keystream(&mut out);
 
         let trailer = &out[out.len() - 8..];
-        let expected_trailer = self.trailer(&out[..out.len() - 8], counter);
-        if !trailer.eq(&expected_trailer) {
+        let expected_trailer = self.trailer(&out[..out.len() - 8], self.decrypt_counter);
+        if trailer != expected_trailer {
             return Err(EncryptionError::InvalidTrailer);
         }
 
-        out.truncate(out.len() - 8);
+        self.decrypt_counter += 1;
 
+        out.truncate(out.len() - 8);
         Ok(out)
     }
 
