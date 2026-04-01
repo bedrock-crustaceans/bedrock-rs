@@ -4,7 +4,6 @@ use ctr::cipher::StreamCipher;
 use ctr::{Ctr128BE, cipher::KeyIvInit};
 use p384::{PublicKey, SecretKey};
 use sha2::{Digest, Sha256};
-use std::io::Write;
 
 #[derive(Debug)]
 pub struct Encryption {
@@ -49,8 +48,8 @@ impl Encryption {
         let trailer = self.trailer(&buf, counter);
 
         let mut out = Vec::<u8>::with_capacity(buf.len() + trailer.len());
-        out.write_all(&buf)?;
-        out.write_all(&trailer)?;
+        out.extend_from_slice(&buf);
+        out.extend_from_slice(&trailer);
 
         self.encrypt_cipher.apply_keystream(&mut out);
 
