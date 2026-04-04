@@ -47,7 +47,7 @@ quote = { version = "1.0" }
 
 jsonwebtoken = "10.3"
 base64 = "0.22"
-nbtx = "2.0"
+nbtx = "3.0.1"
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
@@ -105,4 +105,4 @@ required-features = ["network"]
 [[example]]
 name = "proto_parsing"
 path = "examples/proto_parsing.rs"
-required-features = ["proto"]
+required-features = ["network"]

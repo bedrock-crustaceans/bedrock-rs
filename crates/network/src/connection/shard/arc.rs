@@ -3,7 +3,7 @@ use crate::error::ConnectionError;
 use bedrockrs_proto_core::Packets;
 use std::collections::VecDeque;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub fn shard<T: Packets>(connection: Connection<T>) -> ConnectionShared<T> {
     ConnectionShared::<T> {
@@ -74,5 +74,13 @@ impl<T: Packets> ConnectionShared<T> {
 
     pub async fn is_closed(&self) -> bool {
         self.connection.read().await.is_closed().await
+    }
+
+    pub async fn get_connection(&self) -> RwLockReadGuard<'_, Connection<T>> {
+        self.connection.read().await
+    }
+
+    pub async fn get_mut_connection(&self) -> RwLockWriteGuard<'_, Connection<T>> {
+        self.connection.write().await
     }
 }

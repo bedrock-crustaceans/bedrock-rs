@@ -1,4 +1,4 @@
-use bedrockrs_proto_core::error::CompressionError;
+use crate::error::CompressionError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use flate2::Compression as CompressionLevel;
 use flate2::{read::DeflateDecoder, write::DeflateEncoder};
@@ -76,11 +76,9 @@ impl Compression {
 
                 encoder
                     .write_all(src.as_slice())
-                    .map_err(|err| CompressionError::ZlibError(Box::new(err)))?;
+                    .map_err(CompressionError::ZlibError)?;
 
-                encoder
-                    .finish()
-                    .map_err(|err| CompressionError::ZlibError(Box::new(err)))?
+                encoder.finish().map_err(CompressionError::ZlibError)?
             }
             Compression::Snappy { .. } => {
                 dst.write_u8(Self::ID_SNAPPY)?;

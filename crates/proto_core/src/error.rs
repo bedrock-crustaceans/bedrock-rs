@@ -1,5 +1,4 @@
 use std::convert::Infallible;
-use std::error::Error;
 use std::io::Error as IOError;
 use std::num::{ParseIntError, TryFromIntError};
 use std::string::FromUtf8Error;
@@ -40,10 +39,6 @@ pub enum ProtoCodecError {
     InvalidPacketID(u16),
     #[error("Expected format got mismatched: {0}")]
     FormatMismatch(&'static str),
-    #[error("Compression Error: {0}")]
-    CompressError(#[from] CompressionError),
-    #[error("Encryption Error: {0}")]
-    EncryptionError(#[from] EncryptionError),
     #[error("Strum Parse Error: {0}")]
     StrumParseError(#[from] ParseError),
     #[error("Expected Some in: {0}")]
@@ -54,22 +49,4 @@ impl From<Infallible> for ProtoCodecError {
     fn from(_: Infallible) -> Self {
         unreachable!()
     }
-}
-
-#[derive(Error, Debug)]
-pub enum CompressionError {
-    #[error("Zlib Error: {0}")]
-    ZlibError(#[from] Box<dyn Error + Send + Sync>),
-    #[error("Snappy Error: {0}")]
-    SnappyError(#[from] IOError),
-    #[error("Unknown Compression Method: {0}")]
-    UnknownCompressionMethod(u8),
-    #[error("IO Error: {0}")]
-    IOError(IOError),
-}
-
-#[derive(Error, Debug)]
-pub enum EncryptionError {
-    #[error("IO Error: {0}")]
-    IOError(IOError),
 }

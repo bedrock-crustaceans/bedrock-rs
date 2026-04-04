@@ -4,7 +4,7 @@ use std::io;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use thiserror::Error;
 
-use bedrockrs_proto::info::RAKNET_GAMEPACKET_ID;
+use crate::info::RAKNET_GAMEPACKET_ID;
 
 #[derive(Error, Debug)]
 pub enum ListenerError {
@@ -20,8 +20,8 @@ pub enum ListenerError {
 
 #[derive(Error, Debug)]
 pub enum ConnectionError {
-    #[error("ProtoCodec Error: {0}")]
-    ProtoCodecError(#[from] ProtoCodecError),
+    #[error("NetworkCodec Error: {0}")]
+    NetworkCodecError(#[from] NetworkCodecError),
     #[error("Connection Closed")]
     ConnectionClosed,
     #[error("Transport Error: {0}")]
@@ -58,4 +58,38 @@ pub enum RakNetError {
 pub enum QuicError {
     // #[error("Stream Error: {0}")]
     // StreamError(s2n_quic::stream::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum NetworkCodecError {
+    #[error("ProtoCodec Error: {0}")]
+    ProtoCodecError(#[from] ProtoCodecError),
+    #[error("Compression Error: {0}")]
+    CompressionError(#[from] CompressionError),
+    #[error("Encryption Error: {0}")]
+    EncryptionError(#[from] EncryptionError),
+    #[error("IO Error: {0}")]
+    IOError(#[from] IOError),
+}
+
+#[derive(Error, Debug)]
+pub enum CompressionError {
+    #[error("Zlib Error: {0}")]
+    ZlibError(IOError),
+    #[error("Snappy Error: {0}")]
+    SnappyError(IOError),
+    #[error("Unknown Compression Method: {0}")]
+    UnknownCompressionMethod(u8),
+    #[error("IO Error: {0}")]
+    IOError(#[from] IOError),
+}
+
+#[derive(Error, Debug)]
+pub enum EncryptionError {
+    #[error("Encrypted data length invalid (len={0}, expected > 8 bytes)")]
+    InvalidLength(usize),
+    #[error("Encrypted data trailer invalid")]
+    InvalidTrailer,
+    #[error("IO Error: {0}")]
+    IOError(#[from] IOError),
 }

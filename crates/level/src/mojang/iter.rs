@@ -1,9 +1,6 @@
 use std::{ffi::c_void, marker::PhantomData, ptr::NonNull};
 
-use crate::{
-    db::{Buffer, Database},
-    ffi,
-};
+use crate::db::{Buffer, Database};
 
 /// A key-value tuple returned by the [`Keys`] iterator.
 pub struct KvRef<'k, 'db> {
@@ -18,7 +15,7 @@ impl<'k, 'db> KvRef<'k, 'db> {
         // Safety: A `KvRef` can only be created when the iterator is in a valid state.
         // The iterator cannot become invalid since the existence of this mutable ref prevents updates
         // of the iterator. This means the iterator must be valid and this method is safe to call.
-        let result = unsafe { ffi::bedrockrs_iter_key(self.iter.as_ptr()) };
+        let result = unsafe { leveldb_sys::iter_key(self.iter.as_ptr()) };
 
         // something must go very wrong...
         assert!(
@@ -45,7 +42,7 @@ impl<'k, 'db> KvRef<'k, 'db> {
         // Safety: A `KvRef` can only be created when the iterator is in a valid state.
         // The iterator cannot become invalid since the existence of this mutable ref prevents updates
         // of the iterator. This means the iterator must be valid and this method is safe to call.
-        let result = unsafe { ffi::bedrockrs_iter_value(self.iter.as_ptr()) };
+        let result = unsafe { leveldb_sys::iter_value(self.iter.as_ptr()) };
 
         assert!(
             !result.data.is_null(),
@@ -78,7 +75,7 @@ pub struct Keys<'db> {
 
 impl<'db> Keys<'db> {
     pub fn new(db: &'db Database) -> Self {
-        let result = unsafe { ffi::bedrockrs_iter_new(db.as_ptr()) };
+        let result = unsafe { leveldb_sys::iter_new(db.as_ptr()) };
 
         Self {
             index: 0,
@@ -97,11 +94,11 @@ impl<'k, 'db> Iterator for &'k mut Keys<'db> {
             // The only method of destroying an iterator is the `Drop` implementation of `Keys` which cannot have been
             // called yet.
             unsafe {
-                ffi::bedrockrs_iter_next(self.iter.as_ptr());
+                leveldb_sys::iter_next(self.iter.as_ptr());
             }
         }
 
-        let valid = unsafe { ffi::bedrockrs_iter_valid(self.iter.as_ptr()) };
+        let valid = unsafe { leveldb_sys::iter_valid(self.iter.as_ptr()) };
 
         self.index += 1;
         valid.then_some(KvRef {
@@ -117,7 +114,7 @@ impl<'db> Drop for Keys<'db> {
             // Safety: This piece of code is the only line in the codebase that can destroy iterators.
             // Since this is a `Drop` implementation it means that this specific iterator must exist and
             // can therefore safely be deleted.
-            ffi::bedrockrs_iter_destroy(self.iter.as_ptr());
+            leveldb_sys::iter_destroy(self.iter.as_ptr());
         }
     }
 }

@@ -6,7 +6,7 @@ use std::io::{Cursor, Seek, SeekFrom};
 pub trait SeekExt {
     /// Performs multiple seeks to figure out the length of this buffer.
     ///
-    /// Right now this is currently a direct copy of [`stream_len`]. It is called
+    /// Currently this is a direct copy of [`stream_len`]. It is called
     /// `stream_len_ext` to ensure it does not collide with the standard library method.
     ///
     /// [`stream_len`]: std::io::Seek::stream_len

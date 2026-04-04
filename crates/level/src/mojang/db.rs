@@ -4,7 +4,6 @@ use std::{
     ptr::NonNull,
 };
 
-use crate::ffi::{self, FfiStatus};
 use crate::{
     error::{Error, Result},
     iter::Keys,
@@ -57,7 +56,7 @@ impl<'db> Drop for Buffer<'db> {
         // The slice in self has been allocated by the database, assuming the safety
         // conditions were followed when creating this guard.
         unsafe {
-            ffi::bedrockrs_buffer_destroy(self.0.as_mut_ptr().cast::<i8>());
+            leveldb_sys::buffer_destroy(self.0.as_mut_ptr().cast::<i8>());
         }
     }
 }
@@ -75,9 +74,9 @@ impl Database {
         let ffi_path = CString::new(path.as_ref())?;
 
         // Safety: This is safe to call since `ffi_path` is a valid nul-terminated string.
-        let result = unsafe { ffi::bedrockrs_db_open(ffi_path.as_ptr()) };
+        let result = unsafe { leveldb_sys::db_open(ffi_path.as_ptr()) };
 
-        if result.status == FfiStatus::Success {
+        if result.status == leveldb_sys::Status::Success {
             let ptr = NonNull::new(result.data)
                 .expect("`db_open` pointer was null despite successful status");
 
@@ -109,7 +108,7 @@ impl Database {
         // Safety: This is safe to call since `key` is a valid Rust slice and `self.ptr`
         // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
         let result = unsafe {
-            ffi::bedrockrs_db_get(
+            leveldb_sys::db_get(
                 self.as_ptr(),
                 key.as_ref().as_ptr().cast::<c_char>(),
                 key.as_ref().len() as c_int,
@@ -117,7 +116,7 @@ impl Database {
         };
 
         match result.status {
-            FfiStatus::Success => {
+            leveldb_sys::Status::Success => {
                 assert!(!result.data.is_null(), "`db_get` result data was null");
 
                 // Safety: This is safe because `result.size` is the exact size of the buffer and
@@ -132,7 +131,7 @@ impl Database {
 
                 Ok(Some(guard))
             }
-            FfiStatus::NotFound => Ok(None),
+            leveldb_sys::Status::NotFound => Ok(None),
             // Safety: This is safe because the result is a fail and therefore `result.data` points to a
             // nul-terminated string.
             _ => Err(unsafe { translate_ffi_error(result) }),
@@ -148,7 +147,7 @@ impl Database {
         // Safety: This is safe to call since `key` and `value` are valid Rust slices and `self.ptr`
         // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
         let result = unsafe {
-            ffi::bedrockrs_db_put(
+            leveldb_sys::db_put(
                 self.as_ptr(),
                 key.as_ref().as_ptr().cast::<c_char>(),
                 key.as_ref().len() as c_int,
@@ -157,7 +156,7 @@ impl Database {
             )
         };
 
-        if result.status == FfiStatus::Success {
+        if result.status == leveldb_sys::Status::Success {
             Ok(())
         } else {
             // Safety: This is safe because the result is a fail and therefore `result.data` points to a
@@ -174,7 +173,7 @@ impl Database {
         // Safety: This is safe to call since `key` is a valid Rust slice and `self.ptr`
         // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
         let result = unsafe {
-            ffi::bedrockrs_db_remove(
+            leveldb_sys::db_remove(
                 self.as_ptr(),
                 key.as_ref().as_ptr().cast::<c_char>(),
                 key.as_ref().len() as c_int,
@@ -182,7 +181,7 @@ impl Database {
         };
 
         match result.status {
-            FfiStatus::Success | FfiStatus::NotFound => Ok(()),
+            leveldb_sys::Status::Success | leveldb_sys::Status::NotFound => Ok(()),
             // Safety: This is safe because the result is a fail and therefore `result.data` points to a
             // nul-terminated string.
             _ => Err(unsafe { translate_ffi_error(result) }),
@@ -193,7 +192,7 @@ impl Database {
 impl Drop for Database {
     fn drop(&mut self) {
         unsafe {
-            ffi::bedrockrs_db_close(self.ptr.as_ptr());
+            leveldb_sys::db_close(self.ptr.as_ptr());
         }
     }
 }
@@ -208,16 +207,16 @@ unsafe impl Sync for Database {}
 
 /// # Safety
 ///
-/// This function must only be called if `result.success` is not `FfiResult::Success` and
+/// This function must only be called if `result.success` is not `leveldb_sys::Result::Success` and
 /// `result.data` is a C-style string ending in a nul terminator.
-unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
+unsafe fn translate_ffi_error(result: leveldb_sys::Result) -> Error {
     assert_ne!(
         result.status,
-        FfiStatus::Success,
+        leveldb_sys::Status::Success,
         "cannot translate success status"
     );
 
-    if result.status == FfiStatus::Exception {
+    if result.status == leveldb_sys::Status::Exception {
         return Error::Exception;
     }
 
@@ -231,6 +230,6 @@ unsafe fn translate_ffi_error(result: ffi::FfiResult) -> Error {
 
     let owned = str.to_owned();
 
-    unsafe { ffi::bedrockrs_buffer_destroy(result.data.cast::<c_char>()) };
+    unsafe { leveldb_sys::buffer_destroy(result.data.cast::<c_char>()) };
     Error::LevelDbError(owned)
 }

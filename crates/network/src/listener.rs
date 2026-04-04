@@ -6,9 +6,9 @@ use rand::random;
 
 use crate::connection::Connection;
 use crate::error::{ListenerError, RakNetError, TransportLayerError};
+use crate::info::MINECRAFT_EDITION_MOTD;
 use crate::transport::TransportLayerListener;
 use bedrockrs_proto::Unknown;
-use bedrockrs_proto::info::MINECRAFT_EDITION_MOTD;
 
 #[allow(dead_code)]
 pub struct Listener {

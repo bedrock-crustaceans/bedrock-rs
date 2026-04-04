@@ -1,6 +1,6 @@
 use crate::compression::Compression;
 use crate::encryption::Encryption;
-use bedrockrs_proto_core::error::ProtoCodecError;
+use crate::error::NetworkCodecError;
 use bedrockrs_proto_core::{PacketHeader, Packets, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write};
 
@@ -8,7 +8,7 @@ pub fn encode_packets<T: Packets>(
     packets: &[T],
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
-) -> Result<Vec<u8>, ProtoCodecError> {
+) -> Result<Vec<u8>, NetworkCodecError> {
     tracing::trace!("Encoding packets");
 
     let mut packets_stream = batch_packets::<T>(packets)?;
@@ -22,7 +22,7 @@ pub fn decode_packets<T: Packets>(
     mut packets_stream: Vec<u8>,
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
-) -> Result<Vec<T>, ProtoCodecError> {
+) -> Result<Vec<T>, NetworkCodecError> {
     tracing::trace!("Decoding packets");
 
     packets_stream = decrypt_packets(packets_stream, encryption)?;
@@ -32,7 +32,7 @@ pub fn decode_packets<T: Packets>(
     Ok(packets)
 }
 
-fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, ProtoCodecError> {
+fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError> {
     let packets_stream_size = packets
         .iter()
         .map(|p| {
@@ -50,7 +50,7 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, ProtoCodecError> 
 
     packets
         .iter()
-        .try_for_each(|packet| -> Result<(), ProtoCodecError> {
+        .try_for_each(|packet| -> Result<(), NetworkCodecError> {
             let header = PacketHeader {
                 packet_id: packet.id(),
                 sender_sub_client_id: 0,
@@ -70,7 +70,7 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, ProtoCodecError> 
     Ok(packets_stream)
 }
 
-fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, ProtoCodecError> {
+fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, NetworkCodecError> {
     let mut packets_stream = Cursor::new(packets_stream.as_slice());
     let mut packets = vec![];
 
@@ -91,7 +91,7 @@ fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, Proto
 pub fn compress_packets(
     mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
-) -> Result<Vec<u8>, ProtoCodecError> {
+) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(compression) = compression {
         packet_stream = compression.compress(packet_stream)?;
     }
@@ -102,7 +102,7 @@ pub fn compress_packets(
 pub fn decompress_packets(
     mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
-) -> Result<Vec<u8>, ProtoCodecError> {
+) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(compression) = compression {
         packet_stream = compression.decompress(packet_stream)?;
     }
@@ -113,7 +113,7 @@ pub fn decompress_packets(
 pub fn encrypt_packets(
     mut packet_stream: Vec<u8>,
     encryption: Option<&mut Encryption>,
-) -> Result<Vec<u8>, ProtoCodecError> {
+) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(encryption) = encryption {
         packet_stream = encryption.encrypt(packet_stream)?;
     }
@@ -124,7 +124,7 @@ pub fn encrypt_packets(
 pub fn decrypt_packets(
     mut packet_stream: Vec<u8>,
     encryption: Option<&mut Encryption>,
-) -> Result<Vec<u8>, ProtoCodecError> {
+) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(encryption) = encryption {
         packet_stream = encryption.decrypt(packet_stream)?;
     }

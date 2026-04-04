@@ -1,6 +1,6 @@
+use bedrockrs_network::compression::Compression;
 use bedrockrs_network::connection::Connection;
 use bedrockrs_network::listener::Listener;
-use bedrockrs_proto::compression::Compression;
 use bedrockrs_proto::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting,
     GameType, GeneratorType, PacketCompressionAlgorithm, PlayStatus, PlayerPermissionLevel,
@@ -9,14 +9,15 @@ use bedrockrs_proto::v662::enums::{
 use bedrockrs_proto::v662::packets::{NetworkSettingsPacket, PlayStatusPacket};
 use bedrockrs_proto::v662::types::{
     ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments,
-    NetworkBlockPosition, NetworkPermissions, SpawnSettings,
+    NetworkPermissions, SpawnSettings,
 };
 use bedrockrs_proto::v818::packets::ResourcePacksInfoPacket;
 use bedrockrs_proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs_proto::v898::packets::ResourcePackStackPacket;
-use bedrockrs_proto::v924::packets::{StartGamePacket, VoxelShapesPacket};
 use bedrockrs_proto::v924::types::{GameRuleLegacyData, LevelSettings};
-use bedrockrs_proto::{ProtoVersion, Unknown, V924};
+use bedrockrs_proto::v944::packets::{StartGamePacket, VoxelShapesPacket};
+use bedrockrs_proto::v944::types::NetworkBlockPosition;
+use bedrockrs_proto::{ProtoVersion, Unknown, V944};
 use bedrockrs_shared::world::dimension::Dimension;
 use std::collections::HashMap;
 use tokio::time::Instant;
@@ -28,9 +29,9 @@ async fn main() {
         "127.0.0.1:19132".parse().unwrap(),
         "Bedrock in Rust".to_string(),
         "bedrockrs".to_string(),
-        V924::GAME_VERSION.to_string(),
-        V924::PROTOCOL_VERSION,
-        V924::RAKNET_VERSION,
+        V944::GAME_VERSION.to_string(),
+        V944::PROTOCOL_VERSION,
+        V944::RAKNET_VERSION,
         100,
         10,
         false,
@@ -56,11 +57,14 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let packets = unknown_conn.recv().await.unwrap();
     let mut conn = match packets.first() {
         Some(Unknown::RequestNetworkSettingsPacket(request))
-            if request.client_network_version == 924 =>
+            if request.client_network_version == V944::PROTOCOL_VERSION as i32 =>
         {
-            unknown_conn.into_ver::<V924>()
+            unknown_conn.into_ver::<V944>()
         }
-        _ => return,
+        _ => {
+            unknown_conn.close().await;
+            return;
+        }
     };
 
     println!("RequestNetworkSettings");
@@ -68,7 +72,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send(&[V924::NetworkSettingsPacket(NetworkSettingsPacket {
+    conn.send(&[V944::NetworkSettingsPacket(NetworkSettingsPacket {
         compression_threshold: 1,
         compression_algorithm: PacketCompressionAlgorithm::None,
         client_throttle_enabled: false,
@@ -86,10 +90,10 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     println!("Login");
 
     conn.send(&[
-        V924::PlayStatusPacket(PlayStatusPacket {
+        V944::PlayStatusPacket(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
         }),
-        V924::ResourcePacksInfoPacket(ResourcePacksInfoPacket {
+        V944::ResourcePacksInfoPacket(ResourcePacksInfoPacket {
             resource_pack_required: false,
             has_addon_packs: false,
             has_scripts: false,
@@ -98,7 +102,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             resource_packs: vec![],
             world_template_version: "".to_string(),
         }),
-        V924::ResourcePackStackPacket(ResourcePackStackPacket {
+        V944::ResourcePackStackPacket(ResourcePackStackPacket {
             texture_pack_required: false,
             addon_list: vec![],
             base_game_version: BaseGameVersion(String::from("1.0")),
@@ -120,9 +124,10 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     println!("{:#?}", conn.recv().await.unwrap());
     println!("ResourcePackClientResponse");
 
-    conn.send(&[V924::VoxelShapesPacket(VoxelShapesPacket {
+    conn.send(&[V944::VoxelShapesPacket(VoxelShapesPacket {
         shapes: vec![],
         names: vec![],
+        custom_shape_count: 0,
     })])
     .await
     .unwrap();
@@ -186,7 +191,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             persona_disabled: false,
             custom_skins_disabled: false,
             emote_chat_muted: false,
-            base_game_version: BaseGameVersion(V924::GAME_VERSION.to_string()),
+            base_game_version: BaseGameVersion(V944::GAME_VERSION.to_string()),
             limited_world_width: 16,
             limited_world_depth: 16,
             nether_type: true,
@@ -211,7 +216,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         block_properties: vec![],
         multiplayer_correlation_id: String::from("c5d3d2cc-27fd-4221-9de6-d22c4d423d53"),
         enable_item_stack_net_manager: false,
-        server_version: V924::GAME_VERSION.to_string(),
+        server_version: V944::GAME_VERSION.to_string(),
         player_property_data: HashMap::new(),
         server_block_type_registry_checksum: 0,
         world_template_id: Uuid::nil(),
@@ -227,10 +232,10 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         owner_id: "".to_string(),
     };
 
-    conn.send(&[V924::StartGamePacket(packet1)]).await.unwrap();
+    conn.send(&[V944::StartGamePacket(packet1)]).await.unwrap();
     println!("StartGame");
 
-    conn.send(&[V924::PlayStatusPacket(PlayStatusPacket {
+    conn.send(&[V944::PlayStatusPacket(PlayStatusPacket {
         status: PlayStatus::PlayerSpawn,
     })])
     .await
