@@ -345,6 +345,8 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             format!("V{}", version).as_str(),
             Span::call_site(),
         ));
+        
+        let mod_ident = Ident::new(struct_ident.to_string().to_lowercase().as_str(), Span::call_site());
 
         let proto_version_packets_impl = all_packets
             .iter()
@@ -509,8 +511,19 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 const RAKNET_VERSION: u8 = #raknet_version;
             }
         };
+        
+        let feature_str = LitStr::new(&mod_ident.to_string(), mod_ident.span());
+        
+        let version_mod_tokens = quote! {
+            #[cfg(feature = #feature_str)]
+            mod #mod_ident {
+                #version_tokens
+            }
+            #[cfg(feature = #feature_str)]
+            pub use #mod_ident::*;
+        };
 
-        versions_stream.extend(version_tokens);
+        versions_stream.extend(version_mod_tokens);
     }
 
     quote! {
