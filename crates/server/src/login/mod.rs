@@ -3,11 +3,11 @@ mod handler;
 use crate::error::LoginError;
 use crate::login::handler::LoginHandler;
 use bedrockrs_network::connection::Connection;
-use bedrockrs_proto::V924;
+use bedrockrs_proto::V944;
 use shipyard::World;
 
 pub async fn login(
-    _connection: Connection<V924>,
+    _connection: Connection<V944>,
     _world: &mut World,
     _login_handler: impl LoginHandler,
 ) -> Result<(), LoginError> {

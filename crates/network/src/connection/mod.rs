@@ -5,7 +5,6 @@ use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::error::ConnectionError;
 use crate::transport::TransportLayerConnection;
-use bedrockrs_proto::Unknown;
 use bedrockrs_proto_core::Packets;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
@@ -22,18 +21,16 @@ pub struct Connection<V: Packets> {
     _version_marker: PhantomData<V>,
 }
 
-impl Connection<Unknown> {
-    pub fn into_ver<V: Packets>(self) -> Connection<V> {
-        Connection::<V> {
+impl<V: Packets> Connection<V> {
+    pub fn into_ver<T: Packets>(self) -> Connection<T> {
+        Connection::<T> {
             transport_layer: self.transport_layer,
             compression: self.compression,
             encryption: self.encryption,
             _version_marker: PhantomData,
         }
     }
-}
 
-impl<V: Packets> Connection<V> {
     pub fn from_transport_conn(transport_layer: TransportLayerConnection) -> Self {
         Self {
             transport_layer,

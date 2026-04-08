@@ -2,5 +2,3 @@
 
 pub mod enums;
 pub mod packets;
-
-pub use crate::version::versions::V786;
