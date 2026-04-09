@@ -1,6 +1,5 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
-use vek::Vec3;
 
 #[packet(id = 322)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -8,7 +7,7 @@ pub struct MovementPredictionSyncPacket<V: ProtoVersion> {
     #[endianness(var)]
     pub flags: u128,
     #[endianness(le)]
-    pub bounding_box: Vec3<f32>,
+    pub bounding_box: (f32, f32, f32),
     #[endianness(le)]
     pub speed: f32,
     #[endianness(le)]

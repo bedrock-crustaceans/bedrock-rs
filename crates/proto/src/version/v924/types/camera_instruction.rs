@@ -1,6 +1,5 @@
 use crate::version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use vek::{Vec2, Vec3};
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraInstruction<V: ProtoVersion> {
@@ -27,15 +26,15 @@ pub struct SetInstruction<V: ProtoVersion> {
     pub runtime_id: i32,
     pub ease_data: Option<EaseData<V>>,
     #[endianness(le)]
-    pub position: Option<Vec3<f32>>,
+    pub position: Option<(f32, f32, f32)>,
     #[endianness(le)]
-    pub rotation: Option<Vec2<f32>>,
+    pub rotation: Option<(f32, f32)>,
     #[endianness(le)]
-    pub facing: Option<Vec3<f32>>,
+    pub facing: Option<(f32, f32, f32)>,
     #[endianness(le)]
-    pub view_offset: Option<Vec2<f32>>,
+    pub view_offset: Option<(f32, f32)>,
     #[endianness(le)]
-    pub entity_offset: Option<Vec3<f32>>,
+    pub entity_offset: Option<(f32, f32, f32)>,
     pub default_preset: Option<bool>,
     pub remove_ignore_starting_values_component: bool,
 }
@@ -69,7 +68,7 @@ pub struct FadeInstruction {
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TargetInstruction<V: ProtoVersion> {
     #[endianness(le)]
-    pub target_center_offset: Option<Vec3<f32>>,
+    pub target_center_offset: Option<(f32, f32, f32)>,
     pub actor_unique_id: V::ActorUniqueID,
 }
 

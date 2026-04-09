@@ -3,7 +3,6 @@ use bedrockrs_macros::ProtoCodec;
 use bedrockrs_proto_core::error::ProtoCodecError;
 use bedrockrs_proto_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Read, Write};
-use vek::Vec3;
 
 #[derive(Clone, Debug)]
 pub struct PackedItemUseLegacyInventoryTransaction<V: ProtoVersion> {
@@ -16,8 +15,8 @@ pub struct PackedItemUseLegacyInventoryTransaction<V: ProtoVersion> {
     pub face: i32,
     pub slot: i32,
     pub item: V::NetworkItemStackDescriptor,
-    pub from_position: Vec3<f32>,
-    pub click_position: Vec3<f32>,
+    pub from_position: (f32, f32, f32),
+    pub click_position: (f32, f32, f32),
     pub target_block_id: u32,
     pub predicted_result: PredictedResult,
 }
@@ -99,8 +98,8 @@ impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> 
         let face = <i32 as ProtoCodecVAR>::deserialize(stream)?;
         let slot = <i32 as ProtoCodecVAR>::deserialize(stream)?;
         let item = V::NetworkItemStackDescriptor::deserialize(stream)?;
-        let from_position = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
-        let click_position = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
+        let from_position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
+        let click_position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let target_block_id = <u32 as ProtoCodecVAR>::deserialize(stream)?;
         let predicted_result = PredictedResult::deserialize(stream)?;
 

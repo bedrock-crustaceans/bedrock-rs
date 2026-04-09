@@ -1,6 +1,5 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
-use vek::{Vec2, Vec3};
 
 #[packet(id = 13)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -9,11 +8,11 @@ pub struct AddActorPacket<V: ProtoVersion> {
     pub target_runtime_id: V::ActorRuntimeID,
     pub actor_type: String,
     #[endianness(le)]
-    pub position: Vec3<f32>,
+    pub position: (f32, f32, f32),
     #[endianness(le)]
-    pub velocity: Vec3<f32>,
+    pub velocity: (f32, f32, f32),
     #[endianness(le)]
-    pub rotation: Vec2<f32>,
+    pub rotation: (f32, f32),
     #[endianness(le)]
     pub y_head_rotation: f32,
     #[endianness(le)]

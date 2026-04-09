@@ -1,6 +1,5 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use vek::Vec3;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StructureSettings<V: ProtoVersion> {
@@ -21,5 +20,5 @@ pub struct StructureSettings<V: ProtoVersion> {
     #[endianness(le)]
     pub integrity_seed: u32,
     #[endianness(le)]
-    pub rotation_pivot: Vec3<f32>,
+    pub rotation_pivot: (f32, f32, f32),
 }

@@ -1,13 +1,12 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::{packet, ProtoCodec};
-use vek::Vec3;
 
 #[packet(id = 123)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelSoundEventPacket<V: ProtoVersion> {
     pub event_id: V::LevelSoundEventType,
     #[endianness(le)]
-    pub position: Vec3<f32>,
+    pub position: (f32, f32, f32),
     #[endianness(var)]
     pub data: i32,
     pub actor_identifier: String,

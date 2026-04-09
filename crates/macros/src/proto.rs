@@ -346,6 +346,11 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             Span::call_site(),
         ));
 
+        let mod_ident = Ident::new(
+            struct_ident.to_string().to_lowercase().as_str(),
+            Span::call_site(),
+        );
+
         let proto_version_packets_impl = all_packets
             .iter()
             .map(|k| {
@@ -490,18 +495,22 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 }
             }
 
+            use super::ProtoVersionPackets;
             impl ProtoVersionPackets for #struct_ident {
                 #(#proto_version_packets_impl)*
             }
 
+            use super::ProtoVersionTypes;
             impl ProtoVersionTypes for #struct_ident {
                 #(#proto_version_types_impl)*
             }
 
+            use super::ProtoVersionEnums;
             impl ProtoVersionEnums for #struct_ident {
                 #(#proto_version_enums_impl)*
             }
 
+            use super::ProtoVersion;
             impl ProtoVersion for #struct_ident {
                 const PROTOCOL_VERSION: u32 = #version;
                 const PROTOCOL_BRANCH: &str = #branch;
@@ -510,7 +519,18 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             }
         };
 
-        versions_stream.extend(version_tokens);
+        let feature_str = LitStr::new(&mod_ident.to_string(), mod_ident.span());
+
+        let version_mod_tokens = quote! {
+            #[cfg(feature = #feature_str)]
+            mod #mod_ident {
+                #version_tokens
+            }
+            #[cfg(feature = #feature_str)]
+            pub use #mod_ident::*;
+        };
+
+        versions_stream.extend(version_mod_tokens);
     }
 
     quote! {

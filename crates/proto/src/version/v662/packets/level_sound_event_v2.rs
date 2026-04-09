@@ -6,13 +6,12 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
 use varint_rs::{VarintReader, VarintWriter};
-use vek::Vec3;
 
 #[packet(id = 120)]
 #[derive(Clone, Debug)]
 pub struct LevelSoundEventV2Packet<V: ProtoVersion> {
     pub event_id: V::LevelSoundEventType,
-    pub position: Vec3<f32>,
+    pub position: (f32, f32, f32),
     pub data: i32,
     pub actor_identifier: String,
     pub baby_mob: bool,
@@ -26,7 +25,7 @@ impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV2Packet<V> {
         let mut event_id_cursor = Cursor::new(event_id_stream.as_slice());
 
         stream.write_i8(event_id_cursor.read_u32_varint()? as i8)?;
-        <Vec3<f32> as ProtoCodecLE>::serialize(&self.position, stream)?;
+        <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.position, stream)?;
         <i32 as ProtoCodecVAR>::serialize(&self.data, stream)?;
         <String as ProtoCodec>::serialize(&self.actor_identifier, stream)?;
         <bool as ProtoCodec>::serialize(&self.baby_mob, stream)?;
@@ -41,7 +40,7 @@ impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV2Packet<V> {
         let mut event_id_cursor = Cursor::new(event_id_stream.as_slice());
 
         let event_id = V::LevelSoundEventType::deserialize(&mut event_id_cursor)?;
-        let position = <Vec3<f32> as ProtoCodecLE>::deserialize(stream)?;
+        let position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let data = <i32 as ProtoCodecVAR>::deserialize(stream)?;
         let actor_identifier = <String as ProtoCodec>::deserialize(stream)?;
         let baby_mob = <bool as ProtoCodec>::deserialize(stream)?;

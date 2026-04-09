@@ -1,5 +1,4 @@
 use bedrockrs_macros::ProtoCodec;
-use vek::Vec2;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraPreset {
@@ -16,7 +15,7 @@ pub struct CameraPreset {
     #[endianness(le)]
     pub rot_y: Option<f32>,
     #[endianness(le)]
-    pub view_offset: Option<Vec2<f32>>,
+    pub view_offset: Option<(f32, f32)>,
     #[endianness(le)]
     pub radius: Option<f32>,
     pub listener: Option<AudioListener>,

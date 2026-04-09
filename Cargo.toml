@@ -58,33 +58,23 @@ strum_macros = "0.28.0"
 [dependencies]
 bedrockrs_core = { path = "crates/core" }
 bedrockrs_shared = { path = "crates/shared" }
-
 bedrockrs_macros = { path = "crates/macros", optional = true }
-
 bedrockrs_addon = { path = "crates/addon", optional = true }
-
 bedrockrs_form = { path = "crates/form", optional = true }
-
 bedrockrs_proto = { path = "crates/proto", optional = true }
 bedrockrs_proto_core = { path = "crates/proto_core", optional = true }
-
 bedrockrs_network = { path = "crates/network", optional = true }
-
 bedrockrs_server = { path = "crates/server", optional = true }
-
 bedrockrs_level = { path = "crates/level", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
-
 nbtx = { workspace = true }
 uuid = { workspace = true }
-
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [features]
-
 addon = ["dep:bedrockrs_addon"]
 proto = [
     "dep:bedrockrs_proto",
@@ -97,6 +87,28 @@ full = ["addon", "level", "network", "proto", "server"]
 form = ["dep:bedrockrs_form"]
 server = ["dep:bedrockrs_server", "proto", "level", "form"]
 
+proto-unknown = ["bedrockrs_proto/unknown"]
+proto-v662 = ["bedrockrs_proto/v662"]
+proto-v671 = ["bedrockrs_proto/v671"]
+proto-v685 = ["bedrockrs_proto/v685"]
+proto-v686 = ["bedrockrs_proto/v686"]
+proto-v712 = ["bedrockrs_proto/v712"]
+proto-v729 = ["bedrockrs_proto/v729"]
+proto-v748 = ["bedrockrs_proto/v748"]
+proto-v766 = ["bedrockrs_proto/v766"]
+proto-v776 = ["bedrockrs_proto/v776"]
+proto-v786 = ["bedrockrs_proto/v786"]
+proto-v800 = ["bedrockrs_proto/v800"]
+proto-v818 = ["bedrockrs_proto/v818"]
+proto-v819 = ["bedrockrs_proto/v819"]
+proto-v827 = ["bedrockrs_proto/v827"]
+proto-v844 = ["bedrockrs_proto/v844"]
+proto-v859 = ["bedrockrs_proto/v859"]
+proto-v898 = ["bedrockrs_proto/v898"]
+proto-v924 = ["bedrockrs_proto/v924"]
+proto-v944 = ["bedrockrs_proto/v944"]
+proto-all = ["bedrockrs_proto/all"]
+
 [[example]]
 name = "proto_server"
 path = "examples/proto/server.rs"
@@ -105,4 +117,4 @@ required-features = ["network"]
 [[example]]
 name = "proto_parsing"
 path = "examples/proto_parsing.rs"
-required-features = ["network"]
+required-features = ["network", "proto-v800"]

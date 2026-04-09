@@ -1,6 +1,5 @@
 use crate::version::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use vek::{Vec2, Vec3};
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraPreset<V: ProtoVersion> {
@@ -20,16 +19,16 @@ pub struct CameraPreset<V: ProtoVersion> {
     pub rot_speed: Option<f32>,
     pub snap_to_target: Option<bool>,
     #[endianness(le)]
-    pub horizontal_rot_limit: Option<Vec2<f32>>,
+    pub horizontal_rot_limit: Option<(f32, f32)>,
     #[endianness(le)]
-    pub vertical_rot_limit: Option<Vec2<f32>>,
+    pub vertical_rot_limit: Option<(f32, f32)>,
     pub continue_targeting: Option<bool>,
     #[endianness(le)]
     pub block_listening_radius: Option<f32>,
     #[endianness(le)]
-    pub view_offset: Option<Vec2<f32>>,
+    pub view_offset: Option<(f32, f32)>,
     #[endianness(le)]
-    pub entity_offset: Option<Vec3<f32>>,
+    pub entity_offset: Option<(f32, f32, f32)>,
     #[endianness(le)]
     pub radius: Option<f32>,
     #[endianness(le)]

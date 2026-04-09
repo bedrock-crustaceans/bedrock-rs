@@ -1,13 +1,12 @@
 use crate::version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, packet};
-use vek::Vec2;
 
 #[packet(id = 316)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistPacket<V: ProtoVersion> {
     pub preset_id: String,
     #[endianness(le)]
-    pub view_angle: Vec2<f32>,
+    pub view_angle: (f32, f32),
     #[endianness(le)]
     pub distance: f32,
     pub target_mode: TargetMode,

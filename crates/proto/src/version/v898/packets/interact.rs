@@ -1,6 +1,5 @@
 use crate::version::ProtoVersion;
 use bedrockrs_macros::{ProtoCodec, packet};
-use vek::Vec3;
 
 #[packet(id = 33)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -8,7 +7,7 @@ pub struct InteractPacket<V: ProtoVersion> {
     pub action: InteractPacketAction,
     pub target_runtime_id: V::ActorRuntimeID,
     #[endianness(le)]
-    pub mouse_position: Option<Vec3<f32>>,
+    pub mouse_position: Option<(f32, f32, f32)>,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

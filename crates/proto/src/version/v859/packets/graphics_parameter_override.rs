@@ -1,5 +1,4 @@
 use bedrockrs_macros::{ProtoCodec, packet};
-use vek::Vec3;
 
 #[packet(id = 331)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -15,7 +14,7 @@ pub struct GraphicsParameterOverrideKeyFrame {
     #[endianness(le)]
     pub key: f32,
     #[endianness(le)]
-    pub value: Vec3<f32>,
+    pub value: (f32, f32, f32),
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

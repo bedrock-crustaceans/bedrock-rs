@@ -1,5 +1,4 @@
 use uuid::Uuid;
-use vek::Vec3;
 use bedrockrs_macros::{packet, ProtoCodec};
 
 #[packet(id = 341)]
@@ -54,7 +53,7 @@ pub enum LocatorBarWaypointTexture {
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LocatorBarWaypointWorldPosition {
     #[endianness(le)]
-    pub position: Vec3<f32>,
+    pub position: (f32, f32, f32),
     #[endianness(var)]
     pub dimension: i32,
 }

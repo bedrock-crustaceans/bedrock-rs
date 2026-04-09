@@ -1,5 +1,4 @@
 use bedrockrs_macros::{ProtoCodec, packet};
-use vek::Vec3;
 
 #[packet(id = 326)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -16,7 +15,7 @@ pub enum PlayerLocationType {
         #[endianness(var)]
         target_entity_id: i64,
         #[endianness(le)]
-        position: Vec3<f32>,
+        position: (f32, f32, f32),
     } = 0,
     Hide {
         #[endianness(var)]

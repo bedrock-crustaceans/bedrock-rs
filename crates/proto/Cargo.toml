@@ -11,7 +11,52 @@ nbtx = { workspace = true }
 byteorder = { workspace = true }
 varint-rs = { workspace = true }
 tracing = { workspace = true }
-vek = { workspace = true }
 uuid = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
+
+[features]
+default = ["v944"]
+
+unknown = []
+v662 = []
+v671 = []
+v685 = []
+v686 = []
+v712 = []
+v729 = []
+v748 = []
+v766 = []
+v776 = []
+v786 = []
+v800 = []
+v818 = []
+v819 = []
+v827 = []
+v844 = []
+v859 = []
+v898 = []
+v924 = []
+v944 = []
+all = [
+    "unknown",
+    "v662",
+    "v671",
+    "v685",
+    "v686",
+    "v712",
+    "v729",
+    "v748",
+    "v766",
+    "v776",
+    "v786",
+    "v800",
+    "v818",
+    "v819",
+    "v827",
+    "v844",
+    "v859",
+    "v898",
+    "v924",
+    "v944"
+]

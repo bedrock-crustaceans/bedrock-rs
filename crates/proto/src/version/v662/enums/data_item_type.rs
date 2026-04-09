@@ -1,6 +1,5 @@
 use crate::version::versions::ProtoVersion;
 use bedrockrs_macros::ProtoCodec;
-use vek::Vec3;
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
@@ -14,5 +13,5 @@ pub enum DataItemType<V: ProtoVersion> {
     NBT(#[nbt] nbtx::Value) = 5,
     Pos(V::BlockPos) = 6,
     Int64(#[endianness(var)] i64) = 7,
-    Vec3(#[endianness(le)] Vec3<f32>) = 8,
+    Vec3(#[endianness(le)] (f32, f32, f32)) = 8,
 }
