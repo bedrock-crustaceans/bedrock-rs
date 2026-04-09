@@ -7,7 +7,7 @@ pub struct NetworkChunkPublisherUpdatePacket<V: ProtoVersion> {
     pub new_view_position: V::BlockPos,
     #[endianness(var)]
     pub new_view_radius: u32,
-    #[endianness(le)]
-    pub server_built_chunks_size: u32,
-    pub server_built_chunks_list: Vec<V::ChunkPos>,
+    #[vec_repr(i32)]
+    #[vec_endianness(le)]
+    pub server_built_chunks: Vec<V::ChunkPos>,
 }
