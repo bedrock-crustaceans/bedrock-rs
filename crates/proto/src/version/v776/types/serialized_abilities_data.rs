@@ -5,9 +5,9 @@ use bedrockrs_macros::ProtoCodec;
 pub struct SerializedAbilitiesData<V: ProtoVersion> {
     #[endianness(le)]
     pub target_player_raw_id: i64,
-    pub player_permissions: V::PlayerPermissionLevel,
+    // TODO: use enum with #[as(u8)] after proto refactor
+    pub player_permissions: u8,
     pub command_permissions: V::CommandPermissionLevel,
-
     pub layers: Vec<SerializedLayer>,
 }
 

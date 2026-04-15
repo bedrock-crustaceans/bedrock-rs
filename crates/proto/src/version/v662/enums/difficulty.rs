@@ -9,6 +9,4 @@ pub enum Difficulty {
     Easy = 1,
     Normal = 2,
     Hard = 3,
-    Count = 4,
-    Unknown = 5,
 }

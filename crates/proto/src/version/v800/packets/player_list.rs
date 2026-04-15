@@ -42,11 +42,11 @@ impl <V: ProtoVersion> ProtoCodec for PlayerListPacket<V> {
             0 => {
                 let add_player_list = Vec::<AddPlayerListEntry<V>>::deserialize(stream)?;
                 let mut is_trusted_skin = Vec::with_capacity(add_player_list.len());
-                
+
                 for _ in 0..add_player_list.len() {
                     is_trusted_skin.push(bool::deserialize(stream)?);
                 }
-                
+
                 PlayerListPacket::Add {
                     add_player_list,
                     is_trusted_skin,
@@ -85,4 +85,5 @@ pub struct AddPlayerListEntry<V: ProtoVersion> {
     pub is_teacher: bool,
     pub is_host: bool,
     pub is_sub_client: bool,
+    pub color: V::Color,
 }

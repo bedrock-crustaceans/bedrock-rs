@@ -78,7 +78,6 @@ export!(particle_type);
 export!(photo_type);
 export!(play_status);
 export!(player_action_type);
-export!(player_list_packet_type);
 export!(player_permission_level);
 export!(player_position_mode);
 export!(player_respawn_state);
