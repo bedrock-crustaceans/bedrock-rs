@@ -5,12 +5,12 @@ use std::mem::size_of;
 use crate::ProtoCodec;
 use crate::error::ProtoCodecError;
 
-impl ProtoCodec for bool {
-    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>
+impl ProtoCodec<bool> for bool {
+    fn serialize<W: Write>(value: &bool, stream: &mut W) -> Result<(), ProtoCodecError>
     where
         Self: Sized,
     {
-        match self {
+        match value {
             true => stream.write_u8(1)?,
             false => stream.write_u8(0)?,
         };
@@ -25,7 +25,7 @@ impl ProtoCodec for bool {
         Ok(!matches!(stream.read_u8()?, 0))
     }
 
-    fn size_hint(&self) -> usize {
+    fn size_hint(_: &bool) -> usize {
         size_of::<u8>()
     }
 }
