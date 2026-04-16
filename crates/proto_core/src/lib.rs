@@ -13,15 +13,15 @@ pub mod types;
 pub use endian::*;
 pub use header::*;
 
-pub trait ProtoCodec<T: Sized> {
-    fn serialize<W: Write>(value: &T, stream: &mut W) -> Result<(), ProtoCodecError>;
+pub trait ProtoCodec: Sized {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError>;
 
-    fn deserialize<R: Read>(stream: &mut R) -> Result<T, ProtoCodecError>;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError>;
 
-    fn size_hint(value: &T) -> usize;
+    fn size_hint(&self) -> usize;
 }
 
-pub trait Packet: Sized + ProtoCodec<Self> {
+pub trait Packet: Sized + ProtoCodec {
     const ID: u16;
     const COMPRESS: bool;
     const ENCRYPT: bool;
