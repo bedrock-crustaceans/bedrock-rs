@@ -1,6 +1,6 @@
 use bedrockrs_macros::{packet, ProtoCodec};
 
-#[packet(id = 163)]
+#[packet(id = 164)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDebugRendererPacket {
     pub debug_marker_type: Type,

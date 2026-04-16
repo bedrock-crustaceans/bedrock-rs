@@ -6,12 +6,8 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[enum_repr(i8)]
 #[repr(i8)]
 pub enum SetScorePacket<V: ProtoVersion> {
-    Change {
-        score_packet_info: Vec<ScorePacketInfoChangeEntry<V>>,
-    } = 0,
-    Remove {
-        score_packet_info: Vec<ScorePacketInfoRemoveEntry<V>>,
-    } = 1,
+    Change(Vec<ScorePacketInfoChangeEntry<V>>) = 0,
+    Remove(Vec<ScorePacketInfoRemoveEntry<V>>) = 1,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
