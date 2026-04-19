@@ -24,6 +24,7 @@ rayon = "1.10"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_repr = "0.1.20"
 paste = "1.0"
 semver = { version = "1.0", features = ["serde"] }
 json_comments = "0.2"
@@ -55,7 +56,10 @@ rand = "0.10"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 
+reqwest = "0.13.2"
+
 [dependencies]
+bedrock_auth = { path = "crates/auth", optional = true }
 bedrockrs_core = { path = "crates/core" }
 bedrockrs_shared = { path = "crates/shared" }
 bedrockrs_macros = { path = "crates/macros", optional = true }
@@ -75,6 +79,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [features]
+auth = ["dep:bedrock_auth"]
 addon = ["dep:bedrockrs_addon"]
 proto = [
     "dep:bedrockrs_proto",
@@ -83,9 +88,11 @@ proto = [
 ]
 network = ["dep:bedrockrs_network", "proto"]
 level = ["dep:bedrockrs_level"]
-full = ["addon", "level", "network", "proto", "server"]
+full = ["addon", "level", "network", "proto", "server", "auth"]
 form = ["dep:bedrockrs_form"]
 server = ["dep:bedrockrs_server", "proto", "level", "form"]
+
+auth-async = ["bedrock_auth/async"]
 
 proto-unknown = ["bedrockrs_proto/unknown"]
 proto-v662 = ["bedrockrs_proto/v662"]

@@ -16,6 +16,11 @@ pub mod addon {
     pub use ::bedrockrs_addon::*;
 }
 
+#[cfg(feature = "auth")]
+pub mod auth {
+    pub use ::bedrock_auth::*;
+}
+
 #[cfg(feature = "proto")]
 pub mod proto {
     pub use ::bedrockrs_proto::*;
