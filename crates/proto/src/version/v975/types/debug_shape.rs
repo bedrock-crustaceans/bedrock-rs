@@ -54,7 +54,8 @@ pub enum DebugShapeData {
     Text {
         text: Option<String>,
         use_rotation: bool,
-        background_color: Option<i8>,
+        #[endianness(le)]
+        background_color: Option<i32>,
         depth_test: bool,
         show_backface: bool,
         show_text_backface: bool
