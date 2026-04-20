@@ -1,5 +1,3 @@
-pub use vek;
-
 pub mod biome;
 pub mod bits;
 pub mod error;
@@ -10,6 +8,7 @@ pub mod player;
 pub mod settings;
 pub mod subchunk;
 pub mod traits;
+pub mod types;
 
 #[cfg(feature = "mojang-leveldb")]
 pub mod mojang;

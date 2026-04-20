@@ -9,7 +9,6 @@ use bedrockrs_level::{
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use flate2::read::GzDecoder;
 use tar::Archive;
-use vek::Vec3;
 
 fn extract_test_db() -> tempfile::TempDir {
     let tmp = tempfile::tempdir().expect("Failed to create temp dir");
@@ -65,7 +64,7 @@ fn benchmark(c: &mut Criterion) {
             let data = Vec::from(kv.value());
 
             if let KeyVariant::SubChunk { index } = key.data {
-                Some((Vec3::new(key.chunk.x, index as i32, key.chunk.y), data))
+                Some(([key.chunk.0, index as i32, key.chunk.1], data))
             } else {
                 None
             }
@@ -77,12 +76,12 @@ fn benchmark(c: &mut Criterion) {
     for (key, chunk) in &chunks {
         group1.throughput(criterion::Throughput::Bytes(chunk.len() as u64));
         group1.bench_with_input(
-            BenchmarkId::from_parameter(format!("lazy {key}")),
+            BenchmarkId::from_parameter(format!("lazy {key:?}")),
             chunk,
             |b, chunk| b.iter(|| lazy_load_benchmark(chunk)),
         );
         group1.bench_with_input(
-            BenchmarkId::from_parameter(format!("greedy {key}")),
+            BenchmarkId::from_parameter(format!("greedy {key:?}")),
             chunk,
             |b, chunk| b.iter(|| greedy_load_benchmark(chunk)),
         );
@@ -99,12 +98,12 @@ fn benchmark(c: &mut Criterion) {
 
         group2.throughput(criterion::Throughput::Elements(4096));
         group2.bench_with_input(
-            BenchmarkId::from_parameter(format!("greedy {key}")),
+            BenchmarkId::from_parameter(format!("greedy {key:?}")),
             &greedy_chunk,
             |b, chunk| b.iter(|| greedy_iter_benchmark(chunk)),
         );
         group2.bench_with_input(
-            BenchmarkId::from_parameter(format!("lazy {key}")),
+            BenchmarkId::from_parameter(format!("lazy {key:?}")),
             &lazy_chunk,
             |b, chunk| b.iter(|| lazy_iter_benchmark(chunk)),
         );

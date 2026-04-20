@@ -2,16 +2,18 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Cursor;
 
+use bedrockrs_level::Greedy;
 use bedrockrs_level::biome::Biomes;
 use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
 use bedrockrs_level::subchunk::BlockDef;
-use bedrockrs_level::{Greedy, Lazy};
+use bedrockrs_level::types::BlockPosition;
 use bedrockrs_level::{
     db::Database,
     key::{Key, KeyVariant},
     subchunk::SubChunk,
 };
+
 use flate2::read::GzDecoder;
 use tar::Archive;
 
@@ -90,7 +92,7 @@ fn read_biome() {
 
                 assert_eq!(biome, biome2);
 
-                // println!("{biome:?}");
+                println!("{biome:?}");
 
                 // break
             }
@@ -123,7 +125,7 @@ fn read_subchunk() {
                 let layer = chunk.get_layer_mut(0).unwrap();
                 for i in 0..40 {
                     layer.set(
-                        vek::Vec3::new(0, i, 0),
+                        BlockPosition(0, i, 0),
                         BlockDef {
                             name: "test".to_string(),
                             states: HashMap::from([(

@@ -1,6 +1,6 @@
 use crate::settings::Abilities;
+use bedrockrs_shared::vector::{Position, Rotation};
 use serde::{Deserialize, Serialize};
-use vek::{Vec2, Vec3};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
@@ -79,7 +79,7 @@ pub struct PlayerData {
     pub is_gliding: bool,
     pub player_game_mode: i32,
     pub color: i8,
-    pub rotation: Vec2<f32>,
+    pub rotation: Rotation,
     pub invulnerable: bool,
     pub is_angry: bool,
     pub active_effects: Vec<StatusEffect>,
@@ -109,7 +109,7 @@ pub struct PlayerData {
     #[serde(rename = "hasBoundOrigin")]
     pub has_bound_origin: bool,
     pub is_tamed: bool,
-    pub pos: Vec3<f32>,
+    pub pos: Position,
     pub map_index: i32,
     #[serde(rename = "boundX")]
     pub bound_x: i32,

@@ -1,8 +1,10 @@
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use nbtx::LittleEndian;
-use vek::Vec2;
 
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    types::ChunkPosition,
+};
 use bedrockrs_shared::read::SeekExt;
 use bedrockrs_shared::world::dimension::Dimension;
 use std::io::{Cursor, Read, Seek, Write};
@@ -11,7 +13,7 @@ pub const AUTONOMOUS_ENTITIES: &str = "AutonomousEntities";
 pub const LOCAL_PLAYER: &str = "~local_player";
 pub const VILLAGES: &str = "mVillages";
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum KeyVariant {
     Biome3d = 0x2b,
@@ -68,10 +70,10 @@ impl KeyVariant {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Key {
     /// The X and Z coordinates of the requested chunk.
-    pub chunk: Vec2<i32>,
+    pub chunk: ChunkPosition,
     /// The dimension of the requested chunk.
     pub dimension: Dimension,
     /// The data to be requested of this chunk.
@@ -96,8 +98,8 @@ impl Key {
     }
 
     pub fn serialize<W: Write>(&self, mut writer: W) -> Result<()> {
-        writer.write_i32::<LittleEndian>(self.chunk.x)?;
-        writer.write_i32::<LittleEndian>(self.chunk.y)?;
+        writer.write_i32::<LittleEndian>(self.chunk.0)?;
+        writer.write_i32::<LittleEndian>(self.chunk.1)?;
 
         if self.dimension != Dimension::Overworld {
             writer.write_i32::<LittleEndian>(self.dimension as i32)?;
@@ -121,7 +123,7 @@ impl Key {
         let x = reader.read_i32::<LittleEndian>()?;
         let z = reader.read_i32::<LittleEndian>()?;
 
-        let chunk = Vec2::new(x, z);
+        let chunk = ChunkPosition(x, z);
         let dimension = if len > 10 {
             Dimension::from(reader.read_u32::<LittleEndian>()? as i32)
         } else {
