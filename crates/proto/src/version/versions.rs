@@ -766,23 +766,24 @@ define_versions![
     },
     (975, "r/26_u2", "1.26.20"): {
         packets: [
+            + ServerPresenceInfoPacket: ServerPresenceInfoPacket,
+            + ServerStoreInfoPacket: ServerStoreInfoPacket,
             % ActorEventPacket: ActorEventPacket^,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             % LevelSoundEventPacket: LevelSoundEventPacket^,
             % LocatorBarPacket: LocatorBarPacket,
             % MovementPredictionSyncPacket: MovementPredictionSyncPacket^,
             % PartyChangedPacket: PartyChangedPacket,
-            + ServerPresenceInfoPacket: ServerPresenceInfoPacket,
-            + ServerStoreInfoPacket: ServerStoreInfoPacket,
             % UpdateClientOptionsPacket: UpdateClientOptionsPacket,
         ] in crate::version::v975::packets,
         types: [
-            % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             + BiomeNoiseGradientSurfaceData: BiomeNoiseGradientSurfaceData,
+            + BiomeSurfaceBuilderData: BiomeSurfaceBuilderData^,
             + ClientStoreEntryPointConfiguration: ClientStoreEntryPointConfiguration,
+            + PresenceConfiguration: PresenceConfiguration,
+            % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % DebugShape: DebugShape^,
             % DimensionDefinitionGroup: DimensionDefinitionGroup,
-            + PresenceConfiguration: PresenceConfiguration,
         ] in crate::version::v975::types,
         enums: [
             % ActorEvent: ActorEvent,

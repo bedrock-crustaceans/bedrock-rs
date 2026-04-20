@@ -6,7 +6,6 @@ pub struct BiomeReplacementData {
     pub biome: i16,
     #[endianness(le)]
     pub dimension: i16,
-
     #[endianness(le)]
     pub target_biomes: Vec<i16>,
     #[endianness(le)]
