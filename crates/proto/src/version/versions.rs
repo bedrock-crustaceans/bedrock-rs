@@ -770,10 +770,13 @@ define_versions![
             + ServerStoreInfoPacket: ServerStoreInfoPacket,
             % ActorEventPacket: ActorEventPacket^,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
+            % InventorySlotPacket: InventorySlotPacket^,
             % LevelSoundEventPacket: LevelSoundEventPacket^,
             % LocatorBarPacket: LocatorBarPacket,
             % MovementPredictionSyncPacket: MovementPredictionSyncPacket^,
             % PartyChangedPacket: PartyChangedPacket,
+            % PlaySoundPacket: PlaySoundPacket^,
+            % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
             % UpdateClientOptionsPacket: UpdateClientOptionsPacket,
         ] in crate::version::v975::packets,
         types: [
