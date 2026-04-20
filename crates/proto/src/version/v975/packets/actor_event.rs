@@ -9,5 +9,5 @@ pub struct ActorEventPacket<V: ProtoVersion> {
     #[endianness(var)]
     pub data: i32,
     #[endianness(le)]
-    pub fire_at_position: (f32, f32, f32),
+    pub fire_at_position: Option<(f32, f32, f32)>,
 }

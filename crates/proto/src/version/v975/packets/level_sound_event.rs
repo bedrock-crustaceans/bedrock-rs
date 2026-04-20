@@ -15,5 +15,5 @@ pub struct LevelSoundEventPacket<V: ProtoVersion> {
     #[endianness(le)]
     pub entity_unique_id: u64,
     #[endianness(le)]
-    pub fire_at_position: (f32, f32, f32),
+    pub fire_at_position: Option<(f32, f32, f32)>,
 }
