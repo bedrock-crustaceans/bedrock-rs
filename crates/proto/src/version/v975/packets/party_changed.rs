@@ -3,7 +3,7 @@ use bedrockrs_macros::{packet, ProtoCodec};
 #[packet(id = 342)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PartyChangedPacket {
-    pub party_info: PlayerPartyInfo
+    pub party_info: Option<PlayerPartyInfo>
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

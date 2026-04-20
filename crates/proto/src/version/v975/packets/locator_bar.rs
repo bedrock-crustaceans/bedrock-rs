@@ -30,8 +30,6 @@ pub struct LocatorBarWaypoint {
     pub update_flag: u32,
     pub visible: Option<bool>,
     pub world_position: Option<LocatorBarWaypointWorldPosition>,
-    #[endianness(le)]
-    pub texture: Option<u32>,
     pub texture_path: String,
     #[endianness(le)]
     pub icon_size: (f32, f32),
@@ -40,17 +38,6 @@ pub struct LocatorBarWaypoint {
     pub client_authority: Option<bool>,
     #[endianness(var)]
     pub entity_unique_id: Option<i64>
-}
-
-#[derive(ProtoCodec, Clone, Debug)]
-#[enum_endianness(le)]
-#[enum_repr(u32)]
-#[repr(u32)]
-pub enum LocatorBarWaypointTexture {
-    Square = 0,
-    Circle = 1,
-    SmallSquare = 2,
-    SmallStar = 3,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

@@ -779,8 +779,6 @@ define_versions![
         types: [
             + BiomeNoiseGradientSurfaceData: BiomeNoiseGradientSurfaceData,
             + BiomeSurfaceBuilderData: BiomeSurfaceBuilderData^,
-            + ClientStoreEntryPointConfiguration: ClientStoreEntryPointConfiguration,
-            + PresenceConfiguration: PresenceConfiguration,
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % DebugShape: DebugShape^,
             % DimensionDefinitionGroup: DimensionDefinitionGroup,
