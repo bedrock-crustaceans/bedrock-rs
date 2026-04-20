@@ -20,30 +20,30 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 ### Crate Breakdown:
 
 - [`bedrockrs::shared`](crates/shared)  
-    - [X] Shared data types used across other crates.  
-    - [X] Support for deriving macros defined in other modules.  
+    - Shared data types used across other crates.
+    - Support for deriving macros defined in other modules.  
 
 - [`bedrockrs::form`](crates/form)  
-    - [X] Implementation of the JSON form format used by Minecraft Bedrock Edition.  
+    - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
 
 - [`bedrockrs::addon`](crates/addon)  
-    - [X] Datatypes for defining Minecraft Addon structures.  
-    - [X] Serialization and deserialization support for Addons.  
-    - [X] A programmatic approach to creating Addons easily.  
+    - Datatypes for defining Minecraft Addon structures.  
+    - Serialization and deserialization support for Addons.  
+    - A programmatic approach to creating Addons easily.  
 
 - [`bedrockrs::proto`](crates/proto)  
-    - [X] Complete implementation of the Minecraft Bedrock protocol.  
-    - [X] Support for both server-side and client-side operations.  
-    - [X] Multi-protocol compatibility for handling multiple versions seamlessly.  
+    - Complete implementation of the Minecraft Bedrock protocol.  
+    - Support for both server-side and client-side operations.  
+    - Multi-protocol compatibility for handling multiple versions seamlessly.  
 
 - [`bedrockrs::level`](crates/level)  
-    - [X] Data structures for managing Minecraft Bedrock levels.  
-    - [X] Implementation of Bedrock’s level format using Rust’s LevelDB.  
+    - Data structures for managing Minecraft Bedrock levels.  
+    - Implementation of Bedrock’s level format using Rust’s LevelDB.  
 
 - [`bedrockrs::server`](/crates/server)  
-    - [X] A lightweight foundation for Minecraft Bedrock server software.  
-    - [X] Built-in support for multi-protocol handling.  
-    - [X] Asynchronous architecture powered by Tokio.  
+    - A lightweight foundation for Minecraft Bedrock server software.  
+    - Built-in support for multi-protocol handling.  
+    - Asynchronous architecture powered by Tokio.  
 
 ---
 

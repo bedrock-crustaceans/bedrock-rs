@@ -114,6 +114,7 @@ proto-v859 = ["bedrockrs_proto/v859"]
 proto-v898 = ["bedrockrs_proto/v898"]
 proto-v924 = ["bedrockrs_proto/v924"]
 proto-v944 = ["bedrockrs_proto/v944"]
+proto-v975 = ["bedrockrs_proto/v975"]
 proto-all = ["bedrockrs_proto/all"]
 
 [[example]]
