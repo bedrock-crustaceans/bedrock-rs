@@ -11,3 +11,4 @@ tracing = { workspace = true }
 
 byteorder = { workspace = true }
 varint-rs = { workspace = true }
+serde.workspace = true
