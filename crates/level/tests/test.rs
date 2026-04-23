@@ -4,6 +4,7 @@ use std::io::Cursor;
 
 use bedrockrs_level::Greedy;
 use bedrockrs_level::biome::Biomes;
+use bedrockrs_level::block_entity::BlockEntity;
 use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
 use bedrockrs_level::subchunk::BlockDef;
@@ -63,6 +64,29 @@ fn read_local_player() {
             let data = kv.value();
             let nbt: PlayerData = nbtx::from_le_bytes(&mut data.as_ref()).unwrap();
             println!("{nbt:#?}");
+        }
+    }
+}
+
+#[test]
+fn read_block_entity() {
+    let db = open_test_db();
+    let mut keys = db.keys();
+
+    for kv in &mut keys {
+        let mut key_buf = Cursor::new(kv.key());
+        let Ok(key) = Key::deserialize(&mut key_buf) else {
+            continue;
+        };
+
+        match key.data {
+            KeyVariant::BlockEntity => {
+                let mut value = Cursor::new(kv.value());
+                let block_entity = BlockEntity::from_disk(&mut value).unwrap();
+
+                // break
+            }
+            _ => {}
         }
     }
 }

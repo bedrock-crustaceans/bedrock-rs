@@ -1,5 +1,7 @@
 pub mod biome;
 pub mod bits;
+pub mod block_entities;
+pub mod color;
 pub mod error;
 pub mod greedy;
 pub mod key;
