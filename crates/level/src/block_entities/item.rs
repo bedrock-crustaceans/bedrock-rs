@@ -1,6 +1,9 @@
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename = "PascalCase")]
-pub struct ItemBlock {}
+pub struct ItemBlock {
+    pub name: String,
+    pub states: nbtx::Value,
+}
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename = "PascalCase")]

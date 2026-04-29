@@ -1,4 +1,16 @@
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+use crate::deserialize_bool;
+
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Serialize_repr,
+    serde_repr::Deserialize_repr,
+)]
+#[repr(i8)]
 pub enum SkullType {
     Skeleton,
     WitherSkeleton,
@@ -12,8 +24,9 @@ pub enum SkullType {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Skull {
-    pub mouth_moving: bool,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub doing_animation: bool,
     pub mouth_tick_count: i32,
     pub rotation: f32,
-    pub skull_type: SkullType,
+    pub skull_type: i8, // TODO: Use SkullType enum
 }

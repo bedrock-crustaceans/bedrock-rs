@@ -45,6 +45,9 @@ as_string_slice! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        CommandBlock(CommandBlock),
+        HangingSign(Sign),
+        FlowerPot(FlowerPot),
         BlastFurnace(Furnace),
         CopperGolemStatue(CopperGolemStatue),
         Chest(Chest),
@@ -52,7 +55,10 @@ as_string_slice! {
         SculkCatalyst(SculkCatalyst),
         SculkSensor(SculkSensor),
         Shelf(Shelf),
-        ShulkerBox(ShulkerBox)
+        ShulkerBox(ShulkerBox),
+        Skull(Skull),
+        Sign(Sign),
+        NetherReactor(NetherReactor)
     }
 }
 

@@ -48,3 +48,16 @@ impl UnpackingMethod for Lazy {
 }
 
 pub mod prelude {}
+
+#[inline]
+pub(crate) fn deserialize_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+
+    match i8::deserialize(deserializer)? {
+        0 => Ok(false),
+        _ => Ok(true),
+    }
+}
