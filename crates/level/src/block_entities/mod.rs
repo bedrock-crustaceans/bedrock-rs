@@ -46,6 +46,7 @@ as_string_slice! {
     #[serde(tag = "id")]
     pub enum BlockData {
         BlastFurnace(Furnace),
+        CopperGolemStatue(CopperGolemStatue),
         Chest(Chest),
         Furnace(Furnace),
         SculkCatalyst(SculkCatalyst),
@@ -86,6 +87,7 @@ mod chest;
 mod command_block;
 mod comparator;
 mod conduit;
+mod copper_golem;
 mod enchantment_table;
 mod end_gateway;
 mod flower_pot;
@@ -120,6 +122,7 @@ pub use chest::*;
 pub use command_block::*;
 pub use comparator::*;
 pub use conduit::*;
+pub use copper_golem::*;
 pub use enchantment_table::*;
 pub use end_gateway::*;
 pub use flower_pot::*;
