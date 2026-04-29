@@ -1,6 +1,6 @@
 use crate::color::Color;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum BannerPatternType {
     Base,
     BottomStripe,
@@ -46,12 +46,9 @@ pub enum BannerPatternType {
     Guster,
 }
 
-mod pattern {}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct BannerPattern {
     pub color: Color,
-    #[serde(with = "pattern")]
     pub pattern: BannerPatternType,
 }
 

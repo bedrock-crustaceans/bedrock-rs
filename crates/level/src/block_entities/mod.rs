@@ -1,125 +1,65 @@
 use std::io::{Cursor, Read};
 
-pub const VANILLA_NAMESPACE: &str = "minecraft";
-
 macro_rules! as_string_slice {
     (
-        #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+        $(#[$meta:meta])*
         pub enum $name:ident {
-            $($v:ident),*
+            $(
+                $variant:ident ($vtype:ty)
+            ),*
         }
     ) => {
         const VANILLA_VARIANTS: &[&str] = &[
-            $(stringify!($v)),*
+            $(stringify!($variant)),*
         ];
 
-        #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+        $(#[$meta])*
         pub enum $name {
-            $($v),*
+            $(
+                $variant ($vtype),
+            )*
         }
 
-        impl<'a> TryFrom<&'a str> for VanillaBlockEntityId {
-            type Error = &'a str;
+        // impl<'a> TryFrom<&'a str> for $name {
+        //     type Error = &'a str;
 
-            fn try_from(value: &'a str) -> Result<Self, &'a str> {
-                Ok(match value {
-                    $(stringify!($v) => Self::$v,)*
-                    _ => return Err(value)
-                })
+        //     fn try_from(value: &'a str) -> Result<Self, &'a str> {
+        //         Ok(match value {
+        //             $(stringify!($variant) => Self::$variant,)*
+        //             _ => return Err(value)
+        //         })
+        //     }
+        // }
+
+        impl<'a> From<$name> for &'a str {
+            fn from(id: $name) -> &'a str {
+                match id {
+                    $($name::$variant(_) => stringify!($variant),)*
+                }
             }
         }
     }
 }
 
 as_string_slice! {
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-    pub enum VanillaBlockEntityId {
-        SculkCatalyst
+    #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+    #[serde(tag = "id")]
+    pub enum BlockData {
+        SculkCatalyst(SculkCatalyst),
+        SculkSensor(SculkSensor)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CustomBlockEntityId {
-    pub namespace: String,
-    pub block: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BlockEntityId {
-    Vanilla(VanillaBlockEntityId),
-    Custom(CustomBlockEntityId),
-}
-
-mod block_entity_id {
-    use super::{
-        BlockEntityId, CustomBlockEntityId, VANILLA_NAMESPACE, VANILLA_VARIANTS,
-        VanillaBlockEntityId,
-    };
-    use serde::{Deserialize, Deserializer, Serializer, de::Unexpected};
-
-    /// Deserializes a block version.
-    pub fn deserialize<'de, D>(de: D) -> Result<BlockEntityId, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let id = String::deserialize(de)?;
-        let mut split = id.split(':');
-
-        let Some(namespace) = split.next() else {
-            return Err(serde::de::Error::invalid_value(
-                Unexpected::Str(&id),
-                &"a namespace ending in a colon",
-            ));
-        };
-
-        let Some(block) = split.next() else {
-            return Err(serde::de::Error::invalid_value(
-                Unexpected::Unit,
-                &"a block entity name",
-            ));
-        };
-
-        // Verify that there are no more parts
-        if split.next().is_some() {
-            return Err(serde::de::Error::invalid_length(
-                3,
-                &"expected only two name components",
-            ));
-        }
-
-        if namespace == VANILLA_NAMESPACE {
-            let Ok(id) = VanillaBlockEntityId::try_from(block) else {
-                return Err(serde::de::Error::unknown_variant(block, VANILLA_VARIANTS));
-            };
-
-            Ok(BlockEntityId::Vanilla(id))
-        } else {
-            Ok(BlockEntityId::Custom(CustomBlockEntityId {
-                namespace: namespace.to_owned(),
-                block: block.to_owned(),
-            }))
-        }
-    }
-
-    /// Serializes a block version.
-    pub fn serialize<S>(v: &BlockEntityId, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        todo!()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct BlockEntity {
-    #[serde(with = "block_entity_id")]
-    pub id: BlockEntityId,
     pub x: i32,
     pub y: i32,
     pub z: i32,
     #[serde(rename = "isMovable")]
     pub is_movable: bool,
+
+    #[serde(flatten)]
+    pub data: BlockData,
 }
 
 impl BlockEntity {
@@ -128,7 +68,6 @@ impl BlockEntity {
         Cursor<R>: Read,
     {
         let entity = nbtx::from_le_bytes(reader)?;
-        dbg!(&entity);
         Ok(entity)
     }
 }
@@ -157,6 +96,7 @@ mod nether_reactor;
 mod noteblock;
 mod piston;
 mod sculk_catalyst;
+mod sculk_sensor;
 mod sign;
 mod skull;
 mod structure_block;
@@ -186,6 +126,7 @@ pub use nether_reactor::*;
 pub use noteblock::*;
 pub use piston::*;
 pub use sculk_catalyst::*;
+pub use sculk_sensor::*;
 pub use sign::*;
 pub use skull::*;
 pub use structure_block::*;

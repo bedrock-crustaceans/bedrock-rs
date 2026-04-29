@@ -11,5 +11,5 @@ pub struct SculkCatalystCursor {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct SculkCatalyst {
-    pub cursors: Vec<SculkCatalystCursor>,
+    pub cursors: Option<Vec<SculkCatalystCursor>>,
 }
