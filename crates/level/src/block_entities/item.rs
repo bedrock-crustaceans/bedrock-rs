@@ -1,0 +1,25 @@
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename = "PascalCase")]
+pub struct ItemBlock {}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename = "PascalCase")]
+pub struct ItemStack {
+    pub block: Option<ItemBlock>,
+    pub can_destroy: Option<Vec<String>>,
+    pub can_place_on: Option<Vec<String>>,
+    pub count: i8,
+    pub damage: i16,
+    pub name: String,
+    #[serde(rename = "tag")]
+    pub tag: nbtx::Value,
+    pub was_picked_up: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename = "PascalCase")]
+pub struct ItemSlot {
+    pub slot: i8,
+    #[serde(flatten)]
+    pub stack: ItemStack,
+}

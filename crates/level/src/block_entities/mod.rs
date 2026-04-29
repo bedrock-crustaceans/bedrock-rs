@@ -45,9 +45,13 @@ as_string_slice! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        BlastFurnace(Furnace),
         Chest(Chest),
+        Furnace(Furnace),
         SculkCatalyst(SculkCatalyst),
-        SculkSensor(SculkSensor)
+        SculkSensor(SculkSensor),
+        Shelf(Shelf),
+        ShulkerBox(ShulkerBox)
     }
 }
 
@@ -87,6 +91,7 @@ mod end_gateway;
 mod flower_pot;
 mod furnace;
 mod hopper;
+mod item;
 mod item_frame;
 mod jigsaw;
 mod jukebox;
@@ -99,6 +104,8 @@ mod noteblock;
 mod piston;
 mod sculk_catalyst;
 mod sculk_sensor;
+mod shelf;
+mod shulker_box;
 mod sign;
 mod skull;
 mod structure_block;
@@ -118,6 +125,7 @@ pub use end_gateway::*;
 pub use flower_pot::*;
 pub use furnace::*;
 pub use hopper::*;
+pub use item::*;
 pub use item_frame::*;
 pub use jigsaw::*;
 pub use jukebox::*;
@@ -130,6 +138,8 @@ pub use noteblock::*;
 pub use piston::*;
 pub use sculk_catalyst::*;
 pub use sculk_sensor::*;
+pub use shelf::*;
+pub use shulker_box::*;
 pub use sign::*;
 pub use skull::*;
 pub use structure_block::*;
