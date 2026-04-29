@@ -45,6 +45,7 @@ as_string_slice! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Chest(Chest),
         SculkCatalyst(SculkCatalyst),
         SculkSensor(SculkSensor)
     }
@@ -77,6 +78,7 @@ mod beacon;
 mod bed;
 mod bell;
 mod cauldron;
+mod chest;
 mod command_block;
 mod comparator;
 mod conduit;
@@ -107,6 +109,7 @@ pub use beacon::*;
 pub use bed::*;
 pub use bell::*;
 pub use cauldron::*;
+pub use chest::*;
 pub use command_block::*;
 pub use comparator::*;
 pub use conduit::*;

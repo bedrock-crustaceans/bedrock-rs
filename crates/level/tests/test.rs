@@ -32,7 +32,7 @@ fn extract_test_dir() -> tempfile::TempDir {
 
 fn open_test_db() -> Database {
     let tmp = extract_test_dir();
-    let db_path = tmp.path().join("test_level/db");
+    let db_path = tmp.path().join("debug/db");
 
     Database::open(db_path.to_str().unwrap()).unwrap()
 }
@@ -41,7 +41,7 @@ fn open_test_db() -> Database {
 #[ignore = "currently not properly implemented"]
 fn read_level_dat() {
     let tmp = extract_test_dir();
-    let dat_path = tmp.path().join("test_level/level.dat");
+    let dat_path = tmp.path().join("debug/level.dat");
 
     let data = std::fs::read(&dat_path).unwrap();
     let settings = LevelSettings::read(data.as_slice()).unwrap();
