@@ -1,0 +1,413 @@
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+
+running 1 test
+keys count: 193
+key: Key { chunk: ChunkPosition(0, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 20), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(0, 21), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 21), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(0, 22), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 22), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(0, 23), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 23), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(0, 24), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 24), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(1, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 20), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(1, 22), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 22), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(5, 18), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(5, 18), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(5, 18), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(5, 18), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(5, 19), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(5, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(5, 19), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(5, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(5, 19), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(5, 20), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(5, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(5, 20), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(5, 20), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(6, 17), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(6, 17), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 109, y: 70, z: 287, is_movable: true, data: FlowerPot(FlowerPot { plant_block: None }) }
+key: Key { chunk: ChunkPosition(6, 17), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(6, 18), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(6, 18), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 109, y: 70, z: 297, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:jungle_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 289, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:torchflower", version: Some([1, 21, 60, 33]), states: {} }) }) }
+BlockEntity { x: 109, y: 70, z: 299, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:acacia_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 291, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:oak_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 293, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:spruce_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 301, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:cherry_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 303, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:dark_oak_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 295, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:birch_sapling", version: Some([1, 21, 60, 33]), states: {"age_bit": Byte(0)} }) }) }
+key: Key { chunk: ChunkPosition(6, 18), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(6, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(6, 19), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 109, y: 70, z: 307, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:fern", version: Some([1, 21, 60, 33]), states: {} }) }) }
+BlockEntity { x: 109, y: 70, z: 309, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:dandelion", version: Some([1, 21, 60, 33]), states: {} }) }) }
+BlockEntity { x: 109, y: 70, z: 305, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:mangrove_propagule", version: Some([1, 21, 60, 33]), states: {"propagule_stage": Int(0), "hanging": Byte(0)} }) }) }
+BlockEntity { x: 109, y: 70, z: 311, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:poppy", version: Some([1, 21, 60, 33]), states: {} }) }) }
+key: Key { chunk: ChunkPosition(6, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(6, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(6, 20), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 97, y: -54, z: 326, is_movable: true, data: MobSpawner(MobSpawner { display_entity_height: 1.8, display_entity_scale: 1.0, display_entity_width: 0.8, spawn_count: 4, max_nearby_entities: 6, spawn_range: 4, max_spawn_delay: 800, entity_identifier: "minecraft:skeleton", min_spawn_delay: 200, delay: 20, required_player_range: 16 }) }
+BlockEntity { x: 99, y: -54, z: 328, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/simple_dungeon.json"), loot_table_seed: Some(294618064), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 99, y: -54, z: 324, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/simple_dungeon.json"), loot_table_seed: Some(1973667054), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+key: Key { chunk: ChunkPosition(6, 20), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(7, 15), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(7, 15), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 113, y: 70, z: 255, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 247, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -90.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 243, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -135.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 251, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -45.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 245, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -112.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 253, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -22.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 241, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -157.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 249, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -67.5, skull_type: -1 }) }
+key: Key { chunk: ChunkPosition(7, 15), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(7, 16), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(7, 16), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 113, y: 70, z: 271, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 90.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 263, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 259, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 267, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 45.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 261, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 269, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 67.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 257, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 265, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 22.5, skull_type: -1 }) }
+key: Key { chunk: ChunkPosition(7, 16), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(7, 17), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(7, 17), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 113, y: 70, z: 273, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 112.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 281, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -157.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 275, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 135.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 283, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -135.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 285, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -112.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 277, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 157.5, skull_type: -1 }) }
+BlockEntity { x: 115, y: 70, z: 287, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 113, y: 70, z: 279, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -180.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 287, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -90.0, skull_type: -1 }) }
+key: Key { chunk: ChunkPosition(7, 17), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(7, 18), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(7, 18), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 113, y: 70, z: 297, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 289, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -67.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 291, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -45.0, skull_type: -1 }) }
+BlockEntity { x: 115, y: 70, z: 301, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 291, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 299, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 289, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 295, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 297, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 113, y: 70, z: 293, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: -22.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 299, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 115, y: 70, z: 293, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 303, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 113, y: 70, z: 295, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 301, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 303, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 0.0, skull_type: -1 }) }
+key: Key { chunk: ChunkPosition(7, 18), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(7, 19), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(7, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(7, 19), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(7, 19), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 115, y: 70, z: 311, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 307, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 115, y: 70, z: 309, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+BlockEntity { x: 113, y: 70, z: 309, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 67.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 305, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 22.5, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 307, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 45.0, skull_type: -1 }) }
+BlockEntity { x: 113, y: 70, z: 311, is_movable: true, data: Skull(Skull { doing_animation: false, mouth_tick_count: 0, rotation: 90.0, skull_type: -1 }) }
+BlockEntity { x: 115, y: 70, z: 305, is_movable: true, data: Comparator(Comparator { output_signal: 0 }) }
+key: Key { chunk: ChunkPosition(7, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 14), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 14), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 137, y: 70, z: 229, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 237, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 239, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 239, is_movable: true, data: Banner(Banner { base: Green, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 231, is_movable: true, data: Banner(Banner { base: Red, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 233, is_movable: true, data: Banner(Banner { base: Red, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 235, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 227, is_movable: true, data: Banner(Banner { base: Black, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 229, is_movable: true, data: Banner(Banner { base: Red, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 231, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 235, is_movable: true, data: Banner(Banner { base: Red, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 225, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 233, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 225, is_movable: true, data: Banner(Banner { base: Black, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 237, is_movable: true, data: Banner(Banner { base: Green, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 227, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+key: Key { chunk: ChunkPosition(8, 14), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 15), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 15), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 137, y: 70, z: 247, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 255, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 245, is_movable: true, data: Banner(Banner { base: Brown, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 251, is_movable: true, data: Banner(Banner { base: Brown, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 253, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 243, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 241, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 241, is_movable: true, data: Banner(Banner { base: Green, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 245, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 255, is_movable: true, data: Banner(Banner { base: Blue, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 253, is_movable: true, data: Banner(Banner { base: Blue, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 243, is_movable: true, data: Banner(Banner { base: Green, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 251, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 249, is_movable: true, data: Banner(Banner { base: Brown, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 249, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 247, is_movable: true, data: Banner(Banner { base: Brown, ty: 0, patterns: None }) }
+key: Key { chunk: ChunkPosition(8, 15), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 16), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 16), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 139, y: 70, z: 261, is_movable: true, data: Banner(Banner { base: Purple, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 269, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 257, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 265, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 257, is_movable: true, data: Banner(Banner { base: Blue, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 263, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 261, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 271, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 259, is_movable: true, data: Banner(Banner { base: Blue, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 267, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 263, is_movable: true, data: Banner(Banner { base: Purple, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 259, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 269, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 267, is_movable: true, data: Banner(Banner { base: Purple, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 265, is_movable: true, data: Banner(Banner { base: Purple, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 271, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+key: Key { chunk: ChunkPosition(8, 16), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 17), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 17), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 139, y: 70, z: 279, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 287, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 285, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 277, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 283, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 287, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 275, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 273, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 273, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 283, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 285, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 275, is_movable: true, data: Banner(Banner { base: Cyan, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 281, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 279, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 281, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 277, is_movable: true, data: Banner(Banner { base: LightGray, ty: 0, patterns: None }) }
+key: Key { chunk: ChunkPosition(8, 17), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 18), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 18), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 139, y: 70, z: 291, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 299, is_movable: true, data: Banner(Banner { base: Pink, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 301, is_movable: true, data: Banner(Banner { base: Lime, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 289, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 297, is_movable: true, data: Banner(Banner { base: Pink, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 289, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 295, is_movable: true, data: Banner(Banner { base: Pink, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 299, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 293, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 303, is_movable: true, data: Banner(Banner { base: Lime, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 297, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 293, is_movable: true, data: Banner(Banner { base: Pink, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 291, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 301, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 295, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 303, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+key: Key { chunk: ChunkPosition(8, 18), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 19), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(8, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 19), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(8, 19), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 137, y: 70, z: 305, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 307, is_movable: true, data: Banner(Banner { base: Gray, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 305, is_movable: true, data: Banner(Banner { base: Lime, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 311, is_movable: true, data: Banner(Banner { base: Yellow, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 309, is_movable: true, data: Banner(Banner { base: Pink, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 307, is_movable: true, data: Banner(Banner { base: Lime, ty: 0, patterns: None }) }
+BlockEntity { x: 137, y: 70, z: 311, is_movable: true, data: Banner(Banner { base: Pink, ty: 0, patterns: None }) }
+BlockEntity { x: 139, y: 70, z: 309, is_movable: true, data: Banner(Banner { base: Yellow, ty: 0, patterns: None }) }
+key: Key { chunk: ChunkPosition(8, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 20), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 20), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(8, 21), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 21), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(8, 21), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(8, 22), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(8, 22), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(8, 22), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(8, 22), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 14), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 14), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 159, y: 70, z: 235, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 227, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 159, y: 70, z: 237, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 229, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 159, y: 70, z: 231, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+BlockEntity { x: 159, y: 70, z: 239, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 159, y: 70, z: 233, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+BlockEntity { x: 159, y: 70, z: 225, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+key: Key { chunk: ChunkPosition(9, 14), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 15), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 15), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 159, y: 70, z: 241, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 159, y: 70, z: 249, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 255, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+BlockEntity { x: 159, y: 70, z: 247, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 245, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+BlockEntity { x: 159, y: 70, z: 253, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 159, y: 70, z: 243, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+BlockEntity { x: 159, y: 70, z: 251, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+key: Key { chunk: ChunkPosition(9, 15), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 16), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 16), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 159, y: 70, z: 257, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+BlockEntity { x: 159, y: 70, z: 265, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 159, y: 70, z: 271, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 263, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 159, y: 70, z: 261, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 269, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+BlockEntity { x: 159, y: 70, z: 259, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 267, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+key: Key { chunk: ChunkPosition(9, 16), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 17), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 17), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 159, y: 70, z: 275, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 159, y: 70, z: 283, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 277, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 159, y: 70, z: 285, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 287, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 159, y: 70, z: 279, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+BlockEntity { x: 159, y: 70, z: 273, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 281, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+key: Key { chunk: ChunkPosition(9, 17), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 18), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 18), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 159, y: 70, z: 291, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+BlockEntity { x: 159, y: 70, z: 299, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 156, y: 75, z: 301, is_movable: true, data: GlowItemFrame(ItemFrame { item_rotation: 0.0, item_drop_chance: 1.0, item: ItemStack { block: Some(BlockDef { name: "minecraft:black_concrete", version: Some([1, 21, 60, 33]), states: {} }), can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:black_concrete", tag: None, was_picked_up: false } }) }
+BlockEntity { x: 159, y: 70, z: 293, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+BlockEntity { x: 159, y: 70, z: 301, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 159, y: 70, z: 303, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 2.0 }) }
+BlockEntity { x: 159, y: 70, z: 295, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 297, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 289, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 0.0 }) }
+BlockEntity { x: 155, y: 75, z: 301, is_movable: true, data: ItemFrame(ItemFrame { item_rotation: 0.0, item_drop_chance: 1.0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:frame", tag: None, was_picked_up: false } }) }
+key: Key { chunk: ChunkPosition(9, 18), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 18), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 153, y: 75, z: 308, is_movable: true, data: Beacon(Beacon { primary: Speed, secondary: None }) }
+BlockEntity { x: 159, y: 70, z: 311, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 1.0 }) }
+BlockEntity { x: 159, y: 70, z: 307, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 3.0 }) }
+BlockEntity { x: 159, y: 70, z: 309, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 4.0 }) }
+BlockEntity { x: 159, y: 70, z: 305, is_movable: true, data: ShulkerBox(ShulkerBox { contents: Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }, facing: 5.0 }) }
+BlockEntity { x: 156, y: 75, z: 304, is_movable: true, data: Campfire(Campfire { item1: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item2: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item3: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item4: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item_time1: 24, item_time2: 21, item_time3: 17, item_time4: 15 }) }
+BlockEntity { x: 157, y: 75, z: 306, is_movable: true, data: Campfire(Campfire { item1: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item2: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item3: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item4: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:mutton", tag: None, was_picked_up: false }), item_time1: 51, item_time2: 48, item_time3: 45, item_time4: 37 }) }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 19), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(9, 20), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(9, 21), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 21), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 21), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(9, 23), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(10, 19), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(10, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(10, 19), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(10, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(10, 19), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(10, 20), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(10, 21), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(10, 21), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(11, 19), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(11, 19), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(11, 19), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(11, 19), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(11, 19), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(13, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(13, 20), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 223, y: 27, z: 320, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/simple_dungeon.json"), loot_table_seed: Some(1602863523), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+key: Key { chunk: ChunkPosition(13, 20), dimension: Overworld, data: FinalizedState }
+failed: "AutonomousEntities"
+failed: "BiomeData"
+failed: "Overworld"
+failed: "WorldClocks"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{3}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{4}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{7}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{8}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\t"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{b}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{c}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\r"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{e}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{10}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{11}"
+failed: "actorprefix\0\0\0\u{3}\0\0\0\u{12}"
+failed: "digp\u{8}\0\0\0\u{14}\0\0\0"
+failed: "digp\u{8}\0\0\0\u{15}\0\0\0"
+failed: "digp\t\0\0\0\u{12}\0\0\0"
+failed: "digp\t\0\0\0\u{13}\0\0\0"
+failed: "digp\t\0\0\0\u{14}\0\0\0"
+failed: "digp\t\0\0\0\u{15}\0\0\0"
+failed: "digp\t\0\0\0\u{17}\0\0\0"
+failed: "digp\n\0\0\0\u{14}\0\0\0"
+failed: "digp\n\0\0\0\u{15}\0\0\0"
+failed: "mobevents"
+failed: "scoreboard"
+key: Key { chunk: ChunkPosition(1668246654, 1885301857), dimension: Undefined, data: LocalPlayer }
+key: Key { chunk: ChunkPosition(-1, 21), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-1, 21), dimension: Overworld, data: BiomeState }
+test read_block_entity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.08s
+

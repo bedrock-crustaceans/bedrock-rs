@@ -1,4 +1,4 @@
-use crate::block_entities::ItemSlot;
+use crate::types::ItemSlot;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]

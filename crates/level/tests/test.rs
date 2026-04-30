@@ -99,8 +99,7 @@ fn read_block_entity() {
 
                     match BlockEntity::from_disk(&mut typed_value) {
                         Ok(typed) => {
-                            let name: &str = typed.data.into();
-                            println!("Found {name}");
+                            println!("{typed:?}");
                         }
                         Err(err) => {
                             dbg!(untyped);

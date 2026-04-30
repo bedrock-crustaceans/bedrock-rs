@@ -1,4 +1,4 @@
-pub use crate::block_entities::ItemStack;
+pub use crate::types::ItemStack;
 
 // TODO: TEST ITEMS AND PAIRING
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
