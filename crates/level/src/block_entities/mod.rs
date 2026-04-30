@@ -57,6 +57,9 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Jukebox(Jukebox),
+        Hopper(Hopper),
+        EndGateway(EndGateway),
         ItemFrame(ItemFrame),
         GlowItemFrame(ItemFrame),
         Beacon(Beacon),

@@ -18,7 +18,7 @@ pub struct ItemStack {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename = "PascalCase")]
+#[serde(rename_all = "PascalCase")]
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ItemSlot {
     pub slot: i8,
