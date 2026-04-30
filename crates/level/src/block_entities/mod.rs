@@ -57,6 +57,7 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        PistonArm(PistonArm),
         Jukebox(Jukebox),
         Hopper(Hopper),
         EndGateway(EndGateway),
@@ -145,7 +146,7 @@ mod mob_spawner;
 mod moving_block;
 mod nether_reactor;
 mod noteblock;
-mod piston;
+mod piston_arm;
 mod sculk_catalyst;
 mod sculk_sensor;
 mod shelf;
@@ -183,7 +184,7 @@ pub use mob_spawner::*;
 pub use moving_block::*;
 pub use nether_reactor::*;
 pub use noteblock::*;
-pub use piston::*;
+pub use piston_arm::*;
 pub use sculk_catalyst::*;
 pub use sculk_sensor::*;
 pub use shelf::*;
