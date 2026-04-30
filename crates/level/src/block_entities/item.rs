@@ -1,7 +1,8 @@
+use crate::deserialize_bool;
 use crate::subchunk::BlockDef;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename = "PascalCase")]
+#[serde(rename_all = "PascalCase")]
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ItemStack {
     pub block: Option<BlockDef>,
@@ -11,7 +12,8 @@ pub struct ItemStack {
     pub damage: i16,
     pub name: String,
     #[serde(rename = "tag")]
-    pub tag: nbtx::Value,
+    pub tag: Option<nbtx::Value>,
+    #[serde(deserialize_with = "deserialize_bool")]
     pub was_picked_up: bool,
 }
 

@@ -57,6 +57,8 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        ItemFrame(ItemFrame),
+        GlowItemFrame(ItemFrame),
         Beacon(Beacon),
         SoulCampfire(Campfire),
         CalibratedSculkSensor(SculkSensor),
