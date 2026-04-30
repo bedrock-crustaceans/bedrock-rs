@@ -5,8 +5,8 @@ macro_rules! as_string_slice {
         $(#[$meta:meta])*
         pub enum $name:ident {
             $(
-                $variant:ident ($vtype:ty)
-            ),*
+                $variant:ident $( ($vtype:ty) )?
+            ),* $(,)?
         }
     ) => {
         const VANILLA_VARIANTS: &[&str] = &[
@@ -16,28 +16,27 @@ macro_rules! as_string_slice {
         $(#[$meta])*
         pub enum $name {
             $(
-                $variant ($vtype),
+                $variant $( ($vtype) )?,
             )*
         }
-
-        // impl<'a> TryFrom<&'a str> for $name {
-        //     type Error = &'a str;
-
-        //     fn try_from(value: &'a str) -> Result<Self, &'a str> {
-        //         Ok(match value {
-        //             $(stringify!($variant) => Self::$variant,)*
-        //             _ => return Err(value)
-        //         })
-        //     }
-        // }
 
         impl<'a> From<$name> for &'a str {
             fn from(id: $name) -> &'a str {
                 match id {
-                    $($name::$variant(_) => stringify!($variant),)*
+                    $(
+                        as_string_slice!(@pattern $name $variant $($vtype)?) => stringify!($variant),
+                    )*
                 }
             }
         }
+    };
+
+    (@pattern $name:ident $variant:ident $vtype:ty) => {
+        $name::$variant(_)
+    };
+
+    (@pattern $name:ident $variant:ident) => {
+        $name::$variant
     }
 }
 
@@ -45,6 +44,8 @@ as_string_slice! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Comparator(Comparator),
+        EndPortal,
         CommandBlock(CommandBlock),
         HangingSign(Sign),
         FlowerPot(FlowerPot),
