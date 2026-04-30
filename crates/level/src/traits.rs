@@ -1,6 +1,22 @@
-use std::ops::Deref;
+use std::{
+    io::{Cursor, Read},
+    ops::Deref,
+};
 
 use crate::error::Result;
+
+pub trait CursorExt {
+    fn has_remaining(&self) -> bool;
+}
+
+impl<R: AsRef<[u8]>> CursorExt for Cursor<R>
+where
+    Cursor<R>: Read,
+{
+    fn has_remaining(&self) -> bool {
+        self.get_ref().as_ref().len() as u64 != self.position()
+    }
+}
 
 pub trait DatabaseAccess: Sized {
     type Buffer<'a>: Deref<Target = [u8]>

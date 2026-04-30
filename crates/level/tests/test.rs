@@ -4,10 +4,11 @@ use std::io::Cursor;
 
 use bedrockrs_level::Greedy;
 use bedrockrs_level::biome::Biomes;
-use bedrockrs_level::block_entities::BlockEntity;
+use bedrockrs_level::block_entities::{BlockData, BlockEntity};
 use bedrockrs_level::player::PlayerData;
 use bedrockrs_level::settings::LevelSettings;
 use bedrockrs_level::subchunk::BlockDef;
+use bedrockrs_level::traits::CursorExt;
 use bedrockrs_level::types::BlockPosition;
 use bedrockrs_level::{
     db::Database,
@@ -70,33 +71,43 @@ fn read_local_player() {
 
 #[test]
 fn read_block_entity() {
-    use serde::Deserialize;
-
     let db = open_test_db();
+    let mut keys = db.keys();
+    println!("keys count: {}", keys.count());
+    drop(keys);
+
     let mut keys = db.keys();
 
     for kv in &mut keys {
         let mut key_buf = Cursor::new(kv.key());
+        // println!("key_buf: {key_buf:?}");
+
         let Ok(key) = Key::deserialize(&mut key_buf) else {
+            println!("failed: {:?}", String::from_utf8_lossy(key_buf.get_ref()));
             continue;
         };
 
+        println!("key: {key:?}");
+
         match key.data {
             KeyVariant::BlockEntity => {
-                let mut value = Cursor::new(kv.value());
+                let mut untyped_value = Cursor::new(kv.value());
+                let mut typed_value = Cursor::new(kv.value());
 
-                println!("---------------------------------------------------\n");
-                let b1: nbtx::Value = nbtx::from_le_bytes(&mut value).unwrap();
-                dbg!(b1);
+                while untyped_value.has_remaining() {
+                    let untyped: nbtx::Value = nbtx::from_le_bytes(&mut untyped_value).unwrap();
 
-                println!("NEXT");
-
-                let mut value = Cursor::new(kv.value());
-
-                let block_entity = BlockEntity::from_disk(&mut value).unwrap();
-                dbg!(block_entity);
-
-                // break
+                    match BlockEntity::from_disk(&mut typed_value) {
+                        Ok(typed) => {
+                            let name: &str = typed.data.into();
+                            println!("Found {name}");
+                        }
+                        Err(err) => {
+                            dbg!(untyped);
+                            panic!("{err:?}");
+                        }
+                    }
+                }
             }
             _ => {}
         }

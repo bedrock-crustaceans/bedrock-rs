@@ -20,7 +20,7 @@ macro_rules! pattern_match {
     };
 }
 
-macro_rules! as_string_slice {
+macro_rules! impl_block_data {
     (
         $(#[$meta:meta])*
         pub enum $name:ident {
@@ -29,7 +29,7 @@ macro_rules! as_string_slice {
             ),* $(,)?
         }
     ) => {
-        const VANILLA_VARIANTS: &[&str] = &[
+        pub const VANILLA_IDENTIFIERS: &[&str] = &[
             $(to_name!($variant, $($id)?)),*
         ];
 
@@ -53,10 +53,12 @@ macro_rules! as_string_slice {
     };
 }
 
-as_string_slice! {
+impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Beacon(Beacon),
+        SoulCampfire(Campfire),
         CalibratedSculkSensor(SculkSensor),
         Beehive(Beehive),
         Campfire(Campfire),
