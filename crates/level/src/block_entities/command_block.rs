@@ -3,6 +3,7 @@ use crate::deserialize_bool;
 /// A command block tile entity.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct CommandBlock {
     #[serde(deserialize_with = "deserialize_bool")]
     pub execute_on_first_tick: bool,

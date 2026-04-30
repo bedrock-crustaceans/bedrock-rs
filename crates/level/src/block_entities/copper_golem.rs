@@ -1,4 +1,5 @@
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct CopperGolemActor {
     #[serde(rename = "ActorIdentifier")]
     pub identifier: String,
@@ -19,6 +20,7 @@ pub struct CopperGolemActor {
     serde_repr::Deserialize_repr,
 )]
 #[repr(i32)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub enum CopperGolemPose {
     Standing = 0,
     Sitting = 1,
@@ -28,6 +30,7 @@ pub enum CopperGolemPose {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct CopperGolemStatue {
     pub actor: CopperGolemActor,
     pub pose: CopperGolemPose,

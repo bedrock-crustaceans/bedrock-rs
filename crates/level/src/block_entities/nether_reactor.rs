@@ -3,6 +3,7 @@ use crate::deserialize_bool;
 /// A nether reactor tile entity.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct NetherReactor {
     /// Whether the nether reactor has completed its activation phase and has gone dark.
     #[serde(deserialize_with = "deserialize_bool")]

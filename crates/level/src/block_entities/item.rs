@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ItemBlock {
     pub name: String,
     pub states: nbtx::Value,
@@ -7,6 +8,7 @@ pub struct ItemBlock {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ItemStack {
     pub block: Option<ItemBlock>,
     pub can_destroy: Option<Vec<String>>,
@@ -21,6 +23,7 @@ pub struct ItemStack {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ItemSlot {
     pub slot: i8,
     #[serde(flatten)]

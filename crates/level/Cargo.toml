@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-# default = ["rusty-leveldb"]
-default = ["mojang-leveldb"]
+deny-unknown-fields = []
+default = ["mojang-leveldb", "deny-unknown-fields"]
 mojang-leveldb = ["dep:leveldb-sys"]
 # rusty-leveldb = ["dep:rusty-leveldb", "dep:miniz_oxide"]
 

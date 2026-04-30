@@ -47,6 +47,7 @@ pub enum BannerPatternType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct BannerPattern {
     pub color: Color,
     pub pattern: BannerPatternType,
@@ -54,6 +55,7 @@ pub struct BannerPattern {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Banner {
     /// Base colour of the banner.
     pub base: Color,

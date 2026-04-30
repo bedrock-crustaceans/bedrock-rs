@@ -23,6 +23,7 @@ pub enum SkullType {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Skull {
     #[serde(deserialize_with = "deserialize_bool")]
     pub doing_animation: bool,

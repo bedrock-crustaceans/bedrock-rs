@@ -1,5 +1,6 @@
 /// An enchantment table tile entity.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct EnchantmentTable {
     /// The custom name of this enchantment table.
     ///

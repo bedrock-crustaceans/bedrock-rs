@@ -1,21 +1,25 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct SpawnPotentialEntity {
     pub id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct SpawnPotentialData {
     pub entity: SpawnPotentialEntity,
     pub equipment: Option<Equipment>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct SpawnPotential {
     pub weight: i32,
     pub data: SpawnPotentialData,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct EjectableLootTable {
     pub weight: i32,
     /// Path to a loot table.
@@ -23,6 +27,7 @@ pub struct EjectableLootTable {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct SpawnerConfig {
     pub spawn_range: i32,
     pub total_mobs: f32,
@@ -39,6 +44,7 @@ pub struct SpawnerConfig {
 
 /// Chances for the equipment to drop upon death.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct DropChances {
     pub head: f32,
     pub chest: f32,
@@ -49,6 +55,7 @@ pub struct DropChances {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Equipment {
     pub loot_table: String,
     pub slot_drop_chances: Option<DropChances>,
@@ -56,6 +63,7 @@ pub struct Equipment {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct SpawnData {
     pub type_id: String,
     pub weight: i32,

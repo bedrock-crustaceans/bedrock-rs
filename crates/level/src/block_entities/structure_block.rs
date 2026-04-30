@@ -10,6 +10,7 @@ pub enum StructureBlockMode {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct StructureBlock {
     pub animation_mode: i8,
     pub animation_seconds: f32,

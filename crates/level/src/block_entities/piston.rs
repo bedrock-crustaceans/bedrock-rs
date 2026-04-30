@@ -15,6 +15,7 @@ pub enum PistonProgress {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Piston {
     /// Not sure how this is actually stored. Will need to create a custom type for this for clarity.
     pub attached_blocks: Vec<i32>,

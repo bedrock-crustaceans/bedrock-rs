@@ -3,7 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Write};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Abilities {
     #[serde(rename = "attackmobs")]
     pub attack_mobs: bool,
@@ -32,21 +32,21 @@ pub struct Abilities {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Experiments {
     pub experiments_ever_used: bool,
     pub saved_with_toggled_experiments: bool,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Policies {
     // Not sure what is supposed to be in here
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct LevelSettings {
     #[serde(default)]
     pub file_version: u32,

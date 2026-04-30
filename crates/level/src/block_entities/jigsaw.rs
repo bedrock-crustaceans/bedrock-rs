@@ -1,5 +1,6 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub enum JigsawJoint {
     Rollable,
     Aligned,
@@ -7,6 +8,7 @@ pub enum JigsawJoint {
 
 /// A jigsaw block tile entity.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Jigsaw {
     /// The block that this jigsaw block will become.
     pub final_state: String,

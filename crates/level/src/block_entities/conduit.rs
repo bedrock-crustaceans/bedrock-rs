@@ -1,6 +1,7 @@
 /// A conduit tile entity.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Conduit {
     /// Whether the conduit is active.
     pub active: bool,

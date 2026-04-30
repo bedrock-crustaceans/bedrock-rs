@@ -1,21 +1,42 @@
 use std::io::{Cursor, Read};
 
+macro_rules! to_name {
+    ($variant:ident $(,)?) => {
+        stringify!($variant)
+    };
+
+    ($variant:ident, $($name:literal)?) => {
+        $($name)?
+    };
+}
+
+macro_rules! pattern_match {
+    ($name:ident $variant:ident $vtype:ty) => {
+        $name::$variant(_)
+    };
+
+    ($name:ident $variant:ident) => {
+        $name::$variant
+    };
+}
+
 macro_rules! as_string_slice {
     (
         $(#[$meta:meta])*
         pub enum $name:ident {
             $(
-                $variant:ident $( ($vtype:ty) )?
+                $variant:ident $( ($vtype:ty) )? $(renamed $id:literal)?
             ),* $(,)?
         }
     ) => {
         const VANILLA_VARIANTS: &[&str] = &[
-            $(stringify!($variant)),*
+            $(to_name!($variant, $($id)?)),*
         ];
 
         $(#[$meta])*
         pub enum $name {
             $(
+                $(#[serde(rename = $id)])?
                 $variant $( ($vtype) )?,
             )*
         }
@@ -24,26 +45,22 @@ macro_rules! as_string_slice {
             fn from(id: $name) -> &'a str {
                 match id {
                     $(
-                        as_string_slice!(@pattern $name $variant $($vtype)?) => stringify!($variant),
+                        pattern_match!($name $variant $($vtype)?) => to_name!($variant, $($id)?),
                     )*
                 }
             }
         }
     };
-
-    (@pattern $name:ident $variant:ident $vtype:ty) => {
-        $name::$variant(_)
-    };
-
-    (@pattern $name:ident $variant:ident) => {
-        $name::$variant
-    }
 }
 
 as_string_slice! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        MobSpawner(MobSpawner),
+        Bed(Bed),
+        ChiseledShelf(ChiseledShelf) renamed "ChiseledBookshelf",
+        Noteblock(Noteblock) renamed "Music",
         Comparator(Comparator),
         EndPortal,
         CommandBlock(CommandBlock),
@@ -91,6 +108,7 @@ mod bed;
 mod bell;
 mod cauldron;
 mod chest;
+mod chiseled_shelf;
 mod command_block;
 mod comparator;
 mod conduit;
@@ -106,7 +124,7 @@ mod jigsaw;
 mod jukebox;
 mod lectern;
 mod lodestone;
-mod monster_spawner;
+mod mob_spawner;
 mod moving_block;
 mod nether_reactor;
 mod noteblock;
@@ -126,6 +144,7 @@ pub use bed::*;
 pub use bell::*;
 pub use cauldron::*;
 pub use chest::*;
+pub use chiseled_shelf::*;
 pub use command_block::*;
 pub use comparator::*;
 pub use conduit::*;
@@ -141,7 +160,7 @@ pub use jigsaw::*;
 pub use jukebox::*;
 pub use lectern::*;
 pub use lodestone::*;
-pub use monster_spawner::*;
+pub use mob_spawner::*;
 pub use moving_block::*;
 pub use nether_reactor::*;
 pub use noteblock::*;
