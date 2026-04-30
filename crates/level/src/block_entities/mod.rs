@@ -57,6 +57,14 @@ as_string_slice! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        CalibratedSculkSensor(SculkSensor),
+        Beehive(Beehive),
+        Campfire(Campfire),
+        Bell(Bell),
+        Lectern(Lectern),
+        Banner(Banner),
+        Cauldron(Cauldron),
+        BrewingStand(BrewingStand),
         MobSpawner(MobSpawner),
         Bed(Bed),
         ChiseledShelf(ChiseledShelf) renamed "ChiseledBookshelf",
@@ -105,7 +113,10 @@ impl BlockEntity {
 mod banner;
 mod beacon;
 mod bed;
+mod beehive;
 mod bell;
+mod brewing_stand;
+mod campfire;
 mod cauldron;
 mod chest;
 mod chiseled_shelf;
@@ -141,7 +152,10 @@ mod trial_spawner;
 pub use banner::*;
 pub use beacon::*;
 pub use bed::*;
+pub use beehive::*;
 pub use bell::*;
+pub use brewing_stand::*;
+pub use campfire::*;
 pub use cauldron::*;
 pub use chest::*;
 pub use chiseled_shelf::*;

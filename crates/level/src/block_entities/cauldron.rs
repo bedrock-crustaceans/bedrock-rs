@@ -1,8 +1,10 @@
-pub struct CauldronItem {}
+use crate::block_entities::ItemStack;
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Cauldron {
-    pub custom_color: Option<i32>,
-    pub items: Vec<CauldronItem>,
-    pub potion_id: i16,
     pub potion_type: i16,
+    pub potion_id: i16,
+    pub items: Vec<ItemStack>,
 }

@@ -59,6 +59,8 @@ pub struct BannerPattern {
 pub struct Banner {
     /// Base colour of the banner.
     pub base: Color,
+    #[serde(rename = "Type")]
+    pub ty: i32,
     /// The patterns displayed on this banner.
     ///
     /// May not exist.

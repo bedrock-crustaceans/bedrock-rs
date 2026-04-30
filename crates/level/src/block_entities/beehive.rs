@@ -1,0 +1,9 @@
+use crate::deserialize_bool;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "PascalCase")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+pub struct Beehive {
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub should_spawn_bees: bool,
+}

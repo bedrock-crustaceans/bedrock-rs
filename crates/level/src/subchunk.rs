@@ -70,6 +70,7 @@ mod block_version {
 /// Definition of block in the sub chunk block palette.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename = "")]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct BlockDef {
     /// Name of the block.
     pub name: String,

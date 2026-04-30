@@ -1,16 +1,10 @@
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename = "PascalCase")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
-pub struct ItemBlock {
-    pub name: String,
-    pub states: nbtx::Value,
-}
+use crate::subchunk::BlockDef;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename = "PascalCase")]
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ItemStack {
-    pub block: Option<ItemBlock>,
+    pub block: Option<BlockDef>,
     pub can_destroy: Option<Vec<String>>,
     pub can_place_on: Option<Vec<String>>,
     pub count: i8,
