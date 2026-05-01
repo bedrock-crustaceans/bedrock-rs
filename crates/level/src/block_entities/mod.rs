@@ -57,6 +57,7 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Barrel(Chest),
         TrialSpawner(TrialSpawner),
         Dispenser(Dispenser),
         Vault(Vault),
