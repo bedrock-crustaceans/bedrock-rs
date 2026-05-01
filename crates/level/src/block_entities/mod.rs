@@ -57,6 +57,7 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Vault(Vault),
         PistonArm(PistonArm),
         Jukebox(Jukebox),
         Hopper(Hopper),
@@ -155,6 +156,7 @@ mod sign;
 mod skull;
 mod structure_block;
 mod trial_spawner;
+mod vault;
 
 pub use banner::*;
 pub use beacon::*;
@@ -193,3 +195,4 @@ pub use sign::*;
 pub use skull::*;
 pub use structure_block::*;
 pub use trial_spawner::*;
+pub use vault::*;
