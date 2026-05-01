@@ -57,6 +57,10 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        JigsawBlock(JigsawBlock),
+        BrushableBlock(BrushableBlock),
+        Dropper(Dispenser),
+        DecoratedPot(DecoratedPot),
         Barrel(Chest),
         TrialSpawner(TrialSpawner),
         Dispenser(Dispenser),
@@ -128,6 +132,7 @@ mod bed;
 mod beehive;
 mod bell;
 mod brewing_stand;
+mod brushable_block;
 mod campfire;
 mod cauldron;
 mod chest;
@@ -136,6 +141,7 @@ mod command_block;
 mod comparator;
 mod conduit;
 mod copper_golem;
+mod decorated_pot;
 mod dispenser;
 mod enchantment_table;
 mod end_gateway;
@@ -143,7 +149,7 @@ mod flower_pot;
 mod furnace;
 mod hopper;
 mod item_frame;
-mod jigsaw;
+mod jigsaw_block;
 mod jukebox;
 mod lectern;
 mod lodestone;
@@ -168,6 +174,7 @@ pub use bed::*;
 pub use beehive::*;
 pub use bell::*;
 pub use brewing_stand::*;
+pub use brushable_block::*;
 pub use campfire::*;
 pub use cauldron::*;
 pub use chest::*;
@@ -176,6 +183,7 @@ pub use command_block::*;
 pub use comparator::*;
 pub use conduit::*;
 pub use copper_golem::*;
+pub use decorated_pot::*;
 pub use dispenser::*;
 pub use enchantment_table::*;
 pub use end_gateway::*;
@@ -183,7 +191,7 @@ pub use flower_pot::*;
 pub use furnace::*;
 pub use hopper::*;
 pub use item_frame::*;
-pub use jigsaw::*;
+pub use jigsaw_block::*;
 pub use jukebox::*;
 pub use lectern::*;
 pub use lodestone::*;

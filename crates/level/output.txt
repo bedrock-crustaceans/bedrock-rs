@@ -756,6 +756,680 @@ key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: SubChunk {
 key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: SubChunk { index: -1 } }
 key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: BlockEntity }
 BlockEntity { x: 212, y: -19, z: -511, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 216, y: -34, z: -497, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 209, y: -19, z: -508, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 220, y: -29, z: -507, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 216, y: -34, z: -501, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:guster_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 221, y: -36, z: -497, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 221, y: -36, z: -502, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 216, y: -29, z: -506, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:guster_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 221, y: -36, z: -507, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/corridor.json"), loot_table_seed: Some(0), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 216, y: -29, z: -507, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 216, y: -34, z: -505, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 219, y: -34, z: -504, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 221, y: -36, z: -505, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/corridor.json"), loot_table_seed: Some(0), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 209, y: -9, z: -511, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 214, y: -44, z: -506, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/reward.json"), loot_table_seed: Some(78754412), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 218, y: -2, z: -504, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 215, y: -2, z: -501, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 218, y: -12, z: -504, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 218, y: -2, z: -501, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(13, -32), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 221, y: -36, z: -490, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/corridor.json"), loot_table_seed: Some(0), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 216, y: -34, z: -495, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 221, y: -36, z: -495, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 216, y: -29, z: -491, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 223, y: -17, z: -488, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 218, y: -2, z: -488, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 214, y: -18, z: -489, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 216, y: -34, z: -496, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 216, y: -29, z: -496, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 221, y: -36, z: -496, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:scrape_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 214, y: -17, z: -489, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+BlockEntity { x: 215, y: -12, z: -491, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 215, y: -2, z: -491, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 223, y: -7, z: -488, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 218, y: -12, z: -488, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 216, y: -1, z: -496, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 223, y: 0, z: -488, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward_ominous.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Ominous, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 223, y: -29, z: -491, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/small_melee/silverfish/ominous", spawn_data: SpawnData { type_id: "minecraft:silverfish", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/small_melee/silverfish/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 218, y: -2, z: -491, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 218, y: -12, z: -496, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 223, y: -24, z: -491, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/small_melee/silverfish/ominous", spawn_data: SpawnData { type_id: "minecraft:silverfish", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/small_melee/silverfish/normal", cooldown_end_at: 0 }) }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(13, -31), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 238, y: -31, z: -562, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(14, -36), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 230, y: -34, z: -550, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 230, y: -34, z: -545, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 236, y: -35, z: -550, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 230, y: -34, z: -555, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(14, -35), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 230, y: -34, z: -540, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 238, y: -34, z: -535, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/melee/zombie/ominous", spawn_data: SpawnData { type_id: "minecraft:zombie", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/melee/zombie/normal", cooldown_end_at: 0 }) }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(14, -34), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 224, y: -36, z: -522, is_movable: true, data: Bed(Bed { color: White }) }
+BlockEntity { x: 224, y: -36, z: -520, is_movable: true, data: Bed(Bed { color: White }) }
+BlockEntity { x: 237, y: -29, z: -524, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 225, y: -36, z: -522, is_movable: true, data: Bed(Bed { color: White }) }
+BlockEntity { x: 237, y: -29, z: -518, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:guster_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 225, y: -36, z: -520, is_movable: true, data: Bed(Bed { color: White }) }
+BlockEntity { x: 238, y: -29, z: -514, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 237, y: -29, z: -528, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 237, y: -34, z: -528, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 238, y: -44, z: -527, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/reward.json"), loot_table_seed: Some(447466149), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 235, y: -44, z: -519, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/supply.json"), loot_table_seed: Some(-51343305), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(14, -33), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 227, y: -34, z: -499, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 230, y: -34, z: -497, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 227, y: -34, z: -503, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/corridor.json"), loot_table_seed: Some(0), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 230, y: -34, z: -500, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:scrape_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 230, y: -29, z: -502, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 230, y: -29, z: -506, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:deadbush", version: Some([1, 21, 60, 33]), states: {} }) }) }
+BlockEntity { x: 230, y: -34, z: -502, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 225, y: -36, z: -507, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 230, y: -29, z: -505, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 230, y: -34, z: -505, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:flow_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 230, y: -34, z: -506, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 226, y: -29, z: -507, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 230, y: -34, z: -507, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 227, y: -8, z: -503, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 227, y: -7, z: -503, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+BlockEntity { x: 225, y: -16, z: -501, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(14, -32), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 225, y: -36, z: -490, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 230, y: -34, z: -495, is_movable: true, data: FlowerPot(FlowerPot { plant_block: Some(BlockDef { name: "minecraft:deadbush", version: Some([1, 21, 60, 33]), states: {} }) }) }
+BlockEntity { x: 226, y: -28, z: -491, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 224, y: -7, z: -496, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 226, y: -28, z: -496, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 230, y: -34, z: -496, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 225, y: -16, z: -491, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 226, y: -7, z: -491, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(14, -31), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 248, y: -31, z: -562, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(15, -36), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 243, y: -32, z: -557, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 255, y: -27, z: -545, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward_ominous.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Ominous, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 243, y: -33, z: -553, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(15, -35), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 245, y: -30, z: -531, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 245, y: -40, z: -531, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 243, y: -34, z: -537, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 245, y: -39, z: -531, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+BlockEntity { x: 245, y: -29, z: -531, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+BlockEntity { x: 247, y: -38, z: -535, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22747 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 243, y: -34, z: -541, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/breeze/ominous", spawn_data: SpawnData { type_id: "minecraft:breeze", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/breeze/normal", cooldown_end_at: 0 }) }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(15, -34), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 242, y: -36, z: -519, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 252, y: -34, z: -514, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/corridor.json"), loot_table_seed: Some(0), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 254, y: -29, z: -514, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 248, y: -34, z: -514, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: Some(["minecraft:guster_pottery_sherd", "minecraft:brick", "minecraft:brick", "minecraft:brick"]) }) }
+BlockEntity { x: 252, y: -34, z: -528, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 254, y: -34, z: -528, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 253, y: -34, z: -528, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 254, y: -29, z: -523, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 244, y: -29, z: -524, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 244, y: -34, z: -514, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 249, y: -29, z: -524, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 248, y: -36, z: -519, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/corridor.json"), loot_table_seed: Some(0), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 247, y: -36, z: -519, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 247, y: -34, z: -514, is_movable: true, data: DecoratedPot(DecoratedPot { loot_table: Some("loot_tables/pots/trial_chambers/corridor.json"), loot_table_seed: Some(0), animation: 0, item: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 0, damage: 0, name: "", tag: None, was_picked_up: false }, sherds: None }) }
+BlockEntity { x: 253, y: -29, z: -521, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/melee/zombie/ominous", spawn_data: SpawnData { type_id: "minecraft:zombie", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/melee/zombie/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 243, y: -36, z: -521, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/melee/zombie/ominous", spawn_data: SpawnData { type_id: "minecraft:zombie", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/melee/zombie/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 248, y: -36, z: -521, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/melee/zombie/ominous", spawn_data: SpawnData { type_id: "minecraft:zombie", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/melee/zombie/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 243, y: -29, z: -521, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/small_melee/silverfish/ominous", spawn_data: SpawnData { type_id: "minecraft:silverfish", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/small_melee/silverfish/normal", cooldown_end_at: 0 }) }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(15, -33), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 257, y: -33, z: -562, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 257, y: -32, z: -562, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(16, -36), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 256, y: -34, z: -555, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 270, y: 46, z: -547, is_movable: true, data: MobSpawner(MobSpawner { display_entity_height: 1.8, display_entity_scale: 1.0, display_entity_width: 0.8, spawn_count: 4, max_nearby_entities: 6, spawn_range: 4, max_spawn_delay: 800, entity_identifier: "minecraft:zombie", min_spawn_delay: 200, delay: 20, required_player_range: 16 }) }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(16, -35), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 256, y: -34, z: -540, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(16, -34), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 262, y: -36, z: -521, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: Some("loot_tables/chests/trial_chambers/intersection.json"), loot_table_seed: Some(1548673742), pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 265, y: -23, z: -524, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(16, -33), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(16, -32), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: 4 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 279, y: -26, z: -534, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 276, y: -26, z: -531, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 284, y: -26, z: -534, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 284, y: -30, z: -532, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(17, -34), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 275, y: -32, z: -519, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 276, y: -26, z: -526, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 275, y: -31, z: -519, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+BlockEntity { x: 272, y: -37, z: -521, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward_ominous.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Ominous, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 276, y: -31, z: -526, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 284, y: -30, z: -517, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(17, -33), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 279, y: -31, z: -508, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 284, y: -31, z: -508, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 279, y: -26, z: -508, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 276, y: -31, z: -511, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(17, -32), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 289, y: -24, z: -531, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/melee/zombie/ominous", spawn_data: SpawnData { type_id: "minecraft:zombie", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/melee/zombie/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 302, y: -26, z: -531, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 299, y: -26, z: -534, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 302, y: -31, z: -531, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 293, y: -30, z: -531, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 289, y: -31, z: -534, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 299, y: -31, z: -534, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(18, -34), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 302, y: -26, z: -516, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 302, y: -31, z: -526, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 289, y: -26, z: -521, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/breeze/ominous", spawn_data: SpawnData { type_id: "minecraft:breeze", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/breeze/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 302, y: -31, z: -516, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 293, y: -25, z: -521, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward_ominous.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Ominous, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 289, y: -30, z: -513, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(18, -33), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 291, y: -27, z: -507, is_movable: true, data: Barrel(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 291, y: -26, z: -507, is_movable: true, data: Hopper(Hopper { items: [], transfer_cooldown: 0 }) }
+BlockEntity { x: 294, y: -31, z: -508, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 302, y: -26, z: -511, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(18, -32), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(19, -34), dimension: Overworld, data: ActorDigestVersion }
+failed: "AutonomousEntities"
+failed: "BiomeData"
+failed: "Overworld"
+failed: "TheEnd"
+failed: "WorldClocks"
+failed: "actorprefix\0\0\0\u{2}\0\0\0\u{3}"
+failed: "actorprefix\0\0\0\u{2}\0\0\0\u{7}"
+failed: "actorprefix\0\0\0\u{2}\0\0\0\n"
+failed: "actorprefix\0\0\0\u{2}\0\0\0\u{b}"
+failed: "actorprefix\0\0\0\u{5}\0\0\0R"
+failed: "actorprefix\0\0\0\u{5}\0\0\0S"
+failed: "actorprefix\0\0\0\u{5}\0\0\0T"
+failed: "actorprefix\0\0\0\u{5}\0\0\0U"
+failed: "actorprefix\0\0\0\u{5}\0\0\0V"
+failed: "actorprefix\0\0\0\u{5}\0\0\0W"
+failed: "actorprefix\0\0\0\u{5}\0\0\0\\"
+failed: "actorprefix\0\0\0\u{5}\0\0\0]"
+failed: "actorprefix\0\0\0\u{5}\0\0\0^"
+failed: "actorprefix\0\0\0\u{5}\0\0\0_"
+failed: "actorprefix\0\0\0\u{5}\0\0\0`"
+failed: "actorprefix\0\0\0\u{5}\0\0\0b"
+failed: "actorprefix\0\0\0\u{5}\0\0\0c"
+failed: "actorprefix\0\0\0\u{5}\0\0\0d"
+failed: "actorprefix\0\0\0\u{5}\0\0\0e"
+failed: "actorprefix\0\0\0\u{5}\0\0\0f"
+failed: "actorprefix\0\0\0\u{5}\0\0\0g"
+failed: "actorprefix\0\0\0\u{5}\0\0\0h"
+failed: "actorprefix\0\0\0\u{5}\0\0\0i"
+failed: "actorprefix\0\0\0\u{5}\0\0\0j"
+failed: "actorprefix\0\0\0\u{5}\0\0\0l"
+failed: "actorprefix\0\0\0\u{5}\0\0\0m"
+failed: "actorprefix\0\0\0\u{5}\0\0\0o"
+failed: "actorprefix\0\0\0\u{5}\0\0\0p"
+failed: "actorprefix\0\0\0\u{5}\0\0\0q"
+failed: "actorprefix\0\0\0\u{5}\0\0\0r"
+failed: "actorprefix\0\0\0\u{5}\0\0\0s"
+failed: "actorprefix\0\0\0\u{5}\0\0\0t"
+failed: "actorprefix\0\0\0\u{5}\0\0\0v"
+failed: "actorprefix\0\0\0\u{5}\0\0\0w"
+failed: "actorprefix\0\0\0\u{5}\0\0\0x"
+failed: "actorprefix\0\0\0\u{5}\0\0\0y"
+failed: "actorprefix\0\0\0\u{5}\0\0\0z"
+failed: "actorprefix\0\0\0\u{5}\0\0\0}"
+failed: "actorprefix\0\0\0\u{5}\0\0\0~"
+failed: "actorprefix\0\0\0\u{5}\0\0\0\u{7f}"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\u{5}\0\0\0�"
+failed: "actorprefix\0\0\0\t\0\0\u{2}�"
+failed: "actorprefix\0\0\0\t\0\0\u{2}�"
+failed: "digp\0\0\0\0\0\0\0\0\u{2}\0\0\0"
+failed: "digp\u{1}\0\0\0\0\0\0\0\u{2}\0\0\0"
+failed: "digp\u{4}\0\0\0\0\0\0\0"
+failed: "digp\u{c}\0\0\0����"
+failed: "digp\u{c}\0\0\0����"
+failed: "digp\r\0\0\0����"
+failed: "digp\r\0\0\0����"
+failed: "digp\r\0\0\0����"
+failed: "digp\u{e}\0\0\0����"
+failed: "digp\u{e}\0\0\0����"
+failed: "digp\u{e}\0\0\0����"
+failed: "digp\u{e}\0\0\0����"
+failed: "digp\u{e}\0\0\0����"
+failed: "digp\u{e}\0\0\0����"
+failed: "digp\u{f}\0\0\0����"
+failed: "digp\u{f}\0\0\0����"
+failed: "digp\u{f}\0\0\0����"
+failed: "digp\u{f}\0\0\0����"
+failed: "digp\u{10}\0\0\0����"
+failed: "digp\u{10}\0\0\0����"
+failed: "digp\u{10}\0\0\0����"
+failed: "digp\u{10}\0\0\0����"
+failed: "digp\u{10}\0\0\0����"
+failed: "digp\u{11}\0\0\0����"
+failed: "digp\u{11}\0\0\0����"
+failed: "digp\u{11}\0\0\0����"
+failed: "digp\u{12}\0\0\0����"
+failed: "digp\u{12}\0\0\0����"
+failed: "digp\u{12}\0\0\0����"
+failed: "digp\u{13}\0\0\0����"
+failed: "digp����\u{5}\0\0\0\u{2}\0\0\0"
+failed: "mobevents"
+failed: "scoreboard"
+key: Key { chunk: ChunkPosition(1668246654, 1885301857), dimension: Undefined, data: LocalPlayer }
+key: Key { chunk: ChunkPosition(-3, 0), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-3, 0), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-3, 0), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(-3, 1), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-3, 1), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-3, 1), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(-3, -2), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-3, -2), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-3, -2), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(-2, 5), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-2, 5), dimension: End, data: BlockEntity }
+BlockEntity { x: -29, y: 75, z: 91, is_movable: true, data: EndGateway(EndGateway { age: 4365, exit_portal: [-357, 63, 1031], end_gateway_bad_pos_checked: true }) }
+BlockEntity { x: -30, y: 74, z: 86, is_movable: true, data: Hopper(Hopper { items: [ItemSlot { slot: 0, stack: ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:frame", tag: None, was_picked_up: false } }], transfer_cooldown: 0 }) }
+BlockEntity { x: -26, y: 75, z: 87, is_movable: true, data: Jukebox(Jukebox { record_item: Some(ItemStack { block: None, can_destroy: None, can_place_on: None, count: 1, damage: 0, name: "minecraft:music_disc_11", tag: None, was_picked_up: false }) }) }
+key: Key { chunk: ChunkPosition(-2, 5), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-2, 5), dimension: End, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(-2, 6), dimension: End, data: Biome3d }
+key: Key { chunk: ChunkPosition(-2, 6), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-2, 6), dimension: End, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(-2, 6), dimension: End, data: BlockEntity }
+BlockEntity { x: -22, y: 42, z: 99, is_movable: true, data: Lectern(Lectern { book: Some(LecternBook { total_pages: 1, page: 0, has_book: true, book: Book { count: 1, name: "minecraft:written_book", damage: 0, meta: BookMetadata { author: "Author Unknown", xuid: "2535411078067951", title: "Enter title here", pages: [BookPage { photo_name: "", text: "Hello there" }], generation: 0 }, was_picked_up: false } }) }) }
+BlockEntity { x: -18, y: 42, z: 103, is_movable: true, data: PistonArm(PistonArm { attached_blocks: [], break_blocks: [], last_progress: None, new_state: Retracted, progress: None, state: Retracted, sticky: true }) }
+BlockEntity { x: -18, y: 42, z: 106, is_movable: true, data: BrushableBlock(BrushableBlock { brush_count: 0, brush_direction: 6, loot_table_seed: 0, loot_table: "loot_tables/entities/empty_brushable_block.json", ty: "minecraft:suspicious_gravel" }) }
+BlockEntity { x: -21, y: 42, z: 104, is_movable: true, data: BrushableBlock(BrushableBlock { brush_count: 0, brush_direction: 6, loot_table_seed: 0, loot_table: "loot_tables/entities/empty_brushable_block.json", ty: "minecraft:suspicious_sand" }) }
+key: Key { chunk: ChunkPosition(-2, 6), dimension: End, data: PendingTicks }
+key: Key { chunk: ChunkPosition(-2, 6), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-1, 0), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-1, 0), dimension: End, data: BlockEntity }
+BlockEntity { x: -2, y: 62, z: 0, is_movable: true, data: EndPortal }
+BlockEntity { x: -2, y: 62, z: 1, is_movable: true, data: EndPortal }
+BlockEntity { x: -1, y: 62, z: 0, is_movable: true, data: EndPortal }
+BlockEntity { x: -1, y: 62, z: 1, is_movable: true, data: EndPortal }
+BlockEntity { x: -1, y: 62, z: 2, is_movable: true, data: EndPortal }
+key: Key { chunk: ChunkPosition(-1, 0), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-1, 2), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-1, 2), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-1, 2), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: Biome3d }
+key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: BlockEntity }
+BlockEntity { x: -6, y: 49, z: 106, is_movable: true, data: JigsawBlock(JigsawBlock { target: "minecraft:empty", final_state: "minecraft:air", placement_priority: 0, selection_priority: 0, joint: Rollable, name: "minecraft:empty", target_pool: "minecraft:empty" }) }
 test read_block_entity ... FAILED
 
 failures:
@@ -763,5 +1437,5 @@ failures:
 failures:
     read_block_entity
 
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.17s
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.19s
 
