@@ -1,4 +1,16 @@
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+use crate::deserialize_bool;
+
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Serialize_repr,
+    serde_repr::Deserialize_repr,
+)]
+#[repr(i32)]
 pub enum StructureBlockMode {
     Data = 0,
     Save = 1,
@@ -12,23 +24,39 @@ pub enum StructureBlockMode {
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct StructureBlock {
-    pub animation_mode: i8,
-    pub animation_seconds: f32,
-    pub data: StructureBlockMode,
-    pub data_field: String,
-    pub ignore_entities: bool,
-    pub integrity: f32,
-    pub is_powered: bool,
-    pub mirror: i8,
     pub redstone_save_mode: i32,
-    pub remove_blocks: i8,
-    pub rotation: i8,
-    pub seed: i64,
-    pub show_bounding_box: bool,
     pub structure_name: String,
+    pub data_field: String,
+    pub integrity: f32,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub is_powered: bool,
+    pub seed: i64,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub show_bounding_box: bool,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub include_players: bool,
+
+    #[serde(rename = "lastTouchedPlayerId")]
+    pub last_touched_player_id: i64,
+
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub mirror: bool,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub remove_blocks: bool,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub ignore_entities: bool,
+
+    pub rotation: i8,
+    #[serde(rename = "data")]
+    pub mode: StructureBlockMode,
+
+    pub animation_seconds: f32,
+    pub animation_mode: i8,
+
     pub x_structure_offset: i32,
     pub y_structure_offset: i32,
     pub z_structure_offset: i32,
+
     pub x_structure_size: i32,
     pub y_structure_size: i32,
     pub z_structure_size: i32,

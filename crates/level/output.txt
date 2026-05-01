@@ -1430,12 +1430,18 @@ key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: SubChunk { index: 
 key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: SubChunk { index: 3 } }
 key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: BlockEntity }
 BlockEntity { x: -6, y: 49, z: 106, is_movable: true, data: JigsawBlock(JigsawBlock { target: "minecraft:empty", final_state: "minecraft:air", placement_priority: 0, selection_priority: 0, joint: Rollable, name: "minecraft:empty", target_pool: "minecraft:empty" }) }
-test read_block_entity ... FAILED
+BlockEntity { x: -10, y: 46, z: 108, is_movable: true, data: StructureBlock(StructureBlock { redstone_save_mode: 0, structure_name: "", data_field: "", integrity: 100.0, is_powered: false, seed: 0, show_bounding_box: true, include_players: false, last_touched_player_id: -5833860172343903182, mirror: false, remove_blocks: false, ignore_entities: false, rotation: 0, mode: Save, animation_seconds: 0.0, animation_mode: 0, x_structure_offset: 0, y_structure_offset: -1, z_structure_offset: 0, x_structure_size: 5, y_structure_size: 5, z_structure_size: 5 }) }
+key: Key { chunk: ChunkPosition(-1, 6), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-1, -3), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-1, -3), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(-1, -3), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(-1, -1), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(-1, -1), dimension: End, data: BlockEntity }
+BlockEntity { x: -2, y: 62, z: -1, is_movable: true, data: EndPortal }
+BlockEntity { x: -1, y: 62, z: -2, is_movable: true, data: EndPortal }
+BlockEntity { x: -1, y: 62, z: -1, is_movable: true, data: EndPortal }
+key: Key { chunk: ChunkPosition(-1, -1), dimension: End, data: FinalizedState }
+test read_block_entity ... ok
 
-failures:
-
-failures:
-    read_block_entity
-
-test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.19s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.17s
 
