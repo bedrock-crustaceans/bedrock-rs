@@ -57,6 +57,7 @@ impl_block_data! {
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
     #[serde(tag = "id")]
     pub enum BlockData {
+        Dispenser(Dispenser),
         Vault(Vault),
         PistonArm(PistonArm),
         Jukebox(Jukebox),
@@ -133,6 +134,7 @@ mod command_block;
 mod comparator;
 mod conduit;
 mod copper_golem;
+mod dispenser;
 mod enchantment_table;
 mod end_gateway;
 mod flower_pot;
@@ -172,6 +174,7 @@ pub use command_block::*;
 pub use comparator::*;
 pub use conduit::*;
 pub use copper_golem::*;
+pub use dispenser::*;
 pub use enchantment_table::*;
 pub use end_gateway::*;
 pub use flower_pot::*;
