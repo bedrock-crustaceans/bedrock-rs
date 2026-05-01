@@ -1,0 +1,719 @@
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+
+running 1 test
+keys count: 658
+key: Key { chunk: ChunkPosition(0, 0), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 0), dimension: End, data: BlockEntity }
+BlockEntity { x: 0, y: 62, z: 1, is_movable: true, data: EndPortal }
+BlockEntity { x: 0, y: 62, z: 2, is_movable: true, data: EndPortal }
+BlockEntity { x: 1, y: 62, z: 0, is_movable: true, data: EndPortal }
+BlockEntity { x: 1, y: 62, z: 1, is_movable: true, data: EndPortal }
+BlockEntity { x: 1, y: 62, z: 2, is_movable: true, data: EndPortal }
+BlockEntity { x: 2, y: 62, z: 1, is_movable: true, data: EndPortal }
+BlockEntity { x: 2, y: 62, z: 0, is_movable: true, data: EndPortal }
+key: Key { chunk: ChunkPosition(0, 0), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, 0), dimension: End, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(0, 0), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 0), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 11, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 15, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 11, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 15, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 13, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 9, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 13, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 9, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 9, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 11, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 15, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 13, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 15, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 9, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 9, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 11, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 15, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 13, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 15, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 9, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 11, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 15, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 13, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 13, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 15, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 11, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 13, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 11, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 9, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 13, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 9, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 11, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+key: Key { chunk: ChunkPosition(0, 0), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, 1), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 1), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 11, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 15, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 11, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 15, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 13, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 9, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 13, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 9, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 9, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 11, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 15, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 13, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 15, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 9, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 9, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 11, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 15, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 13, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 15, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 9, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 11, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 15, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 13, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 13, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 15, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 11, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 13, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 11, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 9, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 13, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 9, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 11, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+key: Key { chunk: ChunkPosition(0, 1), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, 2), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 2), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, 2), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(0, 2), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 2), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 11, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 15, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 11, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 15, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 13, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 9, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 13, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 9, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 9, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 11, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 15, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 13, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 15, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 9, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 9, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 11, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 15, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 13, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 15, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 9, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 11, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 15, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 13, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 13, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 15, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 11, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 13, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 11, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 9, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 13, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 9, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 11, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+key: Key { chunk: ChunkPosition(0, 2), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, 3), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 3), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 11, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 15, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 11, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 15, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 13, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 9, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 13, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 9, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 9, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 11, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 15, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 13, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 15, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 9, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 9, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 11, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 15, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 13, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 15, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 9, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 11, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 15, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 13, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 13, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 15, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 11, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 13, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 11, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 9, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 13, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 9, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 11, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+key: Key { chunk: ChunkPosition(0, 3), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, 4), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, 4), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 11, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 15, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 11, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 15, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 13, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 9, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 13, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 9, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 9, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 11, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 15, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 13, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 15, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 9, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 9, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 11, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 15, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 13, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 15, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 9, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 11, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 15, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 13, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 13, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 15, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 11, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 13, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 11, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 9, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 13, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 9, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 11, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+key: Key { chunk: ChunkPosition(0, 4), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, -3), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, -3), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(0, -3), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(0, -1), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(0, -1), dimension: End, data: BlockEntity }
+BlockEntity { x: 0, y: 62, z: -2, is_movable: true, data: EndPortal }
+BlockEntity { x: 0, y: 62, z: -1, is_movable: true, data: EndPortal }
+BlockEntity { x: 1, y: 62, z: -2, is_movable: true, data: EndPortal }
+BlockEntity { x: 1, y: 62, z: -1, is_movable: true, data: EndPortal }
+BlockEntity { x: 2, y: 62, z: -1, is_movable: true, data: EndPortal }
+key: Key { chunk: ChunkPosition(0, -1), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(1, 0), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 0), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(1, 0), dimension: End, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(1, 0), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 0), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 21, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 17, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 31, y: 70, z: 9, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 21, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 21, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 21, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 31, y: 70, z: 13, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 19, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 19, y: 70, z: 5, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 23, y: 70, z: 13, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 31, y: 70, z: 5, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 29, y: 70, z: 5, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 31, y: 70, z: 1, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 19, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 19, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 29, y: 70, z: 15, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 11, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 25, y: 70, z: 11, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 23, y: 70, z: 9, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 19, y: 70, z: 11, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 25, y: 70, z: 13, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 23, y: 70, z: 5, is_movable: true, data: Bed(Bed { color: Orange }) }
+BlockEntity { x: 29, y: 70, z: 3, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 25, y: 70, z: 1, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 23, y: 70, z: 7, is_movable: true, data: Bed(Bed { color: Orange }) }
+BlockEntity { x: 19, y: 70, z: 1, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 29, y: 70, z: 11, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 21, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 25, y: 70, z: 5, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 23, y: 70, z: 3, is_movable: true, data: Bed(Bed { color: Orange }) }
+BlockEntity { x: 17, y: 70, z: 13, is_movable: true, data: Noteblock(Noteblock { note: 8 }) }
+BlockEntity { x: 31, y: 70, z: 3, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 25, y: 70, z: 3, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 17, y: 70, z: 9, is_movable: true, data: Noteblock(Noteblock { note: 7 }) }
+BlockEntity { x: 23, y: 70, z: 15, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 25, y: 70, z: 15, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 31, y: 70, z: 7, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 29, y: 70, z: 13, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 25, y: 70, z: 7, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 29, y: 70, z: 1, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 25, y: 70, z: 9, is_movable: true, data: Bed(Bed { color: Blue }) }
+BlockEntity { x: 17, y: 70, z: 7, is_movable: true, data: Noteblock(Noteblock { note: 6 }) }
+BlockEntity { x: 31, y: 70, z: 15, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 31, y: 70, z: 11, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 1, is_movable: true, data: Bed(Bed { color: Orange }) }
+BlockEntity { x: 29, y: 70, z: 7, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 15, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 17, y: 70, z: 3, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 29, y: 70, z: 9, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+key: Key { chunk: ChunkPosition(1, 0), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(1, 1), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 1), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 21, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 17, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 31, y: 70, z: 25, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 21, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 21, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 21, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 17, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 17, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 29, y: 70, z: 19, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 21, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 31, y: 70, z: 19, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 23, y: 70, z: 29, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 19, y: 70, z: 21, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 31, y: 70, z: 21, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 29, y: 70, z: 21, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 31, y: 70, z: 17, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 19, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 19, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 29, y: 70, z: 31, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 27, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 25, y: 70, z: 27, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 25, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 19, y: 70, z: 27, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 25, y: 70, z: 29, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 25, y: 70, z: 17, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 23, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 19, y: 70, z: 17, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 29, y: 70, z: 27, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 29, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 21, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 25, y: 70, z: 21, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 19, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 25, y: 70, z: 19, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 17, y: 70, z: 25, is_movable: true, data: Noteblock(Noteblock { note: 11 }) }
+BlockEntity { x: 23, y: 70, z: 31, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 25, y: 70, z: 31, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 31, y: 70, z: 23, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 29, y: 70, z: 29, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 25, y: 70, z: 23, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 29, y: 70, z: 17, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 23, is_movable: true, data: Noteblock(Noteblock { note: 10 }) }
+BlockEntity { x: 23, y: 70, z: 17, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 29, y: 70, z: 23, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 12 }) }
+BlockEntity { x: 25, y: 70, z: 25, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 21, y: 70, z: 31, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 17, y: 70, z: 19, is_movable: true, data: Noteblock(Noteblock { note: 9 }) }
+BlockEntity { x: 29, y: 70, z: 25, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+key: Key { chunk: ChunkPosition(1, 1), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(1, 2), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 2), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 17, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 21, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 17, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 21, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 21, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 19, y: 70, z: 37, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 23, y: 70, z: 37, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 29, y: 70, z: 35, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 45, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 17, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 17, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 29, y: 70, z: 37, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 17, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 19, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 25, y: 70, z: 47, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 47, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 29, y: 70, z: 39, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 33, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 19, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 29, y: 70, z: 47, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 43, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 25, y: 70, z: 43, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 41, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 19, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 25, y: 70, z: 45, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 25, y: 70, z: 33, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 39, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 17, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 14 }) }
+BlockEntity { x: 21, y: 70, z: 47, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 17, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 13 }) }
+BlockEntity { x: 29, y: 70, z: 41, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 25, y: 70, z: 35, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 23, y: 70, z: 35, is_movable: true, data: Bed(Bed { color: Magenta }) }
+BlockEntity { x: 25, y: 70, z: 37, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 19, y: 70, z: 33, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 29, y: 70, z: 43, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 21, y: 70, z: 45, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 17, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 15 }) }
+BlockEntity { x: 21, y: 70, z: 43, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 25, y: 70, z: 39, is_movable: true, data: Bed(Bed { color: Brown }) }
+BlockEntity { x: 29, y: 70, z: 45, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 39, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 29, y: 70, z: 33, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 41, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 19, y: 70, z: 35, is_movable: true, data: Noteblock(Noteblock { note: 16 }) }
+BlockEntity { x: 25, y: 70, z: 41, is_movable: true, data: Bed(Bed { color: Brown }) }
+key: Key { chunk: ChunkPosition(1, 2), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(1, 3), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 3), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 17, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 21, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 17, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 21, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 21, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 19, y: 70, z: 53, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 23, y: 70, z: 53, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 29, y: 70, z: 51, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 61, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 17, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 17, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 29, y: 70, z: 53, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 17, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 19, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 19, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 29, y: 70, z: 63, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 59, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 25, y: 70, z: 59, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 57, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 29, y: 70, z: 59, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 19, y: 70, z: 49, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 21, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 25, y: 70, z: 53, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 51, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 21, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 29, y: 70, z: 49, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 25, y: 70, z: 61, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 19, y: 70, z: 59, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 25, y: 70, z: 55, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 55, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 25, y: 70, z: 49, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 19, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 20 }) }
+BlockEntity { x: 25, y: 70, z: 57, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 29, y: 70, z: 57, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 17, y: 70, z: 51, is_movable: true, data: Noteblock(Noteblock { note: 17 }) }
+BlockEntity { x: 17, y: 70, z: 55, is_movable: true, data: Noteblock(Noteblock { note: 18 }) }
+BlockEntity { x: 21, y: 70, z: 63, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 25, y: 70, z: 51, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 21, y: 70, z: 61, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 17, y: 70, z: 57, is_movable: true, data: Noteblock(Noteblock { note: 19 }) }
+BlockEntity { x: 23, y: 70, z: 63, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 25, y: 70, z: 63, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 49, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 29, y: 70, z: 55, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 29, y: 70, z: 61, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+key: Key { chunk: ChunkPosition(1, 3), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(1, 4), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(1, 4), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 17, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 21, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 17, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 21, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 21, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 19, y: 70, z: 69, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 23, y: 70, z: 69, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 29, y: 70, z: 67, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 77, is_movable: true, data: Bed(Bed { color: Yellow }) }
+BlockEntity { x: 17, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 17, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 29, y: 70, z: 69, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 0 }) }
+BlockEntity { x: 17, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 19, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 25, y: 70, z: 79, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 79, is_movable: true, data: Bed(Bed { color: Yellow }) }
+BlockEntity { x: 29, y: 70, z: 71, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 65, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 19, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 29, y: 70, z: 79, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 23, y: 70, z: 75, is_movable: true, data: Bed(Bed { color: Yellow }) }
+BlockEntity { x: 25, y: 70, z: 75, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 73, is_movable: true, data: Bed(Bed { color: Yellow }) }
+BlockEntity { x: 19, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 1 }) }
+BlockEntity { x: 25, y: 70, z: 77, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 25, y: 70, z: 65, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 71, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 19, y: 70, z: 65, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 29, y: 70, z: 75, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 19, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 2 }) }
+BlockEntity { x: 17, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 22 }) }
+BlockEntity { x: 21, y: 70, z: 79, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 25, y: 70, z: 67, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 23, y: 70, z: 67, is_movable: true, data: Bed(Bed { color: LightBlue }) }
+BlockEntity { x: 25, y: 70, z: 69, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 17, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 21 }) }
+BlockEntity { x: 29, y: 70, z: 73, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 77, is_movable: true, data: Noteblock(Noteblock { note: 5 }) }
+BlockEntity { x: 17, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 23 }) }
+BlockEntity { x: 21, y: 70, z: 75, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 25, y: 70, z: 71, is_movable: true, data: Bed(Bed { color: Green }) }
+BlockEntity { x: 29, y: 70, z: 77, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 71, is_movable: true, data: Noteblock(Noteblock { note: 3 }) }
+BlockEntity { x: 29, y: 70, z: 65, is_movable: true, data: ChiseledShelf(ChiseledShelf { items: None, last_interacted_slot: None }) }
+BlockEntity { x: 21, y: 70, z: 73, is_movable: true, data: Noteblock(Noteblock { note: 4 }) }
+BlockEntity { x: 19, y: 70, z: 67, is_movable: true, data: Noteblock(Noteblock { note: 24 }) }
+BlockEntity { x: 25, y: 70, z: 73, is_movable: true, data: Bed(Bed { color: Green }) }
+key: Key { chunk: ChunkPosition(1, 4), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(2, 0), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(2, 0), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(2, 0), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(2, 0), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(2, 0), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 39, y: 70, z: 5, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 13, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 15, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 7, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 3, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 11, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 9, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 1, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+key: Key { chunk: ChunkPosition(2, 0), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(2, 1), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(2, 1), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(2, 1), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(2, 1), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(2, 1), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 39, y: 70, z: 17, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 25, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 19, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 27, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 21, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+BlockEntity { x: 39, y: 70, z: 23, is_movable: true, data: Chest(Chest { findable: 0, force_unpair: None, loot_table: None, loot_table_seed: None, pair_lead: None, pair_x: None, pair_z: None, items: [] }) }
+key: Key { chunk: ChunkPosition(2, 1), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(2, -2), dimension: End, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(2, -2), dimension: End, data: FinalizedState }
+key: Key { chunk: ChunkPosition(2, -2), dimension: End, data: RandomTicks }
+key: Key { chunk: ChunkPosition(3, 0), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(3, 0), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 57, y: 70, z: 13, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 5, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 7, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 15, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 15, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 13, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 3, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 11, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 1, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 1, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 9, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 3, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 13, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 7, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 15, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 11, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 5, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 1, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 9, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 7, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 3, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 11, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 9, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 5, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+key: Key { chunk: ChunkPosition(3, 0), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(3, 1), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(3, 1), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 57, y: 70, z: 17, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 25, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 27, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 19, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 29, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 17, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 21, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 31, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 19, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 23, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 27, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 21, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 31, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 27, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 25, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 23, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 19, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 29, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 23, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 25, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 31, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 17, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 29, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 21, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+key: Key { chunk: ChunkPosition(3, 1), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(3, 2), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(3, 2), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 57, y: 70, z: 45, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 37, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 39, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 47, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 47, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 45, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 35, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 43, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 33, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 33, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 41, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 35, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 45, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 39, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 47, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 57, y: 70, z: 43, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 37, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 33, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 41, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 39, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 35, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 43, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 59, y: 70, z: 41, is_movable: true, data: Sign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 63, y: 70, z: 37, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+key: Key { chunk: ChunkPosition(3, 2), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(4, 0), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(4, 0), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 69, y: 70, z: 1, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 5, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 15, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 5, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 3, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 7, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 3, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 5, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 15, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 1, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 3, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 5, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 1, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 9, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 5, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 13, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 15, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 11, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 11, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 9, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 9, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 13, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 1, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 9, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 13, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 11, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 11, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 7, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 1, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 15, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 7, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 3, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 13, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 13, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 7, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 7, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 11, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 15, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 3, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 9, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+key: Key { chunk: ChunkPosition(4, 0), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(4, 0), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(4, 1), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(4, 1), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 65, y: 70, z: 19, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 19, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 17, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 17, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 21, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 19, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 21, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 31, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 19, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 23, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 17, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 21, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 29, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 31, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 23, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 19, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 27, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 25, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 29, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 27, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 23, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 27, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 23, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 73, y: 70, z: 17, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 31, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 29, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 25, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 21, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 17, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 71, y: 70, z: 25, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 69, y: 70, z: 25, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 27, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 65, y: 70, z: 31, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+BlockEntity { x: 67, y: 70, z: 29, is_movable: true, data: HangingSign(Sign { back_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, front_text: SignText { hide_glow_outline: false, ignore_lighting: false, persist_formatting: true, sign_text_color: -16777216, filtered_text: "", text: "", text_owner: "" }, is_waxed: false }) }
+key: Key { chunk: ChunkPosition(4, 1), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(7, 20), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(7, 20), dimension: Overworld, data: BiomeState }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: BlockEntity }
+BlockEntity { x: 202, y: -23, z: -521, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Normal, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 201, y: -24, z: -521, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 203, y: -14, z: -516, is_movable: true, data: TrialSpawner(TrialSpawner { ominous_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/ominous", spawn_data: SpawnData { type_id: "minecraft:bogged", weight: 1, equipment: None }, total_mobs_spawned: 0, required_player_range: 14, current_mobs: [], next_mob_spawns_at: 0, registered_players: [], normal_config: "minecraft:trial_chamber/slow_ranged/poison_skeleton/normal", cooldown_end_at: 0 }) }
+BlockEntity { x: 201, y: -24, z: -516, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+BlockEntity { x: 204, y: -7, z: -524, is_movable: true, data: Vault(Vault { data: VaultData { items_to_eject: [], rewarded_players: [], state_updating_resumes_at: 22746 }, config: VaultConfig { loot_table: "loot_tables/chests/trial_chambers/reward_ominous.json", activation_range: 4.0, key_item: VaultKeyItem { ty: Ominous, damage: 0, count: 1, was_picked_up: false }, deactivation_range: 4.5, override_loot_table_to_display: "" } }) }
+BlockEntity { x: 204, y: -24, z: -524, is_movable: true, data: Dispenser(Dispenser { loot_table: "loot_tables/dispensers/trial_chambers/chamber.json", items: [], loot_table_seed: 0 }) }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: FinalizedState }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: BlendingBiomeHeight }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: BlendingData }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: ActorDigestVersion }
+key: Key { chunk: ChunkPosition(12, -33), dimension: Overworld, data: AabbVolumes }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: Biome3d }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: ChunkVersion }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: 0 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: 1 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: 2 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: 3 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: -4 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: -3 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: -2 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: SubChunk { index: -1 } }
+key: Key { chunk: ChunkPosition(12, -32), dimension: Overworld, data: BlockEntity }
+test read_block_entity ... FAILED
+
+failures:
+
+failures:
+    read_block_entity
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.17s
+

@@ -1,46 +1,46 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
-pub struct SpawnPotentialEntity {
-    pub id: String,
-}
+// #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// pub struct SpawnPotentialEntity {
+//     pub id: String,
+// }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
-pub struct SpawnPotentialData {
-    pub entity: SpawnPotentialEntity,
-    pub equipment: Option<Equipment>,
-}
+// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// pub struct SpawnPotentialData {
+//     pub entity: SpawnPotentialEntity,
+//     pub equipment: Option<Equipment>,
+// }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
-pub struct SpawnPotential {
-    pub weight: i32,
-    pub data: SpawnPotentialData,
-}
+// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// pub struct SpawnPotential {
+//     pub weight: i32,
+//     pub data: SpawnPotentialData,
+// }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
-pub struct EjectableLootTable {
-    pub weight: i32,
-    /// Path to a loot table.
-    pub data: String,
-}
+// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// pub struct EjectableLootTable {
+//     pub weight: i32,
+//     /// Path to a loot table.
+//     pub data: String,
+// }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
-pub struct SpawnerConfig {
-    pub spawn_range: i32,
-    pub total_mobs: f32,
-    pub simultaneous_mobs: f32,
-    pub total_mobs_added_per_player: f32,
-    pub simultaneous_mobs_added_per_player: f32,
-    pub ticks_between_spawn: i32,
-    pub target_cooldown_length: i32,
-    pub spawn_potentials: Vec<SpawnPotential>,
-    pub loot_tables_to_eject: Vec<EjectableLootTable>,
-    /// A path to a loot table.
-    pub items_to_drop_when_ominuous: String,
-}
+// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// pub struct SpawnerConfig {
+//     pub spawn_range: i32,
+//     pub total_mobs: f32,
+//     pub simultaneous_mobs: f32,
+//     pub total_mobs_added_per_player: f32,
+//     pub simultaneous_mobs_added_per_player: f32,
+//     pub ticks_between_spawn: i32,
+//     pub target_cooldown_length: i32,
+//     pub spawn_potentials: Vec<SpawnPotential>,
+//     pub loot_tables_to_eject: Vec<EjectableLootTable>,
+//     /// A path to a loot table.
+//     pub items_to_drop_when_ominuous: String,
+// }
 
 /// Chances for the equipment to drop upon death.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -77,14 +77,15 @@ pub struct RegisteredEntity {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct TrialSpawner {
-    pub required_player_range: i32,
-    pub normal_config: SpawnerConfig,
-    pub ominous_config: Option<SpawnerConfig>,
-    pub registered_players: Vec<RegisteredEntity>,
-    pub current_mobs: Vec<RegisteredEntity>,
-    pub cooldown_end_at: i64,
-    pub next_mob_spawns_at: i64,
+    pub ominous_config: String,
     pub spawn_data: SpawnData,
-    pub selected_loot_table: String,
+    pub total_mobs_spawned: i32,
+    pub required_player_range: i32,
+    pub current_mobs: Vec<RegisteredEntity>,
+    pub next_mob_spawns_at: i64,
+    pub registered_players: Vec<RegisteredEntity>,
+    pub normal_config: String,
+    pub cooldown_end_at: i64,
 }
