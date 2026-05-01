@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use bedrockrs_level::{
+use bedrock_level::{
     Greedy, Lazy,
     bits::BitArray,
     db::Database,

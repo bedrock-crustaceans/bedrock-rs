@@ -106,7 +106,7 @@ impl Database {
         K: AsRef<[u8]>,
     {
         // Safety: This is safe to call since `key` is a valid Rust slice and `self.ptr`
-        // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
+        // has been allocated by a call to `bedrock_db_open` in `Database::open`.
         let result = unsafe {
             leveldb_sys::db_get(
                 self.as_ptr(),
@@ -145,7 +145,7 @@ impl Database {
         V: AsRef<[u8]>,
     {
         // Safety: This is safe to call since `key` and `value` are valid Rust slices and `self.ptr`
-        // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
+        // has been allocated by a call to `bedrock_db_open` in `Database::open`.
         let result = unsafe {
             leveldb_sys::db_put(
                 self.as_ptr(),
@@ -171,7 +171,7 @@ impl Database {
         K: AsRef<[u8]>,
     {
         // Safety: This is safe to call since `key` is a valid Rust slice and `self.ptr`
-        // has been allocated by a call to `bedrockrs_db_open` in `Database::open`.
+        // has been allocated by a call to `bedrock_db_open` in `Database::open`.
         let result = unsafe {
             leveldb_sys::db_remove(
                 self.as_ptr(),

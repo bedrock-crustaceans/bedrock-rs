@@ -90,7 +90,7 @@ impl<'k, 'db> Iterator for &'k mut Keys<'db> {
 
     fn next(&mut self) -> Option<KvRef<'k, 'db>> {
         if self.index != 0 {
-            // Safety: `bedrockrs_iter_next` is safe to call as long as the iterator has not been destroyed.
+            // Safety: `bedrock_iter_next` is safe to call as long as the iterator has not been destroyed.
             // The only method of destroying an iterator is the `Drop` implementation of `Keys` which cannot have been
             // called yet.
             unsafe {

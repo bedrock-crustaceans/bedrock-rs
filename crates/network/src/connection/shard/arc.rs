@@ -1,6 +1,6 @@
 use crate::connection::Connection;
 use crate::error::ConnectionError;
-use bedrockrs_proto_core::Packets;
+use bedrock_protocol_core::Packets;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};

@@ -1,7 +1,7 @@
 use io::Error as IOError;
 use std::io;
 
-use bedrockrs_proto_core::error::{PacketCodecError, ProtoCodecError};
+use bedrock_protocol_core::error::{PacketCodecError, ProtoCodecError};
 use thiserror::Error;
 
 use crate::info::RAKNET_GAMEPACKET_ID;

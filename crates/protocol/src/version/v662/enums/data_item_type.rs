@@ -1,0 +1,17 @@
+use crate::version::versions::ProtoVersion;
+use bedrock_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(i8)]
+#[repr(i8)]
+pub enum DataItemType<V: ProtoVersion> {
+    Byte(i8) = 0,
+    Short(#[endianness(le)] i16) = 1,
+    Int(#[endianness(var)] i32) = 2,
+    Float(#[endianness(le)] f32) = 3,
+    String(String) = 4,
+    NBT(#[nbt] nbtx::Value) = 5,
+    Pos(V::BlockPos) = 6,
+    Int64(#[endianness(var)] i64) = 7,
+    Vec3(#[endianness(le)] (f32, f32, f32)) = 8,
+}

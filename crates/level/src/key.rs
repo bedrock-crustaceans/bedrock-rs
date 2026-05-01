@@ -5,8 +5,8 @@ use crate::{
     error::{Error, Result},
     types::ChunkPosition,
 };
-use bedrockrs_shared::read::SeekExt;
-use bedrockrs_shared::world::dimension::Dimension;
+use bedrock_shared::read::SeekExt;
+use bedrock_shared::world::dimension::Dimension;
 use std::io::{Cursor, Read, Seek, Write};
 
 pub const AUTONOMOUS_ENTITIES: &str = "AutonomousEntities";

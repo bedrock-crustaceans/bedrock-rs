@@ -1,5 +1,5 @@
 [package]
-name = "bedrockrs"
+name = "bedrock"
 version = "0.1.0"
 edition = "2024"
 
@@ -44,15 +44,15 @@ reqwest = "0.13.2"
 
 [dependencies]
 bedrock_auth = { path = "crates/auth", optional = true }
-bedrockrs_core = { path = "crates/core" }
-bedrockrs_shared = { path = "crates/shared" }
-bedrockrs_macros = { path = "crates/macros", optional = true }
-bedrockrs_addon = { path = "crates/addon", optional = true }
-bedrockrs_form = { path = "crates/form", optional = true }
-bedrockrs_proto = { path = "crates/proto", optional = true }
-bedrockrs_proto_core = { path = "crates/proto_core", optional = true }
-bedrockrs_network = { path = "crates/network", optional = true }
-bedrockrs_level = { path = "crates/level", optional = true }
+bedrock_core = { path = "crates/core" }
+bedrock_shared = { path = "crates/shared" }
+bedrock_macros = { path = "crates/macros", optional = true }
+bedrock_addon = { path = "crates/addon", optional = true }
+bedrock_form = { path = "crates/form", optional = true }
+bedrock_protocol = { path = "crates/protocol", optional = true }
+bedrock_protocol_core = { path = "crates/protocol_core", optional = true }
+bedrock_network = { path = "crates/network", optional = true }
+bedrock_level = { path = "crates/level", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
@@ -62,48 +62,43 @@ tracing-subscriber = { workspace = true }
 
 [features]
 auth = ["dep:bedrock_auth"]
-addon = ["dep:bedrockrs_addon"]
-proto = [
-    "dep:bedrockrs_proto",
-    "dep:bedrockrs_proto_core",
-    "dep:bedrockrs_macros",
+addon = ["dep:bedrock_addon"]
+protocol = [
+    "dep:bedrock_protocol",
+    "dep:bedrock_protocol_core",
+    "dep:bedrock_macros",
 ]
-network = ["dep:bedrockrs_network", "proto"]
-level = ["dep:bedrockrs_level"]
-full = ["addon", "level", "network", "proto", "auth"]
-form = ["dep:bedrockrs_form"]
+network = ["dep:bedrock_network", "protocol"]
+level = ["dep:bedrock_level"]
+full = ["addon", "level", "network", "protocol", "auth"]
+form = ["dep:bedrock_form"]
 
 auth-async = ["bedrock_auth/async"]
 
-proto-unknown = ["bedrockrs_proto/unknown"]
-proto-v662 = ["bedrockrs_proto/v662"]
-proto-v671 = ["bedrockrs_proto/v671"]
-proto-v685 = ["bedrockrs_proto/v685"]
-proto-v686 = ["bedrockrs_proto/v686"]
-proto-v712 = ["bedrockrs_proto/v712"]
-proto-v729 = ["bedrockrs_proto/v729"]
-proto-v748 = ["bedrockrs_proto/v748"]
-proto-v766 = ["bedrockrs_proto/v766"]
-proto-v776 = ["bedrockrs_proto/v776"]
-proto-v786 = ["bedrockrs_proto/v786"]
-proto-v800 = ["bedrockrs_proto/v800"]
-proto-v818 = ["bedrockrs_proto/v818"]
-proto-v819 = ["bedrockrs_proto/v819"]
-proto-v827 = ["bedrockrs_proto/v827"]
-proto-v844 = ["bedrockrs_proto/v844"]
-proto-v859 = ["bedrockrs_proto/v859"]
-proto-v898 = ["bedrockrs_proto/v898"]
-proto-v924 = ["bedrockrs_proto/v924"]
-proto-v944 = ["bedrockrs_proto/v944"]
-proto-v975 = ["bedrockrs_proto/v975"]
-proto-all = ["bedrockrs_proto/all"]
+protocol-unknown = ["bedrock_protocol/unknown"]
+protocol-v662 = ["bedrock_protocol/v662"]
+protocol-v671 = ["bedrock_protocol/v671"]
+protocol-v685 = ["bedrock_protocol/v685"]
+protocol-v686 = ["bedrock_protocol/v686"]
+protocol-v712 = ["bedrock_protocol/v712"]
+protocol-v729 = ["bedrock_protocol/v729"]
+protocol-v748 = ["bedrock_protocol/v748"]
+protocol-v766 = ["bedrock_protocol/v766"]
+protocol-v776 = ["bedrock_protocol/v776"]
+protocol-v786 = ["bedrock_protocol/v786"]
+protocol-v800 = ["bedrock_protocol/v800"]
+protocol-v818 = ["bedrock_protocol/v818"]
+protocol-v819 = ["bedrock_protocol/v819"]
+protocol-v827 = ["bedrock_protocol/v827"]
+protocol-v844 = ["bedrock_protocol/v844"]
+protocol-v859 = ["bedrock_protocol/v859"]
+protocol-v898 = ["bedrock_protocol/v898"]
+protocol-v924 = ["bedrock_protocol/v924"]
+protocol-v944 = ["bedrock_protocol/v944"]
+protocol-v975 = ["bedrock_protocol/v975"]
+protocol-all = ["bedrock_protocol/all"]
 
 [[example]]
-name = "proto_server"
-path = "examples/proto/server.rs"
-required-features = ["network", "proto-v944", "proto-unknown"]
-
-[[example]]
-name = "proto_parsing"
-path = "examples/proto_parsing.rs"
-required-features = ["network", "proto-v800"]
+name = "server"
+path = "examples/server.rs"
+required-features = ["network", "protocol-v944", "protocol-unknown"]

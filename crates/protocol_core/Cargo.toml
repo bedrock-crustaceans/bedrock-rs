@@ -1,0 +1,25 @@
+[package]
+name = "bedrock_protocol_core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bedrock_macros = { path = "../macros" }
+
+nbtx = { workspace = true }
+xuid = { workspace = true }
+
+paste = { workspace = true }
+seq-macro = { workspace = true }
+
+byteorder = { workspace = true }
+varint-rs = { workspace = true }
+
+thiserror = { workspace = true }
+
+serde_json = { workspace = true }
+jsonwebtoken = { workspace = true }
+base64 = { workspace = true }
+uuid = { workspace = true }
+
+strum = { workspace = true }

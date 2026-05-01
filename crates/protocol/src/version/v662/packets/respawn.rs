@@ -1,0 +1,11 @@
+use crate::version::versions::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 45)]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct RespawnPacket<V: ProtoVersion> {
+    #[endianness(le)]
+    pub position: (f32, f32, f32),
+    pub state: V::PlayerRespawnState,
+    pub player_runtime_id: V::ActorRuntimeID,
+}

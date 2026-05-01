@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Cursor;
 
-use bedrockrs_level::Greedy;
-use bedrockrs_level::biome::Biomes;
-use bedrockrs_level::player::PlayerData;
-use bedrockrs_level::settings::LevelSettings;
-use bedrockrs_level::subchunk::BlockDef;
-use bedrockrs_level::types::BlockPosition;
-use bedrockrs_level::{
+use bedrock_level::Greedy;
+use bedrock_level::biome::Biomes;
+use bedrock_level::player::PlayerData;
+use bedrock_level::settings::LevelSettings;
+use bedrock_level::subchunk::BlockDef;
+use bedrock_level::types::BlockPosition;
+use bedrock_level::{
     db::Database,
     key::{Key, KeyVariant},
     subchunk::SubChunk,

@@ -1,0 +1,74 @@
+use crate::version::ProtoVersion;
+use bedrock_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct DebugShape<V: ProtoVersion> {
+    #[endianness(var)]
+    pub id: u64,
+    pub debug_shape_type: Option<DebugShapeType>,
+    #[endianness(le)]
+    pub position: Option<(f32, f32, f32)>,
+    #[endianness(le)]
+    pub scale: Option<f32>,
+    #[endianness(le)]
+    pub rotation: Option<(f32, f32)>,
+    #[endianness(le)]
+    pub remaining_duration: Option<f32>,
+    #[endianness(le)]
+    pub maximum_render_distance: Option<f32>,
+    pub color: Option<V::Color>,
+    #[endianness(var)]
+    pub dimension: Option<i32>,
+    #[endianness(var)]
+    pub attached_to_entity_id: Option<u64>,
+    pub shape_data: DebugShapeData,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(i8)]
+#[repr(i8)]
+pub enum DebugShapeType {
+    Line = 0,
+    Box = 1,
+    Sphere = 2,
+    Circle = 3,
+    Text = 4,
+    Arrow = 5,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(u32)]
+#[enum_endianness(var)]
+#[repr(u32)]
+pub enum DebugShapeData {
+    Last = 0,
+    Arrow {
+        #[endianness(le)]
+        arrow_end_position: Option<(f32, f32, f32)>,
+        #[endianness(le)]
+        arrow_head_length: Option<f32>,
+        #[endianness(le)]
+        arrow_head_radius: Option<f32>,
+        arrow_head_segments: Option<i8>,
+    } = 1,
+    Text {
+        text: Option<String>,
+        use_rotation: bool,
+        #[endianness(le)]
+        background_color: Option<i32>,
+        depth_test: bool,
+        show_backface: bool,
+        show_text_backface: bool
+    } = 2,
+    Box {
+        #[endianness(le)]
+        box_bounds: Option<(f32, f32, f32)>,
+    } = 3,
+    Line {
+        #[endianness(le)]
+        line_end_position: Option<(f32, f32, f32)>,
+    } = 4,
+    Sphere {
+        segments: Option<i8>,
+    } = 5,
+}

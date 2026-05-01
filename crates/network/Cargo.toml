@@ -1,11 +1,11 @@
 [package]
-name = "bedrockrs_network"
+name = "bedrock_network"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bedrockrs_proto = { path = "../proto" }
-bedrockrs_proto_core = { path = "../proto_core" }
+bedrock_protocol = { path = "../protocol" }
+bedrock_protocol_core = { path = "../protocol_core" }
 
 tokio = { workspace = true }
 byteorder = { workspace = true }

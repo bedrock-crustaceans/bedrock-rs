@@ -1,0 +1,13 @@
+use crate::version::versions::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 27)]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ActorEventPacket<V: ProtoVersion> {
+    pub target_runtime_id: V::ActorRuntimeID,
+    pub event_id: V::ActorEvent,
+    #[endianness(var)]
+    pub data: i32,
+    #[endianness(le)]
+    pub fire_at_position: Option<(f32, f32, f32)>,
+}
