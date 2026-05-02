@@ -1,24 +1,24 @@
-use bedrock_network::compression::Compression;
-use bedrock_network::connection::Connection;
-use bedrock_network::listener::Listener;
-use bedrock_protocol::v662::enums::{
+use bedrock::core::world::dimension::Dimension;
+use bedrock::network::compression::Compression;
+use bedrock::network::connection::Connection;
+use bedrock::network::listener::Listener;
+use bedrock::protocol::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting,
     GameType, GeneratorType, PacketCompressionAlgorithm, PlayStatus, PlayerPermissionLevel,
     SpawnBiomeType,
 };
-use bedrock_protocol::v662::packets::{NetworkSettingsPacket, PlayStatusPacket};
-use bedrock_protocol::v662::types::{
+use bedrock::protocol::v662::packets::{NetworkSettingsPacket, PlayStatusPacket};
+use bedrock::protocol::v662::types::{
     ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments,
     NetworkPermissions, SpawnSettings,
 };
-use bedrock_protocol::v818::packets::ResourcePacksInfoPacket;
-use bedrock_protocol::v818::types::SyncedPlayerMovementSettings;
-use bedrock_protocol::v898::packets::ResourcePackStackPacket;
-use bedrock_protocol::v924::types::{GameRuleLegacyData, LevelSettings};
-use bedrock_protocol::v944::packets::{StartGamePacket, VoxelShapesPacket};
-use bedrock_protocol::v944::types::NetworkBlockPosition;
-use bedrock_protocol::{ProtoVersion, Unknown, V944};
-use bedrock_shared::world::dimension::Dimension;
+use bedrock::protocol::v818::packets::ResourcePacksInfoPacket;
+use bedrock::protocol::v818::types::SyncedPlayerMovementSettings;
+use bedrock::protocol::v898::packets::ResourcePackStackPacket;
+use bedrock::protocol::v924::types::{GameRuleLegacyData, LevelSettings};
+use bedrock::protocol::v944::packets::{StartGamePacket, VoxelShapesPacket};
+use bedrock::protocol::v944::types::NetworkBlockPosition;
+use bedrock::protocol::{ProtoVersion, Unknown, V944};
 use std::collections::HashMap;
 use tokio::time::Instant;
 use uuid::Uuid;
