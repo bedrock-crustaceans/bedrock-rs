@@ -52,15 +52,15 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        impl #impl_generics ::bedrockrs_proto_core::ProtoCodec for #name #ty_generics #where_clause {
-            fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
+        impl #impl_generics ::bedrock_protocol_core::ProtoCodec for #name #ty_generics #where_clause {
+            fn serialize<W: ::std::io::Write>(&self, stream: &mut W) -> Result<(), ::bedrock_protocol_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
                 ::tracing::trace!("ProtoSerialize: {}", stringify!(#name));
                 #ser
                 Ok(())
             }
 
-            fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ::bedrockrs_proto_core::error::ProtoCodecError> where Self: Sized {
+            fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ::bedrock_protocol_core::error::ProtoCodecError> where Self: Sized {
                 #[cfg(debug_assertions)]
                 ::tracing::trace!("ProtoDeserialize: {}", stringify!(#name));
                 #de
@@ -144,7 +144,7 @@ pub fn packet(args: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #item
 
-        impl #impl_generics ::bedrockrs_proto_core::Packet for #name #ty_generics #where_clause {
+        impl #impl_generics ::bedrock_protocol_core::Packet for #name #ty_generics #where_clause {
             const ID: u16 = #id;
             const COMPRESS: bool = #compress;
             const ENCRYPT: bool = #encrypt;

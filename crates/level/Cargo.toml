@@ -1,5 +1,5 @@
 [package]
-name = "bedrockrs_level"
+name = "bedrock_level"
 version = "0.1.0"
 edition = "2024"
 
@@ -20,7 +20,7 @@ harness = false
 [dependencies]
 leveldb-sys = { git = "https://github.com/bedrock-crustaceans/leveldb-sys", optional = true }
 
-bedrockrs_shared = { path = "../shared" }
+bedrock_shared = { path = "../shared" }
 nbtx = { workspace = true }
 
 # rusty-leveldb = { git = "https://github.com/bedrock-crustaceans/leveldb-rs", optional = true }

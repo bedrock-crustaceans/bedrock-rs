@@ -1,7 +1,7 @@
 use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::error::NetworkCodecError;
-use bedrockrs_proto_core::{PacketHeader, Packets, ProtoCodecVAR};
+use bedrock_protocol_core::{PacketHeader, Packets, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write};
 
 pub fn encode_packets<T: Packets>(

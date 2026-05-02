@@ -1,6 +1,6 @@
 use std::{fs::File, io::Cursor};
 
-use bedrockrs_level::{
+use bedrock_level::{
     Greedy, Lazy,
     db::Database,
     key::{Key, KeyVariant},

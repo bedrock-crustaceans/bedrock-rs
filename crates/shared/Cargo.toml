@@ -1,11 +1,11 @@
 [package]
-name = "bedrockrs_shared"
+name = "bedrock_shared"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bedrockrs_proto_core = { path = "../proto_core" }
-bedrockrs_macros = { path = "../macros" }
+bedrock_protocol_core = { path = "../protocol_core" }
+bedrock_macros = { path = "../macros" }
 
 tracing = { workspace = true }
 

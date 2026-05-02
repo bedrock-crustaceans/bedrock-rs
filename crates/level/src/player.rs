@@ -1,5 +1,5 @@
 use crate::settings::Abilities;
-use bedrockrs_shared::vector::{Position, Rotation};
+use bedrock_shared::vector::{Position, Rotation};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]

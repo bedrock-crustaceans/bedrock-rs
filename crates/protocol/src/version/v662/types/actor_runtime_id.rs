@@ -1,0 +1,24 @@
+use bedrock_protocol_core::error::ProtoCodecError;
+use bedrock_protocol_core::ProtoCodec;
+use std::io::{Read, Write};
+use std::mem::size_of;
+use varint_rs::{VarintReader, VarintWriter};
+
+#[derive(Clone, Debug)]
+pub struct ActorRuntimeID(pub u64); // TODO: consider removing this type and using primitive types directly
+
+impl ProtoCodec for ActorRuntimeID {
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        stream.write_u64_varint(self.0)?;
+
+        Ok(())
+    }
+
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        Ok(Self(stream.read_u64_varint()?))
+    }
+
+    fn size_hint(&self) -> usize {
+        size_of::<u64>()
+    }
+}

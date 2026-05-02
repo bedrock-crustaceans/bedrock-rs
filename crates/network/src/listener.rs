@@ -8,7 +8,7 @@ use crate::connection::Connection;
 use crate::error::{ListenerError, RakNetError, TransportLayerError};
 use crate::info::MINECRAFT_EDITION_MOTD;
 use crate::transport::TransportLayerListener;
-use bedrockrs_proto_core::Packets;
+use bedrock_protocol_core::Packets;
 
 #[allow(dead_code)]
 pub struct Listener {

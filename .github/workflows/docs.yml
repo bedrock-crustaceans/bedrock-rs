@@ -40,16 +40,16 @@ jobs:
 
     - name: Configure Pages
       id: pages
-      uses: actions/configure-pages@v5
+      uses: actions/configure-pages@v6
       
     - name: Add Root
       run: |
         cd target/doc
         touch index.html
-        echo "<meta http-equiv=\"refresh\" content=\"0; url=bedrockrs/index.html\">" > index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=bedrock/index.html\">" > index.html
 
     - name: Upload Artifact
-      uses: actions/upload-pages-artifact@v4
+      uses: actions/upload-pages-artifact@v5
       with:
         path: target/doc
     

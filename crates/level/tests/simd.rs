@@ -1,4 +1,4 @@
-use bedrockrs_level::greedy::GreedyArray;
+use bedrock_level::greedy::GreedyArray;
 
 #[test]
 fn simd_test() {

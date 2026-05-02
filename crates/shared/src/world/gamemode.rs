@@ -1,4 +1,4 @@
-use bedrockrs_macros::ProtoCodec;
+use bedrock_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Debug, Clone)]
 #[enum_repr(i32)]

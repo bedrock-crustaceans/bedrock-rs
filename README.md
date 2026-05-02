@@ -15,28 +15,28 @@ Join our growing community on Discord to learn more about the project’s future
 
 ## Crates
 
-To maintain modularity and scalability, **bedrock-rs** is divided into multiple crates. Each crate focuses on a specific functionality, making it easier to use and manage. All crates are accessible through the primary `bedrockrs` crate. Additionally, the library offers a variety of optional features you can enable to suit your needs.
+To maintain modularity and scalability, **bedrock-rs** is divided into multiple crates. Each crate focuses on a specific functionality, making it easier to use and manage. All crates are accessible through the primary `bedrock` crate. Additionally, the library offers a variety of optional features you can enable to suit your needs.
 
 ### Crate Breakdown:
 
-- [`bedrockrs::shared`](crates/shared)  
+- [`bedrock::shared`](crates/shared)  
     - Shared data types used across other crates.
     - Support for deriving macros defined in other modules.  
 
-- [`bedrockrs::form`](crates/form)  
+- [`bedrock::form`](crates/form)  
     - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
 
-- [`bedrockrs::addon`](crates/addon)  
+- [`bedrock::addon`](crates/addon)  
     - Datatypes for defining Minecraft Addon structures.  
     - Serialization and deserialization support for Addons.  
     - A programmatic approach to creating Addons easily.  
 
-- [`bedrockrs::proto`](crates/proto)  
+- [`bedrock::protocol`](crates/protocol)  
     - Complete implementation of the Minecraft Bedrock protocol.  
     - Support for both server-side and client-side operations.  
     - Multi-protocol compatibility for handling multiple versions seamlessly.  
 
-- [`bedrockrs::level`](crates/level)  
+- [`bedrock::level`](crates/level)  
     - Data structures for managing Minecraft Bedrock levels.  
     - Implementation of Bedrock’s level format using Rust’s LevelDB.
 
@@ -56,7 +56,7 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 To use **bedrock-rs** in your Rust project, add the following to your `Cargo.toml`:  
 ```toml
 [dependencies]
-bedrockrs = { git = "https://github.com/bedrock-crustaceans/bedrock-rs.git", features = ["full"] }
+bedrock = { git = "https://github.com/bedrock-crustaceans/bedrock-rs.git", features = ["full"] }
 ```
 
 Refer to the individual crate documentation for details on specific modules and features.

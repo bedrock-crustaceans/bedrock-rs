@@ -1,7 +1,7 @@
 use io::Error as IOError;
 use std::io;
 
-use bedrockrs_proto_core::error::ProtoCodecError;
+use bedrock_protocol_core::error::{PacketCodecError, ProtoCodecError};
 use thiserror::Error;
 
 use crate::info::RAKNET_GAMEPACKET_ID;
@@ -62,6 +62,8 @@ pub enum QuicError {
 
 #[derive(Error, Debug)]
 pub enum NetworkCodecError {
+    #[error("PacketCodec Error: {0}")]
+    PacketCodecError(#[from] PacketCodecError),
     #[error("ProtoCodec Error: {0}")]
     ProtoCodecError(#[from] ProtoCodecError),
     #[error("Compression Error: {0}")]

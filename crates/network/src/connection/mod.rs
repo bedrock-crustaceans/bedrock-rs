@@ -5,7 +5,7 @@ use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::error::ConnectionError;
 use crate::transport::TransportLayerConnection;
-use bedrockrs_proto_core::Packets;
+use bedrock_protocol_core::Packets;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
 

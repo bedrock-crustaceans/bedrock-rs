@@ -56,7 +56,7 @@ cargo test --all-features
 For crate-specific changes, also validate the related package directly:
 
 ```bash
-cargo test -p bedrockrs_proto
+cargo test -p bedrock_protocol
 ```
 
 ## Commit Guidelines
