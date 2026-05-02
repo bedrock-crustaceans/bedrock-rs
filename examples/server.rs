@@ -72,13 +72,15 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send(&[V944::NetworkSettingsPacket(Box::new(NetworkSettingsPacket {
-        compression_threshold: 1,
-        compression_algorithm: PacketCompressionAlgorithm::None,
-        client_throttle_enabled: false,
-        client_throttle_threshold: 0,
-        client_throttle_scalar: 0.0,
-    }))])
+    conn.send(&[V944::NetworkSettingsPacket(Box::new(
+        NetworkSettingsPacket {
+            compression_threshold: 1,
+            compression_algorithm: PacketCompressionAlgorithm::None,
+            client_throttle_enabled: false,
+            client_throttle_threshold: 0,
+            client_throttle_scalar: 0.0,
+        },
+    ))])
     .await
     .unwrap();
     println!("NetworkSettings");
@@ -232,7 +234,9 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         owner_id: "".to_string(),
     };
 
-    conn.send(&[V944::StartGamePacket(Box::new(packet1))]).await.unwrap();
+    conn.send(&[V944::StartGamePacket(Box::new(packet1))])
+        .await
+        .unwrap();
     println!("StartGame");
 
     conn.send(&[V944::PlayStatusPacket(Box::new(PlayStatusPacket {

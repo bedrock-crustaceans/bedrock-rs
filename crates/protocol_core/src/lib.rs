@@ -1,6 +1,7 @@
 extern crate core;
 
 use std::any::Any;
+use std::fmt::Debug;
 use std::io::{Read, Write};
 
 use crate::error::{PacketCodecError, ProtoCodecError};
@@ -22,13 +23,13 @@ pub trait ProtoCodec: Sized {
     fn size_hint(&self) -> usize;
 }
 
-pub trait Packet: Sized + ProtoCodec {
+pub trait Packet: Debug + Send + Sync + Sized + ProtoCodec {
     const ID: u16;
     const COMPRESS: bool;
     const ENCRYPT: bool;
 }
 
-pub trait PacketDyn: Any {
+pub trait PacketDyn: Debug + Send + Sync + Any + 'static {
     fn id(&self) -> u16;
     fn name(&self) -> &'static str;
 }

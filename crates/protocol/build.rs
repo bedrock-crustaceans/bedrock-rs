@@ -295,17 +295,17 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
     let proto_version_packets = all_packets
         .iter()
-        .map(|p| quote!(type #p: ::bedrock_protocol_core::ProtoCodec + Clone + ::std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrock_protocol_core::ProtoCodec + Clone + ::std::fmt::Debug + Send + Sync + 'static;))
         .collect::<Vec<_>>();
 
     let proto_version_types = all_types
         .iter()
-        .map(|p| quote!(type #p: ::bedrock_protocol_core::ProtoCodec + Clone + ::std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrock_protocol_core::ProtoCodec + Clone + ::std::fmt::Debug + Send + Sync + 'static;))
         .collect::<Vec<_>>();
 
     let proto_version_enums = all_enums
         .iter()
-        .map(|p| quote!(type #p: ::bedrock_protocol_core::ProtoCodec + Clone + ::std::fmt::Debug;))
+        .map(|p| quote!(type #p: ::bedrock_protocol_core::ProtoCodec + Clone + ::std::fmt::Debug + Send + Sync + 'static;))
         .collect::<Vec<_>>();
 
     let proto_version = quote! {
@@ -321,7 +321,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             #(#proto_version_enums)*
         }
 
-        pub trait ProtoVersion: ProtoVersionPackets + ProtoVersionTypes + ProtoVersionEnums {
+        pub trait ProtoVersion: ProtoVersionPackets + ProtoVersionTypes + ProtoVersionEnums + ::std::fmt::Debug + Send + Sync + 'static {
             const PROTOCOL_VERSION: u32;
             const PROTOCOL_BRANCH: &str;
             const GAME_VERSION: &str;
@@ -330,11 +330,11 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
     };
 
     let mut previous_raknet_version: Option<u8> = None;
-    let mut previous_packets = HashMap::<Ident, proc_macro2::TokenStream>::new();
-    let mut previous_types = HashMap::<Ident, proc_macro2::TokenStream>::new();
-    let mut previous_enums = HashMap::<Ident, proc_macro2::TokenStream>::new();
+    let mut previous_packets = HashMap::<Ident, TokenStream>::new();
+    let mut previous_types = HashMap::<Ident, TokenStream>::new();
+    let mut previous_enums = HashMap::<Ident, TokenStream>::new();
 
-    let mut versions_stream = proc_macro2::TokenStream::new();
+    let mut versions_stream = TokenStream::new();
     for entry in &versions_vec {
         if let Err(e) = collapse(&entry.packets, &mut previous_packets) {
             return e.into_compile_error();
