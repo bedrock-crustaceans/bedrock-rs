@@ -1,10 +1,10 @@
 fn main() {
     let text = fs::read_to_string("def/versions").expect("versions file not found");
     let tokens = TokenStream::from_str(&text).unwrap();
-    
+
     let version_tokens = define_versions_internal(tokens);
     let file = syn::parse2::<File>(version_tokens).unwrap();
-    
+
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest = PathBuf::new().join(out_dir).join("versions.rs");
     let pretty = prettyplease::unparse(&file);
@@ -18,11 +18,14 @@ use proc_macro2::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
 use std::collections::{HashMap, HashSet};
-use std::{env, fs};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::{env, fs};
 use syn::parse::ParseStream;
-use syn::{LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse, punctuated::Punctuated, File};
+use syn::{
+    File, LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse,
+    punctuated::Punctuated,
+};
 
 mod kw {
     use syn::custom_keyword;
@@ -402,38 +405,38 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         let packet_variants = previous_packets
             .keys()
             .map(|k| {
-                quote! { #k(<Self as ProtoVersionPackets>::#k), }
+                quote! { #k(Box<<Self as ProtoVersionPackets>::#k>), }
             })
             .collect::<Vec<_>>();
 
         let packet_id = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::ID; }, }
+            quote! { #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::ID, }
         });
 
         let packet_compress = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::COMPRESS; }, }
+            quote! { #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::COMPRESS, }
         });
 
         let packet_encrypt = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(_) => { return <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::ENCRYPT; }, }
+            quote! { #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::ENCRYPT, }
         });
 
         let packet_size_prediction = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::ProtoCodec>::size_hint(pk), }
+            quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::ProtoCodec>::size_hint(pk.as_ref()), }
         });
 
         let packet_as_dyn = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(pk) => pk, }
+            quote! { #struct_ident::#name(pk) => pk.as_ref(), }
         });
 
         let packet_into_dyn = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(pk) => Box::new(pk), }
+            quote! { #struct_ident::#name(pk) => pk, }
         });
 
         let packet_ser = previous_packets.keys().map(|name| {
             quote! {
                 #struct_ident::#name(pk) => {
-                    match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::serialize(pk, stream) {
+                    match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::serialize(pk.as_ref(), stream) {
                         Ok(_) => {},
                         Err(err) => return Err(::bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                             packet_name: stringify!(#name),
@@ -449,7 +452,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             quote! {
                 <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::ID => {
                     match <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::ProtoCodec>::deserialize(stream) {
-                        Ok(pk) => #struct_ident::#name(pk),
+                        Ok(pk) => #struct_ident::#name(Box::new(pk)),
                         Err(err) => return Err(::bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                             packet_name: stringify!(#name),
                             packet_id: <<#struct_ident as ProtoVersionPackets>::#name as ::bedrock_protocol_core::Packet>::ID,
@@ -464,7 +467,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             #[derive(Clone, std::fmt::Debug)]
             pub enum #struct_ident {
                 #(#packet_variants)*
-                Unknown(::bedrock_protocol_core::UnknownPacket),
+                Unknown(Box<::bedrock_protocol_core::UnknownPacket>),
             }
 
             impl ::bedrock_protocol_core::Packets for #struct_ident {
@@ -472,24 +475,24 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn id(&self) -> u16 {
                     match self {
                         #(#packet_id)*
-                        #struct_ident::Unknown(pk) => { return pk.id; },
-                    };
+                        #struct_ident::Unknown(pk) => pk.id,
+                    }
                 }
 
                 #[inline]
                 fn compress(&self) -> bool {
                     match self {
                         #(#packet_compress)*
-                        #struct_ident::Unknown(_) => { return true; },
-                    };
+                        #struct_ident::Unknown(_) => true,
+                    }
                 }
 
                 #[inline]
                 fn encrypt(&self) -> bool {
                     match self {
                         #(#packet_encrypt)*
-                        #struct_ident::Unknown(_) => { return true; },
-                    };
+                        #struct_ident::Unknown(_) => true,
+                    }
                 }
 
                 #[inline]
@@ -525,10 +528,10 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                                     packet_id: header.packet_id,
                                     error: e.into(),
                                 })?;
-                            #struct_ident::Unknown(::bedrock_protocol_core::UnknownPacket {
+                            #struct_ident::Unknown(Box::new(::bedrock_protocol_core::UnknownPacket {
                                 id: unknown,
                                 buf: buf.into_boxed_slice()
-                            })
+                            }))
                         },
                     };
                     Ok((packet, header))
@@ -546,7 +549,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn as_dyn(&self) -> &dyn ::bedrock_protocol_core::PacketDyn {
                     match self {
                         #(#packet_as_dyn)*
-                        #struct_ident::Unknown(pk) => pk,
+                        #struct_ident::Unknown(pk) => pk.as_ref(),
                     }
                 }
 
@@ -554,7 +557,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
                 fn into_dyn(self) -> Box<dyn ::bedrock_protocol_core::PacketDyn> {
                     match self {
                         #(#packet_into_dyn)*
-                        #struct_ident::Unknown(pk) => Box::new(pk),
+                        #struct_ident::Unknown(pk) => pk,
                     }
                 }
             }
