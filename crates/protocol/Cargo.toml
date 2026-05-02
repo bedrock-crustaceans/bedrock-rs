@@ -62,3 +62,9 @@ all = [
     "v944",
     "v975"
 ]
+
+[build-dependencies]
+proc-macro2 = "1.0.106"
+quote = "1.0.45"
+syn = "2.0.117"
+prettyplease = "0.2.37"

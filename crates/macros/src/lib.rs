@@ -9,7 +9,6 @@ use syn::{Data, DeriveInput, Lit, Token, parse_macro_input};
 
 mod attr;
 mod de;
-mod proto;
 mod ser;
 mod size;
 
@@ -152,9 +151,4 @@ pub fn packet(args: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(expanded)
-}
-
-#[proc_macro]
-pub fn define_versions(input: TokenStream) -> TokenStream {
-    proto::define_versions_internal(input)
 }

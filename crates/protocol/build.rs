@@ -1,12 +1,28 @@
-use proc_macro::TokenStream;
+fn main() {
+    let text = fs::read_to_string("def/versions").expect("versions file not found");
+    let tokens = TokenStream::from_str(&text).unwrap();
+    
+    let version_tokens = define_versions_internal(tokens);
+    let file = syn::parse2::<File>(version_tokens).unwrap();
+    
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest = PathBuf::new().join(out_dir).join("versions.rs");
+    let pretty = prettyplease::unparse(&file);
+    fs::write(dest, pretty).unwrap();
+
+    println!("cargo:rerun-if-changed=def/versions");
+    println!("cargo:rerun-if-changed=build.rs");
+}
+
+use proc_macro2::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
 use std::collections::{HashMap, HashSet};
+use std::{env, fs};
+use std::path::PathBuf;
+use std::str::FromStr;
 use syn::parse::ParseStream;
-use syn::{
-    LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse,
-    punctuated::Punctuated,
-};
+use syn::{LitInt, LitStr, Path, Token, braced, bracketed, parenthesized, parse::Parse, punctuated::Punctuated, File};
 
 mod kw {
     use syn::custom_keyword;
@@ -190,7 +206,7 @@ impl Parse for DefineVersionsDiffEntry {
 }
 
 pub fn define_versions_internal(input: TokenStream) -> TokenStream {
-    let DefineVersionsInput { versions } = syn::parse_macro_input!(input as DefineVersionsInput);
+    let DefineVersionsInput { versions } = syn::parse2::<DefineVersionsInput>(input).unwrap();
 
     let mut versions_vec = versions.into_iter().collect::<Vec<_>>();
 
@@ -219,7 +235,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             Ok(acc)
         }) {
         Ok(acc) => acc,
-        Err(e) => return e.into_compile_error().into(),
+        Err(e) => return e.into_compile_error(),
     };
 
     let all_types = match versions_vec
@@ -245,7 +261,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             Ok(acc)
         }) {
         Ok(acc) => acc,
-        Err(e) => return e.into_compile_error().into(),
+        Err(e) => return e.into_compile_error(),
     };
 
     let all_enums = match versions_vec
@@ -271,7 +287,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
             Ok(acc)
         }) {
         Ok(acc) => acc,
-        Err(e) => return e.into_compile_error().into(),
+        Err(e) => return e.into_compile_error(),
     };
 
     let proto_version_packets = all_packets
@@ -318,13 +334,13 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
     let mut versions_stream = proc_macro2::TokenStream::new();
     for entry in &versions_vec {
         if let Err(e) = collapse(&entry.packets, &mut previous_packets) {
-            return e.into_compile_error().into();
+            return e.into_compile_error();
         }
         if let Err(e) = collapse(&entry.types, &mut previous_types) {
-            return e.into_compile_error().into();
+            return e.into_compile_error();
         }
         if let Err(e) = collapse(&entry.enums, &mut previous_enums) {
-            return e.into_compile_error().into();
+            return e.into_compile_error();
         }
 
         if let Some(raknet_version) = entry.raknet_version {
@@ -333,8 +349,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
         let Some(raknet_version) = previous_raknet_version else {
             return syn::Error::new(Span::call_site(), "raknet_version not defined")
-                .into_compile_error()
-                .into();
+                .into_compile_error();
         };
 
         let version = entry.version;
@@ -587,7 +602,6 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
 
         #versions_stream
     }
-    .into()
 }
 
 fn collapse(
