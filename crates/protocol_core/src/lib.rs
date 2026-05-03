@@ -28,12 +28,21 @@ pub trait Packet: ProtoCodec + Debug + Send + Sync + Any + 'static {
 
 pub trait DynPacket: Debug + Send + Sync + Any + 'static {
     fn id(&self) -> u16;
+
+    #[cfg(feature = "dyn-name")]
+    fn name(&self) -> &'static str;
 }
 
 impl<T: Packet> DynPacket for T {
     #[inline]
     fn id(&self) -> u16 {
         T::ID
+    }
+
+    #[cfg(feature = "dyn-name")]
+    #[inline]
+    fn name(&self) -> &'static str {
+        std::any::type_name::<T>()
     }
 }
 
@@ -44,12 +53,19 @@ pub struct UnknownPacket {
 }
 
 impl DynPacket for UnknownPacket {
+    #[inline]
     fn id(&self) -> u16 {
         self.id
     }
+
+    #[cfg(feature = "dyn-name")]
+    #[inline]
+    fn name(&self) -> &'static str {
+        std::any::type_name::<UnknownPacket>()
+    }
 }
 
-pub trait Packets: DynPacket + Sized {
+pub trait Packets: Sized {
     fn serialize<W: Write>(
         &self,
         header: &PacketHeader,

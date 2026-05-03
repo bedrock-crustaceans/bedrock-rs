@@ -23,3 +23,6 @@ base64 = { workspace = true }
 uuid = { workspace = true }
 
 strum = { workspace = true }
+
+[features]
+dyn-name = []

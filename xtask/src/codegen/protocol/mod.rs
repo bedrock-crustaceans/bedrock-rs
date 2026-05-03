@@ -214,10 +214,6 @@ pub fn build(input: TokenStream, path: &std::path::Path) -> syn::Result<TokenStr
             })
             .collect::<Vec<_>>();
 
-        let packet_id = previous_packets.keys().map(|name| {
-            quote! { #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID, }
-        });
-
         let packet_serialize = previous_packets.keys().map(|name| {
             quote! {
                 #struct_ident::#name(pk) => {
@@ -270,16 +266,6 @@ pub fn build(input: TokenStream, path: &std::path::Path) -> syn::Result<TokenStr
             pub enum #struct_ident {
                 #(#packet_variants)*
                 Unknown(Box<bedrock_protocol_core::UnknownPacket>),
-            }
-
-            impl bedrock_protocol_core::DynPacket for #struct_ident {
-                #[inline]
-                fn id(&self) -> u16 {
-                    match self {
-                        #(#packet_id)*
-                        #struct_ident::Unknown(pk) => pk.id,
-                    }
-                }
             }
 
             impl bedrock_protocol_core::Packets for #struct_ident {

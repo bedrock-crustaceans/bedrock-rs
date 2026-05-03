@@ -12,17 +12,6 @@ mod inner {
         ),
         Unknown(Box<bedrock_protocol_core::UnknownPacket>),
     }
-    impl bedrock_protocol_core::DynPacket for Unknown {
-        #[inline]
-        fn id(&self) -> u16 {
-            match self {
-                Unknown::RequestNetworkSettingsPacket(_) => {
-                    <<Unknown as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
-                }
-                Unknown::Unknown(pk) => pk.id,
-            }
-        }
-    }
     impl bedrock_protocol_core::Packets for Unknown {
         #[inline]
         fn serialize<W: std::io::Write>(
