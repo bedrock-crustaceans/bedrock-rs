@@ -479,11 +479,11 @@ pub fn define_versions_internal(input: TokenStream, path: &std::path::Path) -> T
             quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::size_hint(pk.as_ref()), }
         });
 
-        let packet_as_dyn = previous_packets.keys().map(|name| {
+        let packet_inner = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(pk) => pk.as_ref(), }
         });
 
-        let packet_into_dyn = previous_packets.keys().map(|name| {
+        let packet_into_inner = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(pk) => pk, }
         });
 
@@ -561,17 +561,17 @@ pub fn define_versions_internal(input: TokenStream, path: &std::path::Path) -> T
                 }
 
                 #[inline]
-                fn as_dyn(&self) -> &dyn bedrock_protocol_core::DynPacket {
+                fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
                     match self {
-                        #(#packet_as_dyn)*
+                        #(#packet_inner)*
                         #struct_ident::Unknown(pk) => pk.as_ref(),
                     }
                 }
 
                 #[inline]
-                fn into_dyn(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
+                fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
                     match self {
-                        #(#packet_into_dyn)*
+                        #(#packet_into_inner)*
                         #struct_ident::Unknown(pk) => pk,
                     }
                 }

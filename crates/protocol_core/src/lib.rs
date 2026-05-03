@@ -59,6 +59,6 @@ pub trait Packets: DynPacket + Sized {
     fn deserialize<R: Read>(stream: &mut R) -> Result<(Self, PacketHeader), PacketCodecError>;
     fn size_hint(&self, header: &PacketHeader) -> usize;
 
-    fn as_dyn(&self) -> &dyn DynPacket;
-    fn into_dyn(self) -> Box<dyn DynPacket>;
+    fn inner(&self) -> &dyn DynPacket;
+    fn into_inner(self) -> Box<dyn DynPacket>;
 }
