@@ -600,6 +600,8 @@ pub fn define_versions_internal(input: TokenStream, path: &std::path::Path) -> T
         let feature_str = LitStr::new(&mod_ident.to_string(), mod_ident.span());
 
         let version_mod_tokens = quote! {
+            #![allow(unused)]
+
             #[cfg(feature = #feature_str)]
             mod inner {
                 #version_tokens
@@ -623,6 +625,8 @@ pub fn define_versions_internal(input: TokenStream, path: &std::path::Path) -> T
     }
 
     quote! {
+        #![allow(unused)]
+
         #proto_version
 
         #versions_stream
