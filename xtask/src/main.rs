@@ -2,6 +2,7 @@ use proc_macro2::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs, io};
 use syn::parse::ParseStream;
@@ -11,18 +12,27 @@ use syn::{
 };
 
 fn main() {
-    let text = fs::read_to_string("def/versions.def.rs").expect("versions file not found");
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .to_path_buf();
+
+    let protocol = project_root.join("crates/protocol/");
+
+    let text =
+        fs::read_to_string(protocol.join("def/versions.def.rs")).expect("versions file not found");
     let tokens = TokenStream::from_str(&text).unwrap();
 
-    clear_directory("src/generated").unwrap();
+    clear_directory(protocol.join("src/generated").to_str().unwrap()).unwrap();
 
-    let version_tokens = define_versions_internal(tokens);
+    let version_tokens = define_versions_internal(tokens, protocol.as_path());
     let file = syn::parse2::<File>(version_tokens).unwrap();
 
-    fs::write("src/generated/mod.rs", prettyplease::unparse(&file)).unwrap();
-
-    println!("cargo:rerun-if-changed=def/versions.def.rs");
-    println!("cargo:rerun-if-changed=build.rs");
+    fs::write(
+        protocol.join("src/generated/mod.rs"),
+        prettyplease::unparse(&file),
+    )
+    .unwrap();
 }
 
 fn clear_directory(path: &str) -> io::Result<()> {
@@ -230,7 +240,7 @@ impl Parse for DefineVersionsDiffEntry {
     }
 }
 
-pub fn define_versions_internal(input: TokenStream) -> TokenStream {
+pub fn define_versions_internal(input: TokenStream, path: &std::path::Path) -> TokenStream {
     let DefineVersionsInput { versions } = syn::parse2::<DefineVersionsInput>(input).unwrap();
 
     let mut versions_vec = versions.into_iter().collect::<Vec<_>>();
@@ -601,7 +611,7 @@ pub fn define_versions_internal(input: TokenStream) -> TokenStream {
         let file = syn::parse2(version_mod_tokens).unwrap();
 
         fs::write(
-            format!("src/generated/{}.rs", mod_ident),
+            path.join(format!("src/generated/{}.rs", mod_ident)),
             prettyplease::unparse(&file),
         )
         .unwrap();
