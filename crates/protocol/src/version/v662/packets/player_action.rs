@@ -1,4 +1,4 @@
-use crate::version::versions::ProtoVersion;
+use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 use crate::v662::enums::PlayerActionType;
 

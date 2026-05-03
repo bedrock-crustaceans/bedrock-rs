@@ -1,4 +1,4 @@
-use crate::version::versions::ProtoVersion;
+use crate::ProtoVersion;
 use bedrock_macros::packet;
 use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;

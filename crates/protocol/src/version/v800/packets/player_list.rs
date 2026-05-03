@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
 use uuid::Uuid;
-use crate::version::versions::ProtoVersion;
+use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::ProtoCodec;

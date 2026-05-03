@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::version::versions::ProtoVersion;
+use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
 #[packet(id = 81)]
