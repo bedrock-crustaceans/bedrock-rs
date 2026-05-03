@@ -2,7 +2,6 @@
 name = "bedrock_protocol"
 version = "0.1.0"
 edition = "2024"
-exclude = ["src/generated"]
 
 [dependencies]
 bedrock_protocol_core = { path = "../protocol_core" }
