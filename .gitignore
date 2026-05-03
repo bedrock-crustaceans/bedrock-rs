@@ -25,3 +25,6 @@ crates/level/test_level
 
 # Ignore CMake build directory
 build
+
+# ignore generated code
+generated/
