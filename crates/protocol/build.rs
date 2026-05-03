@@ -1,5 +1,5 @@
 fn main() {
-    let text = fs::read_to_string("def/versions").expect("versions file not found");
+    let text = fs::read_to_string("def/versions.def.rs").expect("versions file not found");
     let tokens = TokenStream::from_str(&text).unwrap();
 
     let version_tokens = define_versions_internal(tokens);
@@ -10,7 +10,7 @@ fn main() {
     let pretty = prettyplease::unparse(&file);
     fs::write(dest, pretty).unwrap();
 
-    println!("cargo:rerun-if-changed=def/versions");
+    println!("cargo:rerun-if-changed=def/versions.def.rs");
     println!("cargo:rerun-if-changed=build.rs");
 }
 
@@ -30,6 +30,7 @@ use syn::{
 mod kw {
     use syn::custom_keyword;
 
+    custom_keyword!(versions);
     custom_keyword!(packets);
     custom_keyword!(types);
     custom_keyword!(enums);
@@ -74,9 +75,17 @@ enum DefineVersionsDiffEntry {
 
 impl Parse for DefineVersionsInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(DefineVersionsInput {
-            versions: Punctuated::parse_terminated(input)?,
-        })
+        input.parse::<kw::versions>()?;
+        input.parse::<Token![!]>()?;
+
+        let bracket;
+        bracketed!(bracket in input);
+
+        let versions = Punctuated::parse_terminated(&bracket)?;
+
+        input.parse::<Token![;]>()?;
+
+        Ok(DefineVersionsInput { versions })
     }
 }
 
