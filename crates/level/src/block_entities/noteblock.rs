@@ -3,5 +3,5 @@
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct Noteblock {
     /// The pitch of the note block.
-    note: i8,
+    pub note: i8,
 }
