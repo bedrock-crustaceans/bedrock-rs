@@ -4,6 +4,6 @@ use crate::block_entities::Chest;
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct ShulkerBox {
     #[serde(flatten)]
-    contents: Chest,
-    facing: f32,
+    pub contents: Chest,
+    pub facing: f32,
 }
