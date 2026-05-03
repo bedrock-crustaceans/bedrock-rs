@@ -72,13 +72,15 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send(&[V944::NetworkSettingsPacket(NetworkSettingsPacket {
-        compression_threshold: 1,
-        compression_algorithm: PacketCompressionAlgorithm::None,
-        client_throttle_enabled: false,
-        client_throttle_threshold: 0,
-        client_throttle_scalar: 0.0,
-    })])
+    conn.send(&[V944::NetworkSettingsPacket(Box::new(
+        NetworkSettingsPacket {
+            compression_threshold: 1,
+            compression_algorithm: PacketCompressionAlgorithm::None,
+            client_throttle_enabled: false,
+            client_throttle_threshold: 0,
+            client_throttle_scalar: 0.0,
+        },
+    ))])
     .await
     .unwrap();
     println!("NetworkSettings");
@@ -90,10 +92,10 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     println!("Login");
 
     conn.send(&[
-        V944::PlayStatusPacket(PlayStatusPacket {
+        V944::PlayStatusPacket(Box::new(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
-        }),
-        V944::ResourcePacksInfoPacket(ResourcePacksInfoPacket {
+        })),
+        V944::ResourcePacksInfoPacket(Box::new(ResourcePacksInfoPacket {
             resource_pack_required: false,
             has_addon_packs: false,
             has_scripts: false,
@@ -101,8 +103,8 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             world_template_uuid: Uuid::nil(),
             resource_packs: vec![],
             world_template_version: "".to_string(),
-        }),
-        V944::ResourcePackStackPacket(ResourcePackStackPacket {
+        })),
+        V944::ResourcePackStackPacket(Box::new(ResourcePackStackPacket {
             texture_pack_required: false,
             addon_list: vec![],
             base_game_version: BaseGameVersion(String::from("1.0")),
@@ -111,7 +113,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
                 ever_toggled: false,
             },
             include_editor_packs: false,
-        }),
+        })),
     ])
     .await
     .unwrap();
@@ -124,11 +126,11 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     println!("{:#?}", conn.recv().await.unwrap());
     println!("ResourcePackClientResponse");
 
-    conn.send(&[V944::VoxelShapesPacket(VoxelShapesPacket {
+    conn.send(&[V944::VoxelShapesPacket(Box::new(VoxelShapesPacket {
         shapes: vec![],
         names: vec![],
         custom_shape_count: 0,
-    })])
+    }))])
     .await
     .unwrap();
     println!("VoxelShapes");
@@ -232,12 +234,14 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         owner_id: "".to_string(),
     };
 
-    conn.send(&[V944::StartGamePacket(packet1)]).await.unwrap();
+    conn.send(&[V944::StartGamePacket(Box::new(packet1))])
+        .await
+        .unwrap();
     println!("StartGame");
 
-    conn.send(&[V944::PlayStatusPacket(PlayStatusPacket {
+    conn.send(&[V944::PlayStatusPacket(Box::new(PlayStatusPacket {
         status: PlayStatus::PlayerSpawn,
-    })])
+    }))])
     .await
     .unwrap();
     println!("PlayStatusPacket (PlayerSpawn)");

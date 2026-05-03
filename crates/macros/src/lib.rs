@@ -3,13 +3,11 @@ use crate::ser::{build_ser_enum, build_ser_struct};
 use crate::size::{build_size_enum, build_size_struct};
 use proc_macro::TokenStream;
 use quote::quote;
-use std::collections::HashMap;
 use syn::parse::{Parse, ParseStream};
-use syn::{Data, DeriveInput, Lit, Token, parse_macro_input};
+use syn::{Data, DeriveInput, LitInt, Token, parse_macro_input};
 
 mod attr;
 mod de;
-mod proto;
 mod ser;
 mod size;
 
@@ -77,41 +75,22 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
 }
 
 struct PacketInput {
-    id: Lit,
-    compress: Option<Lit>,
-    encrypt: Option<Lit>,
+    id: LitInt,
+}
+
+mod kw {
+    use syn::custom_keyword;
+
+    custom_keyword!(id);
 }
 
 impl Parse for PacketInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut map = HashMap::new();
-
-        loop {
-            if !input.peek(syn::Ident) {
-                break;
-            }
-
-            let param_name = input.parse::<syn::Ident>()?.to_string();
-            input.parse::<Token![=]>()?;
-            let param_value = input.parse::<syn::Lit>()?;
-
-            map.insert(param_name, param_value);
-
-            if !input.peek(Token![,]) {
-                break;
-            }
-
-            input.parse::<Token![,]>()?;
-        }
-
-        let id = map.remove(&String::from("id")).unwrap_or_else(|| {
-            panic!("Missing id");
-        });
+        input.parse::<kw::id>()?;
+        input.parse::<Token![=]>()?;
 
         Ok(Self {
-            id: id.clone(),
-            compress: map.remove("compress"),
-            encrypt: map.remove("encrypt"),
+            id: input.parse::<LitInt>()?,
         })
     }
 }
@@ -126,16 +105,6 @@ pub fn packet(args: TokenStream, item: TokenStream) -> TokenStream {
 
     let id = args.id;
 
-    let compress = match args.compress {
-        Some(v) => quote! {#v},
-        None => quote! {true},
-    };
-
-    let encrypt = match args.encrypt {
-        Some(v) => quote! {#v},
-        None => quote! {true},
-    };
-
     let item = proc_macro2::TokenStream::from(item);
 
     let generics = derive.generics;
@@ -146,15 +115,8 @@ pub fn packet(args: TokenStream, item: TokenStream) -> TokenStream {
 
         impl #impl_generics ::bedrock_protocol_core::Packet for #name #ty_generics #where_clause {
             const ID: u16 = #id;
-            const COMPRESS: bool = #compress;
-            const ENCRYPT: bool = #encrypt;
         }
     };
 
     TokenStream::from(expanded)
-}
-
-#[proc_macro]
-pub fn define_versions(input: TokenStream) -> TokenStream {
-    proto::define_versions_internal(input)
 }

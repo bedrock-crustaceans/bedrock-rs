@@ -1,5 +1,5 @@
 use crate::v662::enums::PlayerActionType;
-use crate::version::versions::ProtoVersion;
+use crate::ProtoVersion;
 use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Read, Write};

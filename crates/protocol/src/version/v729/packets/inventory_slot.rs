@@ -1,4 +1,4 @@
-use crate::version::versions::ProtoVersion;
+use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
 #[packet(id = 50)]

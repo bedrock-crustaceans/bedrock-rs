@@ -1,6 +1,4 @@
-use bedrock_macros::define_versions;
-
-define_versions![
+versions![
     (0, "r/0_u0", "0.0.0"): {
         raknet_version: 10,
         packets: [
