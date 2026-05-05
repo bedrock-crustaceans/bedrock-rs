@@ -6,16 +6,16 @@ use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type};
 fn build_de_instance(endianness: Option<ProtoCodecEndianness>, f_type: &Type) -> TokenStream {
     match endianness {
         None => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodec>::deserialize(stream)? }
         }
         Some(ProtoCodecEndianness::Le) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecLE>::deserialize(stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecLE>::deserialize(stream)? }
         }
         Some(ProtoCodecEndianness::Be) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecBE>::deserialize(stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecBE>::deserialize(stream)? }
         }
         Some(ProtoCodecEndianness::Var) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecVAR>::deserialize(stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecVAR>::deserialize(stream)? }
         }
     }
 }
@@ -58,7 +58,7 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
             if flags.str {
                 return quote! {
                     let #name: #ty = {
-                        let string = <String as ::bedrockrs_proto_core::ProtoCodec>::deserialize(stream)?;
+                        let string = <String as ::bedrock_protocol_core::ProtoCodec>::deserialize(stream)?;
                         <#ty as std::str::FromStr>::from_str(string.as_str())?
                     };
                 };
@@ -171,7 +171,7 @@ pub fn build_de_enum(data_enum: &DataEnum, attrs: &[Attribute], name: Ident) -> 
 
             let val = match enum_type {
                 #(#variants),*
-                _ => { return Err(bedrockrs_proto_core::error::ProtoCodecError::InvalidEnumID(format!("{enum_type:?}"), stringify!(#name))) },
+                _ => { return Err(bedrock_protocol_core::error::ProtoCodecError::InvalidEnumID(format!("{enum_type:?}"), stringify!(#name))) },
             };
         }
     } else {

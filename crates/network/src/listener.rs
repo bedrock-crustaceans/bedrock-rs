@@ -4,9 +4,9 @@ use rand::random;
 
 use crate::connection::Connection;
 use crate::error::{ListenerError, RakNetError, TransportLayerError};
+use crate::info::MINECRAFT_EDITION_MOTD;
 use crate::transport::TransportLayerListener;
-use bedrockrs_proto::Unknown;
-use bedrockrs_proto::info::MINECRAFT_EDITION_MOTD;
+use bedrock_protocol_core::Packets;
 
 #[allow(dead_code)]
 pub struct Listener {
@@ -87,7 +87,7 @@ impl Listener {
         Ok(())
     }
 
-    pub async fn accept(&mut self) -> Result<Connection<Unknown>, ListenerError> {
+    pub async fn accept<V: Packets>(&mut self) -> Result<Connection<V>, ListenerError> {
         let rak_conn = self.listener.accept().await?;
 
         Ok(Connection::from_transport_conn(rak_conn))

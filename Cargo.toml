@@ -1,108 +1,106 @@
 [package]
-name = "bedrockrs"
+name = "bedrock"
 version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "xtask"]
 
 [workspace.dependencies]
 thiserror = "2.0"
 vek = "0.17"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
-
 byteorder = "1.5.0"
 varint-rs = "2.2"
 bytemuck = "1.25.0"
-bitflags = "2.6.0"
-
 tokio = { version = "1.50", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
-shipyard = { version = "0.11" }
-
-rayon = "1.10"
-
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_repr = "0.1.20"
 paste = "1.0"
 semver = { version = "1.0", features = ["serde"] }
 json_comments = "0.2"
-
 image = "0.25"
 tar = "0.4.44"
 tempfile = "3.26.0"
 walkdir = "2.5"
-
 flate2 = "1.0"
 snap = "1.1"
-
-x509-cert = "0.2"
-
 criterion = { version = "0.8.2", features = ["html_reports"] }
-
 seq-macro = "0.3"
 proc-macro2 = "1.0"
 syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
-
 jsonwebtoken = "10.3"
 base64 = "0.22"
-nbtx = "2.0"
+nbtx = "3.0.1"
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
-
 strum = "0.28.0"
 strum_macros = "0.28.0"
+reqwest = "0.13.2"
 
 [dependencies]
-bedrockrs_core = { path = "crates/core" }
-bedrockrs_shared = { path = "crates/shared" }
-
-bedrockrs_macros = { path = "crates/macros", optional = true }
-
-bedrockrs_addon = { path = "crates/addon", optional = true }
-
-bedrockrs_form = { path = "crates/form", optional = true }
-
-bedrockrs_proto = { path = "crates/proto", optional = true }
-bedrockrs_proto_core = { path = "crates/proto_core", optional = true }
-
-bedrockrs_network = { path = "crates/network", optional = true }
-
-bedrockrs_server = { path = "crates/server", optional = true }
-
-bedrockrs_level = { path = "crates/level", optional = true }
+bedrock_auth = { path = "crates/auth", optional = true }
+bedrock_core = { path = "crates/core" }
+bedrock_shared = { path = "crates/shared" }
+bedrock_macros = { path = "crates/macros", optional = true }
+bedrock_addon = { path = "crates/addon", optional = true }
+bedrock_form = { path = "crates/form", optional = true }
+bedrock_protocol = { path = "crates/protocol", optional = true }
+bedrock_protocol_core = { path = "crates/protocol_core", optional = true }
+bedrock_network = { path = "crates/network", optional = true }
+bedrock_level = { path = "crates/level", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
-
-nbtx = { workspace = true }
 uuid = { workspace = true }
-
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [features]
-
-addon = ["dep:bedrockrs_addon"]
-proto = [
-    "dep:bedrockrs_proto",
-    "dep:bedrockrs_proto_core",
-    "dep:bedrockrs_macros",
+auth = ["dep:bedrock_auth"]
+addon = ["dep:bedrock_addon"]
+protocol = [
+    "dep:bedrock_protocol",
+    "dep:bedrock_protocol_core",
+    "dep:bedrock_macros",
 ]
-network = ["dep:bedrockrs_network", "proto"]
-level = ["dep:bedrockrs_level"]
-full = ["addon", "level", "network", "proto", "server"]
-form = ["dep:bedrockrs_form"]
-server = ["dep:bedrockrs_server", "proto", "level", "form"]
+network = ["dep:bedrock_network", "protocol"]
+level = ["dep:bedrock_level"]
+full = ["addon", "level", "network", "protocol", "auth"]
+form = ["dep:bedrock_form"]
+
+auth-async = ["bedrock_auth/async"]
+
+protocol-unknown = ["bedrock_protocol/unknown"]
+protocol-v662 = ["bedrock_protocol/v662"]
+protocol-v671 = ["bedrock_protocol/v671"]
+protocol-v685 = ["bedrock_protocol/v685"]
+protocol-v686 = ["bedrock_protocol/v686"]
+protocol-v712 = ["bedrock_protocol/v712"]
+protocol-v729 = ["bedrock_protocol/v729"]
+protocol-v748 = ["bedrock_protocol/v748"]
+protocol-v766 = ["bedrock_protocol/v766"]
+protocol-v776 = ["bedrock_protocol/v776"]
+protocol-v786 = ["bedrock_protocol/v786"]
+protocol-v800 = ["bedrock_protocol/v800"]
+protocol-v818 = ["bedrock_protocol/v818"]
+protocol-v819 = ["bedrock_protocol/v819"]
+protocol-v827 = ["bedrock_protocol/v827"]
+protocol-v844 = ["bedrock_protocol/v844"]
+protocol-v859 = ["bedrock_protocol/v859"]
+protocol-v898 = ["bedrock_protocol/v898"]
+protocol-v924 = ["bedrock_protocol/v924"]
+protocol-v944 = ["bedrock_protocol/v944"]
+protocol-v975 = ["bedrock_protocol/v975"]
+protocol-all = ["bedrock_protocol/all"]
+
+protocol-dyn-name = ["bedrock_protocol_core/dyn-name"]
 
 [[example]]
-name = "proto_server"
-path = "examples/proto/server.rs"
-required-features = ["network"]
-
-[[example]]
-name = "proto_parsing"
-path = "examples/proto_parsing.rs"
-required-features = ["proto"]
+name = "server"
+path = "examples/server.rs"
+required-features = ["network", "protocol-v944", "protocol-unknown"]

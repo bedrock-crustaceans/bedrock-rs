@@ -1,0 +1,10 @@
+use bedrock_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(i8)]
+#[repr(i8)]
+pub enum ShowStoreOfferRedirectType {
+    MarketplaceOffer = 0,
+    DressingRoomOffer = 1,
+    ThirdPartyServerPage = 2,
+}

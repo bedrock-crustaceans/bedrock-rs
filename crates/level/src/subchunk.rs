@@ -9,10 +9,10 @@ use nbtx::LittleEndian;
 use nohash_hasher::BuildNoHashHasher;
 use rustc_hash::FxHasher;
 use serde::{Deserialize, Serialize};
-use vek::Vec3;
 
 use crate::bits::{BitArray, BitArrayIter, IndicesType};
 use crate::error::{Error, Result};
+use crate::types::BlockPosition;
 use crate::{Greedy, Lazy, UnpackingMethod};
 
 /// Version of the subchunk.
@@ -174,7 +174,7 @@ impl Layer {
     }
 
     /// Retrieves the block at `position`.
-    pub fn get<K: Into<Vec3<u8>>>(&self, position: K) -> Option<&BlockDef> {
+    pub fn get<K: Into<BlockPosition>>(&self, position: K) -> Option<&BlockDef> {
         let pos = position.into();
         let offset = to_offset(pos);
         let index = self.array.get(offset)?;
@@ -184,7 +184,7 @@ impl Layer {
     /// Sets the block at `position` to `block`.
     ///
     ///
-    pub fn set<K: Into<Vec3<u8>>>(&mut self, position: K, block: BlockDef) {
+    pub fn set<K: Into<BlockPosition>>(&mut self, position: K, block: BlockDef) {
         // Check whether the block is in the palette
         let hash = Self::hash_def(&block);
         let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
@@ -310,7 +310,7 @@ impl<'a> IntoIterator for &'a Layer {
 
 impl<I> Index<I> for Layer
 where
-    I: Into<Vec3<u8>>,
+    I: Into<BlockPosition>,
 {
     type Output = BlockDef;
 
@@ -331,20 +331,20 @@ where
 ///
 /// These coordinates should be in the range [0, 16) for each component.
 #[inline]
-pub const fn to_offset(position: Vec3<u8>) -> usize {
-    16 * 16 * position.x as usize + 16 * position.z as usize + position.y as usize
+pub const fn to_offset(position: BlockPosition) -> usize {
+    16 * 16 * position.0 as usize + 16 * position.2 as usize + position.1 as usize
 }
 
 /// Converts an offset back to coordinates.
 ///
 /// This offset should be in the range [0, 4096).
 #[inline]
-pub const fn from_offset(offset: usize) -> Vec3<u8> {
+pub const fn from_offset(offset: usize) -> BlockPosition {
     let x = (offset >> 8) as u8 & 0xf;
     let y = offset as u8 & 0xf;
     let z = (offset >> 4) as u8 & 0xf;
 
-    Vec3::new(x, y, z)
+    BlockPosition(x, y, z)
 }
 
 /// A Minecraft sub chunk.

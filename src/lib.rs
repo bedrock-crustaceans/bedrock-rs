@@ -1,45 +1,45 @@
 #![allow(unused_imports)]
 
 pub mod core {
-    pub use ::bedrockrs_core::*;
+    pub use ::bedrock_core::*;
 
-    pub use ::bedrockrs_shared::*;
+    pub use ::bedrock_shared::*;
 }
 
 #[cfg(feature = "level")]
 pub mod level {
-    pub use ::bedrockrs_level::*;
+    pub use ::bedrock_level::*;
 }
 
 #[cfg(feature = "addon")]
 pub mod addon {
-    pub use ::bedrockrs_addon::*;
+    pub use ::bedrock_addon::*;
 }
 
-#[cfg(feature = "proto")]
-pub mod proto {
-    pub use ::bedrockrs_proto::*;
-    pub use ::bedrockrs_proto_core::*;
+#[cfg(feature = "auth")]
+pub mod auth {
+    pub use ::bedrock_auth::*;
+}
+
+#[cfg(feature = "protocol")]
+pub mod protocol {
+    pub use ::bedrock_protocol::*;
+    pub use ::bedrock_protocol_core::*;
 
     pub mod error {
-        pub use ::bedrockrs_proto_core::error::*;
+        pub use ::bedrock_protocol_core::error::*;
     }
 }
 
 #[cfg(feature = "network")]
 pub mod network {
-    pub use ::bedrockrs_network::*;
+    pub use ::bedrock_network::*;
     pub mod error {
-        pub use ::bedrockrs_network::error::*;
+        pub use ::bedrock_network::error::*;
     }
-}
-
-#[cfg(feature = "server")]
-pub mod server {
-    pub use ::bedrockrs_server::*;
 }
 
 #[cfg(feature = "form")]
 pub mod form {
-    pub use ::bedrockrs_form::*;
+    pub use ::bedrock_form::*;
 }

@@ -1,16 +1,24 @@
 [package]
-name = "bedrockrs_network"
+name = "bedrock_network"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bedrockrs_proto = { path = "../proto" }
-bedrockrs_proto_core = { path = "../proto_core" }
+bedrock_protocol = { path = "../protocol" }
+bedrock_protocol_core = { path = "../protocol_core" }
 
 tokio = { workspace = true }
 byteorder = { workspace = true }
 thiserror = { workspace = true }
 rand = { workspace = true }
+tracing = { workspace = true }
+flate2 = { workspace = true }
+snap = { workspace = true }
+
+p384 = { version = "0.14.0-rc.8", features = ["ecdh", "ecdsa"] }
+sha2 = "0.11.0"
+aes = "0.9.0-rc.4"
+ctr = "0.10.0-rc.4"
 
 raknet = { git = "https://github.com/bedrock-crustaceans/raknet-rs.git" }
 

@@ -15,35 +15,30 @@ Join our growing community on Discord to learn more about the project’s future
 
 ## Crates
 
-To maintain modularity and scalability, **bedrock-rs** is divided into multiple crates. Each crate focuses on a specific functionality, making it easier to use and manage. All crates are accessible through the primary `bedrockrs` crate. Additionally, the library offers a variety of optional features you can enable to suit your needs.
+To maintain modularity and scalability, **bedrock-rs** is divided into multiple crates. Each crate focuses on a specific functionality, making it easier to use and manage. All crates are accessible through the primary `bedrock` crate. Additionally, the library offers a variety of optional features you can enable to suit your needs.
 
 ### Crate Breakdown:
 
-- [`bedrockrs::shared`](crates/shared)  
-    - [X] Shared data types used across other crates.  
-    - [X] Support for deriving macros defined in other modules.  
+- [`bedrock::shared`](crates/shared)  
+    - Shared data types used across other crates.
+    - Support for deriving macros defined in other modules.  
 
-- [`bedrockrs::form`](crates/form)  
-    - [X] Implementation of the JSON form format used by Minecraft Bedrock Edition.  
+- [`bedrock::form`](crates/form)  
+    - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
 
-- [`bedrockrs::addon`](crates/addon)  
-    - [X] Datatypes for defining Minecraft Addon structures.  
-    - [X] Serialization and deserialization support for Addons.  
-    - [X] A programmatic approach to creating Addons easily.  
+- [`bedrock::addon`](crates/addon)  
+    - Datatypes for defining Minecraft Addon structures.  
+    - Serialization and deserialization support for Addons.  
+    - A programmatic approach to creating Addons easily.  
 
-- [`bedrockrs::proto`](crates/proto)  
-    - [X] Complete implementation of the Minecraft Bedrock protocol.  
-    - [X] Support for both server-side and client-side operations.  
-    - [X] Multi-protocol compatibility for handling multiple versions seamlessly.  
+- [`bedrock::protocol`](crates/protocol)  
+    - Complete implementation of the Minecraft Bedrock protocol.  
+    - Support for both server-side and client-side operations.  
+    - Multi-protocol compatibility for handling multiple versions seamlessly.  
 
-- [`bedrockrs::level`](crates/level)  
-    - [X] Data structures for managing Minecraft Bedrock levels.  
-    - [X] Implementation of Bedrock’s level format using Rust’s LevelDB.  
-
-- [`bedrockrs::server`](/crates/server)  
-    - [X] A lightweight foundation for Minecraft Bedrock server software.  
-    - [X] Built-in support for multi-protocol handling.  
-    - [X] Asynchronous architecture powered by Tokio.  
+- [`bedrock::level`](crates/level)  
+    - Data structures for managing Minecraft Bedrock levels.  
+    - Implementation of Bedrock’s level format using Rust’s LevelDB.
 
 ---
 
@@ -61,7 +56,7 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 To use **bedrock-rs** in your Rust project, add the following to your `Cargo.toml`:  
 ```toml
 [dependencies]
-bedrockrs = { git = "https://github.com/bedrock-crustaceans/bedrock-rs.git", features = ["full"] }
+bedrock = { git = "https://github.com/bedrock-crustaceans/bedrock-rs.git", features = ["full"] }
 ```
 
 Refer to the individual crate documentation for details on specific modules and features.

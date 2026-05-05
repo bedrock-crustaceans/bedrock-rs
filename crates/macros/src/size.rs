@@ -10,16 +10,16 @@ fn build_size_instance(
 ) -> TokenStream {
     match endianness {
         None => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodec>::size_hint(&#f_name) }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodec>::size_hint(&#f_name) }
         }
         Some(ProtoCodecEndianness::Le) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecLE>::size_hint(&#f_name) }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecLE>::size_hint(&#f_name) }
         }
         Some(ProtoCodecEndianness::Be) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecBE>::size_hint(&#f_name) }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecBE>::size_hint(&#f_name) }
         }
         Some(ProtoCodecEndianness::Var) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecVAR>::size_hint(&#f_name) }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecVAR>::size_hint(&#f_name) }
         }
     }
 }
@@ -75,7 +75,7 @@ fn build_size_field(
 
             if flags.str {
                 return quote! {
-                    size += <String as ::bedrockrs_proto_core::ProtoCodec>::size_hint(&ToString::to_string(&#final_name));
+                    size += <String as ::bedrock_protocol_core::ProtoCodec>::size_hint(&ToString::to_string(&#final_name));
                 };
             }
 

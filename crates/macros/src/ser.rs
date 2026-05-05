@@ -10,16 +10,16 @@ fn build_ser_instance(
 ) -> TokenStream {
     match endianness {
         None => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodec>::serialize(&#f_name, stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodec>::serialize(&#f_name, stream)? }
         }
         Some(ProtoCodecEndianness::Le) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecLE>::serialize(&#f_name, stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecLE>::serialize(&#f_name, stream)? }
         }
         Some(ProtoCodecEndianness::Be) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecBE>::serialize(&#f_name, stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecBE>::serialize(&#f_name, stream)? }
         }
         Some(ProtoCodecEndianness::Var) => {
-            quote! { <#f_type as ::bedrockrs_proto_core::ProtoCodecVAR>::serialize(&#f_name, stream)? }
+            quote! { <#f_type as ::bedrock_protocol_core::ProtoCodecVAR>::serialize(&#f_name, stream)? }
         }
     }
 }
@@ -75,7 +75,7 @@ fn build_ser_field(
 
             if flags.str {
                 return quote! {
-                    <String as ::bedrockrs_proto_core::ProtoCodec>::serialize(&ToString::to_string(&#final_name), stream)?;
+                    <String as ::bedrock_protocol_core::ProtoCodec>::serialize(&ToString::to_string(&#final_name), stream)?;
                 };
             }
 
