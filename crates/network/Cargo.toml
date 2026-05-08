@@ -20,5 +20,5 @@ sha2 = "0.11.0"
 aes = "0.9.0-rc.4"
 ctr = "0.10.0-rc.4"
 
-raknet = { git = "https://github.com/bedrock-crustaceans/raknet-rs.git" }
+raknet = { git = "https://github.com/bedrock-crustaceans/raknet.git" }
 
