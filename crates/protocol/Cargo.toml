@@ -63,8 +63,5 @@ all = [
     "v975"
 ]
 
-[build-dependencies]
-proc-macro2 = "1.0.106"
-quote = "1.0.45"
-syn = "2.0.117"
-prettyplease = "0.2.37"
+packet-dyn = ["bedrock_protocol_core/packet-dyn"]
+packet-meta = ["bedrock_protocol_core/packet-meta"]

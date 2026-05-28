@@ -7832,451 +7832,663 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V924::ActorEventPacket(pk) => pk.as_ref(),
-                V924::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V924::AddActorPacket(pk) => pk.as_ref(),
-                V924::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V924::AddItemActorPacket(pk) => pk.as_ref(),
-                V924::AddPaintingPacket(pk) => pk.as_ref(),
-                V924::AddPlayerPacket(pk) => pk.as_ref(),
-                V924::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V924::AgentActionEventPacket(pk) => pk.as_ref(),
-                V924::AgentAnimationPacket(pk) => pk.as_ref(),
-                V924::AnimateEntityPacket(pk) => pk.as_ref(),
-                V924::AnimatePacket(pk) => pk.as_ref(),
-                V924::AnvilDamagePacket(pk) => pk.as_ref(),
-                V924::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V924::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V924::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V924::AwardAchievementPacket(pk) => pk.as_ref(),
-                V924::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V924::BlockActorDataPacket(pk) => pk.as_ref(),
-                V924::BlockEventPacket(pk) => pk.as_ref(),
-                V924::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V924::BookEditPacket(pk) => pk.as_ref(),
-                V924::BossEventPacket(pk) => pk.as_ref(),
-                V924::CameraAimAssistActorPriorityPacket(pk) => pk.as_ref(),
-                V924::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
-                V924::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V924::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V924::CameraInstructionPacket(pk) => pk.as_ref(),
-                V924::CameraPacket(pk) => pk.as_ref(),
-                V924::CameraPresetsPacket(pk) => pk.as_ref(),
-                V924::CameraShakePacket(pk) => pk.as_ref(),
-                V924::CameraSplinePacket(pk) => pk.as_ref(),
-                V924::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V924::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V924::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V924::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V924::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
-                V924::ClientBoundDataDrivenUICloseAllScreensPacket(pk) => pk.as_ref(),
-                V924::ClientBoundDataDrivenUIReloadPacket(pk) => pk.as_ref(),
-                V924::ClientBoundDataDrivenUIShowScreenPacket(pk) => pk.as_ref(),
-                V924::ClientBoundDataStorePacket(pk) => pk.as_ref(),
-                V924::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V924::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V924::ClientBoundTextureShiftPacket(pk) => pk.as_ref(),
-                V924::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V924::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V924::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V924::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V924::CodeBuilderPacket(pk) => pk.as_ref(),
-                V924::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V924::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V924::CommandOutputPacket(pk) => pk.as_ref(),
-                V924::CommandRequestPacket(pk) => pk.as_ref(),
-                V924::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V924::ContainerClosePacket(pk) => pk.as_ref(),
-                V924::ContainerOpenPacket(pk) => pk.as_ref(),
-                V924::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V924::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V924::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V924::CraftingDataPacket(pk) => pk.as_ref(),
-                V924::CreatePhotoPacket(pk) => pk.as_ref(),
-                V924::CreativeContentPacket(pk) => pk.as_ref(),
-                V924::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V924::DeathInfoPacket(pk) => pk.as_ref(),
-                V924::DebugDrawerPacket(pk) => pk.as_ref(),
-                V924::DebugInfoPacket(pk) => pk.as_ref(),
-                V924::DimensionDataPacket(pk) => pk.as_ref(),
-                V924::DisconnectPacket(pk) => pk.as_ref(),
-                V924::EditorNetworkPacket(pk) => pk.as_ref(),
-                V924::EduUriResourcePacket(pk) => pk.as_ref(),
-                V924::EducationSettingsPacket(pk) => pk.as_ref(),
-                V924::EmoteListPacket(pk) => pk.as_ref(),
-                V924::EmotePacket(pk) => pk.as_ref(),
-                V924::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V924::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V924::GameTestRequestPacket(pk) => pk.as_ref(),
-                V924::GameTestResultsPacket(pk) => pk.as_ref(),
-                V924::GraphicsParameterOverridePacket(pk) => pk.as_ref(),
-                V924::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V924::HurtArmorPacket(pk) => pk.as_ref(),
-                V924::InteractPacket(pk) => pk.as_ref(),
-                V924::InventoryContentPacket(pk) => pk.as_ref(),
-                V924::InventorySlotPacket(pk) => pk.as_ref(),
-                V924::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V924::ItemComponentPacket(pk) => pk.as_ref(),
-                V924::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V924::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V924::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V924::LabTablePacket(pk) => pk.as_ref(),
-                V924::LecternUpdatePacket(pk) => pk.as_ref(),
-                V924::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V924::LessonProgressPacket(pk) => pk.as_ref(),
-                V924::LevelChunkPacket(pk) => pk.as_ref(),
-                V924::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V924::LevelEventPacket(pk) => pk.as_ref(),
-                V924::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V924::LoginPacket(pk) => pk.as_ref(),
-                V924::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V924::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V924::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V924::MobEffectPacket(pk) => pk.as_ref(),
-                V924::MobEquipmentPacket(pk) => pk.as_ref(),
-                V924::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V924::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V924::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V924::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V924::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V924::MovePlayerPacket(pk) => pk.as_ref(),
-                V924::MovementEffectPacket(pk) => pk.as_ref(),
-                V924::MovementPredictionSyncPacket(pk) => pk.as_ref(),
-                V924::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V924::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V924::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V924::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V924::NpcDialoguePacket(pk) => pk.as_ref(),
-                V924::NpcRequestPacket(pk) => pk.as_ref(),
-                V924::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V924::OpenSignPacket(pk) => pk.as_ref(),
-                V924::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V924::PhotoTransferPacket(pk) => pk.as_ref(),
-                V924::PlaySoundPacket(pk) => pk.as_ref(),
-                V924::PlayStatusPacket(pk) => pk.as_ref(),
-                V924::PlayerActionPacket(pk) => pk.as_ref(),
-                V924::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V924::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V924::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V924::PlayerFogPacket(pk) => pk.as_ref(),
-                V924::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V924::PlayerListPacket(pk) => pk.as_ref(),
-                V924::PlayerLocationPacket(pk) => pk.as_ref(),
-                V924::PlayerSkinPacket(pk) => pk.as_ref(),
-                V924::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V924::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V924::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
-                V924::PlayerVideoCapturePacket(pk) => pk.as_ref(),
-                V924::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V924::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V924::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V924::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V924::RemoveActorPacket(pk) => pk.as_ref(),
-                V924::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V924::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V924::RequestAbilityPacket(pk) => pk.as_ref(),
-                V924::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V924::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V924::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V924::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V924::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V924::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V924::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V924::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V924::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V924::RespawnPacket(pk) => pk.as_ref(),
-                V924::ScriptMessagePacket(pk) => pk.as_ref(),
-                V924::ServerBoundDataStorePacket(pk) => pk.as_ref(),
-                V924::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V924::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V924::ServerBoundPackSettingChangePacket(pk) => pk.as_ref(),
-                V924::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V924::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V924::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V924::ServerStatsPacket(pk) => pk.as_ref(),
-                V924::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V924::SetActorDataPacket(pk) => pk.as_ref(),
-                V924::SetActorLinkPacket(pk) => pk.as_ref(),
-                V924::SetActorMotionPacket(pk) => pk.as_ref(),
-                V924::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V924::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V924::SetDifficultyPacket(pk) => pk.as_ref(),
-                V924::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V924::SetHealthPacket(pk) => pk.as_ref(),
-                V924::SetHudPacket(pk) => pk.as_ref(),
-                V924::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V924::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V924::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V924::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V924::SetScorePacket(pk) => pk.as_ref(),
-                V924::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V924::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V924::SetTimePacket(pk) => pk.as_ref(),
-                V924::SetTitlePacket(pk) => pk.as_ref(),
-                V924::SettingsCommandPacket(pk) => pk.as_ref(),
-                V924::ShowCreditsPacket(pk) => pk.as_ref(),
-                V924::ShowProfilePacket(pk) => pk.as_ref(),
-                V924::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V924::SimpleEventPacket(pk) => pk.as_ref(),
-                V924::SimulationTypePacket(pk) => pk.as_ref(),
-                V924::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V924::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V924::StartGamePacket(pk) => pk.as_ref(),
-                V924::StopSoundPacket(pk) => pk.as_ref(),
-                V924::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V924::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V924::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V924::SubChunkPacket(pk) => pk.as_ref(),
-                V924::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V924::SubClientLoginPacket(pk) => pk.as_ref(),
-                V924::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V924::TakeItemActorPacket(pk) => pk.as_ref(),
-                V924::TextPacket(pk) => pk.as_ref(),
-                V924::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V924::ToastRequestPacket(pk) => pk.as_ref(),
-                V924::TransferPlayerPacket(pk) => pk.as_ref(),
-                V924::TrimDataPacket(pk) => pk.as_ref(),
-                V924::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V924::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V924::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V924::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V924::UpdateBlockPacket(pk) => pk.as_ref(),
-                V924::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V924::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V924::UpdateClientOptionsPacket(pk) => pk.as_ref(),
-                V924::UpdateEquipPacket(pk) => pk.as_ref(),
-                V924::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V924::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V924::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V924::UpdateTradePacket(pk) => pk.as_ref(),
-                V924::VoxelShapesPacket(pk) => pk.as_ref(),
-                V924::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V924::ActorEventPacket(pk) => pk,
-                V924::ActorPickRequestPacket(pk) => pk,
-                V924::AddActorPacket(pk) => pk,
-                V924::AddBehaviourTreePacket(pk) => pk,
-                V924::AddItemActorPacket(pk) => pk,
-                V924::AddPaintingPacket(pk) => pk,
-                V924::AddPlayerPacket(pk) => pk,
-                V924::AddVolumeEntityPacket(pk) => pk,
-                V924::AgentActionEventPacket(pk) => pk,
-                V924::AgentAnimationPacket(pk) => pk,
-                V924::AnimateEntityPacket(pk) => pk,
-                V924::AnimatePacket(pk) => pk,
-                V924::AnvilDamagePacket(pk) => pk,
-                V924::AutomationClientConnectPacket(pk) => pk,
-                V924::AvailableActorIdentifiersPacket(pk) => pk,
-                V924::AvailableCommandsPacket(pk) => pk,
-                V924::AwardAchievementPacket(pk) => pk,
-                V924::BiomeDefinitionListPacket(pk) => pk,
-                V924::BlockActorDataPacket(pk) => pk,
-                V924::BlockEventPacket(pk) => pk,
-                V924::BlockPickRequestPacket(pk) => pk,
-                V924::BookEditPacket(pk) => pk,
-                V924::BossEventPacket(pk) => pk,
-                V924::CameraAimAssistActorPriorityPacket(pk) => pk,
-                V924::CameraAimAssistInstructionPacket(pk) => pk,
-                V924::CameraAimAssistPacket(pk) => pk,
-                V924::CameraAimAssistPresetsPacket(pk) => pk,
-                V924::CameraInstructionPacket(pk) => pk,
-                V924::CameraPacket(pk) => pk,
-                V924::CameraPresetsPacket(pk) => pk,
-                V924::CameraShakePacket(pk) => pk,
-                V924::CameraSplinePacket(pk) => pk,
-                V924::ChangeDimensionPacket(pk) => pk,
-                V924::ChangeMobPropertyPacket(pk) => pk,
-                V924::ChunkRadiusUpdatedPacket(pk) => pk,
-                V924::ClientBoundCloseFormPacket(pk) => pk,
-                V924::ClientBoundControlSchemeSetPacket(pk) => pk,
-                V924::ClientBoundDataDrivenUICloseAllScreensPacket(pk) => pk,
-                V924::ClientBoundDataDrivenUIReloadPacket(pk) => pk,
-                V924::ClientBoundDataDrivenUIShowScreenPacket(pk) => pk,
-                V924::ClientBoundDataStorePacket(pk) => pk,
-                V924::ClientBoundDebugRendererPacket(pk) => pk,
-                V924::ClientBoundMapItemDataPacket(pk) => pk,
-                V924::ClientBoundTextureShiftPacket(pk) => pk,
-                V924::ClientCacheBlobStatusPacket(pk) => pk,
-                V924::ClientCacheMissResponsePacket(pk) => pk,
-                V924::ClientCacheStatusPacket(pk) => pk,
-                V924::ClientToServerHandshakePacket(pk) => pk,
-                V924::CodeBuilderPacket(pk) => pk,
-                V924::CodeBuilderSourcePacket(pk) => pk,
-                V924::CommandBlockUpdatePacket(pk) => pk,
-                V924::CommandOutputPacket(pk) => pk,
-                V924::CommandRequestPacket(pk) => pk,
-                V924::CompletedUsingItemPacket(pk) => pk,
-                V924::ContainerClosePacket(pk) => pk,
-                V924::ContainerOpenPacket(pk) => pk,
-                V924::ContainerRegistryCleanupPacket(pk) => pk,
-                V924::ContainerSetDataPacket(pk) => pk,
-                V924::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V924::CraftingDataPacket(pk) => pk,
-                V924::CreatePhotoPacket(pk) => pk,
-                V924::CreativeContentPacket(pk) => pk,
-                V924::CurrentStructureFeaturePacket(pk) => pk,
-                V924::DeathInfoPacket(pk) => pk,
-                V924::DebugDrawerPacket(pk) => pk,
-                V924::DebugInfoPacket(pk) => pk,
-                V924::DimensionDataPacket(pk) => pk,
-                V924::DisconnectPacket(pk) => pk,
-                V924::EditorNetworkPacket(pk) => pk,
-                V924::EduUriResourcePacket(pk) => pk,
-                V924::EducationSettingsPacket(pk) => pk,
-                V924::EmoteListPacket(pk) => pk,
-                V924::EmotePacket(pk) => pk,
-                V924::FeatureRegistryPacket(pk) => pk,
-                V924::GameRulesChangedPacket(pk) => pk,
-                V924::GameTestRequestPacket(pk) => pk,
-                V924::GameTestResultsPacket(pk) => pk,
-                V924::GraphicsParameterOverridePacket(pk) => pk,
-                V924::GuiDataPickItemPacket(pk) => pk,
-                V924::HurtArmorPacket(pk) => pk,
-                V924::InteractPacket(pk) => pk,
-                V924::InventoryContentPacket(pk) => pk,
-                V924::InventorySlotPacket(pk) => pk,
-                V924::InventoryTransactionPacket(pk) => pk,
-                V924::ItemComponentPacket(pk) => pk,
-                V924::ItemStackRequestPacket(pk) => pk,
-                V924::ItemStackResponsePacket(pk) => pk,
-                V924::JigsawStructureDataPacket(pk) => pk,
-                V924::LabTablePacket(pk) => pk,
-                V924::LecternUpdatePacket(pk) => pk,
-                V924::LegacyTelemetryEventPacket(pk) => pk,
-                V924::LessonProgressPacket(pk) => pk,
-                V924::LevelChunkPacket(pk) => pk,
-                V924::LevelEventGenericPacket(pk) => pk,
-                V924::LevelEventPacket(pk) => pk,
-                V924::LevelSoundEventPacket(pk) => pk,
-                V924::LoginPacket(pk) => pk,
-                V924::MapCreateLockedCopyPacket(pk) => pk,
-                V924::MapInfoRequestPacket(pk) => pk,
-                V924::MobArmorEquipmentPacket(pk) => pk,
-                V924::MobEffectPacket(pk) => pk,
-                V924::MobEquipmentPacket(pk) => pk,
-                V924::ModalFormRequestPacket(pk) => pk,
-                V924::ModalFormResponsePacket(pk) => pk,
-                V924::MotionPredictionHintsPacket(pk) => pk,
-                V924::MoveActorAbsolutePacket(pk) => pk,
-                V924::MoveActorDeltaPacket(pk) => pk,
-                V924::MovePlayerPacket(pk) => pk,
-                V924::MovementEffectPacket(pk) => pk,
-                V924::MovementPredictionSyncPacket(pk) => pk,
-                V924::MultiplayerSettingsPacket(pk) => pk,
-                V924::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V924::NetworkSettingsPacket(pk) => pk,
-                V924::NetworkStackLatencyPacket(pk) => pk,
-                V924::NpcDialoguePacket(pk) => pk,
-                V924::NpcRequestPacket(pk) => pk,
-                V924::OnScreenTextureAnimationPacket(pk) => pk,
-                V924::OpenSignPacket(pk) => pk,
-                V924::PacketViolationWarningPacket(pk) => pk,
-                V924::PhotoTransferPacket(pk) => pk,
-                V924::PlaySoundPacket(pk) => pk,
-                V924::PlayStatusPacket(pk) => pk,
-                V924::PlayerActionPacket(pk) => pk,
-                V924::PlayerArmorDamagePacket(pk) => pk,
-                V924::PlayerAuthInputPacket(pk) => pk,
-                V924::PlayerEnchantOptionsPacket(pk) => pk,
-                V924::PlayerFogPacket(pk) => pk,
-                V924::PlayerHotbarPacket(pk) => pk,
-                V924::PlayerListPacket(pk) => pk,
-                V924::PlayerLocationPacket(pk) => pk,
-                V924::PlayerSkinPacket(pk) => pk,
-                V924::PlayerStartItemCooldownPacket(pk) => pk,
-                V924::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V924::PlayerUpdateEntityOverridesPacket(pk) => pk,
-                V924::PlayerVideoCapturePacket(pk) => pk,
-                V924::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V924::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V924::PurchaseReceiptPacket(pk) => pk,
-                V924::RefreshEntitlementsPacket(pk) => pk,
-                V924::RemoveActorPacket(pk) => pk,
-                V924::RemoveObjectivePacket(pk) => pk,
-                V924::RemoveVolumeEntityPacket(pk) => pk,
-                V924::RequestAbilityPacket(pk) => pk,
-                V924::RequestChunkRadiusPacket(pk) => pk,
-                V924::RequestNetworkSettingsPacket(pk) => pk,
-                V924::RequestPermissionsPacket(pk) => pk,
-                V924::ResourcePackChunkDataPacket(pk) => pk,
-                V924::ResourcePackChunkRequestPacket(pk) => pk,
-                V924::ResourcePackClientResponsePacket(pk) => pk,
-                V924::ResourcePackDataInfoPacket(pk) => pk,
-                V924::ResourcePackStackPacket(pk) => pk,
-                V924::ResourcePacksInfoPacket(pk) => pk,
-                V924::RespawnPacket(pk) => pk,
-                V924::ScriptMessagePacket(pk) => pk,
-                V924::ServerBoundDataStorePacket(pk) => pk,
-                V924::ServerBoundDiagnosticsPacket(pk) => pk,
-                V924::ServerBoundLoadingScreenPacket(pk) => pk,
-                V924::ServerBoundPackSettingChangePacket(pk) => pk,
-                V924::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V924::ServerSettingsRequestPacket(pk) => pk,
-                V924::ServerSettingsResponsePacket(pk) => pk,
-                V924::ServerStatsPacket(pk) => pk,
-                V924::ServerToClientHandshakePacket(pk) => pk,
-                V924::SetActorDataPacket(pk) => pk,
-                V924::SetActorLinkPacket(pk) => pk,
-                V924::SetActorMotionPacket(pk) => pk,
-                V924::SetCommandsEnabledPacket(pk) => pk,
-                V924::SetDefaultGameTypePacket(pk) => pk,
-                V924::SetDifficultyPacket(pk) => pk,
-                V924::SetDisplayObjectivePacket(pk) => pk,
-                V924::SetHealthPacket(pk) => pk,
-                V924::SetHudPacket(pk) => pk,
-                V924::SetLastHurtByPacket(pk) => pk,
-                V924::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V924::SetPlayerGameTypePacket(pk) => pk,
-                V924::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V924::SetScorePacket(pk) => pk,
-                V924::SetScoreboardIdentityPacket(pk) => pk,
-                V924::SetSpawnPositionPacket(pk) => pk,
-                V924::SetTimePacket(pk) => pk,
-                V924::SetTitlePacket(pk) => pk,
-                V924::SettingsCommandPacket(pk) => pk,
-                V924::ShowCreditsPacket(pk) => pk,
-                V924::ShowProfilePacket(pk) => pk,
-                V924::ShowStoreOfferPacket(pk) => pk,
-                V924::SimpleEventPacket(pk) => pk,
-                V924::SimulationTypePacket(pk) => pk,
-                V924::SpawnExperienceOrbPacket(pk) => pk,
-                V924::SpawnParticleEffectPacket(pk) => pk,
-                V924::StartGamePacket(pk) => pk,
-                V924::StopSoundPacket(pk) => pk,
-                V924::StructureBlockUpdatePacket(pk) => pk,
-                V924::StructureDataRequestPacket(pk) => pk,
-                V924::StructureDataResponsePacket(pk) => pk,
-                V924::SubChunkPacket(pk) => pk,
-                V924::SubChunkRequestPacket(pk) => pk,
-                V924::SubClientLoginPacket(pk) => pk,
-                V924::SyncActorPropertyPacket(pk) => pk,
-                V924::TakeItemActorPacket(pk) => pk,
-                V924::TextPacket(pk) => pk,
-                V924::TickingAreaLoadStatusPacket(pk) => pk,
-                V924::ToastRequestPacket(pk) => pk,
-                V924::TransferPlayerPacket(pk) => pk,
-                V924::TrimDataPacket(pk) => pk,
-                V924::UnlockedRecipesPacket(pk) => pk,
-                V924::UpdateAbilitiesPacket(pk) => pk,
-                V924::UpdateAdventureSettingsPacket(pk) => pk,
-                V924::UpdateAttributesPacket(pk) => pk,
-                V924::UpdateBlockPacket(pk) => pk,
-                V924::UpdateBlockSyncedPacket(pk) => pk,
-                V924::UpdateClientInputLocksPacket(pk) => pk,
-                V924::UpdateClientOptionsPacket(pk) => pk,
-                V924::UpdateEquipPacket(pk) => pk,
-                V924::UpdatePlayerGameTypePacket(pk) => pk,
-                V924::UpdateSoftEnumPacket(pk) => pk,
-                V924::UpdateSubChunkBlocksPacket(pk) => pk,
-                V924::UpdateTradePacket(pk) => pk,
-                V924::VoxelShapesPacket(pk) => pk,
-                V924::Unknown(pk) => pk,
+                V924::ActorEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ActorPickRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AddActorPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AddBehaviourTreePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AddItemActorPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AddPaintingPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AddPlayerPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AddVolumeEntityPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AgentActionEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AgentAnimationPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AnimateEntityPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AnimatePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AnvilDamagePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AutomationClientConnectPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AvailableActorIdentifiersPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AvailableCommandsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::AwardAchievementPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::BiomeDefinitionListPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::BlockActorDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::BlockEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::BlockPickRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::BookEditPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::BossEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraAimAssistActorPriorityPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraAimAssistActorPriorityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraAimAssistInstructionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraAimAssistPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraAimAssistPresetsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraInstructionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraPresetsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraShakePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CameraSplinePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CameraSplinePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ChangeDimensionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ChangeMobPropertyPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ChunkRadiusUpdatedPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundCloseFormPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundControlSchemeSetPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundDataDrivenUICloseAllScreensPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundDataDrivenUICloseAllScreensPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundDataDrivenUIReloadPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundDataDrivenUIReloadPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundDataDrivenUIShowScreenPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundDataDrivenUIShowScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundDataStorePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundDataStorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundDebugRendererPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundMapItemDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientBoundTextureShiftPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientBoundTextureShiftPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientCacheBlobStatusPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientCacheMissResponsePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientCacheStatusPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ClientToServerHandshakePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CodeBuilderPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CodeBuilderSourcePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CommandBlockUpdatePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CommandOutputPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CommandRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CompletedUsingItemPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ContainerClosePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ContainerOpenPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ContainerRegistryCleanupPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ContainerSetDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CraftingDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CreatePhotoPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CreativeContentPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::CurrentStructureFeaturePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::DeathInfoPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::DebugDrawerPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::DebugDrawerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::DebugInfoPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::DimensionDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::DisconnectPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::EditorNetworkPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::EduUriResourcePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::EducationSettingsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::EmoteListPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::EmotePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::FeatureRegistryPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::GameRulesChangedPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::GameTestRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::GameTestResultsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::GraphicsParameterOverridePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::GraphicsParameterOverridePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::GuiDataPickItemPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::HurtArmorPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::InteractPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::InventoryContentPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::InventorySlotPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::InventoryTransactionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ItemComponentPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ItemStackRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ItemStackResponsePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::JigsawStructureDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LabTablePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LecternUpdatePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LegacyTelemetryEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LessonProgressPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LevelChunkPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LevelEventGenericPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LevelEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LevelSoundEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::LoginPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MapCreateLockedCopyPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MapInfoRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MobArmorEquipmentPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MobEffectPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MobEquipmentPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ModalFormRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ModalFormResponsePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MotionPredictionHintsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MoveActorAbsolutePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MoveActorDeltaPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MovePlayerPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MovementEffectPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MovementPredictionSyncPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::MultiplayerSettingsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::NetworkSettingsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::NetworkStackLatencyPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::NpcDialoguePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::NpcRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::OnScreenTextureAnimationPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::OpenSignPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PacketViolationWarningPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PhotoTransferPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlaySoundPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayStatusPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerActionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerArmorDamagePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerAuthInputPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerEnchantOptionsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerFogPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerHotbarPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerListPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerLocationPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerSkinPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerStartItemCooldownPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerUpdateEntityOverridesPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PlayerVideoCapturePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::PurchaseReceiptPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RefreshEntitlementsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RemoveActorPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RemoveObjectivePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RemoveVolumeEntityPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RequestAbilityPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RequestChunkRadiusPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RequestNetworkSettingsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RequestPermissionsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ResourcePackChunkDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ResourcePackChunkRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ResourcePackClientResponsePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ResourcePackDataInfoPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ResourcePackStackPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ResourcePacksInfoPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::RespawnPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ScriptMessagePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerBoundDataStorePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerBoundDataStorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerBoundDiagnosticsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerBoundLoadingScreenPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerBoundPackSettingChangePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerBoundPackSettingChangePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerSettingsRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerSettingsResponsePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerStatsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ServerToClientHandshakePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetActorDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetActorLinkPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetActorMotionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetCommandsEnabledPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetDefaultGameTypePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetDifficultyPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetDisplayObjectivePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetHealthPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetHudPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetLastHurtByPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetPlayerGameTypePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetScorePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetScoreboardIdentityPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetSpawnPositionPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetTimePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SetTitlePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SettingsCommandPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ShowCreditsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ShowProfilePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ShowStoreOfferPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SimpleEventPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SimulationTypePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SpawnExperienceOrbPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SpawnParticleEffectPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::StartGamePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::StopSoundPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::StructureBlockUpdatePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::StructureDataRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::StructureDataResponsePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SubChunkPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SubChunkRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SubClientLoginPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::SyncActorPropertyPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::TakeItemActorPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::TextPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::TickingAreaLoadStatusPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::ToastRequestPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::TransferPlayerPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::TrimDataPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UnlockedRecipesPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateAbilitiesPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateAdventureSettingsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateAttributesPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateBlockPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateBlockSyncedPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateClientInputLocksPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateClientOptionsPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateEquipPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdatePlayerGameTypePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateSoftEnumPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateSubChunkBlocksPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::UpdateTradePacket(_) => {
+                    <<V924 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::VoxelShapesPacket(_) => {
+                    <<V924 as ProtoVersionPackets>::VoxelShapesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V924::Unknown(pk) => pk.id,
             }
         }
     }
@@ -8815,6 +9027,458 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/26_u0";
         const GAME_VERSION: &str = "1.26.0";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V924 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V924::ActorEventPacket(pk) => pk.as_ref(),
+                V924::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V924::AddActorPacket(pk) => pk.as_ref(),
+                V924::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V924::AddItemActorPacket(pk) => pk.as_ref(),
+                V924::AddPaintingPacket(pk) => pk.as_ref(),
+                V924::AddPlayerPacket(pk) => pk.as_ref(),
+                V924::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V924::AgentActionEventPacket(pk) => pk.as_ref(),
+                V924::AgentAnimationPacket(pk) => pk.as_ref(),
+                V924::AnimateEntityPacket(pk) => pk.as_ref(),
+                V924::AnimatePacket(pk) => pk.as_ref(),
+                V924::AnvilDamagePacket(pk) => pk.as_ref(),
+                V924::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V924::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V924::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V924::AwardAchievementPacket(pk) => pk.as_ref(),
+                V924::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V924::BlockActorDataPacket(pk) => pk.as_ref(),
+                V924::BlockEventPacket(pk) => pk.as_ref(),
+                V924::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V924::BookEditPacket(pk) => pk.as_ref(),
+                V924::BossEventPacket(pk) => pk.as_ref(),
+                V924::CameraAimAssistActorPriorityPacket(pk) => pk.as_ref(),
+                V924::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
+                V924::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V924::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V924::CameraInstructionPacket(pk) => pk.as_ref(),
+                V924::CameraPacket(pk) => pk.as_ref(),
+                V924::CameraPresetsPacket(pk) => pk.as_ref(),
+                V924::CameraShakePacket(pk) => pk.as_ref(),
+                V924::CameraSplinePacket(pk) => pk.as_ref(),
+                V924::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V924::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V924::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V924::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V924::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
+                V924::ClientBoundDataDrivenUICloseAllScreensPacket(pk) => pk.as_ref(),
+                V924::ClientBoundDataDrivenUIReloadPacket(pk) => pk.as_ref(),
+                V924::ClientBoundDataDrivenUIShowScreenPacket(pk) => pk.as_ref(),
+                V924::ClientBoundDataStorePacket(pk) => pk.as_ref(),
+                V924::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V924::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V924::ClientBoundTextureShiftPacket(pk) => pk.as_ref(),
+                V924::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V924::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V924::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V924::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V924::CodeBuilderPacket(pk) => pk.as_ref(),
+                V924::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V924::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V924::CommandOutputPacket(pk) => pk.as_ref(),
+                V924::CommandRequestPacket(pk) => pk.as_ref(),
+                V924::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V924::ContainerClosePacket(pk) => pk.as_ref(),
+                V924::ContainerOpenPacket(pk) => pk.as_ref(),
+                V924::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V924::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V924::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V924::CraftingDataPacket(pk) => pk.as_ref(),
+                V924::CreatePhotoPacket(pk) => pk.as_ref(),
+                V924::CreativeContentPacket(pk) => pk.as_ref(),
+                V924::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V924::DeathInfoPacket(pk) => pk.as_ref(),
+                V924::DebugDrawerPacket(pk) => pk.as_ref(),
+                V924::DebugInfoPacket(pk) => pk.as_ref(),
+                V924::DimensionDataPacket(pk) => pk.as_ref(),
+                V924::DisconnectPacket(pk) => pk.as_ref(),
+                V924::EditorNetworkPacket(pk) => pk.as_ref(),
+                V924::EduUriResourcePacket(pk) => pk.as_ref(),
+                V924::EducationSettingsPacket(pk) => pk.as_ref(),
+                V924::EmoteListPacket(pk) => pk.as_ref(),
+                V924::EmotePacket(pk) => pk.as_ref(),
+                V924::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V924::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V924::GameTestRequestPacket(pk) => pk.as_ref(),
+                V924::GameTestResultsPacket(pk) => pk.as_ref(),
+                V924::GraphicsParameterOverridePacket(pk) => pk.as_ref(),
+                V924::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V924::HurtArmorPacket(pk) => pk.as_ref(),
+                V924::InteractPacket(pk) => pk.as_ref(),
+                V924::InventoryContentPacket(pk) => pk.as_ref(),
+                V924::InventorySlotPacket(pk) => pk.as_ref(),
+                V924::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V924::ItemComponentPacket(pk) => pk.as_ref(),
+                V924::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V924::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V924::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V924::LabTablePacket(pk) => pk.as_ref(),
+                V924::LecternUpdatePacket(pk) => pk.as_ref(),
+                V924::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V924::LessonProgressPacket(pk) => pk.as_ref(),
+                V924::LevelChunkPacket(pk) => pk.as_ref(),
+                V924::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V924::LevelEventPacket(pk) => pk.as_ref(),
+                V924::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V924::LoginPacket(pk) => pk.as_ref(),
+                V924::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V924::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V924::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V924::MobEffectPacket(pk) => pk.as_ref(),
+                V924::MobEquipmentPacket(pk) => pk.as_ref(),
+                V924::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V924::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V924::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V924::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V924::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V924::MovePlayerPacket(pk) => pk.as_ref(),
+                V924::MovementEffectPacket(pk) => pk.as_ref(),
+                V924::MovementPredictionSyncPacket(pk) => pk.as_ref(),
+                V924::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V924::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V924::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V924::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V924::NpcDialoguePacket(pk) => pk.as_ref(),
+                V924::NpcRequestPacket(pk) => pk.as_ref(),
+                V924::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V924::OpenSignPacket(pk) => pk.as_ref(),
+                V924::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V924::PhotoTransferPacket(pk) => pk.as_ref(),
+                V924::PlaySoundPacket(pk) => pk.as_ref(),
+                V924::PlayStatusPacket(pk) => pk.as_ref(),
+                V924::PlayerActionPacket(pk) => pk.as_ref(),
+                V924::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V924::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V924::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V924::PlayerFogPacket(pk) => pk.as_ref(),
+                V924::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V924::PlayerListPacket(pk) => pk.as_ref(),
+                V924::PlayerLocationPacket(pk) => pk.as_ref(),
+                V924::PlayerSkinPacket(pk) => pk.as_ref(),
+                V924::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V924::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V924::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
+                V924::PlayerVideoCapturePacket(pk) => pk.as_ref(),
+                V924::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V924::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V924::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V924::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V924::RemoveActorPacket(pk) => pk.as_ref(),
+                V924::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V924::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V924::RequestAbilityPacket(pk) => pk.as_ref(),
+                V924::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V924::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V924::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V924::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V924::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V924::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V924::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V924::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V924::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V924::RespawnPacket(pk) => pk.as_ref(),
+                V924::ScriptMessagePacket(pk) => pk.as_ref(),
+                V924::ServerBoundDataStorePacket(pk) => pk.as_ref(),
+                V924::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V924::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V924::ServerBoundPackSettingChangePacket(pk) => pk.as_ref(),
+                V924::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V924::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V924::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V924::ServerStatsPacket(pk) => pk.as_ref(),
+                V924::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V924::SetActorDataPacket(pk) => pk.as_ref(),
+                V924::SetActorLinkPacket(pk) => pk.as_ref(),
+                V924::SetActorMotionPacket(pk) => pk.as_ref(),
+                V924::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V924::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V924::SetDifficultyPacket(pk) => pk.as_ref(),
+                V924::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V924::SetHealthPacket(pk) => pk.as_ref(),
+                V924::SetHudPacket(pk) => pk.as_ref(),
+                V924::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V924::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V924::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V924::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V924::SetScorePacket(pk) => pk.as_ref(),
+                V924::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V924::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V924::SetTimePacket(pk) => pk.as_ref(),
+                V924::SetTitlePacket(pk) => pk.as_ref(),
+                V924::SettingsCommandPacket(pk) => pk.as_ref(),
+                V924::ShowCreditsPacket(pk) => pk.as_ref(),
+                V924::ShowProfilePacket(pk) => pk.as_ref(),
+                V924::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V924::SimpleEventPacket(pk) => pk.as_ref(),
+                V924::SimulationTypePacket(pk) => pk.as_ref(),
+                V924::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V924::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V924::StartGamePacket(pk) => pk.as_ref(),
+                V924::StopSoundPacket(pk) => pk.as_ref(),
+                V924::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V924::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V924::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V924::SubChunkPacket(pk) => pk.as_ref(),
+                V924::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V924::SubClientLoginPacket(pk) => pk.as_ref(),
+                V924::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V924::TakeItemActorPacket(pk) => pk.as_ref(),
+                V924::TextPacket(pk) => pk.as_ref(),
+                V924::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V924::ToastRequestPacket(pk) => pk.as_ref(),
+                V924::TransferPlayerPacket(pk) => pk.as_ref(),
+                V924::TrimDataPacket(pk) => pk.as_ref(),
+                V924::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V924::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V924::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V924::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V924::UpdateBlockPacket(pk) => pk.as_ref(),
+                V924::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V924::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V924::UpdateClientOptionsPacket(pk) => pk.as_ref(),
+                V924::UpdateEquipPacket(pk) => pk.as_ref(),
+                V924::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V924::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V924::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V924::UpdateTradePacket(pk) => pk.as_ref(),
+                V924::VoxelShapesPacket(pk) => pk.as_ref(),
+                V924::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V924> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V924) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V924::ActorEventPacket(pk) => pk,
+                V924::ActorPickRequestPacket(pk) => pk,
+                V924::AddActorPacket(pk) => pk,
+                V924::AddBehaviourTreePacket(pk) => pk,
+                V924::AddItemActorPacket(pk) => pk,
+                V924::AddPaintingPacket(pk) => pk,
+                V924::AddPlayerPacket(pk) => pk,
+                V924::AddVolumeEntityPacket(pk) => pk,
+                V924::AgentActionEventPacket(pk) => pk,
+                V924::AgentAnimationPacket(pk) => pk,
+                V924::AnimateEntityPacket(pk) => pk,
+                V924::AnimatePacket(pk) => pk,
+                V924::AnvilDamagePacket(pk) => pk,
+                V924::AutomationClientConnectPacket(pk) => pk,
+                V924::AvailableActorIdentifiersPacket(pk) => pk,
+                V924::AvailableCommandsPacket(pk) => pk,
+                V924::AwardAchievementPacket(pk) => pk,
+                V924::BiomeDefinitionListPacket(pk) => pk,
+                V924::BlockActorDataPacket(pk) => pk,
+                V924::BlockEventPacket(pk) => pk,
+                V924::BlockPickRequestPacket(pk) => pk,
+                V924::BookEditPacket(pk) => pk,
+                V924::BossEventPacket(pk) => pk,
+                V924::CameraAimAssistActorPriorityPacket(pk) => pk,
+                V924::CameraAimAssistInstructionPacket(pk) => pk,
+                V924::CameraAimAssistPacket(pk) => pk,
+                V924::CameraAimAssistPresetsPacket(pk) => pk,
+                V924::CameraInstructionPacket(pk) => pk,
+                V924::CameraPacket(pk) => pk,
+                V924::CameraPresetsPacket(pk) => pk,
+                V924::CameraShakePacket(pk) => pk,
+                V924::CameraSplinePacket(pk) => pk,
+                V924::ChangeDimensionPacket(pk) => pk,
+                V924::ChangeMobPropertyPacket(pk) => pk,
+                V924::ChunkRadiusUpdatedPacket(pk) => pk,
+                V924::ClientBoundCloseFormPacket(pk) => pk,
+                V924::ClientBoundControlSchemeSetPacket(pk) => pk,
+                V924::ClientBoundDataDrivenUICloseAllScreensPacket(pk) => pk,
+                V924::ClientBoundDataDrivenUIReloadPacket(pk) => pk,
+                V924::ClientBoundDataDrivenUIShowScreenPacket(pk) => pk,
+                V924::ClientBoundDataStorePacket(pk) => pk,
+                V924::ClientBoundDebugRendererPacket(pk) => pk,
+                V924::ClientBoundMapItemDataPacket(pk) => pk,
+                V924::ClientBoundTextureShiftPacket(pk) => pk,
+                V924::ClientCacheBlobStatusPacket(pk) => pk,
+                V924::ClientCacheMissResponsePacket(pk) => pk,
+                V924::ClientCacheStatusPacket(pk) => pk,
+                V924::ClientToServerHandshakePacket(pk) => pk,
+                V924::CodeBuilderPacket(pk) => pk,
+                V924::CodeBuilderSourcePacket(pk) => pk,
+                V924::CommandBlockUpdatePacket(pk) => pk,
+                V924::CommandOutputPacket(pk) => pk,
+                V924::CommandRequestPacket(pk) => pk,
+                V924::CompletedUsingItemPacket(pk) => pk,
+                V924::ContainerClosePacket(pk) => pk,
+                V924::ContainerOpenPacket(pk) => pk,
+                V924::ContainerRegistryCleanupPacket(pk) => pk,
+                V924::ContainerSetDataPacket(pk) => pk,
+                V924::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V924::CraftingDataPacket(pk) => pk,
+                V924::CreatePhotoPacket(pk) => pk,
+                V924::CreativeContentPacket(pk) => pk,
+                V924::CurrentStructureFeaturePacket(pk) => pk,
+                V924::DeathInfoPacket(pk) => pk,
+                V924::DebugDrawerPacket(pk) => pk,
+                V924::DebugInfoPacket(pk) => pk,
+                V924::DimensionDataPacket(pk) => pk,
+                V924::DisconnectPacket(pk) => pk,
+                V924::EditorNetworkPacket(pk) => pk,
+                V924::EduUriResourcePacket(pk) => pk,
+                V924::EducationSettingsPacket(pk) => pk,
+                V924::EmoteListPacket(pk) => pk,
+                V924::EmotePacket(pk) => pk,
+                V924::FeatureRegistryPacket(pk) => pk,
+                V924::GameRulesChangedPacket(pk) => pk,
+                V924::GameTestRequestPacket(pk) => pk,
+                V924::GameTestResultsPacket(pk) => pk,
+                V924::GraphicsParameterOverridePacket(pk) => pk,
+                V924::GuiDataPickItemPacket(pk) => pk,
+                V924::HurtArmorPacket(pk) => pk,
+                V924::InteractPacket(pk) => pk,
+                V924::InventoryContentPacket(pk) => pk,
+                V924::InventorySlotPacket(pk) => pk,
+                V924::InventoryTransactionPacket(pk) => pk,
+                V924::ItemComponentPacket(pk) => pk,
+                V924::ItemStackRequestPacket(pk) => pk,
+                V924::ItemStackResponsePacket(pk) => pk,
+                V924::JigsawStructureDataPacket(pk) => pk,
+                V924::LabTablePacket(pk) => pk,
+                V924::LecternUpdatePacket(pk) => pk,
+                V924::LegacyTelemetryEventPacket(pk) => pk,
+                V924::LessonProgressPacket(pk) => pk,
+                V924::LevelChunkPacket(pk) => pk,
+                V924::LevelEventGenericPacket(pk) => pk,
+                V924::LevelEventPacket(pk) => pk,
+                V924::LevelSoundEventPacket(pk) => pk,
+                V924::LoginPacket(pk) => pk,
+                V924::MapCreateLockedCopyPacket(pk) => pk,
+                V924::MapInfoRequestPacket(pk) => pk,
+                V924::MobArmorEquipmentPacket(pk) => pk,
+                V924::MobEffectPacket(pk) => pk,
+                V924::MobEquipmentPacket(pk) => pk,
+                V924::ModalFormRequestPacket(pk) => pk,
+                V924::ModalFormResponsePacket(pk) => pk,
+                V924::MotionPredictionHintsPacket(pk) => pk,
+                V924::MoveActorAbsolutePacket(pk) => pk,
+                V924::MoveActorDeltaPacket(pk) => pk,
+                V924::MovePlayerPacket(pk) => pk,
+                V924::MovementEffectPacket(pk) => pk,
+                V924::MovementPredictionSyncPacket(pk) => pk,
+                V924::MultiplayerSettingsPacket(pk) => pk,
+                V924::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V924::NetworkSettingsPacket(pk) => pk,
+                V924::NetworkStackLatencyPacket(pk) => pk,
+                V924::NpcDialoguePacket(pk) => pk,
+                V924::NpcRequestPacket(pk) => pk,
+                V924::OnScreenTextureAnimationPacket(pk) => pk,
+                V924::OpenSignPacket(pk) => pk,
+                V924::PacketViolationWarningPacket(pk) => pk,
+                V924::PhotoTransferPacket(pk) => pk,
+                V924::PlaySoundPacket(pk) => pk,
+                V924::PlayStatusPacket(pk) => pk,
+                V924::PlayerActionPacket(pk) => pk,
+                V924::PlayerArmorDamagePacket(pk) => pk,
+                V924::PlayerAuthInputPacket(pk) => pk,
+                V924::PlayerEnchantOptionsPacket(pk) => pk,
+                V924::PlayerFogPacket(pk) => pk,
+                V924::PlayerHotbarPacket(pk) => pk,
+                V924::PlayerListPacket(pk) => pk,
+                V924::PlayerLocationPacket(pk) => pk,
+                V924::PlayerSkinPacket(pk) => pk,
+                V924::PlayerStartItemCooldownPacket(pk) => pk,
+                V924::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V924::PlayerUpdateEntityOverridesPacket(pk) => pk,
+                V924::PlayerVideoCapturePacket(pk) => pk,
+                V924::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V924::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V924::PurchaseReceiptPacket(pk) => pk,
+                V924::RefreshEntitlementsPacket(pk) => pk,
+                V924::RemoveActorPacket(pk) => pk,
+                V924::RemoveObjectivePacket(pk) => pk,
+                V924::RemoveVolumeEntityPacket(pk) => pk,
+                V924::RequestAbilityPacket(pk) => pk,
+                V924::RequestChunkRadiusPacket(pk) => pk,
+                V924::RequestNetworkSettingsPacket(pk) => pk,
+                V924::RequestPermissionsPacket(pk) => pk,
+                V924::ResourcePackChunkDataPacket(pk) => pk,
+                V924::ResourcePackChunkRequestPacket(pk) => pk,
+                V924::ResourcePackClientResponsePacket(pk) => pk,
+                V924::ResourcePackDataInfoPacket(pk) => pk,
+                V924::ResourcePackStackPacket(pk) => pk,
+                V924::ResourcePacksInfoPacket(pk) => pk,
+                V924::RespawnPacket(pk) => pk,
+                V924::ScriptMessagePacket(pk) => pk,
+                V924::ServerBoundDataStorePacket(pk) => pk,
+                V924::ServerBoundDiagnosticsPacket(pk) => pk,
+                V924::ServerBoundLoadingScreenPacket(pk) => pk,
+                V924::ServerBoundPackSettingChangePacket(pk) => pk,
+                V924::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V924::ServerSettingsRequestPacket(pk) => pk,
+                V924::ServerSettingsResponsePacket(pk) => pk,
+                V924::ServerStatsPacket(pk) => pk,
+                V924::ServerToClientHandshakePacket(pk) => pk,
+                V924::SetActorDataPacket(pk) => pk,
+                V924::SetActorLinkPacket(pk) => pk,
+                V924::SetActorMotionPacket(pk) => pk,
+                V924::SetCommandsEnabledPacket(pk) => pk,
+                V924::SetDefaultGameTypePacket(pk) => pk,
+                V924::SetDifficultyPacket(pk) => pk,
+                V924::SetDisplayObjectivePacket(pk) => pk,
+                V924::SetHealthPacket(pk) => pk,
+                V924::SetHudPacket(pk) => pk,
+                V924::SetLastHurtByPacket(pk) => pk,
+                V924::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V924::SetPlayerGameTypePacket(pk) => pk,
+                V924::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V924::SetScorePacket(pk) => pk,
+                V924::SetScoreboardIdentityPacket(pk) => pk,
+                V924::SetSpawnPositionPacket(pk) => pk,
+                V924::SetTimePacket(pk) => pk,
+                V924::SetTitlePacket(pk) => pk,
+                V924::SettingsCommandPacket(pk) => pk,
+                V924::ShowCreditsPacket(pk) => pk,
+                V924::ShowProfilePacket(pk) => pk,
+                V924::ShowStoreOfferPacket(pk) => pk,
+                V924::SimpleEventPacket(pk) => pk,
+                V924::SimulationTypePacket(pk) => pk,
+                V924::SpawnExperienceOrbPacket(pk) => pk,
+                V924::SpawnParticleEffectPacket(pk) => pk,
+                V924::StartGamePacket(pk) => pk,
+                V924::StopSoundPacket(pk) => pk,
+                V924::StructureBlockUpdatePacket(pk) => pk,
+                V924::StructureDataRequestPacket(pk) => pk,
+                V924::StructureDataResponsePacket(pk) => pk,
+                V924::SubChunkPacket(pk) => pk,
+                V924::SubChunkRequestPacket(pk) => pk,
+                V924::SubClientLoginPacket(pk) => pk,
+                V924::SyncActorPropertyPacket(pk) => pk,
+                V924::TakeItemActorPacket(pk) => pk,
+                V924::TextPacket(pk) => pk,
+                V924::TickingAreaLoadStatusPacket(pk) => pk,
+                V924::ToastRequestPacket(pk) => pk,
+                V924::TransferPlayerPacket(pk) => pk,
+                V924::TrimDataPacket(pk) => pk,
+                V924::UnlockedRecipesPacket(pk) => pk,
+                V924::UpdateAbilitiesPacket(pk) => pk,
+                V924::UpdateAdventureSettingsPacket(pk) => pk,
+                V924::UpdateAttributesPacket(pk) => pk,
+                V924::UpdateBlockPacket(pk) => pk,
+                V924::UpdateBlockSyncedPacket(pk) => pk,
+                V924::UpdateClientInputLocksPacket(pk) => pk,
+                V924::UpdateClientOptionsPacket(pk) => pk,
+                V924::UpdateEquipPacket(pk) => pk,
+                V924::UpdatePlayerGameTypePacket(pk) => pk,
+                V924::UpdateSoftEnumPacket(pk) => pk,
+                V924::UpdateSubChunkBlocksPacket(pk) => pk,
+                V924::UpdateTradePacket(pk) => pk,
+                V924::VoxelShapesPacket(pk) => pk,
+                V924::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v924")]

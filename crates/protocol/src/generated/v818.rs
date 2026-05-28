@@ -7415,429 +7415,630 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V818::ActorEventPacket(pk) => pk.as_ref(),
-                V818::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V818::AddActorPacket(pk) => pk.as_ref(),
-                V818::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V818::AddItemActorPacket(pk) => pk.as_ref(),
-                V818::AddPaintingPacket(pk) => pk.as_ref(),
-                V818::AddPlayerPacket(pk) => pk.as_ref(),
-                V818::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V818::AgentActionEventPacket(pk) => pk.as_ref(),
-                V818::AgentAnimationPacket(pk) => pk.as_ref(),
-                V818::AnimateEntityPacket(pk) => pk.as_ref(),
-                V818::AnimatePacket(pk) => pk.as_ref(),
-                V818::AnvilDamagePacket(pk) => pk.as_ref(),
-                V818::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V818::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V818::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V818::AwardAchievementPacket(pk) => pk.as_ref(),
-                V818::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V818::BlockActorDataPacket(pk) => pk.as_ref(),
-                V818::BlockEventPacket(pk) => pk.as_ref(),
-                V818::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V818::BookEditPacket(pk) => pk.as_ref(),
-                V818::BossEventPacket(pk) => pk.as_ref(),
-                V818::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
-                V818::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V818::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V818::CameraInstructionPacket(pk) => pk.as_ref(),
-                V818::CameraPacket(pk) => pk.as_ref(),
-                V818::CameraPresetsPacket(pk) => pk.as_ref(),
-                V818::CameraShakePacket(pk) => pk.as_ref(),
-                V818::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V818::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V818::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V818::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V818::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
-                V818::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V818::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V818::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V818::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V818::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V818::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V818::CodeBuilderPacket(pk) => pk.as_ref(),
-                V818::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V818::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V818::CommandOutputPacket(pk) => pk.as_ref(),
-                V818::CommandRequestPacket(pk) => pk.as_ref(),
-                V818::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V818::ContainerClosePacket(pk) => pk.as_ref(),
-                V818::ContainerOpenPacket(pk) => pk.as_ref(),
-                V818::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V818::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V818::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V818::CraftingDataPacket(pk) => pk.as_ref(),
-                V818::CreatePhotoPacket(pk) => pk.as_ref(),
-                V818::CreativeContentPacket(pk) => pk.as_ref(),
-                V818::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V818::DeathInfoPacket(pk) => pk.as_ref(),
-                V818::DebugDrawerPacket(pk) => pk.as_ref(),
-                V818::DebugInfoPacket(pk) => pk.as_ref(),
-                V818::DimensionDataPacket(pk) => pk.as_ref(),
-                V818::DisconnectPacket(pk) => pk.as_ref(),
-                V818::EditorNetworkPacket(pk) => pk.as_ref(),
-                V818::EduUriResourcePacket(pk) => pk.as_ref(),
-                V818::EducationSettingsPacket(pk) => pk.as_ref(),
-                V818::EmoteListPacket(pk) => pk.as_ref(),
-                V818::EmotePacket(pk) => pk.as_ref(),
-                V818::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V818::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V818::GameTestRequestPacket(pk) => pk.as_ref(),
-                V818::GameTestResultsPacket(pk) => pk.as_ref(),
-                V818::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V818::HurtArmorPacket(pk) => pk.as_ref(),
-                V818::InteractPacket(pk) => pk.as_ref(),
-                V818::InventoryContentPacket(pk) => pk.as_ref(),
-                V818::InventorySlotPacket(pk) => pk.as_ref(),
-                V818::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V818::ItemComponentPacket(pk) => pk.as_ref(),
-                V818::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V818::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V818::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V818::LabTablePacket(pk) => pk.as_ref(),
-                V818::LecternUpdatePacket(pk) => pk.as_ref(),
-                V818::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V818::LessonProgressPacket(pk) => pk.as_ref(),
-                V818::LevelChunkPacket(pk) => pk.as_ref(),
-                V818::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V818::LevelEventPacket(pk) => pk.as_ref(),
-                V818::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V818::LoginPacket(pk) => pk.as_ref(),
-                V818::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V818::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V818::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V818::MobEffectPacket(pk) => pk.as_ref(),
-                V818::MobEquipmentPacket(pk) => pk.as_ref(),
-                V818::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V818::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V818::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V818::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V818::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V818::MovePlayerPacket(pk) => pk.as_ref(),
-                V818::MovementEffectPacket(pk) => pk.as_ref(),
-                V818::MovementPredictionSyncPacket(pk) => pk.as_ref(),
-                V818::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V818::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V818::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V818::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V818::NpcDialoguePacket(pk) => pk.as_ref(),
-                V818::NpcRequestPacket(pk) => pk.as_ref(),
-                V818::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V818::OpenSignPacket(pk) => pk.as_ref(),
-                V818::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V818::PhotoTransferPacket(pk) => pk.as_ref(),
-                V818::PlaySoundPacket(pk) => pk.as_ref(),
-                V818::PlayStatusPacket(pk) => pk.as_ref(),
-                V818::PlayerActionPacket(pk) => pk.as_ref(),
-                V818::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V818::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V818::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V818::PlayerFogPacket(pk) => pk.as_ref(),
-                V818::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V818::PlayerListPacket(pk) => pk.as_ref(),
-                V818::PlayerLocationPacket(pk) => pk.as_ref(),
-                V818::PlayerSkinPacket(pk) => pk.as_ref(),
-                V818::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V818::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V818::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
-                V818::PlayerVideoCapturePacket(pk) => pk.as_ref(),
-                V818::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V818::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V818::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V818::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V818::RemoveActorPacket(pk) => pk.as_ref(),
-                V818::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V818::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V818::RequestAbilityPacket(pk) => pk.as_ref(),
-                V818::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V818::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V818::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V818::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V818::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V818::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V818::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V818::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V818::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V818::RespawnPacket(pk) => pk.as_ref(),
-                V818::ScriptMessagePacket(pk) => pk.as_ref(),
-                V818::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V818::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V818::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V818::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V818::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V818::ServerStatsPacket(pk) => pk.as_ref(),
-                V818::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V818::SetActorDataPacket(pk) => pk.as_ref(),
-                V818::SetActorLinkPacket(pk) => pk.as_ref(),
-                V818::SetActorMotionPacket(pk) => pk.as_ref(),
-                V818::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V818::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V818::SetDifficultyPacket(pk) => pk.as_ref(),
-                V818::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V818::SetHealthPacket(pk) => pk.as_ref(),
-                V818::SetHudPacket(pk) => pk.as_ref(),
-                V818::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V818::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V818::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V818::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V818::SetScorePacket(pk) => pk.as_ref(),
-                V818::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V818::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V818::SetTimePacket(pk) => pk.as_ref(),
-                V818::SetTitlePacket(pk) => pk.as_ref(),
-                V818::SettingsCommandPacket(pk) => pk.as_ref(),
-                V818::ShowCreditsPacket(pk) => pk.as_ref(),
-                V818::ShowProfilePacket(pk) => pk.as_ref(),
-                V818::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V818::SimpleEventPacket(pk) => pk.as_ref(),
-                V818::SimulationTypePacket(pk) => pk.as_ref(),
-                V818::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V818::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V818::StartGamePacket(pk) => pk.as_ref(),
-                V818::StopSoundPacket(pk) => pk.as_ref(),
-                V818::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V818::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V818::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V818::SubChunkPacket(pk) => pk.as_ref(),
-                V818::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V818::SubClientLoginPacket(pk) => pk.as_ref(),
-                V818::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V818::TakeItemActorPacket(pk) => pk.as_ref(),
-                V818::TextPacket(pk) => pk.as_ref(),
-                V818::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V818::ToastRequestPacket(pk) => pk.as_ref(),
-                V818::TransferPlayerPacket(pk) => pk.as_ref(),
-                V818::TrimDataPacket(pk) => pk.as_ref(),
-                V818::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V818::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V818::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V818::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V818::UpdateBlockPacket(pk) => pk.as_ref(),
-                V818::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V818::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V818::UpdateClientOptionsPacket(pk) => pk.as_ref(),
-                V818::UpdateEquipPacket(pk) => pk.as_ref(),
-                V818::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V818::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V818::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V818::UpdateTradePacket(pk) => pk.as_ref(),
-                V818::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V818::ActorEventPacket(pk) => pk,
-                V818::ActorPickRequestPacket(pk) => pk,
-                V818::AddActorPacket(pk) => pk,
-                V818::AddBehaviourTreePacket(pk) => pk,
-                V818::AddItemActorPacket(pk) => pk,
-                V818::AddPaintingPacket(pk) => pk,
-                V818::AddPlayerPacket(pk) => pk,
-                V818::AddVolumeEntityPacket(pk) => pk,
-                V818::AgentActionEventPacket(pk) => pk,
-                V818::AgentAnimationPacket(pk) => pk,
-                V818::AnimateEntityPacket(pk) => pk,
-                V818::AnimatePacket(pk) => pk,
-                V818::AnvilDamagePacket(pk) => pk,
-                V818::AutomationClientConnectPacket(pk) => pk,
-                V818::AvailableActorIdentifiersPacket(pk) => pk,
-                V818::AvailableCommandsPacket(pk) => pk,
-                V818::AwardAchievementPacket(pk) => pk,
-                V818::BiomeDefinitionListPacket(pk) => pk,
-                V818::BlockActorDataPacket(pk) => pk,
-                V818::BlockEventPacket(pk) => pk,
-                V818::BlockPickRequestPacket(pk) => pk,
-                V818::BookEditPacket(pk) => pk,
-                V818::BossEventPacket(pk) => pk,
-                V818::CameraAimAssistInstructionPacket(pk) => pk,
-                V818::CameraAimAssistPacket(pk) => pk,
-                V818::CameraAimAssistPresetsPacket(pk) => pk,
-                V818::CameraInstructionPacket(pk) => pk,
-                V818::CameraPacket(pk) => pk,
-                V818::CameraPresetsPacket(pk) => pk,
-                V818::CameraShakePacket(pk) => pk,
-                V818::ChangeDimensionPacket(pk) => pk,
-                V818::ChangeMobPropertyPacket(pk) => pk,
-                V818::ChunkRadiusUpdatedPacket(pk) => pk,
-                V818::ClientBoundCloseFormPacket(pk) => pk,
-                V818::ClientBoundControlSchemeSetPacket(pk) => pk,
-                V818::ClientBoundDebugRendererPacket(pk) => pk,
-                V818::ClientBoundMapItemDataPacket(pk) => pk,
-                V818::ClientCacheBlobStatusPacket(pk) => pk,
-                V818::ClientCacheMissResponsePacket(pk) => pk,
-                V818::ClientCacheStatusPacket(pk) => pk,
-                V818::ClientToServerHandshakePacket(pk) => pk,
-                V818::CodeBuilderPacket(pk) => pk,
-                V818::CodeBuilderSourcePacket(pk) => pk,
-                V818::CommandBlockUpdatePacket(pk) => pk,
-                V818::CommandOutputPacket(pk) => pk,
-                V818::CommandRequestPacket(pk) => pk,
-                V818::CompletedUsingItemPacket(pk) => pk,
-                V818::ContainerClosePacket(pk) => pk,
-                V818::ContainerOpenPacket(pk) => pk,
-                V818::ContainerRegistryCleanupPacket(pk) => pk,
-                V818::ContainerSetDataPacket(pk) => pk,
-                V818::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V818::CraftingDataPacket(pk) => pk,
-                V818::CreatePhotoPacket(pk) => pk,
-                V818::CreativeContentPacket(pk) => pk,
-                V818::CurrentStructureFeaturePacket(pk) => pk,
-                V818::DeathInfoPacket(pk) => pk,
-                V818::DebugDrawerPacket(pk) => pk,
-                V818::DebugInfoPacket(pk) => pk,
-                V818::DimensionDataPacket(pk) => pk,
-                V818::DisconnectPacket(pk) => pk,
-                V818::EditorNetworkPacket(pk) => pk,
-                V818::EduUriResourcePacket(pk) => pk,
-                V818::EducationSettingsPacket(pk) => pk,
-                V818::EmoteListPacket(pk) => pk,
-                V818::EmotePacket(pk) => pk,
-                V818::FeatureRegistryPacket(pk) => pk,
-                V818::GameRulesChangedPacket(pk) => pk,
-                V818::GameTestRequestPacket(pk) => pk,
-                V818::GameTestResultsPacket(pk) => pk,
-                V818::GuiDataPickItemPacket(pk) => pk,
-                V818::HurtArmorPacket(pk) => pk,
-                V818::InteractPacket(pk) => pk,
-                V818::InventoryContentPacket(pk) => pk,
-                V818::InventorySlotPacket(pk) => pk,
-                V818::InventoryTransactionPacket(pk) => pk,
-                V818::ItemComponentPacket(pk) => pk,
-                V818::ItemStackRequestPacket(pk) => pk,
-                V818::ItemStackResponsePacket(pk) => pk,
-                V818::JigsawStructureDataPacket(pk) => pk,
-                V818::LabTablePacket(pk) => pk,
-                V818::LecternUpdatePacket(pk) => pk,
-                V818::LegacyTelemetryEventPacket(pk) => pk,
-                V818::LessonProgressPacket(pk) => pk,
-                V818::LevelChunkPacket(pk) => pk,
-                V818::LevelEventGenericPacket(pk) => pk,
-                V818::LevelEventPacket(pk) => pk,
-                V818::LevelSoundEventPacket(pk) => pk,
-                V818::LoginPacket(pk) => pk,
-                V818::MapCreateLockedCopyPacket(pk) => pk,
-                V818::MapInfoRequestPacket(pk) => pk,
-                V818::MobArmorEquipmentPacket(pk) => pk,
-                V818::MobEffectPacket(pk) => pk,
-                V818::MobEquipmentPacket(pk) => pk,
-                V818::ModalFormRequestPacket(pk) => pk,
-                V818::ModalFormResponsePacket(pk) => pk,
-                V818::MotionPredictionHintsPacket(pk) => pk,
-                V818::MoveActorAbsolutePacket(pk) => pk,
-                V818::MoveActorDeltaPacket(pk) => pk,
-                V818::MovePlayerPacket(pk) => pk,
-                V818::MovementEffectPacket(pk) => pk,
-                V818::MovementPredictionSyncPacket(pk) => pk,
-                V818::MultiplayerSettingsPacket(pk) => pk,
-                V818::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V818::NetworkSettingsPacket(pk) => pk,
-                V818::NetworkStackLatencyPacket(pk) => pk,
-                V818::NpcDialoguePacket(pk) => pk,
-                V818::NpcRequestPacket(pk) => pk,
-                V818::OnScreenTextureAnimationPacket(pk) => pk,
-                V818::OpenSignPacket(pk) => pk,
-                V818::PacketViolationWarningPacket(pk) => pk,
-                V818::PhotoTransferPacket(pk) => pk,
-                V818::PlaySoundPacket(pk) => pk,
-                V818::PlayStatusPacket(pk) => pk,
-                V818::PlayerActionPacket(pk) => pk,
-                V818::PlayerArmorDamagePacket(pk) => pk,
-                V818::PlayerAuthInputPacket(pk) => pk,
-                V818::PlayerEnchantOptionsPacket(pk) => pk,
-                V818::PlayerFogPacket(pk) => pk,
-                V818::PlayerHotbarPacket(pk) => pk,
-                V818::PlayerListPacket(pk) => pk,
-                V818::PlayerLocationPacket(pk) => pk,
-                V818::PlayerSkinPacket(pk) => pk,
-                V818::PlayerStartItemCooldownPacket(pk) => pk,
-                V818::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V818::PlayerUpdateEntityOverridesPacket(pk) => pk,
-                V818::PlayerVideoCapturePacket(pk) => pk,
-                V818::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V818::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V818::PurchaseReceiptPacket(pk) => pk,
-                V818::RefreshEntitlementsPacket(pk) => pk,
-                V818::RemoveActorPacket(pk) => pk,
-                V818::RemoveObjectivePacket(pk) => pk,
-                V818::RemoveVolumeEntityPacket(pk) => pk,
-                V818::RequestAbilityPacket(pk) => pk,
-                V818::RequestChunkRadiusPacket(pk) => pk,
-                V818::RequestNetworkSettingsPacket(pk) => pk,
-                V818::RequestPermissionsPacket(pk) => pk,
-                V818::ResourcePackChunkDataPacket(pk) => pk,
-                V818::ResourcePackChunkRequestPacket(pk) => pk,
-                V818::ResourcePackClientResponsePacket(pk) => pk,
-                V818::ResourcePackDataInfoPacket(pk) => pk,
-                V818::ResourcePackStackPacket(pk) => pk,
-                V818::ResourcePacksInfoPacket(pk) => pk,
-                V818::RespawnPacket(pk) => pk,
-                V818::ScriptMessagePacket(pk) => pk,
-                V818::ServerBoundDiagnosticsPacket(pk) => pk,
-                V818::ServerBoundLoadingScreenPacket(pk) => pk,
-                V818::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V818::ServerSettingsRequestPacket(pk) => pk,
-                V818::ServerSettingsResponsePacket(pk) => pk,
-                V818::ServerStatsPacket(pk) => pk,
-                V818::ServerToClientHandshakePacket(pk) => pk,
-                V818::SetActorDataPacket(pk) => pk,
-                V818::SetActorLinkPacket(pk) => pk,
-                V818::SetActorMotionPacket(pk) => pk,
-                V818::SetCommandsEnabledPacket(pk) => pk,
-                V818::SetDefaultGameTypePacket(pk) => pk,
-                V818::SetDifficultyPacket(pk) => pk,
-                V818::SetDisplayObjectivePacket(pk) => pk,
-                V818::SetHealthPacket(pk) => pk,
-                V818::SetHudPacket(pk) => pk,
-                V818::SetLastHurtByPacket(pk) => pk,
-                V818::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V818::SetPlayerGameTypePacket(pk) => pk,
-                V818::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V818::SetScorePacket(pk) => pk,
-                V818::SetScoreboardIdentityPacket(pk) => pk,
-                V818::SetSpawnPositionPacket(pk) => pk,
-                V818::SetTimePacket(pk) => pk,
-                V818::SetTitlePacket(pk) => pk,
-                V818::SettingsCommandPacket(pk) => pk,
-                V818::ShowCreditsPacket(pk) => pk,
-                V818::ShowProfilePacket(pk) => pk,
-                V818::ShowStoreOfferPacket(pk) => pk,
-                V818::SimpleEventPacket(pk) => pk,
-                V818::SimulationTypePacket(pk) => pk,
-                V818::SpawnExperienceOrbPacket(pk) => pk,
-                V818::SpawnParticleEffectPacket(pk) => pk,
-                V818::StartGamePacket(pk) => pk,
-                V818::StopSoundPacket(pk) => pk,
-                V818::StructureBlockUpdatePacket(pk) => pk,
-                V818::StructureDataRequestPacket(pk) => pk,
-                V818::StructureDataResponsePacket(pk) => pk,
-                V818::SubChunkPacket(pk) => pk,
-                V818::SubChunkRequestPacket(pk) => pk,
-                V818::SubClientLoginPacket(pk) => pk,
-                V818::SyncActorPropertyPacket(pk) => pk,
-                V818::TakeItemActorPacket(pk) => pk,
-                V818::TextPacket(pk) => pk,
-                V818::TickingAreaLoadStatusPacket(pk) => pk,
-                V818::ToastRequestPacket(pk) => pk,
-                V818::TransferPlayerPacket(pk) => pk,
-                V818::TrimDataPacket(pk) => pk,
-                V818::UnlockedRecipesPacket(pk) => pk,
-                V818::UpdateAbilitiesPacket(pk) => pk,
-                V818::UpdateAdventureSettingsPacket(pk) => pk,
-                V818::UpdateAttributesPacket(pk) => pk,
-                V818::UpdateBlockPacket(pk) => pk,
-                V818::UpdateBlockSyncedPacket(pk) => pk,
-                V818::UpdateClientInputLocksPacket(pk) => pk,
-                V818::UpdateClientOptionsPacket(pk) => pk,
-                V818::UpdateEquipPacket(pk) => pk,
-                V818::UpdatePlayerGameTypePacket(pk) => pk,
-                V818::UpdateSoftEnumPacket(pk) => pk,
-                V818::UpdateSubChunkBlocksPacket(pk) => pk,
-                V818::UpdateTradePacket(pk) => pk,
-                V818::Unknown(pk) => pk,
+                V818::ActorEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ActorPickRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AddActorPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AddBehaviourTreePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AddItemActorPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AddPaintingPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AddPlayerPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AddVolumeEntityPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AgentActionEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AgentAnimationPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AnimateEntityPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AnimatePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AnvilDamagePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AutomationClientConnectPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AvailableActorIdentifiersPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AvailableCommandsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::AwardAchievementPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::BiomeDefinitionListPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::BlockActorDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::BlockEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::BlockPickRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::BookEditPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::BossEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraAimAssistInstructionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraAimAssistPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraAimAssistPresetsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraInstructionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraPresetsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CameraShakePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ChangeDimensionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ChangeMobPropertyPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ChunkRadiusUpdatedPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientBoundCloseFormPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientBoundControlSchemeSetPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientBoundDebugRendererPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientBoundMapItemDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientCacheBlobStatusPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientCacheMissResponsePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientCacheStatusPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ClientToServerHandshakePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CodeBuilderPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CodeBuilderSourcePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CommandBlockUpdatePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CommandOutputPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CommandRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CompletedUsingItemPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ContainerClosePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ContainerOpenPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ContainerRegistryCleanupPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ContainerSetDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CraftingDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CreatePhotoPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CreativeContentPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::CurrentStructureFeaturePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::DeathInfoPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::DebugDrawerPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::DebugDrawerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::DebugInfoPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::DimensionDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::DisconnectPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::EditorNetworkPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::EduUriResourcePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::EducationSettingsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::EmoteListPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::EmotePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::FeatureRegistryPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::GameRulesChangedPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::GameTestRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::GameTestResultsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::GuiDataPickItemPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::HurtArmorPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::InteractPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::InventoryContentPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::InventorySlotPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::InventoryTransactionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ItemComponentPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ItemStackRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ItemStackResponsePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::JigsawStructureDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LabTablePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LecternUpdatePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LegacyTelemetryEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LessonProgressPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LevelChunkPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LevelEventGenericPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LevelEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LevelSoundEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::LoginPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MapCreateLockedCopyPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MapInfoRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MobArmorEquipmentPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MobEffectPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MobEquipmentPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ModalFormRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ModalFormResponsePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MotionPredictionHintsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MoveActorAbsolutePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MoveActorDeltaPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MovePlayerPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MovementEffectPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MovementPredictionSyncPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::MultiplayerSettingsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::NetworkSettingsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::NetworkStackLatencyPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::NpcDialoguePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::NpcRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::OnScreenTextureAnimationPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::OpenSignPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PacketViolationWarningPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PhotoTransferPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlaySoundPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayStatusPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerActionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerArmorDamagePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerAuthInputPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerEnchantOptionsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerFogPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerHotbarPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerListPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerLocationPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerSkinPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerStartItemCooldownPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerUpdateEntityOverridesPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PlayerVideoCapturePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::PurchaseReceiptPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RefreshEntitlementsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RemoveActorPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RemoveObjectivePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RemoveVolumeEntityPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RequestAbilityPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RequestChunkRadiusPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RequestNetworkSettingsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RequestPermissionsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ResourcePackChunkDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ResourcePackChunkRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ResourcePackClientResponsePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ResourcePackDataInfoPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ResourcePackStackPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ResourcePacksInfoPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::RespawnPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ScriptMessagePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerBoundDiagnosticsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerBoundLoadingScreenPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerSettingsRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerSettingsResponsePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerStatsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ServerToClientHandshakePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetActorDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetActorLinkPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetActorMotionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetCommandsEnabledPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetDefaultGameTypePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetDifficultyPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetDisplayObjectivePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetHealthPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetHudPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetLastHurtByPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetPlayerGameTypePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetScorePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetScoreboardIdentityPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetSpawnPositionPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetTimePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SetTitlePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SettingsCommandPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ShowCreditsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ShowProfilePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ShowStoreOfferPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SimpleEventPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SimulationTypePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SpawnExperienceOrbPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SpawnParticleEffectPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::StartGamePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::StopSoundPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::StructureBlockUpdatePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::StructureDataRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::StructureDataResponsePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SubChunkPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SubChunkRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SubClientLoginPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::SyncActorPropertyPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::TakeItemActorPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::TextPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::TickingAreaLoadStatusPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::ToastRequestPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::TransferPlayerPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::TrimDataPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UnlockedRecipesPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateAbilitiesPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateAdventureSettingsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateAttributesPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateBlockPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateBlockSyncedPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateClientInputLocksPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateClientOptionsPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateEquipPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdatePlayerGameTypePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateSoftEnumPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateSubChunkBlocksPacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::UpdateTradePacket(_) => {
+                    <<V818 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V818::Unknown(pk) => pk.id,
             }
         }
     }
@@ -8369,6 +8570,436 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u9";
         const GAME_VERSION: &str = "1.21.90";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V818 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V818::ActorEventPacket(pk) => pk.as_ref(),
+                V818::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V818::AddActorPacket(pk) => pk.as_ref(),
+                V818::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V818::AddItemActorPacket(pk) => pk.as_ref(),
+                V818::AddPaintingPacket(pk) => pk.as_ref(),
+                V818::AddPlayerPacket(pk) => pk.as_ref(),
+                V818::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V818::AgentActionEventPacket(pk) => pk.as_ref(),
+                V818::AgentAnimationPacket(pk) => pk.as_ref(),
+                V818::AnimateEntityPacket(pk) => pk.as_ref(),
+                V818::AnimatePacket(pk) => pk.as_ref(),
+                V818::AnvilDamagePacket(pk) => pk.as_ref(),
+                V818::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V818::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V818::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V818::AwardAchievementPacket(pk) => pk.as_ref(),
+                V818::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V818::BlockActorDataPacket(pk) => pk.as_ref(),
+                V818::BlockEventPacket(pk) => pk.as_ref(),
+                V818::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V818::BookEditPacket(pk) => pk.as_ref(),
+                V818::BossEventPacket(pk) => pk.as_ref(),
+                V818::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
+                V818::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V818::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V818::CameraInstructionPacket(pk) => pk.as_ref(),
+                V818::CameraPacket(pk) => pk.as_ref(),
+                V818::CameraPresetsPacket(pk) => pk.as_ref(),
+                V818::CameraShakePacket(pk) => pk.as_ref(),
+                V818::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V818::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V818::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V818::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V818::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
+                V818::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V818::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V818::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V818::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V818::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V818::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V818::CodeBuilderPacket(pk) => pk.as_ref(),
+                V818::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V818::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V818::CommandOutputPacket(pk) => pk.as_ref(),
+                V818::CommandRequestPacket(pk) => pk.as_ref(),
+                V818::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V818::ContainerClosePacket(pk) => pk.as_ref(),
+                V818::ContainerOpenPacket(pk) => pk.as_ref(),
+                V818::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V818::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V818::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V818::CraftingDataPacket(pk) => pk.as_ref(),
+                V818::CreatePhotoPacket(pk) => pk.as_ref(),
+                V818::CreativeContentPacket(pk) => pk.as_ref(),
+                V818::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V818::DeathInfoPacket(pk) => pk.as_ref(),
+                V818::DebugDrawerPacket(pk) => pk.as_ref(),
+                V818::DebugInfoPacket(pk) => pk.as_ref(),
+                V818::DimensionDataPacket(pk) => pk.as_ref(),
+                V818::DisconnectPacket(pk) => pk.as_ref(),
+                V818::EditorNetworkPacket(pk) => pk.as_ref(),
+                V818::EduUriResourcePacket(pk) => pk.as_ref(),
+                V818::EducationSettingsPacket(pk) => pk.as_ref(),
+                V818::EmoteListPacket(pk) => pk.as_ref(),
+                V818::EmotePacket(pk) => pk.as_ref(),
+                V818::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V818::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V818::GameTestRequestPacket(pk) => pk.as_ref(),
+                V818::GameTestResultsPacket(pk) => pk.as_ref(),
+                V818::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V818::HurtArmorPacket(pk) => pk.as_ref(),
+                V818::InteractPacket(pk) => pk.as_ref(),
+                V818::InventoryContentPacket(pk) => pk.as_ref(),
+                V818::InventorySlotPacket(pk) => pk.as_ref(),
+                V818::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V818::ItemComponentPacket(pk) => pk.as_ref(),
+                V818::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V818::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V818::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V818::LabTablePacket(pk) => pk.as_ref(),
+                V818::LecternUpdatePacket(pk) => pk.as_ref(),
+                V818::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V818::LessonProgressPacket(pk) => pk.as_ref(),
+                V818::LevelChunkPacket(pk) => pk.as_ref(),
+                V818::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V818::LevelEventPacket(pk) => pk.as_ref(),
+                V818::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V818::LoginPacket(pk) => pk.as_ref(),
+                V818::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V818::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V818::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V818::MobEffectPacket(pk) => pk.as_ref(),
+                V818::MobEquipmentPacket(pk) => pk.as_ref(),
+                V818::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V818::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V818::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V818::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V818::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V818::MovePlayerPacket(pk) => pk.as_ref(),
+                V818::MovementEffectPacket(pk) => pk.as_ref(),
+                V818::MovementPredictionSyncPacket(pk) => pk.as_ref(),
+                V818::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V818::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V818::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V818::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V818::NpcDialoguePacket(pk) => pk.as_ref(),
+                V818::NpcRequestPacket(pk) => pk.as_ref(),
+                V818::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V818::OpenSignPacket(pk) => pk.as_ref(),
+                V818::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V818::PhotoTransferPacket(pk) => pk.as_ref(),
+                V818::PlaySoundPacket(pk) => pk.as_ref(),
+                V818::PlayStatusPacket(pk) => pk.as_ref(),
+                V818::PlayerActionPacket(pk) => pk.as_ref(),
+                V818::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V818::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V818::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V818::PlayerFogPacket(pk) => pk.as_ref(),
+                V818::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V818::PlayerListPacket(pk) => pk.as_ref(),
+                V818::PlayerLocationPacket(pk) => pk.as_ref(),
+                V818::PlayerSkinPacket(pk) => pk.as_ref(),
+                V818::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V818::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V818::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
+                V818::PlayerVideoCapturePacket(pk) => pk.as_ref(),
+                V818::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V818::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V818::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V818::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V818::RemoveActorPacket(pk) => pk.as_ref(),
+                V818::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V818::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V818::RequestAbilityPacket(pk) => pk.as_ref(),
+                V818::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V818::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V818::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V818::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V818::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V818::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V818::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V818::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V818::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V818::RespawnPacket(pk) => pk.as_ref(),
+                V818::ScriptMessagePacket(pk) => pk.as_ref(),
+                V818::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V818::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V818::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V818::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V818::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V818::ServerStatsPacket(pk) => pk.as_ref(),
+                V818::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V818::SetActorDataPacket(pk) => pk.as_ref(),
+                V818::SetActorLinkPacket(pk) => pk.as_ref(),
+                V818::SetActorMotionPacket(pk) => pk.as_ref(),
+                V818::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V818::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V818::SetDifficultyPacket(pk) => pk.as_ref(),
+                V818::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V818::SetHealthPacket(pk) => pk.as_ref(),
+                V818::SetHudPacket(pk) => pk.as_ref(),
+                V818::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V818::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V818::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V818::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V818::SetScorePacket(pk) => pk.as_ref(),
+                V818::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V818::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V818::SetTimePacket(pk) => pk.as_ref(),
+                V818::SetTitlePacket(pk) => pk.as_ref(),
+                V818::SettingsCommandPacket(pk) => pk.as_ref(),
+                V818::ShowCreditsPacket(pk) => pk.as_ref(),
+                V818::ShowProfilePacket(pk) => pk.as_ref(),
+                V818::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V818::SimpleEventPacket(pk) => pk.as_ref(),
+                V818::SimulationTypePacket(pk) => pk.as_ref(),
+                V818::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V818::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V818::StartGamePacket(pk) => pk.as_ref(),
+                V818::StopSoundPacket(pk) => pk.as_ref(),
+                V818::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V818::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V818::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V818::SubChunkPacket(pk) => pk.as_ref(),
+                V818::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V818::SubClientLoginPacket(pk) => pk.as_ref(),
+                V818::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V818::TakeItemActorPacket(pk) => pk.as_ref(),
+                V818::TextPacket(pk) => pk.as_ref(),
+                V818::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V818::ToastRequestPacket(pk) => pk.as_ref(),
+                V818::TransferPlayerPacket(pk) => pk.as_ref(),
+                V818::TrimDataPacket(pk) => pk.as_ref(),
+                V818::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V818::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V818::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V818::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V818::UpdateBlockPacket(pk) => pk.as_ref(),
+                V818::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V818::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V818::UpdateClientOptionsPacket(pk) => pk.as_ref(),
+                V818::UpdateEquipPacket(pk) => pk.as_ref(),
+                V818::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V818::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V818::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V818::UpdateTradePacket(pk) => pk.as_ref(),
+                V818::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V818> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V818) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V818::ActorEventPacket(pk) => pk,
+                V818::ActorPickRequestPacket(pk) => pk,
+                V818::AddActorPacket(pk) => pk,
+                V818::AddBehaviourTreePacket(pk) => pk,
+                V818::AddItemActorPacket(pk) => pk,
+                V818::AddPaintingPacket(pk) => pk,
+                V818::AddPlayerPacket(pk) => pk,
+                V818::AddVolumeEntityPacket(pk) => pk,
+                V818::AgentActionEventPacket(pk) => pk,
+                V818::AgentAnimationPacket(pk) => pk,
+                V818::AnimateEntityPacket(pk) => pk,
+                V818::AnimatePacket(pk) => pk,
+                V818::AnvilDamagePacket(pk) => pk,
+                V818::AutomationClientConnectPacket(pk) => pk,
+                V818::AvailableActorIdentifiersPacket(pk) => pk,
+                V818::AvailableCommandsPacket(pk) => pk,
+                V818::AwardAchievementPacket(pk) => pk,
+                V818::BiomeDefinitionListPacket(pk) => pk,
+                V818::BlockActorDataPacket(pk) => pk,
+                V818::BlockEventPacket(pk) => pk,
+                V818::BlockPickRequestPacket(pk) => pk,
+                V818::BookEditPacket(pk) => pk,
+                V818::BossEventPacket(pk) => pk,
+                V818::CameraAimAssistInstructionPacket(pk) => pk,
+                V818::CameraAimAssistPacket(pk) => pk,
+                V818::CameraAimAssistPresetsPacket(pk) => pk,
+                V818::CameraInstructionPacket(pk) => pk,
+                V818::CameraPacket(pk) => pk,
+                V818::CameraPresetsPacket(pk) => pk,
+                V818::CameraShakePacket(pk) => pk,
+                V818::ChangeDimensionPacket(pk) => pk,
+                V818::ChangeMobPropertyPacket(pk) => pk,
+                V818::ChunkRadiusUpdatedPacket(pk) => pk,
+                V818::ClientBoundCloseFormPacket(pk) => pk,
+                V818::ClientBoundControlSchemeSetPacket(pk) => pk,
+                V818::ClientBoundDebugRendererPacket(pk) => pk,
+                V818::ClientBoundMapItemDataPacket(pk) => pk,
+                V818::ClientCacheBlobStatusPacket(pk) => pk,
+                V818::ClientCacheMissResponsePacket(pk) => pk,
+                V818::ClientCacheStatusPacket(pk) => pk,
+                V818::ClientToServerHandshakePacket(pk) => pk,
+                V818::CodeBuilderPacket(pk) => pk,
+                V818::CodeBuilderSourcePacket(pk) => pk,
+                V818::CommandBlockUpdatePacket(pk) => pk,
+                V818::CommandOutputPacket(pk) => pk,
+                V818::CommandRequestPacket(pk) => pk,
+                V818::CompletedUsingItemPacket(pk) => pk,
+                V818::ContainerClosePacket(pk) => pk,
+                V818::ContainerOpenPacket(pk) => pk,
+                V818::ContainerRegistryCleanupPacket(pk) => pk,
+                V818::ContainerSetDataPacket(pk) => pk,
+                V818::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V818::CraftingDataPacket(pk) => pk,
+                V818::CreatePhotoPacket(pk) => pk,
+                V818::CreativeContentPacket(pk) => pk,
+                V818::CurrentStructureFeaturePacket(pk) => pk,
+                V818::DeathInfoPacket(pk) => pk,
+                V818::DebugDrawerPacket(pk) => pk,
+                V818::DebugInfoPacket(pk) => pk,
+                V818::DimensionDataPacket(pk) => pk,
+                V818::DisconnectPacket(pk) => pk,
+                V818::EditorNetworkPacket(pk) => pk,
+                V818::EduUriResourcePacket(pk) => pk,
+                V818::EducationSettingsPacket(pk) => pk,
+                V818::EmoteListPacket(pk) => pk,
+                V818::EmotePacket(pk) => pk,
+                V818::FeatureRegistryPacket(pk) => pk,
+                V818::GameRulesChangedPacket(pk) => pk,
+                V818::GameTestRequestPacket(pk) => pk,
+                V818::GameTestResultsPacket(pk) => pk,
+                V818::GuiDataPickItemPacket(pk) => pk,
+                V818::HurtArmorPacket(pk) => pk,
+                V818::InteractPacket(pk) => pk,
+                V818::InventoryContentPacket(pk) => pk,
+                V818::InventorySlotPacket(pk) => pk,
+                V818::InventoryTransactionPacket(pk) => pk,
+                V818::ItemComponentPacket(pk) => pk,
+                V818::ItemStackRequestPacket(pk) => pk,
+                V818::ItemStackResponsePacket(pk) => pk,
+                V818::JigsawStructureDataPacket(pk) => pk,
+                V818::LabTablePacket(pk) => pk,
+                V818::LecternUpdatePacket(pk) => pk,
+                V818::LegacyTelemetryEventPacket(pk) => pk,
+                V818::LessonProgressPacket(pk) => pk,
+                V818::LevelChunkPacket(pk) => pk,
+                V818::LevelEventGenericPacket(pk) => pk,
+                V818::LevelEventPacket(pk) => pk,
+                V818::LevelSoundEventPacket(pk) => pk,
+                V818::LoginPacket(pk) => pk,
+                V818::MapCreateLockedCopyPacket(pk) => pk,
+                V818::MapInfoRequestPacket(pk) => pk,
+                V818::MobArmorEquipmentPacket(pk) => pk,
+                V818::MobEffectPacket(pk) => pk,
+                V818::MobEquipmentPacket(pk) => pk,
+                V818::ModalFormRequestPacket(pk) => pk,
+                V818::ModalFormResponsePacket(pk) => pk,
+                V818::MotionPredictionHintsPacket(pk) => pk,
+                V818::MoveActorAbsolutePacket(pk) => pk,
+                V818::MoveActorDeltaPacket(pk) => pk,
+                V818::MovePlayerPacket(pk) => pk,
+                V818::MovementEffectPacket(pk) => pk,
+                V818::MovementPredictionSyncPacket(pk) => pk,
+                V818::MultiplayerSettingsPacket(pk) => pk,
+                V818::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V818::NetworkSettingsPacket(pk) => pk,
+                V818::NetworkStackLatencyPacket(pk) => pk,
+                V818::NpcDialoguePacket(pk) => pk,
+                V818::NpcRequestPacket(pk) => pk,
+                V818::OnScreenTextureAnimationPacket(pk) => pk,
+                V818::OpenSignPacket(pk) => pk,
+                V818::PacketViolationWarningPacket(pk) => pk,
+                V818::PhotoTransferPacket(pk) => pk,
+                V818::PlaySoundPacket(pk) => pk,
+                V818::PlayStatusPacket(pk) => pk,
+                V818::PlayerActionPacket(pk) => pk,
+                V818::PlayerArmorDamagePacket(pk) => pk,
+                V818::PlayerAuthInputPacket(pk) => pk,
+                V818::PlayerEnchantOptionsPacket(pk) => pk,
+                V818::PlayerFogPacket(pk) => pk,
+                V818::PlayerHotbarPacket(pk) => pk,
+                V818::PlayerListPacket(pk) => pk,
+                V818::PlayerLocationPacket(pk) => pk,
+                V818::PlayerSkinPacket(pk) => pk,
+                V818::PlayerStartItemCooldownPacket(pk) => pk,
+                V818::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V818::PlayerUpdateEntityOverridesPacket(pk) => pk,
+                V818::PlayerVideoCapturePacket(pk) => pk,
+                V818::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V818::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V818::PurchaseReceiptPacket(pk) => pk,
+                V818::RefreshEntitlementsPacket(pk) => pk,
+                V818::RemoveActorPacket(pk) => pk,
+                V818::RemoveObjectivePacket(pk) => pk,
+                V818::RemoveVolumeEntityPacket(pk) => pk,
+                V818::RequestAbilityPacket(pk) => pk,
+                V818::RequestChunkRadiusPacket(pk) => pk,
+                V818::RequestNetworkSettingsPacket(pk) => pk,
+                V818::RequestPermissionsPacket(pk) => pk,
+                V818::ResourcePackChunkDataPacket(pk) => pk,
+                V818::ResourcePackChunkRequestPacket(pk) => pk,
+                V818::ResourcePackClientResponsePacket(pk) => pk,
+                V818::ResourcePackDataInfoPacket(pk) => pk,
+                V818::ResourcePackStackPacket(pk) => pk,
+                V818::ResourcePacksInfoPacket(pk) => pk,
+                V818::RespawnPacket(pk) => pk,
+                V818::ScriptMessagePacket(pk) => pk,
+                V818::ServerBoundDiagnosticsPacket(pk) => pk,
+                V818::ServerBoundLoadingScreenPacket(pk) => pk,
+                V818::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V818::ServerSettingsRequestPacket(pk) => pk,
+                V818::ServerSettingsResponsePacket(pk) => pk,
+                V818::ServerStatsPacket(pk) => pk,
+                V818::ServerToClientHandshakePacket(pk) => pk,
+                V818::SetActorDataPacket(pk) => pk,
+                V818::SetActorLinkPacket(pk) => pk,
+                V818::SetActorMotionPacket(pk) => pk,
+                V818::SetCommandsEnabledPacket(pk) => pk,
+                V818::SetDefaultGameTypePacket(pk) => pk,
+                V818::SetDifficultyPacket(pk) => pk,
+                V818::SetDisplayObjectivePacket(pk) => pk,
+                V818::SetHealthPacket(pk) => pk,
+                V818::SetHudPacket(pk) => pk,
+                V818::SetLastHurtByPacket(pk) => pk,
+                V818::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V818::SetPlayerGameTypePacket(pk) => pk,
+                V818::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V818::SetScorePacket(pk) => pk,
+                V818::SetScoreboardIdentityPacket(pk) => pk,
+                V818::SetSpawnPositionPacket(pk) => pk,
+                V818::SetTimePacket(pk) => pk,
+                V818::SetTitlePacket(pk) => pk,
+                V818::SettingsCommandPacket(pk) => pk,
+                V818::ShowCreditsPacket(pk) => pk,
+                V818::ShowProfilePacket(pk) => pk,
+                V818::ShowStoreOfferPacket(pk) => pk,
+                V818::SimpleEventPacket(pk) => pk,
+                V818::SimulationTypePacket(pk) => pk,
+                V818::SpawnExperienceOrbPacket(pk) => pk,
+                V818::SpawnParticleEffectPacket(pk) => pk,
+                V818::StartGamePacket(pk) => pk,
+                V818::StopSoundPacket(pk) => pk,
+                V818::StructureBlockUpdatePacket(pk) => pk,
+                V818::StructureDataRequestPacket(pk) => pk,
+                V818::StructureDataResponsePacket(pk) => pk,
+                V818::SubChunkPacket(pk) => pk,
+                V818::SubChunkRequestPacket(pk) => pk,
+                V818::SubClientLoginPacket(pk) => pk,
+                V818::SyncActorPropertyPacket(pk) => pk,
+                V818::TakeItemActorPacket(pk) => pk,
+                V818::TextPacket(pk) => pk,
+                V818::TickingAreaLoadStatusPacket(pk) => pk,
+                V818::ToastRequestPacket(pk) => pk,
+                V818::TransferPlayerPacket(pk) => pk,
+                V818::TrimDataPacket(pk) => pk,
+                V818::UnlockedRecipesPacket(pk) => pk,
+                V818::UpdateAbilitiesPacket(pk) => pk,
+                V818::UpdateAdventureSettingsPacket(pk) => pk,
+                V818::UpdateAttributesPacket(pk) => pk,
+                V818::UpdateBlockPacket(pk) => pk,
+                V818::UpdateBlockSyncedPacket(pk) => pk,
+                V818::UpdateClientInputLocksPacket(pk) => pk,
+                V818::UpdateClientOptionsPacket(pk) => pk,
+                V818::UpdateEquipPacket(pk) => pk,
+                V818::UpdatePlayerGameTypePacket(pk) => pk,
+                V818::UpdateSoftEnumPacket(pk) => pk,
+                V818::UpdateSubChunkBlocksPacket(pk) => pk,
+                V818::UpdateTradePacket(pk) => pk,
+                V818::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v818")]

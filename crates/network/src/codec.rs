@@ -37,7 +37,7 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError
         .iter()
         .map(|p| {
             let packet_size = p.size_hint(&PacketHeader {
-                packet_id: p.inner().id(),
+                packet_id: p.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
             });
@@ -52,7 +52,7 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError
         .iter()
         .try_for_each(|packet| -> Result<(), NetworkCodecError> {
             let header = PacketHeader {
-                packet_id: packet.inner().id(),
+                packet_id: packet.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
             };

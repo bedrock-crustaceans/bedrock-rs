@@ -6983,405 +6983,594 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V671::ActorEventPacket(pk) => pk.as_ref(),
-                V671::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V671::AddActorPacket(pk) => pk.as_ref(),
-                V671::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V671::AddItemActorPacket(pk) => pk.as_ref(),
-                V671::AddPaintingPacket(pk) => pk.as_ref(),
-                V671::AddPlayerPacket(pk) => pk.as_ref(),
-                V671::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V671::AgentActionEventPacket(pk) => pk.as_ref(),
-                V671::AgentAnimationPacket(pk) => pk.as_ref(),
-                V671::AnimateEntityPacket(pk) => pk.as_ref(),
-                V671::AnimatePacket(pk) => pk.as_ref(),
-                V671::AnvilDamagePacket(pk) => pk.as_ref(),
-                V671::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V671::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V671::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V671::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V671::BlockActorDataPacket(pk) => pk.as_ref(),
-                V671::BlockEventPacket(pk) => pk.as_ref(),
-                V671::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V671::BookEditPacket(pk) => pk.as_ref(),
-                V671::BossEventPacket(pk) => pk.as_ref(),
-                V671::CameraInstructionPacket(pk) => pk.as_ref(),
-                V671::CameraPacket(pk) => pk.as_ref(),
-                V671::CameraPresetsPacket(pk) => pk.as_ref(),
-                V671::CameraShakePacket(pk) => pk.as_ref(),
-                V671::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V671::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V671::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V671::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V671::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V671::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V671::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V671::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V671::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V671::CodeBuilderPacket(pk) => pk.as_ref(),
-                V671::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V671::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V671::CommandOutputPacket(pk) => pk.as_ref(),
-                V671::CommandRequestPacket(pk) => pk.as_ref(),
-                V671::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V671::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V671::ContainerClosePacket(pk) => pk.as_ref(),
-                V671::ContainerOpenPacket(pk) => pk.as_ref(),
-                V671::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V671::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V671::CraftingDataPacket(pk) => pk.as_ref(),
-                V671::CreatePhotoPacket(pk) => pk.as_ref(),
-                V671::CreativeContentPacket(pk) => pk.as_ref(),
-                V671::DeathInfoPacket(pk) => pk.as_ref(),
-                V671::DebugInfoPacket(pk) => pk.as_ref(),
-                V671::DimensionDataPacket(pk) => pk.as_ref(),
-                V671::DisconnectPacket(pk) => pk.as_ref(),
-                V671::EditorNetworkPacket(pk) => pk.as_ref(),
-                V671::EduUriResourcePacket(pk) => pk.as_ref(),
-                V671::EducationSettingsPacket(pk) => pk.as_ref(),
-                V671::EmoteListPacket(pk) => pk.as_ref(),
-                V671::EmotePacket(pk) => pk.as_ref(),
-                V671::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V671::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V671::GameTestRequestPacket(pk) => pk.as_ref(),
-                V671::GameTestResultsPacket(pk) => pk.as_ref(),
-                V671::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V671::HurtArmorPacket(pk) => pk.as_ref(),
-                V671::InteractPacket(pk) => pk.as_ref(),
-                V671::InventoryContentPacket(pk) => pk.as_ref(),
-                V671::InventorySlotPacket(pk) => pk.as_ref(),
-                V671::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V671::ItemComponentPacket(pk) => pk.as_ref(),
-                V671::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V671::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V671::LabTablePacket(pk) => pk.as_ref(),
-                V671::LecternUpdatePacket(pk) => pk.as_ref(),
-                V671::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V671::LessonProgressPacket(pk) => pk.as_ref(),
-                V671::LevelChunkPacket(pk) => pk.as_ref(),
-                V671::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V671::LevelEventPacket(pk) => pk.as_ref(),
-                V671::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V671::LevelSoundEventV1Packet(pk) => pk.as_ref(),
-                V671::LevelSoundEventV2Packet(pk) => pk.as_ref(),
-                V671::LoginPacket(pk) => pk.as_ref(),
-                V671::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V671::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V671::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V671::MobEffectPacket(pk) => pk.as_ref(),
-                V671::MobEquipmentPacket(pk) => pk.as_ref(),
-                V671::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V671::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V671::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V671::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V671::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V671::MovePlayerPacket(pk) => pk.as_ref(),
-                V671::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V671::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V671::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V671::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V671::NpcDialoguePacket(pk) => pk.as_ref(),
-                V671::NpcRequestPacket(pk) => pk.as_ref(),
-                V671::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V671::OpenSignPacket(pk) => pk.as_ref(),
-                V671::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V671::PassengerJumpPacket(pk) => pk.as_ref(),
-                V671::PhotoTransferPacket(pk) => pk.as_ref(),
-                V671::PlaySoundPacket(pk) => pk.as_ref(),
-                V671::PlayStatusPacket(pk) => pk.as_ref(),
-                V671::PlayerActionPacket(pk) => pk.as_ref(),
-                V671::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V671::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V671::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V671::PlayerFogPacket(pk) => pk.as_ref(),
-                V671::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V671::PlayerInputPacket(pk) => pk.as_ref(),
-                V671::PlayerListPacket(pk) => pk.as_ref(),
-                V671::PlayerSkinPacket(pk) => pk.as_ref(),
-                V671::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V671::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V671::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V671::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V671::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V671::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V671::RemoveActorPacket(pk) => pk.as_ref(),
-                V671::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V671::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V671::RequestAbilityPacket(pk) => pk.as_ref(),
-                V671::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V671::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V671::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V671::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V671::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V671::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V671::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V671::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V671::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V671::RespawnPacket(pk) => pk.as_ref(),
-                V671::ScriptMessagePacket(pk) => pk.as_ref(),
-                V671::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V671::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V671::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V671::ServerStatsPacket(pk) => pk.as_ref(),
-                V671::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V671::SetActorDataPacket(pk) => pk.as_ref(),
-                V671::SetActorLinkPacket(pk) => pk.as_ref(),
-                V671::SetActorMotionPacket(pk) => pk.as_ref(),
-                V671::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V671::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V671::SetDifficultyPacket(pk) => pk.as_ref(),
-                V671::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V671::SetHealthPacket(pk) => pk.as_ref(),
-                V671::SetHudPacket(pk) => pk.as_ref(),
-                V671::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V671::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V671::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V671::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V671::SetScorePacket(pk) => pk.as_ref(),
-                V671::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V671::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V671::SetTimePacket(pk) => pk.as_ref(),
-                V671::SetTitlePacket(pk) => pk.as_ref(),
-                V671::SettingsCommandPacket(pk) => pk.as_ref(),
-                V671::ShowCreditsPacket(pk) => pk.as_ref(),
-                V671::ShowProfilePacket(pk) => pk.as_ref(),
-                V671::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V671::SimpleEventPacket(pk) => pk.as_ref(),
-                V671::SimulationTypePacket(pk) => pk.as_ref(),
-                V671::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V671::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V671::StartGamePacket(pk) => pk.as_ref(),
-                V671::StopSoundPacket(pk) => pk.as_ref(),
-                V671::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V671::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V671::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V671::SubChunkPacket(pk) => pk.as_ref(),
-                V671::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V671::SubClientLoginPacket(pk) => pk.as_ref(),
-                V671::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V671::TakeItemActorPacket(pk) => pk.as_ref(),
-                V671::TextPacket(pk) => pk.as_ref(),
-                V671::TickSyncPacket(pk) => pk.as_ref(),
-                V671::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V671::ToastRequestPacket(pk) => pk.as_ref(),
-                V671::TransferPlayerPacket(pk) => pk.as_ref(),
-                V671::TrimDataPacket(pk) => pk.as_ref(),
-                V671::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V671::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V671::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V671::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V671::UpdateBlockPacket(pk) => pk.as_ref(),
-                V671::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V671::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V671::UpdateEquipPacket(pk) => pk.as_ref(),
-                V671::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V671::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V671::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V671::UpdateTradePacket(pk) => pk.as_ref(),
-                V671::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V671::ActorEventPacket(pk) => pk,
-                V671::ActorPickRequestPacket(pk) => pk,
-                V671::AddActorPacket(pk) => pk,
-                V671::AddBehaviourTreePacket(pk) => pk,
-                V671::AddItemActorPacket(pk) => pk,
-                V671::AddPaintingPacket(pk) => pk,
-                V671::AddPlayerPacket(pk) => pk,
-                V671::AddVolumeEntityPacket(pk) => pk,
-                V671::AgentActionEventPacket(pk) => pk,
-                V671::AgentAnimationPacket(pk) => pk,
-                V671::AnimateEntityPacket(pk) => pk,
-                V671::AnimatePacket(pk) => pk,
-                V671::AnvilDamagePacket(pk) => pk,
-                V671::AutomationClientConnectPacket(pk) => pk,
-                V671::AvailableActorIdentifiersPacket(pk) => pk,
-                V671::AvailableCommandsPacket(pk) => pk,
-                V671::BiomeDefinitionListPacket(pk) => pk,
-                V671::BlockActorDataPacket(pk) => pk,
-                V671::BlockEventPacket(pk) => pk,
-                V671::BlockPickRequestPacket(pk) => pk,
-                V671::BookEditPacket(pk) => pk,
-                V671::BossEventPacket(pk) => pk,
-                V671::CameraInstructionPacket(pk) => pk,
-                V671::CameraPacket(pk) => pk,
-                V671::CameraPresetsPacket(pk) => pk,
-                V671::CameraShakePacket(pk) => pk,
-                V671::ChangeDimensionPacket(pk) => pk,
-                V671::ChangeMobPropertyPacket(pk) => pk,
-                V671::ChunkRadiusUpdatedPacket(pk) => pk,
-                V671::ClientBoundDebugRendererPacket(pk) => pk,
-                V671::ClientBoundMapItemDataPacket(pk) => pk,
-                V671::ClientCacheBlobStatusPacket(pk) => pk,
-                V671::ClientCacheMissResponsePacket(pk) => pk,
-                V671::ClientCacheStatusPacket(pk) => pk,
-                V671::ClientToServerHandshakePacket(pk) => pk,
-                V671::CodeBuilderPacket(pk) => pk,
-                V671::CodeBuilderSourcePacket(pk) => pk,
-                V671::CommandBlockUpdatePacket(pk) => pk,
-                V671::CommandOutputPacket(pk) => pk,
-                V671::CommandRequestPacket(pk) => pk,
-                V671::CompletedUsingItemPacket(pk) => pk,
-                V671::CompressedBiomeDefinitionListPacket(pk) => pk,
-                V671::ContainerClosePacket(pk) => pk,
-                V671::ContainerOpenPacket(pk) => pk,
-                V671::ContainerSetDataPacket(pk) => pk,
-                V671::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V671::CraftingDataPacket(pk) => pk,
-                V671::CreatePhotoPacket(pk) => pk,
-                V671::CreativeContentPacket(pk) => pk,
-                V671::DeathInfoPacket(pk) => pk,
-                V671::DebugInfoPacket(pk) => pk,
-                V671::DimensionDataPacket(pk) => pk,
-                V671::DisconnectPacket(pk) => pk,
-                V671::EditorNetworkPacket(pk) => pk,
-                V671::EduUriResourcePacket(pk) => pk,
-                V671::EducationSettingsPacket(pk) => pk,
-                V671::EmoteListPacket(pk) => pk,
-                V671::EmotePacket(pk) => pk,
-                V671::FeatureRegistryPacket(pk) => pk,
-                V671::GameRulesChangedPacket(pk) => pk,
-                V671::GameTestRequestPacket(pk) => pk,
-                V671::GameTestResultsPacket(pk) => pk,
-                V671::GuiDataPickItemPacket(pk) => pk,
-                V671::HurtArmorPacket(pk) => pk,
-                V671::InteractPacket(pk) => pk,
-                V671::InventoryContentPacket(pk) => pk,
-                V671::InventorySlotPacket(pk) => pk,
-                V671::InventoryTransactionPacket(pk) => pk,
-                V671::ItemComponentPacket(pk) => pk,
-                V671::ItemStackRequestPacket(pk) => pk,
-                V671::ItemStackResponsePacket(pk) => pk,
-                V671::LabTablePacket(pk) => pk,
-                V671::LecternUpdatePacket(pk) => pk,
-                V671::LegacyTelemetryEventPacket(pk) => pk,
-                V671::LessonProgressPacket(pk) => pk,
-                V671::LevelChunkPacket(pk) => pk,
-                V671::LevelEventGenericPacket(pk) => pk,
-                V671::LevelEventPacket(pk) => pk,
-                V671::LevelSoundEventPacket(pk) => pk,
-                V671::LevelSoundEventV1Packet(pk) => pk,
-                V671::LevelSoundEventV2Packet(pk) => pk,
-                V671::LoginPacket(pk) => pk,
-                V671::MapCreateLockedCopyPacket(pk) => pk,
-                V671::MapInfoRequestPacket(pk) => pk,
-                V671::MobArmorEquipmentPacket(pk) => pk,
-                V671::MobEffectPacket(pk) => pk,
-                V671::MobEquipmentPacket(pk) => pk,
-                V671::ModalFormRequestPacket(pk) => pk,
-                V671::ModalFormResponsePacket(pk) => pk,
-                V671::MotionPredictionHintsPacket(pk) => pk,
-                V671::MoveActorAbsolutePacket(pk) => pk,
-                V671::MoveActorDeltaPacket(pk) => pk,
-                V671::MovePlayerPacket(pk) => pk,
-                V671::MultiplayerSettingsPacket(pk) => pk,
-                V671::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V671::NetworkSettingsPacket(pk) => pk,
-                V671::NetworkStackLatencyPacket(pk) => pk,
-                V671::NpcDialoguePacket(pk) => pk,
-                V671::NpcRequestPacket(pk) => pk,
-                V671::OnScreenTextureAnimationPacket(pk) => pk,
-                V671::OpenSignPacket(pk) => pk,
-                V671::PacketViolationWarningPacket(pk) => pk,
-                V671::PassengerJumpPacket(pk) => pk,
-                V671::PhotoTransferPacket(pk) => pk,
-                V671::PlaySoundPacket(pk) => pk,
-                V671::PlayStatusPacket(pk) => pk,
-                V671::PlayerActionPacket(pk) => pk,
-                V671::PlayerArmorDamagePacket(pk) => pk,
-                V671::PlayerAuthInputPacket(pk) => pk,
-                V671::PlayerEnchantOptionsPacket(pk) => pk,
-                V671::PlayerFogPacket(pk) => pk,
-                V671::PlayerHotbarPacket(pk) => pk,
-                V671::PlayerInputPacket(pk) => pk,
-                V671::PlayerListPacket(pk) => pk,
-                V671::PlayerSkinPacket(pk) => pk,
-                V671::PlayerStartItemCooldownPacket(pk) => pk,
-                V671::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V671::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V671::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V671::PurchaseReceiptPacket(pk) => pk,
-                V671::RefreshEntitlementsPacket(pk) => pk,
-                V671::RemoveActorPacket(pk) => pk,
-                V671::RemoveObjectivePacket(pk) => pk,
-                V671::RemoveVolumeEntityPacket(pk) => pk,
-                V671::RequestAbilityPacket(pk) => pk,
-                V671::RequestChunkRadiusPacket(pk) => pk,
-                V671::RequestNetworkSettingsPacket(pk) => pk,
-                V671::RequestPermissionsPacket(pk) => pk,
-                V671::ResourcePackChunkDataPacket(pk) => pk,
-                V671::ResourcePackChunkRequestPacket(pk) => pk,
-                V671::ResourcePackClientResponsePacket(pk) => pk,
-                V671::ResourcePackDataInfoPacket(pk) => pk,
-                V671::ResourcePackStackPacket(pk) => pk,
-                V671::ResourcePacksInfoPacket(pk) => pk,
-                V671::RespawnPacket(pk) => pk,
-                V671::ScriptMessagePacket(pk) => pk,
-                V671::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V671::ServerSettingsRequestPacket(pk) => pk,
-                V671::ServerSettingsResponsePacket(pk) => pk,
-                V671::ServerStatsPacket(pk) => pk,
-                V671::ServerToClientHandshakePacket(pk) => pk,
-                V671::SetActorDataPacket(pk) => pk,
-                V671::SetActorLinkPacket(pk) => pk,
-                V671::SetActorMotionPacket(pk) => pk,
-                V671::SetCommandsEnabledPacket(pk) => pk,
-                V671::SetDefaultGameTypePacket(pk) => pk,
-                V671::SetDifficultyPacket(pk) => pk,
-                V671::SetDisplayObjectivePacket(pk) => pk,
-                V671::SetHealthPacket(pk) => pk,
-                V671::SetHudPacket(pk) => pk,
-                V671::SetLastHurtByPacket(pk) => pk,
-                V671::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V671::SetPlayerGameTypePacket(pk) => pk,
-                V671::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V671::SetScorePacket(pk) => pk,
-                V671::SetScoreboardIdentityPacket(pk) => pk,
-                V671::SetSpawnPositionPacket(pk) => pk,
-                V671::SetTimePacket(pk) => pk,
-                V671::SetTitlePacket(pk) => pk,
-                V671::SettingsCommandPacket(pk) => pk,
-                V671::ShowCreditsPacket(pk) => pk,
-                V671::ShowProfilePacket(pk) => pk,
-                V671::ShowStoreOfferPacket(pk) => pk,
-                V671::SimpleEventPacket(pk) => pk,
-                V671::SimulationTypePacket(pk) => pk,
-                V671::SpawnExperienceOrbPacket(pk) => pk,
-                V671::SpawnParticleEffectPacket(pk) => pk,
-                V671::StartGamePacket(pk) => pk,
-                V671::StopSoundPacket(pk) => pk,
-                V671::StructureBlockUpdatePacket(pk) => pk,
-                V671::StructureDataRequestPacket(pk) => pk,
-                V671::StructureDataResponsePacket(pk) => pk,
-                V671::SubChunkPacket(pk) => pk,
-                V671::SubChunkRequestPacket(pk) => pk,
-                V671::SubClientLoginPacket(pk) => pk,
-                V671::SyncActorPropertyPacket(pk) => pk,
-                V671::TakeItemActorPacket(pk) => pk,
-                V671::TextPacket(pk) => pk,
-                V671::TickSyncPacket(pk) => pk,
-                V671::TickingAreaLoadStatusPacket(pk) => pk,
-                V671::ToastRequestPacket(pk) => pk,
-                V671::TransferPlayerPacket(pk) => pk,
-                V671::TrimDataPacket(pk) => pk,
-                V671::UnlockedRecipesPacket(pk) => pk,
-                V671::UpdateAbilitiesPacket(pk) => pk,
-                V671::UpdateAdventureSettingsPacket(pk) => pk,
-                V671::UpdateAttributesPacket(pk) => pk,
-                V671::UpdateBlockPacket(pk) => pk,
-                V671::UpdateBlockSyncedPacket(pk) => pk,
-                V671::UpdateClientInputLocksPacket(pk) => pk,
-                V671::UpdateEquipPacket(pk) => pk,
-                V671::UpdatePlayerGameTypePacket(pk) => pk,
-                V671::UpdateSoftEnumPacket(pk) => pk,
-                V671::UpdateSubChunkBlocksPacket(pk) => pk,
-                V671::UpdateTradePacket(pk) => pk,
-                V671::Unknown(pk) => pk,
+                V671::ActorEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ActorPickRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AddActorPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AddBehaviourTreePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AddItemActorPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AddPaintingPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AddPlayerPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AddVolumeEntityPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AgentActionEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AgentAnimationPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AnimateEntityPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AnimatePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AnvilDamagePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AutomationClientConnectPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AvailableActorIdentifiersPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::AvailableCommandsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::BiomeDefinitionListPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::BlockActorDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::BlockEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::BlockPickRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::BookEditPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::BossEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CameraInstructionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CameraPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CameraPresetsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CameraShakePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ChangeDimensionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ChangeMobPropertyPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ChunkRadiusUpdatedPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ClientBoundDebugRendererPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ClientBoundMapItemDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ClientCacheBlobStatusPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ClientCacheMissResponsePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ClientCacheStatusPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ClientToServerHandshakePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CodeBuilderPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CodeBuilderSourcePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CommandBlockUpdatePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CommandOutputPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CommandRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CompletedUsingItemPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CompressedBiomeDefinitionListPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CompressedBiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ContainerClosePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ContainerOpenPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ContainerSetDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CraftingDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CreatePhotoPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::CreativeContentPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::DeathInfoPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::DebugInfoPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::DimensionDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::DisconnectPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::EditorNetworkPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::EduUriResourcePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::EducationSettingsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::EmoteListPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::EmotePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::FeatureRegistryPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::GameRulesChangedPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::GameTestRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::GameTestResultsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::GuiDataPickItemPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::HurtArmorPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::InteractPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::InventoryContentPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::InventorySlotPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::InventoryTransactionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ItemComponentPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ItemStackRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ItemStackResponsePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LabTablePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LecternUpdatePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LegacyTelemetryEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LessonProgressPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LevelChunkPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LevelEventGenericPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LevelEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LevelSoundEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LevelSoundEventV1Packet(_) => {
+                    <<V671 as ProtoVersionPackets>::LevelSoundEventV1Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LevelSoundEventV2Packet(_) => {
+                    <<V671 as ProtoVersionPackets>::LevelSoundEventV2Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V671::LoginPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MapCreateLockedCopyPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MapInfoRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MobArmorEquipmentPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MobEffectPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MobEquipmentPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ModalFormRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ModalFormResponsePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MotionPredictionHintsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MoveActorAbsolutePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MoveActorDeltaPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MovePlayerPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::MultiplayerSettingsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::NetworkSettingsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::NetworkStackLatencyPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::NpcDialoguePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::NpcRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::OnScreenTextureAnimationPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::OpenSignPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PacketViolationWarningPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PassengerJumpPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PassengerJumpPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PhotoTransferPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlaySoundPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayStatusPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerActionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerArmorDamagePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerAuthInputPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerEnchantOptionsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerFogPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerHotbarPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerInputPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerListPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerSkinPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerStartItemCooldownPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::PurchaseReceiptPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RefreshEntitlementsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RemoveActorPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RemoveObjectivePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RemoveVolumeEntityPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RequestAbilityPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RequestChunkRadiusPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RequestNetworkSettingsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RequestPermissionsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ResourcePackChunkDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ResourcePackChunkRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ResourcePackClientResponsePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ResourcePackDataInfoPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ResourcePackStackPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ResourcePacksInfoPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::RespawnPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ScriptMessagePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ServerSettingsRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ServerSettingsResponsePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ServerStatsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ServerToClientHandshakePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetActorDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetActorLinkPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetActorMotionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetCommandsEnabledPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetDefaultGameTypePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetDifficultyPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetDisplayObjectivePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetHealthPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetHudPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetLastHurtByPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetPlayerGameTypePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetScorePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetScoreboardIdentityPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetSpawnPositionPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetTimePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SetTitlePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SettingsCommandPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ShowCreditsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ShowProfilePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ShowStoreOfferPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SimpleEventPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SimulationTypePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SpawnExperienceOrbPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SpawnParticleEffectPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::StartGamePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::StopSoundPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::StructureBlockUpdatePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::StructureDataRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::StructureDataResponsePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SubChunkPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SubChunkRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SubClientLoginPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::SyncActorPropertyPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::TakeItemActorPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::TextPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::TickSyncPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::TickSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::TickingAreaLoadStatusPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::ToastRequestPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::TransferPlayerPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::TrimDataPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UnlockedRecipesPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateAbilitiesPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateAdventureSettingsPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateAttributesPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateBlockPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateBlockSyncedPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateClientInputLocksPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateEquipPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdatePlayerGameTypePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateSoftEnumPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateSubChunkBlocksPacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::UpdateTradePacket(_) => {
+                    <<V671 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V671::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7894,6 +8083,412 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/20_u8";
         const GAME_VERSION: &str = "1.20.80";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V671 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V671::ActorEventPacket(pk) => pk.as_ref(),
+                V671::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V671::AddActorPacket(pk) => pk.as_ref(),
+                V671::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V671::AddItemActorPacket(pk) => pk.as_ref(),
+                V671::AddPaintingPacket(pk) => pk.as_ref(),
+                V671::AddPlayerPacket(pk) => pk.as_ref(),
+                V671::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V671::AgentActionEventPacket(pk) => pk.as_ref(),
+                V671::AgentAnimationPacket(pk) => pk.as_ref(),
+                V671::AnimateEntityPacket(pk) => pk.as_ref(),
+                V671::AnimatePacket(pk) => pk.as_ref(),
+                V671::AnvilDamagePacket(pk) => pk.as_ref(),
+                V671::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V671::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V671::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V671::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V671::BlockActorDataPacket(pk) => pk.as_ref(),
+                V671::BlockEventPacket(pk) => pk.as_ref(),
+                V671::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V671::BookEditPacket(pk) => pk.as_ref(),
+                V671::BossEventPacket(pk) => pk.as_ref(),
+                V671::CameraInstructionPacket(pk) => pk.as_ref(),
+                V671::CameraPacket(pk) => pk.as_ref(),
+                V671::CameraPresetsPacket(pk) => pk.as_ref(),
+                V671::CameraShakePacket(pk) => pk.as_ref(),
+                V671::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V671::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V671::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V671::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V671::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V671::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V671::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V671::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V671::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V671::CodeBuilderPacket(pk) => pk.as_ref(),
+                V671::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V671::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V671::CommandOutputPacket(pk) => pk.as_ref(),
+                V671::CommandRequestPacket(pk) => pk.as_ref(),
+                V671::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V671::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V671::ContainerClosePacket(pk) => pk.as_ref(),
+                V671::ContainerOpenPacket(pk) => pk.as_ref(),
+                V671::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V671::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V671::CraftingDataPacket(pk) => pk.as_ref(),
+                V671::CreatePhotoPacket(pk) => pk.as_ref(),
+                V671::CreativeContentPacket(pk) => pk.as_ref(),
+                V671::DeathInfoPacket(pk) => pk.as_ref(),
+                V671::DebugInfoPacket(pk) => pk.as_ref(),
+                V671::DimensionDataPacket(pk) => pk.as_ref(),
+                V671::DisconnectPacket(pk) => pk.as_ref(),
+                V671::EditorNetworkPacket(pk) => pk.as_ref(),
+                V671::EduUriResourcePacket(pk) => pk.as_ref(),
+                V671::EducationSettingsPacket(pk) => pk.as_ref(),
+                V671::EmoteListPacket(pk) => pk.as_ref(),
+                V671::EmotePacket(pk) => pk.as_ref(),
+                V671::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V671::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V671::GameTestRequestPacket(pk) => pk.as_ref(),
+                V671::GameTestResultsPacket(pk) => pk.as_ref(),
+                V671::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V671::HurtArmorPacket(pk) => pk.as_ref(),
+                V671::InteractPacket(pk) => pk.as_ref(),
+                V671::InventoryContentPacket(pk) => pk.as_ref(),
+                V671::InventorySlotPacket(pk) => pk.as_ref(),
+                V671::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V671::ItemComponentPacket(pk) => pk.as_ref(),
+                V671::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V671::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V671::LabTablePacket(pk) => pk.as_ref(),
+                V671::LecternUpdatePacket(pk) => pk.as_ref(),
+                V671::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V671::LessonProgressPacket(pk) => pk.as_ref(),
+                V671::LevelChunkPacket(pk) => pk.as_ref(),
+                V671::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V671::LevelEventPacket(pk) => pk.as_ref(),
+                V671::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V671::LevelSoundEventV1Packet(pk) => pk.as_ref(),
+                V671::LevelSoundEventV2Packet(pk) => pk.as_ref(),
+                V671::LoginPacket(pk) => pk.as_ref(),
+                V671::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V671::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V671::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V671::MobEffectPacket(pk) => pk.as_ref(),
+                V671::MobEquipmentPacket(pk) => pk.as_ref(),
+                V671::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V671::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V671::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V671::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V671::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V671::MovePlayerPacket(pk) => pk.as_ref(),
+                V671::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V671::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V671::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V671::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V671::NpcDialoguePacket(pk) => pk.as_ref(),
+                V671::NpcRequestPacket(pk) => pk.as_ref(),
+                V671::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V671::OpenSignPacket(pk) => pk.as_ref(),
+                V671::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V671::PassengerJumpPacket(pk) => pk.as_ref(),
+                V671::PhotoTransferPacket(pk) => pk.as_ref(),
+                V671::PlaySoundPacket(pk) => pk.as_ref(),
+                V671::PlayStatusPacket(pk) => pk.as_ref(),
+                V671::PlayerActionPacket(pk) => pk.as_ref(),
+                V671::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V671::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V671::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V671::PlayerFogPacket(pk) => pk.as_ref(),
+                V671::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V671::PlayerInputPacket(pk) => pk.as_ref(),
+                V671::PlayerListPacket(pk) => pk.as_ref(),
+                V671::PlayerSkinPacket(pk) => pk.as_ref(),
+                V671::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V671::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V671::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V671::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V671::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V671::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V671::RemoveActorPacket(pk) => pk.as_ref(),
+                V671::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V671::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V671::RequestAbilityPacket(pk) => pk.as_ref(),
+                V671::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V671::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V671::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V671::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V671::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V671::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V671::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V671::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V671::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V671::RespawnPacket(pk) => pk.as_ref(),
+                V671::ScriptMessagePacket(pk) => pk.as_ref(),
+                V671::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V671::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V671::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V671::ServerStatsPacket(pk) => pk.as_ref(),
+                V671::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V671::SetActorDataPacket(pk) => pk.as_ref(),
+                V671::SetActorLinkPacket(pk) => pk.as_ref(),
+                V671::SetActorMotionPacket(pk) => pk.as_ref(),
+                V671::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V671::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V671::SetDifficultyPacket(pk) => pk.as_ref(),
+                V671::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V671::SetHealthPacket(pk) => pk.as_ref(),
+                V671::SetHudPacket(pk) => pk.as_ref(),
+                V671::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V671::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V671::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V671::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V671::SetScorePacket(pk) => pk.as_ref(),
+                V671::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V671::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V671::SetTimePacket(pk) => pk.as_ref(),
+                V671::SetTitlePacket(pk) => pk.as_ref(),
+                V671::SettingsCommandPacket(pk) => pk.as_ref(),
+                V671::ShowCreditsPacket(pk) => pk.as_ref(),
+                V671::ShowProfilePacket(pk) => pk.as_ref(),
+                V671::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V671::SimpleEventPacket(pk) => pk.as_ref(),
+                V671::SimulationTypePacket(pk) => pk.as_ref(),
+                V671::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V671::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V671::StartGamePacket(pk) => pk.as_ref(),
+                V671::StopSoundPacket(pk) => pk.as_ref(),
+                V671::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V671::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V671::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V671::SubChunkPacket(pk) => pk.as_ref(),
+                V671::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V671::SubClientLoginPacket(pk) => pk.as_ref(),
+                V671::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V671::TakeItemActorPacket(pk) => pk.as_ref(),
+                V671::TextPacket(pk) => pk.as_ref(),
+                V671::TickSyncPacket(pk) => pk.as_ref(),
+                V671::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V671::ToastRequestPacket(pk) => pk.as_ref(),
+                V671::TransferPlayerPacket(pk) => pk.as_ref(),
+                V671::TrimDataPacket(pk) => pk.as_ref(),
+                V671::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V671::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V671::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V671::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V671::UpdateBlockPacket(pk) => pk.as_ref(),
+                V671::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V671::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V671::UpdateEquipPacket(pk) => pk.as_ref(),
+                V671::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V671::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V671::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V671::UpdateTradePacket(pk) => pk.as_ref(),
+                V671::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V671> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V671) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V671::ActorEventPacket(pk) => pk,
+                V671::ActorPickRequestPacket(pk) => pk,
+                V671::AddActorPacket(pk) => pk,
+                V671::AddBehaviourTreePacket(pk) => pk,
+                V671::AddItemActorPacket(pk) => pk,
+                V671::AddPaintingPacket(pk) => pk,
+                V671::AddPlayerPacket(pk) => pk,
+                V671::AddVolumeEntityPacket(pk) => pk,
+                V671::AgentActionEventPacket(pk) => pk,
+                V671::AgentAnimationPacket(pk) => pk,
+                V671::AnimateEntityPacket(pk) => pk,
+                V671::AnimatePacket(pk) => pk,
+                V671::AnvilDamagePacket(pk) => pk,
+                V671::AutomationClientConnectPacket(pk) => pk,
+                V671::AvailableActorIdentifiersPacket(pk) => pk,
+                V671::AvailableCommandsPacket(pk) => pk,
+                V671::BiomeDefinitionListPacket(pk) => pk,
+                V671::BlockActorDataPacket(pk) => pk,
+                V671::BlockEventPacket(pk) => pk,
+                V671::BlockPickRequestPacket(pk) => pk,
+                V671::BookEditPacket(pk) => pk,
+                V671::BossEventPacket(pk) => pk,
+                V671::CameraInstructionPacket(pk) => pk,
+                V671::CameraPacket(pk) => pk,
+                V671::CameraPresetsPacket(pk) => pk,
+                V671::CameraShakePacket(pk) => pk,
+                V671::ChangeDimensionPacket(pk) => pk,
+                V671::ChangeMobPropertyPacket(pk) => pk,
+                V671::ChunkRadiusUpdatedPacket(pk) => pk,
+                V671::ClientBoundDebugRendererPacket(pk) => pk,
+                V671::ClientBoundMapItemDataPacket(pk) => pk,
+                V671::ClientCacheBlobStatusPacket(pk) => pk,
+                V671::ClientCacheMissResponsePacket(pk) => pk,
+                V671::ClientCacheStatusPacket(pk) => pk,
+                V671::ClientToServerHandshakePacket(pk) => pk,
+                V671::CodeBuilderPacket(pk) => pk,
+                V671::CodeBuilderSourcePacket(pk) => pk,
+                V671::CommandBlockUpdatePacket(pk) => pk,
+                V671::CommandOutputPacket(pk) => pk,
+                V671::CommandRequestPacket(pk) => pk,
+                V671::CompletedUsingItemPacket(pk) => pk,
+                V671::CompressedBiomeDefinitionListPacket(pk) => pk,
+                V671::ContainerClosePacket(pk) => pk,
+                V671::ContainerOpenPacket(pk) => pk,
+                V671::ContainerSetDataPacket(pk) => pk,
+                V671::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V671::CraftingDataPacket(pk) => pk,
+                V671::CreatePhotoPacket(pk) => pk,
+                V671::CreativeContentPacket(pk) => pk,
+                V671::DeathInfoPacket(pk) => pk,
+                V671::DebugInfoPacket(pk) => pk,
+                V671::DimensionDataPacket(pk) => pk,
+                V671::DisconnectPacket(pk) => pk,
+                V671::EditorNetworkPacket(pk) => pk,
+                V671::EduUriResourcePacket(pk) => pk,
+                V671::EducationSettingsPacket(pk) => pk,
+                V671::EmoteListPacket(pk) => pk,
+                V671::EmotePacket(pk) => pk,
+                V671::FeatureRegistryPacket(pk) => pk,
+                V671::GameRulesChangedPacket(pk) => pk,
+                V671::GameTestRequestPacket(pk) => pk,
+                V671::GameTestResultsPacket(pk) => pk,
+                V671::GuiDataPickItemPacket(pk) => pk,
+                V671::HurtArmorPacket(pk) => pk,
+                V671::InteractPacket(pk) => pk,
+                V671::InventoryContentPacket(pk) => pk,
+                V671::InventorySlotPacket(pk) => pk,
+                V671::InventoryTransactionPacket(pk) => pk,
+                V671::ItemComponentPacket(pk) => pk,
+                V671::ItemStackRequestPacket(pk) => pk,
+                V671::ItemStackResponsePacket(pk) => pk,
+                V671::LabTablePacket(pk) => pk,
+                V671::LecternUpdatePacket(pk) => pk,
+                V671::LegacyTelemetryEventPacket(pk) => pk,
+                V671::LessonProgressPacket(pk) => pk,
+                V671::LevelChunkPacket(pk) => pk,
+                V671::LevelEventGenericPacket(pk) => pk,
+                V671::LevelEventPacket(pk) => pk,
+                V671::LevelSoundEventPacket(pk) => pk,
+                V671::LevelSoundEventV1Packet(pk) => pk,
+                V671::LevelSoundEventV2Packet(pk) => pk,
+                V671::LoginPacket(pk) => pk,
+                V671::MapCreateLockedCopyPacket(pk) => pk,
+                V671::MapInfoRequestPacket(pk) => pk,
+                V671::MobArmorEquipmentPacket(pk) => pk,
+                V671::MobEffectPacket(pk) => pk,
+                V671::MobEquipmentPacket(pk) => pk,
+                V671::ModalFormRequestPacket(pk) => pk,
+                V671::ModalFormResponsePacket(pk) => pk,
+                V671::MotionPredictionHintsPacket(pk) => pk,
+                V671::MoveActorAbsolutePacket(pk) => pk,
+                V671::MoveActorDeltaPacket(pk) => pk,
+                V671::MovePlayerPacket(pk) => pk,
+                V671::MultiplayerSettingsPacket(pk) => pk,
+                V671::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V671::NetworkSettingsPacket(pk) => pk,
+                V671::NetworkStackLatencyPacket(pk) => pk,
+                V671::NpcDialoguePacket(pk) => pk,
+                V671::NpcRequestPacket(pk) => pk,
+                V671::OnScreenTextureAnimationPacket(pk) => pk,
+                V671::OpenSignPacket(pk) => pk,
+                V671::PacketViolationWarningPacket(pk) => pk,
+                V671::PassengerJumpPacket(pk) => pk,
+                V671::PhotoTransferPacket(pk) => pk,
+                V671::PlaySoundPacket(pk) => pk,
+                V671::PlayStatusPacket(pk) => pk,
+                V671::PlayerActionPacket(pk) => pk,
+                V671::PlayerArmorDamagePacket(pk) => pk,
+                V671::PlayerAuthInputPacket(pk) => pk,
+                V671::PlayerEnchantOptionsPacket(pk) => pk,
+                V671::PlayerFogPacket(pk) => pk,
+                V671::PlayerHotbarPacket(pk) => pk,
+                V671::PlayerInputPacket(pk) => pk,
+                V671::PlayerListPacket(pk) => pk,
+                V671::PlayerSkinPacket(pk) => pk,
+                V671::PlayerStartItemCooldownPacket(pk) => pk,
+                V671::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V671::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V671::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V671::PurchaseReceiptPacket(pk) => pk,
+                V671::RefreshEntitlementsPacket(pk) => pk,
+                V671::RemoveActorPacket(pk) => pk,
+                V671::RemoveObjectivePacket(pk) => pk,
+                V671::RemoveVolumeEntityPacket(pk) => pk,
+                V671::RequestAbilityPacket(pk) => pk,
+                V671::RequestChunkRadiusPacket(pk) => pk,
+                V671::RequestNetworkSettingsPacket(pk) => pk,
+                V671::RequestPermissionsPacket(pk) => pk,
+                V671::ResourcePackChunkDataPacket(pk) => pk,
+                V671::ResourcePackChunkRequestPacket(pk) => pk,
+                V671::ResourcePackClientResponsePacket(pk) => pk,
+                V671::ResourcePackDataInfoPacket(pk) => pk,
+                V671::ResourcePackStackPacket(pk) => pk,
+                V671::ResourcePacksInfoPacket(pk) => pk,
+                V671::RespawnPacket(pk) => pk,
+                V671::ScriptMessagePacket(pk) => pk,
+                V671::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V671::ServerSettingsRequestPacket(pk) => pk,
+                V671::ServerSettingsResponsePacket(pk) => pk,
+                V671::ServerStatsPacket(pk) => pk,
+                V671::ServerToClientHandshakePacket(pk) => pk,
+                V671::SetActorDataPacket(pk) => pk,
+                V671::SetActorLinkPacket(pk) => pk,
+                V671::SetActorMotionPacket(pk) => pk,
+                V671::SetCommandsEnabledPacket(pk) => pk,
+                V671::SetDefaultGameTypePacket(pk) => pk,
+                V671::SetDifficultyPacket(pk) => pk,
+                V671::SetDisplayObjectivePacket(pk) => pk,
+                V671::SetHealthPacket(pk) => pk,
+                V671::SetHudPacket(pk) => pk,
+                V671::SetLastHurtByPacket(pk) => pk,
+                V671::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V671::SetPlayerGameTypePacket(pk) => pk,
+                V671::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V671::SetScorePacket(pk) => pk,
+                V671::SetScoreboardIdentityPacket(pk) => pk,
+                V671::SetSpawnPositionPacket(pk) => pk,
+                V671::SetTimePacket(pk) => pk,
+                V671::SetTitlePacket(pk) => pk,
+                V671::SettingsCommandPacket(pk) => pk,
+                V671::ShowCreditsPacket(pk) => pk,
+                V671::ShowProfilePacket(pk) => pk,
+                V671::ShowStoreOfferPacket(pk) => pk,
+                V671::SimpleEventPacket(pk) => pk,
+                V671::SimulationTypePacket(pk) => pk,
+                V671::SpawnExperienceOrbPacket(pk) => pk,
+                V671::SpawnParticleEffectPacket(pk) => pk,
+                V671::StartGamePacket(pk) => pk,
+                V671::StopSoundPacket(pk) => pk,
+                V671::StructureBlockUpdatePacket(pk) => pk,
+                V671::StructureDataRequestPacket(pk) => pk,
+                V671::StructureDataResponsePacket(pk) => pk,
+                V671::SubChunkPacket(pk) => pk,
+                V671::SubChunkRequestPacket(pk) => pk,
+                V671::SubClientLoginPacket(pk) => pk,
+                V671::SyncActorPropertyPacket(pk) => pk,
+                V671::TakeItemActorPacket(pk) => pk,
+                V671::TextPacket(pk) => pk,
+                V671::TickSyncPacket(pk) => pk,
+                V671::TickingAreaLoadStatusPacket(pk) => pk,
+                V671::ToastRequestPacket(pk) => pk,
+                V671::TransferPlayerPacket(pk) => pk,
+                V671::TrimDataPacket(pk) => pk,
+                V671::UnlockedRecipesPacket(pk) => pk,
+                V671::UpdateAbilitiesPacket(pk) => pk,
+                V671::UpdateAdventureSettingsPacket(pk) => pk,
+                V671::UpdateAttributesPacket(pk) => pk,
+                V671::UpdateBlockPacket(pk) => pk,
+                V671::UpdateBlockSyncedPacket(pk) => pk,
+                V671::UpdateClientInputLocksPacket(pk) => pk,
+                V671::UpdateEquipPacket(pk) => pk,
+                V671::UpdatePlayerGameTypePacket(pk) => pk,
+                V671::UpdateSoftEnumPacket(pk) => pk,
+                V671::UpdateSubChunkBlocksPacket(pk) => pk,
+                V671::UpdateTradePacket(pk) => pk,
+                V671::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v671")]

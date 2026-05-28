@@ -4,7 +4,7 @@ use crate::size::{build_size_enum, build_size_struct};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::{Data, DeriveInput, LitInt, Token, parse_macro_input};
+use syn::{Data, DeriveInput, LitInt, LitStr, Token, parse_macro_input};
 
 mod attr;
 mod de;
@@ -76,12 +76,14 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
 
 struct PacketInput {
     id: LitInt,
+    direction: Option<LitStr>,
 }
 
 mod kw {
     use syn::custom_keyword;
 
     custom_keyword!(id);
+    custom_keyword!(direction);
 }
 
 impl Parse for PacketInput {
@@ -91,6 +93,16 @@ impl Parse for PacketInput {
 
         Ok(Self {
             id: input.parse::<LitInt>()?,
+            direction: {
+                if input.peek2(kw::direction) {
+                    input.parse::<Token![,]>()?;
+                    input.parse::<kw::direction>()?;
+                    input.parse::<Token![=]>()?;
+                    Some(input.parse()?)
+                } else {
+                    None
+                }
+            },
         })
     }
 }
@@ -110,11 +122,27 @@ pub fn packet(args: TokenStream, item: TokenStream) -> TokenStream {
     let generics = derive.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
+    let direction = match args.direction.map(|f| f.value()).as_deref() {
+        Some("client_to_server") => {
+            quote! { Some(bedrock_protocol_core::PacketDirection::ClientToServer)}
+        }
+        Some("server_to_client") => {
+            quote! { Some(bedrock_protocol_core::PacketDirection::ServerToClient)}
+        }
+        _ => quote! { None },
+    };
+
     let expanded = quote! {
         #item
 
-        impl #impl_generics ::bedrock_protocol_core::Packet for #name #ty_generics #where_clause {
+        impl #impl_generics bedrock_protocol_core::Packet for #name #ty_generics #where_clause {
             const ID: u16 = #id;
+
+            #[cfg(feature = "packet-meta")]
+            const META: bedrock_protocol_core::PacketMeta = bedrock_protocol_core::PacketMeta {
+                name: stringify!(#name),
+                direction: #direction,
+            };
         }
     };
 

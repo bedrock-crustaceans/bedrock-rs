@@ -7489,433 +7489,636 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V859::ActorEventPacket(pk) => pk.as_ref(),
-                V859::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V859::AddActorPacket(pk) => pk.as_ref(),
-                V859::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V859::AddItemActorPacket(pk) => pk.as_ref(),
-                V859::AddPaintingPacket(pk) => pk.as_ref(),
-                V859::AddPlayerPacket(pk) => pk.as_ref(),
-                V859::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V859::AgentActionEventPacket(pk) => pk.as_ref(),
-                V859::AgentAnimationPacket(pk) => pk.as_ref(),
-                V859::AnimateEntityPacket(pk) => pk.as_ref(),
-                V859::AnimatePacket(pk) => pk.as_ref(),
-                V859::AnvilDamagePacket(pk) => pk.as_ref(),
-                V859::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V859::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V859::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V859::AwardAchievementPacket(pk) => pk.as_ref(),
-                V859::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V859::BlockActorDataPacket(pk) => pk.as_ref(),
-                V859::BlockEventPacket(pk) => pk.as_ref(),
-                V859::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V859::BookEditPacket(pk) => pk.as_ref(),
-                V859::BossEventPacket(pk) => pk.as_ref(),
-                V859::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
-                V859::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V859::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V859::CameraInstructionPacket(pk) => pk.as_ref(),
-                V859::CameraPacket(pk) => pk.as_ref(),
-                V859::CameraPresetsPacket(pk) => pk.as_ref(),
-                V859::CameraShakePacket(pk) => pk.as_ref(),
-                V859::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V859::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V859::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V859::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V859::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
-                V859::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V859::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V859::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V859::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V859::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V859::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V859::CodeBuilderPacket(pk) => pk.as_ref(),
-                V859::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V859::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V859::CommandOutputPacket(pk) => pk.as_ref(),
-                V859::CommandRequestPacket(pk) => pk.as_ref(),
-                V859::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V859::ContainerClosePacket(pk) => pk.as_ref(),
-                V859::ContainerOpenPacket(pk) => pk.as_ref(),
-                V859::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V859::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V859::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V859::CraftingDataPacket(pk) => pk.as_ref(),
-                V859::CreatePhotoPacket(pk) => pk.as_ref(),
-                V859::CreativeContentPacket(pk) => pk.as_ref(),
-                V859::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V859::DeathInfoPacket(pk) => pk.as_ref(),
-                V859::DebugDrawerPacket(pk) => pk.as_ref(),
-                V859::DebugInfoPacket(pk) => pk.as_ref(),
-                V859::DimensionDataPacket(pk) => pk.as_ref(),
-                V859::DisconnectPacket(pk) => pk.as_ref(),
-                V859::EditorNetworkPacket(pk) => pk.as_ref(),
-                V859::EduUriResourcePacket(pk) => pk.as_ref(),
-                V859::EducationSettingsPacket(pk) => pk.as_ref(),
-                V859::EmoteListPacket(pk) => pk.as_ref(),
-                V859::EmotePacket(pk) => pk.as_ref(),
-                V859::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V859::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V859::GameTestRequestPacket(pk) => pk.as_ref(),
-                V859::GameTestResultsPacket(pk) => pk.as_ref(),
-                V859::GraphicsParameterOverridePacket(pk) => pk.as_ref(),
-                V859::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V859::HurtArmorPacket(pk) => pk.as_ref(),
-                V859::InteractPacket(pk) => pk.as_ref(),
-                V859::InventoryContentPacket(pk) => pk.as_ref(),
-                V859::InventorySlotPacket(pk) => pk.as_ref(),
-                V859::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V859::ItemComponentPacket(pk) => pk.as_ref(),
-                V859::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V859::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V859::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V859::LabTablePacket(pk) => pk.as_ref(),
-                V859::LecternUpdatePacket(pk) => pk.as_ref(),
-                V859::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V859::LessonProgressPacket(pk) => pk.as_ref(),
-                V859::LevelChunkPacket(pk) => pk.as_ref(),
-                V859::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V859::LevelEventPacket(pk) => pk.as_ref(),
-                V859::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V859::LoginPacket(pk) => pk.as_ref(),
-                V859::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V859::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V859::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V859::MobEffectPacket(pk) => pk.as_ref(),
-                V859::MobEquipmentPacket(pk) => pk.as_ref(),
-                V859::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V859::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V859::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V859::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V859::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V859::MovePlayerPacket(pk) => pk.as_ref(),
-                V859::MovementEffectPacket(pk) => pk.as_ref(),
-                V859::MovementPredictionSyncPacket(pk) => pk.as_ref(),
-                V859::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V859::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V859::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V859::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V859::NpcDialoguePacket(pk) => pk.as_ref(),
-                V859::NpcRequestPacket(pk) => pk.as_ref(),
-                V859::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V859::OpenSignPacket(pk) => pk.as_ref(),
-                V859::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V859::PhotoTransferPacket(pk) => pk.as_ref(),
-                V859::PlaySoundPacket(pk) => pk.as_ref(),
-                V859::PlayStatusPacket(pk) => pk.as_ref(),
-                V859::PlayerActionPacket(pk) => pk.as_ref(),
-                V859::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V859::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V859::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V859::PlayerFogPacket(pk) => pk.as_ref(),
-                V859::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V859::PlayerListPacket(pk) => pk.as_ref(),
-                V859::PlayerLocationPacket(pk) => pk.as_ref(),
-                V859::PlayerSkinPacket(pk) => pk.as_ref(),
-                V859::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V859::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V859::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
-                V859::PlayerVideoCapturePacket(pk) => pk.as_ref(),
-                V859::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V859::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V859::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V859::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V859::RemoveActorPacket(pk) => pk.as_ref(),
-                V859::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V859::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V859::RequestAbilityPacket(pk) => pk.as_ref(),
-                V859::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V859::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V859::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V859::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V859::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V859::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V859::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V859::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V859::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V859::RespawnPacket(pk) => pk.as_ref(),
-                V859::ScriptMessagePacket(pk) => pk.as_ref(),
-                V859::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V859::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V859::ServerBoundPackSettingChangePacket(pk) => pk.as_ref(),
-                V859::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V859::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V859::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V859::ServerStatsPacket(pk) => pk.as_ref(),
-                V859::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V859::SetActorDataPacket(pk) => pk.as_ref(),
-                V859::SetActorLinkPacket(pk) => pk.as_ref(),
-                V859::SetActorMotionPacket(pk) => pk.as_ref(),
-                V859::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V859::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V859::SetDifficultyPacket(pk) => pk.as_ref(),
-                V859::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V859::SetHealthPacket(pk) => pk.as_ref(),
-                V859::SetHudPacket(pk) => pk.as_ref(),
-                V859::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V859::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V859::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V859::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V859::SetScorePacket(pk) => pk.as_ref(),
-                V859::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V859::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V859::SetTimePacket(pk) => pk.as_ref(),
-                V859::SetTitlePacket(pk) => pk.as_ref(),
-                V859::SettingsCommandPacket(pk) => pk.as_ref(),
-                V859::ShowCreditsPacket(pk) => pk.as_ref(),
-                V859::ShowProfilePacket(pk) => pk.as_ref(),
-                V859::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V859::SimpleEventPacket(pk) => pk.as_ref(),
-                V859::SimulationTypePacket(pk) => pk.as_ref(),
-                V859::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V859::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V859::StartGamePacket(pk) => pk.as_ref(),
-                V859::StopSoundPacket(pk) => pk.as_ref(),
-                V859::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V859::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V859::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V859::SubChunkPacket(pk) => pk.as_ref(),
-                V859::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V859::SubClientLoginPacket(pk) => pk.as_ref(),
-                V859::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V859::TakeItemActorPacket(pk) => pk.as_ref(),
-                V859::TextPacket(pk) => pk.as_ref(),
-                V859::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V859::ToastRequestPacket(pk) => pk.as_ref(),
-                V859::TransferPlayerPacket(pk) => pk.as_ref(),
-                V859::TrimDataPacket(pk) => pk.as_ref(),
-                V859::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V859::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V859::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V859::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V859::UpdateBlockPacket(pk) => pk.as_ref(),
-                V859::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V859::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V859::UpdateClientOptionsPacket(pk) => pk.as_ref(),
-                V859::UpdateEquipPacket(pk) => pk.as_ref(),
-                V859::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V859::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V859::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V859::UpdateTradePacket(pk) => pk.as_ref(),
-                V859::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V859::ActorEventPacket(pk) => pk,
-                V859::ActorPickRequestPacket(pk) => pk,
-                V859::AddActorPacket(pk) => pk,
-                V859::AddBehaviourTreePacket(pk) => pk,
-                V859::AddItemActorPacket(pk) => pk,
-                V859::AddPaintingPacket(pk) => pk,
-                V859::AddPlayerPacket(pk) => pk,
-                V859::AddVolumeEntityPacket(pk) => pk,
-                V859::AgentActionEventPacket(pk) => pk,
-                V859::AgentAnimationPacket(pk) => pk,
-                V859::AnimateEntityPacket(pk) => pk,
-                V859::AnimatePacket(pk) => pk,
-                V859::AnvilDamagePacket(pk) => pk,
-                V859::AutomationClientConnectPacket(pk) => pk,
-                V859::AvailableActorIdentifiersPacket(pk) => pk,
-                V859::AvailableCommandsPacket(pk) => pk,
-                V859::AwardAchievementPacket(pk) => pk,
-                V859::BiomeDefinitionListPacket(pk) => pk,
-                V859::BlockActorDataPacket(pk) => pk,
-                V859::BlockEventPacket(pk) => pk,
-                V859::BlockPickRequestPacket(pk) => pk,
-                V859::BookEditPacket(pk) => pk,
-                V859::BossEventPacket(pk) => pk,
-                V859::CameraAimAssistInstructionPacket(pk) => pk,
-                V859::CameraAimAssistPacket(pk) => pk,
-                V859::CameraAimAssistPresetsPacket(pk) => pk,
-                V859::CameraInstructionPacket(pk) => pk,
-                V859::CameraPacket(pk) => pk,
-                V859::CameraPresetsPacket(pk) => pk,
-                V859::CameraShakePacket(pk) => pk,
-                V859::ChangeDimensionPacket(pk) => pk,
-                V859::ChangeMobPropertyPacket(pk) => pk,
-                V859::ChunkRadiusUpdatedPacket(pk) => pk,
-                V859::ClientBoundCloseFormPacket(pk) => pk,
-                V859::ClientBoundControlSchemeSetPacket(pk) => pk,
-                V859::ClientBoundDebugRendererPacket(pk) => pk,
-                V859::ClientBoundMapItemDataPacket(pk) => pk,
-                V859::ClientCacheBlobStatusPacket(pk) => pk,
-                V859::ClientCacheMissResponsePacket(pk) => pk,
-                V859::ClientCacheStatusPacket(pk) => pk,
-                V859::ClientToServerHandshakePacket(pk) => pk,
-                V859::CodeBuilderPacket(pk) => pk,
-                V859::CodeBuilderSourcePacket(pk) => pk,
-                V859::CommandBlockUpdatePacket(pk) => pk,
-                V859::CommandOutputPacket(pk) => pk,
-                V859::CommandRequestPacket(pk) => pk,
-                V859::CompletedUsingItemPacket(pk) => pk,
-                V859::ContainerClosePacket(pk) => pk,
-                V859::ContainerOpenPacket(pk) => pk,
-                V859::ContainerRegistryCleanupPacket(pk) => pk,
-                V859::ContainerSetDataPacket(pk) => pk,
-                V859::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V859::CraftingDataPacket(pk) => pk,
-                V859::CreatePhotoPacket(pk) => pk,
-                V859::CreativeContentPacket(pk) => pk,
-                V859::CurrentStructureFeaturePacket(pk) => pk,
-                V859::DeathInfoPacket(pk) => pk,
-                V859::DebugDrawerPacket(pk) => pk,
-                V859::DebugInfoPacket(pk) => pk,
-                V859::DimensionDataPacket(pk) => pk,
-                V859::DisconnectPacket(pk) => pk,
-                V859::EditorNetworkPacket(pk) => pk,
-                V859::EduUriResourcePacket(pk) => pk,
-                V859::EducationSettingsPacket(pk) => pk,
-                V859::EmoteListPacket(pk) => pk,
-                V859::EmotePacket(pk) => pk,
-                V859::FeatureRegistryPacket(pk) => pk,
-                V859::GameRulesChangedPacket(pk) => pk,
-                V859::GameTestRequestPacket(pk) => pk,
-                V859::GameTestResultsPacket(pk) => pk,
-                V859::GraphicsParameterOverridePacket(pk) => pk,
-                V859::GuiDataPickItemPacket(pk) => pk,
-                V859::HurtArmorPacket(pk) => pk,
-                V859::InteractPacket(pk) => pk,
-                V859::InventoryContentPacket(pk) => pk,
-                V859::InventorySlotPacket(pk) => pk,
-                V859::InventoryTransactionPacket(pk) => pk,
-                V859::ItemComponentPacket(pk) => pk,
-                V859::ItemStackRequestPacket(pk) => pk,
-                V859::ItemStackResponsePacket(pk) => pk,
-                V859::JigsawStructureDataPacket(pk) => pk,
-                V859::LabTablePacket(pk) => pk,
-                V859::LecternUpdatePacket(pk) => pk,
-                V859::LegacyTelemetryEventPacket(pk) => pk,
-                V859::LessonProgressPacket(pk) => pk,
-                V859::LevelChunkPacket(pk) => pk,
-                V859::LevelEventGenericPacket(pk) => pk,
-                V859::LevelEventPacket(pk) => pk,
-                V859::LevelSoundEventPacket(pk) => pk,
-                V859::LoginPacket(pk) => pk,
-                V859::MapCreateLockedCopyPacket(pk) => pk,
-                V859::MapInfoRequestPacket(pk) => pk,
-                V859::MobArmorEquipmentPacket(pk) => pk,
-                V859::MobEffectPacket(pk) => pk,
-                V859::MobEquipmentPacket(pk) => pk,
-                V859::ModalFormRequestPacket(pk) => pk,
-                V859::ModalFormResponsePacket(pk) => pk,
-                V859::MotionPredictionHintsPacket(pk) => pk,
-                V859::MoveActorAbsolutePacket(pk) => pk,
-                V859::MoveActorDeltaPacket(pk) => pk,
-                V859::MovePlayerPacket(pk) => pk,
-                V859::MovementEffectPacket(pk) => pk,
-                V859::MovementPredictionSyncPacket(pk) => pk,
-                V859::MultiplayerSettingsPacket(pk) => pk,
-                V859::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V859::NetworkSettingsPacket(pk) => pk,
-                V859::NetworkStackLatencyPacket(pk) => pk,
-                V859::NpcDialoguePacket(pk) => pk,
-                V859::NpcRequestPacket(pk) => pk,
-                V859::OnScreenTextureAnimationPacket(pk) => pk,
-                V859::OpenSignPacket(pk) => pk,
-                V859::PacketViolationWarningPacket(pk) => pk,
-                V859::PhotoTransferPacket(pk) => pk,
-                V859::PlaySoundPacket(pk) => pk,
-                V859::PlayStatusPacket(pk) => pk,
-                V859::PlayerActionPacket(pk) => pk,
-                V859::PlayerArmorDamagePacket(pk) => pk,
-                V859::PlayerAuthInputPacket(pk) => pk,
-                V859::PlayerEnchantOptionsPacket(pk) => pk,
-                V859::PlayerFogPacket(pk) => pk,
-                V859::PlayerHotbarPacket(pk) => pk,
-                V859::PlayerListPacket(pk) => pk,
-                V859::PlayerLocationPacket(pk) => pk,
-                V859::PlayerSkinPacket(pk) => pk,
-                V859::PlayerStartItemCooldownPacket(pk) => pk,
-                V859::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V859::PlayerUpdateEntityOverridesPacket(pk) => pk,
-                V859::PlayerVideoCapturePacket(pk) => pk,
-                V859::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V859::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V859::PurchaseReceiptPacket(pk) => pk,
-                V859::RefreshEntitlementsPacket(pk) => pk,
-                V859::RemoveActorPacket(pk) => pk,
-                V859::RemoveObjectivePacket(pk) => pk,
-                V859::RemoveVolumeEntityPacket(pk) => pk,
-                V859::RequestAbilityPacket(pk) => pk,
-                V859::RequestChunkRadiusPacket(pk) => pk,
-                V859::RequestNetworkSettingsPacket(pk) => pk,
-                V859::RequestPermissionsPacket(pk) => pk,
-                V859::ResourcePackChunkDataPacket(pk) => pk,
-                V859::ResourcePackChunkRequestPacket(pk) => pk,
-                V859::ResourcePackClientResponsePacket(pk) => pk,
-                V859::ResourcePackDataInfoPacket(pk) => pk,
-                V859::ResourcePackStackPacket(pk) => pk,
-                V859::ResourcePacksInfoPacket(pk) => pk,
-                V859::RespawnPacket(pk) => pk,
-                V859::ScriptMessagePacket(pk) => pk,
-                V859::ServerBoundDiagnosticsPacket(pk) => pk,
-                V859::ServerBoundLoadingScreenPacket(pk) => pk,
-                V859::ServerBoundPackSettingChangePacket(pk) => pk,
-                V859::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V859::ServerSettingsRequestPacket(pk) => pk,
-                V859::ServerSettingsResponsePacket(pk) => pk,
-                V859::ServerStatsPacket(pk) => pk,
-                V859::ServerToClientHandshakePacket(pk) => pk,
-                V859::SetActorDataPacket(pk) => pk,
-                V859::SetActorLinkPacket(pk) => pk,
-                V859::SetActorMotionPacket(pk) => pk,
-                V859::SetCommandsEnabledPacket(pk) => pk,
-                V859::SetDefaultGameTypePacket(pk) => pk,
-                V859::SetDifficultyPacket(pk) => pk,
-                V859::SetDisplayObjectivePacket(pk) => pk,
-                V859::SetHealthPacket(pk) => pk,
-                V859::SetHudPacket(pk) => pk,
-                V859::SetLastHurtByPacket(pk) => pk,
-                V859::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V859::SetPlayerGameTypePacket(pk) => pk,
-                V859::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V859::SetScorePacket(pk) => pk,
-                V859::SetScoreboardIdentityPacket(pk) => pk,
-                V859::SetSpawnPositionPacket(pk) => pk,
-                V859::SetTimePacket(pk) => pk,
-                V859::SetTitlePacket(pk) => pk,
-                V859::SettingsCommandPacket(pk) => pk,
-                V859::ShowCreditsPacket(pk) => pk,
-                V859::ShowProfilePacket(pk) => pk,
-                V859::ShowStoreOfferPacket(pk) => pk,
-                V859::SimpleEventPacket(pk) => pk,
-                V859::SimulationTypePacket(pk) => pk,
-                V859::SpawnExperienceOrbPacket(pk) => pk,
-                V859::SpawnParticleEffectPacket(pk) => pk,
-                V859::StartGamePacket(pk) => pk,
-                V859::StopSoundPacket(pk) => pk,
-                V859::StructureBlockUpdatePacket(pk) => pk,
-                V859::StructureDataRequestPacket(pk) => pk,
-                V859::StructureDataResponsePacket(pk) => pk,
-                V859::SubChunkPacket(pk) => pk,
-                V859::SubChunkRequestPacket(pk) => pk,
-                V859::SubClientLoginPacket(pk) => pk,
-                V859::SyncActorPropertyPacket(pk) => pk,
-                V859::TakeItemActorPacket(pk) => pk,
-                V859::TextPacket(pk) => pk,
-                V859::TickingAreaLoadStatusPacket(pk) => pk,
-                V859::ToastRequestPacket(pk) => pk,
-                V859::TransferPlayerPacket(pk) => pk,
-                V859::TrimDataPacket(pk) => pk,
-                V859::UnlockedRecipesPacket(pk) => pk,
-                V859::UpdateAbilitiesPacket(pk) => pk,
-                V859::UpdateAdventureSettingsPacket(pk) => pk,
-                V859::UpdateAttributesPacket(pk) => pk,
-                V859::UpdateBlockPacket(pk) => pk,
-                V859::UpdateBlockSyncedPacket(pk) => pk,
-                V859::UpdateClientInputLocksPacket(pk) => pk,
-                V859::UpdateClientOptionsPacket(pk) => pk,
-                V859::UpdateEquipPacket(pk) => pk,
-                V859::UpdatePlayerGameTypePacket(pk) => pk,
-                V859::UpdateSoftEnumPacket(pk) => pk,
-                V859::UpdateSubChunkBlocksPacket(pk) => pk,
-                V859::UpdateTradePacket(pk) => pk,
-                V859::Unknown(pk) => pk,
+                V859::ActorEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ActorPickRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AddActorPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AddBehaviourTreePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AddItemActorPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AddPaintingPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AddPlayerPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AddVolumeEntityPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AgentActionEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AgentAnimationPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AnimateEntityPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AnimatePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AnvilDamagePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AutomationClientConnectPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AvailableActorIdentifiersPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AvailableCommandsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::AwardAchievementPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::BiomeDefinitionListPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::BlockActorDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::BlockEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::BlockPickRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::BookEditPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::BossEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraAimAssistInstructionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraAimAssistPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraAimAssistPresetsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraInstructionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraPresetsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CameraShakePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ChangeDimensionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ChangeMobPropertyPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ChunkRadiusUpdatedPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientBoundCloseFormPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientBoundControlSchemeSetPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientBoundDebugRendererPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientBoundMapItemDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientCacheBlobStatusPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientCacheMissResponsePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientCacheStatusPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ClientToServerHandshakePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CodeBuilderPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CodeBuilderSourcePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CommandBlockUpdatePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CommandOutputPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CommandRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CompletedUsingItemPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ContainerClosePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ContainerOpenPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ContainerRegistryCleanupPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ContainerSetDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CraftingDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CreatePhotoPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CreativeContentPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::CurrentStructureFeaturePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::DeathInfoPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::DebugDrawerPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::DebugDrawerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::DebugInfoPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::DimensionDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::DisconnectPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::EditorNetworkPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::EduUriResourcePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::EducationSettingsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::EmoteListPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::EmotePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::FeatureRegistryPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::GameRulesChangedPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::GameTestRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::GameTestResultsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::GraphicsParameterOverridePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::GraphicsParameterOverridePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::GuiDataPickItemPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::HurtArmorPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::InteractPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::InventoryContentPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::InventorySlotPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::InventoryTransactionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ItemComponentPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ItemStackRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ItemStackResponsePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::JigsawStructureDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LabTablePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LecternUpdatePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LegacyTelemetryEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LessonProgressPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LevelChunkPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LevelEventGenericPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LevelEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LevelSoundEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::LoginPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MapCreateLockedCopyPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MapInfoRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MobArmorEquipmentPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MobEffectPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MobEquipmentPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ModalFormRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ModalFormResponsePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MotionPredictionHintsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MoveActorAbsolutePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MoveActorDeltaPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MovePlayerPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MovementEffectPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MovementPredictionSyncPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::MultiplayerSettingsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::NetworkSettingsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::NetworkStackLatencyPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::NpcDialoguePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::NpcRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::OnScreenTextureAnimationPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::OpenSignPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PacketViolationWarningPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PhotoTransferPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlaySoundPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayStatusPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerActionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerArmorDamagePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerAuthInputPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerEnchantOptionsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerFogPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerHotbarPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerListPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerLocationPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerSkinPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerStartItemCooldownPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerUpdateEntityOverridesPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PlayerVideoCapturePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::PurchaseReceiptPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RefreshEntitlementsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RemoveActorPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RemoveObjectivePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RemoveVolumeEntityPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RequestAbilityPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RequestChunkRadiusPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RequestNetworkSettingsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RequestPermissionsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ResourcePackChunkDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ResourcePackChunkRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ResourcePackClientResponsePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ResourcePackDataInfoPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ResourcePackStackPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ResourcePacksInfoPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::RespawnPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ScriptMessagePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerBoundDiagnosticsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerBoundLoadingScreenPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerBoundPackSettingChangePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerBoundPackSettingChangePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerSettingsRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerSettingsResponsePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerStatsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ServerToClientHandshakePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetActorDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetActorLinkPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetActorMotionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetCommandsEnabledPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetDefaultGameTypePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetDifficultyPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetDisplayObjectivePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetHealthPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetHudPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetLastHurtByPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetPlayerGameTypePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetScorePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetScoreboardIdentityPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetSpawnPositionPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetTimePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SetTitlePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SettingsCommandPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ShowCreditsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ShowProfilePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ShowStoreOfferPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SimpleEventPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SimulationTypePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SpawnExperienceOrbPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SpawnParticleEffectPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::StartGamePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::StopSoundPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::StructureBlockUpdatePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::StructureDataRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::StructureDataResponsePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SubChunkPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SubChunkRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SubClientLoginPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::SyncActorPropertyPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::TakeItemActorPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::TextPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::TickingAreaLoadStatusPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::ToastRequestPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::TransferPlayerPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::TrimDataPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UnlockedRecipesPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateAbilitiesPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateAdventureSettingsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateAttributesPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateBlockPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateBlockSyncedPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateClientInputLocksPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateClientOptionsPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateEquipPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdatePlayerGameTypePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateSoftEnumPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateSubChunkBlocksPacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::UpdateTradePacket(_) => {
+                    <<V859 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V859::Unknown(pk) => pk.id,
             }
         }
     }
@@ -8449,6 +8652,440 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u12";
         const GAME_VERSION: &str = "1.21.120";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V859 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V859::ActorEventPacket(pk) => pk.as_ref(),
+                V859::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V859::AddActorPacket(pk) => pk.as_ref(),
+                V859::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V859::AddItemActorPacket(pk) => pk.as_ref(),
+                V859::AddPaintingPacket(pk) => pk.as_ref(),
+                V859::AddPlayerPacket(pk) => pk.as_ref(),
+                V859::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V859::AgentActionEventPacket(pk) => pk.as_ref(),
+                V859::AgentAnimationPacket(pk) => pk.as_ref(),
+                V859::AnimateEntityPacket(pk) => pk.as_ref(),
+                V859::AnimatePacket(pk) => pk.as_ref(),
+                V859::AnvilDamagePacket(pk) => pk.as_ref(),
+                V859::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V859::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V859::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V859::AwardAchievementPacket(pk) => pk.as_ref(),
+                V859::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V859::BlockActorDataPacket(pk) => pk.as_ref(),
+                V859::BlockEventPacket(pk) => pk.as_ref(),
+                V859::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V859::BookEditPacket(pk) => pk.as_ref(),
+                V859::BossEventPacket(pk) => pk.as_ref(),
+                V859::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
+                V859::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V859::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V859::CameraInstructionPacket(pk) => pk.as_ref(),
+                V859::CameraPacket(pk) => pk.as_ref(),
+                V859::CameraPresetsPacket(pk) => pk.as_ref(),
+                V859::CameraShakePacket(pk) => pk.as_ref(),
+                V859::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V859::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V859::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V859::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V859::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
+                V859::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V859::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V859::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V859::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V859::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V859::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V859::CodeBuilderPacket(pk) => pk.as_ref(),
+                V859::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V859::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V859::CommandOutputPacket(pk) => pk.as_ref(),
+                V859::CommandRequestPacket(pk) => pk.as_ref(),
+                V859::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V859::ContainerClosePacket(pk) => pk.as_ref(),
+                V859::ContainerOpenPacket(pk) => pk.as_ref(),
+                V859::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V859::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V859::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V859::CraftingDataPacket(pk) => pk.as_ref(),
+                V859::CreatePhotoPacket(pk) => pk.as_ref(),
+                V859::CreativeContentPacket(pk) => pk.as_ref(),
+                V859::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V859::DeathInfoPacket(pk) => pk.as_ref(),
+                V859::DebugDrawerPacket(pk) => pk.as_ref(),
+                V859::DebugInfoPacket(pk) => pk.as_ref(),
+                V859::DimensionDataPacket(pk) => pk.as_ref(),
+                V859::DisconnectPacket(pk) => pk.as_ref(),
+                V859::EditorNetworkPacket(pk) => pk.as_ref(),
+                V859::EduUriResourcePacket(pk) => pk.as_ref(),
+                V859::EducationSettingsPacket(pk) => pk.as_ref(),
+                V859::EmoteListPacket(pk) => pk.as_ref(),
+                V859::EmotePacket(pk) => pk.as_ref(),
+                V859::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V859::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V859::GameTestRequestPacket(pk) => pk.as_ref(),
+                V859::GameTestResultsPacket(pk) => pk.as_ref(),
+                V859::GraphicsParameterOverridePacket(pk) => pk.as_ref(),
+                V859::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V859::HurtArmorPacket(pk) => pk.as_ref(),
+                V859::InteractPacket(pk) => pk.as_ref(),
+                V859::InventoryContentPacket(pk) => pk.as_ref(),
+                V859::InventorySlotPacket(pk) => pk.as_ref(),
+                V859::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V859::ItemComponentPacket(pk) => pk.as_ref(),
+                V859::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V859::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V859::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V859::LabTablePacket(pk) => pk.as_ref(),
+                V859::LecternUpdatePacket(pk) => pk.as_ref(),
+                V859::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V859::LessonProgressPacket(pk) => pk.as_ref(),
+                V859::LevelChunkPacket(pk) => pk.as_ref(),
+                V859::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V859::LevelEventPacket(pk) => pk.as_ref(),
+                V859::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V859::LoginPacket(pk) => pk.as_ref(),
+                V859::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V859::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V859::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V859::MobEffectPacket(pk) => pk.as_ref(),
+                V859::MobEquipmentPacket(pk) => pk.as_ref(),
+                V859::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V859::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V859::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V859::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V859::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V859::MovePlayerPacket(pk) => pk.as_ref(),
+                V859::MovementEffectPacket(pk) => pk.as_ref(),
+                V859::MovementPredictionSyncPacket(pk) => pk.as_ref(),
+                V859::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V859::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V859::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V859::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V859::NpcDialoguePacket(pk) => pk.as_ref(),
+                V859::NpcRequestPacket(pk) => pk.as_ref(),
+                V859::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V859::OpenSignPacket(pk) => pk.as_ref(),
+                V859::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V859::PhotoTransferPacket(pk) => pk.as_ref(),
+                V859::PlaySoundPacket(pk) => pk.as_ref(),
+                V859::PlayStatusPacket(pk) => pk.as_ref(),
+                V859::PlayerActionPacket(pk) => pk.as_ref(),
+                V859::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V859::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V859::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V859::PlayerFogPacket(pk) => pk.as_ref(),
+                V859::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V859::PlayerListPacket(pk) => pk.as_ref(),
+                V859::PlayerLocationPacket(pk) => pk.as_ref(),
+                V859::PlayerSkinPacket(pk) => pk.as_ref(),
+                V859::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V859::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V859::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
+                V859::PlayerVideoCapturePacket(pk) => pk.as_ref(),
+                V859::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V859::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V859::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V859::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V859::RemoveActorPacket(pk) => pk.as_ref(),
+                V859::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V859::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V859::RequestAbilityPacket(pk) => pk.as_ref(),
+                V859::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V859::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V859::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V859::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V859::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V859::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V859::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V859::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V859::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V859::RespawnPacket(pk) => pk.as_ref(),
+                V859::ScriptMessagePacket(pk) => pk.as_ref(),
+                V859::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V859::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V859::ServerBoundPackSettingChangePacket(pk) => pk.as_ref(),
+                V859::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V859::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V859::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V859::ServerStatsPacket(pk) => pk.as_ref(),
+                V859::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V859::SetActorDataPacket(pk) => pk.as_ref(),
+                V859::SetActorLinkPacket(pk) => pk.as_ref(),
+                V859::SetActorMotionPacket(pk) => pk.as_ref(),
+                V859::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V859::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V859::SetDifficultyPacket(pk) => pk.as_ref(),
+                V859::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V859::SetHealthPacket(pk) => pk.as_ref(),
+                V859::SetHudPacket(pk) => pk.as_ref(),
+                V859::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V859::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V859::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V859::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V859::SetScorePacket(pk) => pk.as_ref(),
+                V859::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V859::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V859::SetTimePacket(pk) => pk.as_ref(),
+                V859::SetTitlePacket(pk) => pk.as_ref(),
+                V859::SettingsCommandPacket(pk) => pk.as_ref(),
+                V859::ShowCreditsPacket(pk) => pk.as_ref(),
+                V859::ShowProfilePacket(pk) => pk.as_ref(),
+                V859::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V859::SimpleEventPacket(pk) => pk.as_ref(),
+                V859::SimulationTypePacket(pk) => pk.as_ref(),
+                V859::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V859::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V859::StartGamePacket(pk) => pk.as_ref(),
+                V859::StopSoundPacket(pk) => pk.as_ref(),
+                V859::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V859::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V859::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V859::SubChunkPacket(pk) => pk.as_ref(),
+                V859::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V859::SubClientLoginPacket(pk) => pk.as_ref(),
+                V859::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V859::TakeItemActorPacket(pk) => pk.as_ref(),
+                V859::TextPacket(pk) => pk.as_ref(),
+                V859::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V859::ToastRequestPacket(pk) => pk.as_ref(),
+                V859::TransferPlayerPacket(pk) => pk.as_ref(),
+                V859::TrimDataPacket(pk) => pk.as_ref(),
+                V859::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V859::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V859::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V859::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V859::UpdateBlockPacket(pk) => pk.as_ref(),
+                V859::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V859::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V859::UpdateClientOptionsPacket(pk) => pk.as_ref(),
+                V859::UpdateEquipPacket(pk) => pk.as_ref(),
+                V859::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V859::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V859::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V859::UpdateTradePacket(pk) => pk.as_ref(),
+                V859::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V859> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V859) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V859::ActorEventPacket(pk) => pk,
+                V859::ActorPickRequestPacket(pk) => pk,
+                V859::AddActorPacket(pk) => pk,
+                V859::AddBehaviourTreePacket(pk) => pk,
+                V859::AddItemActorPacket(pk) => pk,
+                V859::AddPaintingPacket(pk) => pk,
+                V859::AddPlayerPacket(pk) => pk,
+                V859::AddVolumeEntityPacket(pk) => pk,
+                V859::AgentActionEventPacket(pk) => pk,
+                V859::AgentAnimationPacket(pk) => pk,
+                V859::AnimateEntityPacket(pk) => pk,
+                V859::AnimatePacket(pk) => pk,
+                V859::AnvilDamagePacket(pk) => pk,
+                V859::AutomationClientConnectPacket(pk) => pk,
+                V859::AvailableActorIdentifiersPacket(pk) => pk,
+                V859::AvailableCommandsPacket(pk) => pk,
+                V859::AwardAchievementPacket(pk) => pk,
+                V859::BiomeDefinitionListPacket(pk) => pk,
+                V859::BlockActorDataPacket(pk) => pk,
+                V859::BlockEventPacket(pk) => pk,
+                V859::BlockPickRequestPacket(pk) => pk,
+                V859::BookEditPacket(pk) => pk,
+                V859::BossEventPacket(pk) => pk,
+                V859::CameraAimAssistInstructionPacket(pk) => pk,
+                V859::CameraAimAssistPacket(pk) => pk,
+                V859::CameraAimAssistPresetsPacket(pk) => pk,
+                V859::CameraInstructionPacket(pk) => pk,
+                V859::CameraPacket(pk) => pk,
+                V859::CameraPresetsPacket(pk) => pk,
+                V859::CameraShakePacket(pk) => pk,
+                V859::ChangeDimensionPacket(pk) => pk,
+                V859::ChangeMobPropertyPacket(pk) => pk,
+                V859::ChunkRadiusUpdatedPacket(pk) => pk,
+                V859::ClientBoundCloseFormPacket(pk) => pk,
+                V859::ClientBoundControlSchemeSetPacket(pk) => pk,
+                V859::ClientBoundDebugRendererPacket(pk) => pk,
+                V859::ClientBoundMapItemDataPacket(pk) => pk,
+                V859::ClientCacheBlobStatusPacket(pk) => pk,
+                V859::ClientCacheMissResponsePacket(pk) => pk,
+                V859::ClientCacheStatusPacket(pk) => pk,
+                V859::ClientToServerHandshakePacket(pk) => pk,
+                V859::CodeBuilderPacket(pk) => pk,
+                V859::CodeBuilderSourcePacket(pk) => pk,
+                V859::CommandBlockUpdatePacket(pk) => pk,
+                V859::CommandOutputPacket(pk) => pk,
+                V859::CommandRequestPacket(pk) => pk,
+                V859::CompletedUsingItemPacket(pk) => pk,
+                V859::ContainerClosePacket(pk) => pk,
+                V859::ContainerOpenPacket(pk) => pk,
+                V859::ContainerRegistryCleanupPacket(pk) => pk,
+                V859::ContainerSetDataPacket(pk) => pk,
+                V859::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V859::CraftingDataPacket(pk) => pk,
+                V859::CreatePhotoPacket(pk) => pk,
+                V859::CreativeContentPacket(pk) => pk,
+                V859::CurrentStructureFeaturePacket(pk) => pk,
+                V859::DeathInfoPacket(pk) => pk,
+                V859::DebugDrawerPacket(pk) => pk,
+                V859::DebugInfoPacket(pk) => pk,
+                V859::DimensionDataPacket(pk) => pk,
+                V859::DisconnectPacket(pk) => pk,
+                V859::EditorNetworkPacket(pk) => pk,
+                V859::EduUriResourcePacket(pk) => pk,
+                V859::EducationSettingsPacket(pk) => pk,
+                V859::EmoteListPacket(pk) => pk,
+                V859::EmotePacket(pk) => pk,
+                V859::FeatureRegistryPacket(pk) => pk,
+                V859::GameRulesChangedPacket(pk) => pk,
+                V859::GameTestRequestPacket(pk) => pk,
+                V859::GameTestResultsPacket(pk) => pk,
+                V859::GraphicsParameterOverridePacket(pk) => pk,
+                V859::GuiDataPickItemPacket(pk) => pk,
+                V859::HurtArmorPacket(pk) => pk,
+                V859::InteractPacket(pk) => pk,
+                V859::InventoryContentPacket(pk) => pk,
+                V859::InventorySlotPacket(pk) => pk,
+                V859::InventoryTransactionPacket(pk) => pk,
+                V859::ItemComponentPacket(pk) => pk,
+                V859::ItemStackRequestPacket(pk) => pk,
+                V859::ItemStackResponsePacket(pk) => pk,
+                V859::JigsawStructureDataPacket(pk) => pk,
+                V859::LabTablePacket(pk) => pk,
+                V859::LecternUpdatePacket(pk) => pk,
+                V859::LegacyTelemetryEventPacket(pk) => pk,
+                V859::LessonProgressPacket(pk) => pk,
+                V859::LevelChunkPacket(pk) => pk,
+                V859::LevelEventGenericPacket(pk) => pk,
+                V859::LevelEventPacket(pk) => pk,
+                V859::LevelSoundEventPacket(pk) => pk,
+                V859::LoginPacket(pk) => pk,
+                V859::MapCreateLockedCopyPacket(pk) => pk,
+                V859::MapInfoRequestPacket(pk) => pk,
+                V859::MobArmorEquipmentPacket(pk) => pk,
+                V859::MobEffectPacket(pk) => pk,
+                V859::MobEquipmentPacket(pk) => pk,
+                V859::ModalFormRequestPacket(pk) => pk,
+                V859::ModalFormResponsePacket(pk) => pk,
+                V859::MotionPredictionHintsPacket(pk) => pk,
+                V859::MoveActorAbsolutePacket(pk) => pk,
+                V859::MoveActorDeltaPacket(pk) => pk,
+                V859::MovePlayerPacket(pk) => pk,
+                V859::MovementEffectPacket(pk) => pk,
+                V859::MovementPredictionSyncPacket(pk) => pk,
+                V859::MultiplayerSettingsPacket(pk) => pk,
+                V859::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V859::NetworkSettingsPacket(pk) => pk,
+                V859::NetworkStackLatencyPacket(pk) => pk,
+                V859::NpcDialoguePacket(pk) => pk,
+                V859::NpcRequestPacket(pk) => pk,
+                V859::OnScreenTextureAnimationPacket(pk) => pk,
+                V859::OpenSignPacket(pk) => pk,
+                V859::PacketViolationWarningPacket(pk) => pk,
+                V859::PhotoTransferPacket(pk) => pk,
+                V859::PlaySoundPacket(pk) => pk,
+                V859::PlayStatusPacket(pk) => pk,
+                V859::PlayerActionPacket(pk) => pk,
+                V859::PlayerArmorDamagePacket(pk) => pk,
+                V859::PlayerAuthInputPacket(pk) => pk,
+                V859::PlayerEnchantOptionsPacket(pk) => pk,
+                V859::PlayerFogPacket(pk) => pk,
+                V859::PlayerHotbarPacket(pk) => pk,
+                V859::PlayerListPacket(pk) => pk,
+                V859::PlayerLocationPacket(pk) => pk,
+                V859::PlayerSkinPacket(pk) => pk,
+                V859::PlayerStartItemCooldownPacket(pk) => pk,
+                V859::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V859::PlayerUpdateEntityOverridesPacket(pk) => pk,
+                V859::PlayerVideoCapturePacket(pk) => pk,
+                V859::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V859::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V859::PurchaseReceiptPacket(pk) => pk,
+                V859::RefreshEntitlementsPacket(pk) => pk,
+                V859::RemoveActorPacket(pk) => pk,
+                V859::RemoveObjectivePacket(pk) => pk,
+                V859::RemoveVolumeEntityPacket(pk) => pk,
+                V859::RequestAbilityPacket(pk) => pk,
+                V859::RequestChunkRadiusPacket(pk) => pk,
+                V859::RequestNetworkSettingsPacket(pk) => pk,
+                V859::RequestPermissionsPacket(pk) => pk,
+                V859::ResourcePackChunkDataPacket(pk) => pk,
+                V859::ResourcePackChunkRequestPacket(pk) => pk,
+                V859::ResourcePackClientResponsePacket(pk) => pk,
+                V859::ResourcePackDataInfoPacket(pk) => pk,
+                V859::ResourcePackStackPacket(pk) => pk,
+                V859::ResourcePacksInfoPacket(pk) => pk,
+                V859::RespawnPacket(pk) => pk,
+                V859::ScriptMessagePacket(pk) => pk,
+                V859::ServerBoundDiagnosticsPacket(pk) => pk,
+                V859::ServerBoundLoadingScreenPacket(pk) => pk,
+                V859::ServerBoundPackSettingChangePacket(pk) => pk,
+                V859::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V859::ServerSettingsRequestPacket(pk) => pk,
+                V859::ServerSettingsResponsePacket(pk) => pk,
+                V859::ServerStatsPacket(pk) => pk,
+                V859::ServerToClientHandshakePacket(pk) => pk,
+                V859::SetActorDataPacket(pk) => pk,
+                V859::SetActorLinkPacket(pk) => pk,
+                V859::SetActorMotionPacket(pk) => pk,
+                V859::SetCommandsEnabledPacket(pk) => pk,
+                V859::SetDefaultGameTypePacket(pk) => pk,
+                V859::SetDifficultyPacket(pk) => pk,
+                V859::SetDisplayObjectivePacket(pk) => pk,
+                V859::SetHealthPacket(pk) => pk,
+                V859::SetHudPacket(pk) => pk,
+                V859::SetLastHurtByPacket(pk) => pk,
+                V859::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V859::SetPlayerGameTypePacket(pk) => pk,
+                V859::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V859::SetScorePacket(pk) => pk,
+                V859::SetScoreboardIdentityPacket(pk) => pk,
+                V859::SetSpawnPositionPacket(pk) => pk,
+                V859::SetTimePacket(pk) => pk,
+                V859::SetTitlePacket(pk) => pk,
+                V859::SettingsCommandPacket(pk) => pk,
+                V859::ShowCreditsPacket(pk) => pk,
+                V859::ShowProfilePacket(pk) => pk,
+                V859::ShowStoreOfferPacket(pk) => pk,
+                V859::SimpleEventPacket(pk) => pk,
+                V859::SimulationTypePacket(pk) => pk,
+                V859::SpawnExperienceOrbPacket(pk) => pk,
+                V859::SpawnParticleEffectPacket(pk) => pk,
+                V859::StartGamePacket(pk) => pk,
+                V859::StopSoundPacket(pk) => pk,
+                V859::StructureBlockUpdatePacket(pk) => pk,
+                V859::StructureDataRequestPacket(pk) => pk,
+                V859::StructureDataResponsePacket(pk) => pk,
+                V859::SubChunkPacket(pk) => pk,
+                V859::SubChunkRequestPacket(pk) => pk,
+                V859::SubClientLoginPacket(pk) => pk,
+                V859::SyncActorPropertyPacket(pk) => pk,
+                V859::TakeItemActorPacket(pk) => pk,
+                V859::TextPacket(pk) => pk,
+                V859::TickingAreaLoadStatusPacket(pk) => pk,
+                V859::ToastRequestPacket(pk) => pk,
+                V859::TransferPlayerPacket(pk) => pk,
+                V859::TrimDataPacket(pk) => pk,
+                V859::UnlockedRecipesPacket(pk) => pk,
+                V859::UpdateAbilitiesPacket(pk) => pk,
+                V859::UpdateAdventureSettingsPacket(pk) => pk,
+                V859::UpdateAttributesPacket(pk) => pk,
+                V859::UpdateBlockPacket(pk) => pk,
+                V859::UpdateBlockSyncedPacket(pk) => pk,
+                V859::UpdateClientInputLocksPacket(pk) => pk,
+                V859::UpdateClientOptionsPacket(pk) => pk,
+                V859::UpdateEquipPacket(pk) => pk,
+                V859::UpdatePlayerGameTypePacket(pk) => pk,
+                V859::UpdateSoftEnumPacket(pk) => pk,
+                V859::UpdateSubChunkBlocksPacket(pk) => pk,
+                V859::UpdateTradePacket(pk) => pk,
+                V859::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v859")]
