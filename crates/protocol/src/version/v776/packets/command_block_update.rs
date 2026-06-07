@@ -29,21 +29,21 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
         match &self.is_block {
             false => {
                 <V::ActorRuntimeID as ProtoCodec>::serialize(
-                    self.target_runtime_id.as_ref().unwrap(),
+                    self.target_runtime_id.as_ref().ok_or(ProtoCodecError::ExpectedSome("target_runtime_id"))?,
                     stream,
                 )?;
             }
             true => {
                 <V::NetworkBlockPosition as ProtoCodec>::serialize(
-                    self.block_position.as_ref().unwrap(),
+                    self.block_position.as_ref().ok_or(ProtoCodecError::ExpectedSome("block_position"))?,
                     stream,
                 )?;
                 <V::CommandBlockMode as ProtoCodec>::serialize(
-                    self.command_block_mode.as_ref().unwrap(),
+                    self.command_block_mode.as_ref().ok_or(ProtoCodecError::ExpectedSome("command_block_mode"))?,
                     stream,
                 )?;
-                <bool as ProtoCodec>::serialize(self.redstone_mode.as_ref().unwrap(), stream)?;
-                <bool as ProtoCodec>::serialize(self.is_conditional.as_ref().unwrap(), stream)?;
+                <bool as ProtoCodec>::serialize(self.redstone_mode.as_ref().ok_or(ProtoCodecError::ExpectedSome("redstone_mode"))?, stream)?;
+                <bool as ProtoCodec>::serialize(self.is_conditional.as_ref().ok_or(ProtoCodecError::ExpectedSome("is_conditional"))?, stream)?;
             }
         }
         <String as ProtoCodec>::serialize(&self.command, stream)?;
@@ -112,10 +112,10 @@ impl<V: ProtoVersion> ProtoCodec for CommandBlockUpdatePacket<V> {
     fn size_hint(&self) -> usize {
         size_of::<bool>()
             + match &self.is_block {
-                false => self.target_runtime_id.as_ref().unwrap().size_hint(),
+                false => self.target_runtime_id.as_ref().map_or(0, ProtoCodec::size_hint),
                 true => {
-                    self.block_position.as_ref().unwrap().size_hint()
-                        + self.command_block_mode.as_ref().unwrap().size_hint()
+                    self.block_position.as_ref().map_or(0, ProtoCodec::size_hint)
+                        + self.command_block_mode.as_ref().map_or(0, ProtoCodec::size_hint)
                         + size_of::<bool>()
                         + size_of::<bool>()
                 }

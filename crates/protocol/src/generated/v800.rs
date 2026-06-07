@@ -7415,429 +7415,630 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V800::ActorEventPacket(pk) => pk.as_ref(),
-                V800::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V800::AddActorPacket(pk) => pk.as_ref(),
-                V800::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V800::AddItemActorPacket(pk) => pk.as_ref(),
-                V800::AddPaintingPacket(pk) => pk.as_ref(),
-                V800::AddPlayerPacket(pk) => pk.as_ref(),
-                V800::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V800::AgentActionEventPacket(pk) => pk.as_ref(),
-                V800::AgentAnimationPacket(pk) => pk.as_ref(),
-                V800::AnimateEntityPacket(pk) => pk.as_ref(),
-                V800::AnimatePacket(pk) => pk.as_ref(),
-                V800::AnvilDamagePacket(pk) => pk.as_ref(),
-                V800::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V800::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V800::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V800::AwardAchievementPacket(pk) => pk.as_ref(),
-                V800::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V800::BlockActorDataPacket(pk) => pk.as_ref(),
-                V800::BlockEventPacket(pk) => pk.as_ref(),
-                V800::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V800::BookEditPacket(pk) => pk.as_ref(),
-                V800::BossEventPacket(pk) => pk.as_ref(),
-                V800::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
-                V800::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V800::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V800::CameraInstructionPacket(pk) => pk.as_ref(),
-                V800::CameraPacket(pk) => pk.as_ref(),
-                V800::CameraPresetsPacket(pk) => pk.as_ref(),
-                V800::CameraShakePacket(pk) => pk.as_ref(),
-                V800::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V800::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V800::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V800::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V800::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
-                V800::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V800::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V800::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V800::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V800::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V800::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V800::CodeBuilderPacket(pk) => pk.as_ref(),
-                V800::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V800::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V800::CommandOutputPacket(pk) => pk.as_ref(),
-                V800::CommandRequestPacket(pk) => pk.as_ref(),
-                V800::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V800::ContainerClosePacket(pk) => pk.as_ref(),
-                V800::ContainerOpenPacket(pk) => pk.as_ref(),
-                V800::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V800::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V800::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V800::CraftingDataPacket(pk) => pk.as_ref(),
-                V800::CreatePhotoPacket(pk) => pk.as_ref(),
-                V800::CreativeContentPacket(pk) => pk.as_ref(),
-                V800::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V800::DeathInfoPacket(pk) => pk.as_ref(),
-                V800::DebugInfoPacket(pk) => pk.as_ref(),
-                V800::DimensionDataPacket(pk) => pk.as_ref(),
-                V800::DisconnectPacket(pk) => pk.as_ref(),
-                V800::EditorNetworkPacket(pk) => pk.as_ref(),
-                V800::EduUriResourcePacket(pk) => pk.as_ref(),
-                V800::EducationSettingsPacket(pk) => pk.as_ref(),
-                V800::EmoteListPacket(pk) => pk.as_ref(),
-                V800::EmotePacket(pk) => pk.as_ref(),
-                V800::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V800::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V800::GameTestRequestPacket(pk) => pk.as_ref(),
-                V800::GameTestResultsPacket(pk) => pk.as_ref(),
-                V800::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V800::HurtArmorPacket(pk) => pk.as_ref(),
-                V800::InteractPacket(pk) => pk.as_ref(),
-                V800::InventoryContentPacket(pk) => pk.as_ref(),
-                V800::InventorySlotPacket(pk) => pk.as_ref(),
-                V800::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V800::ItemComponentPacket(pk) => pk.as_ref(),
-                V800::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V800::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V800::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V800::LabTablePacket(pk) => pk.as_ref(),
-                V800::LecternUpdatePacket(pk) => pk.as_ref(),
-                V800::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V800::LessonProgressPacket(pk) => pk.as_ref(),
-                V800::LevelChunkPacket(pk) => pk.as_ref(),
-                V800::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V800::LevelEventPacket(pk) => pk.as_ref(),
-                V800::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V800::LoginPacket(pk) => pk.as_ref(),
-                V800::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V800::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V800::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V800::MobEffectPacket(pk) => pk.as_ref(),
-                V800::MobEquipmentPacket(pk) => pk.as_ref(),
-                V800::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V800::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V800::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V800::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V800::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V800::MovePlayerPacket(pk) => pk.as_ref(),
-                V800::MovementEffectPacket(pk) => pk.as_ref(),
-                V800::MovementPredictionSyncPacket(pk) => pk.as_ref(),
-                V800::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V800::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V800::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V800::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V800::NpcDialoguePacket(pk) => pk.as_ref(),
-                V800::NpcRequestPacket(pk) => pk.as_ref(),
-                V800::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V800::OpenSignPacket(pk) => pk.as_ref(),
-                V800::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V800::PhotoTransferPacket(pk) => pk.as_ref(),
-                V800::PlaySoundPacket(pk) => pk.as_ref(),
-                V800::PlayStatusPacket(pk) => pk.as_ref(),
-                V800::PlayerActionPacket(pk) => pk.as_ref(),
-                V800::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V800::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V800::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V800::PlayerFogPacket(pk) => pk.as_ref(),
-                V800::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V800::PlayerListPacket(pk) => pk.as_ref(),
-                V800::PlayerLocationPacket(pk) => pk.as_ref(),
-                V800::PlayerSkinPacket(pk) => pk.as_ref(),
-                V800::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V800::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V800::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
-                V800::PlayerVideoCapturePacket(pk) => pk.as_ref(),
-                V800::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V800::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V800::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V800::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V800::RemoveActorPacket(pk) => pk.as_ref(),
-                V800::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V800::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V800::RequestAbilityPacket(pk) => pk.as_ref(),
-                V800::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V800::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V800::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V800::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V800::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V800::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V800::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V800::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V800::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V800::RespawnPacket(pk) => pk.as_ref(),
-                V800::ScriptMessagePacket(pk) => pk.as_ref(),
-                V800::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V800::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V800::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V800::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V800::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V800::ServerStatsPacket(pk) => pk.as_ref(),
-                V800::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V800::SetActorDataPacket(pk) => pk.as_ref(),
-                V800::SetActorLinkPacket(pk) => pk.as_ref(),
-                V800::SetActorMotionPacket(pk) => pk.as_ref(),
-                V800::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V800::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V800::SetDifficultyPacket(pk) => pk.as_ref(),
-                V800::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V800::SetHealthPacket(pk) => pk.as_ref(),
-                V800::SetHudPacket(pk) => pk.as_ref(),
-                V800::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V800::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V800::SetMovementAuthorityPacket(pk) => pk.as_ref(),
-                V800::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V800::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V800::SetScorePacket(pk) => pk.as_ref(),
-                V800::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V800::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V800::SetTimePacket(pk) => pk.as_ref(),
-                V800::SetTitlePacket(pk) => pk.as_ref(),
-                V800::SettingsCommandPacket(pk) => pk.as_ref(),
-                V800::ShowCreditsPacket(pk) => pk.as_ref(),
-                V800::ShowProfilePacket(pk) => pk.as_ref(),
-                V800::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V800::SimpleEventPacket(pk) => pk.as_ref(),
-                V800::SimulationTypePacket(pk) => pk.as_ref(),
-                V800::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V800::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V800::StartGamePacket(pk) => pk.as_ref(),
-                V800::StopSoundPacket(pk) => pk.as_ref(),
-                V800::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V800::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V800::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V800::SubChunkPacket(pk) => pk.as_ref(),
-                V800::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V800::SubClientLoginPacket(pk) => pk.as_ref(),
-                V800::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V800::TakeItemActorPacket(pk) => pk.as_ref(),
-                V800::TextPacket(pk) => pk.as_ref(),
-                V800::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V800::ToastRequestPacket(pk) => pk.as_ref(),
-                V800::TransferPlayerPacket(pk) => pk.as_ref(),
-                V800::TrimDataPacket(pk) => pk.as_ref(),
-                V800::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V800::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V800::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V800::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V800::UpdateBlockPacket(pk) => pk.as_ref(),
-                V800::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V800::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V800::UpdateClientOptionsPacket(pk) => pk.as_ref(),
-                V800::UpdateEquipPacket(pk) => pk.as_ref(),
-                V800::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V800::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V800::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V800::UpdateTradePacket(pk) => pk.as_ref(),
-                V800::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V800::ActorEventPacket(pk) => pk,
-                V800::ActorPickRequestPacket(pk) => pk,
-                V800::AddActorPacket(pk) => pk,
-                V800::AddBehaviourTreePacket(pk) => pk,
-                V800::AddItemActorPacket(pk) => pk,
-                V800::AddPaintingPacket(pk) => pk,
-                V800::AddPlayerPacket(pk) => pk,
-                V800::AddVolumeEntityPacket(pk) => pk,
-                V800::AgentActionEventPacket(pk) => pk,
-                V800::AgentAnimationPacket(pk) => pk,
-                V800::AnimateEntityPacket(pk) => pk,
-                V800::AnimatePacket(pk) => pk,
-                V800::AnvilDamagePacket(pk) => pk,
-                V800::AutomationClientConnectPacket(pk) => pk,
-                V800::AvailableActorIdentifiersPacket(pk) => pk,
-                V800::AvailableCommandsPacket(pk) => pk,
-                V800::AwardAchievementPacket(pk) => pk,
-                V800::BiomeDefinitionListPacket(pk) => pk,
-                V800::BlockActorDataPacket(pk) => pk,
-                V800::BlockEventPacket(pk) => pk,
-                V800::BlockPickRequestPacket(pk) => pk,
-                V800::BookEditPacket(pk) => pk,
-                V800::BossEventPacket(pk) => pk,
-                V800::CameraAimAssistInstructionPacket(pk) => pk,
-                V800::CameraAimAssistPacket(pk) => pk,
-                V800::CameraAimAssistPresetsPacket(pk) => pk,
-                V800::CameraInstructionPacket(pk) => pk,
-                V800::CameraPacket(pk) => pk,
-                V800::CameraPresetsPacket(pk) => pk,
-                V800::CameraShakePacket(pk) => pk,
-                V800::ChangeDimensionPacket(pk) => pk,
-                V800::ChangeMobPropertyPacket(pk) => pk,
-                V800::ChunkRadiusUpdatedPacket(pk) => pk,
-                V800::ClientBoundCloseFormPacket(pk) => pk,
-                V800::ClientBoundControlSchemeSetPacket(pk) => pk,
-                V800::ClientBoundDebugRendererPacket(pk) => pk,
-                V800::ClientBoundMapItemDataPacket(pk) => pk,
-                V800::ClientCacheBlobStatusPacket(pk) => pk,
-                V800::ClientCacheMissResponsePacket(pk) => pk,
-                V800::ClientCacheStatusPacket(pk) => pk,
-                V800::ClientToServerHandshakePacket(pk) => pk,
-                V800::CodeBuilderPacket(pk) => pk,
-                V800::CodeBuilderSourcePacket(pk) => pk,
-                V800::CommandBlockUpdatePacket(pk) => pk,
-                V800::CommandOutputPacket(pk) => pk,
-                V800::CommandRequestPacket(pk) => pk,
-                V800::CompletedUsingItemPacket(pk) => pk,
-                V800::ContainerClosePacket(pk) => pk,
-                V800::ContainerOpenPacket(pk) => pk,
-                V800::ContainerRegistryCleanupPacket(pk) => pk,
-                V800::ContainerSetDataPacket(pk) => pk,
-                V800::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V800::CraftingDataPacket(pk) => pk,
-                V800::CreatePhotoPacket(pk) => pk,
-                V800::CreativeContentPacket(pk) => pk,
-                V800::CurrentStructureFeaturePacket(pk) => pk,
-                V800::DeathInfoPacket(pk) => pk,
-                V800::DebugInfoPacket(pk) => pk,
-                V800::DimensionDataPacket(pk) => pk,
-                V800::DisconnectPacket(pk) => pk,
-                V800::EditorNetworkPacket(pk) => pk,
-                V800::EduUriResourcePacket(pk) => pk,
-                V800::EducationSettingsPacket(pk) => pk,
-                V800::EmoteListPacket(pk) => pk,
-                V800::EmotePacket(pk) => pk,
-                V800::FeatureRegistryPacket(pk) => pk,
-                V800::GameRulesChangedPacket(pk) => pk,
-                V800::GameTestRequestPacket(pk) => pk,
-                V800::GameTestResultsPacket(pk) => pk,
-                V800::GuiDataPickItemPacket(pk) => pk,
-                V800::HurtArmorPacket(pk) => pk,
-                V800::InteractPacket(pk) => pk,
-                V800::InventoryContentPacket(pk) => pk,
-                V800::InventorySlotPacket(pk) => pk,
-                V800::InventoryTransactionPacket(pk) => pk,
-                V800::ItemComponentPacket(pk) => pk,
-                V800::ItemStackRequestPacket(pk) => pk,
-                V800::ItemStackResponsePacket(pk) => pk,
-                V800::JigsawStructureDataPacket(pk) => pk,
-                V800::LabTablePacket(pk) => pk,
-                V800::LecternUpdatePacket(pk) => pk,
-                V800::LegacyTelemetryEventPacket(pk) => pk,
-                V800::LessonProgressPacket(pk) => pk,
-                V800::LevelChunkPacket(pk) => pk,
-                V800::LevelEventGenericPacket(pk) => pk,
-                V800::LevelEventPacket(pk) => pk,
-                V800::LevelSoundEventPacket(pk) => pk,
-                V800::LoginPacket(pk) => pk,
-                V800::MapCreateLockedCopyPacket(pk) => pk,
-                V800::MapInfoRequestPacket(pk) => pk,
-                V800::MobArmorEquipmentPacket(pk) => pk,
-                V800::MobEffectPacket(pk) => pk,
-                V800::MobEquipmentPacket(pk) => pk,
-                V800::ModalFormRequestPacket(pk) => pk,
-                V800::ModalFormResponsePacket(pk) => pk,
-                V800::MotionPredictionHintsPacket(pk) => pk,
-                V800::MoveActorAbsolutePacket(pk) => pk,
-                V800::MoveActorDeltaPacket(pk) => pk,
-                V800::MovePlayerPacket(pk) => pk,
-                V800::MovementEffectPacket(pk) => pk,
-                V800::MovementPredictionSyncPacket(pk) => pk,
-                V800::MultiplayerSettingsPacket(pk) => pk,
-                V800::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V800::NetworkSettingsPacket(pk) => pk,
-                V800::NetworkStackLatencyPacket(pk) => pk,
-                V800::NpcDialoguePacket(pk) => pk,
-                V800::NpcRequestPacket(pk) => pk,
-                V800::OnScreenTextureAnimationPacket(pk) => pk,
-                V800::OpenSignPacket(pk) => pk,
-                V800::PacketViolationWarningPacket(pk) => pk,
-                V800::PhotoTransferPacket(pk) => pk,
-                V800::PlaySoundPacket(pk) => pk,
-                V800::PlayStatusPacket(pk) => pk,
-                V800::PlayerActionPacket(pk) => pk,
-                V800::PlayerArmorDamagePacket(pk) => pk,
-                V800::PlayerAuthInputPacket(pk) => pk,
-                V800::PlayerEnchantOptionsPacket(pk) => pk,
-                V800::PlayerFogPacket(pk) => pk,
-                V800::PlayerHotbarPacket(pk) => pk,
-                V800::PlayerListPacket(pk) => pk,
-                V800::PlayerLocationPacket(pk) => pk,
-                V800::PlayerSkinPacket(pk) => pk,
-                V800::PlayerStartItemCooldownPacket(pk) => pk,
-                V800::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V800::PlayerUpdateEntityOverridesPacket(pk) => pk,
-                V800::PlayerVideoCapturePacket(pk) => pk,
-                V800::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V800::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V800::PurchaseReceiptPacket(pk) => pk,
-                V800::RefreshEntitlementsPacket(pk) => pk,
-                V800::RemoveActorPacket(pk) => pk,
-                V800::RemoveObjectivePacket(pk) => pk,
-                V800::RemoveVolumeEntityPacket(pk) => pk,
-                V800::RequestAbilityPacket(pk) => pk,
-                V800::RequestChunkRadiusPacket(pk) => pk,
-                V800::RequestNetworkSettingsPacket(pk) => pk,
-                V800::RequestPermissionsPacket(pk) => pk,
-                V800::ResourcePackChunkDataPacket(pk) => pk,
-                V800::ResourcePackChunkRequestPacket(pk) => pk,
-                V800::ResourcePackClientResponsePacket(pk) => pk,
-                V800::ResourcePackDataInfoPacket(pk) => pk,
-                V800::ResourcePackStackPacket(pk) => pk,
-                V800::ResourcePacksInfoPacket(pk) => pk,
-                V800::RespawnPacket(pk) => pk,
-                V800::ScriptMessagePacket(pk) => pk,
-                V800::ServerBoundDiagnosticsPacket(pk) => pk,
-                V800::ServerBoundLoadingScreenPacket(pk) => pk,
-                V800::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V800::ServerSettingsRequestPacket(pk) => pk,
-                V800::ServerSettingsResponsePacket(pk) => pk,
-                V800::ServerStatsPacket(pk) => pk,
-                V800::ServerToClientHandshakePacket(pk) => pk,
-                V800::SetActorDataPacket(pk) => pk,
-                V800::SetActorLinkPacket(pk) => pk,
-                V800::SetActorMotionPacket(pk) => pk,
-                V800::SetCommandsEnabledPacket(pk) => pk,
-                V800::SetDefaultGameTypePacket(pk) => pk,
-                V800::SetDifficultyPacket(pk) => pk,
-                V800::SetDisplayObjectivePacket(pk) => pk,
-                V800::SetHealthPacket(pk) => pk,
-                V800::SetHudPacket(pk) => pk,
-                V800::SetLastHurtByPacket(pk) => pk,
-                V800::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V800::SetMovementAuthorityPacket(pk) => pk,
-                V800::SetPlayerGameTypePacket(pk) => pk,
-                V800::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V800::SetScorePacket(pk) => pk,
-                V800::SetScoreboardIdentityPacket(pk) => pk,
-                V800::SetSpawnPositionPacket(pk) => pk,
-                V800::SetTimePacket(pk) => pk,
-                V800::SetTitlePacket(pk) => pk,
-                V800::SettingsCommandPacket(pk) => pk,
-                V800::ShowCreditsPacket(pk) => pk,
-                V800::ShowProfilePacket(pk) => pk,
-                V800::ShowStoreOfferPacket(pk) => pk,
-                V800::SimpleEventPacket(pk) => pk,
-                V800::SimulationTypePacket(pk) => pk,
-                V800::SpawnExperienceOrbPacket(pk) => pk,
-                V800::SpawnParticleEffectPacket(pk) => pk,
-                V800::StartGamePacket(pk) => pk,
-                V800::StopSoundPacket(pk) => pk,
-                V800::StructureBlockUpdatePacket(pk) => pk,
-                V800::StructureDataRequestPacket(pk) => pk,
-                V800::StructureDataResponsePacket(pk) => pk,
-                V800::SubChunkPacket(pk) => pk,
-                V800::SubChunkRequestPacket(pk) => pk,
-                V800::SubClientLoginPacket(pk) => pk,
-                V800::SyncActorPropertyPacket(pk) => pk,
-                V800::TakeItemActorPacket(pk) => pk,
-                V800::TextPacket(pk) => pk,
-                V800::TickingAreaLoadStatusPacket(pk) => pk,
-                V800::ToastRequestPacket(pk) => pk,
-                V800::TransferPlayerPacket(pk) => pk,
-                V800::TrimDataPacket(pk) => pk,
-                V800::UnlockedRecipesPacket(pk) => pk,
-                V800::UpdateAbilitiesPacket(pk) => pk,
-                V800::UpdateAdventureSettingsPacket(pk) => pk,
-                V800::UpdateAttributesPacket(pk) => pk,
-                V800::UpdateBlockPacket(pk) => pk,
-                V800::UpdateBlockSyncedPacket(pk) => pk,
-                V800::UpdateClientInputLocksPacket(pk) => pk,
-                V800::UpdateClientOptionsPacket(pk) => pk,
-                V800::UpdateEquipPacket(pk) => pk,
-                V800::UpdatePlayerGameTypePacket(pk) => pk,
-                V800::UpdateSoftEnumPacket(pk) => pk,
-                V800::UpdateSubChunkBlocksPacket(pk) => pk,
-                V800::UpdateTradePacket(pk) => pk,
-                V800::Unknown(pk) => pk,
+                V800::ActorEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ActorPickRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AddActorPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AddBehaviourTreePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AddItemActorPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AddPaintingPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AddPlayerPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AddVolumeEntityPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AgentActionEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AgentAnimationPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AnimateEntityPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AnimatePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AnvilDamagePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AutomationClientConnectPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AvailableActorIdentifiersPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AvailableCommandsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::AwardAchievementPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::BiomeDefinitionListPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::BlockActorDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::BlockEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::BlockPickRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::BookEditPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::BossEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraAimAssistInstructionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraAimAssistPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraAimAssistPresetsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraInstructionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraPresetsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CameraShakePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ChangeDimensionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ChangeMobPropertyPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ChunkRadiusUpdatedPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientBoundCloseFormPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientBoundControlSchemeSetPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientBoundDebugRendererPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientBoundMapItemDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientCacheBlobStatusPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientCacheMissResponsePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientCacheStatusPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ClientToServerHandshakePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CodeBuilderPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CodeBuilderSourcePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CommandBlockUpdatePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CommandOutputPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CommandRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CompletedUsingItemPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ContainerClosePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ContainerOpenPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ContainerRegistryCleanupPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ContainerSetDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CraftingDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CreatePhotoPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CreativeContentPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::CurrentStructureFeaturePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::DeathInfoPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::DebugInfoPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::DimensionDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::DisconnectPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::EditorNetworkPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::EduUriResourcePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::EducationSettingsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::EmoteListPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::EmotePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::FeatureRegistryPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::GameRulesChangedPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::GameTestRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::GameTestResultsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::GuiDataPickItemPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::HurtArmorPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::InteractPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::InventoryContentPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::InventorySlotPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::InventoryTransactionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ItemComponentPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ItemStackRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ItemStackResponsePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::JigsawStructureDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LabTablePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LecternUpdatePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LegacyTelemetryEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LessonProgressPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LevelChunkPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LevelEventGenericPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LevelEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LevelSoundEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::LoginPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MapCreateLockedCopyPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MapInfoRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MobArmorEquipmentPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MobEffectPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MobEquipmentPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ModalFormRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ModalFormResponsePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MotionPredictionHintsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MoveActorAbsolutePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MoveActorDeltaPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MovePlayerPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MovementEffectPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MovementPredictionSyncPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::MultiplayerSettingsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::NetworkSettingsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::NetworkStackLatencyPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::NpcDialoguePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::NpcRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::OnScreenTextureAnimationPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::OpenSignPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PacketViolationWarningPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PhotoTransferPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlaySoundPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayStatusPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerActionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerArmorDamagePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerAuthInputPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerEnchantOptionsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerFogPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerHotbarPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerListPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerLocationPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerSkinPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerStartItemCooldownPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerUpdateEntityOverridesPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PlayerVideoCapturePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::PurchaseReceiptPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RefreshEntitlementsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RemoveActorPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RemoveObjectivePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RemoveVolumeEntityPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RequestAbilityPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RequestChunkRadiusPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RequestNetworkSettingsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RequestPermissionsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ResourcePackChunkDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ResourcePackChunkRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ResourcePackClientResponsePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ResourcePackDataInfoPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ResourcePackStackPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ResourcePacksInfoPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::RespawnPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ScriptMessagePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerBoundDiagnosticsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerBoundLoadingScreenPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerSettingsRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerSettingsResponsePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerStatsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ServerToClientHandshakePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetActorDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetActorLinkPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetActorMotionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetCommandsEnabledPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetDefaultGameTypePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetDifficultyPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetDisplayObjectivePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetHealthPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetHudPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetLastHurtByPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetMovementAuthorityPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetMovementAuthorityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetPlayerGameTypePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetScorePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetScoreboardIdentityPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetSpawnPositionPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetTimePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SetTitlePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SettingsCommandPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ShowCreditsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ShowProfilePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ShowStoreOfferPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SimpleEventPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SimulationTypePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SpawnExperienceOrbPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SpawnParticleEffectPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::StartGamePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::StopSoundPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::StructureBlockUpdatePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::StructureDataRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::StructureDataResponsePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SubChunkPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SubChunkRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SubClientLoginPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::SyncActorPropertyPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::TakeItemActorPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::TextPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::TickingAreaLoadStatusPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::ToastRequestPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::TransferPlayerPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::TrimDataPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UnlockedRecipesPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateAbilitiesPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateAdventureSettingsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateAttributesPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateBlockPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateBlockSyncedPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateClientInputLocksPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateClientOptionsPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateEquipPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdatePlayerGameTypePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateSoftEnumPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateSubChunkBlocksPacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::UpdateTradePacket(_) => {
+                    <<V800 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V800::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7919,7 +8120,7 @@ mod inner {
         type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
         type CorrectPlayerMovePredictionPacket =
             crate::version::v671::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
         type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
         type CreativeContentPacket = crate::version::v776::packets::CreativeContentPacket<Self>;
         type CurrentStructureFeaturePacket =
@@ -8234,9 +8435,7 @@ mod inner {
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v776::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
         type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
         type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
@@ -8372,6 +8571,436 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u8";
         const GAME_VERSION: &str = "1.21.80";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V800 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V800::ActorEventPacket(pk) => pk.as_ref(),
+                V800::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V800::AddActorPacket(pk) => pk.as_ref(),
+                V800::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V800::AddItemActorPacket(pk) => pk.as_ref(),
+                V800::AddPaintingPacket(pk) => pk.as_ref(),
+                V800::AddPlayerPacket(pk) => pk.as_ref(),
+                V800::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V800::AgentActionEventPacket(pk) => pk.as_ref(),
+                V800::AgentAnimationPacket(pk) => pk.as_ref(),
+                V800::AnimateEntityPacket(pk) => pk.as_ref(),
+                V800::AnimatePacket(pk) => pk.as_ref(),
+                V800::AnvilDamagePacket(pk) => pk.as_ref(),
+                V800::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V800::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V800::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V800::AwardAchievementPacket(pk) => pk.as_ref(),
+                V800::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V800::BlockActorDataPacket(pk) => pk.as_ref(),
+                V800::BlockEventPacket(pk) => pk.as_ref(),
+                V800::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V800::BookEditPacket(pk) => pk.as_ref(),
+                V800::BossEventPacket(pk) => pk.as_ref(),
+                V800::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
+                V800::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V800::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V800::CameraInstructionPacket(pk) => pk.as_ref(),
+                V800::CameraPacket(pk) => pk.as_ref(),
+                V800::CameraPresetsPacket(pk) => pk.as_ref(),
+                V800::CameraShakePacket(pk) => pk.as_ref(),
+                V800::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V800::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V800::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V800::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V800::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
+                V800::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V800::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V800::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V800::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V800::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V800::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V800::CodeBuilderPacket(pk) => pk.as_ref(),
+                V800::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V800::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V800::CommandOutputPacket(pk) => pk.as_ref(),
+                V800::CommandRequestPacket(pk) => pk.as_ref(),
+                V800::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V800::ContainerClosePacket(pk) => pk.as_ref(),
+                V800::ContainerOpenPacket(pk) => pk.as_ref(),
+                V800::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V800::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V800::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V800::CraftingDataPacket(pk) => pk.as_ref(),
+                V800::CreatePhotoPacket(pk) => pk.as_ref(),
+                V800::CreativeContentPacket(pk) => pk.as_ref(),
+                V800::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V800::DeathInfoPacket(pk) => pk.as_ref(),
+                V800::DebugInfoPacket(pk) => pk.as_ref(),
+                V800::DimensionDataPacket(pk) => pk.as_ref(),
+                V800::DisconnectPacket(pk) => pk.as_ref(),
+                V800::EditorNetworkPacket(pk) => pk.as_ref(),
+                V800::EduUriResourcePacket(pk) => pk.as_ref(),
+                V800::EducationSettingsPacket(pk) => pk.as_ref(),
+                V800::EmoteListPacket(pk) => pk.as_ref(),
+                V800::EmotePacket(pk) => pk.as_ref(),
+                V800::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V800::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V800::GameTestRequestPacket(pk) => pk.as_ref(),
+                V800::GameTestResultsPacket(pk) => pk.as_ref(),
+                V800::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V800::HurtArmorPacket(pk) => pk.as_ref(),
+                V800::InteractPacket(pk) => pk.as_ref(),
+                V800::InventoryContentPacket(pk) => pk.as_ref(),
+                V800::InventorySlotPacket(pk) => pk.as_ref(),
+                V800::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V800::ItemComponentPacket(pk) => pk.as_ref(),
+                V800::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V800::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V800::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V800::LabTablePacket(pk) => pk.as_ref(),
+                V800::LecternUpdatePacket(pk) => pk.as_ref(),
+                V800::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V800::LessonProgressPacket(pk) => pk.as_ref(),
+                V800::LevelChunkPacket(pk) => pk.as_ref(),
+                V800::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V800::LevelEventPacket(pk) => pk.as_ref(),
+                V800::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V800::LoginPacket(pk) => pk.as_ref(),
+                V800::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V800::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V800::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V800::MobEffectPacket(pk) => pk.as_ref(),
+                V800::MobEquipmentPacket(pk) => pk.as_ref(),
+                V800::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V800::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V800::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V800::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V800::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V800::MovePlayerPacket(pk) => pk.as_ref(),
+                V800::MovementEffectPacket(pk) => pk.as_ref(),
+                V800::MovementPredictionSyncPacket(pk) => pk.as_ref(),
+                V800::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V800::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V800::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V800::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V800::NpcDialoguePacket(pk) => pk.as_ref(),
+                V800::NpcRequestPacket(pk) => pk.as_ref(),
+                V800::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V800::OpenSignPacket(pk) => pk.as_ref(),
+                V800::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V800::PhotoTransferPacket(pk) => pk.as_ref(),
+                V800::PlaySoundPacket(pk) => pk.as_ref(),
+                V800::PlayStatusPacket(pk) => pk.as_ref(),
+                V800::PlayerActionPacket(pk) => pk.as_ref(),
+                V800::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V800::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V800::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V800::PlayerFogPacket(pk) => pk.as_ref(),
+                V800::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V800::PlayerListPacket(pk) => pk.as_ref(),
+                V800::PlayerLocationPacket(pk) => pk.as_ref(),
+                V800::PlayerSkinPacket(pk) => pk.as_ref(),
+                V800::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V800::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V800::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
+                V800::PlayerVideoCapturePacket(pk) => pk.as_ref(),
+                V800::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V800::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V800::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V800::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V800::RemoveActorPacket(pk) => pk.as_ref(),
+                V800::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V800::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V800::RequestAbilityPacket(pk) => pk.as_ref(),
+                V800::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V800::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V800::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V800::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V800::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V800::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V800::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V800::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V800::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V800::RespawnPacket(pk) => pk.as_ref(),
+                V800::ScriptMessagePacket(pk) => pk.as_ref(),
+                V800::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V800::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V800::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V800::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V800::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V800::ServerStatsPacket(pk) => pk.as_ref(),
+                V800::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V800::SetActorDataPacket(pk) => pk.as_ref(),
+                V800::SetActorLinkPacket(pk) => pk.as_ref(),
+                V800::SetActorMotionPacket(pk) => pk.as_ref(),
+                V800::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V800::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V800::SetDifficultyPacket(pk) => pk.as_ref(),
+                V800::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V800::SetHealthPacket(pk) => pk.as_ref(),
+                V800::SetHudPacket(pk) => pk.as_ref(),
+                V800::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V800::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V800::SetMovementAuthorityPacket(pk) => pk.as_ref(),
+                V800::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V800::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V800::SetScorePacket(pk) => pk.as_ref(),
+                V800::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V800::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V800::SetTimePacket(pk) => pk.as_ref(),
+                V800::SetTitlePacket(pk) => pk.as_ref(),
+                V800::SettingsCommandPacket(pk) => pk.as_ref(),
+                V800::ShowCreditsPacket(pk) => pk.as_ref(),
+                V800::ShowProfilePacket(pk) => pk.as_ref(),
+                V800::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V800::SimpleEventPacket(pk) => pk.as_ref(),
+                V800::SimulationTypePacket(pk) => pk.as_ref(),
+                V800::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V800::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V800::StartGamePacket(pk) => pk.as_ref(),
+                V800::StopSoundPacket(pk) => pk.as_ref(),
+                V800::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V800::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V800::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V800::SubChunkPacket(pk) => pk.as_ref(),
+                V800::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V800::SubClientLoginPacket(pk) => pk.as_ref(),
+                V800::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V800::TakeItemActorPacket(pk) => pk.as_ref(),
+                V800::TextPacket(pk) => pk.as_ref(),
+                V800::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V800::ToastRequestPacket(pk) => pk.as_ref(),
+                V800::TransferPlayerPacket(pk) => pk.as_ref(),
+                V800::TrimDataPacket(pk) => pk.as_ref(),
+                V800::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V800::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V800::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V800::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V800::UpdateBlockPacket(pk) => pk.as_ref(),
+                V800::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V800::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V800::UpdateClientOptionsPacket(pk) => pk.as_ref(),
+                V800::UpdateEquipPacket(pk) => pk.as_ref(),
+                V800::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V800::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V800::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V800::UpdateTradePacket(pk) => pk.as_ref(),
+                V800::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V800> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V800) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V800::ActorEventPacket(pk) => pk,
+                V800::ActorPickRequestPacket(pk) => pk,
+                V800::AddActorPacket(pk) => pk,
+                V800::AddBehaviourTreePacket(pk) => pk,
+                V800::AddItemActorPacket(pk) => pk,
+                V800::AddPaintingPacket(pk) => pk,
+                V800::AddPlayerPacket(pk) => pk,
+                V800::AddVolumeEntityPacket(pk) => pk,
+                V800::AgentActionEventPacket(pk) => pk,
+                V800::AgentAnimationPacket(pk) => pk,
+                V800::AnimateEntityPacket(pk) => pk,
+                V800::AnimatePacket(pk) => pk,
+                V800::AnvilDamagePacket(pk) => pk,
+                V800::AutomationClientConnectPacket(pk) => pk,
+                V800::AvailableActorIdentifiersPacket(pk) => pk,
+                V800::AvailableCommandsPacket(pk) => pk,
+                V800::AwardAchievementPacket(pk) => pk,
+                V800::BiomeDefinitionListPacket(pk) => pk,
+                V800::BlockActorDataPacket(pk) => pk,
+                V800::BlockEventPacket(pk) => pk,
+                V800::BlockPickRequestPacket(pk) => pk,
+                V800::BookEditPacket(pk) => pk,
+                V800::BossEventPacket(pk) => pk,
+                V800::CameraAimAssistInstructionPacket(pk) => pk,
+                V800::CameraAimAssistPacket(pk) => pk,
+                V800::CameraAimAssistPresetsPacket(pk) => pk,
+                V800::CameraInstructionPacket(pk) => pk,
+                V800::CameraPacket(pk) => pk,
+                V800::CameraPresetsPacket(pk) => pk,
+                V800::CameraShakePacket(pk) => pk,
+                V800::ChangeDimensionPacket(pk) => pk,
+                V800::ChangeMobPropertyPacket(pk) => pk,
+                V800::ChunkRadiusUpdatedPacket(pk) => pk,
+                V800::ClientBoundCloseFormPacket(pk) => pk,
+                V800::ClientBoundControlSchemeSetPacket(pk) => pk,
+                V800::ClientBoundDebugRendererPacket(pk) => pk,
+                V800::ClientBoundMapItemDataPacket(pk) => pk,
+                V800::ClientCacheBlobStatusPacket(pk) => pk,
+                V800::ClientCacheMissResponsePacket(pk) => pk,
+                V800::ClientCacheStatusPacket(pk) => pk,
+                V800::ClientToServerHandshakePacket(pk) => pk,
+                V800::CodeBuilderPacket(pk) => pk,
+                V800::CodeBuilderSourcePacket(pk) => pk,
+                V800::CommandBlockUpdatePacket(pk) => pk,
+                V800::CommandOutputPacket(pk) => pk,
+                V800::CommandRequestPacket(pk) => pk,
+                V800::CompletedUsingItemPacket(pk) => pk,
+                V800::ContainerClosePacket(pk) => pk,
+                V800::ContainerOpenPacket(pk) => pk,
+                V800::ContainerRegistryCleanupPacket(pk) => pk,
+                V800::ContainerSetDataPacket(pk) => pk,
+                V800::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V800::CraftingDataPacket(pk) => pk,
+                V800::CreatePhotoPacket(pk) => pk,
+                V800::CreativeContentPacket(pk) => pk,
+                V800::CurrentStructureFeaturePacket(pk) => pk,
+                V800::DeathInfoPacket(pk) => pk,
+                V800::DebugInfoPacket(pk) => pk,
+                V800::DimensionDataPacket(pk) => pk,
+                V800::DisconnectPacket(pk) => pk,
+                V800::EditorNetworkPacket(pk) => pk,
+                V800::EduUriResourcePacket(pk) => pk,
+                V800::EducationSettingsPacket(pk) => pk,
+                V800::EmoteListPacket(pk) => pk,
+                V800::EmotePacket(pk) => pk,
+                V800::FeatureRegistryPacket(pk) => pk,
+                V800::GameRulesChangedPacket(pk) => pk,
+                V800::GameTestRequestPacket(pk) => pk,
+                V800::GameTestResultsPacket(pk) => pk,
+                V800::GuiDataPickItemPacket(pk) => pk,
+                V800::HurtArmorPacket(pk) => pk,
+                V800::InteractPacket(pk) => pk,
+                V800::InventoryContentPacket(pk) => pk,
+                V800::InventorySlotPacket(pk) => pk,
+                V800::InventoryTransactionPacket(pk) => pk,
+                V800::ItemComponentPacket(pk) => pk,
+                V800::ItemStackRequestPacket(pk) => pk,
+                V800::ItemStackResponsePacket(pk) => pk,
+                V800::JigsawStructureDataPacket(pk) => pk,
+                V800::LabTablePacket(pk) => pk,
+                V800::LecternUpdatePacket(pk) => pk,
+                V800::LegacyTelemetryEventPacket(pk) => pk,
+                V800::LessonProgressPacket(pk) => pk,
+                V800::LevelChunkPacket(pk) => pk,
+                V800::LevelEventGenericPacket(pk) => pk,
+                V800::LevelEventPacket(pk) => pk,
+                V800::LevelSoundEventPacket(pk) => pk,
+                V800::LoginPacket(pk) => pk,
+                V800::MapCreateLockedCopyPacket(pk) => pk,
+                V800::MapInfoRequestPacket(pk) => pk,
+                V800::MobArmorEquipmentPacket(pk) => pk,
+                V800::MobEffectPacket(pk) => pk,
+                V800::MobEquipmentPacket(pk) => pk,
+                V800::ModalFormRequestPacket(pk) => pk,
+                V800::ModalFormResponsePacket(pk) => pk,
+                V800::MotionPredictionHintsPacket(pk) => pk,
+                V800::MoveActorAbsolutePacket(pk) => pk,
+                V800::MoveActorDeltaPacket(pk) => pk,
+                V800::MovePlayerPacket(pk) => pk,
+                V800::MovementEffectPacket(pk) => pk,
+                V800::MovementPredictionSyncPacket(pk) => pk,
+                V800::MultiplayerSettingsPacket(pk) => pk,
+                V800::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V800::NetworkSettingsPacket(pk) => pk,
+                V800::NetworkStackLatencyPacket(pk) => pk,
+                V800::NpcDialoguePacket(pk) => pk,
+                V800::NpcRequestPacket(pk) => pk,
+                V800::OnScreenTextureAnimationPacket(pk) => pk,
+                V800::OpenSignPacket(pk) => pk,
+                V800::PacketViolationWarningPacket(pk) => pk,
+                V800::PhotoTransferPacket(pk) => pk,
+                V800::PlaySoundPacket(pk) => pk,
+                V800::PlayStatusPacket(pk) => pk,
+                V800::PlayerActionPacket(pk) => pk,
+                V800::PlayerArmorDamagePacket(pk) => pk,
+                V800::PlayerAuthInputPacket(pk) => pk,
+                V800::PlayerEnchantOptionsPacket(pk) => pk,
+                V800::PlayerFogPacket(pk) => pk,
+                V800::PlayerHotbarPacket(pk) => pk,
+                V800::PlayerListPacket(pk) => pk,
+                V800::PlayerLocationPacket(pk) => pk,
+                V800::PlayerSkinPacket(pk) => pk,
+                V800::PlayerStartItemCooldownPacket(pk) => pk,
+                V800::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V800::PlayerUpdateEntityOverridesPacket(pk) => pk,
+                V800::PlayerVideoCapturePacket(pk) => pk,
+                V800::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V800::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V800::PurchaseReceiptPacket(pk) => pk,
+                V800::RefreshEntitlementsPacket(pk) => pk,
+                V800::RemoveActorPacket(pk) => pk,
+                V800::RemoveObjectivePacket(pk) => pk,
+                V800::RemoveVolumeEntityPacket(pk) => pk,
+                V800::RequestAbilityPacket(pk) => pk,
+                V800::RequestChunkRadiusPacket(pk) => pk,
+                V800::RequestNetworkSettingsPacket(pk) => pk,
+                V800::RequestPermissionsPacket(pk) => pk,
+                V800::ResourcePackChunkDataPacket(pk) => pk,
+                V800::ResourcePackChunkRequestPacket(pk) => pk,
+                V800::ResourcePackClientResponsePacket(pk) => pk,
+                V800::ResourcePackDataInfoPacket(pk) => pk,
+                V800::ResourcePackStackPacket(pk) => pk,
+                V800::ResourcePacksInfoPacket(pk) => pk,
+                V800::RespawnPacket(pk) => pk,
+                V800::ScriptMessagePacket(pk) => pk,
+                V800::ServerBoundDiagnosticsPacket(pk) => pk,
+                V800::ServerBoundLoadingScreenPacket(pk) => pk,
+                V800::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V800::ServerSettingsRequestPacket(pk) => pk,
+                V800::ServerSettingsResponsePacket(pk) => pk,
+                V800::ServerStatsPacket(pk) => pk,
+                V800::ServerToClientHandshakePacket(pk) => pk,
+                V800::SetActorDataPacket(pk) => pk,
+                V800::SetActorLinkPacket(pk) => pk,
+                V800::SetActorMotionPacket(pk) => pk,
+                V800::SetCommandsEnabledPacket(pk) => pk,
+                V800::SetDefaultGameTypePacket(pk) => pk,
+                V800::SetDifficultyPacket(pk) => pk,
+                V800::SetDisplayObjectivePacket(pk) => pk,
+                V800::SetHealthPacket(pk) => pk,
+                V800::SetHudPacket(pk) => pk,
+                V800::SetLastHurtByPacket(pk) => pk,
+                V800::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V800::SetMovementAuthorityPacket(pk) => pk,
+                V800::SetPlayerGameTypePacket(pk) => pk,
+                V800::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V800::SetScorePacket(pk) => pk,
+                V800::SetScoreboardIdentityPacket(pk) => pk,
+                V800::SetSpawnPositionPacket(pk) => pk,
+                V800::SetTimePacket(pk) => pk,
+                V800::SetTitlePacket(pk) => pk,
+                V800::SettingsCommandPacket(pk) => pk,
+                V800::ShowCreditsPacket(pk) => pk,
+                V800::ShowProfilePacket(pk) => pk,
+                V800::ShowStoreOfferPacket(pk) => pk,
+                V800::SimpleEventPacket(pk) => pk,
+                V800::SimulationTypePacket(pk) => pk,
+                V800::SpawnExperienceOrbPacket(pk) => pk,
+                V800::SpawnParticleEffectPacket(pk) => pk,
+                V800::StartGamePacket(pk) => pk,
+                V800::StopSoundPacket(pk) => pk,
+                V800::StructureBlockUpdatePacket(pk) => pk,
+                V800::StructureDataRequestPacket(pk) => pk,
+                V800::StructureDataResponsePacket(pk) => pk,
+                V800::SubChunkPacket(pk) => pk,
+                V800::SubChunkRequestPacket(pk) => pk,
+                V800::SubClientLoginPacket(pk) => pk,
+                V800::SyncActorPropertyPacket(pk) => pk,
+                V800::TakeItemActorPacket(pk) => pk,
+                V800::TextPacket(pk) => pk,
+                V800::TickingAreaLoadStatusPacket(pk) => pk,
+                V800::ToastRequestPacket(pk) => pk,
+                V800::TransferPlayerPacket(pk) => pk,
+                V800::TrimDataPacket(pk) => pk,
+                V800::UnlockedRecipesPacket(pk) => pk,
+                V800::UpdateAbilitiesPacket(pk) => pk,
+                V800::UpdateAdventureSettingsPacket(pk) => pk,
+                V800::UpdateAttributesPacket(pk) => pk,
+                V800::UpdateBlockPacket(pk) => pk,
+                V800::UpdateBlockSyncedPacket(pk) => pk,
+                V800::UpdateClientInputLocksPacket(pk) => pk,
+                V800::UpdateClientOptionsPacket(pk) => pk,
+                V800::UpdateEquipPacket(pk) => pk,
+                V800::UpdatePlayerGameTypePacket(pk) => pk,
+                V800::UpdateSoftEnumPacket(pk) => pk,
+                V800::UpdateSubChunkBlocksPacket(pk) => pk,
+                V800::UpdateTradePacket(pk) => pk,
+                V800::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v800")]

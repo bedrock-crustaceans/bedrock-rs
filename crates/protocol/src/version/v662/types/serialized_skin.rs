@@ -10,7 +10,7 @@ pub struct SerializedSkin<V: ProtoVersion> {
     pub skin_image_width: u32,
     #[endianness(le)]
     pub skin_image_height: u32,
-    pub skin_image_bytes: String,
+    pub skin_image_bytes: Vec<u8>,
     #[vec_repr(u32)]
     #[vec_endianness(le)]
     pub animations: Vec<SerializedSkinAnimationFrame<V>>,
@@ -18,7 +18,7 @@ pub struct SerializedSkin<V: ProtoVersion> {
     pub cape_image_width: u32,
     #[endianness(le)]
     pub cape_image_height: u32,
-    pub cape_image_bytes: String,
+    pub cape_image_bytes: Vec<u8>,
     pub geometry_data: String,
     pub geometry_data_engine_version: String,
     pub animation_data: String,
@@ -45,7 +45,7 @@ pub struct SerializedSkinAnimationFrame<V: ProtoVersion> {
     pub image_width: u32,
     #[endianness(le)]
     pub image_height: u32,
-    pub image_bytes: String,
+    pub image_bytes: Vec<u8>,
     pub animation_type: V::AnimatedTextureType,
     #[endianness(le)]
     pub frame_count: f32,

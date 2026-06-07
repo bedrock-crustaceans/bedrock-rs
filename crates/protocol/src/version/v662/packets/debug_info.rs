@@ -5,5 +5,5 @@ use bedrock_macros::{packet, ProtoCodec};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct DebugInfoPacket<V: ProtoVersion> {
     pub actor_id: V::ActorUniqueID,
-    pub data: String,
+    pub data: Vec<u8>,
 }

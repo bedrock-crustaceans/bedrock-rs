@@ -7236,419 +7236,615 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V729::ActorEventPacket(pk) => pk.as_ref(),
-                V729::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V729::AddActorPacket(pk) => pk.as_ref(),
-                V729::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V729::AddItemActorPacket(pk) => pk.as_ref(),
-                V729::AddPaintingPacket(pk) => pk.as_ref(),
-                V729::AddPlayerPacket(pk) => pk.as_ref(),
-                V729::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V729::AgentActionEventPacket(pk) => pk.as_ref(),
-                V729::AgentAnimationPacket(pk) => pk.as_ref(),
-                V729::AnimateEntityPacket(pk) => pk.as_ref(),
-                V729::AnimatePacket(pk) => pk.as_ref(),
-                V729::AnvilDamagePacket(pk) => pk.as_ref(),
-                V729::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V729::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V729::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V729::AwardAchievementPacket(pk) => pk.as_ref(),
-                V729::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V729::BlockActorDataPacket(pk) => pk.as_ref(),
-                V729::BlockEventPacket(pk) => pk.as_ref(),
-                V729::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V729::BookEditPacket(pk) => pk.as_ref(),
-                V729::BossEventPacket(pk) => pk.as_ref(),
-                V729::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V729::CameraInstructionPacket(pk) => pk.as_ref(),
-                V729::CameraPacket(pk) => pk.as_ref(),
-                V729::CameraPresetsPacket(pk) => pk.as_ref(),
-                V729::CameraShakePacket(pk) => pk.as_ref(),
-                V729::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V729::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V729::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V729::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V729::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V729::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V729::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V729::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V729::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V729::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V729::CodeBuilderPacket(pk) => pk.as_ref(),
-                V729::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V729::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V729::CommandOutputPacket(pk) => pk.as_ref(),
-                V729::CommandRequestPacket(pk) => pk.as_ref(),
-                V729::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V729::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V729::ContainerClosePacket(pk) => pk.as_ref(),
-                V729::ContainerOpenPacket(pk) => pk.as_ref(),
-                V729::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V729::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V729::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V729::CraftingDataPacket(pk) => pk.as_ref(),
-                V729::CreatePhotoPacket(pk) => pk.as_ref(),
-                V729::CreativeContentPacket(pk) => pk.as_ref(),
-                V729::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V729::DeathInfoPacket(pk) => pk.as_ref(),
-                V729::DebugInfoPacket(pk) => pk.as_ref(),
-                V729::DimensionDataPacket(pk) => pk.as_ref(),
-                V729::DisconnectPacket(pk) => pk.as_ref(),
-                V729::EditorNetworkPacket(pk) => pk.as_ref(),
-                V729::EduUriResourcePacket(pk) => pk.as_ref(),
-                V729::EducationSettingsPacket(pk) => pk.as_ref(),
-                V729::EmoteListPacket(pk) => pk.as_ref(),
-                V729::EmotePacket(pk) => pk.as_ref(),
-                V729::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V729::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V729::GameTestRequestPacket(pk) => pk.as_ref(),
-                V729::GameTestResultsPacket(pk) => pk.as_ref(),
-                V729::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V729::HurtArmorPacket(pk) => pk.as_ref(),
-                V729::InteractPacket(pk) => pk.as_ref(),
-                V729::InventoryContentPacket(pk) => pk.as_ref(),
-                V729::InventorySlotPacket(pk) => pk.as_ref(),
-                V729::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V729::ItemComponentPacket(pk) => pk.as_ref(),
-                V729::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V729::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V729::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V729::LabTablePacket(pk) => pk.as_ref(),
-                V729::LecternUpdatePacket(pk) => pk.as_ref(),
-                V729::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V729::LessonProgressPacket(pk) => pk.as_ref(),
-                V729::LevelChunkPacket(pk) => pk.as_ref(),
-                V729::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V729::LevelEventPacket(pk) => pk.as_ref(),
-                V729::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V729::LevelSoundEventV1Packet(pk) => pk.as_ref(),
-                V729::LevelSoundEventV2Packet(pk) => pk.as_ref(),
-                V729::LoginPacket(pk) => pk.as_ref(),
-                V729::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V729::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V729::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V729::MobEffectPacket(pk) => pk.as_ref(),
-                V729::MobEquipmentPacket(pk) => pk.as_ref(),
-                V729::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V729::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V729::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V729::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V729::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V729::MovePlayerPacket(pk) => pk.as_ref(),
-                V729::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V729::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V729::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V729::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V729::NpcDialoguePacket(pk) => pk.as_ref(),
-                V729::NpcRequestPacket(pk) => pk.as_ref(),
-                V729::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V729::OpenSignPacket(pk) => pk.as_ref(),
-                V729::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V729::PassengerJumpPacket(pk) => pk.as_ref(),
-                V729::PhotoTransferPacket(pk) => pk.as_ref(),
-                V729::PlaySoundPacket(pk) => pk.as_ref(),
-                V729::PlayStatusPacket(pk) => pk.as_ref(),
-                V729::PlayerActionPacket(pk) => pk.as_ref(),
-                V729::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V729::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V729::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V729::PlayerFogPacket(pk) => pk.as_ref(),
-                V729::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V729::PlayerInputPacket(pk) => pk.as_ref(),
-                V729::PlayerListPacket(pk) => pk.as_ref(),
-                V729::PlayerSkinPacket(pk) => pk.as_ref(),
-                V729::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V729::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V729::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V729::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V729::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V729::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V729::RemoveActorPacket(pk) => pk.as_ref(),
-                V729::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V729::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V729::RequestAbilityPacket(pk) => pk.as_ref(),
-                V729::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V729::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V729::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V729::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V729::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V729::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V729::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V729::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V729::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V729::RespawnPacket(pk) => pk.as_ref(),
-                V729::ScriptMessagePacket(pk) => pk.as_ref(),
-                V729::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V729::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V729::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V729::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V729::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V729::ServerStatsPacket(pk) => pk.as_ref(),
-                V729::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V729::SetActorDataPacket(pk) => pk.as_ref(),
-                V729::SetActorLinkPacket(pk) => pk.as_ref(),
-                V729::SetActorMotionPacket(pk) => pk.as_ref(),
-                V729::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V729::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V729::SetDifficultyPacket(pk) => pk.as_ref(),
-                V729::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V729::SetHealthPacket(pk) => pk.as_ref(),
-                V729::SetHudPacket(pk) => pk.as_ref(),
-                V729::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V729::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V729::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V729::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V729::SetScorePacket(pk) => pk.as_ref(),
-                V729::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V729::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V729::SetTimePacket(pk) => pk.as_ref(),
-                V729::SetTitlePacket(pk) => pk.as_ref(),
-                V729::SettingsCommandPacket(pk) => pk.as_ref(),
-                V729::ShowCreditsPacket(pk) => pk.as_ref(),
-                V729::ShowProfilePacket(pk) => pk.as_ref(),
-                V729::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V729::SimpleEventPacket(pk) => pk.as_ref(),
-                V729::SimulationTypePacket(pk) => pk.as_ref(),
-                V729::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V729::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V729::StartGamePacket(pk) => pk.as_ref(),
-                V729::StopSoundPacket(pk) => pk.as_ref(),
-                V729::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V729::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V729::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V729::SubChunkPacket(pk) => pk.as_ref(),
-                V729::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V729::SubClientLoginPacket(pk) => pk.as_ref(),
-                V729::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V729::TakeItemActorPacket(pk) => pk.as_ref(),
-                V729::TextPacket(pk) => pk.as_ref(),
-                V729::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V729::ToastRequestPacket(pk) => pk.as_ref(),
-                V729::TransferPlayerPacket(pk) => pk.as_ref(),
-                V729::TrimDataPacket(pk) => pk.as_ref(),
-                V729::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V729::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V729::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V729::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V729::UpdateBlockPacket(pk) => pk.as_ref(),
-                V729::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V729::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V729::UpdateEquipPacket(pk) => pk.as_ref(),
-                V729::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V729::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V729::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V729::UpdateTradePacket(pk) => pk.as_ref(),
-                V729::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V729::ActorEventPacket(pk) => pk,
-                V729::ActorPickRequestPacket(pk) => pk,
-                V729::AddActorPacket(pk) => pk,
-                V729::AddBehaviourTreePacket(pk) => pk,
-                V729::AddItemActorPacket(pk) => pk,
-                V729::AddPaintingPacket(pk) => pk,
-                V729::AddPlayerPacket(pk) => pk,
-                V729::AddVolumeEntityPacket(pk) => pk,
-                V729::AgentActionEventPacket(pk) => pk,
-                V729::AgentAnimationPacket(pk) => pk,
-                V729::AnimateEntityPacket(pk) => pk,
-                V729::AnimatePacket(pk) => pk,
-                V729::AnvilDamagePacket(pk) => pk,
-                V729::AutomationClientConnectPacket(pk) => pk,
-                V729::AvailableActorIdentifiersPacket(pk) => pk,
-                V729::AvailableCommandsPacket(pk) => pk,
-                V729::AwardAchievementPacket(pk) => pk,
-                V729::BiomeDefinitionListPacket(pk) => pk,
-                V729::BlockActorDataPacket(pk) => pk,
-                V729::BlockEventPacket(pk) => pk,
-                V729::BlockPickRequestPacket(pk) => pk,
-                V729::BookEditPacket(pk) => pk,
-                V729::BossEventPacket(pk) => pk,
-                V729::CameraAimAssistPacket(pk) => pk,
-                V729::CameraInstructionPacket(pk) => pk,
-                V729::CameraPacket(pk) => pk,
-                V729::CameraPresetsPacket(pk) => pk,
-                V729::CameraShakePacket(pk) => pk,
-                V729::ChangeDimensionPacket(pk) => pk,
-                V729::ChangeMobPropertyPacket(pk) => pk,
-                V729::ChunkRadiusUpdatedPacket(pk) => pk,
-                V729::ClientBoundCloseFormPacket(pk) => pk,
-                V729::ClientBoundDebugRendererPacket(pk) => pk,
-                V729::ClientBoundMapItemDataPacket(pk) => pk,
-                V729::ClientCacheBlobStatusPacket(pk) => pk,
-                V729::ClientCacheMissResponsePacket(pk) => pk,
-                V729::ClientCacheStatusPacket(pk) => pk,
-                V729::ClientToServerHandshakePacket(pk) => pk,
-                V729::CodeBuilderPacket(pk) => pk,
-                V729::CodeBuilderSourcePacket(pk) => pk,
-                V729::CommandBlockUpdatePacket(pk) => pk,
-                V729::CommandOutputPacket(pk) => pk,
-                V729::CommandRequestPacket(pk) => pk,
-                V729::CompletedUsingItemPacket(pk) => pk,
-                V729::CompressedBiomeDefinitionListPacket(pk) => pk,
-                V729::ContainerClosePacket(pk) => pk,
-                V729::ContainerOpenPacket(pk) => pk,
-                V729::ContainerRegistryCleanupPacket(pk) => pk,
-                V729::ContainerSetDataPacket(pk) => pk,
-                V729::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V729::CraftingDataPacket(pk) => pk,
-                V729::CreatePhotoPacket(pk) => pk,
-                V729::CreativeContentPacket(pk) => pk,
-                V729::CurrentStructureFeaturePacket(pk) => pk,
-                V729::DeathInfoPacket(pk) => pk,
-                V729::DebugInfoPacket(pk) => pk,
-                V729::DimensionDataPacket(pk) => pk,
-                V729::DisconnectPacket(pk) => pk,
-                V729::EditorNetworkPacket(pk) => pk,
-                V729::EduUriResourcePacket(pk) => pk,
-                V729::EducationSettingsPacket(pk) => pk,
-                V729::EmoteListPacket(pk) => pk,
-                V729::EmotePacket(pk) => pk,
-                V729::FeatureRegistryPacket(pk) => pk,
-                V729::GameRulesChangedPacket(pk) => pk,
-                V729::GameTestRequestPacket(pk) => pk,
-                V729::GameTestResultsPacket(pk) => pk,
-                V729::GuiDataPickItemPacket(pk) => pk,
-                V729::HurtArmorPacket(pk) => pk,
-                V729::InteractPacket(pk) => pk,
-                V729::InventoryContentPacket(pk) => pk,
-                V729::InventorySlotPacket(pk) => pk,
-                V729::InventoryTransactionPacket(pk) => pk,
-                V729::ItemComponentPacket(pk) => pk,
-                V729::ItemStackRequestPacket(pk) => pk,
-                V729::ItemStackResponsePacket(pk) => pk,
-                V729::JigsawStructureDataPacket(pk) => pk,
-                V729::LabTablePacket(pk) => pk,
-                V729::LecternUpdatePacket(pk) => pk,
-                V729::LegacyTelemetryEventPacket(pk) => pk,
-                V729::LessonProgressPacket(pk) => pk,
-                V729::LevelChunkPacket(pk) => pk,
-                V729::LevelEventGenericPacket(pk) => pk,
-                V729::LevelEventPacket(pk) => pk,
-                V729::LevelSoundEventPacket(pk) => pk,
-                V729::LevelSoundEventV1Packet(pk) => pk,
-                V729::LevelSoundEventV2Packet(pk) => pk,
-                V729::LoginPacket(pk) => pk,
-                V729::MapCreateLockedCopyPacket(pk) => pk,
-                V729::MapInfoRequestPacket(pk) => pk,
-                V729::MobArmorEquipmentPacket(pk) => pk,
-                V729::MobEffectPacket(pk) => pk,
-                V729::MobEquipmentPacket(pk) => pk,
-                V729::ModalFormRequestPacket(pk) => pk,
-                V729::ModalFormResponsePacket(pk) => pk,
-                V729::MotionPredictionHintsPacket(pk) => pk,
-                V729::MoveActorAbsolutePacket(pk) => pk,
-                V729::MoveActorDeltaPacket(pk) => pk,
-                V729::MovePlayerPacket(pk) => pk,
-                V729::MultiplayerSettingsPacket(pk) => pk,
-                V729::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V729::NetworkSettingsPacket(pk) => pk,
-                V729::NetworkStackLatencyPacket(pk) => pk,
-                V729::NpcDialoguePacket(pk) => pk,
-                V729::NpcRequestPacket(pk) => pk,
-                V729::OnScreenTextureAnimationPacket(pk) => pk,
-                V729::OpenSignPacket(pk) => pk,
-                V729::PacketViolationWarningPacket(pk) => pk,
-                V729::PassengerJumpPacket(pk) => pk,
-                V729::PhotoTransferPacket(pk) => pk,
-                V729::PlaySoundPacket(pk) => pk,
-                V729::PlayStatusPacket(pk) => pk,
-                V729::PlayerActionPacket(pk) => pk,
-                V729::PlayerArmorDamagePacket(pk) => pk,
-                V729::PlayerAuthInputPacket(pk) => pk,
-                V729::PlayerEnchantOptionsPacket(pk) => pk,
-                V729::PlayerFogPacket(pk) => pk,
-                V729::PlayerHotbarPacket(pk) => pk,
-                V729::PlayerInputPacket(pk) => pk,
-                V729::PlayerListPacket(pk) => pk,
-                V729::PlayerSkinPacket(pk) => pk,
-                V729::PlayerStartItemCooldownPacket(pk) => pk,
-                V729::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V729::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V729::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V729::PurchaseReceiptPacket(pk) => pk,
-                V729::RefreshEntitlementsPacket(pk) => pk,
-                V729::RemoveActorPacket(pk) => pk,
-                V729::RemoveObjectivePacket(pk) => pk,
-                V729::RemoveVolumeEntityPacket(pk) => pk,
-                V729::RequestAbilityPacket(pk) => pk,
-                V729::RequestChunkRadiusPacket(pk) => pk,
-                V729::RequestNetworkSettingsPacket(pk) => pk,
-                V729::RequestPermissionsPacket(pk) => pk,
-                V729::ResourcePackChunkDataPacket(pk) => pk,
-                V729::ResourcePackChunkRequestPacket(pk) => pk,
-                V729::ResourcePackClientResponsePacket(pk) => pk,
-                V729::ResourcePackDataInfoPacket(pk) => pk,
-                V729::ResourcePackStackPacket(pk) => pk,
-                V729::ResourcePacksInfoPacket(pk) => pk,
-                V729::RespawnPacket(pk) => pk,
-                V729::ScriptMessagePacket(pk) => pk,
-                V729::ServerBoundDiagnosticsPacket(pk) => pk,
-                V729::ServerBoundLoadingScreenPacket(pk) => pk,
-                V729::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V729::ServerSettingsRequestPacket(pk) => pk,
-                V729::ServerSettingsResponsePacket(pk) => pk,
-                V729::ServerStatsPacket(pk) => pk,
-                V729::ServerToClientHandshakePacket(pk) => pk,
-                V729::SetActorDataPacket(pk) => pk,
-                V729::SetActorLinkPacket(pk) => pk,
-                V729::SetActorMotionPacket(pk) => pk,
-                V729::SetCommandsEnabledPacket(pk) => pk,
-                V729::SetDefaultGameTypePacket(pk) => pk,
-                V729::SetDifficultyPacket(pk) => pk,
-                V729::SetDisplayObjectivePacket(pk) => pk,
-                V729::SetHealthPacket(pk) => pk,
-                V729::SetHudPacket(pk) => pk,
-                V729::SetLastHurtByPacket(pk) => pk,
-                V729::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V729::SetPlayerGameTypePacket(pk) => pk,
-                V729::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V729::SetScorePacket(pk) => pk,
-                V729::SetScoreboardIdentityPacket(pk) => pk,
-                V729::SetSpawnPositionPacket(pk) => pk,
-                V729::SetTimePacket(pk) => pk,
-                V729::SetTitlePacket(pk) => pk,
-                V729::SettingsCommandPacket(pk) => pk,
-                V729::ShowCreditsPacket(pk) => pk,
-                V729::ShowProfilePacket(pk) => pk,
-                V729::ShowStoreOfferPacket(pk) => pk,
-                V729::SimpleEventPacket(pk) => pk,
-                V729::SimulationTypePacket(pk) => pk,
-                V729::SpawnExperienceOrbPacket(pk) => pk,
-                V729::SpawnParticleEffectPacket(pk) => pk,
-                V729::StartGamePacket(pk) => pk,
-                V729::StopSoundPacket(pk) => pk,
-                V729::StructureBlockUpdatePacket(pk) => pk,
-                V729::StructureDataRequestPacket(pk) => pk,
-                V729::StructureDataResponsePacket(pk) => pk,
-                V729::SubChunkPacket(pk) => pk,
-                V729::SubChunkRequestPacket(pk) => pk,
-                V729::SubClientLoginPacket(pk) => pk,
-                V729::SyncActorPropertyPacket(pk) => pk,
-                V729::TakeItemActorPacket(pk) => pk,
-                V729::TextPacket(pk) => pk,
-                V729::TickingAreaLoadStatusPacket(pk) => pk,
-                V729::ToastRequestPacket(pk) => pk,
-                V729::TransferPlayerPacket(pk) => pk,
-                V729::TrimDataPacket(pk) => pk,
-                V729::UnlockedRecipesPacket(pk) => pk,
-                V729::UpdateAbilitiesPacket(pk) => pk,
-                V729::UpdateAdventureSettingsPacket(pk) => pk,
-                V729::UpdateAttributesPacket(pk) => pk,
-                V729::UpdateBlockPacket(pk) => pk,
-                V729::UpdateBlockSyncedPacket(pk) => pk,
-                V729::UpdateClientInputLocksPacket(pk) => pk,
-                V729::UpdateEquipPacket(pk) => pk,
-                V729::UpdatePlayerGameTypePacket(pk) => pk,
-                V729::UpdateSoftEnumPacket(pk) => pk,
-                V729::UpdateSubChunkBlocksPacket(pk) => pk,
-                V729::UpdateTradePacket(pk) => pk,
-                V729::Unknown(pk) => pk,
+                V729::ActorEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ActorPickRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AddActorPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AddBehaviourTreePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AddItemActorPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AddPaintingPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AddPlayerPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AddVolumeEntityPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AgentActionEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AgentAnimationPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AnimateEntityPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AnimatePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AnvilDamagePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AutomationClientConnectPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AvailableActorIdentifiersPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AvailableCommandsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::AwardAchievementPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::BiomeDefinitionListPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::BlockActorDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::BlockEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::BlockPickRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::BookEditPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::BossEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CameraAimAssistPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CameraInstructionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CameraPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CameraPresetsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CameraShakePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ChangeDimensionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ChangeMobPropertyPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ChunkRadiusUpdatedPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientBoundCloseFormPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientBoundDebugRendererPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientBoundMapItemDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientCacheBlobStatusPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientCacheMissResponsePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientCacheStatusPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ClientToServerHandshakePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CodeBuilderPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CodeBuilderSourcePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CommandBlockUpdatePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CommandOutputPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CommandRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CompletedUsingItemPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CompressedBiomeDefinitionListPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CompressedBiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ContainerClosePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ContainerOpenPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ContainerRegistryCleanupPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ContainerSetDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CraftingDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CreatePhotoPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CreativeContentPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::CurrentStructureFeaturePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::DeathInfoPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::DebugInfoPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::DimensionDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::DisconnectPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::EditorNetworkPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::EduUriResourcePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::EducationSettingsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::EmoteListPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::EmotePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::FeatureRegistryPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::GameRulesChangedPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::GameTestRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::GameTestResultsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::GuiDataPickItemPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::HurtArmorPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::InteractPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::InventoryContentPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::InventorySlotPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::InventoryTransactionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ItemComponentPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ItemStackRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ItemStackResponsePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::JigsawStructureDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LabTablePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LecternUpdatePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LegacyTelemetryEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LessonProgressPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LevelChunkPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LevelEventGenericPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LevelEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LevelSoundEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LevelSoundEventV1Packet(_) => {
+                    <<V729 as ProtoVersionPackets>::LevelSoundEventV1Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LevelSoundEventV2Packet(_) => {
+                    <<V729 as ProtoVersionPackets>::LevelSoundEventV2Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V729::LoginPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MapCreateLockedCopyPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MapInfoRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MobArmorEquipmentPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MobEffectPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MobEquipmentPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ModalFormRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ModalFormResponsePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MotionPredictionHintsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MoveActorAbsolutePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MoveActorDeltaPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MovePlayerPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::MultiplayerSettingsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::NetworkSettingsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::NetworkStackLatencyPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::NpcDialoguePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::NpcRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::OnScreenTextureAnimationPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::OpenSignPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PacketViolationWarningPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PassengerJumpPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PassengerJumpPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PhotoTransferPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlaySoundPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayStatusPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerActionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerArmorDamagePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerAuthInputPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerEnchantOptionsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerFogPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerHotbarPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerInputPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerListPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerSkinPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerStartItemCooldownPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::PurchaseReceiptPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RefreshEntitlementsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RemoveActorPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RemoveObjectivePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RemoveVolumeEntityPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RequestAbilityPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RequestChunkRadiusPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RequestNetworkSettingsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RequestPermissionsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ResourcePackChunkDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ResourcePackChunkRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ResourcePackClientResponsePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ResourcePackDataInfoPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ResourcePackStackPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ResourcePacksInfoPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::RespawnPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ScriptMessagePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerBoundDiagnosticsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerBoundLoadingScreenPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerSettingsRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerSettingsResponsePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerStatsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ServerToClientHandshakePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetActorDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetActorLinkPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetActorMotionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetCommandsEnabledPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetDefaultGameTypePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetDifficultyPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetDisplayObjectivePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetHealthPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetHudPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetLastHurtByPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetPlayerGameTypePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetScorePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetScoreboardIdentityPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetSpawnPositionPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetTimePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SetTitlePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SettingsCommandPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ShowCreditsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ShowProfilePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ShowStoreOfferPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SimpleEventPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SimulationTypePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SpawnExperienceOrbPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SpawnParticleEffectPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::StartGamePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::StopSoundPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::StructureBlockUpdatePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::StructureDataRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::StructureDataResponsePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SubChunkPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SubChunkRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SubClientLoginPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::SyncActorPropertyPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::TakeItemActorPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::TextPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::TickingAreaLoadStatusPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::ToastRequestPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::TransferPlayerPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::TrimDataPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UnlockedRecipesPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateAbilitiesPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateAdventureSettingsPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateAttributesPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateBlockPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateBlockSyncedPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateClientInputLocksPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateEquipPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdatePlayerGameTypePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateSoftEnumPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateSubChunkBlocksPacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::UpdateTradePacket(_) => {
+                    <<V729 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V729::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7727,7 +7923,7 @@ mod inner {
         type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
         type CorrectPlayerMovePredictionPacket =
             crate::version::v671::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
         type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
         type CreativeContentPacket = crate::version::v662::packets::CreativeContentPacket<Self>;
         type CurrentStructureFeaturePacket =
@@ -8030,9 +8226,7 @@ mod inner {
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v662::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
         type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
         type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v662::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
@@ -8168,6 +8362,426 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u3";
         const GAME_VERSION: &str = "1.21.30";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V729 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V729::ActorEventPacket(pk) => pk.as_ref(),
+                V729::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V729::AddActorPacket(pk) => pk.as_ref(),
+                V729::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V729::AddItemActorPacket(pk) => pk.as_ref(),
+                V729::AddPaintingPacket(pk) => pk.as_ref(),
+                V729::AddPlayerPacket(pk) => pk.as_ref(),
+                V729::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V729::AgentActionEventPacket(pk) => pk.as_ref(),
+                V729::AgentAnimationPacket(pk) => pk.as_ref(),
+                V729::AnimateEntityPacket(pk) => pk.as_ref(),
+                V729::AnimatePacket(pk) => pk.as_ref(),
+                V729::AnvilDamagePacket(pk) => pk.as_ref(),
+                V729::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V729::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V729::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V729::AwardAchievementPacket(pk) => pk.as_ref(),
+                V729::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V729::BlockActorDataPacket(pk) => pk.as_ref(),
+                V729::BlockEventPacket(pk) => pk.as_ref(),
+                V729::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V729::BookEditPacket(pk) => pk.as_ref(),
+                V729::BossEventPacket(pk) => pk.as_ref(),
+                V729::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V729::CameraInstructionPacket(pk) => pk.as_ref(),
+                V729::CameraPacket(pk) => pk.as_ref(),
+                V729::CameraPresetsPacket(pk) => pk.as_ref(),
+                V729::CameraShakePacket(pk) => pk.as_ref(),
+                V729::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V729::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V729::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V729::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V729::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V729::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V729::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V729::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V729::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V729::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V729::CodeBuilderPacket(pk) => pk.as_ref(),
+                V729::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V729::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V729::CommandOutputPacket(pk) => pk.as_ref(),
+                V729::CommandRequestPacket(pk) => pk.as_ref(),
+                V729::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V729::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V729::ContainerClosePacket(pk) => pk.as_ref(),
+                V729::ContainerOpenPacket(pk) => pk.as_ref(),
+                V729::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V729::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V729::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V729::CraftingDataPacket(pk) => pk.as_ref(),
+                V729::CreatePhotoPacket(pk) => pk.as_ref(),
+                V729::CreativeContentPacket(pk) => pk.as_ref(),
+                V729::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V729::DeathInfoPacket(pk) => pk.as_ref(),
+                V729::DebugInfoPacket(pk) => pk.as_ref(),
+                V729::DimensionDataPacket(pk) => pk.as_ref(),
+                V729::DisconnectPacket(pk) => pk.as_ref(),
+                V729::EditorNetworkPacket(pk) => pk.as_ref(),
+                V729::EduUriResourcePacket(pk) => pk.as_ref(),
+                V729::EducationSettingsPacket(pk) => pk.as_ref(),
+                V729::EmoteListPacket(pk) => pk.as_ref(),
+                V729::EmotePacket(pk) => pk.as_ref(),
+                V729::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V729::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V729::GameTestRequestPacket(pk) => pk.as_ref(),
+                V729::GameTestResultsPacket(pk) => pk.as_ref(),
+                V729::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V729::HurtArmorPacket(pk) => pk.as_ref(),
+                V729::InteractPacket(pk) => pk.as_ref(),
+                V729::InventoryContentPacket(pk) => pk.as_ref(),
+                V729::InventorySlotPacket(pk) => pk.as_ref(),
+                V729::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V729::ItemComponentPacket(pk) => pk.as_ref(),
+                V729::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V729::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V729::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V729::LabTablePacket(pk) => pk.as_ref(),
+                V729::LecternUpdatePacket(pk) => pk.as_ref(),
+                V729::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V729::LessonProgressPacket(pk) => pk.as_ref(),
+                V729::LevelChunkPacket(pk) => pk.as_ref(),
+                V729::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V729::LevelEventPacket(pk) => pk.as_ref(),
+                V729::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V729::LevelSoundEventV1Packet(pk) => pk.as_ref(),
+                V729::LevelSoundEventV2Packet(pk) => pk.as_ref(),
+                V729::LoginPacket(pk) => pk.as_ref(),
+                V729::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V729::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V729::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V729::MobEffectPacket(pk) => pk.as_ref(),
+                V729::MobEquipmentPacket(pk) => pk.as_ref(),
+                V729::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V729::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V729::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V729::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V729::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V729::MovePlayerPacket(pk) => pk.as_ref(),
+                V729::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V729::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V729::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V729::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V729::NpcDialoguePacket(pk) => pk.as_ref(),
+                V729::NpcRequestPacket(pk) => pk.as_ref(),
+                V729::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V729::OpenSignPacket(pk) => pk.as_ref(),
+                V729::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V729::PassengerJumpPacket(pk) => pk.as_ref(),
+                V729::PhotoTransferPacket(pk) => pk.as_ref(),
+                V729::PlaySoundPacket(pk) => pk.as_ref(),
+                V729::PlayStatusPacket(pk) => pk.as_ref(),
+                V729::PlayerActionPacket(pk) => pk.as_ref(),
+                V729::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V729::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V729::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V729::PlayerFogPacket(pk) => pk.as_ref(),
+                V729::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V729::PlayerInputPacket(pk) => pk.as_ref(),
+                V729::PlayerListPacket(pk) => pk.as_ref(),
+                V729::PlayerSkinPacket(pk) => pk.as_ref(),
+                V729::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V729::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V729::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V729::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V729::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V729::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V729::RemoveActorPacket(pk) => pk.as_ref(),
+                V729::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V729::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V729::RequestAbilityPacket(pk) => pk.as_ref(),
+                V729::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V729::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V729::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V729::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V729::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V729::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V729::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V729::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V729::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V729::RespawnPacket(pk) => pk.as_ref(),
+                V729::ScriptMessagePacket(pk) => pk.as_ref(),
+                V729::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V729::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V729::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V729::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V729::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V729::ServerStatsPacket(pk) => pk.as_ref(),
+                V729::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V729::SetActorDataPacket(pk) => pk.as_ref(),
+                V729::SetActorLinkPacket(pk) => pk.as_ref(),
+                V729::SetActorMotionPacket(pk) => pk.as_ref(),
+                V729::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V729::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V729::SetDifficultyPacket(pk) => pk.as_ref(),
+                V729::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V729::SetHealthPacket(pk) => pk.as_ref(),
+                V729::SetHudPacket(pk) => pk.as_ref(),
+                V729::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V729::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V729::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V729::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V729::SetScorePacket(pk) => pk.as_ref(),
+                V729::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V729::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V729::SetTimePacket(pk) => pk.as_ref(),
+                V729::SetTitlePacket(pk) => pk.as_ref(),
+                V729::SettingsCommandPacket(pk) => pk.as_ref(),
+                V729::ShowCreditsPacket(pk) => pk.as_ref(),
+                V729::ShowProfilePacket(pk) => pk.as_ref(),
+                V729::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V729::SimpleEventPacket(pk) => pk.as_ref(),
+                V729::SimulationTypePacket(pk) => pk.as_ref(),
+                V729::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V729::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V729::StartGamePacket(pk) => pk.as_ref(),
+                V729::StopSoundPacket(pk) => pk.as_ref(),
+                V729::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V729::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V729::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V729::SubChunkPacket(pk) => pk.as_ref(),
+                V729::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V729::SubClientLoginPacket(pk) => pk.as_ref(),
+                V729::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V729::TakeItemActorPacket(pk) => pk.as_ref(),
+                V729::TextPacket(pk) => pk.as_ref(),
+                V729::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V729::ToastRequestPacket(pk) => pk.as_ref(),
+                V729::TransferPlayerPacket(pk) => pk.as_ref(),
+                V729::TrimDataPacket(pk) => pk.as_ref(),
+                V729::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V729::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V729::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V729::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V729::UpdateBlockPacket(pk) => pk.as_ref(),
+                V729::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V729::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V729::UpdateEquipPacket(pk) => pk.as_ref(),
+                V729::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V729::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V729::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V729::UpdateTradePacket(pk) => pk.as_ref(),
+                V729::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V729> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V729) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V729::ActorEventPacket(pk) => pk,
+                V729::ActorPickRequestPacket(pk) => pk,
+                V729::AddActorPacket(pk) => pk,
+                V729::AddBehaviourTreePacket(pk) => pk,
+                V729::AddItemActorPacket(pk) => pk,
+                V729::AddPaintingPacket(pk) => pk,
+                V729::AddPlayerPacket(pk) => pk,
+                V729::AddVolumeEntityPacket(pk) => pk,
+                V729::AgentActionEventPacket(pk) => pk,
+                V729::AgentAnimationPacket(pk) => pk,
+                V729::AnimateEntityPacket(pk) => pk,
+                V729::AnimatePacket(pk) => pk,
+                V729::AnvilDamagePacket(pk) => pk,
+                V729::AutomationClientConnectPacket(pk) => pk,
+                V729::AvailableActorIdentifiersPacket(pk) => pk,
+                V729::AvailableCommandsPacket(pk) => pk,
+                V729::AwardAchievementPacket(pk) => pk,
+                V729::BiomeDefinitionListPacket(pk) => pk,
+                V729::BlockActorDataPacket(pk) => pk,
+                V729::BlockEventPacket(pk) => pk,
+                V729::BlockPickRequestPacket(pk) => pk,
+                V729::BookEditPacket(pk) => pk,
+                V729::BossEventPacket(pk) => pk,
+                V729::CameraAimAssistPacket(pk) => pk,
+                V729::CameraInstructionPacket(pk) => pk,
+                V729::CameraPacket(pk) => pk,
+                V729::CameraPresetsPacket(pk) => pk,
+                V729::CameraShakePacket(pk) => pk,
+                V729::ChangeDimensionPacket(pk) => pk,
+                V729::ChangeMobPropertyPacket(pk) => pk,
+                V729::ChunkRadiusUpdatedPacket(pk) => pk,
+                V729::ClientBoundCloseFormPacket(pk) => pk,
+                V729::ClientBoundDebugRendererPacket(pk) => pk,
+                V729::ClientBoundMapItemDataPacket(pk) => pk,
+                V729::ClientCacheBlobStatusPacket(pk) => pk,
+                V729::ClientCacheMissResponsePacket(pk) => pk,
+                V729::ClientCacheStatusPacket(pk) => pk,
+                V729::ClientToServerHandshakePacket(pk) => pk,
+                V729::CodeBuilderPacket(pk) => pk,
+                V729::CodeBuilderSourcePacket(pk) => pk,
+                V729::CommandBlockUpdatePacket(pk) => pk,
+                V729::CommandOutputPacket(pk) => pk,
+                V729::CommandRequestPacket(pk) => pk,
+                V729::CompletedUsingItemPacket(pk) => pk,
+                V729::CompressedBiomeDefinitionListPacket(pk) => pk,
+                V729::ContainerClosePacket(pk) => pk,
+                V729::ContainerOpenPacket(pk) => pk,
+                V729::ContainerRegistryCleanupPacket(pk) => pk,
+                V729::ContainerSetDataPacket(pk) => pk,
+                V729::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V729::CraftingDataPacket(pk) => pk,
+                V729::CreatePhotoPacket(pk) => pk,
+                V729::CreativeContentPacket(pk) => pk,
+                V729::CurrentStructureFeaturePacket(pk) => pk,
+                V729::DeathInfoPacket(pk) => pk,
+                V729::DebugInfoPacket(pk) => pk,
+                V729::DimensionDataPacket(pk) => pk,
+                V729::DisconnectPacket(pk) => pk,
+                V729::EditorNetworkPacket(pk) => pk,
+                V729::EduUriResourcePacket(pk) => pk,
+                V729::EducationSettingsPacket(pk) => pk,
+                V729::EmoteListPacket(pk) => pk,
+                V729::EmotePacket(pk) => pk,
+                V729::FeatureRegistryPacket(pk) => pk,
+                V729::GameRulesChangedPacket(pk) => pk,
+                V729::GameTestRequestPacket(pk) => pk,
+                V729::GameTestResultsPacket(pk) => pk,
+                V729::GuiDataPickItemPacket(pk) => pk,
+                V729::HurtArmorPacket(pk) => pk,
+                V729::InteractPacket(pk) => pk,
+                V729::InventoryContentPacket(pk) => pk,
+                V729::InventorySlotPacket(pk) => pk,
+                V729::InventoryTransactionPacket(pk) => pk,
+                V729::ItemComponentPacket(pk) => pk,
+                V729::ItemStackRequestPacket(pk) => pk,
+                V729::ItemStackResponsePacket(pk) => pk,
+                V729::JigsawStructureDataPacket(pk) => pk,
+                V729::LabTablePacket(pk) => pk,
+                V729::LecternUpdatePacket(pk) => pk,
+                V729::LegacyTelemetryEventPacket(pk) => pk,
+                V729::LessonProgressPacket(pk) => pk,
+                V729::LevelChunkPacket(pk) => pk,
+                V729::LevelEventGenericPacket(pk) => pk,
+                V729::LevelEventPacket(pk) => pk,
+                V729::LevelSoundEventPacket(pk) => pk,
+                V729::LevelSoundEventV1Packet(pk) => pk,
+                V729::LevelSoundEventV2Packet(pk) => pk,
+                V729::LoginPacket(pk) => pk,
+                V729::MapCreateLockedCopyPacket(pk) => pk,
+                V729::MapInfoRequestPacket(pk) => pk,
+                V729::MobArmorEquipmentPacket(pk) => pk,
+                V729::MobEffectPacket(pk) => pk,
+                V729::MobEquipmentPacket(pk) => pk,
+                V729::ModalFormRequestPacket(pk) => pk,
+                V729::ModalFormResponsePacket(pk) => pk,
+                V729::MotionPredictionHintsPacket(pk) => pk,
+                V729::MoveActorAbsolutePacket(pk) => pk,
+                V729::MoveActorDeltaPacket(pk) => pk,
+                V729::MovePlayerPacket(pk) => pk,
+                V729::MultiplayerSettingsPacket(pk) => pk,
+                V729::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V729::NetworkSettingsPacket(pk) => pk,
+                V729::NetworkStackLatencyPacket(pk) => pk,
+                V729::NpcDialoguePacket(pk) => pk,
+                V729::NpcRequestPacket(pk) => pk,
+                V729::OnScreenTextureAnimationPacket(pk) => pk,
+                V729::OpenSignPacket(pk) => pk,
+                V729::PacketViolationWarningPacket(pk) => pk,
+                V729::PassengerJumpPacket(pk) => pk,
+                V729::PhotoTransferPacket(pk) => pk,
+                V729::PlaySoundPacket(pk) => pk,
+                V729::PlayStatusPacket(pk) => pk,
+                V729::PlayerActionPacket(pk) => pk,
+                V729::PlayerArmorDamagePacket(pk) => pk,
+                V729::PlayerAuthInputPacket(pk) => pk,
+                V729::PlayerEnchantOptionsPacket(pk) => pk,
+                V729::PlayerFogPacket(pk) => pk,
+                V729::PlayerHotbarPacket(pk) => pk,
+                V729::PlayerInputPacket(pk) => pk,
+                V729::PlayerListPacket(pk) => pk,
+                V729::PlayerSkinPacket(pk) => pk,
+                V729::PlayerStartItemCooldownPacket(pk) => pk,
+                V729::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V729::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V729::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V729::PurchaseReceiptPacket(pk) => pk,
+                V729::RefreshEntitlementsPacket(pk) => pk,
+                V729::RemoveActorPacket(pk) => pk,
+                V729::RemoveObjectivePacket(pk) => pk,
+                V729::RemoveVolumeEntityPacket(pk) => pk,
+                V729::RequestAbilityPacket(pk) => pk,
+                V729::RequestChunkRadiusPacket(pk) => pk,
+                V729::RequestNetworkSettingsPacket(pk) => pk,
+                V729::RequestPermissionsPacket(pk) => pk,
+                V729::ResourcePackChunkDataPacket(pk) => pk,
+                V729::ResourcePackChunkRequestPacket(pk) => pk,
+                V729::ResourcePackClientResponsePacket(pk) => pk,
+                V729::ResourcePackDataInfoPacket(pk) => pk,
+                V729::ResourcePackStackPacket(pk) => pk,
+                V729::ResourcePacksInfoPacket(pk) => pk,
+                V729::RespawnPacket(pk) => pk,
+                V729::ScriptMessagePacket(pk) => pk,
+                V729::ServerBoundDiagnosticsPacket(pk) => pk,
+                V729::ServerBoundLoadingScreenPacket(pk) => pk,
+                V729::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V729::ServerSettingsRequestPacket(pk) => pk,
+                V729::ServerSettingsResponsePacket(pk) => pk,
+                V729::ServerStatsPacket(pk) => pk,
+                V729::ServerToClientHandshakePacket(pk) => pk,
+                V729::SetActorDataPacket(pk) => pk,
+                V729::SetActorLinkPacket(pk) => pk,
+                V729::SetActorMotionPacket(pk) => pk,
+                V729::SetCommandsEnabledPacket(pk) => pk,
+                V729::SetDefaultGameTypePacket(pk) => pk,
+                V729::SetDifficultyPacket(pk) => pk,
+                V729::SetDisplayObjectivePacket(pk) => pk,
+                V729::SetHealthPacket(pk) => pk,
+                V729::SetHudPacket(pk) => pk,
+                V729::SetLastHurtByPacket(pk) => pk,
+                V729::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V729::SetPlayerGameTypePacket(pk) => pk,
+                V729::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V729::SetScorePacket(pk) => pk,
+                V729::SetScoreboardIdentityPacket(pk) => pk,
+                V729::SetSpawnPositionPacket(pk) => pk,
+                V729::SetTimePacket(pk) => pk,
+                V729::SetTitlePacket(pk) => pk,
+                V729::SettingsCommandPacket(pk) => pk,
+                V729::ShowCreditsPacket(pk) => pk,
+                V729::ShowProfilePacket(pk) => pk,
+                V729::ShowStoreOfferPacket(pk) => pk,
+                V729::SimpleEventPacket(pk) => pk,
+                V729::SimulationTypePacket(pk) => pk,
+                V729::SpawnExperienceOrbPacket(pk) => pk,
+                V729::SpawnParticleEffectPacket(pk) => pk,
+                V729::StartGamePacket(pk) => pk,
+                V729::StopSoundPacket(pk) => pk,
+                V729::StructureBlockUpdatePacket(pk) => pk,
+                V729::StructureDataRequestPacket(pk) => pk,
+                V729::StructureDataResponsePacket(pk) => pk,
+                V729::SubChunkPacket(pk) => pk,
+                V729::SubChunkRequestPacket(pk) => pk,
+                V729::SubClientLoginPacket(pk) => pk,
+                V729::SyncActorPropertyPacket(pk) => pk,
+                V729::TakeItemActorPacket(pk) => pk,
+                V729::TextPacket(pk) => pk,
+                V729::TickingAreaLoadStatusPacket(pk) => pk,
+                V729::ToastRequestPacket(pk) => pk,
+                V729::TransferPlayerPacket(pk) => pk,
+                V729::TrimDataPacket(pk) => pk,
+                V729::UnlockedRecipesPacket(pk) => pk,
+                V729::UpdateAbilitiesPacket(pk) => pk,
+                V729::UpdateAdventureSettingsPacket(pk) => pk,
+                V729::UpdateAttributesPacket(pk) => pk,
+                V729::UpdateBlockPacket(pk) => pk,
+                V729::UpdateBlockSyncedPacket(pk) => pk,
+                V729::UpdateClientInputLocksPacket(pk) => pk,
+                V729::UpdateEquipPacket(pk) => pk,
+                V729::UpdatePlayerGameTypePacket(pk) => pk,
+                V729::UpdateSoftEnumPacket(pk) => pk,
+                V729::UpdateSubChunkBlocksPacket(pk) => pk,
+                V729::UpdateTradePacket(pk) => pk,
+                V729::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v729")]

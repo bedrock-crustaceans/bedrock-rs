@@ -98,7 +98,8 @@ protocol-v944 = ["bedrock_protocol/v944"]
 protocol-v975 = ["bedrock_protocol/v975"]
 protocol-all = ["bedrock_protocol/all"]
 
-protocol-dyn-name = ["bedrock_protocol_core/dyn-name"]
+protocol-packet-dyn = ["bedrock_protocol/packet-dyn"]
+protocol-packet-meta = ["bedrock_protocol/packet-meta"]
 
 [[example]]
 name = "server"

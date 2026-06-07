@@ -8,4 +8,6 @@ pub struct SmithingTrimRecipe<V: ProtoVersion> {
     pub base_ingredient: V::RecipeIngredient,
     pub addition_ingredient: V::RecipeIngredient,
     pub tag: String,
+    #[endianness(var)]
+    pub network_id: u32,
 }

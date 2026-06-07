@@ -7415,429 +7415,630 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V827::ActorEventPacket(pk) => pk.as_ref(),
-                V827::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V827::AddActorPacket(pk) => pk.as_ref(),
-                V827::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V827::AddItemActorPacket(pk) => pk.as_ref(),
-                V827::AddPaintingPacket(pk) => pk.as_ref(),
-                V827::AddPlayerPacket(pk) => pk.as_ref(),
-                V827::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V827::AgentActionEventPacket(pk) => pk.as_ref(),
-                V827::AgentAnimationPacket(pk) => pk.as_ref(),
-                V827::AnimateEntityPacket(pk) => pk.as_ref(),
-                V827::AnimatePacket(pk) => pk.as_ref(),
-                V827::AnvilDamagePacket(pk) => pk.as_ref(),
-                V827::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V827::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V827::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V827::AwardAchievementPacket(pk) => pk.as_ref(),
-                V827::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V827::BlockActorDataPacket(pk) => pk.as_ref(),
-                V827::BlockEventPacket(pk) => pk.as_ref(),
-                V827::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V827::BookEditPacket(pk) => pk.as_ref(),
-                V827::BossEventPacket(pk) => pk.as_ref(),
-                V827::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
-                V827::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V827::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V827::CameraInstructionPacket(pk) => pk.as_ref(),
-                V827::CameraPacket(pk) => pk.as_ref(),
-                V827::CameraPresetsPacket(pk) => pk.as_ref(),
-                V827::CameraShakePacket(pk) => pk.as_ref(),
-                V827::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V827::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V827::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V827::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V827::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
-                V827::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V827::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V827::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V827::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V827::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V827::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V827::CodeBuilderPacket(pk) => pk.as_ref(),
-                V827::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V827::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V827::CommandOutputPacket(pk) => pk.as_ref(),
-                V827::CommandRequestPacket(pk) => pk.as_ref(),
-                V827::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V827::ContainerClosePacket(pk) => pk.as_ref(),
-                V827::ContainerOpenPacket(pk) => pk.as_ref(),
-                V827::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V827::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V827::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V827::CraftingDataPacket(pk) => pk.as_ref(),
-                V827::CreatePhotoPacket(pk) => pk.as_ref(),
-                V827::CreativeContentPacket(pk) => pk.as_ref(),
-                V827::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V827::DeathInfoPacket(pk) => pk.as_ref(),
-                V827::DebugDrawerPacket(pk) => pk.as_ref(),
-                V827::DebugInfoPacket(pk) => pk.as_ref(),
-                V827::DimensionDataPacket(pk) => pk.as_ref(),
-                V827::DisconnectPacket(pk) => pk.as_ref(),
-                V827::EditorNetworkPacket(pk) => pk.as_ref(),
-                V827::EduUriResourcePacket(pk) => pk.as_ref(),
-                V827::EducationSettingsPacket(pk) => pk.as_ref(),
-                V827::EmoteListPacket(pk) => pk.as_ref(),
-                V827::EmotePacket(pk) => pk.as_ref(),
-                V827::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V827::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V827::GameTestRequestPacket(pk) => pk.as_ref(),
-                V827::GameTestResultsPacket(pk) => pk.as_ref(),
-                V827::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V827::HurtArmorPacket(pk) => pk.as_ref(),
-                V827::InteractPacket(pk) => pk.as_ref(),
-                V827::InventoryContentPacket(pk) => pk.as_ref(),
-                V827::InventorySlotPacket(pk) => pk.as_ref(),
-                V827::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V827::ItemComponentPacket(pk) => pk.as_ref(),
-                V827::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V827::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V827::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V827::LabTablePacket(pk) => pk.as_ref(),
-                V827::LecternUpdatePacket(pk) => pk.as_ref(),
-                V827::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V827::LessonProgressPacket(pk) => pk.as_ref(),
-                V827::LevelChunkPacket(pk) => pk.as_ref(),
-                V827::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V827::LevelEventPacket(pk) => pk.as_ref(),
-                V827::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V827::LoginPacket(pk) => pk.as_ref(),
-                V827::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V827::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V827::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V827::MobEffectPacket(pk) => pk.as_ref(),
-                V827::MobEquipmentPacket(pk) => pk.as_ref(),
-                V827::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V827::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V827::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V827::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V827::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V827::MovePlayerPacket(pk) => pk.as_ref(),
-                V827::MovementEffectPacket(pk) => pk.as_ref(),
-                V827::MovementPredictionSyncPacket(pk) => pk.as_ref(),
-                V827::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V827::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V827::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V827::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V827::NpcDialoguePacket(pk) => pk.as_ref(),
-                V827::NpcRequestPacket(pk) => pk.as_ref(),
-                V827::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V827::OpenSignPacket(pk) => pk.as_ref(),
-                V827::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V827::PhotoTransferPacket(pk) => pk.as_ref(),
-                V827::PlaySoundPacket(pk) => pk.as_ref(),
-                V827::PlayStatusPacket(pk) => pk.as_ref(),
-                V827::PlayerActionPacket(pk) => pk.as_ref(),
-                V827::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V827::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V827::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V827::PlayerFogPacket(pk) => pk.as_ref(),
-                V827::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V827::PlayerListPacket(pk) => pk.as_ref(),
-                V827::PlayerLocationPacket(pk) => pk.as_ref(),
-                V827::PlayerSkinPacket(pk) => pk.as_ref(),
-                V827::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V827::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V827::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
-                V827::PlayerVideoCapturePacket(pk) => pk.as_ref(),
-                V827::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V827::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V827::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V827::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V827::RemoveActorPacket(pk) => pk.as_ref(),
-                V827::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V827::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V827::RequestAbilityPacket(pk) => pk.as_ref(),
-                V827::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V827::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V827::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V827::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V827::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V827::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V827::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V827::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V827::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V827::RespawnPacket(pk) => pk.as_ref(),
-                V827::ScriptMessagePacket(pk) => pk.as_ref(),
-                V827::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V827::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V827::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V827::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V827::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V827::ServerStatsPacket(pk) => pk.as_ref(),
-                V827::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V827::SetActorDataPacket(pk) => pk.as_ref(),
-                V827::SetActorLinkPacket(pk) => pk.as_ref(),
-                V827::SetActorMotionPacket(pk) => pk.as_ref(),
-                V827::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V827::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V827::SetDifficultyPacket(pk) => pk.as_ref(),
-                V827::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V827::SetHealthPacket(pk) => pk.as_ref(),
-                V827::SetHudPacket(pk) => pk.as_ref(),
-                V827::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V827::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V827::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V827::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V827::SetScorePacket(pk) => pk.as_ref(),
-                V827::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V827::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V827::SetTimePacket(pk) => pk.as_ref(),
-                V827::SetTitlePacket(pk) => pk.as_ref(),
-                V827::SettingsCommandPacket(pk) => pk.as_ref(),
-                V827::ShowCreditsPacket(pk) => pk.as_ref(),
-                V827::ShowProfilePacket(pk) => pk.as_ref(),
-                V827::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V827::SimpleEventPacket(pk) => pk.as_ref(),
-                V827::SimulationTypePacket(pk) => pk.as_ref(),
-                V827::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V827::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V827::StartGamePacket(pk) => pk.as_ref(),
-                V827::StopSoundPacket(pk) => pk.as_ref(),
-                V827::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V827::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V827::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V827::SubChunkPacket(pk) => pk.as_ref(),
-                V827::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V827::SubClientLoginPacket(pk) => pk.as_ref(),
-                V827::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V827::TakeItemActorPacket(pk) => pk.as_ref(),
-                V827::TextPacket(pk) => pk.as_ref(),
-                V827::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V827::ToastRequestPacket(pk) => pk.as_ref(),
-                V827::TransferPlayerPacket(pk) => pk.as_ref(),
-                V827::TrimDataPacket(pk) => pk.as_ref(),
-                V827::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V827::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V827::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V827::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V827::UpdateBlockPacket(pk) => pk.as_ref(),
-                V827::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V827::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V827::UpdateClientOptionsPacket(pk) => pk.as_ref(),
-                V827::UpdateEquipPacket(pk) => pk.as_ref(),
-                V827::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V827::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V827::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V827::UpdateTradePacket(pk) => pk.as_ref(),
-                V827::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V827::ActorEventPacket(pk) => pk,
-                V827::ActorPickRequestPacket(pk) => pk,
-                V827::AddActorPacket(pk) => pk,
-                V827::AddBehaviourTreePacket(pk) => pk,
-                V827::AddItemActorPacket(pk) => pk,
-                V827::AddPaintingPacket(pk) => pk,
-                V827::AddPlayerPacket(pk) => pk,
-                V827::AddVolumeEntityPacket(pk) => pk,
-                V827::AgentActionEventPacket(pk) => pk,
-                V827::AgentAnimationPacket(pk) => pk,
-                V827::AnimateEntityPacket(pk) => pk,
-                V827::AnimatePacket(pk) => pk,
-                V827::AnvilDamagePacket(pk) => pk,
-                V827::AutomationClientConnectPacket(pk) => pk,
-                V827::AvailableActorIdentifiersPacket(pk) => pk,
-                V827::AvailableCommandsPacket(pk) => pk,
-                V827::AwardAchievementPacket(pk) => pk,
-                V827::BiomeDefinitionListPacket(pk) => pk,
-                V827::BlockActorDataPacket(pk) => pk,
-                V827::BlockEventPacket(pk) => pk,
-                V827::BlockPickRequestPacket(pk) => pk,
-                V827::BookEditPacket(pk) => pk,
-                V827::BossEventPacket(pk) => pk,
-                V827::CameraAimAssistInstructionPacket(pk) => pk,
-                V827::CameraAimAssistPacket(pk) => pk,
-                V827::CameraAimAssistPresetsPacket(pk) => pk,
-                V827::CameraInstructionPacket(pk) => pk,
-                V827::CameraPacket(pk) => pk,
-                V827::CameraPresetsPacket(pk) => pk,
-                V827::CameraShakePacket(pk) => pk,
-                V827::ChangeDimensionPacket(pk) => pk,
-                V827::ChangeMobPropertyPacket(pk) => pk,
-                V827::ChunkRadiusUpdatedPacket(pk) => pk,
-                V827::ClientBoundCloseFormPacket(pk) => pk,
-                V827::ClientBoundControlSchemeSetPacket(pk) => pk,
-                V827::ClientBoundDebugRendererPacket(pk) => pk,
-                V827::ClientBoundMapItemDataPacket(pk) => pk,
-                V827::ClientCacheBlobStatusPacket(pk) => pk,
-                V827::ClientCacheMissResponsePacket(pk) => pk,
-                V827::ClientCacheStatusPacket(pk) => pk,
-                V827::ClientToServerHandshakePacket(pk) => pk,
-                V827::CodeBuilderPacket(pk) => pk,
-                V827::CodeBuilderSourcePacket(pk) => pk,
-                V827::CommandBlockUpdatePacket(pk) => pk,
-                V827::CommandOutputPacket(pk) => pk,
-                V827::CommandRequestPacket(pk) => pk,
-                V827::CompletedUsingItemPacket(pk) => pk,
-                V827::ContainerClosePacket(pk) => pk,
-                V827::ContainerOpenPacket(pk) => pk,
-                V827::ContainerRegistryCleanupPacket(pk) => pk,
-                V827::ContainerSetDataPacket(pk) => pk,
-                V827::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V827::CraftingDataPacket(pk) => pk,
-                V827::CreatePhotoPacket(pk) => pk,
-                V827::CreativeContentPacket(pk) => pk,
-                V827::CurrentStructureFeaturePacket(pk) => pk,
-                V827::DeathInfoPacket(pk) => pk,
-                V827::DebugDrawerPacket(pk) => pk,
-                V827::DebugInfoPacket(pk) => pk,
-                V827::DimensionDataPacket(pk) => pk,
-                V827::DisconnectPacket(pk) => pk,
-                V827::EditorNetworkPacket(pk) => pk,
-                V827::EduUriResourcePacket(pk) => pk,
-                V827::EducationSettingsPacket(pk) => pk,
-                V827::EmoteListPacket(pk) => pk,
-                V827::EmotePacket(pk) => pk,
-                V827::FeatureRegistryPacket(pk) => pk,
-                V827::GameRulesChangedPacket(pk) => pk,
-                V827::GameTestRequestPacket(pk) => pk,
-                V827::GameTestResultsPacket(pk) => pk,
-                V827::GuiDataPickItemPacket(pk) => pk,
-                V827::HurtArmorPacket(pk) => pk,
-                V827::InteractPacket(pk) => pk,
-                V827::InventoryContentPacket(pk) => pk,
-                V827::InventorySlotPacket(pk) => pk,
-                V827::InventoryTransactionPacket(pk) => pk,
-                V827::ItemComponentPacket(pk) => pk,
-                V827::ItemStackRequestPacket(pk) => pk,
-                V827::ItemStackResponsePacket(pk) => pk,
-                V827::JigsawStructureDataPacket(pk) => pk,
-                V827::LabTablePacket(pk) => pk,
-                V827::LecternUpdatePacket(pk) => pk,
-                V827::LegacyTelemetryEventPacket(pk) => pk,
-                V827::LessonProgressPacket(pk) => pk,
-                V827::LevelChunkPacket(pk) => pk,
-                V827::LevelEventGenericPacket(pk) => pk,
-                V827::LevelEventPacket(pk) => pk,
-                V827::LevelSoundEventPacket(pk) => pk,
-                V827::LoginPacket(pk) => pk,
-                V827::MapCreateLockedCopyPacket(pk) => pk,
-                V827::MapInfoRequestPacket(pk) => pk,
-                V827::MobArmorEquipmentPacket(pk) => pk,
-                V827::MobEffectPacket(pk) => pk,
-                V827::MobEquipmentPacket(pk) => pk,
-                V827::ModalFormRequestPacket(pk) => pk,
-                V827::ModalFormResponsePacket(pk) => pk,
-                V827::MotionPredictionHintsPacket(pk) => pk,
-                V827::MoveActorAbsolutePacket(pk) => pk,
-                V827::MoveActorDeltaPacket(pk) => pk,
-                V827::MovePlayerPacket(pk) => pk,
-                V827::MovementEffectPacket(pk) => pk,
-                V827::MovementPredictionSyncPacket(pk) => pk,
-                V827::MultiplayerSettingsPacket(pk) => pk,
-                V827::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V827::NetworkSettingsPacket(pk) => pk,
-                V827::NetworkStackLatencyPacket(pk) => pk,
-                V827::NpcDialoguePacket(pk) => pk,
-                V827::NpcRequestPacket(pk) => pk,
-                V827::OnScreenTextureAnimationPacket(pk) => pk,
-                V827::OpenSignPacket(pk) => pk,
-                V827::PacketViolationWarningPacket(pk) => pk,
-                V827::PhotoTransferPacket(pk) => pk,
-                V827::PlaySoundPacket(pk) => pk,
-                V827::PlayStatusPacket(pk) => pk,
-                V827::PlayerActionPacket(pk) => pk,
-                V827::PlayerArmorDamagePacket(pk) => pk,
-                V827::PlayerAuthInputPacket(pk) => pk,
-                V827::PlayerEnchantOptionsPacket(pk) => pk,
-                V827::PlayerFogPacket(pk) => pk,
-                V827::PlayerHotbarPacket(pk) => pk,
-                V827::PlayerListPacket(pk) => pk,
-                V827::PlayerLocationPacket(pk) => pk,
-                V827::PlayerSkinPacket(pk) => pk,
-                V827::PlayerStartItemCooldownPacket(pk) => pk,
-                V827::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V827::PlayerUpdateEntityOverridesPacket(pk) => pk,
-                V827::PlayerVideoCapturePacket(pk) => pk,
-                V827::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V827::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V827::PurchaseReceiptPacket(pk) => pk,
-                V827::RefreshEntitlementsPacket(pk) => pk,
-                V827::RemoveActorPacket(pk) => pk,
-                V827::RemoveObjectivePacket(pk) => pk,
-                V827::RemoveVolumeEntityPacket(pk) => pk,
-                V827::RequestAbilityPacket(pk) => pk,
-                V827::RequestChunkRadiusPacket(pk) => pk,
-                V827::RequestNetworkSettingsPacket(pk) => pk,
-                V827::RequestPermissionsPacket(pk) => pk,
-                V827::ResourcePackChunkDataPacket(pk) => pk,
-                V827::ResourcePackChunkRequestPacket(pk) => pk,
-                V827::ResourcePackClientResponsePacket(pk) => pk,
-                V827::ResourcePackDataInfoPacket(pk) => pk,
-                V827::ResourcePackStackPacket(pk) => pk,
-                V827::ResourcePacksInfoPacket(pk) => pk,
-                V827::RespawnPacket(pk) => pk,
-                V827::ScriptMessagePacket(pk) => pk,
-                V827::ServerBoundDiagnosticsPacket(pk) => pk,
-                V827::ServerBoundLoadingScreenPacket(pk) => pk,
-                V827::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V827::ServerSettingsRequestPacket(pk) => pk,
-                V827::ServerSettingsResponsePacket(pk) => pk,
-                V827::ServerStatsPacket(pk) => pk,
-                V827::ServerToClientHandshakePacket(pk) => pk,
-                V827::SetActorDataPacket(pk) => pk,
-                V827::SetActorLinkPacket(pk) => pk,
-                V827::SetActorMotionPacket(pk) => pk,
-                V827::SetCommandsEnabledPacket(pk) => pk,
-                V827::SetDefaultGameTypePacket(pk) => pk,
-                V827::SetDifficultyPacket(pk) => pk,
-                V827::SetDisplayObjectivePacket(pk) => pk,
-                V827::SetHealthPacket(pk) => pk,
-                V827::SetHudPacket(pk) => pk,
-                V827::SetLastHurtByPacket(pk) => pk,
-                V827::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V827::SetPlayerGameTypePacket(pk) => pk,
-                V827::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V827::SetScorePacket(pk) => pk,
-                V827::SetScoreboardIdentityPacket(pk) => pk,
-                V827::SetSpawnPositionPacket(pk) => pk,
-                V827::SetTimePacket(pk) => pk,
-                V827::SetTitlePacket(pk) => pk,
-                V827::SettingsCommandPacket(pk) => pk,
-                V827::ShowCreditsPacket(pk) => pk,
-                V827::ShowProfilePacket(pk) => pk,
-                V827::ShowStoreOfferPacket(pk) => pk,
-                V827::SimpleEventPacket(pk) => pk,
-                V827::SimulationTypePacket(pk) => pk,
-                V827::SpawnExperienceOrbPacket(pk) => pk,
-                V827::SpawnParticleEffectPacket(pk) => pk,
-                V827::StartGamePacket(pk) => pk,
-                V827::StopSoundPacket(pk) => pk,
-                V827::StructureBlockUpdatePacket(pk) => pk,
-                V827::StructureDataRequestPacket(pk) => pk,
-                V827::StructureDataResponsePacket(pk) => pk,
-                V827::SubChunkPacket(pk) => pk,
-                V827::SubChunkRequestPacket(pk) => pk,
-                V827::SubClientLoginPacket(pk) => pk,
-                V827::SyncActorPropertyPacket(pk) => pk,
-                V827::TakeItemActorPacket(pk) => pk,
-                V827::TextPacket(pk) => pk,
-                V827::TickingAreaLoadStatusPacket(pk) => pk,
-                V827::ToastRequestPacket(pk) => pk,
-                V827::TransferPlayerPacket(pk) => pk,
-                V827::TrimDataPacket(pk) => pk,
-                V827::UnlockedRecipesPacket(pk) => pk,
-                V827::UpdateAbilitiesPacket(pk) => pk,
-                V827::UpdateAdventureSettingsPacket(pk) => pk,
-                V827::UpdateAttributesPacket(pk) => pk,
-                V827::UpdateBlockPacket(pk) => pk,
-                V827::UpdateBlockSyncedPacket(pk) => pk,
-                V827::UpdateClientInputLocksPacket(pk) => pk,
-                V827::UpdateClientOptionsPacket(pk) => pk,
-                V827::UpdateEquipPacket(pk) => pk,
-                V827::UpdatePlayerGameTypePacket(pk) => pk,
-                V827::UpdateSoftEnumPacket(pk) => pk,
-                V827::UpdateSubChunkBlocksPacket(pk) => pk,
-                V827::UpdateTradePacket(pk) => pk,
-                V827::Unknown(pk) => pk,
+                V827::ActorEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ActorPickRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AddActorPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AddBehaviourTreePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AddItemActorPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AddPaintingPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AddPlayerPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AddVolumeEntityPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AgentActionEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AgentAnimationPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AnimateEntityPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AnimatePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AnvilDamagePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AutomationClientConnectPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AvailableActorIdentifiersPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AvailableCommandsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::AwardAchievementPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::BiomeDefinitionListPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::BlockActorDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::BlockEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::BlockPickRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::BookEditPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::BossEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraAimAssistInstructionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraAimAssistPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraAimAssistPresetsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraInstructionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraPresetsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CameraShakePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ChangeDimensionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ChangeMobPropertyPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ChunkRadiusUpdatedPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientBoundCloseFormPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientBoundControlSchemeSetPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientBoundDebugRendererPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientBoundMapItemDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientCacheBlobStatusPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientCacheMissResponsePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientCacheStatusPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ClientToServerHandshakePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CodeBuilderPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CodeBuilderSourcePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CommandBlockUpdatePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CommandOutputPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CommandRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CompletedUsingItemPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ContainerClosePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ContainerOpenPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ContainerRegistryCleanupPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ContainerSetDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CraftingDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CreatePhotoPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CreativeContentPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::CurrentStructureFeaturePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::DeathInfoPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::DebugDrawerPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::DebugDrawerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::DebugInfoPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::DimensionDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::DisconnectPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::EditorNetworkPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::EduUriResourcePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::EducationSettingsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::EmoteListPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::EmotePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::FeatureRegistryPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::GameRulesChangedPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::GameTestRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::GameTestResultsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::GuiDataPickItemPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::HurtArmorPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::InteractPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::InventoryContentPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::InventorySlotPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::InventoryTransactionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ItemComponentPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ItemStackRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ItemStackResponsePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::JigsawStructureDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LabTablePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LecternUpdatePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LegacyTelemetryEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LessonProgressPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LevelChunkPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LevelEventGenericPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LevelEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LevelSoundEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::LoginPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MapCreateLockedCopyPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MapInfoRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MobArmorEquipmentPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MobEffectPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MobEquipmentPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ModalFormRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ModalFormResponsePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MotionPredictionHintsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MoveActorAbsolutePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MoveActorDeltaPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MovePlayerPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MovementEffectPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MovementPredictionSyncPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::MultiplayerSettingsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::NetworkSettingsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::NetworkStackLatencyPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::NpcDialoguePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::NpcRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::OnScreenTextureAnimationPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::OpenSignPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PacketViolationWarningPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PhotoTransferPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlaySoundPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayStatusPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerActionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerArmorDamagePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerAuthInputPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerEnchantOptionsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerFogPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerHotbarPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerListPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerLocationPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerSkinPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerStartItemCooldownPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerUpdateEntityOverridesPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PlayerVideoCapturePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::PurchaseReceiptPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RefreshEntitlementsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RemoveActorPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RemoveObjectivePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RemoveVolumeEntityPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RequestAbilityPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RequestChunkRadiusPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RequestNetworkSettingsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RequestPermissionsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ResourcePackChunkDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ResourcePackChunkRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ResourcePackClientResponsePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ResourcePackDataInfoPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ResourcePackStackPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ResourcePacksInfoPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::RespawnPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ScriptMessagePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerBoundDiagnosticsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerBoundLoadingScreenPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerSettingsRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerSettingsResponsePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerStatsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ServerToClientHandshakePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetActorDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetActorLinkPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetActorMotionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetCommandsEnabledPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetDefaultGameTypePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetDifficultyPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetDisplayObjectivePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetHealthPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetHudPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetLastHurtByPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetPlayerGameTypePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetScorePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetScoreboardIdentityPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetSpawnPositionPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetTimePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SetTitlePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SettingsCommandPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ShowCreditsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ShowProfilePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ShowStoreOfferPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SimpleEventPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SimulationTypePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SpawnExperienceOrbPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SpawnParticleEffectPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::StartGamePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::StopSoundPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::StructureBlockUpdatePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::StructureDataRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::StructureDataResponsePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SubChunkPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SubChunkRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SubClientLoginPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::SyncActorPropertyPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::TakeItemActorPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::TextPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::TickingAreaLoadStatusPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::ToastRequestPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::TransferPlayerPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::TrimDataPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UnlockedRecipesPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateAbilitiesPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateAdventureSettingsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateAttributesPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateBlockPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateBlockSyncedPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateClientInputLocksPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateClientOptionsPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateEquipPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdatePlayerGameTypePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateSoftEnumPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateSubChunkBlocksPacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::UpdateTradePacket(_) => {
+                    <<V827 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V827::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7919,7 +8120,7 @@ mod inner {
         type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
         type CorrectPlayerMovePredictionPacket =
             crate::version::v827::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
         type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
         type CreativeContentPacket = crate::version::v776::packets::CreativeContentPacket<Self>;
         type CurrentStructureFeaturePacket =
@@ -8233,9 +8434,7 @@ mod inner {
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v776::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
         type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
         type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
@@ -8371,6 +8570,436 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u10";
         const GAME_VERSION: &str = "1.21.100";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V827 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V827::ActorEventPacket(pk) => pk.as_ref(),
+                V827::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V827::AddActorPacket(pk) => pk.as_ref(),
+                V827::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V827::AddItemActorPacket(pk) => pk.as_ref(),
+                V827::AddPaintingPacket(pk) => pk.as_ref(),
+                V827::AddPlayerPacket(pk) => pk.as_ref(),
+                V827::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V827::AgentActionEventPacket(pk) => pk.as_ref(),
+                V827::AgentAnimationPacket(pk) => pk.as_ref(),
+                V827::AnimateEntityPacket(pk) => pk.as_ref(),
+                V827::AnimatePacket(pk) => pk.as_ref(),
+                V827::AnvilDamagePacket(pk) => pk.as_ref(),
+                V827::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V827::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V827::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V827::AwardAchievementPacket(pk) => pk.as_ref(),
+                V827::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V827::BlockActorDataPacket(pk) => pk.as_ref(),
+                V827::BlockEventPacket(pk) => pk.as_ref(),
+                V827::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V827::BookEditPacket(pk) => pk.as_ref(),
+                V827::BossEventPacket(pk) => pk.as_ref(),
+                V827::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
+                V827::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V827::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V827::CameraInstructionPacket(pk) => pk.as_ref(),
+                V827::CameraPacket(pk) => pk.as_ref(),
+                V827::CameraPresetsPacket(pk) => pk.as_ref(),
+                V827::CameraShakePacket(pk) => pk.as_ref(),
+                V827::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V827::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V827::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V827::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V827::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
+                V827::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V827::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V827::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V827::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V827::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V827::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V827::CodeBuilderPacket(pk) => pk.as_ref(),
+                V827::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V827::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V827::CommandOutputPacket(pk) => pk.as_ref(),
+                V827::CommandRequestPacket(pk) => pk.as_ref(),
+                V827::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V827::ContainerClosePacket(pk) => pk.as_ref(),
+                V827::ContainerOpenPacket(pk) => pk.as_ref(),
+                V827::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V827::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V827::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V827::CraftingDataPacket(pk) => pk.as_ref(),
+                V827::CreatePhotoPacket(pk) => pk.as_ref(),
+                V827::CreativeContentPacket(pk) => pk.as_ref(),
+                V827::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V827::DeathInfoPacket(pk) => pk.as_ref(),
+                V827::DebugDrawerPacket(pk) => pk.as_ref(),
+                V827::DebugInfoPacket(pk) => pk.as_ref(),
+                V827::DimensionDataPacket(pk) => pk.as_ref(),
+                V827::DisconnectPacket(pk) => pk.as_ref(),
+                V827::EditorNetworkPacket(pk) => pk.as_ref(),
+                V827::EduUriResourcePacket(pk) => pk.as_ref(),
+                V827::EducationSettingsPacket(pk) => pk.as_ref(),
+                V827::EmoteListPacket(pk) => pk.as_ref(),
+                V827::EmotePacket(pk) => pk.as_ref(),
+                V827::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V827::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V827::GameTestRequestPacket(pk) => pk.as_ref(),
+                V827::GameTestResultsPacket(pk) => pk.as_ref(),
+                V827::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V827::HurtArmorPacket(pk) => pk.as_ref(),
+                V827::InteractPacket(pk) => pk.as_ref(),
+                V827::InventoryContentPacket(pk) => pk.as_ref(),
+                V827::InventorySlotPacket(pk) => pk.as_ref(),
+                V827::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V827::ItemComponentPacket(pk) => pk.as_ref(),
+                V827::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V827::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V827::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V827::LabTablePacket(pk) => pk.as_ref(),
+                V827::LecternUpdatePacket(pk) => pk.as_ref(),
+                V827::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V827::LessonProgressPacket(pk) => pk.as_ref(),
+                V827::LevelChunkPacket(pk) => pk.as_ref(),
+                V827::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V827::LevelEventPacket(pk) => pk.as_ref(),
+                V827::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V827::LoginPacket(pk) => pk.as_ref(),
+                V827::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V827::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V827::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V827::MobEffectPacket(pk) => pk.as_ref(),
+                V827::MobEquipmentPacket(pk) => pk.as_ref(),
+                V827::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V827::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V827::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V827::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V827::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V827::MovePlayerPacket(pk) => pk.as_ref(),
+                V827::MovementEffectPacket(pk) => pk.as_ref(),
+                V827::MovementPredictionSyncPacket(pk) => pk.as_ref(),
+                V827::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V827::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V827::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V827::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V827::NpcDialoguePacket(pk) => pk.as_ref(),
+                V827::NpcRequestPacket(pk) => pk.as_ref(),
+                V827::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V827::OpenSignPacket(pk) => pk.as_ref(),
+                V827::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V827::PhotoTransferPacket(pk) => pk.as_ref(),
+                V827::PlaySoundPacket(pk) => pk.as_ref(),
+                V827::PlayStatusPacket(pk) => pk.as_ref(),
+                V827::PlayerActionPacket(pk) => pk.as_ref(),
+                V827::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V827::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V827::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V827::PlayerFogPacket(pk) => pk.as_ref(),
+                V827::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V827::PlayerListPacket(pk) => pk.as_ref(),
+                V827::PlayerLocationPacket(pk) => pk.as_ref(),
+                V827::PlayerSkinPacket(pk) => pk.as_ref(),
+                V827::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V827::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V827::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
+                V827::PlayerVideoCapturePacket(pk) => pk.as_ref(),
+                V827::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V827::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V827::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V827::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V827::RemoveActorPacket(pk) => pk.as_ref(),
+                V827::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V827::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V827::RequestAbilityPacket(pk) => pk.as_ref(),
+                V827::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V827::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V827::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V827::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V827::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V827::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V827::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V827::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V827::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V827::RespawnPacket(pk) => pk.as_ref(),
+                V827::ScriptMessagePacket(pk) => pk.as_ref(),
+                V827::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V827::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V827::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V827::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V827::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V827::ServerStatsPacket(pk) => pk.as_ref(),
+                V827::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V827::SetActorDataPacket(pk) => pk.as_ref(),
+                V827::SetActorLinkPacket(pk) => pk.as_ref(),
+                V827::SetActorMotionPacket(pk) => pk.as_ref(),
+                V827::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V827::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V827::SetDifficultyPacket(pk) => pk.as_ref(),
+                V827::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V827::SetHealthPacket(pk) => pk.as_ref(),
+                V827::SetHudPacket(pk) => pk.as_ref(),
+                V827::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V827::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V827::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V827::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V827::SetScorePacket(pk) => pk.as_ref(),
+                V827::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V827::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V827::SetTimePacket(pk) => pk.as_ref(),
+                V827::SetTitlePacket(pk) => pk.as_ref(),
+                V827::SettingsCommandPacket(pk) => pk.as_ref(),
+                V827::ShowCreditsPacket(pk) => pk.as_ref(),
+                V827::ShowProfilePacket(pk) => pk.as_ref(),
+                V827::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V827::SimpleEventPacket(pk) => pk.as_ref(),
+                V827::SimulationTypePacket(pk) => pk.as_ref(),
+                V827::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V827::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V827::StartGamePacket(pk) => pk.as_ref(),
+                V827::StopSoundPacket(pk) => pk.as_ref(),
+                V827::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V827::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V827::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V827::SubChunkPacket(pk) => pk.as_ref(),
+                V827::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V827::SubClientLoginPacket(pk) => pk.as_ref(),
+                V827::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V827::TakeItemActorPacket(pk) => pk.as_ref(),
+                V827::TextPacket(pk) => pk.as_ref(),
+                V827::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V827::ToastRequestPacket(pk) => pk.as_ref(),
+                V827::TransferPlayerPacket(pk) => pk.as_ref(),
+                V827::TrimDataPacket(pk) => pk.as_ref(),
+                V827::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V827::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V827::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V827::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V827::UpdateBlockPacket(pk) => pk.as_ref(),
+                V827::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V827::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V827::UpdateClientOptionsPacket(pk) => pk.as_ref(),
+                V827::UpdateEquipPacket(pk) => pk.as_ref(),
+                V827::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V827::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V827::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V827::UpdateTradePacket(pk) => pk.as_ref(),
+                V827::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V827> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V827) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V827::ActorEventPacket(pk) => pk,
+                V827::ActorPickRequestPacket(pk) => pk,
+                V827::AddActorPacket(pk) => pk,
+                V827::AddBehaviourTreePacket(pk) => pk,
+                V827::AddItemActorPacket(pk) => pk,
+                V827::AddPaintingPacket(pk) => pk,
+                V827::AddPlayerPacket(pk) => pk,
+                V827::AddVolumeEntityPacket(pk) => pk,
+                V827::AgentActionEventPacket(pk) => pk,
+                V827::AgentAnimationPacket(pk) => pk,
+                V827::AnimateEntityPacket(pk) => pk,
+                V827::AnimatePacket(pk) => pk,
+                V827::AnvilDamagePacket(pk) => pk,
+                V827::AutomationClientConnectPacket(pk) => pk,
+                V827::AvailableActorIdentifiersPacket(pk) => pk,
+                V827::AvailableCommandsPacket(pk) => pk,
+                V827::AwardAchievementPacket(pk) => pk,
+                V827::BiomeDefinitionListPacket(pk) => pk,
+                V827::BlockActorDataPacket(pk) => pk,
+                V827::BlockEventPacket(pk) => pk,
+                V827::BlockPickRequestPacket(pk) => pk,
+                V827::BookEditPacket(pk) => pk,
+                V827::BossEventPacket(pk) => pk,
+                V827::CameraAimAssistInstructionPacket(pk) => pk,
+                V827::CameraAimAssistPacket(pk) => pk,
+                V827::CameraAimAssistPresetsPacket(pk) => pk,
+                V827::CameraInstructionPacket(pk) => pk,
+                V827::CameraPacket(pk) => pk,
+                V827::CameraPresetsPacket(pk) => pk,
+                V827::CameraShakePacket(pk) => pk,
+                V827::ChangeDimensionPacket(pk) => pk,
+                V827::ChangeMobPropertyPacket(pk) => pk,
+                V827::ChunkRadiusUpdatedPacket(pk) => pk,
+                V827::ClientBoundCloseFormPacket(pk) => pk,
+                V827::ClientBoundControlSchemeSetPacket(pk) => pk,
+                V827::ClientBoundDebugRendererPacket(pk) => pk,
+                V827::ClientBoundMapItemDataPacket(pk) => pk,
+                V827::ClientCacheBlobStatusPacket(pk) => pk,
+                V827::ClientCacheMissResponsePacket(pk) => pk,
+                V827::ClientCacheStatusPacket(pk) => pk,
+                V827::ClientToServerHandshakePacket(pk) => pk,
+                V827::CodeBuilderPacket(pk) => pk,
+                V827::CodeBuilderSourcePacket(pk) => pk,
+                V827::CommandBlockUpdatePacket(pk) => pk,
+                V827::CommandOutputPacket(pk) => pk,
+                V827::CommandRequestPacket(pk) => pk,
+                V827::CompletedUsingItemPacket(pk) => pk,
+                V827::ContainerClosePacket(pk) => pk,
+                V827::ContainerOpenPacket(pk) => pk,
+                V827::ContainerRegistryCleanupPacket(pk) => pk,
+                V827::ContainerSetDataPacket(pk) => pk,
+                V827::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V827::CraftingDataPacket(pk) => pk,
+                V827::CreatePhotoPacket(pk) => pk,
+                V827::CreativeContentPacket(pk) => pk,
+                V827::CurrentStructureFeaturePacket(pk) => pk,
+                V827::DeathInfoPacket(pk) => pk,
+                V827::DebugDrawerPacket(pk) => pk,
+                V827::DebugInfoPacket(pk) => pk,
+                V827::DimensionDataPacket(pk) => pk,
+                V827::DisconnectPacket(pk) => pk,
+                V827::EditorNetworkPacket(pk) => pk,
+                V827::EduUriResourcePacket(pk) => pk,
+                V827::EducationSettingsPacket(pk) => pk,
+                V827::EmoteListPacket(pk) => pk,
+                V827::EmotePacket(pk) => pk,
+                V827::FeatureRegistryPacket(pk) => pk,
+                V827::GameRulesChangedPacket(pk) => pk,
+                V827::GameTestRequestPacket(pk) => pk,
+                V827::GameTestResultsPacket(pk) => pk,
+                V827::GuiDataPickItemPacket(pk) => pk,
+                V827::HurtArmorPacket(pk) => pk,
+                V827::InteractPacket(pk) => pk,
+                V827::InventoryContentPacket(pk) => pk,
+                V827::InventorySlotPacket(pk) => pk,
+                V827::InventoryTransactionPacket(pk) => pk,
+                V827::ItemComponentPacket(pk) => pk,
+                V827::ItemStackRequestPacket(pk) => pk,
+                V827::ItemStackResponsePacket(pk) => pk,
+                V827::JigsawStructureDataPacket(pk) => pk,
+                V827::LabTablePacket(pk) => pk,
+                V827::LecternUpdatePacket(pk) => pk,
+                V827::LegacyTelemetryEventPacket(pk) => pk,
+                V827::LessonProgressPacket(pk) => pk,
+                V827::LevelChunkPacket(pk) => pk,
+                V827::LevelEventGenericPacket(pk) => pk,
+                V827::LevelEventPacket(pk) => pk,
+                V827::LevelSoundEventPacket(pk) => pk,
+                V827::LoginPacket(pk) => pk,
+                V827::MapCreateLockedCopyPacket(pk) => pk,
+                V827::MapInfoRequestPacket(pk) => pk,
+                V827::MobArmorEquipmentPacket(pk) => pk,
+                V827::MobEffectPacket(pk) => pk,
+                V827::MobEquipmentPacket(pk) => pk,
+                V827::ModalFormRequestPacket(pk) => pk,
+                V827::ModalFormResponsePacket(pk) => pk,
+                V827::MotionPredictionHintsPacket(pk) => pk,
+                V827::MoveActorAbsolutePacket(pk) => pk,
+                V827::MoveActorDeltaPacket(pk) => pk,
+                V827::MovePlayerPacket(pk) => pk,
+                V827::MovementEffectPacket(pk) => pk,
+                V827::MovementPredictionSyncPacket(pk) => pk,
+                V827::MultiplayerSettingsPacket(pk) => pk,
+                V827::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V827::NetworkSettingsPacket(pk) => pk,
+                V827::NetworkStackLatencyPacket(pk) => pk,
+                V827::NpcDialoguePacket(pk) => pk,
+                V827::NpcRequestPacket(pk) => pk,
+                V827::OnScreenTextureAnimationPacket(pk) => pk,
+                V827::OpenSignPacket(pk) => pk,
+                V827::PacketViolationWarningPacket(pk) => pk,
+                V827::PhotoTransferPacket(pk) => pk,
+                V827::PlaySoundPacket(pk) => pk,
+                V827::PlayStatusPacket(pk) => pk,
+                V827::PlayerActionPacket(pk) => pk,
+                V827::PlayerArmorDamagePacket(pk) => pk,
+                V827::PlayerAuthInputPacket(pk) => pk,
+                V827::PlayerEnchantOptionsPacket(pk) => pk,
+                V827::PlayerFogPacket(pk) => pk,
+                V827::PlayerHotbarPacket(pk) => pk,
+                V827::PlayerListPacket(pk) => pk,
+                V827::PlayerLocationPacket(pk) => pk,
+                V827::PlayerSkinPacket(pk) => pk,
+                V827::PlayerStartItemCooldownPacket(pk) => pk,
+                V827::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V827::PlayerUpdateEntityOverridesPacket(pk) => pk,
+                V827::PlayerVideoCapturePacket(pk) => pk,
+                V827::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V827::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V827::PurchaseReceiptPacket(pk) => pk,
+                V827::RefreshEntitlementsPacket(pk) => pk,
+                V827::RemoveActorPacket(pk) => pk,
+                V827::RemoveObjectivePacket(pk) => pk,
+                V827::RemoveVolumeEntityPacket(pk) => pk,
+                V827::RequestAbilityPacket(pk) => pk,
+                V827::RequestChunkRadiusPacket(pk) => pk,
+                V827::RequestNetworkSettingsPacket(pk) => pk,
+                V827::RequestPermissionsPacket(pk) => pk,
+                V827::ResourcePackChunkDataPacket(pk) => pk,
+                V827::ResourcePackChunkRequestPacket(pk) => pk,
+                V827::ResourcePackClientResponsePacket(pk) => pk,
+                V827::ResourcePackDataInfoPacket(pk) => pk,
+                V827::ResourcePackStackPacket(pk) => pk,
+                V827::ResourcePacksInfoPacket(pk) => pk,
+                V827::RespawnPacket(pk) => pk,
+                V827::ScriptMessagePacket(pk) => pk,
+                V827::ServerBoundDiagnosticsPacket(pk) => pk,
+                V827::ServerBoundLoadingScreenPacket(pk) => pk,
+                V827::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V827::ServerSettingsRequestPacket(pk) => pk,
+                V827::ServerSettingsResponsePacket(pk) => pk,
+                V827::ServerStatsPacket(pk) => pk,
+                V827::ServerToClientHandshakePacket(pk) => pk,
+                V827::SetActorDataPacket(pk) => pk,
+                V827::SetActorLinkPacket(pk) => pk,
+                V827::SetActorMotionPacket(pk) => pk,
+                V827::SetCommandsEnabledPacket(pk) => pk,
+                V827::SetDefaultGameTypePacket(pk) => pk,
+                V827::SetDifficultyPacket(pk) => pk,
+                V827::SetDisplayObjectivePacket(pk) => pk,
+                V827::SetHealthPacket(pk) => pk,
+                V827::SetHudPacket(pk) => pk,
+                V827::SetLastHurtByPacket(pk) => pk,
+                V827::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V827::SetPlayerGameTypePacket(pk) => pk,
+                V827::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V827::SetScorePacket(pk) => pk,
+                V827::SetScoreboardIdentityPacket(pk) => pk,
+                V827::SetSpawnPositionPacket(pk) => pk,
+                V827::SetTimePacket(pk) => pk,
+                V827::SetTitlePacket(pk) => pk,
+                V827::SettingsCommandPacket(pk) => pk,
+                V827::ShowCreditsPacket(pk) => pk,
+                V827::ShowProfilePacket(pk) => pk,
+                V827::ShowStoreOfferPacket(pk) => pk,
+                V827::SimpleEventPacket(pk) => pk,
+                V827::SimulationTypePacket(pk) => pk,
+                V827::SpawnExperienceOrbPacket(pk) => pk,
+                V827::SpawnParticleEffectPacket(pk) => pk,
+                V827::StartGamePacket(pk) => pk,
+                V827::StopSoundPacket(pk) => pk,
+                V827::StructureBlockUpdatePacket(pk) => pk,
+                V827::StructureDataRequestPacket(pk) => pk,
+                V827::StructureDataResponsePacket(pk) => pk,
+                V827::SubChunkPacket(pk) => pk,
+                V827::SubChunkRequestPacket(pk) => pk,
+                V827::SubClientLoginPacket(pk) => pk,
+                V827::SyncActorPropertyPacket(pk) => pk,
+                V827::TakeItemActorPacket(pk) => pk,
+                V827::TextPacket(pk) => pk,
+                V827::TickingAreaLoadStatusPacket(pk) => pk,
+                V827::ToastRequestPacket(pk) => pk,
+                V827::TransferPlayerPacket(pk) => pk,
+                V827::TrimDataPacket(pk) => pk,
+                V827::UnlockedRecipesPacket(pk) => pk,
+                V827::UpdateAbilitiesPacket(pk) => pk,
+                V827::UpdateAdventureSettingsPacket(pk) => pk,
+                V827::UpdateAttributesPacket(pk) => pk,
+                V827::UpdateBlockPacket(pk) => pk,
+                V827::UpdateBlockSyncedPacket(pk) => pk,
+                V827::UpdateClientInputLocksPacket(pk) => pk,
+                V827::UpdateClientOptionsPacket(pk) => pk,
+                V827::UpdateEquipPacket(pk) => pk,
+                V827::UpdatePlayerGameTypePacket(pk) => pk,
+                V827::UpdateSoftEnumPacket(pk) => pk,
+                V827::UpdateSubChunkBlocksPacket(pk) => pk,
+                V827::UpdateTradePacket(pk) => pk,
+                V827::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v827")]

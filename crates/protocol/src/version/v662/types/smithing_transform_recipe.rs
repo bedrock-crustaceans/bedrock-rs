@@ -9,4 +9,6 @@ pub struct SmithingTransformRecipe<V: ProtoVersion> {
     pub addition_ingredient: V::RecipeIngredient,
     pub result: V::NetworkItemInstanceDescriptor,
     pub tag: String,
+    #[endianness(var)]
+    pub network_id: u32,
 }

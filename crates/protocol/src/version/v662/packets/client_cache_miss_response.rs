@@ -10,5 +10,5 @@ pub struct ClientCacheMissResponsePacket {
 pub struct MissingBlobEntry {
     #[endianness(le)]
     pub blob_id: u64,
-    pub blob_data: String,
+    pub blob_data: Vec<u8>,
 }

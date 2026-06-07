@@ -7452,431 +7452,633 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V844::ActorEventPacket(pk) => pk.as_ref(),
-                V844::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V844::AddActorPacket(pk) => pk.as_ref(),
-                V844::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V844::AddItemActorPacket(pk) => pk.as_ref(),
-                V844::AddPaintingPacket(pk) => pk.as_ref(),
-                V844::AddPlayerPacket(pk) => pk.as_ref(),
-                V844::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V844::AgentActionEventPacket(pk) => pk.as_ref(),
-                V844::AgentAnimationPacket(pk) => pk.as_ref(),
-                V844::AnimateEntityPacket(pk) => pk.as_ref(),
-                V844::AnimatePacket(pk) => pk.as_ref(),
-                V844::AnvilDamagePacket(pk) => pk.as_ref(),
-                V844::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V844::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V844::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V844::AwardAchievementPacket(pk) => pk.as_ref(),
-                V844::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V844::BlockActorDataPacket(pk) => pk.as_ref(),
-                V844::BlockEventPacket(pk) => pk.as_ref(),
-                V844::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V844::BookEditPacket(pk) => pk.as_ref(),
-                V844::BossEventPacket(pk) => pk.as_ref(),
-                V844::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
-                V844::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V844::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V844::CameraInstructionPacket(pk) => pk.as_ref(),
-                V844::CameraPacket(pk) => pk.as_ref(),
-                V844::CameraPresetsPacket(pk) => pk.as_ref(),
-                V844::CameraShakePacket(pk) => pk.as_ref(),
-                V844::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V844::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V844::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V844::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V844::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
-                V844::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V844::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V844::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V844::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V844::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V844::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V844::CodeBuilderPacket(pk) => pk.as_ref(),
-                V844::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V844::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V844::CommandOutputPacket(pk) => pk.as_ref(),
-                V844::CommandRequestPacket(pk) => pk.as_ref(),
-                V844::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V844::ContainerClosePacket(pk) => pk.as_ref(),
-                V844::ContainerOpenPacket(pk) => pk.as_ref(),
-                V844::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V844::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V844::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V844::CraftingDataPacket(pk) => pk.as_ref(),
-                V844::CreatePhotoPacket(pk) => pk.as_ref(),
-                V844::CreativeContentPacket(pk) => pk.as_ref(),
-                V844::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V844::DeathInfoPacket(pk) => pk.as_ref(),
-                V844::DebugDrawerPacket(pk) => pk.as_ref(),
-                V844::DebugInfoPacket(pk) => pk.as_ref(),
-                V844::DimensionDataPacket(pk) => pk.as_ref(),
-                V844::DisconnectPacket(pk) => pk.as_ref(),
-                V844::EditorNetworkPacket(pk) => pk.as_ref(),
-                V844::EduUriResourcePacket(pk) => pk.as_ref(),
-                V844::EducationSettingsPacket(pk) => pk.as_ref(),
-                V844::EmoteListPacket(pk) => pk.as_ref(),
-                V844::EmotePacket(pk) => pk.as_ref(),
-                V844::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V844::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V844::GameTestRequestPacket(pk) => pk.as_ref(),
-                V844::GameTestResultsPacket(pk) => pk.as_ref(),
-                V844::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V844::HurtArmorPacket(pk) => pk.as_ref(),
-                V844::InteractPacket(pk) => pk.as_ref(),
-                V844::InventoryContentPacket(pk) => pk.as_ref(),
-                V844::InventorySlotPacket(pk) => pk.as_ref(),
-                V844::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V844::ItemComponentPacket(pk) => pk.as_ref(),
-                V844::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V844::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V844::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V844::LabTablePacket(pk) => pk.as_ref(),
-                V844::LecternUpdatePacket(pk) => pk.as_ref(),
-                V844::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V844::LessonProgressPacket(pk) => pk.as_ref(),
-                V844::LevelChunkPacket(pk) => pk.as_ref(),
-                V844::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V844::LevelEventPacket(pk) => pk.as_ref(),
-                V844::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V844::LoginPacket(pk) => pk.as_ref(),
-                V844::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V844::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V844::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V844::MobEffectPacket(pk) => pk.as_ref(),
-                V844::MobEquipmentPacket(pk) => pk.as_ref(),
-                V844::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V844::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V844::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V844::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V844::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V844::MovePlayerPacket(pk) => pk.as_ref(),
-                V844::MovementEffectPacket(pk) => pk.as_ref(),
-                V844::MovementPredictionSyncPacket(pk) => pk.as_ref(),
-                V844::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V844::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V844::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V844::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V844::NpcDialoguePacket(pk) => pk.as_ref(),
-                V844::NpcRequestPacket(pk) => pk.as_ref(),
-                V844::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V844::OpenSignPacket(pk) => pk.as_ref(),
-                V844::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V844::PhotoTransferPacket(pk) => pk.as_ref(),
-                V844::PlaySoundPacket(pk) => pk.as_ref(),
-                V844::PlayStatusPacket(pk) => pk.as_ref(),
-                V844::PlayerActionPacket(pk) => pk.as_ref(),
-                V844::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V844::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V844::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V844::PlayerFogPacket(pk) => pk.as_ref(),
-                V844::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V844::PlayerListPacket(pk) => pk.as_ref(),
-                V844::PlayerLocationPacket(pk) => pk.as_ref(),
-                V844::PlayerSkinPacket(pk) => pk.as_ref(),
-                V844::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V844::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V844::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
-                V844::PlayerVideoCapturePacket(pk) => pk.as_ref(),
-                V844::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V844::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V844::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V844::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V844::RemoveActorPacket(pk) => pk.as_ref(),
-                V844::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V844::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V844::RequestAbilityPacket(pk) => pk.as_ref(),
-                V844::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V844::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V844::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V844::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V844::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V844::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V844::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V844::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V844::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V844::RespawnPacket(pk) => pk.as_ref(),
-                V844::ScriptMessagePacket(pk) => pk.as_ref(),
-                V844::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V844::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V844::ServerBoundPackSettingChangePacket(pk) => pk.as_ref(),
-                V844::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V844::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V844::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V844::ServerStatsPacket(pk) => pk.as_ref(),
-                V844::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V844::SetActorDataPacket(pk) => pk.as_ref(),
-                V844::SetActorLinkPacket(pk) => pk.as_ref(),
-                V844::SetActorMotionPacket(pk) => pk.as_ref(),
-                V844::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V844::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V844::SetDifficultyPacket(pk) => pk.as_ref(),
-                V844::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V844::SetHealthPacket(pk) => pk.as_ref(),
-                V844::SetHudPacket(pk) => pk.as_ref(),
-                V844::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V844::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V844::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V844::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V844::SetScorePacket(pk) => pk.as_ref(),
-                V844::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V844::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V844::SetTimePacket(pk) => pk.as_ref(),
-                V844::SetTitlePacket(pk) => pk.as_ref(),
-                V844::SettingsCommandPacket(pk) => pk.as_ref(),
-                V844::ShowCreditsPacket(pk) => pk.as_ref(),
-                V844::ShowProfilePacket(pk) => pk.as_ref(),
-                V844::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V844::SimpleEventPacket(pk) => pk.as_ref(),
-                V844::SimulationTypePacket(pk) => pk.as_ref(),
-                V844::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V844::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V844::StartGamePacket(pk) => pk.as_ref(),
-                V844::StopSoundPacket(pk) => pk.as_ref(),
-                V844::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V844::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V844::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V844::SubChunkPacket(pk) => pk.as_ref(),
-                V844::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V844::SubClientLoginPacket(pk) => pk.as_ref(),
-                V844::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V844::TakeItemActorPacket(pk) => pk.as_ref(),
-                V844::TextPacket(pk) => pk.as_ref(),
-                V844::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V844::ToastRequestPacket(pk) => pk.as_ref(),
-                V844::TransferPlayerPacket(pk) => pk.as_ref(),
-                V844::TrimDataPacket(pk) => pk.as_ref(),
-                V844::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V844::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V844::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V844::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V844::UpdateBlockPacket(pk) => pk.as_ref(),
-                V844::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V844::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V844::UpdateClientOptionsPacket(pk) => pk.as_ref(),
-                V844::UpdateEquipPacket(pk) => pk.as_ref(),
-                V844::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V844::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V844::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V844::UpdateTradePacket(pk) => pk.as_ref(),
-                V844::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V844::ActorEventPacket(pk) => pk,
-                V844::ActorPickRequestPacket(pk) => pk,
-                V844::AddActorPacket(pk) => pk,
-                V844::AddBehaviourTreePacket(pk) => pk,
-                V844::AddItemActorPacket(pk) => pk,
-                V844::AddPaintingPacket(pk) => pk,
-                V844::AddPlayerPacket(pk) => pk,
-                V844::AddVolumeEntityPacket(pk) => pk,
-                V844::AgentActionEventPacket(pk) => pk,
-                V844::AgentAnimationPacket(pk) => pk,
-                V844::AnimateEntityPacket(pk) => pk,
-                V844::AnimatePacket(pk) => pk,
-                V844::AnvilDamagePacket(pk) => pk,
-                V844::AutomationClientConnectPacket(pk) => pk,
-                V844::AvailableActorIdentifiersPacket(pk) => pk,
-                V844::AvailableCommandsPacket(pk) => pk,
-                V844::AwardAchievementPacket(pk) => pk,
-                V844::BiomeDefinitionListPacket(pk) => pk,
-                V844::BlockActorDataPacket(pk) => pk,
-                V844::BlockEventPacket(pk) => pk,
-                V844::BlockPickRequestPacket(pk) => pk,
-                V844::BookEditPacket(pk) => pk,
-                V844::BossEventPacket(pk) => pk,
-                V844::CameraAimAssistInstructionPacket(pk) => pk,
-                V844::CameraAimAssistPacket(pk) => pk,
-                V844::CameraAimAssistPresetsPacket(pk) => pk,
-                V844::CameraInstructionPacket(pk) => pk,
-                V844::CameraPacket(pk) => pk,
-                V844::CameraPresetsPacket(pk) => pk,
-                V844::CameraShakePacket(pk) => pk,
-                V844::ChangeDimensionPacket(pk) => pk,
-                V844::ChangeMobPropertyPacket(pk) => pk,
-                V844::ChunkRadiusUpdatedPacket(pk) => pk,
-                V844::ClientBoundCloseFormPacket(pk) => pk,
-                V844::ClientBoundControlSchemeSetPacket(pk) => pk,
-                V844::ClientBoundDebugRendererPacket(pk) => pk,
-                V844::ClientBoundMapItemDataPacket(pk) => pk,
-                V844::ClientCacheBlobStatusPacket(pk) => pk,
-                V844::ClientCacheMissResponsePacket(pk) => pk,
-                V844::ClientCacheStatusPacket(pk) => pk,
-                V844::ClientToServerHandshakePacket(pk) => pk,
-                V844::CodeBuilderPacket(pk) => pk,
-                V844::CodeBuilderSourcePacket(pk) => pk,
-                V844::CommandBlockUpdatePacket(pk) => pk,
-                V844::CommandOutputPacket(pk) => pk,
-                V844::CommandRequestPacket(pk) => pk,
-                V844::CompletedUsingItemPacket(pk) => pk,
-                V844::ContainerClosePacket(pk) => pk,
-                V844::ContainerOpenPacket(pk) => pk,
-                V844::ContainerRegistryCleanupPacket(pk) => pk,
-                V844::ContainerSetDataPacket(pk) => pk,
-                V844::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V844::CraftingDataPacket(pk) => pk,
-                V844::CreatePhotoPacket(pk) => pk,
-                V844::CreativeContentPacket(pk) => pk,
-                V844::CurrentStructureFeaturePacket(pk) => pk,
-                V844::DeathInfoPacket(pk) => pk,
-                V844::DebugDrawerPacket(pk) => pk,
-                V844::DebugInfoPacket(pk) => pk,
-                V844::DimensionDataPacket(pk) => pk,
-                V844::DisconnectPacket(pk) => pk,
-                V844::EditorNetworkPacket(pk) => pk,
-                V844::EduUriResourcePacket(pk) => pk,
-                V844::EducationSettingsPacket(pk) => pk,
-                V844::EmoteListPacket(pk) => pk,
-                V844::EmotePacket(pk) => pk,
-                V844::FeatureRegistryPacket(pk) => pk,
-                V844::GameRulesChangedPacket(pk) => pk,
-                V844::GameTestRequestPacket(pk) => pk,
-                V844::GameTestResultsPacket(pk) => pk,
-                V844::GuiDataPickItemPacket(pk) => pk,
-                V844::HurtArmorPacket(pk) => pk,
-                V844::InteractPacket(pk) => pk,
-                V844::InventoryContentPacket(pk) => pk,
-                V844::InventorySlotPacket(pk) => pk,
-                V844::InventoryTransactionPacket(pk) => pk,
-                V844::ItemComponentPacket(pk) => pk,
-                V844::ItemStackRequestPacket(pk) => pk,
-                V844::ItemStackResponsePacket(pk) => pk,
-                V844::JigsawStructureDataPacket(pk) => pk,
-                V844::LabTablePacket(pk) => pk,
-                V844::LecternUpdatePacket(pk) => pk,
-                V844::LegacyTelemetryEventPacket(pk) => pk,
-                V844::LessonProgressPacket(pk) => pk,
-                V844::LevelChunkPacket(pk) => pk,
-                V844::LevelEventGenericPacket(pk) => pk,
-                V844::LevelEventPacket(pk) => pk,
-                V844::LevelSoundEventPacket(pk) => pk,
-                V844::LoginPacket(pk) => pk,
-                V844::MapCreateLockedCopyPacket(pk) => pk,
-                V844::MapInfoRequestPacket(pk) => pk,
-                V844::MobArmorEquipmentPacket(pk) => pk,
-                V844::MobEffectPacket(pk) => pk,
-                V844::MobEquipmentPacket(pk) => pk,
-                V844::ModalFormRequestPacket(pk) => pk,
-                V844::ModalFormResponsePacket(pk) => pk,
-                V844::MotionPredictionHintsPacket(pk) => pk,
-                V844::MoveActorAbsolutePacket(pk) => pk,
-                V844::MoveActorDeltaPacket(pk) => pk,
-                V844::MovePlayerPacket(pk) => pk,
-                V844::MovementEffectPacket(pk) => pk,
-                V844::MovementPredictionSyncPacket(pk) => pk,
-                V844::MultiplayerSettingsPacket(pk) => pk,
-                V844::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V844::NetworkSettingsPacket(pk) => pk,
-                V844::NetworkStackLatencyPacket(pk) => pk,
-                V844::NpcDialoguePacket(pk) => pk,
-                V844::NpcRequestPacket(pk) => pk,
-                V844::OnScreenTextureAnimationPacket(pk) => pk,
-                V844::OpenSignPacket(pk) => pk,
-                V844::PacketViolationWarningPacket(pk) => pk,
-                V844::PhotoTransferPacket(pk) => pk,
-                V844::PlaySoundPacket(pk) => pk,
-                V844::PlayStatusPacket(pk) => pk,
-                V844::PlayerActionPacket(pk) => pk,
-                V844::PlayerArmorDamagePacket(pk) => pk,
-                V844::PlayerAuthInputPacket(pk) => pk,
-                V844::PlayerEnchantOptionsPacket(pk) => pk,
-                V844::PlayerFogPacket(pk) => pk,
-                V844::PlayerHotbarPacket(pk) => pk,
-                V844::PlayerListPacket(pk) => pk,
-                V844::PlayerLocationPacket(pk) => pk,
-                V844::PlayerSkinPacket(pk) => pk,
-                V844::PlayerStartItemCooldownPacket(pk) => pk,
-                V844::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V844::PlayerUpdateEntityOverridesPacket(pk) => pk,
-                V844::PlayerVideoCapturePacket(pk) => pk,
-                V844::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V844::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V844::PurchaseReceiptPacket(pk) => pk,
-                V844::RefreshEntitlementsPacket(pk) => pk,
-                V844::RemoveActorPacket(pk) => pk,
-                V844::RemoveObjectivePacket(pk) => pk,
-                V844::RemoveVolumeEntityPacket(pk) => pk,
-                V844::RequestAbilityPacket(pk) => pk,
-                V844::RequestChunkRadiusPacket(pk) => pk,
-                V844::RequestNetworkSettingsPacket(pk) => pk,
-                V844::RequestPermissionsPacket(pk) => pk,
-                V844::ResourcePackChunkDataPacket(pk) => pk,
-                V844::ResourcePackChunkRequestPacket(pk) => pk,
-                V844::ResourcePackClientResponsePacket(pk) => pk,
-                V844::ResourcePackDataInfoPacket(pk) => pk,
-                V844::ResourcePackStackPacket(pk) => pk,
-                V844::ResourcePacksInfoPacket(pk) => pk,
-                V844::RespawnPacket(pk) => pk,
-                V844::ScriptMessagePacket(pk) => pk,
-                V844::ServerBoundDiagnosticsPacket(pk) => pk,
-                V844::ServerBoundLoadingScreenPacket(pk) => pk,
-                V844::ServerBoundPackSettingChangePacket(pk) => pk,
-                V844::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V844::ServerSettingsRequestPacket(pk) => pk,
-                V844::ServerSettingsResponsePacket(pk) => pk,
-                V844::ServerStatsPacket(pk) => pk,
-                V844::ServerToClientHandshakePacket(pk) => pk,
-                V844::SetActorDataPacket(pk) => pk,
-                V844::SetActorLinkPacket(pk) => pk,
-                V844::SetActorMotionPacket(pk) => pk,
-                V844::SetCommandsEnabledPacket(pk) => pk,
-                V844::SetDefaultGameTypePacket(pk) => pk,
-                V844::SetDifficultyPacket(pk) => pk,
-                V844::SetDisplayObjectivePacket(pk) => pk,
-                V844::SetHealthPacket(pk) => pk,
-                V844::SetHudPacket(pk) => pk,
-                V844::SetLastHurtByPacket(pk) => pk,
-                V844::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V844::SetPlayerGameTypePacket(pk) => pk,
-                V844::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V844::SetScorePacket(pk) => pk,
-                V844::SetScoreboardIdentityPacket(pk) => pk,
-                V844::SetSpawnPositionPacket(pk) => pk,
-                V844::SetTimePacket(pk) => pk,
-                V844::SetTitlePacket(pk) => pk,
-                V844::SettingsCommandPacket(pk) => pk,
-                V844::ShowCreditsPacket(pk) => pk,
-                V844::ShowProfilePacket(pk) => pk,
-                V844::ShowStoreOfferPacket(pk) => pk,
-                V844::SimpleEventPacket(pk) => pk,
-                V844::SimulationTypePacket(pk) => pk,
-                V844::SpawnExperienceOrbPacket(pk) => pk,
-                V844::SpawnParticleEffectPacket(pk) => pk,
-                V844::StartGamePacket(pk) => pk,
-                V844::StopSoundPacket(pk) => pk,
-                V844::StructureBlockUpdatePacket(pk) => pk,
-                V844::StructureDataRequestPacket(pk) => pk,
-                V844::StructureDataResponsePacket(pk) => pk,
-                V844::SubChunkPacket(pk) => pk,
-                V844::SubChunkRequestPacket(pk) => pk,
-                V844::SubClientLoginPacket(pk) => pk,
-                V844::SyncActorPropertyPacket(pk) => pk,
-                V844::TakeItemActorPacket(pk) => pk,
-                V844::TextPacket(pk) => pk,
-                V844::TickingAreaLoadStatusPacket(pk) => pk,
-                V844::ToastRequestPacket(pk) => pk,
-                V844::TransferPlayerPacket(pk) => pk,
-                V844::TrimDataPacket(pk) => pk,
-                V844::UnlockedRecipesPacket(pk) => pk,
-                V844::UpdateAbilitiesPacket(pk) => pk,
-                V844::UpdateAdventureSettingsPacket(pk) => pk,
-                V844::UpdateAttributesPacket(pk) => pk,
-                V844::UpdateBlockPacket(pk) => pk,
-                V844::UpdateBlockSyncedPacket(pk) => pk,
-                V844::UpdateClientInputLocksPacket(pk) => pk,
-                V844::UpdateClientOptionsPacket(pk) => pk,
-                V844::UpdateEquipPacket(pk) => pk,
-                V844::UpdatePlayerGameTypePacket(pk) => pk,
-                V844::UpdateSoftEnumPacket(pk) => pk,
-                V844::UpdateSubChunkBlocksPacket(pk) => pk,
-                V844::UpdateTradePacket(pk) => pk,
-                V844::Unknown(pk) => pk,
+                V844::ActorEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ActorPickRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AddActorPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AddBehaviourTreePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AddItemActorPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AddPaintingPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AddPlayerPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AddVolumeEntityPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AgentActionEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AgentAnimationPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AnimateEntityPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AnimatePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AnvilDamagePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AutomationClientConnectPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AvailableActorIdentifiersPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AvailableCommandsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::AwardAchievementPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::BiomeDefinitionListPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::BlockActorDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::BlockEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::BlockPickRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::BookEditPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::BossEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraAimAssistInstructionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraAimAssistPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraAimAssistPresetsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraInstructionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraPresetsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CameraShakePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ChangeDimensionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ChangeMobPropertyPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ChunkRadiusUpdatedPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientBoundCloseFormPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientBoundControlSchemeSetPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientBoundDebugRendererPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientBoundMapItemDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientCacheBlobStatusPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientCacheMissResponsePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientCacheStatusPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ClientToServerHandshakePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CodeBuilderPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CodeBuilderSourcePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CommandBlockUpdatePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CommandOutputPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CommandRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CompletedUsingItemPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ContainerClosePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ContainerOpenPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ContainerRegistryCleanupPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ContainerSetDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CraftingDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CreatePhotoPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CreativeContentPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::CurrentStructureFeaturePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::DeathInfoPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::DebugDrawerPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::DebugDrawerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::DebugInfoPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::DimensionDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::DisconnectPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::EditorNetworkPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::EduUriResourcePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::EducationSettingsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::EmoteListPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::EmotePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::FeatureRegistryPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::GameRulesChangedPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::GameTestRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::GameTestResultsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::GuiDataPickItemPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::HurtArmorPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::InteractPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::InventoryContentPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::InventorySlotPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::InventoryTransactionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ItemComponentPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ItemStackRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ItemStackResponsePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::JigsawStructureDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LabTablePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LecternUpdatePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LegacyTelemetryEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LessonProgressPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LevelChunkPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LevelEventGenericPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LevelEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LevelSoundEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::LoginPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MapCreateLockedCopyPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MapInfoRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MobArmorEquipmentPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MobEffectPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MobEquipmentPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ModalFormRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ModalFormResponsePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MotionPredictionHintsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MoveActorAbsolutePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MoveActorDeltaPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MovePlayerPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MovementEffectPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MovementPredictionSyncPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::MultiplayerSettingsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::NetworkSettingsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::NetworkStackLatencyPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::NpcDialoguePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::NpcRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::OnScreenTextureAnimationPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::OpenSignPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PacketViolationWarningPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PhotoTransferPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlaySoundPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayStatusPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerActionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerArmorDamagePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerAuthInputPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerEnchantOptionsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerFogPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerHotbarPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerListPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerLocationPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerSkinPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerStartItemCooldownPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerUpdateEntityOverridesPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PlayerVideoCapturePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::PurchaseReceiptPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RefreshEntitlementsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RemoveActorPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RemoveObjectivePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RemoveVolumeEntityPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RequestAbilityPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RequestChunkRadiusPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RequestNetworkSettingsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RequestPermissionsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ResourcePackChunkDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ResourcePackChunkRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ResourcePackClientResponsePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ResourcePackDataInfoPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ResourcePackStackPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ResourcePacksInfoPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::RespawnPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ScriptMessagePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerBoundDiagnosticsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerBoundLoadingScreenPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerBoundPackSettingChangePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerBoundPackSettingChangePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerSettingsRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerSettingsResponsePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerStatsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ServerToClientHandshakePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetActorDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetActorLinkPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetActorMotionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetCommandsEnabledPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetDefaultGameTypePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetDifficultyPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetDisplayObjectivePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetHealthPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetHudPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetLastHurtByPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetPlayerGameTypePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetScorePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetScoreboardIdentityPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetSpawnPositionPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetTimePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SetTitlePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SettingsCommandPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ShowCreditsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ShowProfilePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ShowStoreOfferPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SimpleEventPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SimulationTypePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SpawnExperienceOrbPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SpawnParticleEffectPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::StartGamePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::StopSoundPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::StructureBlockUpdatePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::StructureDataRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::StructureDataResponsePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SubChunkPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SubChunkRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SubClientLoginPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::SyncActorPropertyPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::TakeItemActorPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::TextPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::TickingAreaLoadStatusPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::ToastRequestPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::TransferPlayerPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::TrimDataPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UnlockedRecipesPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateAbilitiesPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateAdventureSettingsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateAttributesPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateBlockPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateBlockSyncedPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateClientInputLocksPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateClientOptionsPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateEquipPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdatePlayerGameTypePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateSoftEnumPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateSubChunkBlocksPacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::UpdateTradePacket(_) => {
+                    <<V844 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V844::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7958,7 +8160,7 @@ mod inner {
         type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
         type CorrectPlayerMovePredictionPacket =
             crate::version::v827::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
         type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
         type CreativeContentPacket = crate::version::v776::packets::CreativeContentPacket<Self>;
         type CurrentStructureFeaturePacket =
@@ -8273,9 +8475,7 @@ mod inner {
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v776::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
         type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
         type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
@@ -8411,6 +8611,438 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u11";
         const GAME_VERSION: &str = "1.21.111";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V844 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V844::ActorEventPacket(pk) => pk.as_ref(),
+                V844::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V844::AddActorPacket(pk) => pk.as_ref(),
+                V844::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V844::AddItemActorPacket(pk) => pk.as_ref(),
+                V844::AddPaintingPacket(pk) => pk.as_ref(),
+                V844::AddPlayerPacket(pk) => pk.as_ref(),
+                V844::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V844::AgentActionEventPacket(pk) => pk.as_ref(),
+                V844::AgentAnimationPacket(pk) => pk.as_ref(),
+                V844::AnimateEntityPacket(pk) => pk.as_ref(),
+                V844::AnimatePacket(pk) => pk.as_ref(),
+                V844::AnvilDamagePacket(pk) => pk.as_ref(),
+                V844::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V844::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V844::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V844::AwardAchievementPacket(pk) => pk.as_ref(),
+                V844::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V844::BlockActorDataPacket(pk) => pk.as_ref(),
+                V844::BlockEventPacket(pk) => pk.as_ref(),
+                V844::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V844::BookEditPacket(pk) => pk.as_ref(),
+                V844::BossEventPacket(pk) => pk.as_ref(),
+                V844::CameraAimAssistInstructionPacket(pk) => pk.as_ref(),
+                V844::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V844::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V844::CameraInstructionPacket(pk) => pk.as_ref(),
+                V844::CameraPacket(pk) => pk.as_ref(),
+                V844::CameraPresetsPacket(pk) => pk.as_ref(),
+                V844::CameraShakePacket(pk) => pk.as_ref(),
+                V844::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V844::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V844::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V844::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V844::ClientBoundControlSchemeSetPacket(pk) => pk.as_ref(),
+                V844::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V844::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V844::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V844::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V844::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V844::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V844::CodeBuilderPacket(pk) => pk.as_ref(),
+                V844::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V844::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V844::CommandOutputPacket(pk) => pk.as_ref(),
+                V844::CommandRequestPacket(pk) => pk.as_ref(),
+                V844::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V844::ContainerClosePacket(pk) => pk.as_ref(),
+                V844::ContainerOpenPacket(pk) => pk.as_ref(),
+                V844::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V844::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V844::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V844::CraftingDataPacket(pk) => pk.as_ref(),
+                V844::CreatePhotoPacket(pk) => pk.as_ref(),
+                V844::CreativeContentPacket(pk) => pk.as_ref(),
+                V844::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V844::DeathInfoPacket(pk) => pk.as_ref(),
+                V844::DebugDrawerPacket(pk) => pk.as_ref(),
+                V844::DebugInfoPacket(pk) => pk.as_ref(),
+                V844::DimensionDataPacket(pk) => pk.as_ref(),
+                V844::DisconnectPacket(pk) => pk.as_ref(),
+                V844::EditorNetworkPacket(pk) => pk.as_ref(),
+                V844::EduUriResourcePacket(pk) => pk.as_ref(),
+                V844::EducationSettingsPacket(pk) => pk.as_ref(),
+                V844::EmoteListPacket(pk) => pk.as_ref(),
+                V844::EmotePacket(pk) => pk.as_ref(),
+                V844::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V844::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V844::GameTestRequestPacket(pk) => pk.as_ref(),
+                V844::GameTestResultsPacket(pk) => pk.as_ref(),
+                V844::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V844::HurtArmorPacket(pk) => pk.as_ref(),
+                V844::InteractPacket(pk) => pk.as_ref(),
+                V844::InventoryContentPacket(pk) => pk.as_ref(),
+                V844::InventorySlotPacket(pk) => pk.as_ref(),
+                V844::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V844::ItemComponentPacket(pk) => pk.as_ref(),
+                V844::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V844::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V844::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V844::LabTablePacket(pk) => pk.as_ref(),
+                V844::LecternUpdatePacket(pk) => pk.as_ref(),
+                V844::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V844::LessonProgressPacket(pk) => pk.as_ref(),
+                V844::LevelChunkPacket(pk) => pk.as_ref(),
+                V844::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V844::LevelEventPacket(pk) => pk.as_ref(),
+                V844::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V844::LoginPacket(pk) => pk.as_ref(),
+                V844::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V844::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V844::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V844::MobEffectPacket(pk) => pk.as_ref(),
+                V844::MobEquipmentPacket(pk) => pk.as_ref(),
+                V844::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V844::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V844::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V844::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V844::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V844::MovePlayerPacket(pk) => pk.as_ref(),
+                V844::MovementEffectPacket(pk) => pk.as_ref(),
+                V844::MovementPredictionSyncPacket(pk) => pk.as_ref(),
+                V844::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V844::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V844::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V844::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V844::NpcDialoguePacket(pk) => pk.as_ref(),
+                V844::NpcRequestPacket(pk) => pk.as_ref(),
+                V844::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V844::OpenSignPacket(pk) => pk.as_ref(),
+                V844::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V844::PhotoTransferPacket(pk) => pk.as_ref(),
+                V844::PlaySoundPacket(pk) => pk.as_ref(),
+                V844::PlayStatusPacket(pk) => pk.as_ref(),
+                V844::PlayerActionPacket(pk) => pk.as_ref(),
+                V844::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V844::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V844::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V844::PlayerFogPacket(pk) => pk.as_ref(),
+                V844::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V844::PlayerListPacket(pk) => pk.as_ref(),
+                V844::PlayerLocationPacket(pk) => pk.as_ref(),
+                V844::PlayerSkinPacket(pk) => pk.as_ref(),
+                V844::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V844::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V844::PlayerUpdateEntityOverridesPacket(pk) => pk.as_ref(),
+                V844::PlayerVideoCapturePacket(pk) => pk.as_ref(),
+                V844::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V844::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V844::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V844::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V844::RemoveActorPacket(pk) => pk.as_ref(),
+                V844::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V844::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V844::RequestAbilityPacket(pk) => pk.as_ref(),
+                V844::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V844::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V844::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V844::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V844::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V844::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V844::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V844::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V844::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V844::RespawnPacket(pk) => pk.as_ref(),
+                V844::ScriptMessagePacket(pk) => pk.as_ref(),
+                V844::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V844::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V844::ServerBoundPackSettingChangePacket(pk) => pk.as_ref(),
+                V844::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V844::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V844::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V844::ServerStatsPacket(pk) => pk.as_ref(),
+                V844::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V844::SetActorDataPacket(pk) => pk.as_ref(),
+                V844::SetActorLinkPacket(pk) => pk.as_ref(),
+                V844::SetActorMotionPacket(pk) => pk.as_ref(),
+                V844::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V844::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V844::SetDifficultyPacket(pk) => pk.as_ref(),
+                V844::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V844::SetHealthPacket(pk) => pk.as_ref(),
+                V844::SetHudPacket(pk) => pk.as_ref(),
+                V844::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V844::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V844::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V844::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V844::SetScorePacket(pk) => pk.as_ref(),
+                V844::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V844::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V844::SetTimePacket(pk) => pk.as_ref(),
+                V844::SetTitlePacket(pk) => pk.as_ref(),
+                V844::SettingsCommandPacket(pk) => pk.as_ref(),
+                V844::ShowCreditsPacket(pk) => pk.as_ref(),
+                V844::ShowProfilePacket(pk) => pk.as_ref(),
+                V844::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V844::SimpleEventPacket(pk) => pk.as_ref(),
+                V844::SimulationTypePacket(pk) => pk.as_ref(),
+                V844::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V844::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V844::StartGamePacket(pk) => pk.as_ref(),
+                V844::StopSoundPacket(pk) => pk.as_ref(),
+                V844::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V844::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V844::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V844::SubChunkPacket(pk) => pk.as_ref(),
+                V844::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V844::SubClientLoginPacket(pk) => pk.as_ref(),
+                V844::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V844::TakeItemActorPacket(pk) => pk.as_ref(),
+                V844::TextPacket(pk) => pk.as_ref(),
+                V844::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V844::ToastRequestPacket(pk) => pk.as_ref(),
+                V844::TransferPlayerPacket(pk) => pk.as_ref(),
+                V844::TrimDataPacket(pk) => pk.as_ref(),
+                V844::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V844::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V844::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V844::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V844::UpdateBlockPacket(pk) => pk.as_ref(),
+                V844::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V844::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V844::UpdateClientOptionsPacket(pk) => pk.as_ref(),
+                V844::UpdateEquipPacket(pk) => pk.as_ref(),
+                V844::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V844::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V844::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V844::UpdateTradePacket(pk) => pk.as_ref(),
+                V844::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V844> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V844) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V844::ActorEventPacket(pk) => pk,
+                V844::ActorPickRequestPacket(pk) => pk,
+                V844::AddActorPacket(pk) => pk,
+                V844::AddBehaviourTreePacket(pk) => pk,
+                V844::AddItemActorPacket(pk) => pk,
+                V844::AddPaintingPacket(pk) => pk,
+                V844::AddPlayerPacket(pk) => pk,
+                V844::AddVolumeEntityPacket(pk) => pk,
+                V844::AgentActionEventPacket(pk) => pk,
+                V844::AgentAnimationPacket(pk) => pk,
+                V844::AnimateEntityPacket(pk) => pk,
+                V844::AnimatePacket(pk) => pk,
+                V844::AnvilDamagePacket(pk) => pk,
+                V844::AutomationClientConnectPacket(pk) => pk,
+                V844::AvailableActorIdentifiersPacket(pk) => pk,
+                V844::AvailableCommandsPacket(pk) => pk,
+                V844::AwardAchievementPacket(pk) => pk,
+                V844::BiomeDefinitionListPacket(pk) => pk,
+                V844::BlockActorDataPacket(pk) => pk,
+                V844::BlockEventPacket(pk) => pk,
+                V844::BlockPickRequestPacket(pk) => pk,
+                V844::BookEditPacket(pk) => pk,
+                V844::BossEventPacket(pk) => pk,
+                V844::CameraAimAssistInstructionPacket(pk) => pk,
+                V844::CameraAimAssistPacket(pk) => pk,
+                V844::CameraAimAssistPresetsPacket(pk) => pk,
+                V844::CameraInstructionPacket(pk) => pk,
+                V844::CameraPacket(pk) => pk,
+                V844::CameraPresetsPacket(pk) => pk,
+                V844::CameraShakePacket(pk) => pk,
+                V844::ChangeDimensionPacket(pk) => pk,
+                V844::ChangeMobPropertyPacket(pk) => pk,
+                V844::ChunkRadiusUpdatedPacket(pk) => pk,
+                V844::ClientBoundCloseFormPacket(pk) => pk,
+                V844::ClientBoundControlSchemeSetPacket(pk) => pk,
+                V844::ClientBoundDebugRendererPacket(pk) => pk,
+                V844::ClientBoundMapItemDataPacket(pk) => pk,
+                V844::ClientCacheBlobStatusPacket(pk) => pk,
+                V844::ClientCacheMissResponsePacket(pk) => pk,
+                V844::ClientCacheStatusPacket(pk) => pk,
+                V844::ClientToServerHandshakePacket(pk) => pk,
+                V844::CodeBuilderPacket(pk) => pk,
+                V844::CodeBuilderSourcePacket(pk) => pk,
+                V844::CommandBlockUpdatePacket(pk) => pk,
+                V844::CommandOutputPacket(pk) => pk,
+                V844::CommandRequestPacket(pk) => pk,
+                V844::CompletedUsingItemPacket(pk) => pk,
+                V844::ContainerClosePacket(pk) => pk,
+                V844::ContainerOpenPacket(pk) => pk,
+                V844::ContainerRegistryCleanupPacket(pk) => pk,
+                V844::ContainerSetDataPacket(pk) => pk,
+                V844::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V844::CraftingDataPacket(pk) => pk,
+                V844::CreatePhotoPacket(pk) => pk,
+                V844::CreativeContentPacket(pk) => pk,
+                V844::CurrentStructureFeaturePacket(pk) => pk,
+                V844::DeathInfoPacket(pk) => pk,
+                V844::DebugDrawerPacket(pk) => pk,
+                V844::DebugInfoPacket(pk) => pk,
+                V844::DimensionDataPacket(pk) => pk,
+                V844::DisconnectPacket(pk) => pk,
+                V844::EditorNetworkPacket(pk) => pk,
+                V844::EduUriResourcePacket(pk) => pk,
+                V844::EducationSettingsPacket(pk) => pk,
+                V844::EmoteListPacket(pk) => pk,
+                V844::EmotePacket(pk) => pk,
+                V844::FeatureRegistryPacket(pk) => pk,
+                V844::GameRulesChangedPacket(pk) => pk,
+                V844::GameTestRequestPacket(pk) => pk,
+                V844::GameTestResultsPacket(pk) => pk,
+                V844::GuiDataPickItemPacket(pk) => pk,
+                V844::HurtArmorPacket(pk) => pk,
+                V844::InteractPacket(pk) => pk,
+                V844::InventoryContentPacket(pk) => pk,
+                V844::InventorySlotPacket(pk) => pk,
+                V844::InventoryTransactionPacket(pk) => pk,
+                V844::ItemComponentPacket(pk) => pk,
+                V844::ItemStackRequestPacket(pk) => pk,
+                V844::ItemStackResponsePacket(pk) => pk,
+                V844::JigsawStructureDataPacket(pk) => pk,
+                V844::LabTablePacket(pk) => pk,
+                V844::LecternUpdatePacket(pk) => pk,
+                V844::LegacyTelemetryEventPacket(pk) => pk,
+                V844::LessonProgressPacket(pk) => pk,
+                V844::LevelChunkPacket(pk) => pk,
+                V844::LevelEventGenericPacket(pk) => pk,
+                V844::LevelEventPacket(pk) => pk,
+                V844::LevelSoundEventPacket(pk) => pk,
+                V844::LoginPacket(pk) => pk,
+                V844::MapCreateLockedCopyPacket(pk) => pk,
+                V844::MapInfoRequestPacket(pk) => pk,
+                V844::MobArmorEquipmentPacket(pk) => pk,
+                V844::MobEffectPacket(pk) => pk,
+                V844::MobEquipmentPacket(pk) => pk,
+                V844::ModalFormRequestPacket(pk) => pk,
+                V844::ModalFormResponsePacket(pk) => pk,
+                V844::MotionPredictionHintsPacket(pk) => pk,
+                V844::MoveActorAbsolutePacket(pk) => pk,
+                V844::MoveActorDeltaPacket(pk) => pk,
+                V844::MovePlayerPacket(pk) => pk,
+                V844::MovementEffectPacket(pk) => pk,
+                V844::MovementPredictionSyncPacket(pk) => pk,
+                V844::MultiplayerSettingsPacket(pk) => pk,
+                V844::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V844::NetworkSettingsPacket(pk) => pk,
+                V844::NetworkStackLatencyPacket(pk) => pk,
+                V844::NpcDialoguePacket(pk) => pk,
+                V844::NpcRequestPacket(pk) => pk,
+                V844::OnScreenTextureAnimationPacket(pk) => pk,
+                V844::OpenSignPacket(pk) => pk,
+                V844::PacketViolationWarningPacket(pk) => pk,
+                V844::PhotoTransferPacket(pk) => pk,
+                V844::PlaySoundPacket(pk) => pk,
+                V844::PlayStatusPacket(pk) => pk,
+                V844::PlayerActionPacket(pk) => pk,
+                V844::PlayerArmorDamagePacket(pk) => pk,
+                V844::PlayerAuthInputPacket(pk) => pk,
+                V844::PlayerEnchantOptionsPacket(pk) => pk,
+                V844::PlayerFogPacket(pk) => pk,
+                V844::PlayerHotbarPacket(pk) => pk,
+                V844::PlayerListPacket(pk) => pk,
+                V844::PlayerLocationPacket(pk) => pk,
+                V844::PlayerSkinPacket(pk) => pk,
+                V844::PlayerStartItemCooldownPacket(pk) => pk,
+                V844::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V844::PlayerUpdateEntityOverridesPacket(pk) => pk,
+                V844::PlayerVideoCapturePacket(pk) => pk,
+                V844::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V844::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V844::PurchaseReceiptPacket(pk) => pk,
+                V844::RefreshEntitlementsPacket(pk) => pk,
+                V844::RemoveActorPacket(pk) => pk,
+                V844::RemoveObjectivePacket(pk) => pk,
+                V844::RemoveVolumeEntityPacket(pk) => pk,
+                V844::RequestAbilityPacket(pk) => pk,
+                V844::RequestChunkRadiusPacket(pk) => pk,
+                V844::RequestNetworkSettingsPacket(pk) => pk,
+                V844::RequestPermissionsPacket(pk) => pk,
+                V844::ResourcePackChunkDataPacket(pk) => pk,
+                V844::ResourcePackChunkRequestPacket(pk) => pk,
+                V844::ResourcePackClientResponsePacket(pk) => pk,
+                V844::ResourcePackDataInfoPacket(pk) => pk,
+                V844::ResourcePackStackPacket(pk) => pk,
+                V844::ResourcePacksInfoPacket(pk) => pk,
+                V844::RespawnPacket(pk) => pk,
+                V844::ScriptMessagePacket(pk) => pk,
+                V844::ServerBoundDiagnosticsPacket(pk) => pk,
+                V844::ServerBoundLoadingScreenPacket(pk) => pk,
+                V844::ServerBoundPackSettingChangePacket(pk) => pk,
+                V844::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V844::ServerSettingsRequestPacket(pk) => pk,
+                V844::ServerSettingsResponsePacket(pk) => pk,
+                V844::ServerStatsPacket(pk) => pk,
+                V844::ServerToClientHandshakePacket(pk) => pk,
+                V844::SetActorDataPacket(pk) => pk,
+                V844::SetActorLinkPacket(pk) => pk,
+                V844::SetActorMotionPacket(pk) => pk,
+                V844::SetCommandsEnabledPacket(pk) => pk,
+                V844::SetDefaultGameTypePacket(pk) => pk,
+                V844::SetDifficultyPacket(pk) => pk,
+                V844::SetDisplayObjectivePacket(pk) => pk,
+                V844::SetHealthPacket(pk) => pk,
+                V844::SetHudPacket(pk) => pk,
+                V844::SetLastHurtByPacket(pk) => pk,
+                V844::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V844::SetPlayerGameTypePacket(pk) => pk,
+                V844::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V844::SetScorePacket(pk) => pk,
+                V844::SetScoreboardIdentityPacket(pk) => pk,
+                V844::SetSpawnPositionPacket(pk) => pk,
+                V844::SetTimePacket(pk) => pk,
+                V844::SetTitlePacket(pk) => pk,
+                V844::SettingsCommandPacket(pk) => pk,
+                V844::ShowCreditsPacket(pk) => pk,
+                V844::ShowProfilePacket(pk) => pk,
+                V844::ShowStoreOfferPacket(pk) => pk,
+                V844::SimpleEventPacket(pk) => pk,
+                V844::SimulationTypePacket(pk) => pk,
+                V844::SpawnExperienceOrbPacket(pk) => pk,
+                V844::SpawnParticleEffectPacket(pk) => pk,
+                V844::StartGamePacket(pk) => pk,
+                V844::StopSoundPacket(pk) => pk,
+                V844::StructureBlockUpdatePacket(pk) => pk,
+                V844::StructureDataRequestPacket(pk) => pk,
+                V844::StructureDataResponsePacket(pk) => pk,
+                V844::SubChunkPacket(pk) => pk,
+                V844::SubChunkRequestPacket(pk) => pk,
+                V844::SubClientLoginPacket(pk) => pk,
+                V844::SyncActorPropertyPacket(pk) => pk,
+                V844::TakeItemActorPacket(pk) => pk,
+                V844::TextPacket(pk) => pk,
+                V844::TickingAreaLoadStatusPacket(pk) => pk,
+                V844::ToastRequestPacket(pk) => pk,
+                V844::TransferPlayerPacket(pk) => pk,
+                V844::TrimDataPacket(pk) => pk,
+                V844::UnlockedRecipesPacket(pk) => pk,
+                V844::UpdateAbilitiesPacket(pk) => pk,
+                V844::UpdateAdventureSettingsPacket(pk) => pk,
+                V844::UpdateAttributesPacket(pk) => pk,
+                V844::UpdateBlockPacket(pk) => pk,
+                V844::UpdateBlockSyncedPacket(pk) => pk,
+                V844::UpdateClientInputLocksPacket(pk) => pk,
+                V844::UpdateClientOptionsPacket(pk) => pk,
+                V844::UpdateEquipPacket(pk) => pk,
+                V844::UpdatePlayerGameTypePacket(pk) => pk,
+                V844::UpdateSoftEnumPacket(pk) => pk,
+                V844::UpdateSubChunkBlocksPacket(pk) => pk,
+                V844::UpdateTradePacket(pk) => pk,
+                V844::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v844")]

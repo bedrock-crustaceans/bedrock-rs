@@ -5,7 +5,7 @@ use bedrock_macros::{packet, ProtoCodec};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PhotoTransferPacket<V: ProtoVersion> {
     pub photo_name: String,
-    pub photo_data: String,
+    pub photo_data: Vec<u8>,
     pub book_id: String,
     pub photo_type: V::PhotoType,
     pub source_type: V::PhotoType,

@@ -7343,425 +7343,624 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V766::ActorEventPacket(pk) => pk.as_ref(),
-                V766::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V766::AddActorPacket(pk) => pk.as_ref(),
-                V766::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V766::AddItemActorPacket(pk) => pk.as_ref(),
-                V766::AddPaintingPacket(pk) => pk.as_ref(),
-                V766::AddPlayerPacket(pk) => pk.as_ref(),
-                V766::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V766::AgentActionEventPacket(pk) => pk.as_ref(),
-                V766::AgentAnimationPacket(pk) => pk.as_ref(),
-                V766::AnimateEntityPacket(pk) => pk.as_ref(),
-                V766::AnimatePacket(pk) => pk.as_ref(),
-                V766::AnvilDamagePacket(pk) => pk.as_ref(),
-                V766::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V766::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V766::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V766::AwardAchievementPacket(pk) => pk.as_ref(),
-                V766::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V766::BlockActorDataPacket(pk) => pk.as_ref(),
-                V766::BlockEventPacket(pk) => pk.as_ref(),
-                V766::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V766::BookEditPacket(pk) => pk.as_ref(),
-                V766::BossEventPacket(pk) => pk.as_ref(),
-                V766::CameraAimAssistPacket(pk) => pk.as_ref(),
-                V766::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
-                V766::CameraInstructionPacket(pk) => pk.as_ref(),
-                V766::CameraPacket(pk) => pk.as_ref(),
-                V766::CameraPresetsPacket(pk) => pk.as_ref(),
-                V766::CameraShakePacket(pk) => pk.as_ref(),
-                V766::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V766::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V766::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V766::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V766::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V766::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V766::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V766::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V766::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V766::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V766::CodeBuilderPacket(pk) => pk.as_ref(),
-                V766::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V766::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V766::CommandOutputPacket(pk) => pk.as_ref(),
-                V766::CommandRequestPacket(pk) => pk.as_ref(),
-                V766::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V766::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V766::ContainerClosePacket(pk) => pk.as_ref(),
-                V766::ContainerOpenPacket(pk) => pk.as_ref(),
-                V766::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
-                V766::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V766::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V766::CraftingDataPacket(pk) => pk.as_ref(),
-                V766::CreatePhotoPacket(pk) => pk.as_ref(),
-                V766::CreativeContentPacket(pk) => pk.as_ref(),
-                V766::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V766::DeathInfoPacket(pk) => pk.as_ref(),
-                V766::DebugInfoPacket(pk) => pk.as_ref(),
-                V766::DimensionDataPacket(pk) => pk.as_ref(),
-                V766::DisconnectPacket(pk) => pk.as_ref(),
-                V766::EditorNetworkPacket(pk) => pk.as_ref(),
-                V766::EduUriResourcePacket(pk) => pk.as_ref(),
-                V766::EducationSettingsPacket(pk) => pk.as_ref(),
-                V766::EmoteListPacket(pk) => pk.as_ref(),
-                V766::EmotePacket(pk) => pk.as_ref(),
-                V766::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V766::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V766::GameTestRequestPacket(pk) => pk.as_ref(),
-                V766::GameTestResultsPacket(pk) => pk.as_ref(),
-                V766::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V766::HurtArmorPacket(pk) => pk.as_ref(),
-                V766::InteractPacket(pk) => pk.as_ref(),
-                V766::InventoryContentPacket(pk) => pk.as_ref(),
-                V766::InventorySlotPacket(pk) => pk.as_ref(),
-                V766::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V766::ItemComponentPacket(pk) => pk.as_ref(),
-                V766::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V766::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V766::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V766::LabTablePacket(pk) => pk.as_ref(),
-                V766::LecternUpdatePacket(pk) => pk.as_ref(),
-                V766::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V766::LessonProgressPacket(pk) => pk.as_ref(),
-                V766::LevelChunkPacket(pk) => pk.as_ref(),
-                V766::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V766::LevelEventPacket(pk) => pk.as_ref(),
-                V766::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V766::LevelSoundEventV1Packet(pk) => pk.as_ref(),
-                V766::LevelSoundEventV2Packet(pk) => pk.as_ref(),
-                V766::LoginPacket(pk) => pk.as_ref(),
-                V766::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V766::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V766::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V766::MobEffectPacket(pk) => pk.as_ref(),
-                V766::MobEquipmentPacket(pk) => pk.as_ref(),
-                V766::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V766::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V766::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V766::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V766::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V766::MovePlayerPacket(pk) => pk.as_ref(),
-                V766::MovementEffectPacket(pk) => pk.as_ref(),
-                V766::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V766::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V766::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V766::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V766::NpcDialoguePacket(pk) => pk.as_ref(),
-                V766::NpcRequestPacket(pk) => pk.as_ref(),
-                V766::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V766::OpenSignPacket(pk) => pk.as_ref(),
-                V766::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V766::PassengerJumpPacket(pk) => pk.as_ref(),
-                V766::PhotoTransferPacket(pk) => pk.as_ref(),
-                V766::PlaySoundPacket(pk) => pk.as_ref(),
-                V766::PlayStatusPacket(pk) => pk.as_ref(),
-                V766::PlayerActionPacket(pk) => pk.as_ref(),
-                V766::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V766::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V766::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V766::PlayerFogPacket(pk) => pk.as_ref(),
-                V766::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V766::PlayerInputPacket(pk) => pk.as_ref(),
-                V766::PlayerListPacket(pk) => pk.as_ref(),
-                V766::PlayerSkinPacket(pk) => pk.as_ref(),
-                V766::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V766::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V766::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V766::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V766::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V766::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V766::RemoveActorPacket(pk) => pk.as_ref(),
-                V766::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V766::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V766::RequestAbilityPacket(pk) => pk.as_ref(),
-                V766::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V766::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V766::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V766::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V766::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V766::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V766::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V766::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V766::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V766::RespawnPacket(pk) => pk.as_ref(),
-                V766::ScriptMessagePacket(pk) => pk.as_ref(),
-                V766::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V766::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V766::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V766::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V766::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V766::ServerStatsPacket(pk) => pk.as_ref(),
-                V766::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V766::SetActorDataPacket(pk) => pk.as_ref(),
-                V766::SetActorLinkPacket(pk) => pk.as_ref(),
-                V766::SetActorMotionPacket(pk) => pk.as_ref(),
-                V766::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V766::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V766::SetDifficultyPacket(pk) => pk.as_ref(),
-                V766::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V766::SetHealthPacket(pk) => pk.as_ref(),
-                V766::SetHudPacket(pk) => pk.as_ref(),
-                V766::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V766::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V766::SetMovementAuthorityPacket(pk) => pk.as_ref(),
-                V766::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V766::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V766::SetScorePacket(pk) => pk.as_ref(),
-                V766::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V766::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V766::SetTimePacket(pk) => pk.as_ref(),
-                V766::SetTitlePacket(pk) => pk.as_ref(),
-                V766::SettingsCommandPacket(pk) => pk.as_ref(),
-                V766::ShowCreditsPacket(pk) => pk.as_ref(),
-                V766::ShowProfilePacket(pk) => pk.as_ref(),
-                V766::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V766::SimpleEventPacket(pk) => pk.as_ref(),
-                V766::SimulationTypePacket(pk) => pk.as_ref(),
-                V766::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V766::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V766::StartGamePacket(pk) => pk.as_ref(),
-                V766::StopSoundPacket(pk) => pk.as_ref(),
-                V766::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V766::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V766::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V766::SubChunkPacket(pk) => pk.as_ref(),
-                V766::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V766::SubClientLoginPacket(pk) => pk.as_ref(),
-                V766::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V766::TakeItemActorPacket(pk) => pk.as_ref(),
-                V766::TextPacket(pk) => pk.as_ref(),
-                V766::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V766::ToastRequestPacket(pk) => pk.as_ref(),
-                V766::TransferPlayerPacket(pk) => pk.as_ref(),
-                V766::TrimDataPacket(pk) => pk.as_ref(),
-                V766::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V766::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V766::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V766::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V766::UpdateBlockPacket(pk) => pk.as_ref(),
-                V766::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V766::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V766::UpdateEquipPacket(pk) => pk.as_ref(),
-                V766::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V766::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V766::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V766::UpdateTradePacket(pk) => pk.as_ref(),
-                V766::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V766::ActorEventPacket(pk) => pk,
-                V766::ActorPickRequestPacket(pk) => pk,
-                V766::AddActorPacket(pk) => pk,
-                V766::AddBehaviourTreePacket(pk) => pk,
-                V766::AddItemActorPacket(pk) => pk,
-                V766::AddPaintingPacket(pk) => pk,
-                V766::AddPlayerPacket(pk) => pk,
-                V766::AddVolumeEntityPacket(pk) => pk,
-                V766::AgentActionEventPacket(pk) => pk,
-                V766::AgentAnimationPacket(pk) => pk,
-                V766::AnimateEntityPacket(pk) => pk,
-                V766::AnimatePacket(pk) => pk,
-                V766::AnvilDamagePacket(pk) => pk,
-                V766::AutomationClientConnectPacket(pk) => pk,
-                V766::AvailableActorIdentifiersPacket(pk) => pk,
-                V766::AvailableCommandsPacket(pk) => pk,
-                V766::AwardAchievementPacket(pk) => pk,
-                V766::BiomeDefinitionListPacket(pk) => pk,
-                V766::BlockActorDataPacket(pk) => pk,
-                V766::BlockEventPacket(pk) => pk,
-                V766::BlockPickRequestPacket(pk) => pk,
-                V766::BookEditPacket(pk) => pk,
-                V766::BossEventPacket(pk) => pk,
-                V766::CameraAimAssistPacket(pk) => pk,
-                V766::CameraAimAssistPresetsPacket(pk) => pk,
-                V766::CameraInstructionPacket(pk) => pk,
-                V766::CameraPacket(pk) => pk,
-                V766::CameraPresetsPacket(pk) => pk,
-                V766::CameraShakePacket(pk) => pk,
-                V766::ChangeDimensionPacket(pk) => pk,
-                V766::ChangeMobPropertyPacket(pk) => pk,
-                V766::ChunkRadiusUpdatedPacket(pk) => pk,
-                V766::ClientBoundCloseFormPacket(pk) => pk,
-                V766::ClientBoundDebugRendererPacket(pk) => pk,
-                V766::ClientBoundMapItemDataPacket(pk) => pk,
-                V766::ClientCacheBlobStatusPacket(pk) => pk,
-                V766::ClientCacheMissResponsePacket(pk) => pk,
-                V766::ClientCacheStatusPacket(pk) => pk,
-                V766::ClientToServerHandshakePacket(pk) => pk,
-                V766::CodeBuilderPacket(pk) => pk,
-                V766::CodeBuilderSourcePacket(pk) => pk,
-                V766::CommandBlockUpdatePacket(pk) => pk,
-                V766::CommandOutputPacket(pk) => pk,
-                V766::CommandRequestPacket(pk) => pk,
-                V766::CompletedUsingItemPacket(pk) => pk,
-                V766::CompressedBiomeDefinitionListPacket(pk) => pk,
-                V766::ContainerClosePacket(pk) => pk,
-                V766::ContainerOpenPacket(pk) => pk,
-                V766::ContainerRegistryCleanupPacket(pk) => pk,
-                V766::ContainerSetDataPacket(pk) => pk,
-                V766::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V766::CraftingDataPacket(pk) => pk,
-                V766::CreatePhotoPacket(pk) => pk,
-                V766::CreativeContentPacket(pk) => pk,
-                V766::CurrentStructureFeaturePacket(pk) => pk,
-                V766::DeathInfoPacket(pk) => pk,
-                V766::DebugInfoPacket(pk) => pk,
-                V766::DimensionDataPacket(pk) => pk,
-                V766::DisconnectPacket(pk) => pk,
-                V766::EditorNetworkPacket(pk) => pk,
-                V766::EduUriResourcePacket(pk) => pk,
-                V766::EducationSettingsPacket(pk) => pk,
-                V766::EmoteListPacket(pk) => pk,
-                V766::EmotePacket(pk) => pk,
-                V766::FeatureRegistryPacket(pk) => pk,
-                V766::GameRulesChangedPacket(pk) => pk,
-                V766::GameTestRequestPacket(pk) => pk,
-                V766::GameTestResultsPacket(pk) => pk,
-                V766::GuiDataPickItemPacket(pk) => pk,
-                V766::HurtArmorPacket(pk) => pk,
-                V766::InteractPacket(pk) => pk,
-                V766::InventoryContentPacket(pk) => pk,
-                V766::InventorySlotPacket(pk) => pk,
-                V766::InventoryTransactionPacket(pk) => pk,
-                V766::ItemComponentPacket(pk) => pk,
-                V766::ItemStackRequestPacket(pk) => pk,
-                V766::ItemStackResponsePacket(pk) => pk,
-                V766::JigsawStructureDataPacket(pk) => pk,
-                V766::LabTablePacket(pk) => pk,
-                V766::LecternUpdatePacket(pk) => pk,
-                V766::LegacyTelemetryEventPacket(pk) => pk,
-                V766::LessonProgressPacket(pk) => pk,
-                V766::LevelChunkPacket(pk) => pk,
-                V766::LevelEventGenericPacket(pk) => pk,
-                V766::LevelEventPacket(pk) => pk,
-                V766::LevelSoundEventPacket(pk) => pk,
-                V766::LevelSoundEventV1Packet(pk) => pk,
-                V766::LevelSoundEventV2Packet(pk) => pk,
-                V766::LoginPacket(pk) => pk,
-                V766::MapCreateLockedCopyPacket(pk) => pk,
-                V766::MapInfoRequestPacket(pk) => pk,
-                V766::MobArmorEquipmentPacket(pk) => pk,
-                V766::MobEffectPacket(pk) => pk,
-                V766::MobEquipmentPacket(pk) => pk,
-                V766::ModalFormRequestPacket(pk) => pk,
-                V766::ModalFormResponsePacket(pk) => pk,
-                V766::MotionPredictionHintsPacket(pk) => pk,
-                V766::MoveActorAbsolutePacket(pk) => pk,
-                V766::MoveActorDeltaPacket(pk) => pk,
-                V766::MovePlayerPacket(pk) => pk,
-                V766::MovementEffectPacket(pk) => pk,
-                V766::MultiplayerSettingsPacket(pk) => pk,
-                V766::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V766::NetworkSettingsPacket(pk) => pk,
-                V766::NetworkStackLatencyPacket(pk) => pk,
-                V766::NpcDialoguePacket(pk) => pk,
-                V766::NpcRequestPacket(pk) => pk,
-                V766::OnScreenTextureAnimationPacket(pk) => pk,
-                V766::OpenSignPacket(pk) => pk,
-                V766::PacketViolationWarningPacket(pk) => pk,
-                V766::PassengerJumpPacket(pk) => pk,
-                V766::PhotoTransferPacket(pk) => pk,
-                V766::PlaySoundPacket(pk) => pk,
-                V766::PlayStatusPacket(pk) => pk,
-                V766::PlayerActionPacket(pk) => pk,
-                V766::PlayerArmorDamagePacket(pk) => pk,
-                V766::PlayerAuthInputPacket(pk) => pk,
-                V766::PlayerEnchantOptionsPacket(pk) => pk,
-                V766::PlayerFogPacket(pk) => pk,
-                V766::PlayerHotbarPacket(pk) => pk,
-                V766::PlayerInputPacket(pk) => pk,
-                V766::PlayerListPacket(pk) => pk,
-                V766::PlayerSkinPacket(pk) => pk,
-                V766::PlayerStartItemCooldownPacket(pk) => pk,
-                V766::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V766::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V766::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V766::PurchaseReceiptPacket(pk) => pk,
-                V766::RefreshEntitlementsPacket(pk) => pk,
-                V766::RemoveActorPacket(pk) => pk,
-                V766::RemoveObjectivePacket(pk) => pk,
-                V766::RemoveVolumeEntityPacket(pk) => pk,
-                V766::RequestAbilityPacket(pk) => pk,
-                V766::RequestChunkRadiusPacket(pk) => pk,
-                V766::RequestNetworkSettingsPacket(pk) => pk,
-                V766::RequestPermissionsPacket(pk) => pk,
-                V766::ResourcePackChunkDataPacket(pk) => pk,
-                V766::ResourcePackChunkRequestPacket(pk) => pk,
-                V766::ResourcePackClientResponsePacket(pk) => pk,
-                V766::ResourcePackDataInfoPacket(pk) => pk,
-                V766::ResourcePackStackPacket(pk) => pk,
-                V766::ResourcePacksInfoPacket(pk) => pk,
-                V766::RespawnPacket(pk) => pk,
-                V766::ScriptMessagePacket(pk) => pk,
-                V766::ServerBoundDiagnosticsPacket(pk) => pk,
-                V766::ServerBoundLoadingScreenPacket(pk) => pk,
-                V766::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V766::ServerSettingsRequestPacket(pk) => pk,
-                V766::ServerSettingsResponsePacket(pk) => pk,
-                V766::ServerStatsPacket(pk) => pk,
-                V766::ServerToClientHandshakePacket(pk) => pk,
-                V766::SetActorDataPacket(pk) => pk,
-                V766::SetActorLinkPacket(pk) => pk,
-                V766::SetActorMotionPacket(pk) => pk,
-                V766::SetCommandsEnabledPacket(pk) => pk,
-                V766::SetDefaultGameTypePacket(pk) => pk,
-                V766::SetDifficultyPacket(pk) => pk,
-                V766::SetDisplayObjectivePacket(pk) => pk,
-                V766::SetHealthPacket(pk) => pk,
-                V766::SetHudPacket(pk) => pk,
-                V766::SetLastHurtByPacket(pk) => pk,
-                V766::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V766::SetMovementAuthorityPacket(pk) => pk,
-                V766::SetPlayerGameTypePacket(pk) => pk,
-                V766::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V766::SetScorePacket(pk) => pk,
-                V766::SetScoreboardIdentityPacket(pk) => pk,
-                V766::SetSpawnPositionPacket(pk) => pk,
-                V766::SetTimePacket(pk) => pk,
-                V766::SetTitlePacket(pk) => pk,
-                V766::SettingsCommandPacket(pk) => pk,
-                V766::ShowCreditsPacket(pk) => pk,
-                V766::ShowProfilePacket(pk) => pk,
-                V766::ShowStoreOfferPacket(pk) => pk,
-                V766::SimpleEventPacket(pk) => pk,
-                V766::SimulationTypePacket(pk) => pk,
-                V766::SpawnExperienceOrbPacket(pk) => pk,
-                V766::SpawnParticleEffectPacket(pk) => pk,
-                V766::StartGamePacket(pk) => pk,
-                V766::StopSoundPacket(pk) => pk,
-                V766::StructureBlockUpdatePacket(pk) => pk,
-                V766::StructureDataRequestPacket(pk) => pk,
-                V766::StructureDataResponsePacket(pk) => pk,
-                V766::SubChunkPacket(pk) => pk,
-                V766::SubChunkRequestPacket(pk) => pk,
-                V766::SubClientLoginPacket(pk) => pk,
-                V766::SyncActorPropertyPacket(pk) => pk,
-                V766::TakeItemActorPacket(pk) => pk,
-                V766::TextPacket(pk) => pk,
-                V766::TickingAreaLoadStatusPacket(pk) => pk,
-                V766::ToastRequestPacket(pk) => pk,
-                V766::TransferPlayerPacket(pk) => pk,
-                V766::TrimDataPacket(pk) => pk,
-                V766::UnlockedRecipesPacket(pk) => pk,
-                V766::UpdateAbilitiesPacket(pk) => pk,
-                V766::UpdateAdventureSettingsPacket(pk) => pk,
-                V766::UpdateAttributesPacket(pk) => pk,
-                V766::UpdateBlockPacket(pk) => pk,
-                V766::UpdateBlockSyncedPacket(pk) => pk,
-                V766::UpdateClientInputLocksPacket(pk) => pk,
-                V766::UpdateEquipPacket(pk) => pk,
-                V766::UpdatePlayerGameTypePacket(pk) => pk,
-                V766::UpdateSoftEnumPacket(pk) => pk,
-                V766::UpdateSubChunkBlocksPacket(pk) => pk,
-                V766::UpdateTradePacket(pk) => pk,
-                V766::Unknown(pk) => pk,
+                V766::ActorEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ActorPickRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AddActorPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AddBehaviourTreePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AddItemActorPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AddPaintingPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AddPlayerPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AddVolumeEntityPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AgentActionEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AgentAnimationPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AnimateEntityPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AnimatePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AnvilDamagePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AutomationClientConnectPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AvailableActorIdentifiersPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AvailableCommandsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::AwardAchievementPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::BiomeDefinitionListPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::BlockActorDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::BlockEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::BlockPickRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::BookEditPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::BossEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CameraAimAssistPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CameraAimAssistPresetsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CameraInstructionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CameraPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CameraPresetsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CameraShakePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ChangeDimensionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ChangeMobPropertyPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ChunkRadiusUpdatedPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientBoundCloseFormPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientBoundDebugRendererPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientBoundMapItemDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientCacheBlobStatusPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientCacheMissResponsePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientCacheStatusPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ClientToServerHandshakePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CodeBuilderPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CodeBuilderSourcePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CommandBlockUpdatePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CommandOutputPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CommandRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CompletedUsingItemPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CompressedBiomeDefinitionListPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CompressedBiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ContainerClosePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ContainerOpenPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ContainerRegistryCleanupPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ContainerSetDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CraftingDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CreatePhotoPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CreativeContentPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::CurrentStructureFeaturePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::DeathInfoPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::DebugInfoPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::DimensionDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::DisconnectPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::EditorNetworkPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::EduUriResourcePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::EducationSettingsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::EmoteListPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::EmotePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::FeatureRegistryPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::GameRulesChangedPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::GameTestRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::GameTestResultsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::GuiDataPickItemPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::HurtArmorPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::InteractPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::InventoryContentPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::InventorySlotPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::InventoryTransactionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ItemComponentPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ItemStackRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ItemStackResponsePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::JigsawStructureDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LabTablePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LecternUpdatePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LegacyTelemetryEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LessonProgressPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LevelChunkPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LevelEventGenericPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LevelEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LevelSoundEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LevelSoundEventV1Packet(_) => {
+                    <<V766 as ProtoVersionPackets>::LevelSoundEventV1Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LevelSoundEventV2Packet(_) => {
+                    <<V766 as ProtoVersionPackets>::LevelSoundEventV2Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V766::LoginPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MapCreateLockedCopyPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MapInfoRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MobArmorEquipmentPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MobEffectPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MobEquipmentPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ModalFormRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ModalFormResponsePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MotionPredictionHintsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MoveActorAbsolutePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MoveActorDeltaPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MovePlayerPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MovementEffectPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::MultiplayerSettingsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::NetworkSettingsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::NetworkStackLatencyPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::NpcDialoguePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::NpcRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::OnScreenTextureAnimationPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::OpenSignPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PacketViolationWarningPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PassengerJumpPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PassengerJumpPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PhotoTransferPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlaySoundPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayStatusPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerActionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerArmorDamagePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerAuthInputPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerEnchantOptionsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerFogPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerHotbarPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerInputPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerListPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerSkinPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerStartItemCooldownPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::PurchaseReceiptPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RefreshEntitlementsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RemoveActorPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RemoveObjectivePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RemoveVolumeEntityPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RequestAbilityPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RequestChunkRadiusPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RequestNetworkSettingsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RequestPermissionsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ResourcePackChunkDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ResourcePackChunkRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ResourcePackClientResponsePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ResourcePackDataInfoPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ResourcePackStackPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ResourcePacksInfoPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::RespawnPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ScriptMessagePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerBoundDiagnosticsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerBoundLoadingScreenPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerSettingsRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerSettingsResponsePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerStatsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ServerToClientHandshakePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetActorDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetActorLinkPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetActorMotionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetCommandsEnabledPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetDefaultGameTypePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetDifficultyPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetDisplayObjectivePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetHealthPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetHudPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetLastHurtByPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetMovementAuthorityPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetMovementAuthorityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetPlayerGameTypePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetScorePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetScoreboardIdentityPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetSpawnPositionPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetTimePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SetTitlePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SettingsCommandPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ShowCreditsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ShowProfilePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ShowStoreOfferPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SimpleEventPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SimulationTypePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SpawnExperienceOrbPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SpawnParticleEffectPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::StartGamePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::StopSoundPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::StructureBlockUpdatePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::StructureDataRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::StructureDataResponsePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SubChunkPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SubChunkRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SubClientLoginPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::SyncActorPropertyPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::TakeItemActorPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::TextPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::TickingAreaLoadStatusPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::ToastRequestPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::TransferPlayerPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::TrimDataPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UnlockedRecipesPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateAbilitiesPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateAdventureSettingsPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateAttributesPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateBlockPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateBlockSyncedPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateClientInputLocksPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateEquipPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdatePlayerGameTypePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateSoftEnumPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateSubChunkBlocksPacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::UpdateTradePacket(_) => {
+                    <<V766 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V766::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7841,7 +8040,7 @@ mod inner {
         type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
         type CorrectPlayerMovePredictionPacket =
             crate::version::v671::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
         type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
         type CreativeContentPacket = crate::version::v662::packets::CreativeContentPacket<Self>;
         type CurrentStructureFeaturePacket =
@@ -8147,9 +8346,7 @@ mod inner {
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v662::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
         type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
         type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
@@ -8285,6 +8482,432 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u5";
         const GAME_VERSION: &str = "1.21.50";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V766 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V766::ActorEventPacket(pk) => pk.as_ref(),
+                V766::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V766::AddActorPacket(pk) => pk.as_ref(),
+                V766::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V766::AddItemActorPacket(pk) => pk.as_ref(),
+                V766::AddPaintingPacket(pk) => pk.as_ref(),
+                V766::AddPlayerPacket(pk) => pk.as_ref(),
+                V766::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V766::AgentActionEventPacket(pk) => pk.as_ref(),
+                V766::AgentAnimationPacket(pk) => pk.as_ref(),
+                V766::AnimateEntityPacket(pk) => pk.as_ref(),
+                V766::AnimatePacket(pk) => pk.as_ref(),
+                V766::AnvilDamagePacket(pk) => pk.as_ref(),
+                V766::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V766::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V766::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V766::AwardAchievementPacket(pk) => pk.as_ref(),
+                V766::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V766::BlockActorDataPacket(pk) => pk.as_ref(),
+                V766::BlockEventPacket(pk) => pk.as_ref(),
+                V766::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V766::BookEditPacket(pk) => pk.as_ref(),
+                V766::BossEventPacket(pk) => pk.as_ref(),
+                V766::CameraAimAssistPacket(pk) => pk.as_ref(),
+                V766::CameraAimAssistPresetsPacket(pk) => pk.as_ref(),
+                V766::CameraInstructionPacket(pk) => pk.as_ref(),
+                V766::CameraPacket(pk) => pk.as_ref(),
+                V766::CameraPresetsPacket(pk) => pk.as_ref(),
+                V766::CameraShakePacket(pk) => pk.as_ref(),
+                V766::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V766::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V766::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V766::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V766::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V766::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V766::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V766::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V766::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V766::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V766::CodeBuilderPacket(pk) => pk.as_ref(),
+                V766::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V766::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V766::CommandOutputPacket(pk) => pk.as_ref(),
+                V766::CommandRequestPacket(pk) => pk.as_ref(),
+                V766::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V766::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V766::ContainerClosePacket(pk) => pk.as_ref(),
+                V766::ContainerOpenPacket(pk) => pk.as_ref(),
+                V766::ContainerRegistryCleanupPacket(pk) => pk.as_ref(),
+                V766::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V766::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V766::CraftingDataPacket(pk) => pk.as_ref(),
+                V766::CreatePhotoPacket(pk) => pk.as_ref(),
+                V766::CreativeContentPacket(pk) => pk.as_ref(),
+                V766::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V766::DeathInfoPacket(pk) => pk.as_ref(),
+                V766::DebugInfoPacket(pk) => pk.as_ref(),
+                V766::DimensionDataPacket(pk) => pk.as_ref(),
+                V766::DisconnectPacket(pk) => pk.as_ref(),
+                V766::EditorNetworkPacket(pk) => pk.as_ref(),
+                V766::EduUriResourcePacket(pk) => pk.as_ref(),
+                V766::EducationSettingsPacket(pk) => pk.as_ref(),
+                V766::EmoteListPacket(pk) => pk.as_ref(),
+                V766::EmotePacket(pk) => pk.as_ref(),
+                V766::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V766::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V766::GameTestRequestPacket(pk) => pk.as_ref(),
+                V766::GameTestResultsPacket(pk) => pk.as_ref(),
+                V766::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V766::HurtArmorPacket(pk) => pk.as_ref(),
+                V766::InteractPacket(pk) => pk.as_ref(),
+                V766::InventoryContentPacket(pk) => pk.as_ref(),
+                V766::InventorySlotPacket(pk) => pk.as_ref(),
+                V766::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V766::ItemComponentPacket(pk) => pk.as_ref(),
+                V766::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V766::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V766::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V766::LabTablePacket(pk) => pk.as_ref(),
+                V766::LecternUpdatePacket(pk) => pk.as_ref(),
+                V766::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V766::LessonProgressPacket(pk) => pk.as_ref(),
+                V766::LevelChunkPacket(pk) => pk.as_ref(),
+                V766::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V766::LevelEventPacket(pk) => pk.as_ref(),
+                V766::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V766::LevelSoundEventV1Packet(pk) => pk.as_ref(),
+                V766::LevelSoundEventV2Packet(pk) => pk.as_ref(),
+                V766::LoginPacket(pk) => pk.as_ref(),
+                V766::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V766::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V766::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V766::MobEffectPacket(pk) => pk.as_ref(),
+                V766::MobEquipmentPacket(pk) => pk.as_ref(),
+                V766::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V766::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V766::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V766::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V766::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V766::MovePlayerPacket(pk) => pk.as_ref(),
+                V766::MovementEffectPacket(pk) => pk.as_ref(),
+                V766::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V766::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V766::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V766::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V766::NpcDialoguePacket(pk) => pk.as_ref(),
+                V766::NpcRequestPacket(pk) => pk.as_ref(),
+                V766::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V766::OpenSignPacket(pk) => pk.as_ref(),
+                V766::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V766::PassengerJumpPacket(pk) => pk.as_ref(),
+                V766::PhotoTransferPacket(pk) => pk.as_ref(),
+                V766::PlaySoundPacket(pk) => pk.as_ref(),
+                V766::PlayStatusPacket(pk) => pk.as_ref(),
+                V766::PlayerActionPacket(pk) => pk.as_ref(),
+                V766::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V766::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V766::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V766::PlayerFogPacket(pk) => pk.as_ref(),
+                V766::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V766::PlayerInputPacket(pk) => pk.as_ref(),
+                V766::PlayerListPacket(pk) => pk.as_ref(),
+                V766::PlayerSkinPacket(pk) => pk.as_ref(),
+                V766::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V766::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V766::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V766::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V766::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V766::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V766::RemoveActorPacket(pk) => pk.as_ref(),
+                V766::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V766::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V766::RequestAbilityPacket(pk) => pk.as_ref(),
+                V766::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V766::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V766::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V766::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V766::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V766::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V766::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V766::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V766::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V766::RespawnPacket(pk) => pk.as_ref(),
+                V766::ScriptMessagePacket(pk) => pk.as_ref(),
+                V766::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V766::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V766::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V766::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V766::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V766::ServerStatsPacket(pk) => pk.as_ref(),
+                V766::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V766::SetActorDataPacket(pk) => pk.as_ref(),
+                V766::SetActorLinkPacket(pk) => pk.as_ref(),
+                V766::SetActorMotionPacket(pk) => pk.as_ref(),
+                V766::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V766::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V766::SetDifficultyPacket(pk) => pk.as_ref(),
+                V766::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V766::SetHealthPacket(pk) => pk.as_ref(),
+                V766::SetHudPacket(pk) => pk.as_ref(),
+                V766::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V766::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V766::SetMovementAuthorityPacket(pk) => pk.as_ref(),
+                V766::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V766::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V766::SetScorePacket(pk) => pk.as_ref(),
+                V766::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V766::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V766::SetTimePacket(pk) => pk.as_ref(),
+                V766::SetTitlePacket(pk) => pk.as_ref(),
+                V766::SettingsCommandPacket(pk) => pk.as_ref(),
+                V766::ShowCreditsPacket(pk) => pk.as_ref(),
+                V766::ShowProfilePacket(pk) => pk.as_ref(),
+                V766::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V766::SimpleEventPacket(pk) => pk.as_ref(),
+                V766::SimulationTypePacket(pk) => pk.as_ref(),
+                V766::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V766::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V766::StartGamePacket(pk) => pk.as_ref(),
+                V766::StopSoundPacket(pk) => pk.as_ref(),
+                V766::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V766::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V766::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V766::SubChunkPacket(pk) => pk.as_ref(),
+                V766::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V766::SubClientLoginPacket(pk) => pk.as_ref(),
+                V766::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V766::TakeItemActorPacket(pk) => pk.as_ref(),
+                V766::TextPacket(pk) => pk.as_ref(),
+                V766::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V766::ToastRequestPacket(pk) => pk.as_ref(),
+                V766::TransferPlayerPacket(pk) => pk.as_ref(),
+                V766::TrimDataPacket(pk) => pk.as_ref(),
+                V766::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V766::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V766::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V766::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V766::UpdateBlockPacket(pk) => pk.as_ref(),
+                V766::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V766::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V766::UpdateEquipPacket(pk) => pk.as_ref(),
+                V766::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V766::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V766::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V766::UpdateTradePacket(pk) => pk.as_ref(),
+                V766::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V766> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V766) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V766::ActorEventPacket(pk) => pk,
+                V766::ActorPickRequestPacket(pk) => pk,
+                V766::AddActorPacket(pk) => pk,
+                V766::AddBehaviourTreePacket(pk) => pk,
+                V766::AddItemActorPacket(pk) => pk,
+                V766::AddPaintingPacket(pk) => pk,
+                V766::AddPlayerPacket(pk) => pk,
+                V766::AddVolumeEntityPacket(pk) => pk,
+                V766::AgentActionEventPacket(pk) => pk,
+                V766::AgentAnimationPacket(pk) => pk,
+                V766::AnimateEntityPacket(pk) => pk,
+                V766::AnimatePacket(pk) => pk,
+                V766::AnvilDamagePacket(pk) => pk,
+                V766::AutomationClientConnectPacket(pk) => pk,
+                V766::AvailableActorIdentifiersPacket(pk) => pk,
+                V766::AvailableCommandsPacket(pk) => pk,
+                V766::AwardAchievementPacket(pk) => pk,
+                V766::BiomeDefinitionListPacket(pk) => pk,
+                V766::BlockActorDataPacket(pk) => pk,
+                V766::BlockEventPacket(pk) => pk,
+                V766::BlockPickRequestPacket(pk) => pk,
+                V766::BookEditPacket(pk) => pk,
+                V766::BossEventPacket(pk) => pk,
+                V766::CameraAimAssistPacket(pk) => pk,
+                V766::CameraAimAssistPresetsPacket(pk) => pk,
+                V766::CameraInstructionPacket(pk) => pk,
+                V766::CameraPacket(pk) => pk,
+                V766::CameraPresetsPacket(pk) => pk,
+                V766::CameraShakePacket(pk) => pk,
+                V766::ChangeDimensionPacket(pk) => pk,
+                V766::ChangeMobPropertyPacket(pk) => pk,
+                V766::ChunkRadiusUpdatedPacket(pk) => pk,
+                V766::ClientBoundCloseFormPacket(pk) => pk,
+                V766::ClientBoundDebugRendererPacket(pk) => pk,
+                V766::ClientBoundMapItemDataPacket(pk) => pk,
+                V766::ClientCacheBlobStatusPacket(pk) => pk,
+                V766::ClientCacheMissResponsePacket(pk) => pk,
+                V766::ClientCacheStatusPacket(pk) => pk,
+                V766::ClientToServerHandshakePacket(pk) => pk,
+                V766::CodeBuilderPacket(pk) => pk,
+                V766::CodeBuilderSourcePacket(pk) => pk,
+                V766::CommandBlockUpdatePacket(pk) => pk,
+                V766::CommandOutputPacket(pk) => pk,
+                V766::CommandRequestPacket(pk) => pk,
+                V766::CompletedUsingItemPacket(pk) => pk,
+                V766::CompressedBiomeDefinitionListPacket(pk) => pk,
+                V766::ContainerClosePacket(pk) => pk,
+                V766::ContainerOpenPacket(pk) => pk,
+                V766::ContainerRegistryCleanupPacket(pk) => pk,
+                V766::ContainerSetDataPacket(pk) => pk,
+                V766::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V766::CraftingDataPacket(pk) => pk,
+                V766::CreatePhotoPacket(pk) => pk,
+                V766::CreativeContentPacket(pk) => pk,
+                V766::CurrentStructureFeaturePacket(pk) => pk,
+                V766::DeathInfoPacket(pk) => pk,
+                V766::DebugInfoPacket(pk) => pk,
+                V766::DimensionDataPacket(pk) => pk,
+                V766::DisconnectPacket(pk) => pk,
+                V766::EditorNetworkPacket(pk) => pk,
+                V766::EduUriResourcePacket(pk) => pk,
+                V766::EducationSettingsPacket(pk) => pk,
+                V766::EmoteListPacket(pk) => pk,
+                V766::EmotePacket(pk) => pk,
+                V766::FeatureRegistryPacket(pk) => pk,
+                V766::GameRulesChangedPacket(pk) => pk,
+                V766::GameTestRequestPacket(pk) => pk,
+                V766::GameTestResultsPacket(pk) => pk,
+                V766::GuiDataPickItemPacket(pk) => pk,
+                V766::HurtArmorPacket(pk) => pk,
+                V766::InteractPacket(pk) => pk,
+                V766::InventoryContentPacket(pk) => pk,
+                V766::InventorySlotPacket(pk) => pk,
+                V766::InventoryTransactionPacket(pk) => pk,
+                V766::ItemComponentPacket(pk) => pk,
+                V766::ItemStackRequestPacket(pk) => pk,
+                V766::ItemStackResponsePacket(pk) => pk,
+                V766::JigsawStructureDataPacket(pk) => pk,
+                V766::LabTablePacket(pk) => pk,
+                V766::LecternUpdatePacket(pk) => pk,
+                V766::LegacyTelemetryEventPacket(pk) => pk,
+                V766::LessonProgressPacket(pk) => pk,
+                V766::LevelChunkPacket(pk) => pk,
+                V766::LevelEventGenericPacket(pk) => pk,
+                V766::LevelEventPacket(pk) => pk,
+                V766::LevelSoundEventPacket(pk) => pk,
+                V766::LevelSoundEventV1Packet(pk) => pk,
+                V766::LevelSoundEventV2Packet(pk) => pk,
+                V766::LoginPacket(pk) => pk,
+                V766::MapCreateLockedCopyPacket(pk) => pk,
+                V766::MapInfoRequestPacket(pk) => pk,
+                V766::MobArmorEquipmentPacket(pk) => pk,
+                V766::MobEffectPacket(pk) => pk,
+                V766::MobEquipmentPacket(pk) => pk,
+                V766::ModalFormRequestPacket(pk) => pk,
+                V766::ModalFormResponsePacket(pk) => pk,
+                V766::MotionPredictionHintsPacket(pk) => pk,
+                V766::MoveActorAbsolutePacket(pk) => pk,
+                V766::MoveActorDeltaPacket(pk) => pk,
+                V766::MovePlayerPacket(pk) => pk,
+                V766::MovementEffectPacket(pk) => pk,
+                V766::MultiplayerSettingsPacket(pk) => pk,
+                V766::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V766::NetworkSettingsPacket(pk) => pk,
+                V766::NetworkStackLatencyPacket(pk) => pk,
+                V766::NpcDialoguePacket(pk) => pk,
+                V766::NpcRequestPacket(pk) => pk,
+                V766::OnScreenTextureAnimationPacket(pk) => pk,
+                V766::OpenSignPacket(pk) => pk,
+                V766::PacketViolationWarningPacket(pk) => pk,
+                V766::PassengerJumpPacket(pk) => pk,
+                V766::PhotoTransferPacket(pk) => pk,
+                V766::PlaySoundPacket(pk) => pk,
+                V766::PlayStatusPacket(pk) => pk,
+                V766::PlayerActionPacket(pk) => pk,
+                V766::PlayerArmorDamagePacket(pk) => pk,
+                V766::PlayerAuthInputPacket(pk) => pk,
+                V766::PlayerEnchantOptionsPacket(pk) => pk,
+                V766::PlayerFogPacket(pk) => pk,
+                V766::PlayerHotbarPacket(pk) => pk,
+                V766::PlayerInputPacket(pk) => pk,
+                V766::PlayerListPacket(pk) => pk,
+                V766::PlayerSkinPacket(pk) => pk,
+                V766::PlayerStartItemCooldownPacket(pk) => pk,
+                V766::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V766::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V766::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V766::PurchaseReceiptPacket(pk) => pk,
+                V766::RefreshEntitlementsPacket(pk) => pk,
+                V766::RemoveActorPacket(pk) => pk,
+                V766::RemoveObjectivePacket(pk) => pk,
+                V766::RemoveVolumeEntityPacket(pk) => pk,
+                V766::RequestAbilityPacket(pk) => pk,
+                V766::RequestChunkRadiusPacket(pk) => pk,
+                V766::RequestNetworkSettingsPacket(pk) => pk,
+                V766::RequestPermissionsPacket(pk) => pk,
+                V766::ResourcePackChunkDataPacket(pk) => pk,
+                V766::ResourcePackChunkRequestPacket(pk) => pk,
+                V766::ResourcePackClientResponsePacket(pk) => pk,
+                V766::ResourcePackDataInfoPacket(pk) => pk,
+                V766::ResourcePackStackPacket(pk) => pk,
+                V766::ResourcePacksInfoPacket(pk) => pk,
+                V766::RespawnPacket(pk) => pk,
+                V766::ScriptMessagePacket(pk) => pk,
+                V766::ServerBoundDiagnosticsPacket(pk) => pk,
+                V766::ServerBoundLoadingScreenPacket(pk) => pk,
+                V766::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V766::ServerSettingsRequestPacket(pk) => pk,
+                V766::ServerSettingsResponsePacket(pk) => pk,
+                V766::ServerStatsPacket(pk) => pk,
+                V766::ServerToClientHandshakePacket(pk) => pk,
+                V766::SetActorDataPacket(pk) => pk,
+                V766::SetActorLinkPacket(pk) => pk,
+                V766::SetActorMotionPacket(pk) => pk,
+                V766::SetCommandsEnabledPacket(pk) => pk,
+                V766::SetDefaultGameTypePacket(pk) => pk,
+                V766::SetDifficultyPacket(pk) => pk,
+                V766::SetDisplayObjectivePacket(pk) => pk,
+                V766::SetHealthPacket(pk) => pk,
+                V766::SetHudPacket(pk) => pk,
+                V766::SetLastHurtByPacket(pk) => pk,
+                V766::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V766::SetMovementAuthorityPacket(pk) => pk,
+                V766::SetPlayerGameTypePacket(pk) => pk,
+                V766::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V766::SetScorePacket(pk) => pk,
+                V766::SetScoreboardIdentityPacket(pk) => pk,
+                V766::SetSpawnPositionPacket(pk) => pk,
+                V766::SetTimePacket(pk) => pk,
+                V766::SetTitlePacket(pk) => pk,
+                V766::SettingsCommandPacket(pk) => pk,
+                V766::ShowCreditsPacket(pk) => pk,
+                V766::ShowProfilePacket(pk) => pk,
+                V766::ShowStoreOfferPacket(pk) => pk,
+                V766::SimpleEventPacket(pk) => pk,
+                V766::SimulationTypePacket(pk) => pk,
+                V766::SpawnExperienceOrbPacket(pk) => pk,
+                V766::SpawnParticleEffectPacket(pk) => pk,
+                V766::StartGamePacket(pk) => pk,
+                V766::StopSoundPacket(pk) => pk,
+                V766::StructureBlockUpdatePacket(pk) => pk,
+                V766::StructureDataRequestPacket(pk) => pk,
+                V766::StructureDataResponsePacket(pk) => pk,
+                V766::SubChunkPacket(pk) => pk,
+                V766::SubChunkRequestPacket(pk) => pk,
+                V766::SubClientLoginPacket(pk) => pk,
+                V766::SyncActorPropertyPacket(pk) => pk,
+                V766::TakeItemActorPacket(pk) => pk,
+                V766::TextPacket(pk) => pk,
+                V766::TickingAreaLoadStatusPacket(pk) => pk,
+                V766::ToastRequestPacket(pk) => pk,
+                V766::TransferPlayerPacket(pk) => pk,
+                V766::TrimDataPacket(pk) => pk,
+                V766::UnlockedRecipesPacket(pk) => pk,
+                V766::UpdateAbilitiesPacket(pk) => pk,
+                V766::UpdateAdventureSettingsPacket(pk) => pk,
+                V766::UpdateAttributesPacket(pk) => pk,
+                V766::UpdateBlockPacket(pk) => pk,
+                V766::UpdateBlockSyncedPacket(pk) => pk,
+                V766::UpdateClientInputLocksPacket(pk) => pk,
+                V766::UpdateEquipPacket(pk) => pk,
+                V766::UpdatePlayerGameTypePacket(pk) => pk,
+                V766::UpdateSoftEnumPacket(pk) => pk,
+                V766::UpdateSubChunkBlocksPacket(pk) => pk,
+                V766::UpdateTradePacket(pk) => pk,
+                V766::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v766")]

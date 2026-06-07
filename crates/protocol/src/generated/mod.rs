@@ -1899,19 +1899,7 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
-    type ShapedChemistryRecipe: bedrock_protocol_core::ProtoCodec
-        + Clone
-        + std::fmt::Debug
-        + Send
-        + Sync
-        + 'static;
     type ShapedRecipe: bedrock_protocol_core::ProtoCodec
-        + Clone
-        + std::fmt::Debug
-        + Send
-        + Sync
-        + 'static;
-    type ShapelessChemistryRecipe: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send

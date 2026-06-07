@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bedrock_macros = { path = "../macros" }
-
 nbtx = { workspace = true }
 xuid = { workspace = true }
 
@@ -25,4 +23,5 @@ uuid = { workspace = true }
 strum = { workspace = true }
 
 [features]
-dyn-name = []
+packet-meta = []
+packet-dyn = []

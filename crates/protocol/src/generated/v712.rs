@@ -7164,415 +7164,609 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                V712::ActorEventPacket(pk) => pk.as_ref(),
-                V712::ActorPickRequestPacket(pk) => pk.as_ref(),
-                V712::AddActorPacket(pk) => pk.as_ref(),
-                V712::AddBehaviourTreePacket(pk) => pk.as_ref(),
-                V712::AddItemActorPacket(pk) => pk.as_ref(),
-                V712::AddPaintingPacket(pk) => pk.as_ref(),
-                V712::AddPlayerPacket(pk) => pk.as_ref(),
-                V712::AddVolumeEntityPacket(pk) => pk.as_ref(),
-                V712::AgentActionEventPacket(pk) => pk.as_ref(),
-                V712::AgentAnimationPacket(pk) => pk.as_ref(),
-                V712::AnimateEntityPacket(pk) => pk.as_ref(),
-                V712::AnimatePacket(pk) => pk.as_ref(),
-                V712::AnvilDamagePacket(pk) => pk.as_ref(),
-                V712::AutomationClientConnectPacket(pk) => pk.as_ref(),
-                V712::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
-                V712::AvailableCommandsPacket(pk) => pk.as_ref(),
-                V712::AwardAchievementPacket(pk) => pk.as_ref(),
-                V712::BiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V712::BlockActorDataPacket(pk) => pk.as_ref(),
-                V712::BlockEventPacket(pk) => pk.as_ref(),
-                V712::BlockPickRequestPacket(pk) => pk.as_ref(),
-                V712::BookEditPacket(pk) => pk.as_ref(),
-                V712::BossEventPacket(pk) => pk.as_ref(),
-                V712::CameraInstructionPacket(pk) => pk.as_ref(),
-                V712::CameraPacket(pk) => pk.as_ref(),
-                V712::CameraPresetsPacket(pk) => pk.as_ref(),
-                V712::CameraShakePacket(pk) => pk.as_ref(),
-                V712::ChangeDimensionPacket(pk) => pk.as_ref(),
-                V712::ChangeMobPropertyPacket(pk) => pk.as_ref(),
-                V712::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
-                V712::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
-                V712::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
-                V712::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
-                V712::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
-                V712::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
-                V712::ClientCacheStatusPacket(pk) => pk.as_ref(),
-                V712::ClientToServerHandshakePacket(pk) => pk.as_ref(),
-                V712::CodeBuilderPacket(pk) => pk.as_ref(),
-                V712::CodeBuilderSourcePacket(pk) => pk.as_ref(),
-                V712::CommandBlockUpdatePacket(pk) => pk.as_ref(),
-                V712::CommandOutputPacket(pk) => pk.as_ref(),
-                V712::CommandRequestPacket(pk) => pk.as_ref(),
-                V712::CompletedUsingItemPacket(pk) => pk.as_ref(),
-                V712::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
-                V712::ContainerClosePacket(pk) => pk.as_ref(),
-                V712::ContainerOpenPacket(pk) => pk.as_ref(),
-                V712::ContainerSetDataPacket(pk) => pk.as_ref(),
-                V712::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
-                V712::CraftingDataPacket(pk) => pk.as_ref(),
-                V712::CreatePhotoPacket(pk) => pk.as_ref(),
-                V712::CreativeContentPacket(pk) => pk.as_ref(),
-                V712::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
-                V712::DeathInfoPacket(pk) => pk.as_ref(),
-                V712::DebugInfoPacket(pk) => pk.as_ref(),
-                V712::DimensionDataPacket(pk) => pk.as_ref(),
-                V712::DisconnectPacket(pk) => pk.as_ref(),
-                V712::EditorNetworkPacket(pk) => pk.as_ref(),
-                V712::EduUriResourcePacket(pk) => pk.as_ref(),
-                V712::EducationSettingsPacket(pk) => pk.as_ref(),
-                V712::EmoteListPacket(pk) => pk.as_ref(),
-                V712::EmotePacket(pk) => pk.as_ref(),
-                V712::FeatureRegistryPacket(pk) => pk.as_ref(),
-                V712::GameRulesChangedPacket(pk) => pk.as_ref(),
-                V712::GameTestRequestPacket(pk) => pk.as_ref(),
-                V712::GameTestResultsPacket(pk) => pk.as_ref(),
-                V712::GuiDataPickItemPacket(pk) => pk.as_ref(),
-                V712::HurtArmorPacket(pk) => pk.as_ref(),
-                V712::InteractPacket(pk) => pk.as_ref(),
-                V712::InventoryContentPacket(pk) => pk.as_ref(),
-                V712::InventorySlotPacket(pk) => pk.as_ref(),
-                V712::InventoryTransactionPacket(pk) => pk.as_ref(),
-                V712::ItemComponentPacket(pk) => pk.as_ref(),
-                V712::ItemStackRequestPacket(pk) => pk.as_ref(),
-                V712::ItemStackResponsePacket(pk) => pk.as_ref(),
-                V712::JigsawStructureDataPacket(pk) => pk.as_ref(),
-                V712::LabTablePacket(pk) => pk.as_ref(),
-                V712::LecternUpdatePacket(pk) => pk.as_ref(),
-                V712::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
-                V712::LessonProgressPacket(pk) => pk.as_ref(),
-                V712::LevelChunkPacket(pk) => pk.as_ref(),
-                V712::LevelEventGenericPacket(pk) => pk.as_ref(),
-                V712::LevelEventPacket(pk) => pk.as_ref(),
-                V712::LevelSoundEventPacket(pk) => pk.as_ref(),
-                V712::LevelSoundEventV1Packet(pk) => pk.as_ref(),
-                V712::LevelSoundEventV2Packet(pk) => pk.as_ref(),
-                V712::LoginPacket(pk) => pk.as_ref(),
-                V712::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
-                V712::MapInfoRequestPacket(pk) => pk.as_ref(),
-                V712::MobArmorEquipmentPacket(pk) => pk.as_ref(),
-                V712::MobEffectPacket(pk) => pk.as_ref(),
-                V712::MobEquipmentPacket(pk) => pk.as_ref(),
-                V712::ModalFormRequestPacket(pk) => pk.as_ref(),
-                V712::ModalFormResponsePacket(pk) => pk.as_ref(),
-                V712::MotionPredictionHintsPacket(pk) => pk.as_ref(),
-                V712::MoveActorAbsolutePacket(pk) => pk.as_ref(),
-                V712::MoveActorDeltaPacket(pk) => pk.as_ref(),
-                V712::MovePlayerPacket(pk) => pk.as_ref(),
-                V712::MultiplayerSettingsPacket(pk) => pk.as_ref(),
-                V712::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
-                V712::NetworkSettingsPacket(pk) => pk.as_ref(),
-                V712::NetworkStackLatencyPacket(pk) => pk.as_ref(),
-                V712::NpcDialoguePacket(pk) => pk.as_ref(),
-                V712::NpcRequestPacket(pk) => pk.as_ref(),
-                V712::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
-                V712::OpenSignPacket(pk) => pk.as_ref(),
-                V712::PacketViolationWarningPacket(pk) => pk.as_ref(),
-                V712::PassengerJumpPacket(pk) => pk.as_ref(),
-                V712::PhotoTransferPacket(pk) => pk.as_ref(),
-                V712::PlaySoundPacket(pk) => pk.as_ref(),
-                V712::PlayStatusPacket(pk) => pk.as_ref(),
-                V712::PlayerActionPacket(pk) => pk.as_ref(),
-                V712::PlayerArmorDamagePacket(pk) => pk.as_ref(),
-                V712::PlayerAuthInputPacket(pk) => pk.as_ref(),
-                V712::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
-                V712::PlayerFogPacket(pk) => pk.as_ref(),
-                V712::PlayerHotbarPacket(pk) => pk.as_ref(),
-                V712::PlayerInputPacket(pk) => pk.as_ref(),
-                V712::PlayerListPacket(pk) => pk.as_ref(),
-                V712::PlayerSkinPacket(pk) => pk.as_ref(),
-                V712::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
-                V712::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
-                V712::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
-                V712::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
-                V712::PurchaseReceiptPacket(pk) => pk.as_ref(),
-                V712::RefreshEntitlementsPacket(pk) => pk.as_ref(),
-                V712::RemoveActorPacket(pk) => pk.as_ref(),
-                V712::RemoveObjectivePacket(pk) => pk.as_ref(),
-                V712::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
-                V712::RequestAbilityPacket(pk) => pk.as_ref(),
-                V712::RequestChunkRadiusPacket(pk) => pk.as_ref(),
-                V712::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                V712::RequestPermissionsPacket(pk) => pk.as_ref(),
-                V712::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
-                V712::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
-                V712::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
-                V712::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
-                V712::ResourcePackStackPacket(pk) => pk.as_ref(),
-                V712::ResourcePacksInfoPacket(pk) => pk.as_ref(),
-                V712::RespawnPacket(pk) => pk.as_ref(),
-                V712::ScriptMessagePacket(pk) => pk.as_ref(),
-                V712::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
-                V712::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
-                V712::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
-                V712::ServerSettingsRequestPacket(pk) => pk.as_ref(),
-                V712::ServerSettingsResponsePacket(pk) => pk.as_ref(),
-                V712::ServerStatsPacket(pk) => pk.as_ref(),
-                V712::ServerToClientHandshakePacket(pk) => pk.as_ref(),
-                V712::SetActorDataPacket(pk) => pk.as_ref(),
-                V712::SetActorLinkPacket(pk) => pk.as_ref(),
-                V712::SetActorMotionPacket(pk) => pk.as_ref(),
-                V712::SetCommandsEnabledPacket(pk) => pk.as_ref(),
-                V712::SetDefaultGameTypePacket(pk) => pk.as_ref(),
-                V712::SetDifficultyPacket(pk) => pk.as_ref(),
-                V712::SetDisplayObjectivePacket(pk) => pk.as_ref(),
-                V712::SetHealthPacket(pk) => pk.as_ref(),
-                V712::SetHudPacket(pk) => pk.as_ref(),
-                V712::SetLastHurtByPacket(pk) => pk.as_ref(),
-                V712::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
-                V712::SetPlayerGameTypePacket(pk) => pk.as_ref(),
-                V712::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
-                V712::SetScorePacket(pk) => pk.as_ref(),
-                V712::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
-                V712::SetSpawnPositionPacket(pk) => pk.as_ref(),
-                V712::SetTimePacket(pk) => pk.as_ref(),
-                V712::SetTitlePacket(pk) => pk.as_ref(),
-                V712::SettingsCommandPacket(pk) => pk.as_ref(),
-                V712::ShowCreditsPacket(pk) => pk.as_ref(),
-                V712::ShowProfilePacket(pk) => pk.as_ref(),
-                V712::ShowStoreOfferPacket(pk) => pk.as_ref(),
-                V712::SimpleEventPacket(pk) => pk.as_ref(),
-                V712::SimulationTypePacket(pk) => pk.as_ref(),
-                V712::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
-                V712::SpawnParticleEffectPacket(pk) => pk.as_ref(),
-                V712::StartGamePacket(pk) => pk.as_ref(),
-                V712::StopSoundPacket(pk) => pk.as_ref(),
-                V712::StructureBlockUpdatePacket(pk) => pk.as_ref(),
-                V712::StructureDataRequestPacket(pk) => pk.as_ref(),
-                V712::StructureDataResponsePacket(pk) => pk.as_ref(),
-                V712::SubChunkPacket(pk) => pk.as_ref(),
-                V712::SubChunkRequestPacket(pk) => pk.as_ref(),
-                V712::SubClientLoginPacket(pk) => pk.as_ref(),
-                V712::SyncActorPropertyPacket(pk) => pk.as_ref(),
-                V712::TakeItemActorPacket(pk) => pk.as_ref(),
-                V712::TextPacket(pk) => pk.as_ref(),
-                V712::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
-                V712::ToastRequestPacket(pk) => pk.as_ref(),
-                V712::TransferPlayerPacket(pk) => pk.as_ref(),
-                V712::TrimDataPacket(pk) => pk.as_ref(),
-                V712::UnlockedRecipesPacket(pk) => pk.as_ref(),
-                V712::UpdateAbilitiesPacket(pk) => pk.as_ref(),
-                V712::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
-                V712::UpdateAttributesPacket(pk) => pk.as_ref(),
-                V712::UpdateBlockPacket(pk) => pk.as_ref(),
-                V712::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
-                V712::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
-                V712::UpdateEquipPacket(pk) => pk.as_ref(),
-                V712::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
-                V712::UpdateSoftEnumPacket(pk) => pk.as_ref(),
-                V712::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
-                V712::UpdateTradePacket(pk) => pk.as_ref(),
-                V712::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                V712::ActorEventPacket(pk) => pk,
-                V712::ActorPickRequestPacket(pk) => pk,
-                V712::AddActorPacket(pk) => pk,
-                V712::AddBehaviourTreePacket(pk) => pk,
-                V712::AddItemActorPacket(pk) => pk,
-                V712::AddPaintingPacket(pk) => pk,
-                V712::AddPlayerPacket(pk) => pk,
-                V712::AddVolumeEntityPacket(pk) => pk,
-                V712::AgentActionEventPacket(pk) => pk,
-                V712::AgentAnimationPacket(pk) => pk,
-                V712::AnimateEntityPacket(pk) => pk,
-                V712::AnimatePacket(pk) => pk,
-                V712::AnvilDamagePacket(pk) => pk,
-                V712::AutomationClientConnectPacket(pk) => pk,
-                V712::AvailableActorIdentifiersPacket(pk) => pk,
-                V712::AvailableCommandsPacket(pk) => pk,
-                V712::AwardAchievementPacket(pk) => pk,
-                V712::BiomeDefinitionListPacket(pk) => pk,
-                V712::BlockActorDataPacket(pk) => pk,
-                V712::BlockEventPacket(pk) => pk,
-                V712::BlockPickRequestPacket(pk) => pk,
-                V712::BookEditPacket(pk) => pk,
-                V712::BossEventPacket(pk) => pk,
-                V712::CameraInstructionPacket(pk) => pk,
-                V712::CameraPacket(pk) => pk,
-                V712::CameraPresetsPacket(pk) => pk,
-                V712::CameraShakePacket(pk) => pk,
-                V712::ChangeDimensionPacket(pk) => pk,
-                V712::ChangeMobPropertyPacket(pk) => pk,
-                V712::ChunkRadiusUpdatedPacket(pk) => pk,
-                V712::ClientBoundCloseFormPacket(pk) => pk,
-                V712::ClientBoundDebugRendererPacket(pk) => pk,
-                V712::ClientBoundMapItemDataPacket(pk) => pk,
-                V712::ClientCacheBlobStatusPacket(pk) => pk,
-                V712::ClientCacheMissResponsePacket(pk) => pk,
-                V712::ClientCacheStatusPacket(pk) => pk,
-                V712::ClientToServerHandshakePacket(pk) => pk,
-                V712::CodeBuilderPacket(pk) => pk,
-                V712::CodeBuilderSourcePacket(pk) => pk,
-                V712::CommandBlockUpdatePacket(pk) => pk,
-                V712::CommandOutputPacket(pk) => pk,
-                V712::CommandRequestPacket(pk) => pk,
-                V712::CompletedUsingItemPacket(pk) => pk,
-                V712::CompressedBiomeDefinitionListPacket(pk) => pk,
-                V712::ContainerClosePacket(pk) => pk,
-                V712::ContainerOpenPacket(pk) => pk,
-                V712::ContainerSetDataPacket(pk) => pk,
-                V712::CorrectPlayerMovePredictionPacket(pk) => pk,
-                V712::CraftingDataPacket(pk) => pk,
-                V712::CreatePhotoPacket(pk) => pk,
-                V712::CreativeContentPacket(pk) => pk,
-                V712::CurrentStructureFeaturePacket(pk) => pk,
-                V712::DeathInfoPacket(pk) => pk,
-                V712::DebugInfoPacket(pk) => pk,
-                V712::DimensionDataPacket(pk) => pk,
-                V712::DisconnectPacket(pk) => pk,
-                V712::EditorNetworkPacket(pk) => pk,
-                V712::EduUriResourcePacket(pk) => pk,
-                V712::EducationSettingsPacket(pk) => pk,
-                V712::EmoteListPacket(pk) => pk,
-                V712::EmotePacket(pk) => pk,
-                V712::FeatureRegistryPacket(pk) => pk,
-                V712::GameRulesChangedPacket(pk) => pk,
-                V712::GameTestRequestPacket(pk) => pk,
-                V712::GameTestResultsPacket(pk) => pk,
-                V712::GuiDataPickItemPacket(pk) => pk,
-                V712::HurtArmorPacket(pk) => pk,
-                V712::InteractPacket(pk) => pk,
-                V712::InventoryContentPacket(pk) => pk,
-                V712::InventorySlotPacket(pk) => pk,
-                V712::InventoryTransactionPacket(pk) => pk,
-                V712::ItemComponentPacket(pk) => pk,
-                V712::ItemStackRequestPacket(pk) => pk,
-                V712::ItemStackResponsePacket(pk) => pk,
-                V712::JigsawStructureDataPacket(pk) => pk,
-                V712::LabTablePacket(pk) => pk,
-                V712::LecternUpdatePacket(pk) => pk,
-                V712::LegacyTelemetryEventPacket(pk) => pk,
-                V712::LessonProgressPacket(pk) => pk,
-                V712::LevelChunkPacket(pk) => pk,
-                V712::LevelEventGenericPacket(pk) => pk,
-                V712::LevelEventPacket(pk) => pk,
-                V712::LevelSoundEventPacket(pk) => pk,
-                V712::LevelSoundEventV1Packet(pk) => pk,
-                V712::LevelSoundEventV2Packet(pk) => pk,
-                V712::LoginPacket(pk) => pk,
-                V712::MapCreateLockedCopyPacket(pk) => pk,
-                V712::MapInfoRequestPacket(pk) => pk,
-                V712::MobArmorEquipmentPacket(pk) => pk,
-                V712::MobEffectPacket(pk) => pk,
-                V712::MobEquipmentPacket(pk) => pk,
-                V712::ModalFormRequestPacket(pk) => pk,
-                V712::ModalFormResponsePacket(pk) => pk,
-                V712::MotionPredictionHintsPacket(pk) => pk,
-                V712::MoveActorAbsolutePacket(pk) => pk,
-                V712::MoveActorDeltaPacket(pk) => pk,
-                V712::MovePlayerPacket(pk) => pk,
-                V712::MultiplayerSettingsPacket(pk) => pk,
-                V712::NetworkChunkPublisherUpdatePacket(pk) => pk,
-                V712::NetworkSettingsPacket(pk) => pk,
-                V712::NetworkStackLatencyPacket(pk) => pk,
-                V712::NpcDialoguePacket(pk) => pk,
-                V712::NpcRequestPacket(pk) => pk,
-                V712::OnScreenTextureAnimationPacket(pk) => pk,
-                V712::OpenSignPacket(pk) => pk,
-                V712::PacketViolationWarningPacket(pk) => pk,
-                V712::PassengerJumpPacket(pk) => pk,
-                V712::PhotoTransferPacket(pk) => pk,
-                V712::PlaySoundPacket(pk) => pk,
-                V712::PlayStatusPacket(pk) => pk,
-                V712::PlayerActionPacket(pk) => pk,
-                V712::PlayerArmorDamagePacket(pk) => pk,
-                V712::PlayerAuthInputPacket(pk) => pk,
-                V712::PlayerEnchantOptionsPacket(pk) => pk,
-                V712::PlayerFogPacket(pk) => pk,
-                V712::PlayerHotbarPacket(pk) => pk,
-                V712::PlayerInputPacket(pk) => pk,
-                V712::PlayerListPacket(pk) => pk,
-                V712::PlayerSkinPacket(pk) => pk,
-                V712::PlayerStartItemCooldownPacket(pk) => pk,
-                V712::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
-                V712::PositionTrackingDBClientRequestPacket(pk) => pk,
-                V712::PositionTrackingDBServerBroadcastPacket(pk) => pk,
-                V712::PurchaseReceiptPacket(pk) => pk,
-                V712::RefreshEntitlementsPacket(pk) => pk,
-                V712::RemoveActorPacket(pk) => pk,
-                V712::RemoveObjectivePacket(pk) => pk,
-                V712::RemoveVolumeEntityPacket(pk) => pk,
-                V712::RequestAbilityPacket(pk) => pk,
-                V712::RequestChunkRadiusPacket(pk) => pk,
-                V712::RequestNetworkSettingsPacket(pk) => pk,
-                V712::RequestPermissionsPacket(pk) => pk,
-                V712::ResourcePackChunkDataPacket(pk) => pk,
-                V712::ResourcePackChunkRequestPacket(pk) => pk,
-                V712::ResourcePackClientResponsePacket(pk) => pk,
-                V712::ResourcePackDataInfoPacket(pk) => pk,
-                V712::ResourcePackStackPacket(pk) => pk,
-                V712::ResourcePacksInfoPacket(pk) => pk,
-                V712::RespawnPacket(pk) => pk,
-                V712::ScriptMessagePacket(pk) => pk,
-                V712::ServerBoundDiagnosticsPacket(pk) => pk,
-                V712::ServerBoundLoadingScreenPacket(pk) => pk,
-                V712::ServerPlayerPostMovePositionPacket(pk) => pk,
-                V712::ServerSettingsRequestPacket(pk) => pk,
-                V712::ServerSettingsResponsePacket(pk) => pk,
-                V712::ServerStatsPacket(pk) => pk,
-                V712::ServerToClientHandshakePacket(pk) => pk,
-                V712::SetActorDataPacket(pk) => pk,
-                V712::SetActorLinkPacket(pk) => pk,
-                V712::SetActorMotionPacket(pk) => pk,
-                V712::SetCommandsEnabledPacket(pk) => pk,
-                V712::SetDefaultGameTypePacket(pk) => pk,
-                V712::SetDifficultyPacket(pk) => pk,
-                V712::SetDisplayObjectivePacket(pk) => pk,
-                V712::SetHealthPacket(pk) => pk,
-                V712::SetHudPacket(pk) => pk,
-                V712::SetLastHurtByPacket(pk) => pk,
-                V712::SetLocalPlayerAsInitializedPacket(pk) => pk,
-                V712::SetPlayerGameTypePacket(pk) => pk,
-                V712::SetPlayerInventoryOptionsPacket(pk) => pk,
-                V712::SetScorePacket(pk) => pk,
-                V712::SetScoreboardIdentityPacket(pk) => pk,
-                V712::SetSpawnPositionPacket(pk) => pk,
-                V712::SetTimePacket(pk) => pk,
-                V712::SetTitlePacket(pk) => pk,
-                V712::SettingsCommandPacket(pk) => pk,
-                V712::ShowCreditsPacket(pk) => pk,
-                V712::ShowProfilePacket(pk) => pk,
-                V712::ShowStoreOfferPacket(pk) => pk,
-                V712::SimpleEventPacket(pk) => pk,
-                V712::SimulationTypePacket(pk) => pk,
-                V712::SpawnExperienceOrbPacket(pk) => pk,
-                V712::SpawnParticleEffectPacket(pk) => pk,
-                V712::StartGamePacket(pk) => pk,
-                V712::StopSoundPacket(pk) => pk,
-                V712::StructureBlockUpdatePacket(pk) => pk,
-                V712::StructureDataRequestPacket(pk) => pk,
-                V712::StructureDataResponsePacket(pk) => pk,
-                V712::SubChunkPacket(pk) => pk,
-                V712::SubChunkRequestPacket(pk) => pk,
-                V712::SubClientLoginPacket(pk) => pk,
-                V712::SyncActorPropertyPacket(pk) => pk,
-                V712::TakeItemActorPacket(pk) => pk,
-                V712::TextPacket(pk) => pk,
-                V712::TickingAreaLoadStatusPacket(pk) => pk,
-                V712::ToastRequestPacket(pk) => pk,
-                V712::TransferPlayerPacket(pk) => pk,
-                V712::TrimDataPacket(pk) => pk,
-                V712::UnlockedRecipesPacket(pk) => pk,
-                V712::UpdateAbilitiesPacket(pk) => pk,
-                V712::UpdateAdventureSettingsPacket(pk) => pk,
-                V712::UpdateAttributesPacket(pk) => pk,
-                V712::UpdateBlockPacket(pk) => pk,
-                V712::UpdateBlockSyncedPacket(pk) => pk,
-                V712::UpdateClientInputLocksPacket(pk) => pk,
-                V712::UpdateEquipPacket(pk) => pk,
-                V712::UpdatePlayerGameTypePacket(pk) => pk,
-                V712::UpdateSoftEnumPacket(pk) => pk,
-                V712::UpdateSubChunkBlocksPacket(pk) => pk,
-                V712::UpdateTradePacket(pk) => pk,
-                V712::Unknown(pk) => pk,
+                V712::ActorEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ActorPickRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AddActorPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AddBehaviourTreePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AddItemActorPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AddPaintingPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AddPlayerPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AddVolumeEntityPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AgentActionEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AgentAnimationPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AnimateEntityPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AnimatePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AnvilDamagePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AutomationClientConnectPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AvailableActorIdentifiersPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AvailableCommandsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::AwardAchievementPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::BiomeDefinitionListPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::BlockActorDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::BlockEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::BlockPickRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::BookEditPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::BossEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CameraInstructionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CameraPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CameraPresetsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CameraShakePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ChangeDimensionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ChangeMobPropertyPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ChunkRadiusUpdatedPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientBoundCloseFormPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientBoundDebugRendererPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientBoundMapItemDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientCacheBlobStatusPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientCacheMissResponsePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientCacheStatusPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ClientToServerHandshakePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CodeBuilderPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CodeBuilderSourcePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CommandBlockUpdatePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CommandOutputPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CommandRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CompletedUsingItemPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CompressedBiomeDefinitionListPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CompressedBiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ContainerClosePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ContainerOpenPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ContainerSetDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CraftingDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CreatePhotoPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CreativeContentPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::CurrentStructureFeaturePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::DeathInfoPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::DebugInfoPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::DimensionDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::DisconnectPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::EditorNetworkPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::EduUriResourcePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::EducationSettingsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::EmoteListPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::EmotePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::FeatureRegistryPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::GameRulesChangedPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::GameTestRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::GameTestResultsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::GuiDataPickItemPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::HurtArmorPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::InteractPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::InventoryContentPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::InventorySlotPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::InventoryTransactionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ItemComponentPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ItemStackRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ItemStackResponsePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::JigsawStructureDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LabTablePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LecternUpdatePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LegacyTelemetryEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LessonProgressPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LevelChunkPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LevelEventGenericPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LevelEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LevelSoundEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LevelSoundEventV1Packet(_) => {
+                    <<V712 as ProtoVersionPackets>::LevelSoundEventV1Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LevelSoundEventV2Packet(_) => {
+                    <<V712 as ProtoVersionPackets>::LevelSoundEventV2Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V712::LoginPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MapCreateLockedCopyPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MapInfoRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MobArmorEquipmentPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MobEffectPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MobEquipmentPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ModalFormRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ModalFormResponsePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MotionPredictionHintsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MoveActorAbsolutePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MoveActorDeltaPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MovePlayerPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::MultiplayerSettingsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::NetworkSettingsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::NetworkStackLatencyPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::NpcDialoguePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::NpcRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::OnScreenTextureAnimationPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::OpenSignPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PacketViolationWarningPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PassengerJumpPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PassengerJumpPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PhotoTransferPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlaySoundPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayStatusPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerActionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerArmorDamagePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerAuthInputPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerEnchantOptionsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerFogPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerHotbarPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerInputPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerListPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerSkinPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerStartItemCooldownPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::PurchaseReceiptPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RefreshEntitlementsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RemoveActorPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RemoveObjectivePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RemoveVolumeEntityPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RequestAbilityPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RequestChunkRadiusPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RequestNetworkSettingsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RequestPermissionsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ResourcePackChunkDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ResourcePackChunkRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ResourcePackClientResponsePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ResourcePackDataInfoPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ResourcePackStackPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ResourcePacksInfoPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::RespawnPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ScriptMessagePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerBoundDiagnosticsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerBoundLoadingScreenPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerSettingsRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerSettingsResponsePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerStatsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ServerToClientHandshakePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetActorDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetActorLinkPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetActorMotionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetCommandsEnabledPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetDefaultGameTypePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetDifficultyPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetDisplayObjectivePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetHealthPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetHudPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetLastHurtByPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetPlayerGameTypePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetScorePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetScoreboardIdentityPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetSpawnPositionPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetTimePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SetTitlePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SettingsCommandPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ShowCreditsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ShowProfilePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ShowStoreOfferPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SimpleEventPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SimulationTypePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SpawnExperienceOrbPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SpawnParticleEffectPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::StartGamePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::StopSoundPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::StructureBlockUpdatePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::StructureDataRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::StructureDataResponsePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SubChunkPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SubChunkRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SubClientLoginPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::SyncActorPropertyPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::TakeItemActorPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::TextPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::TickingAreaLoadStatusPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::ToastRequestPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::TransferPlayerPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::TrimDataPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UnlockedRecipesPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateAbilitiesPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateAdventureSettingsPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateAttributesPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateBlockPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateBlockSyncedPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateClientInputLocksPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateEquipPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdatePlayerGameTypePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateSoftEnumPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateSubChunkBlocksPacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::UpdateTradePacket(_) => {
+                    <<V712 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V712::Unknown(pk) => pk.id,
             }
         }
     }
@@ -7650,7 +7844,7 @@ mod inner {
         type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
         type CorrectPlayerMovePredictionPacket =
             crate::version::v671::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
         type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
         type CreativeContentPacket = crate::version::v662::packets::CreativeContentPacket<Self>;
         type CurrentStructureFeaturePacket =
@@ -7953,9 +8147,7 @@ mod inner {
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v662::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
         type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
         type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v662::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
@@ -8091,6 +8283,422 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/21_u2";
         const GAME_VERSION: &str = "1.21.20";
         const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V712 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                V712::ActorEventPacket(pk) => pk.as_ref(),
+                V712::ActorPickRequestPacket(pk) => pk.as_ref(),
+                V712::AddActorPacket(pk) => pk.as_ref(),
+                V712::AddBehaviourTreePacket(pk) => pk.as_ref(),
+                V712::AddItemActorPacket(pk) => pk.as_ref(),
+                V712::AddPaintingPacket(pk) => pk.as_ref(),
+                V712::AddPlayerPacket(pk) => pk.as_ref(),
+                V712::AddVolumeEntityPacket(pk) => pk.as_ref(),
+                V712::AgentActionEventPacket(pk) => pk.as_ref(),
+                V712::AgentAnimationPacket(pk) => pk.as_ref(),
+                V712::AnimateEntityPacket(pk) => pk.as_ref(),
+                V712::AnimatePacket(pk) => pk.as_ref(),
+                V712::AnvilDamagePacket(pk) => pk.as_ref(),
+                V712::AutomationClientConnectPacket(pk) => pk.as_ref(),
+                V712::AvailableActorIdentifiersPacket(pk) => pk.as_ref(),
+                V712::AvailableCommandsPacket(pk) => pk.as_ref(),
+                V712::AwardAchievementPacket(pk) => pk.as_ref(),
+                V712::BiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V712::BlockActorDataPacket(pk) => pk.as_ref(),
+                V712::BlockEventPacket(pk) => pk.as_ref(),
+                V712::BlockPickRequestPacket(pk) => pk.as_ref(),
+                V712::BookEditPacket(pk) => pk.as_ref(),
+                V712::BossEventPacket(pk) => pk.as_ref(),
+                V712::CameraInstructionPacket(pk) => pk.as_ref(),
+                V712::CameraPacket(pk) => pk.as_ref(),
+                V712::CameraPresetsPacket(pk) => pk.as_ref(),
+                V712::CameraShakePacket(pk) => pk.as_ref(),
+                V712::ChangeDimensionPacket(pk) => pk.as_ref(),
+                V712::ChangeMobPropertyPacket(pk) => pk.as_ref(),
+                V712::ChunkRadiusUpdatedPacket(pk) => pk.as_ref(),
+                V712::ClientBoundCloseFormPacket(pk) => pk.as_ref(),
+                V712::ClientBoundDebugRendererPacket(pk) => pk.as_ref(),
+                V712::ClientBoundMapItemDataPacket(pk) => pk.as_ref(),
+                V712::ClientCacheBlobStatusPacket(pk) => pk.as_ref(),
+                V712::ClientCacheMissResponsePacket(pk) => pk.as_ref(),
+                V712::ClientCacheStatusPacket(pk) => pk.as_ref(),
+                V712::ClientToServerHandshakePacket(pk) => pk.as_ref(),
+                V712::CodeBuilderPacket(pk) => pk.as_ref(),
+                V712::CodeBuilderSourcePacket(pk) => pk.as_ref(),
+                V712::CommandBlockUpdatePacket(pk) => pk.as_ref(),
+                V712::CommandOutputPacket(pk) => pk.as_ref(),
+                V712::CommandRequestPacket(pk) => pk.as_ref(),
+                V712::CompletedUsingItemPacket(pk) => pk.as_ref(),
+                V712::CompressedBiomeDefinitionListPacket(pk) => pk.as_ref(),
+                V712::ContainerClosePacket(pk) => pk.as_ref(),
+                V712::ContainerOpenPacket(pk) => pk.as_ref(),
+                V712::ContainerSetDataPacket(pk) => pk.as_ref(),
+                V712::CorrectPlayerMovePredictionPacket(pk) => pk.as_ref(),
+                V712::CraftingDataPacket(pk) => pk.as_ref(),
+                V712::CreatePhotoPacket(pk) => pk.as_ref(),
+                V712::CreativeContentPacket(pk) => pk.as_ref(),
+                V712::CurrentStructureFeaturePacket(pk) => pk.as_ref(),
+                V712::DeathInfoPacket(pk) => pk.as_ref(),
+                V712::DebugInfoPacket(pk) => pk.as_ref(),
+                V712::DimensionDataPacket(pk) => pk.as_ref(),
+                V712::DisconnectPacket(pk) => pk.as_ref(),
+                V712::EditorNetworkPacket(pk) => pk.as_ref(),
+                V712::EduUriResourcePacket(pk) => pk.as_ref(),
+                V712::EducationSettingsPacket(pk) => pk.as_ref(),
+                V712::EmoteListPacket(pk) => pk.as_ref(),
+                V712::EmotePacket(pk) => pk.as_ref(),
+                V712::FeatureRegistryPacket(pk) => pk.as_ref(),
+                V712::GameRulesChangedPacket(pk) => pk.as_ref(),
+                V712::GameTestRequestPacket(pk) => pk.as_ref(),
+                V712::GameTestResultsPacket(pk) => pk.as_ref(),
+                V712::GuiDataPickItemPacket(pk) => pk.as_ref(),
+                V712::HurtArmorPacket(pk) => pk.as_ref(),
+                V712::InteractPacket(pk) => pk.as_ref(),
+                V712::InventoryContentPacket(pk) => pk.as_ref(),
+                V712::InventorySlotPacket(pk) => pk.as_ref(),
+                V712::InventoryTransactionPacket(pk) => pk.as_ref(),
+                V712::ItemComponentPacket(pk) => pk.as_ref(),
+                V712::ItemStackRequestPacket(pk) => pk.as_ref(),
+                V712::ItemStackResponsePacket(pk) => pk.as_ref(),
+                V712::JigsawStructureDataPacket(pk) => pk.as_ref(),
+                V712::LabTablePacket(pk) => pk.as_ref(),
+                V712::LecternUpdatePacket(pk) => pk.as_ref(),
+                V712::LegacyTelemetryEventPacket(pk) => pk.as_ref(),
+                V712::LessonProgressPacket(pk) => pk.as_ref(),
+                V712::LevelChunkPacket(pk) => pk.as_ref(),
+                V712::LevelEventGenericPacket(pk) => pk.as_ref(),
+                V712::LevelEventPacket(pk) => pk.as_ref(),
+                V712::LevelSoundEventPacket(pk) => pk.as_ref(),
+                V712::LevelSoundEventV1Packet(pk) => pk.as_ref(),
+                V712::LevelSoundEventV2Packet(pk) => pk.as_ref(),
+                V712::LoginPacket(pk) => pk.as_ref(),
+                V712::MapCreateLockedCopyPacket(pk) => pk.as_ref(),
+                V712::MapInfoRequestPacket(pk) => pk.as_ref(),
+                V712::MobArmorEquipmentPacket(pk) => pk.as_ref(),
+                V712::MobEffectPacket(pk) => pk.as_ref(),
+                V712::MobEquipmentPacket(pk) => pk.as_ref(),
+                V712::ModalFormRequestPacket(pk) => pk.as_ref(),
+                V712::ModalFormResponsePacket(pk) => pk.as_ref(),
+                V712::MotionPredictionHintsPacket(pk) => pk.as_ref(),
+                V712::MoveActorAbsolutePacket(pk) => pk.as_ref(),
+                V712::MoveActorDeltaPacket(pk) => pk.as_ref(),
+                V712::MovePlayerPacket(pk) => pk.as_ref(),
+                V712::MultiplayerSettingsPacket(pk) => pk.as_ref(),
+                V712::NetworkChunkPublisherUpdatePacket(pk) => pk.as_ref(),
+                V712::NetworkSettingsPacket(pk) => pk.as_ref(),
+                V712::NetworkStackLatencyPacket(pk) => pk.as_ref(),
+                V712::NpcDialoguePacket(pk) => pk.as_ref(),
+                V712::NpcRequestPacket(pk) => pk.as_ref(),
+                V712::OnScreenTextureAnimationPacket(pk) => pk.as_ref(),
+                V712::OpenSignPacket(pk) => pk.as_ref(),
+                V712::PacketViolationWarningPacket(pk) => pk.as_ref(),
+                V712::PassengerJumpPacket(pk) => pk.as_ref(),
+                V712::PhotoTransferPacket(pk) => pk.as_ref(),
+                V712::PlaySoundPacket(pk) => pk.as_ref(),
+                V712::PlayStatusPacket(pk) => pk.as_ref(),
+                V712::PlayerActionPacket(pk) => pk.as_ref(),
+                V712::PlayerArmorDamagePacket(pk) => pk.as_ref(),
+                V712::PlayerAuthInputPacket(pk) => pk.as_ref(),
+                V712::PlayerEnchantOptionsPacket(pk) => pk.as_ref(),
+                V712::PlayerFogPacket(pk) => pk.as_ref(),
+                V712::PlayerHotbarPacket(pk) => pk.as_ref(),
+                V712::PlayerInputPacket(pk) => pk.as_ref(),
+                V712::PlayerListPacket(pk) => pk.as_ref(),
+                V712::PlayerSkinPacket(pk) => pk.as_ref(),
+                V712::PlayerStartItemCooldownPacket(pk) => pk.as_ref(),
+                V712::PlayerToggleCrafterSlotRequestPacket(pk) => pk.as_ref(),
+                V712::PositionTrackingDBClientRequestPacket(pk) => pk.as_ref(),
+                V712::PositionTrackingDBServerBroadcastPacket(pk) => pk.as_ref(),
+                V712::PurchaseReceiptPacket(pk) => pk.as_ref(),
+                V712::RefreshEntitlementsPacket(pk) => pk.as_ref(),
+                V712::RemoveActorPacket(pk) => pk.as_ref(),
+                V712::RemoveObjectivePacket(pk) => pk.as_ref(),
+                V712::RemoveVolumeEntityPacket(pk) => pk.as_ref(),
+                V712::RequestAbilityPacket(pk) => pk.as_ref(),
+                V712::RequestChunkRadiusPacket(pk) => pk.as_ref(),
+                V712::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                V712::RequestPermissionsPacket(pk) => pk.as_ref(),
+                V712::ResourcePackChunkDataPacket(pk) => pk.as_ref(),
+                V712::ResourcePackChunkRequestPacket(pk) => pk.as_ref(),
+                V712::ResourcePackClientResponsePacket(pk) => pk.as_ref(),
+                V712::ResourcePackDataInfoPacket(pk) => pk.as_ref(),
+                V712::ResourcePackStackPacket(pk) => pk.as_ref(),
+                V712::ResourcePacksInfoPacket(pk) => pk.as_ref(),
+                V712::RespawnPacket(pk) => pk.as_ref(),
+                V712::ScriptMessagePacket(pk) => pk.as_ref(),
+                V712::ServerBoundDiagnosticsPacket(pk) => pk.as_ref(),
+                V712::ServerBoundLoadingScreenPacket(pk) => pk.as_ref(),
+                V712::ServerPlayerPostMovePositionPacket(pk) => pk.as_ref(),
+                V712::ServerSettingsRequestPacket(pk) => pk.as_ref(),
+                V712::ServerSettingsResponsePacket(pk) => pk.as_ref(),
+                V712::ServerStatsPacket(pk) => pk.as_ref(),
+                V712::ServerToClientHandshakePacket(pk) => pk.as_ref(),
+                V712::SetActorDataPacket(pk) => pk.as_ref(),
+                V712::SetActorLinkPacket(pk) => pk.as_ref(),
+                V712::SetActorMotionPacket(pk) => pk.as_ref(),
+                V712::SetCommandsEnabledPacket(pk) => pk.as_ref(),
+                V712::SetDefaultGameTypePacket(pk) => pk.as_ref(),
+                V712::SetDifficultyPacket(pk) => pk.as_ref(),
+                V712::SetDisplayObjectivePacket(pk) => pk.as_ref(),
+                V712::SetHealthPacket(pk) => pk.as_ref(),
+                V712::SetHudPacket(pk) => pk.as_ref(),
+                V712::SetLastHurtByPacket(pk) => pk.as_ref(),
+                V712::SetLocalPlayerAsInitializedPacket(pk) => pk.as_ref(),
+                V712::SetPlayerGameTypePacket(pk) => pk.as_ref(),
+                V712::SetPlayerInventoryOptionsPacket(pk) => pk.as_ref(),
+                V712::SetScorePacket(pk) => pk.as_ref(),
+                V712::SetScoreboardIdentityPacket(pk) => pk.as_ref(),
+                V712::SetSpawnPositionPacket(pk) => pk.as_ref(),
+                V712::SetTimePacket(pk) => pk.as_ref(),
+                V712::SetTitlePacket(pk) => pk.as_ref(),
+                V712::SettingsCommandPacket(pk) => pk.as_ref(),
+                V712::ShowCreditsPacket(pk) => pk.as_ref(),
+                V712::ShowProfilePacket(pk) => pk.as_ref(),
+                V712::ShowStoreOfferPacket(pk) => pk.as_ref(),
+                V712::SimpleEventPacket(pk) => pk.as_ref(),
+                V712::SimulationTypePacket(pk) => pk.as_ref(),
+                V712::SpawnExperienceOrbPacket(pk) => pk.as_ref(),
+                V712::SpawnParticleEffectPacket(pk) => pk.as_ref(),
+                V712::StartGamePacket(pk) => pk.as_ref(),
+                V712::StopSoundPacket(pk) => pk.as_ref(),
+                V712::StructureBlockUpdatePacket(pk) => pk.as_ref(),
+                V712::StructureDataRequestPacket(pk) => pk.as_ref(),
+                V712::StructureDataResponsePacket(pk) => pk.as_ref(),
+                V712::SubChunkPacket(pk) => pk.as_ref(),
+                V712::SubChunkRequestPacket(pk) => pk.as_ref(),
+                V712::SubClientLoginPacket(pk) => pk.as_ref(),
+                V712::SyncActorPropertyPacket(pk) => pk.as_ref(),
+                V712::TakeItemActorPacket(pk) => pk.as_ref(),
+                V712::TextPacket(pk) => pk.as_ref(),
+                V712::TickingAreaLoadStatusPacket(pk) => pk.as_ref(),
+                V712::ToastRequestPacket(pk) => pk.as_ref(),
+                V712::TransferPlayerPacket(pk) => pk.as_ref(),
+                V712::TrimDataPacket(pk) => pk.as_ref(),
+                V712::UnlockedRecipesPacket(pk) => pk.as_ref(),
+                V712::UpdateAbilitiesPacket(pk) => pk.as_ref(),
+                V712::UpdateAdventureSettingsPacket(pk) => pk.as_ref(),
+                V712::UpdateAttributesPacket(pk) => pk.as_ref(),
+                V712::UpdateBlockPacket(pk) => pk.as_ref(),
+                V712::UpdateBlockSyncedPacket(pk) => pk.as_ref(),
+                V712::UpdateClientInputLocksPacket(pk) => pk.as_ref(),
+                V712::UpdateEquipPacket(pk) => pk.as_ref(),
+                V712::UpdatePlayerGameTypePacket(pk) => pk.as_ref(),
+                V712::UpdateSoftEnumPacket(pk) => pk.as_ref(),
+                V712::UpdateSubChunkBlocksPacket(pk) => pk.as_ref(),
+                V712::UpdateTradePacket(pk) => pk.as_ref(),
+                V712::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V712> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V712) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                V712::ActorEventPacket(pk) => pk,
+                V712::ActorPickRequestPacket(pk) => pk,
+                V712::AddActorPacket(pk) => pk,
+                V712::AddBehaviourTreePacket(pk) => pk,
+                V712::AddItemActorPacket(pk) => pk,
+                V712::AddPaintingPacket(pk) => pk,
+                V712::AddPlayerPacket(pk) => pk,
+                V712::AddVolumeEntityPacket(pk) => pk,
+                V712::AgentActionEventPacket(pk) => pk,
+                V712::AgentAnimationPacket(pk) => pk,
+                V712::AnimateEntityPacket(pk) => pk,
+                V712::AnimatePacket(pk) => pk,
+                V712::AnvilDamagePacket(pk) => pk,
+                V712::AutomationClientConnectPacket(pk) => pk,
+                V712::AvailableActorIdentifiersPacket(pk) => pk,
+                V712::AvailableCommandsPacket(pk) => pk,
+                V712::AwardAchievementPacket(pk) => pk,
+                V712::BiomeDefinitionListPacket(pk) => pk,
+                V712::BlockActorDataPacket(pk) => pk,
+                V712::BlockEventPacket(pk) => pk,
+                V712::BlockPickRequestPacket(pk) => pk,
+                V712::BookEditPacket(pk) => pk,
+                V712::BossEventPacket(pk) => pk,
+                V712::CameraInstructionPacket(pk) => pk,
+                V712::CameraPacket(pk) => pk,
+                V712::CameraPresetsPacket(pk) => pk,
+                V712::CameraShakePacket(pk) => pk,
+                V712::ChangeDimensionPacket(pk) => pk,
+                V712::ChangeMobPropertyPacket(pk) => pk,
+                V712::ChunkRadiusUpdatedPacket(pk) => pk,
+                V712::ClientBoundCloseFormPacket(pk) => pk,
+                V712::ClientBoundDebugRendererPacket(pk) => pk,
+                V712::ClientBoundMapItemDataPacket(pk) => pk,
+                V712::ClientCacheBlobStatusPacket(pk) => pk,
+                V712::ClientCacheMissResponsePacket(pk) => pk,
+                V712::ClientCacheStatusPacket(pk) => pk,
+                V712::ClientToServerHandshakePacket(pk) => pk,
+                V712::CodeBuilderPacket(pk) => pk,
+                V712::CodeBuilderSourcePacket(pk) => pk,
+                V712::CommandBlockUpdatePacket(pk) => pk,
+                V712::CommandOutputPacket(pk) => pk,
+                V712::CommandRequestPacket(pk) => pk,
+                V712::CompletedUsingItemPacket(pk) => pk,
+                V712::CompressedBiomeDefinitionListPacket(pk) => pk,
+                V712::ContainerClosePacket(pk) => pk,
+                V712::ContainerOpenPacket(pk) => pk,
+                V712::ContainerSetDataPacket(pk) => pk,
+                V712::CorrectPlayerMovePredictionPacket(pk) => pk,
+                V712::CraftingDataPacket(pk) => pk,
+                V712::CreatePhotoPacket(pk) => pk,
+                V712::CreativeContentPacket(pk) => pk,
+                V712::CurrentStructureFeaturePacket(pk) => pk,
+                V712::DeathInfoPacket(pk) => pk,
+                V712::DebugInfoPacket(pk) => pk,
+                V712::DimensionDataPacket(pk) => pk,
+                V712::DisconnectPacket(pk) => pk,
+                V712::EditorNetworkPacket(pk) => pk,
+                V712::EduUriResourcePacket(pk) => pk,
+                V712::EducationSettingsPacket(pk) => pk,
+                V712::EmoteListPacket(pk) => pk,
+                V712::EmotePacket(pk) => pk,
+                V712::FeatureRegistryPacket(pk) => pk,
+                V712::GameRulesChangedPacket(pk) => pk,
+                V712::GameTestRequestPacket(pk) => pk,
+                V712::GameTestResultsPacket(pk) => pk,
+                V712::GuiDataPickItemPacket(pk) => pk,
+                V712::HurtArmorPacket(pk) => pk,
+                V712::InteractPacket(pk) => pk,
+                V712::InventoryContentPacket(pk) => pk,
+                V712::InventorySlotPacket(pk) => pk,
+                V712::InventoryTransactionPacket(pk) => pk,
+                V712::ItemComponentPacket(pk) => pk,
+                V712::ItemStackRequestPacket(pk) => pk,
+                V712::ItemStackResponsePacket(pk) => pk,
+                V712::JigsawStructureDataPacket(pk) => pk,
+                V712::LabTablePacket(pk) => pk,
+                V712::LecternUpdatePacket(pk) => pk,
+                V712::LegacyTelemetryEventPacket(pk) => pk,
+                V712::LessonProgressPacket(pk) => pk,
+                V712::LevelChunkPacket(pk) => pk,
+                V712::LevelEventGenericPacket(pk) => pk,
+                V712::LevelEventPacket(pk) => pk,
+                V712::LevelSoundEventPacket(pk) => pk,
+                V712::LevelSoundEventV1Packet(pk) => pk,
+                V712::LevelSoundEventV2Packet(pk) => pk,
+                V712::LoginPacket(pk) => pk,
+                V712::MapCreateLockedCopyPacket(pk) => pk,
+                V712::MapInfoRequestPacket(pk) => pk,
+                V712::MobArmorEquipmentPacket(pk) => pk,
+                V712::MobEffectPacket(pk) => pk,
+                V712::MobEquipmentPacket(pk) => pk,
+                V712::ModalFormRequestPacket(pk) => pk,
+                V712::ModalFormResponsePacket(pk) => pk,
+                V712::MotionPredictionHintsPacket(pk) => pk,
+                V712::MoveActorAbsolutePacket(pk) => pk,
+                V712::MoveActorDeltaPacket(pk) => pk,
+                V712::MovePlayerPacket(pk) => pk,
+                V712::MultiplayerSettingsPacket(pk) => pk,
+                V712::NetworkChunkPublisherUpdatePacket(pk) => pk,
+                V712::NetworkSettingsPacket(pk) => pk,
+                V712::NetworkStackLatencyPacket(pk) => pk,
+                V712::NpcDialoguePacket(pk) => pk,
+                V712::NpcRequestPacket(pk) => pk,
+                V712::OnScreenTextureAnimationPacket(pk) => pk,
+                V712::OpenSignPacket(pk) => pk,
+                V712::PacketViolationWarningPacket(pk) => pk,
+                V712::PassengerJumpPacket(pk) => pk,
+                V712::PhotoTransferPacket(pk) => pk,
+                V712::PlaySoundPacket(pk) => pk,
+                V712::PlayStatusPacket(pk) => pk,
+                V712::PlayerActionPacket(pk) => pk,
+                V712::PlayerArmorDamagePacket(pk) => pk,
+                V712::PlayerAuthInputPacket(pk) => pk,
+                V712::PlayerEnchantOptionsPacket(pk) => pk,
+                V712::PlayerFogPacket(pk) => pk,
+                V712::PlayerHotbarPacket(pk) => pk,
+                V712::PlayerInputPacket(pk) => pk,
+                V712::PlayerListPacket(pk) => pk,
+                V712::PlayerSkinPacket(pk) => pk,
+                V712::PlayerStartItemCooldownPacket(pk) => pk,
+                V712::PlayerToggleCrafterSlotRequestPacket(pk) => pk,
+                V712::PositionTrackingDBClientRequestPacket(pk) => pk,
+                V712::PositionTrackingDBServerBroadcastPacket(pk) => pk,
+                V712::PurchaseReceiptPacket(pk) => pk,
+                V712::RefreshEntitlementsPacket(pk) => pk,
+                V712::RemoveActorPacket(pk) => pk,
+                V712::RemoveObjectivePacket(pk) => pk,
+                V712::RemoveVolumeEntityPacket(pk) => pk,
+                V712::RequestAbilityPacket(pk) => pk,
+                V712::RequestChunkRadiusPacket(pk) => pk,
+                V712::RequestNetworkSettingsPacket(pk) => pk,
+                V712::RequestPermissionsPacket(pk) => pk,
+                V712::ResourcePackChunkDataPacket(pk) => pk,
+                V712::ResourcePackChunkRequestPacket(pk) => pk,
+                V712::ResourcePackClientResponsePacket(pk) => pk,
+                V712::ResourcePackDataInfoPacket(pk) => pk,
+                V712::ResourcePackStackPacket(pk) => pk,
+                V712::ResourcePacksInfoPacket(pk) => pk,
+                V712::RespawnPacket(pk) => pk,
+                V712::ScriptMessagePacket(pk) => pk,
+                V712::ServerBoundDiagnosticsPacket(pk) => pk,
+                V712::ServerBoundLoadingScreenPacket(pk) => pk,
+                V712::ServerPlayerPostMovePositionPacket(pk) => pk,
+                V712::ServerSettingsRequestPacket(pk) => pk,
+                V712::ServerSettingsResponsePacket(pk) => pk,
+                V712::ServerStatsPacket(pk) => pk,
+                V712::ServerToClientHandshakePacket(pk) => pk,
+                V712::SetActorDataPacket(pk) => pk,
+                V712::SetActorLinkPacket(pk) => pk,
+                V712::SetActorMotionPacket(pk) => pk,
+                V712::SetCommandsEnabledPacket(pk) => pk,
+                V712::SetDefaultGameTypePacket(pk) => pk,
+                V712::SetDifficultyPacket(pk) => pk,
+                V712::SetDisplayObjectivePacket(pk) => pk,
+                V712::SetHealthPacket(pk) => pk,
+                V712::SetHudPacket(pk) => pk,
+                V712::SetLastHurtByPacket(pk) => pk,
+                V712::SetLocalPlayerAsInitializedPacket(pk) => pk,
+                V712::SetPlayerGameTypePacket(pk) => pk,
+                V712::SetPlayerInventoryOptionsPacket(pk) => pk,
+                V712::SetScorePacket(pk) => pk,
+                V712::SetScoreboardIdentityPacket(pk) => pk,
+                V712::SetSpawnPositionPacket(pk) => pk,
+                V712::SetTimePacket(pk) => pk,
+                V712::SetTitlePacket(pk) => pk,
+                V712::SettingsCommandPacket(pk) => pk,
+                V712::ShowCreditsPacket(pk) => pk,
+                V712::ShowProfilePacket(pk) => pk,
+                V712::ShowStoreOfferPacket(pk) => pk,
+                V712::SimpleEventPacket(pk) => pk,
+                V712::SimulationTypePacket(pk) => pk,
+                V712::SpawnExperienceOrbPacket(pk) => pk,
+                V712::SpawnParticleEffectPacket(pk) => pk,
+                V712::StartGamePacket(pk) => pk,
+                V712::StopSoundPacket(pk) => pk,
+                V712::StructureBlockUpdatePacket(pk) => pk,
+                V712::StructureDataRequestPacket(pk) => pk,
+                V712::StructureDataResponsePacket(pk) => pk,
+                V712::SubChunkPacket(pk) => pk,
+                V712::SubChunkRequestPacket(pk) => pk,
+                V712::SubClientLoginPacket(pk) => pk,
+                V712::SyncActorPropertyPacket(pk) => pk,
+                V712::TakeItemActorPacket(pk) => pk,
+                V712::TextPacket(pk) => pk,
+                V712::TickingAreaLoadStatusPacket(pk) => pk,
+                V712::ToastRequestPacket(pk) => pk,
+                V712::TransferPlayerPacket(pk) => pk,
+                V712::TrimDataPacket(pk) => pk,
+                V712::UnlockedRecipesPacket(pk) => pk,
+                V712::UpdateAbilitiesPacket(pk) => pk,
+                V712::UpdateAdventureSettingsPacket(pk) => pk,
+                V712::UpdateAttributesPacket(pk) => pk,
+                V712::UpdateBlockPacket(pk) => pk,
+                V712::UpdateBlockSyncedPacket(pk) => pk,
+                V712::UpdateClientInputLocksPacket(pk) => pk,
+                V712::UpdateEquipPacket(pk) => pk,
+                V712::UpdatePlayerGameTypePacket(pk) => pk,
+                V712::UpdateSoftEnumPacket(pk) => pk,
+                V712::UpdateSubChunkBlocksPacket(pk) => pk,
+                V712::UpdateTradePacket(pk) => pk,
+                V712::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "v712")]
