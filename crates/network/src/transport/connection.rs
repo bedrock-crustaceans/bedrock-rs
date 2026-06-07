@@ -23,7 +23,7 @@ impl TransportLayerConnection {
                 buf.write_all(stream)?;
 
                 // TODO Find out if immediate: true should be used
-                conn.send(buf, RakReliability::ReliableOrdered, RakPriority::Normal)
+                conn.send(buf, RakReliability::ReliableOrdered, RakPriority::Immediate)
                     .await
                     .map_err(RakNetError::from)?;
             }
