@@ -46,7 +46,7 @@ impl<V: Packets> Connection<V> {
 
     pub fn get_socket_addr(&self) -> SocketAddr {
         match &self.transport_layer {
-            TransportLayerConnection::RakNet(rak) => rak.remote_addr(),
+            TransportLayerConnection::RakNet(rak) => rak.get_addr(),
         }
     }
 

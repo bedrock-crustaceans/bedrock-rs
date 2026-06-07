@@ -5,4 +5,5 @@ pub mod encryption;
 pub mod error;
 pub mod info;
 pub mod listener;
+pub mod motd;
 pub mod transport;

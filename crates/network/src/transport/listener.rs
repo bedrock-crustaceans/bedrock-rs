@@ -1,8 +1,9 @@
 use crate::error::{RakNetError, TransportLayerError};
 use crate::transport::TransportLayerConnection;
+use raknet_tokio::prelude::*;
 
 pub enum TransportLayerListener {
-    RakNet(raknet::Listener),
+    RakNet(RakServer),
     // TODO: NetherNet(...),
     // TODO: Quic(s2n_quic::server::Server),
     // TODO: Tcp(...),
@@ -11,10 +12,7 @@ pub enum TransportLayerListener {
 impl TransportLayerListener {
     pub async fn start(&mut self) -> Result<(), TransportLayerError> {
         match self {
-            Self::RakNet(listener) => listener
-                .start()
-                .await
-                .map_err(|err| TransportLayerError::RakNetError(RakNetError::ServerError(err)))?,
+            Self::RakNet(listener) => listener.start().await.map_err(RakNetError::from)?,
         };
 
         Ok(())
@@ -22,24 +20,17 @@ impl TransportLayerListener {
 
     pub async fn stop(&mut self) -> Result<(), TransportLayerError> {
         match self {
-            Self::RakNet(listener) => listener
-                .stop()
-                .await
-                .map_err(|err| TransportLayerError::RakNetError(RakNetError::ServerError(err)))?,
+            Self::RakNet(listener) => listener.stop(),
         }
 
         Ok(())
     }
 
-    pub async fn accept(&mut self) -> Result<TransportLayerConnection, TransportLayerError> {
+    pub async fn accept(&mut self) -> Option<TransportLayerConnection> {
         let conn = match self {
-            Self::RakNet(listener) => {
-                TransportLayerConnection::RakNet(listener.accept().await.map_err(|err| {
-                    TransportLayerError::RakNetError(RakNetError::ServerError(err))
-                })?)
-            }
+            Self::RakNet(listener) => TransportLayerConnection::RakNet(listener.accept().await?),
         };
 
-        Ok(conn)
+        Some(conn)
     }
 }
