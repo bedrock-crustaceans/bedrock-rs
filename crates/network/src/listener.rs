@@ -80,9 +80,9 @@ impl Listener {
         Ok(())
     }
 
-    pub async fn accept<V: Packets>(&mut self) -> Option<Connection<V>> {
+    pub async fn accept<V: Packets>(&mut self) -> Result<Connection<V>, ListenerError> {
         let rak_conn = self.listener.accept().await?;
 
-        Some(Connection::from_transport_conn(rak_conn))
+        Ok(Connection::from_transport_conn(rak_conn))
     }
 }

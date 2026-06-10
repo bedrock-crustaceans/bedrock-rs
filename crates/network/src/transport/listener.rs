@@ -26,11 +26,13 @@ impl TransportLayerListener {
         Ok(())
     }
 
-    pub async fn accept(&mut self) -> Option<TransportLayerConnection> {
+    pub async fn accept(&mut self) -> Result<TransportLayerConnection, TransportLayerError> {
         let conn = match self {
-            Self::RakNet(listener) => TransportLayerConnection::RakNet(listener.accept().await?),
+            Self::RakNet(listener) => TransportLayerConnection::RakNet(
+                listener.accept().await.map_err(RakNetError::from)?,
+            ),
         };
 
-        Some(conn)
+        Ok(conn)
     }
 }

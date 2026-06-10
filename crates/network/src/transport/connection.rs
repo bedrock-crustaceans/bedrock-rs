@@ -35,11 +35,7 @@ impl TransportLayerConnection {
     pub async fn recv(&mut self) -> Result<Vec<u8>, TransportLayerError> {
         let stream = match self {
             Self::RakNet(conn) => {
-                let stream: Vec<u8> = conn
-                    .recv()
-                    .await
-                    .ok_or(RakSessionError::Closed)
-                    .map_err(RakNetError::from)?;
+                let stream: Vec<u8> = conn.recv().await.map_err(RakNetError::from)?;
 
                 let mut stream = Cursor::new(stream);
 
