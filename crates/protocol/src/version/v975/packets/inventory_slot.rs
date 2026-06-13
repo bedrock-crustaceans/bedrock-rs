@@ -9,6 +9,6 @@ pub struct InventorySlotPacket<V: ProtoVersion> {
     #[endianness(var)]
     pub slot: u32,
     pub container_name_data: Option<V::FullContainerName>,
-    pub storage_item: Option<V::NetworkItemStackDescriptor>,
-    pub item: V::NetworkItemStackDescriptor,
+    pub storage_item: Option<V::NetworkItemStackDescriptorV2>,
+    pub item: V::NetworkItemStackDescriptorV2,
 }

@@ -768,6 +768,7 @@ versions![
             % InventorySlotPacket: InventorySlotPacket^,
             % LevelSoundEventPacket: LevelSoundEventPacket^,
             % LocatorBarPacket: LocatorBarPacket,
+            % MobEquipmentPacket: MobEquipmentPacket^,
             % MovementPredictionSyncPacket: MovementPredictionSyncPacket^,
             % PartyChangedPacket: PartyChangedPacket,
             % PlaySoundPacket: PlaySoundPacket^,
@@ -777,6 +778,7 @@ versions![
         types: [
             + BiomeNoiseGradientSurfaceData: BiomeNoiseGradientSurfaceData,
             + BiomeSurfaceBuilderData: BiomeSurfaceBuilderData^,
+            + NetworkItemStackDescriptorV2: NetworkItemStackDescriptorV2,
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % DebugShape: DebugShape^,
             % DimensionDefinitionGroup: DimensionDefinitionGroup,
@@ -786,5 +788,35 @@ versions![
             % ActorFlags: ActorFlags,
             % LevelSoundEventType: LevelSoundEventType,
         ] in crate::version::v975::enums,
+    },
+    (1001, "r/26_u3", "1.26.30"): {
+        packets: [
+            + ClientBoundUpdateSoundDataPacket: ClientBoundUpdateSoundDataPacket,
+            + PartyDestinationCookieResponsePacket: PartyDestinationCookieResponsePacket,
+            + SendPartyDestinationCookiePacket: SendPartyDestinationCookiePacket,
+            % BossEventPacket: BossEventPacket^,
+            % ClientBoundAttributeLayerSyncPacket: ClientBoundAttributeLayerSyncPacket,
+            % ClientCacheBlobStatusPacket: ClientCacheBlobStatusPacket,
+            % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
+            % InventoryContentPacket: InventoryContentPacket^,
+            % InventoryTransactionPacket: InventoryTransactionPacket^,
+            % LevelSoundEventPacket: LevelSoundEventPacket,
+            % MobArmorEquipmentPacket: MobArmorEquipmentPacket^,
+            % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
+            % ServerPresenceInfoPacket: ServerPresenceInfoPacket,
+            % StartGamePacket: StartGamePacket^,
+            % SubChunkRequestPacket: SubChunkRequestPacket^,
+        ] in crate::version::v1001::packets,
+        types: [
+            % BiomeNoiseGradientSurfaceData: BiomeNoiseGradientSurfaceData,
+            % DebugShape: DebugShape^,
+            % InventoryAction: InventoryAction^,
+            % LevelSettings: LevelSettings^,
+        ] in crate::version::v1001::types,
+        enums: [
+            % ConnectionFailReason: ConnectionFailReason,
+            % LevelSoundEventType: LevelSoundEventType,
+            % MovementEffectType: MovementEffectType,
+        ] in crate::version::v1001::enums,
     }
 ];

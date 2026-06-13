@@ -276,6 +276,12 @@ pub trait ProtoVersionPackets {
         + Send
         + Sync
         + 'static;
+    type ClientBoundUpdateSoundDataPacket: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type ClientCacheBlobStatusPacket: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -762,6 +768,12 @@ pub trait ProtoVersionPackets {
         + Send
         + Sync
         + 'static;
+    type PartyDestinationCookieResponsePacket: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type PassengerJumpPacket: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -985,6 +997,12 @@ pub trait ProtoVersionPackets {
         + Sync
         + 'static;
     type ScriptMessagePacket: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type SendPartyDestinationCookiePacket: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -1833,6 +1851,12 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
+    type NetworkItemStackDescriptorV2: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type NetworkPermissions: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -2667,3 +2691,5 @@ mod v944;
 pub use v944::*;
 mod v975;
 pub use v975::*;
+mod v1001;
+pub use v1001::*;

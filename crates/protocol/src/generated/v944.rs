@@ -8795,6 +8795,7 @@ mod inner {
             crate::version::v662::packets::ClientBoundMapItemDataPacket<Self>;
         type ClientBoundTextureShiftPacket =
             crate::version::v924::packets::ClientBoundTextureShiftPacket;
+        type ClientBoundUpdateSoundDataPacket = ();
         type ClientCacheBlobStatusPacket =
             crate::version::v662::packets::ClientCacheBlobStatusPacket;
         type ClientCacheMissResponsePacket =
@@ -8894,6 +8895,7 @@ mod inner {
         type PacketViolationWarningPacket =
             crate::version::v662::packets::PacketViolationWarningPacket<Self>;
         type PartyChangedPacket = crate::version::v944::packets::PartyChangedPacket;
+        type PartyDestinationCookieResponsePacket = ();
         type PassengerJumpPacket = ();
         type PhotoTransferPacket = crate::version::v662::packets::PhotoTransferPacket<Self>;
         type PlaySoundPacket = crate::version::v662::packets::PlaySoundPacket<Self>;
@@ -8946,6 +8948,7 @@ mod inner {
             crate::version::v944::packets::ResourcePacksReadyForValidationPacket;
         type RespawnPacket = crate::version::v662::packets::RespawnPacket<Self>;
         type ScriptMessagePacket = crate::version::v662::packets::ScriptMessagePacket;
+        type SendPartyDestinationCookiePacket = ();
         type ServerBoundDataDrivenClosedPacket =
             crate::version::v944::packets::ServerBoundDataDrivenClosedPacket;
         type ServerBoundDataStorePacket = crate::version::v924::packets::ServerBoundDataStorePacket;
@@ -9123,6 +9126,7 @@ mod inner {
         type NetworkItemInstanceDescriptor =
             crate::version::v662::types::NetworkItemInstanceDescriptor;
         type NetworkItemStackDescriptor = crate::version::v662::types::NetworkItemStackDescriptor;
+        type NetworkItemStackDescriptorV2 = ();
         type NetworkPermissions = crate::version::v662::types::NetworkPermissions;
         type PackedItemUseLegacyInventoryTransaction =
             crate::version::v944::types::PackedItemUseLegacyInventoryTransaction<Self>;

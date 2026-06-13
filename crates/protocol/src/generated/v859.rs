@@ -8177,6 +8177,7 @@ mod inner {
         type ClientBoundMapItemDataPacket =
             crate::version::v662::packets::ClientBoundMapItemDataPacket<Self>;
         type ClientBoundTextureShiftPacket = ();
+        type ClientBoundUpdateSoundDataPacket = ();
         type ClientCacheBlobStatusPacket =
             crate::version::v662::packets::ClientCacheBlobStatusPacket;
         type ClientCacheMissResponsePacket =
@@ -8276,6 +8277,7 @@ mod inner {
         type PacketViolationWarningPacket =
             crate::version::v662::packets::PacketViolationWarningPacket<Self>;
         type PartyChangedPacket = ();
+        type PartyDestinationCookieResponsePacket = ();
         type PassengerJumpPacket = ();
         type PhotoTransferPacket = crate::version::v662::packets::PhotoTransferPacket<Self>;
         type PlaySoundPacket = crate::version::v662::packets::PlaySoundPacket<Self>;
@@ -8327,6 +8329,7 @@ mod inner {
         type ResourcePacksReadyForValidationPacket = ();
         type RespawnPacket = crate::version::v662::packets::RespawnPacket<Self>;
         type ScriptMessagePacket = crate::version::v662::packets::ScriptMessagePacket;
+        type SendPartyDestinationCookiePacket = ();
         type ServerBoundDataDrivenClosedPacket = ();
         type ServerBoundDataStorePacket = ();
         type ServerBoundDiagnosticsPacket =
@@ -8503,6 +8506,7 @@ mod inner {
         type NetworkItemInstanceDescriptor =
             crate::version::v662::types::NetworkItemInstanceDescriptor;
         type NetworkItemStackDescriptor = crate::version::v662::types::NetworkItemStackDescriptor;
+        type NetworkItemStackDescriptorV2 = ();
         type NetworkPermissions = crate::version::v662::types::NetworkPermissions;
         type PackedItemUseLegacyInventoryTransaction =
             crate::version::v712::types::PackedItemUseLegacyInventoryTransaction<Self>;

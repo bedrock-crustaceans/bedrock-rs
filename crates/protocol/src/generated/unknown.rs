@@ -165,6 +165,7 @@ mod inner {
         type ClientBoundDebugRendererPacket = ();
         type ClientBoundMapItemDataPacket = ();
         type ClientBoundTextureShiftPacket = ();
+        type ClientBoundUpdateSoundDataPacket = ();
         type ClientCacheBlobStatusPacket = ();
         type ClientCacheMissResponsePacket = ();
         type ClientCacheStatusPacket = ();
@@ -246,6 +247,7 @@ mod inner {
         type OpenSignPacket = ();
         type PacketViolationWarningPacket = ();
         type PartyChangedPacket = ();
+        type PartyDestinationCookieResponsePacket = ();
         type PassengerJumpPacket = ();
         type PhotoTransferPacket = ();
         type PlaySoundPacket = ();
@@ -285,6 +287,7 @@ mod inner {
         type ResourcePacksReadyForValidationPacket = ();
         type RespawnPacket = ();
         type ScriptMessagePacket = ();
+        type SendPartyDestinationCookiePacket = ();
         type ServerBoundDataDrivenClosedPacket = ();
         type ServerBoundDataStorePacket = ();
         type ServerBoundDiagnosticsPacket = ();
@@ -428,6 +431,7 @@ mod inner {
         type NetworkBlockPosition = ();
         type NetworkItemInstanceDescriptor = ();
         type NetworkItemStackDescriptor = ();
+        type NetworkItemStackDescriptorV2 = ();
         type NetworkPermissions = ();
         type PackedItemUseLegacyInventoryTransaction = ();
         type PlayerBlockActionData = ();

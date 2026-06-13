@@ -16,7 +16,7 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 
 [features]
-default = ["v975"]
+default = ["v1001"]
 
 unknown = []
 v662 = []
@@ -39,6 +39,7 @@ v898 = []
 v924 = []
 v944 = []
 v975 = []
+v1001 = []
 all = [
     "unknown",
     "v662",
@@ -60,7 +61,8 @@ all = [
     "v898",
     "v924",
     "v944",
-    "v975"
+    "v975",
+    "v1001"
 ]
 
 packet-dyn = ["bedrock_protocol_core/packet-dyn"]
