@@ -1,0 +1,12 @@
+(
+    meta: (
+        name: Some("Unknown"),
+        protocol: 0,
+        branch: "r/0_u0",
+        version: "0.0.0",
+        raknet: Some(10)
+    ),
+    packets: [
+        Added(name: "RequestNetworkSettingsPacket")
+    ]
+)

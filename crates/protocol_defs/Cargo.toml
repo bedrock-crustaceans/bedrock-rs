@@ -1,0 +1,10 @@
+[package]
+name = "bedrock_protocol_defs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rust-embed = "8"
+ron = "0.12"
+serde = "1"
+serde_derive = "1"
