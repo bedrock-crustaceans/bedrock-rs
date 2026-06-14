@@ -15,13 +15,16 @@ use bedrock::protocol::v662::types::{
 use bedrock::protocol::v818::packets::ResourcePacksInfoPacket;
 use bedrock::protocol::v818::types::SyncedPlayerMovementSettings;
 use bedrock::protocol::v898::packets::ResourcePackStackPacket;
-use bedrock::protocol::v924::types::{GameRuleLegacyData, LevelSettings};
-use bedrock::protocol::v944::packets::{StartGamePacket, VoxelShapesPacket};
+use bedrock::protocol::v944::packets::VoxelShapesPacket;
 use bedrock::protocol::v944::types::NetworkBlockPosition;
-use bedrock::protocol::{ProtoVersion, Unknown, V975};
+use bedrock::protocol::{ProtoVersion, Unknown, V1001};
+use bedrock_protocol::v1001::packets::StartGamePacket;
+use bedrock_protocol::v1001::types::{GameRuleLegacyData, LevelSettings};
 use std::collections::HashMap;
 use tokio::time::Instant;
 use uuid::Uuid;
+
+type Protocol = V1001;
 
 #[tokio::main]
 async fn main() {
@@ -29,9 +32,9 @@ async fn main() {
         "127.0.0.1:19132".parse().unwrap(),
         "Bedrock in Rust".to_string(),
         "bedrock-rs".to_string(),
-        V975::GAME_VERSION.to_string(),
-        V975::PROTOCOL_VERSION,
-        V975::RAKNET_VERSION,
+        Protocol::GAME_VERSION.to_string(),
+        Protocol::PROTOCOL_VERSION,
+        Protocol::RAKNET_VERSION,
         100,
         10,
         false,
@@ -57,9 +60,9 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let packets = unknown_conn.recv().await.unwrap();
     let mut conn = match packets.first() {
         Some(Unknown::RequestNetworkSettingsPacket(request))
-            if request.client_network_version == V975::PROTOCOL_VERSION as i32 =>
+            if request.client_network_version == Protocol::PROTOCOL_VERSION as i32 =>
         {
-            unknown_conn.into_ver::<V975>()
+            unknown_conn.into_ver::<Protocol>()
         }
         _ => {
             unknown_conn.close().await;
@@ -72,7 +75,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     let compression = Compression::None;
 
     // NetworkSettings
-    conn.send(&[V975::NetworkSettingsPacket(Box::new(
+    conn.send(&[Protocol::NetworkSettingsPacket(Box::new(
         NetworkSettingsPacket {
             compression_threshold: 1,
             compression_algorithm: PacketCompressionAlgorithm::None,
@@ -92,10 +95,10 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     println!("Login");
 
     conn.send(&[
-        V975::PlayStatusPacket(Box::new(PlayStatusPacket {
+        Protocol::PlayStatusPacket(Box::new(PlayStatusPacket {
             status: PlayStatus::LoginSuccess,
         })),
-        V975::ResourcePacksInfoPacket(Box::new(ResourcePacksInfoPacket {
+        Protocol::ResourcePacksInfoPacket(Box::new(ResourcePacksInfoPacket {
             resource_pack_required: false,
             has_addon_packs: false,
             has_scripts: false,
@@ -104,7 +107,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             resource_packs: vec![],
             world_template_version: "".to_string(),
         })),
-        V975::ResourcePackStackPacket(Box::new(ResourcePackStackPacket {
+        Protocol::ResourcePackStackPacket(Box::new(ResourcePackStackPacket {
             texture_pack_required: false,
             addon_list: vec![],
             base_game_version: BaseGameVersion(String::from("1.0")),
@@ -126,7 +129,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     println!("{:#?}", conn.recv().await.unwrap());
     println!("ResourcePackClientResponse");
 
-    conn.send(&[V975::VoxelShapesPacket(Box::new(VoxelShapesPacket {
+    conn.send(&[Protocol::VoxelShapesPacket(Box::new(VoxelShapesPacket {
         shapes: vec![],
         names: vec![],
         custom_shape_count: 0,
@@ -193,7 +196,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             persona_disabled: false,
             custom_skins_disabled: false,
             emote_chat_muted: false,
-            base_game_version: BaseGameVersion(V975::GAME_VERSION.to_string()),
+            base_game_version: BaseGameVersion(Protocol::GAME_VERSION.to_string()),
             limited_world_width: 16,
             limited_world_depth: 16,
             nether_type: true,
@@ -204,6 +207,8 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             override_force_experimental_gameplay: Some(true),
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
+            server_editor_connection_policy: 0,
+            allow_anonymous_block_drops_in_editor_worlds: false,
         },
         level_id: String::from("UmFuZG9tIFdvcmxk"),
         level_name: String::from("Random World"),
@@ -218,7 +223,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         block_properties: vec![],
         multiplayer_correlation_id: String::from("c5d3d2cc-27fd-4221-9de6-d22c4d423d53"),
         enable_item_stack_net_manager: false,
-        server_version: V975::GAME_VERSION.to_string(),
+        server_version: Protocol::GAME_VERSION.to_string(),
         player_property_data: HashMap::new(),
         server_block_type_registry_checksum: 0,
         world_template_id: Uuid::nil(),
@@ -227,6 +232,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         network_permissions: NetworkPermissions {
             server_auth_sound_enabled: false,
         },
+        is_logging_chat: false,
         server_join_information: None,
         server_id: "".to_string(),
         world_id: "".to_string(),
@@ -234,12 +240,12 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         owner_id: "".to_string(),
     };
 
-    conn.send(&[V975::StartGamePacket(Box::new(packet1))])
+    conn.send(&[Protocol::StartGamePacket(Box::new(packet1))])
         .await
         .unwrap();
     println!("StartGame");
 
-    conn.send(&[V975::PlayStatusPacket(Box::new(PlayStatusPacket {
+    conn.send(&[Protocol::PlayStatusPacket(Box::new(PlayStatusPacket {
         status: PlayStatus::PlayerSpawn,
     }))])
     .await
