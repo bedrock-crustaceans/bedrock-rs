@@ -1,0 +1,10 @@
+(
+    id: 193,
+    ident: "RequestNetworkSettingsPacket",
+    fields: [
+        (
+            ident: "client_network_version", 
+            type: I32(BigEndian)
+        )
+    ]
+)

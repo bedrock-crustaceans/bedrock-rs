@@ -22,19 +22,9 @@ pub struct Meta {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Change {
-    Added {
-        name: Box<str>,
-        #[serde(default)]
-        versioned: bool,
-    },
-    Modified {
-        name: Box<str>,
-        #[serde(default)]
-        versioned: bool,
-    },
-    Removed {
-        name: Box<str>,
-    },
+    Added(Box<str>),
+    Removed(Box<str>),
+    Modified(Box<str>),
 }
 
 #[cfg(test)]
