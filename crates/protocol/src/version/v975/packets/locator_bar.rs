@@ -30,9 +30,9 @@ pub struct LocatorBarWaypoint {
     pub update_flag: u32,
     pub visible: Option<bool>,
     pub world_position: Option<LocatorBarWaypointWorldPosition>,
-    pub texture_path: String,
+    pub texture_path: Option<String>,
     #[endianness(le)]
-    pub icon_size: (f32, f32),
+    pub icon_size: Option<(f32, f32)>,
     #[endianness(le)]
     pub color: Option<i32>,
     pub client_authority: Option<bool>,

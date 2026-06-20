@@ -38,8 +38,8 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub is_logging_chat: bool,
     pub server_join_information: Option<ServerJoinInformation>,
     pub server_id: String,
-    pub world_id: String,
     pub scenario_id: String,
+    pub world_id: String,
     pub owner_id: String,
 }
 
@@ -59,13 +59,13 @@ pub struct ServerJoinInformation {
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GatheringJoinInfo {
-    pub experience_id: String,
-    pub experience_name: Option<String>,
-    pub experience_world_id: String,
-    pub experience_world_name: Option<String>,
+    pub experience_id: Uuid,
+    pub experience_name: String,
+    pub experience_world_id: Uuid,
+    pub experience_world_name: String,
     pub creator_id: String,
-    pub unknown1: Uuid, // TODO: find out what this is
-    pub unknown2: Uuid, // TODO: find out what this is
+    pub target_id: Uuid,
+    pub scenario_id: String,
     pub server_id: String,
 }
 

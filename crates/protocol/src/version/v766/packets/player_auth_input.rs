@@ -6,6 +6,7 @@ use player_auth_input_packet::{
     ClientPredictedVehicleData, PerformItemStackRequestData, PlayerAuthInputFlags,
 };
 use std::io::{Read, Write};
+use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 144)]
 #[derive(Clone, Debug)]
@@ -116,7 +117,7 @@ pub mod player_auth_input_packet {
     #[derive(ProtoCodec, Clone, Debug)]
     pub struct PerformItemStackRequestData<V: ProtoVersion> {
         #[endianness(var)]
-        pub client_request_id: u32,
+        pub client_request_id: i32,
         pub actions: Vec<ActionsEntry<V>>,
         pub strings_to_filter: Vec<String>,
         pub strings_to_filter_origin: V::TextProcessingEventOrigin,
@@ -156,10 +157,11 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
-            <Vec<V::PlayerBlockActionData> as ProtoCodec>::serialize(
-                self.player_block_actions.as_ref().ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?,
-                stream,
-            )?;
+            let vec = self.player_block_actions.as_ref().ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?;
+            stream.write_i32_varint(vec.len() as i32)?;
+            for a in vec {
+                <V::PlayerBlockActionData as ProtoCodec>::serialize(a, stream)?;
+            }
         }
         if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u128 != 0 {
             <ClientPredictedVehicleData<V> as ProtoCodec>::serialize(
@@ -204,7 +206,14 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             };
         let player_block_actions =
             match input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
-                true => Some(<Vec<V::PlayerBlockActionData> as ProtoCodec>::deserialize(stream)?),
+                true => {
+                    let len = stream.read_i32_varint()?;
+                    let mut vec = Vec::with_capacity(len.max(0) as usize);
+                    for _ in 0..len {
+                        vec.push(<V::PlayerBlockActionData as ProtoCodec>::deserialize(stream)?);
+                    }
+                    Some(vec)
+                }
                 false => None,
             };
         let client_predicted_vehicle =
@@ -261,7 +270,10 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
-                true => self.player_block_actions.as_ref().map_or(0, ProtoCodec::size_hint),
+                true => self.player_block_actions.as_ref().map_or(0, |vec| {
+                    <i32 as ProtoCodecVAR>::size_hint(&(vec.len() as i32))
+                        + vec.iter().map(ProtoCodec::size_hint).sum::<usize>()
+                }),
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u128 != 0

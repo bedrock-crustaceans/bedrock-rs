@@ -26,7 +26,7 @@ pub enum ClientBoundDataStoreUpdate {
         property: String,
         #[endianness(le)]
         update_count: u32,
-        new_value: ClientBoundDataStoreValue,
+        new_value: ClientBoundDataStorePropertyValue,
     } = 1,
     Remove {
         data_store_name: String,
@@ -41,4 +41,22 @@ pub enum ClientBoundDataStoreValue {
     Double(#[endianness(le)] f64) = 0,
     Bool(bool) = 1,
     String(String) = 2,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(i32)]
+#[enum_endianness(le)]
+#[repr(i32)]
+pub enum ClientBoundDataStorePropertyValue {
+    None = 0,
+    Bool(bool) = 1,
+    Int64(#[endianness(le)] i64) = 2,
+    String(String) = 4,
+    Map(Vec<DataStoreMapEntry>) = 6,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct DataStoreMapEntry {
+    pub key: String,
+    pub value: ClientBoundDataStorePropertyValue,
 }

@@ -7,6 +7,7 @@ pub struct CameraInstruction<V: ProtoVersion> {
     pub clear: Option<bool>,
     pub fade: Option<FadeInstruction>,
     pub target: Option<TargetInstruction<V>>,
+    pub remove_target: Option<bool>,
 }
 
 // VERIFY: SetInstruction & FadeInstruction

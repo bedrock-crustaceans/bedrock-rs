@@ -11,7 +11,7 @@ pub struct DebugShape<V: ProtoVersion> {
     #[endianness(le)]
     pub scale: Option<f32>,
     #[endianness(le)]
-    pub rotation: Option<(f32, f32)>,
+    pub rotation: Option<(f32, f32, f32)>,
     #[endianness(le)]
     pub remaining_duration: Option<f32>,
     pub color: Option<V::Color>,

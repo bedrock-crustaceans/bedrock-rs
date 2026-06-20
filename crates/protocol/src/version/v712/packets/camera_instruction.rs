@@ -5,5 +5,4 @@ use bedrock_macros::{packet, ProtoCodec};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraInstructionPacket<V: ProtoVersion> {
     pub camera_instruction: V::CameraInstruction,
-    pub remove_target: Option<bool>,
 }
