@@ -83,6 +83,12 @@ fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, Netwo
         let mut buf = packets_stream.by_ref().take(buf_len as u64);
 
         packets.push(T::deserialize(&mut buf)?.0);
+
+        // drain bytes the deserializer left behind so the next packet's length prefix stays aligned
+        if buf.limit() > 0 {
+            tracing::warn!("packet deserializer left {} unread bytes, skipping to next packet", buf.limit());
+            std::io::copy(&mut buf, &mut std::io::sink())?;
+        }
     }
 
     Ok(packets)
