@@ -4,11 +4,7 @@ use crate::error::NetworkCodecError;
 use bedrock_protocol_core::{PacketHeader, Packets, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write};
 
-pub fn encode_packets<T: Packets>(
-    packets: &[T],
-    compression: Option<&Compression>,
-    encryption: Option<&mut Encryption>,
-) -> Result<Vec<u8>, NetworkCodecError> {
+pub fn encode_packets<T: Packets>(packets: &[T], compression: Option<&Compression>, encryption: Option<&mut Encryption>) -> Result<Vec<u8>, NetworkCodecError> {
     tracing::trace!("Encoding packets");
 
     let mut packets_stream = batch_packets::<T>(packets)?;
@@ -18,11 +14,7 @@ pub fn encode_packets<T: Packets>(
     Ok(packets_stream)
 }
 
-pub fn decode_packets<T: Packets>(
-    mut packets_stream: Vec<u8>,
-    compression: Option<&Compression>,
-    encryption: Option<&mut Encryption>,
-) -> Result<Vec<T>, NetworkCodecError> {
+pub fn decode_packets<T: Packets>(mut packets_stream: Vec<u8>, compression: Option<&Compression>, encryption: Option<&mut Encryption>) -> Result<Vec<T>, NetworkCodecError> {
     tracing::trace!("Decoding packets");
 
     packets_stream = decrypt_packets(packets_stream, encryption)?;
@@ -48,24 +40,22 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError
 
     let mut packets_stream = Vec::with_capacity(packets_stream_size);
 
-    packets
-        .iter()
-        .try_for_each(|packet| -> Result<(), NetworkCodecError> {
-            let header = PacketHeader {
-                packet_id: packet.id(),
-                sender_sub_client_id: 0,
-                target_sub_client_id: 0,
-            };
+    packets.iter().try_for_each(|packet| -> Result<(), NetworkCodecError> {
+        let header = PacketHeader {
+            packet_id: packet.id(),
+            sender_sub_client_id: 0,
+            target_sub_client_id: 0,
+        };
 
-            let mut buf = Vec::with_capacity(packet.size_hint(&header));
+        let mut buf = Vec::with_capacity(packet.size_hint(&header));
 
-            packet.serialize(&header, &mut buf)?;
+        packet.serialize(&header, &mut buf)?;
 
-            <u32 as ProtoCodecVAR>::serialize(&(buf.len() as u32), &mut packets_stream)?;
-            packets_stream.write_all(&buf)?;
+        <u32 as ProtoCodecVAR>::serialize(&(buf.len() as u32), &mut packets_stream)?;
+        packets_stream.write_all(&buf)?;
 
-            Ok(())
-        })?;
+        Ok(())
+    })?;
 
     Ok(packets_stream)
 }
@@ -95,10 +85,7 @@ fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, Netwo
     Ok(packets)
 }
 
-pub fn compress_packets(
-    mut packet_stream: Vec<u8>,
-    compression: Option<&Compression>,
-) -> Result<Vec<u8>, NetworkCodecError> {
+pub fn compress_packets(mut packet_stream: Vec<u8>, compression: Option<&Compression>) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(compression) = compression {
         packet_stream = compression.compress(packet_stream)?;
     }
@@ -106,10 +93,7 @@ pub fn compress_packets(
     Ok(packet_stream)
 }
 
-pub fn decompress_packets(
-    mut packet_stream: Vec<u8>,
-    compression: Option<&Compression>,
-) -> Result<Vec<u8>, NetworkCodecError> {
+pub fn decompress_packets(mut packet_stream: Vec<u8>, compression: Option<&Compression>) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(compression) = compression {
         packet_stream = compression.decompress(packet_stream)?;
     }
@@ -117,10 +101,7 @@ pub fn decompress_packets(
     Ok(packet_stream)
 }
 
-pub fn encrypt_packets(
-    mut packet_stream: Vec<u8>,
-    encryption: Option<&mut Encryption>,
-) -> Result<Vec<u8>, NetworkCodecError> {
+pub fn encrypt_packets(mut packet_stream: Vec<u8>, encryption: Option<&mut Encryption>) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(encryption) = encryption {
         packet_stream = encryption.encrypt(packet_stream)?;
     }
@@ -128,10 +109,7 @@ pub fn encrypt_packets(
     Ok(packet_stream)
 }
 
-pub fn decrypt_packets(
-    mut packet_stream: Vec<u8>,
-    encryption: Option<&mut Encryption>,
-) -> Result<Vec<u8>, NetworkCodecError> {
+pub fn decrypt_packets(mut packet_stream: Vec<u8>, encryption: Option<&mut Encryption>) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(encryption) = encryption {
         packet_stream = encryption.decrypt(packet_stream)?;
     }
