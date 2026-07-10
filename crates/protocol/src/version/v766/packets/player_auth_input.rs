@@ -156,10 +156,13 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
-            <Vec<V::PlayerBlockActionData> as ProtoCodec>::serialize(
-                self.player_block_actions.as_ref().ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?,
-                stream,
-            )?;
+            {
+                let vec = self.player_block_actions.as_ref().ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?;
+                <i32 as ProtoCodecVAR>::serialize(&(vec.len() as i32), stream)?;
+                for i in vec {
+                    V::PlayerBlockActionData::serialize(i, stream)?;
+                }
+            }
         }
         if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u128 != 0 {
             <ClientPredictedVehicleData<V> as ProtoCodec>::serialize(
@@ -204,7 +207,14 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             };
         let player_block_actions =
             match input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
-                true => Some(<Vec<V::PlayerBlockActionData> as ProtoCodec>::deserialize(stream)?),
+                true => Some({
+                    let len = <i32 as ProtoCodecVAR>::deserialize(stream)?;
+                    let mut vec = Vec::with_capacity(len as usize);
+                    for _ in 0..len {
+                        vec.push(V::PlayerBlockActionData::deserialize(stream)?);
+                    }
+                    vec
+                }),
                 false => None,
             };
         let client_predicted_vehicle =
@@ -261,7 +271,10 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::PerformBlockActions as u128 != 0 {
-                true => self.player_block_actions.as_ref().map_or(0, ProtoCodec::size_hint),
+                true => self.player_block_actions.as_ref().map_or(0, |vec| {
+                    <i32 as ProtoCodecVAR>::size_hint(&(vec.len() as i32))
+                        + vec.iter().map(V::PlayerBlockActionData::size_hint).sum::<usize>()
+                }),
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u128 != 0
