@@ -1,6 +1,5 @@
 pub mod biome;
 pub mod bits;
-pub mod block_entities;
 pub mod color;
 pub mod db;
 pub mod error;
@@ -9,6 +8,8 @@ pub mod iter;
 pub mod key;
 pub mod lazy;
 pub mod player;
+pub mod provider;
+pub mod serde_helpers;
 pub mod settings;
 pub mod subchunk;
 pub mod traits;
@@ -39,16 +40,3 @@ impl UnpackingMethod for Lazy {
 }
 
 pub mod prelude {}
-
-#[inline]
-pub(crate) fn deserialize_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::Deserialize;
-
-    match i8::deserialize(deserializer)? {
-        0 => Ok(false),
-        _ => Ok(true),
-    }
-}

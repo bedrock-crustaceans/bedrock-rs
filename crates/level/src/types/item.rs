@@ -1,4 +1,4 @@
-use crate::deserialize_bool;
+use crate::serde_helpers::deserialize_bool;
 use crate::subchunk::BlockDef;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

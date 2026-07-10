@@ -4,11 +4,9 @@ use std::io::Cursor;
 
 use bedrock_level::Greedy;
 use bedrock_level::biome::Biomes;
-use bedrock_level::block_entities::BlockEntity;
 use bedrock_level::player::PlayerData;
 use bedrock_level::settings::LevelSettings;
 use bedrock_level::subchunk::BlockDef;
-use bedrock_level::traits::CursorExt;
 use bedrock_level::types::BlockPosition;
 use bedrock_level::{
     db::Database,
@@ -65,50 +63,6 @@ fn read_local_player() {
             let data = kv.value();
             let nbt: PlayerData = nbtx::from_le_bytes(&mut data.as_ref()).unwrap();
             println!("{nbt:#?}");
-        }
-    }
-}
-
-#[test]
-fn read_block_entity() {
-    let db = open_test_db();
-    let mut keys = db.keys().unwrap();
-    println!("keys count: {}", keys.count());
-    drop(keys);
-
-    let mut keys = db.keys().unwrap();
-
-    for kv in &mut keys {
-        let mut key_buf = Cursor::new(kv.key());
-        // println!("key_buf: {key_buf:?}");
-
-        let Ok(key) = Key::deserialize(&mut key_buf) else {
-            println!("failed: {:?}", String::from_utf8_lossy(key_buf.get_ref()));
-            continue;
-        };
-
-        println!("key: {key:?}");
-
-        match key.data {
-            KeyVariant::BlockEntity => {
-                let mut untyped_value = Cursor::new(kv.value());
-                let mut typed_value = Cursor::new(kv.value());
-
-                while untyped_value.has_remaining() {
-                    let untyped: nbtx::Value = nbtx::from_le_bytes(&mut untyped_value).unwrap();
-
-                    match BlockEntity::from_disk(&mut typed_value) {
-                        Ok(typed) => {
-                            println!("{typed:?}");
-                        }
-                        Err(err) => {
-                            dbg!(untyped);
-                            panic!("{err:?}");
-                        }
-                    }
-                }
-            }
-            _ => {}
         }
     }
 }
