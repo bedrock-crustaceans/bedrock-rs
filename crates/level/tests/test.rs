@@ -4,9 +4,11 @@ use std::io::Cursor;
 
 use bedrock_level::Greedy;
 use bedrock_level::biome::Biomes;
+use bedrock_level::block_entities::BlockEntity;
 use bedrock_level::player::PlayerData;
 use bedrock_level::settings::LevelSettings;
 use bedrock_level::subchunk::BlockDef;
+use bedrock_level::traits::CursorExt;
 use bedrock_level::types::BlockPosition;
 use bedrock_level::{
     db::Database,
@@ -52,7 +54,7 @@ fn read_level_dat() {
 #[ignore = "currently not properly implemented"]
 fn read_local_player() {
     let db = open_test_db();
-    let mut keys = db.keys();
+    let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
         let mut key_buf = Cursor::new(kv.key());
@@ -70,11 +72,11 @@ fn read_local_player() {
 #[test]
 fn read_block_entity() {
     let db = open_test_db();
-    let mut keys = db.keys();
+    let mut keys = db.keys().unwrap();
     println!("keys count: {}", keys.count());
     drop(keys);
 
-    let mut keys = db.keys();
+    let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
         let mut key_buf = Cursor::new(kv.key());
@@ -114,7 +116,7 @@ fn read_block_entity() {
 #[test]
 fn read_biome() {
     let db = open_test_db();
-    let mut keys = db.keys();
+    let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
         let mut key_buf = Cursor::new(kv.key());
@@ -148,7 +150,7 @@ fn read_biome() {
 #[test]
 fn read_subchunk() {
     let db = open_test_db();
-    let mut keys = db.keys();
+    let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
         let mut key_buf = Cursor::new(kv.key());
