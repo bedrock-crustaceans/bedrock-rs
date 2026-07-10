@@ -11,7 +11,7 @@ pub struct ResourcePackDataInfoPacket<V: ProtoVersion> {
     pub chunk_amount: u32,
     #[endianness(le)]
     pub file_size: u64,
-    pub file_hash: String,
+    pub file_hash: Vec<u8>,
     pub is_premium: bool,
     pub pack_type: V::PackType,
 }

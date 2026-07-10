@@ -1,10 +1,11 @@
 use crate::error::{RakNetError, TransportLayerError};
 use crate::info::RAKNET_GAMEPACKET_ID;
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use raknet_tokio::prelude::*;
 use std::io::{Cursor, Write};
 
 pub enum TransportLayerConnection {
-    RakNet(rak_rs::connection::Connection),
+    RakNet(RakSession),
     // TODO: NetherNet(nethernet::connection::Connection),
     // TODO: Quic(s2n_quic::stream::BidirectionalStream),
     // TODO: Tcp(net::TcpStream),
@@ -15,16 +16,16 @@ impl TransportLayerConnection {
         match self {
             Self::RakNet(conn) => {
                 // 1 = RAKNET_GAMEPACKET_ID size
-                let mut str = Vec::with_capacity(stream.len() + 1);
+                let mut buf = Vec::with_capacity(stream.len() + 1);
 
                 // TODO Find out a way to avoid copying of the entire buffer
-                str.write_u8(RAKNET_GAMEPACKET_ID)?;
-                str.write_all(stream)?;
+                buf.write_u8(RAKNET_GAMEPACKET_ID)?;
+                buf.write_all(stream)?;
 
                 // TODO Find out if immediate: true should be used
-                conn.send(str.as_slice(), true)
+                conn.send(buf, RakReliability::ReliableOrdered, RakPriority::Immediate)
                     .await
-                    .map_err(|err| TransportLayerError::RakNetError(RakNetError::SendError(err)))?;
+                    .map_err(RakNetError::from)?;
             }
         }
 
@@ -34,10 +35,7 @@ impl TransportLayerConnection {
     pub async fn recv(&mut self) -> Result<Vec<u8>, TransportLayerError> {
         let stream = match self {
             Self::RakNet(conn) => {
-                let stream = conn
-                    .recv()
-                    .await
-                    .map_err(|e| TransportLayerError::RakNetError(RakNetError::RecvError(e)))?;
+                let stream: Vec<u8> = conn.recv().await.map_err(RakNetError::from)?;
 
                 let mut stream = Cursor::new(stream);
 
@@ -63,7 +61,7 @@ impl TransportLayerConnection {
     pub async fn close(&self) {
         match self {
             Self::RakNet(conn) => {
-                conn.close().await;
+                let _ = conn.close().await;
             }
         }
     }

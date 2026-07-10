@@ -1,7 +1,7 @@
-use io::Error as IOError;
-use std::io;
-
 use bedrock_protocol_core::error::{PacketCodecError, ProtoCodecError};
+use io::Error as IOError;
+use raknet_tokio::prelude::{RakServerError, RakSessionError};
+use std::io;
 use thiserror::Error;
 
 use crate::info::RAKNET_GAMEPACKET_ID;
@@ -36,29 +36,27 @@ pub enum TransportLayerError {
     IOError(#[from] IOError),
     #[error("RakNet Error: {0}")]
     RakNetError(#[from] RakNetError),
-    #[error("Quic Error: {0}")]
-    QuicError(#[from] QuicError),
+    // #[error("Quic Error: {0}")]
+    // QuicError(#[from] QuicError),
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug)]
 pub enum RakNetError {
-    #[error("Receive Error: {0}")]
-    RecvError(#[from] rak_rs::connection::RecvError),
-    #[error("Send Error: {0}")]
-    SendError(#[from] rak_rs::connection::queue::SendQueueError),
+    #[error("Session Error: {0}")]
+    SessionError(#[from] RakSessionError),
     #[error("Server Error: {0}")]
-    ServerError(#[from] rak_rs::error::server::ServerError),
+    ServerError(#[from] RakServerError),
     #[error("Invalid RakNet Header (expected: {RAKNET_GAMEPACKET_ID}, got: {0})")]
     InvalidRakNetHeader(u8),
     #[error("Format Error: {0}")]
     FormatError(&'static str),
 }
 
-#[derive(Error, Debug, Clone)]
-pub enum QuicError {
-    // #[error("Stream Error: {0}")]
-    // StreamError(s2n_quic::stream::Error),
-}
+// #[derive(Error, Debug, Clone)]
+// pub enum QuicError {
+//     // #[error("Stream Error: {0}")]
+//     // StreamError(s2n_quic::stream::Error),
+// }
 
 #[derive(Error, Debug)]
 pub enum NetworkCodecError {

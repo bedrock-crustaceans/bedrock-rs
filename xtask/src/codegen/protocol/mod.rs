@@ -244,15 +244,21 @@ pub fn build(input: TokenStream, path: &std::path::Path) -> syn::Result<TokenStr
             }
         });
 
+        let packet_id = previous_packets.keys().map(|name| {
+            quote! {
+                #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID,
+            }
+        });
+
         let packet_size_hint = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::size_hint(pk.as_ref()), }
         });
 
-        let packet_inner = previous_packets.keys().map(|name| {
+        let packet_dyn_as_ref = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(pk) => pk.as_ref(), }
         });
 
-        let packet_into_inner = previous_packets.keys().map(|name| {
+        let packet_dyn_into = previous_packets.keys().map(|name| {
             quote! { #struct_ident::#name(pk) => pk, }
         });
 
@@ -320,18 +326,10 @@ pub fn build(input: TokenStream, path: &std::path::Path) -> syn::Result<TokenStr
                 }
 
                 #[inline]
-                fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+                fn id(&self) -> u16 {
                     match self {
-                        #(#packet_inner)*
-                        #struct_ident::Unknown(pk) => pk.as_ref(),
-                    }
-                }
-
-                #[inline]
-                fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-                    match self {
-                        #(#packet_into_inner)*
-                        #struct_ident::Unknown(pk) => pk,
+                        #(#packet_id)*
+                        #struct_ident::Unknown(pk) => pk.id,
                     }
                 }
             }
@@ -353,6 +351,26 @@ pub fn build(input: TokenStream, path: &std::path::Path) -> syn::Result<TokenStr
                 const PROTOCOL_BRANCH: &str = #branch;
                 const GAME_VERSION: &str = #game_version;
                 const RAKNET_VERSION: u8 = #raknet_version;
+            }
+
+            #[cfg(feature = "packet-dyn")]
+            impl AsRef<dyn bedrock_protocol_core::PacketDyn> for #struct_ident {
+                fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+                    match self {
+                        #(#packet_dyn_as_ref)*
+                        #struct_ident::Unknown(pk) => pk.as_ref(),
+                    }
+                }
+            }
+
+            #[cfg(feature = "packet-dyn")]
+            impl From<#struct_ident> for Box<dyn bedrock_protocol_core::PacketDyn> {
+                fn from(val: #struct_ident) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+                    match val {
+                        #(#packet_dyn_into)*
+                        #struct_ident::Unknown(pk) => pk,
+                    }
+                }
             }
         };
 

@@ -12,7 +12,7 @@ use std::io::{Read, Write};
 pub struct PlayerAuthInputPacket<V: ProtoVersion> {
     pub player_rotation: (f32, f32),
     pub player_position: (f32, f32, f32),
-    pub move_vector: (f32, f32, f32),
+    pub move_vector: (f32, f32),
     pub player_head_rotation: f32,
     pub input_data: u64,
     pub input_mode: V::InputMode,
@@ -115,7 +115,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         <(f32, f32) as ProtoCodecLE>::serialize(&self.player_rotation, stream)?;
         <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.player_position, stream)?;
-        <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.move_vector, stream)?;
+        <(f32, f32) as ProtoCodecLE>::serialize(&self.move_vector, stream)?;
         <f32 as ProtoCodecLE>::serialize(&self.player_head_rotation, stream)?;
         <u64 as ProtoCodecVAR>::serialize(&self.input_data, stream)?;
         <V::InputMode as ProtoCodec>::serialize(&self.input_mode, stream)?;
@@ -123,7 +123,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         <V::NewInteractionModel as ProtoCodec>::serialize(&self.new_interaction_model, stream)?;
         if let ClientPlayMode::Reality = &self.play_mode {
             <(f32, f32, f32) as ProtoCodecLE>::serialize(
-                self.vr_gaze_direction.as_ref().unwrap(),
+                self.vr_gaze_direction.as_ref().ok_or(ProtoCodecError::ExpectedSome("vr_gaze_direction"))?,
                 stream,
             )?;
         }
@@ -131,25 +131,25 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.velocity, stream)?;
         if self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
             <V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::serialize(
-                self.item_use_transaction.as_ref().unwrap(),
+                self.item_use_transaction.as_ref().ok_or(ProtoCodecError::ExpectedSome("item_use_transaction"))?,
                 stream,
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
             <PerformItemStackRequestData<V> as ProtoCodec>::serialize(
-                self.item_stack_request.as_ref().unwrap(),
+                self.item_stack_request.as_ref().ok_or(ProtoCodecError::ExpectedSome("item_stack_request"))?,
                 stream,
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
             <Vec<V::PlayerBlockActionData> as ProtoCodec>::serialize(
-                self.player_block_actions.as_ref().unwrap(),
+                self.player_block_actions.as_ref().ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?,
                 stream,
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
             <ClientPredictedVehicleData<V> as ProtoCodec>::serialize(
-                self.client_predicted_vehicle.as_ref().unwrap(),
+                self.client_predicted_vehicle.as_ref().ok_or(ProtoCodecError::ExpectedSome("client_predicted_vehicle"))?,
                 stream,
             )?;
         }
@@ -161,7 +161,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let player_rotation = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let player_position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
-        let move_vector = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
+        let move_vector = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let player_head_rotation = <f32 as ProtoCodecLE>::deserialize(stream)?;
         let input_data = <u64 as ProtoCodecVAR>::deserialize(stream)?;
         let input_mode = <V::InputMode as ProtoCodec>::deserialize(stream)?;
@@ -239,19 +239,19 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             + ProtoCodecVAR::size_hint(&self.client_tick)
             + ProtoCodecLE::size_hint(&self.velocity)
             + match self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
-                true => self.item_use_transaction.size_hint(),
+                true => self.item_use_transaction.as_ref().map_or(0, ProtoCodec::size_hint),
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
-                true => self.item_stack_request.size_hint(),
+                true => self.item_stack_request.as_ref().map_or(0, ProtoCodec::size_hint),
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
-                true => self.player_block_actions.size_hint(),
+                true => self.player_block_actions.as_ref().map_or(0, ProtoCodec::size_hint),
                 false => 0,
             }
             + match self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
-                true => self.client_predicted_vehicle.size_hint(),
+                true => self.client_predicted_vehicle.as_ref().map_or(0, ProtoCodec::size_hint),
                 false => 0,
             }
             + ProtoCodecLE::size_hint(&self.analog_move_vector)

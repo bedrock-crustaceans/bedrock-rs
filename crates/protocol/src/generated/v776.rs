@@ -7417,7 +7417,1161 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
+            match self {
+                V776::ActorEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ActorEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ActorPickRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AddActorPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AddBehaviourTreePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AddItemActorPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AddPaintingPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AddPlayerPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AddVolumeEntityPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AgentActionEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AgentAnimationPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AnimateEntityPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AnimatePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AnvilDamagePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AutomationClientConnectPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AvailableActorIdentifiersPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AvailableCommandsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::AwardAchievementPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::BiomeDefinitionListPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::BlockActorDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::BlockEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::BlockPickRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::BookEditPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::BossEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraAimAssistInstructionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraAimAssistPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraAimAssistPresetsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraInstructionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraPresetsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CameraShakePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ChangeDimensionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ChangeMobPropertyPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ChunkRadiusUpdatedPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientBoundCloseFormPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientBoundDebugRendererPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientBoundMapItemDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientCacheBlobStatusPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientCacheMissResponsePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientCacheStatusPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ClientToServerHandshakePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CodeBuilderPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CodeBuilderSourcePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CommandBlockUpdatePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CommandOutputPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CommandRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CompletedUsingItemPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CompressedBiomeDefinitionListPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CompressedBiomeDefinitionListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ContainerClosePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ContainerOpenPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ContainerRegistryCleanupPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ContainerSetDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CorrectPlayerMovePredictionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CraftingDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CreatePhotoPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CreativeContentPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::CurrentStructureFeaturePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::DeathInfoPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::DebugInfoPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::DimensionDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::DisconnectPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::EditorNetworkPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::EduUriResourcePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::EducationSettingsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::EmoteListPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::EmotePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::FeatureRegistryPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::GameRulesChangedPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::GameTestRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::GameTestResultsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::GuiDataPickItemPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::HurtArmorPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::InteractPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::InventoryContentPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::InventorySlotPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::InventoryTransactionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ItemComponentPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ItemStackRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ItemStackResponsePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::JigsawStructureDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LabTablePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LecternUpdatePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LegacyTelemetryEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LessonProgressPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LevelChunkPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LevelEventGenericPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LevelEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LevelSoundEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LevelSoundEventV1Packet(_) => {
+                    <<V776 as ProtoVersionPackets>::LevelSoundEventV1Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LevelSoundEventV2Packet(_) => {
+                    <<V776 as ProtoVersionPackets>::LevelSoundEventV2Packet as bedrock_protocol_core::Packet>::ID
+                }
+                V776::LoginPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MapCreateLockedCopyPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MapInfoRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MobArmorEquipmentPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MobEffectPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MobEquipmentPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ModalFormRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ModalFormResponsePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MotionPredictionHintsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MoveActorAbsolutePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MoveActorDeltaPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MovePlayerPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MovementEffectPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MovementPredictionSyncPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::MultiplayerSettingsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::NetworkChunkPublisherUpdatePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::NetworkSettingsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::NetworkStackLatencyPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::NpcDialoguePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::NpcRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::OnScreenTextureAnimationPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::OpenSignPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PacketViolationWarningPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PassengerJumpPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PassengerJumpPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PhotoTransferPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlaySoundPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayStatusPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerActionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerArmorDamagePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerAuthInputPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerEnchantOptionsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerFogPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerHotbarPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerInputPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerInputPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerListPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerSkinPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerStartItemCooldownPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PlayerToggleCrafterSlotRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PositionTrackingDBClientRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PositionTrackingDBServerBroadcastPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::PurchaseReceiptPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RefreshEntitlementsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RemoveActorPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RemoveObjectivePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RemoveVolumeEntityPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RequestAbilityPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RequestChunkRadiusPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RequestNetworkSettingsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RequestPermissionsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ResourcePackChunkDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ResourcePackChunkRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ResourcePackClientResponsePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ResourcePackDataInfoPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ResourcePackStackPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ResourcePacksInfoPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::RespawnPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ScriptMessagePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerBoundDiagnosticsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerBoundLoadingScreenPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerPlayerPostMovePositionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerSettingsRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerSettingsResponsePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerStatsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ServerToClientHandshakePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetActorDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetActorLinkPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetActorMotionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetCommandsEnabledPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetDefaultGameTypePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetDifficultyPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetDisplayObjectivePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetHealthPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetHudPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetLastHurtByPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetLocalPlayerAsInitializedPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetMovementAuthorityPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetMovementAuthorityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetPlayerGameTypePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetPlayerInventoryOptionsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetScorePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetScoreboardIdentityPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetSpawnPositionPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetTimePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SetTitlePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SettingsCommandPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ShowCreditsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ShowProfilePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ShowStoreOfferPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SimpleEventPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SimulationTypePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SpawnExperienceOrbPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SpawnParticleEffectPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::StartGamePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::StopSoundPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::StructureBlockUpdatePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::StructureDataRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::StructureDataResponsePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SubChunkPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SubChunkRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SubClientLoginPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::SyncActorPropertyPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::TakeItemActorPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::TextPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::TickingAreaLoadStatusPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::ToastRequestPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::TransferPlayerPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::TrimDataPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UnlockedRecipesPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateAbilitiesPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateAdventureSettingsPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateAttributesPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateBlockPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateBlockSyncedPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateClientInputLocksPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateEquipPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdatePlayerGameTypePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateSoftEnumPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateSubChunkBlocksPacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::UpdateTradePacket(_) => {
+                    <<V776 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::Packet>::ID
+                }
+                V776::Unknown(pk) => pk.id,
+            }
+        }
+    }
+    impl ProtoVersionPackets for V776 {
+        type ActorEventPacket = crate::version::v662::packets::ActorEventPacket<Self>;
+        type ActorPickRequestPacket = crate::version::v662::packets::ActorPickRequestPacket;
+        type AddActorPacket = crate::version::v662::packets::AddActorPacket<Self>;
+        type AddBehaviourTreePacket = crate::version::v662::packets::AddBehaviourTreePacket;
+        type AddItemActorPacket = crate::version::v662::packets::AddItemActorPacket<Self>;
+        type AddPaintingPacket = crate::version::v662::packets::AddPaintingPacket<Self>;
+        type AddPlayerPacket = crate::version::v662::packets::AddPlayerPacket<Self>;
+        type AddVolumeEntityPacket = crate::version::v662::packets::AddVolumeEntityPacket<Self>;
+        type AgentActionEventPacket = crate::version::v662::packets::AgentActionEventPacket<Self>;
+        type AgentAnimationPacket = crate::version::v662::packets::AgentAnimationPacket<Self>;
+        type AnimateEntityPacket = crate::version::v662::packets::AnimateEntityPacket<Self>;
+        type AnimatePacket = crate::version::v662::packets::AnimatePacket<Self>;
+        type AnvilDamagePacket = crate::version::v662::packets::AnvilDamagePacket<Self>;
+        type AutomationClientConnectPacket =
+            crate::version::v662::packets::AutomationClientConnectPacket<Self>;
+        type AvailableActorIdentifiersPacket =
+            crate::version::v662::packets::AvailableActorIdentifiersPacket;
+        type AvailableCommandsPacket = crate::version::v662::packets::AvailableCommandsPacket<Self>;
+        type AwardAchievementPacket = crate::version::v685::packets::AwardAchievementPacket;
+        type BiomeDefinitionListPacket = crate::version::v662::packets::BiomeDefinitionListPacket;
+        type BlockActorDataPacket = crate::version::v662::packets::BlockActorDataPacket<Self>;
+        type BlockEventPacket = crate::version::v662::packets::BlockEventPacket<Self>;
+        type BlockPickRequestPacket = crate::version::v662::packets::BlockPickRequestPacket<Self>;
+        type BookEditPacket = crate::version::v662::packets::BookEditPacket<Self>;
+        type BossEventPacket = crate::version::v662::packets::BossEventPacket<Self>;
+        type CameraAimAssistActorPriorityPacket = ();
+        type CameraAimAssistInstructionPacket =
+            crate::version::v776::packets::CameraAimAssistInstructionPacket<Self>;
+        type CameraAimAssistPacket = crate::version::v766::packets::CameraAimAssistPacket<Self>;
+        type CameraAimAssistPresetsPacket =
+            crate::version::v776::packets::CameraAimAssistPresetsPacket<Self>;
+        type CameraInstructionPacket = crate::version::v712::packets::CameraInstructionPacket<Self>;
+        type CameraPacket = crate::version::v662::packets::CameraPacket<Self>;
+        type CameraPresetsPacket = crate::version::v662::packets::CameraPresetsPacket<Self>;
+        type CameraShakePacket = crate::version::v662::packets::CameraShakePacket<Self>;
+        type CameraSplinePacket = ();
+        type ChangeDimensionPacket = crate::version::v712::packets::ChangeDimensionPacket;
+        type ChangeMobPropertyPacket = crate::version::v662::packets::ChangeMobPropertyPacket<Self>;
+        type ChunkRadiusUpdatedPacket = crate::version::v662::packets::ChunkRadiusUpdatedPacket;
+        type ClientBoundAttributeLayerSyncPacket = ();
+        type ClientBoundCloseFormPacket = crate::version::v686::packets::ClientBoundCloseFormPacket;
+        type ClientBoundControlSchemeSetPacket = ();
+        type ClientBoundDataDrivenUICloseAllScreensPacket = ();
+        type ClientBoundDataDrivenUICloseScreenPacket = ();
+        type ClientBoundDataDrivenUIReloadPacket = ();
+        type ClientBoundDataDrivenUIShowScreenPacket = ();
+        type ClientBoundDataStorePacket = ();
+        type ClientBoundDebugRendererPacket =
+            crate::version::v671::packets::ClientBoundDebugRendererPacket;
+        type ClientBoundMapItemDataPacket =
+            crate::version::v662::packets::ClientBoundMapItemDataPacket<Self>;
+        type ClientBoundTextureShiftPacket = ();
+        type ClientBoundUpdateSoundDataPacket = ();
+        type ClientCacheBlobStatusPacket =
+            crate::version::v662::packets::ClientCacheBlobStatusPacket;
+        type ClientCacheMissResponsePacket =
+            crate::version::v662::packets::ClientCacheMissResponsePacket;
+        type ClientCacheStatusPacket = crate::version::v662::packets::ClientCacheStatusPacket;
+        type ClientToServerHandshakePacket =
+            crate::version::v662::packets::ClientToServerHandshakePacket;
+        type CodeBuilderPacket = crate::version::v662::packets::CodeBuilderPacket;
+        type CodeBuilderSourcePacket = crate::version::v685::packets::CodeBuilderSourcePacket<Self>;
+        type CommandBlockUpdatePacket =
+            crate::version::v776::packets::CommandBlockUpdatePacket<Self>;
+        type CommandOutputPacket = crate::version::v662::packets::CommandOutputPacket<Self>;
+        type CommandRequestPacket = crate::version::v662::packets::CommandRequestPacket<Self>;
+        type CompletedUsingItemPacket =
+            crate::version::v662::packets::CompletedUsingItemPacket<Self>;
+        type CompressedBiomeDefinitionListPacket =
+            crate::version::v662::packets::CompressedBiomeDefinitionListPacket;
+        type ContainerClosePacket = crate::version::v685::packets::ContainerClosePacket<Self>;
+        type ContainerOpenPacket = crate::version::v662::packets::ContainerOpenPacket<Self>;
+        type ContainerRegistryCleanupPacket =
+            crate::version::v729::packets::ContainerRegistryCleanupPacket<Self>;
+        type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
+        type CorrectPlayerMovePredictionPacket =
+            crate::version::v671::packets::CorrectPlayerMovePredictionPacket<Self>;
+        type CraftingDataPacket = crate::version::v662::packets::CraftingDataPacket<Self>;
+        type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
+        type CreativeContentPacket = crate::version::v776::packets::CreativeContentPacket<Self>;
+        type CurrentStructureFeaturePacket =
+            crate::version::v712::packets::CurrentStructureFeaturePacket;
+        type DeathInfoPacket = crate::version::v662::packets::DeathInfoPacket;
+        type DebugDrawerPacket = ();
+        type DebugInfoPacket = crate::version::v662::packets::DebugInfoPacket<Self>;
+        type DimensionDataPacket = crate::version::v662::packets::DimensionDataPacket<Self>;
+        type DisconnectPacket = crate::version::v712::packets::DisconnectPacket<Self>;
+        type EditorNetworkPacket = crate::version::v662::packets::EditorNetworkPacket;
+        type EduUriResourcePacket = crate::version::v662::packets::EduUriResourcePacket<Self>;
+        type EducationSettingsPacket = crate::version::v662::packets::EducationSettingsPacket<Self>;
+        type EmoteListPacket = crate::version::v662::packets::EmoteListPacket<Self>;
+        type EmotePacket = crate::version::v729::packets::EmotePacket<Self>;
+        type FeatureRegistryPacket = crate::version::v662::packets::FeatureRegistryPacket;
+        type FilterTextPacket = ();
+        type GameRulesChangedPacket = crate::version::v662::packets::GameRulesChangedPacket<Self>;
+        type GameTestRequestPacket = crate::version::v662::packets::GameTestRequestPacket<Self>;
+        type GameTestResultsPacket = crate::version::v662::packets::GameTestResultsPacket;
+        type GraphicsParameterOverridePacket = ();
+        type GuiDataPickItemPacket = crate::version::v662::packets::GuiDataPickItemPacket;
+        type HurtArmorPacket = crate::version::v662::packets::HurtArmorPacket;
+        type InteractPacket = crate::version::v662::packets::InteractPacket<Self>;
+        type InventoryContentPacket = crate::version::v748::packets::InventoryContentPacket<Self>;
+        type InventorySlotPacket = crate::version::v748::packets::InventorySlotPacket<Self>;
+        type InventoryTransactionPacket =
+            crate::version::v662::packets::InventoryTransactionPacket<Self>;
+        type ItemComponentPacket = crate::version::v776::packets::ItemComponentPacket<Self>;
+        type ItemStackRequestPacket = crate::version::v662::packets::ItemStackRequestPacket<Self>;
+        type ItemStackResponsePacket = crate::version::v662::packets::ItemStackResponsePacket<Self>;
+        type JigsawStructureDataPacket = crate::version::v712::packets::JigsawStructureDataPacket;
+        type LabTablePacket = crate::version::v662::packets::LabTablePacket<Self>;
+        type LecternUpdatePacket = crate::version::v662::packets::LecternUpdatePacket<Self>;
+        type LegacyTelemetryEventPacket =
+            crate::version::v685::packets::LegacyTelemetryEventPacket<Self>;
+        type LessonProgressPacket = crate::version::v662::packets::LessonProgressPacket<Self>;
+        type LevelChunkPacket = crate::version::v662::packets::LevelChunkPacket<Self>;
+        type LevelEventGenericPacket = crate::version::v662::packets::LevelEventGenericPacket<Self>;
+        type LevelEventPacket = crate::version::v662::packets::LevelEventPacket;
+        type LevelSoundEventPacket = crate::version::v662::packets::LevelSoundEventPacket<Self>;
+        type LevelSoundEventV1Packet = crate::version::v662::packets::LevelSoundEventV1Packet<Self>;
+        type LevelSoundEventV2Packet = crate::version::v662::packets::LevelSoundEventV2Packet<Self>;
+        type LocatorBarPacket = ();
+        type LoginPacket = crate::version::v662::packets::LoginPacket;
+        type MapCreateLockedCopyPacket =
+            crate::version::v662::packets::MapCreateLockedCopyPacket<Self>;
+        type MapInfoRequestPacket = crate::version::v662::packets::MapInfoRequestPacket<Self>;
+        type MobArmorEquipmentPacket = crate::version::v712::packets::MobArmorEquipmentPacket<Self>;
+        type MobEffectPacket = crate::version::v748::packets::MobEffectPacket<Self>;
+        type MobEquipmentPacket = crate::version::v662::packets::MobEquipmentPacket<Self>;
+        type ModalFormRequestPacket = crate::version::v662::packets::ModalFormRequestPacket;
+        type ModalFormResponsePacket = crate::version::v662::packets::ModalFormResponsePacket<Self>;
+        type MotionPredictionHintsPacket =
+            crate::version::v662::packets::MotionPredictionHintsPacket<Self>;
+        type MoveActorAbsolutePacket = crate::version::v662::packets::MoveActorAbsolutePacket<Self>;
+        type MoveActorDeltaPacket = crate::version::v662::packets::MoveActorDeltaPacket<Self>;
+        type MovePlayerPacket = crate::version::v662::packets::MovePlayerPacket<Self>;
+        type MovementEffectPacket = crate::version::v748::packets::MovementEffectPacket<Self>;
+        type MovementPredictionSyncPacket =
+            crate::version::v776::packets::MovementPredictionSyncPacket<Self>;
+        type MultiplayerSettingsPacket =
+            crate::version::v662::packets::MultiplayerSettingsPacket<Self>;
+        type NetworkChunkPublisherUpdatePacket =
+            crate::version::v662::packets::NetworkChunkPublisherUpdatePacket<Self>;
+        type NetworkSettingsPacket = crate::version::v662::packets::NetworkSettingsPacket<Self>;
+        type NetworkStackLatencyPacket = crate::version::v662::packets::NetworkStackLatencyPacket;
+        type NpcDialoguePacket = crate::version::v662::packets::NpcDialoguePacket;
+        type NpcRequestPacket = crate::version::v662::packets::NpcRequestPacket<Self>;
+        type OnScreenTextureAnimationPacket =
+            crate::version::v662::packets::OnScreenTextureAnimationPacket;
+        type OpenSignPacket = crate::version::v662::packets::OpenSignPacket<Self>;
+        type PacketViolationWarningPacket =
+            crate::version::v662::packets::PacketViolationWarningPacket<Self>;
+        type PartyChangedPacket = ();
+        type PartyDestinationCookieResponsePacket = ();
+        type PassengerJumpPacket = crate::version::v662::packets::PassengerJumpPacket;
+        type PhotoTransferPacket = crate::version::v662::packets::PhotoTransferPacket<Self>;
+        type PlaySoundPacket = crate::version::v662::packets::PlaySoundPacket<Self>;
+        type PlayStatusPacket = crate::version::v662::packets::PlayStatusPacket<Self>;
+        type PlayerActionPacket = crate::version::v662::packets::PlayerActionPacket<Self>;
+        type PlayerArmorDamagePacket = crate::version::v712::packets::PlayerArmorDamagePacket;
+        type PlayerAuthInputPacket = crate::version::v766::packets::PlayerAuthInputPacket<Self>;
+        type PlayerEnchantOptionsPacket =
+            crate::version::v662::packets::PlayerEnchantOptionsPacket<Self>;
+        type PlayerFogPacket = crate::version::v662::packets::PlayerFogPacket;
+        type PlayerHotbarPacket = crate::version::v662::packets::PlayerHotbarPacket<Self>;
+        type PlayerInputPacket = crate::version::v662::packets::PlayerInputPacket;
+        type PlayerListPacket = crate::version::v662::packets::PlayerListPacket<Self>;
+        type PlayerLocationPacket = ();
+        type PlayerSkinPacket = crate::version::v662::packets::PlayerSkinPacket<Self>;
+        type PlayerStartItemCooldownPacket =
+            crate::version::v662::packets::PlayerStartItemCooldownPacket;
+        type PlayerToggleCrafterSlotRequestPacket =
+            crate::version::v662::packets::PlayerToggleCrafterSlotRequestPacket;
+        type PlayerUpdateEntityOverridesPacket = ();
+        type PlayerVideoCapturePacket = ();
+        type PositionTrackingDBClientRequestPacket =
+            crate::version::v662::packets::PositionTrackingDBClientRequestPacket<Self>;
+        type PositionTrackingDBServerBroadcastPacket =
+            crate::version::v662::packets::PositionTrackingDBServerBroadcastPacket<Self>;
+        type PurchaseReceiptPacket = crate::version::v662::packets::PurchaseReceiptPacket;
+        type RefreshEntitlementsPacket = crate::version::v662::packets::RefreshEntitlementsPacket;
+        type RemoveActorPacket = crate::version::v662::packets::RemoveActorPacket<Self>;
+        type RemoveObjectivePacket = crate::version::v662::packets::RemoveObjectivePacket;
+        type RemoveVolumeEntityPacket =
+            crate::version::v662::packets::RemoveVolumeEntityPacket<Self>;
+        type RequestAbilityPacket = crate::version::v662::packets::RequestAbilityPacket<Self>;
+        type RequestChunkRadiusPacket = crate::version::v662::packets::RequestChunkRadiusPacket;
+        type RequestNetworkSettingsPacket =
+            crate::version::v662::packets::RequestNetworkSettingsPacket;
+        type RequestPermissionsPacket =
+            crate::version::v662::packets::RequestPermissionsPacket<Self>;
+        type ResourcePackChunkDataPacket =
+            crate::version::v662::packets::ResourcePackChunkDataPacket;
+        type ResourcePackChunkRequestPacket =
+            crate::version::v662::packets::ResourcePackChunkRequestPacket;
+        type ResourcePackClientResponsePacket =
+            crate::version::v662::packets::ResourcePackClientResponsePacket<Self>;
+        type ResourcePackDataInfoPacket =
+            crate::version::v662::packets::ResourcePackDataInfoPacket<Self>;
+        type ResourcePackStackPacket = crate::version::v671::packets::ResourcePackStackPacket<Self>;
+        type ResourcePacksInfoPacket = crate::version::v766::packets::ResourcePacksInfoPacket;
+        type ResourcePacksReadyForValidationPacket = ();
+        type RespawnPacket = crate::version::v662::packets::RespawnPacket<Self>;
+        type ScriptMessagePacket = crate::version::v662::packets::ScriptMessagePacket;
+        type SendPartyDestinationCookiePacket = ();
+        type ServerBoundDataDrivenClosedPacket = ();
+        type ServerBoundDataStorePacket = ();
+        type ServerBoundDiagnosticsPacket =
+            crate::version::v712::packets::ServerBoundDiagnosticsPacket;
+        type ServerBoundLoadingScreenPacket =
+            crate::version::v712::packets::ServerBoundLoadingScreenPacket;
+        type ServerBoundPackSettingChangePacket = ();
+        type ServerPlayerPostMovePositionPacket =
+            crate::version::v662::packets::ServerPlayerPostMovePositionPacket;
+        type ServerPresenceInfoPacket = ();
+        type ServerSettingsRequestPacket =
+            crate::version::v662::packets::ServerSettingsRequestPacket;
+        type ServerSettingsResponsePacket =
+            crate::version::v662::packets::ServerSettingsResponsePacket;
+        type ServerStatsPacket = crate::version::v662::packets::ServerStatsPacket;
+        type ServerStoreInfoPacket = ();
+        type ServerToClientHandshakePacket =
+            crate::version::v662::packets::ServerToClientHandshakePacket;
+        type SetActorDataPacket = crate::version::v662::packets::SetActorDataPacket<Self>;
+        type SetActorLinkPacket = crate::version::v662::packets::SetActorLinkPacket<Self>;
+        type SetActorMotionPacket = crate::version::v662::packets::SetActorMotionPacket<Self>;
+        type SetCommandsEnabledPacket = crate::version::v662::packets::SetCommandsEnabledPacket;
+        type SetDefaultGameTypePacket =
+            crate::version::v662::packets::SetDefaultGameTypePacket<Self>;
+        type SetDifficultyPacket = crate::version::v662::packets::SetDifficultyPacket;
+        type SetDisplayObjectivePacket =
+            crate::version::v662::packets::SetDisplayObjectivePacket<Self>;
+        type SetHealthPacket = crate::version::v662::packets::SetHealthPacket;
+        type SetHudPacket = crate::version::v662::packets::SetHudPacket<Self>;
+        type SetLastHurtByPacket = crate::version::v662::packets::SetLastHurtByPacket<Self>;
+        type SetLocalPlayerAsInitializedPacket =
+            crate::version::v662::packets::SetLocalPlayerAsInitializedPacket<Self>;
+        type SetMovementAuthorityPacket =
+            crate::version::v748::packets::SetMovementAuthorityPacket<Self>;
+        type SetPlayerGameTypePacket = crate::version::v662::packets::SetPlayerGameTypePacket<Self>;
+        type SetPlayerInventoryOptionsPacket =
+            crate::version::v662::packets::SetPlayerInventoryOptionsPacket<Self>;
+        type SetScorePacket = crate::version::v662::packets::SetScorePacket<Self>;
+        type SetScoreboardIdentityPacket =
+            crate::version::v662::packets::SetScoreboardIdentityPacket<Self>;
+        type SetSpawnPositionPacket = crate::version::v662::packets::SetSpawnPositionPacket<Self>;
+        type SetTimePacket = crate::version::v662::packets::SetTimePacket;
+        type SetTitlePacket = crate::version::v712::packets::SetTitlePacket;
+        type SettingsCommandPacket = crate::version::v662::packets::SettingsCommandPacket;
+        type ShowCreditsPacket = crate::version::v662::packets::ShowCreditsPacket<Self>;
+        type ShowProfilePacket = crate::version::v662::packets::ShowProfilePacket;
+        type ShowStoreOfferPacket = crate::version::v662::packets::ShowStoreOfferPacket<Self>;
+        type SimpleEventPacket = crate::version::v662::packets::SimpleEventPacket;
+        type SimulationTypePacket = crate::version::v662::packets::SimulationTypePacket<Self>;
+        type SpawnExperienceOrbPacket = crate::version::v662::packets::SpawnExperienceOrbPacket;
+        type SpawnParticleEffectPacket =
+            crate::version::v662::packets::SpawnParticleEffectPacket<Self>;
+        type StartGamePacket = crate::version::v776::packets::StartGamePacket<Self>;
+        type StopSoundPacket = crate::version::v712::packets::StopSoundPacket;
+        type StructureBlockUpdatePacket =
+            crate::version::v662::packets::StructureBlockUpdatePacket<Self>;
+        type StructureDataRequestPacket =
+            crate::version::v662::packets::StructureDataRequestPacket<Self>;
+        type StructureDataResponsePacket =
+            crate::version::v662::packets::StructureDataResponsePacket<Self>;
+        type SubChunkPacket = crate::version::v662::packets::SubChunkPacket<Self>;
+        type SubChunkRequestPacket = crate::version::v662::packets::SubChunkRequestPacket<Self>;
+        type SubClientLoginPacket = crate::version::v662::packets::SubClientLoginPacket;
+        type SyncActorPropertyPacket = crate::version::v662::packets::SyncActorPropertyPacket;
+        type SyncWorldClocksPacket = ();
+        type TakeItemActorPacket = crate::version::v662::packets::TakeItemActorPacket<Self>;
+        type TextPacket = crate::version::v685::packets::TextPacket<Self>;
+        type TickSyncPacket = ();
+        type TickingAreaLoadStatusPacket =
+            crate::version::v662::packets::TickingAreaLoadStatusPacket;
+        type ToastRequestPacket = crate::version::v662::packets::ToastRequestPacket;
+        type TransferPlayerPacket = crate::version::v729::packets::TransferPlayerPacket;
+        type TrimDataPacket = crate::version::v662::packets::TrimDataPacket;
+        type UnlockedRecipesPacket = crate::version::v662::packets::UnlockedRecipesPacket;
+        type UpdateAbilitiesPacket = crate::version::v662::packets::UpdateAbilitiesPacket<Self>;
+        type UpdateAdventureSettingsPacket =
+            crate::version::v662::packets::UpdateAdventureSettingsPacket<Self>;
+        type UpdateAttributesPacket = crate::version::v729::packets::UpdateAttributesPacket<Self>;
+        type UpdateBlockPacket = crate::version::v662::packets::UpdateBlockPacket<Self>;
+        type UpdateBlockSyncedPacket = crate::version::v662::packets::UpdateBlockSyncedPacket<Self>;
+        type UpdateClientInputLocksPacket =
+            crate::version::v662::packets::UpdateClientInputLocksPacket;
+        type UpdateClientOptionsPacket = ();
+        type UpdateEquipPacket = crate::version::v662::packets::UpdateEquipPacket<Self>;
+        type UpdatePlayerGameTypePacket =
+            crate::version::v671::packets::UpdatePlayerGameTypePacket<Self>;
+        type UpdateSoftEnumPacket = crate::version::v662::packets::UpdateSoftEnumPacket<Self>;
+        type UpdateSubChunkBlocksPacket =
+            crate::version::v662::packets::UpdateSubChunkBlocksPacket<Self>;
+        type UpdateTradePacket = crate::version::v662::packets::UpdateTradePacket<Self>;
+        type VoxelShapesPacket = ();
+    }
+    impl ProtoVersionTypes for V776 {
+        type ActorLink = crate::version::v712::types::ActorLink<Self>;
+        type ActorRuntimeID = crate::version::v662::types::ActorRuntimeID;
+        type ActorUniqueID = crate::version::v662::types::ActorUniqueID;
+        type AdventureSettings = crate::version::v662::types::AdventureSettings;
+        type BaseDescription = crate::version::v662::types::BaseDescription<Self>;
+        type BaseGameVersion = crate::version::v662::types::BaseGameVersion;
+        type BiomeCappedSurfaceData = ();
+        type BiomeClimateData = ();
+        type BiomeConditionalTransformationData = ();
+        type BiomeConsolidatedFeatureList = ();
+        type BiomeCoordinateData = ();
+        type BiomeDefinition = ();
+        type BiomeDefinitionChunkGenData = ();
+        type BiomeElementData = ();
+        type BiomeLegacyWorldGenRulesData = ();
+        type BiomeMesaSurfaceData = ();
+        type BiomeMountainParamsData = ();
+        type BiomeMultinoiseGenRulesData = ();
+        type BiomeNoiseGradientSurfaceData = ();
+        type BiomeOverworldGenRulesData = ();
+        type BiomeReplacementData = ();
+        type BiomeScatterParamData = ();
+        type BiomeSurfaceBuilderData = ();
+        type BiomeSurfaceMaterialAdjustmentData = ();
+        type BiomeSurfaceMaterialData = ();
+        type BiomeWeightedData = ();
+        type BiomeWeightedTemperatureData = ();
+        type BlockPos = crate::version::v662::types::BlockPos;
+        type CameraAimAssistCategories =
+            crate::version::v766::types::CameraAimAssistCategories<Self>;
+        type CameraAimAssistCategory = crate::version::v766::types::CameraAimAssistCategory<Self>;
+        type CameraAimAssistItemSettings = crate::version::v766::types::CameraAimAssistItemSettings;
+        type CameraAimAssistPreset = crate::version::v766::types::CameraAimAssistPreset;
+        type CameraAimAssistPresetDefinition =
+            crate::version::v776::types::CameraAimAssistPresetDefinition<Self>;
+        type CameraAimAssistPriority = crate::version::v766::types::CameraAimAssistPriority;
+        type CameraInstruction = crate::version::v748::types::CameraInstruction<Self>;
+        type CameraPreset = crate::version::v776::types::CameraPreset<Self>;
+        type CameraPresets = crate::version::v662::types::CameraPresets<Self>;
+        type CameraSplineInstruction = ();
+        type ChunkPos = crate::version::v662::types::ChunkPos;
+        type Color = ();
+        type CommandOriginData = crate::version::v662::types::CommandOriginData<Self>;
+        type ContainerMixDataEntry = crate::version::v662::types::ContainerMixDataEntry;
+        type CraftingDataEntry = crate::version::v662::types::CraftingDataEntry<Self>;
+        type DataItem = crate::version::v662::types::DataItem<Self>;
+        type DebugShape = ();
+        type DimensionDefinitionGroup = crate::version::v662::types::DimensionDefinitionGroup;
+        type EduSharedUriResource = crate::version::v662::types::EduSharedUriResource;
+        type EducationLevelSettings = crate::version::v662::types::EducationLevelSettings;
+        type EntityNetID = crate::version::v662::types::EntityNetID;
+        type Experiments = crate::version::v662::types::Experiments;
+        type FullContainerName = crate::version::v729::types::FullContainerName<Self>;
+        type GameRulesChangedPacketData = crate::version::v662::types::GameRulesChangedPacketData;
+        type InventoryAction = crate::version::v662::types::InventoryAction<Self>;
+        type InventorySource = crate::version::v662::types::InventorySource<Self>;
+        type InventoryTransaction = crate::version::v662::types::InventoryTransaction<Self>;
+        type ItemData = crate::version::v662::types::ItemData;
+        type ItemEnchants = crate::version::v662::types::ItemEnchants<Self>;
+        type ItemStackRequestSlotInfo = crate::version::v712::types::ItemStackRequestSlotInfo<Self>;
+        type ItemStackResponseContainerInfo =
+            crate::version::v712::types::ItemStackResponseContainerInfo<Self>;
+        type ItemStackResponseInfo = crate::version::v662::types::ItemStackResponseInfo<Self>;
+        type ItemStackResponseSlotInfo = crate::version::v766::types::ItemStackResponseSlotInfo;
+        type LevelSettings = crate::version::v685::types::LevelSettings<Self>;
+        type MapDecoration = crate::version::v662::types::MapDecoration;
+        type MapItemTrackedActorUniqueID =
+            crate::version::v662::types::MapItemTrackedActorUniqueID<Self>;
+        type MaterialReducerDataEntry = crate::version::v662::types::MaterialReducerDataEntry;
+        type MolangVariableMap = crate::version::v662::types::MolangVariableMap;
+        type MoveActorAbsoluteData = crate::version::v662::types::MoveActorAbsoluteData<Self>;
+        type MoveActorDeltaData = crate::version::v662::types::MoveActorDeltaData<Self>;
+        type NetworkBlockPosition = crate::version::v662::types::NetworkBlockPosition;
+        type NetworkItemInstanceDescriptor =
+            crate::version::v662::types::NetworkItemInstanceDescriptor;
+        type NetworkItemStackDescriptor = crate::version::v662::types::NetworkItemStackDescriptor;
+        type NetworkItemStackDescriptorV2 = ();
+        type NetworkPermissions = crate::version::v662::types::NetworkPermissions;
+        type PackedItemUseLegacyInventoryTransaction =
+            crate::version::v712::types::PackedItemUseLegacyInventoryTransaction<Self>;
+        type PlayerBlockActionData = crate::version::v662::types::PlayerBlockActionData<Self>;
+        type PositionTrackingId = crate::version::v662::types::PositionTrackingId;
+        type PotionMixDataEntry = crate::version::v662::types::PotionMixDataEntry;
+        type PropertySyncData = crate::version::v662::types::PropertySyncData;
+        type RecipeIngredient = crate::version::v662::types::RecipeIngredient<Self>;
+        type RecipeUnlockingRequirement =
+            crate::version::v685::types::RecipeUnlockingRequirement<Self>;
+        type ScoreboardId = crate::version::v662::types::ScoreboardId;
+        type SerializedAbilitiesData = crate::version::v776::types::SerializedAbilitiesData<Self>;
+        type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
+        type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
+        type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
+        type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
+        type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
+        type SmithingTrimRecipe = crate::version::v662::types::SmithingTrimRecipe<Self>;
+        type SpawnSettings = crate::version::v662::types::SpawnSettings<Self>;
+        type StructureEditorData = crate::version::v776::types::StructureEditorData<Self>;
+        type StructureSettings = crate::version::v662::types::StructureSettings<Self>;
+        type SubChunkPos = crate::version::v662::types::SubChunkPos;
+        type SubChunkPosOffset = crate::version::v662::types::SubChunkPosOffset;
+        type SyncedPlayerMovementSettings =
+            crate::version::v662::types::SyncedPlayerMovementSettings<Self>;
+        type WebSocketPacketData = crate::version::v662::types::WebSocketPacketData;
+    }
+    impl ProtoVersionEnums for V776 {
+        type AbilitiesIndex = crate::version::v776::enums::AbilitiesIndex;
+        type ActorBlockSyncMessageID = crate::version::v662::enums::ActorBlockSyncMessageID;
+        type ActorDamageCause = crate::version::v662::enums::ActorDamageCause;
+        type ActorDataIDs = crate::version::v776::enums::ActorDataIDs;
+        type ActorEvent = crate::version::v662::enums::ActorEvent;
+        type ActorFlags = crate::version::v776::enums::ActorFlags;
+        type ActorLinkType = crate::version::v662::enums::ActorLinkType;
+        type ActorType = crate::version::v662::enums::ActorType;
+        type AgentActionType = crate::version::v662::enums::AgentActionType;
+        type AimAssistAction = crate::version::v729::enums::AimAssistAction;
+        type AnimatedTextureType = crate::version::v662::enums::AnimatedTextureType;
+        type AnimationExpression = crate::version::v662::enums::AnimationExpression;
+        type AnimationMode = crate::version::v662::enums::AnimationMode;
+        type AttributeModifierOperation = crate::version::v662::enums::AttributeModifierOperation;
+        type AttributeOperands = crate::version::v662::enums::AttributeOperands;
+        type AuthoritativeMovementMode = crate::version::v748::enums::AuthoritativeMovementMode;
+        type BookEditAction = crate::version::v662::enums::BookEditAction;
+        type BossEventUpdateType = crate::version::v776::enums::BossEventUpdateType<Self>;
+        type BuildPlatform = crate::version::v662::enums::BuildPlatform;
+        type CameraAimAssistOperation = crate::version::v776::enums::CameraAimAssistOperation;
+        type CameraShakeAction = crate::version::v662::enums::CameraShakeAction;
+        type CameraShakeType = crate::version::v662::enums::CameraShakeType;
+        type CameraSplineEaseType = ();
+        type CameraSplineType = ();
+        type ChatRestrictionLevel = crate::version::v662::enums::ChatRestrictionLevel;
+        type CodeBuilderCodeStatus = crate::version::v685::enums::CodeBuilderCodeStatus;
+        type CodeBuilderStorageCategory = crate::version::v662::enums::CodeBuilderStorageCategory;
+        type CodeBuilderStorageOperation = crate::version::v662::enums::CodeBuilderStorageOperation;
+        type CommandBlockMode = crate::version::v662::enums::CommandBlockMode;
+        type CommandOriginType = crate::version::v662::enums::CommandOriginType;
+        type CommandOutputType = crate::version::v662::enums::CommandOutputType;
+        type CommandParameterOption = crate::version::v662::enums::CommandParameterOption;
+        type CommandPermissionLevel = crate::version::v662::enums::CommandPermissionLevel;
+        type ComplexInventoryTransactionType =
+            crate::version::v662::enums::ComplexInventoryTransactionType;
+        type ConnectionFailReason = crate::version::v662::enums::ConnectionFailReason;
+        type ContainerEnumName = crate::version::v712::enums::ContainerEnumName;
+        type ContainerID = crate::version::v662::enums::ContainerID;
+        type ContainerType = crate::version::v662::enums::ContainerType;
+        type ControlScheme = ();
+        type CraftingDataEntryType = crate::version::v662::enums::CraftingDataEntryType<Self>;
+        type DataItemType = crate::version::v662::enums::DataItemType<Self>;
+        type Difficulty = crate::version::v662::enums::Difficulty;
+        type EasingType = crate::version::v662::enums::EasingType;
+        type EditorWorldType = crate::version::v662::enums::EditorWorldType;
+        type EducationEditionOffer = crate::version::v662::enums::EducationEditionOffer;
+        type EnchantType = crate::version::v662::enums::EnchantType;
+        type GamePublishSetting = crate::version::v662::enums::GamePublishSetting;
+        type GameType = crate::version::v662::enums::GameType;
+        type GeneratorType = crate::version::v662::enums::GeneratorType;
+        type HudElement = crate::version::v662::enums::HudElement;
+        type HudVisibility = crate::version::v662::enums::HudVisibility;
+        type IdentityDefinitionType = crate::version::v662::enums::IdentityDefinitionType<Self>;
+        type InputMode = crate::version::v662::enums::InputMode;
+        type InteractionType = crate::version::v662::enums::InteractionType;
+        type InventoryLayout = crate::version::v662::enums::InventoryLayout;
+        type InventoryLeftTabIndex = crate::version::v662::enums::InventoryLeftTabIndex;
+        type InventoryRightTabIndex = crate::version::v662::enums::InventoryRightTabIndex;
+        type InventorySourceFlags = crate::version::v662::enums::InventorySourceFlags;
+        type InventorySourceType = crate::version::v662::enums::InventorySourceType<Self>;
+        type ItemDescriptorType = crate::version::v662::enums::ItemDescriptorType;
+        type ItemReleaseInventoryTransactionType =
+            crate::version::v662::enums::ItemReleaseInventoryTransactionType;
+        type ItemStackNetResult = crate::version::v662::enums::ItemStackNetResult<Self>;
+        type ItemStackRequestActionType =
+            crate::version::v712::enums::ItemStackRequestActionType<Self>;
+        type ItemUseInventoryTransactionType =
+            crate::version::v662::enums::ItemUseInventoryTransactionType;
+        type ItemUseMethod = crate::version::v662::enums::ItemUseMethod;
+        type ItemUseOnActorInventoryTransactionType =
+            crate::version::v662::enums::ItemUseOnActorInventoryTransactionType;
+        type ItemVersion = crate::version::v776::enums::ItemVersion;
+        type LabTableReactionType = crate::version::v662::enums::LabTableReactionType;
+        type LessonAction = crate::version::v662::enums::LessonAction;
+        type LevelEvent = crate::version::v766::enums::LevelEvent;
+        type LevelSoundEventType = crate::version::v766::enums::LevelSoundEventType;
+        type MinecraftPacketIds = crate::version::v662::enums::MinecraftPacketIds;
+        type Mirror = crate::version::v662::enums::Mirror;
+        type ModalFormCancelReason = crate::version::v662::enums::ModalFormCancelReason;
+        type MolangVersion = crate::version::v662::enums::MolangVersion;
+        type MovementEffectType = crate::version::v748::enums::MovementEffectType;
+        type MultiplayerSettingsPacketType =
+            crate::version::v662::enums::MultiplayerSettingsPacketType;
+        type NewInteractionModel = crate::version::v662::enums::NewInteractionModel;
+        type ObjectiveSortOrder = crate::version::v662::enums::ObjectiveSortOrder;
+        type POIBlockInteractionType = crate::version::v662::enums::POIBlockInteractionType;
+        type PackType = crate::version::v662::enums::PackType;
+        type PacketCompressionAlgorithm = crate::version::v662::enums::PacketCompressionAlgorithm;
+        type PacketViolationSeverity = crate::version::v662::enums::PacketViolationSeverity;
+        type PacketViolationType = crate::version::v662::enums::PacketViolationType;
+        type ParticleType = crate::version::v766::enums::ParticleType;
+        type PhotoType = crate::version::v662::enums::PhotoType;
+        type PlayStatus = crate::version::v662::enums::PlayStatus;
+        type PlayerPermissionLevel = crate::version::v662::enums::PlayerPermissionLevel;
+        type PlayerPositionMode = crate::version::v662::enums::PlayerPositionMode;
+        type PlayerRespawnState = crate::version::v662::enums::PlayerRespawnState;
+        type PredictionType = crate::version::v712::enums::PredictionType;
+        type ResourcePackResponse = crate::version::v662::enums::ResourcePackResponse;
+        type Rotation = crate::version::v662::enums::Rotation;
+        type ServerAuthMovementMode = crate::version::v662::enums::ServerAuthMovementMode;
+        type ShowStoreOfferRedirectType = crate::version::v662::enums::ShowStoreOfferRedirectType;
+        type SimulationType = crate::version::v662::enums::SimulationType;
+        type SoftEnumUpdateType = crate::version::v662::enums::SoftEnumUpdateType;
+        type SpawnBiomeType = crate::version::v662::enums::SpawnBiomeType;
+        type SpawnPositionType = crate::version::v662::enums::SpawnPositionType;
+        type StructureBlockType = crate::version::v662::enums::StructureBlockType;
+        type StructureRedstoneSaveMode = crate::version::v662::enums::StructureRedstoneSaveMode;
+        type StructureTemplateRequestOperation =
+            crate::version::v662::enums::StructureTemplateRequestOperation;
+        type StructureTemplateResponseType =
+            crate::version::v662::enums::StructureTemplateResponseType;
+        type TeleportationCause = crate::version::v662::enums::TeleportationCause;
+        type TextPacketType = crate::version::v662::enums::TextPacketType;
+        type TextProcessingEventOrigin = crate::version::v662::enums::TextProcessingEventOrigin;
+        type UIProfile = crate::version::v662::enums::UIProfile;
+    }
+    impl ProtoVersion for V776 {
+        const PROTOCOL_VERSION: u32 = 776u32;
+        const PROTOCOL_BRANCH: &str = "r/21_u6";
+        const GAME_VERSION: &str = "1.21.60";
+        const RAKNET_VERSION: u8 = 11u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for V776 {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
             match self {
                 V776::ActorEventPacket(pk) => pk.as_ref(),
                 V776::ActorPickRequestPacket(pk) => pk.as_ref(),
@@ -7629,9 +8783,11 @@ mod inner {
                 V776::Unknown(pk) => pk.as_ref(),
             }
         }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<V776> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: V776) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
                 V776::ActorEventPacket(pk) => pk,
                 V776::ActorPickRequestPacket(pk) => pk,
                 V776::AddActorPacket(pk) => pk,
@@ -7842,529 +8998,6 @@ mod inner {
                 V776::Unknown(pk) => pk,
             }
         }
-    }
-    impl ProtoVersionPackets for V776 {
-        type ActorEventPacket = crate::version::v662::packets::ActorEventPacket<Self>;
-        type ActorPickRequestPacket = crate::version::v662::packets::ActorPickRequestPacket;
-        type AddActorPacket = crate::version::v662::packets::AddActorPacket<Self>;
-        type AddBehaviourTreePacket = crate::version::v662::packets::AddBehaviourTreePacket;
-        type AddItemActorPacket = crate::version::v662::packets::AddItemActorPacket<Self>;
-        type AddPaintingPacket = crate::version::v662::packets::AddPaintingPacket<Self>;
-        type AddPlayerPacket = crate::version::v662::packets::AddPlayerPacket<Self>;
-        type AddVolumeEntityPacket = crate::version::v662::packets::AddVolumeEntityPacket<Self>;
-        type AgentActionEventPacket = crate::version::v662::packets::AgentActionEventPacket<Self>;
-        type AgentAnimationPacket = crate::version::v662::packets::AgentAnimationPacket<Self>;
-        type AnimateEntityPacket = crate::version::v662::packets::AnimateEntityPacket<Self>;
-        type AnimatePacket = crate::version::v662::packets::AnimatePacket<Self>;
-        type AnvilDamagePacket = crate::version::v662::packets::AnvilDamagePacket<Self>;
-        type AutomationClientConnectPacket =
-            crate::version::v662::packets::AutomationClientConnectPacket<Self>;
-        type AvailableActorIdentifiersPacket =
-            crate::version::v662::packets::AvailableActorIdentifiersPacket;
-        type AvailableCommandsPacket = crate::version::v662::packets::AvailableCommandsPacket<Self>;
-        type AwardAchievementPacket = crate::version::v685::packets::AwardAchievementPacket;
-        type BiomeDefinitionListPacket = crate::version::v662::packets::BiomeDefinitionListPacket;
-        type BlockActorDataPacket = crate::version::v662::packets::BlockActorDataPacket<Self>;
-        type BlockEventPacket = crate::version::v662::packets::BlockEventPacket<Self>;
-        type BlockPickRequestPacket = crate::version::v662::packets::BlockPickRequestPacket<Self>;
-        type BookEditPacket = crate::version::v662::packets::BookEditPacket<Self>;
-        type BossEventPacket = crate::version::v662::packets::BossEventPacket<Self>;
-        type CameraAimAssistActorPriorityPacket = ();
-        type CameraAimAssistInstructionPacket =
-            crate::version::v776::packets::CameraAimAssistInstructionPacket<Self>;
-        type CameraAimAssistPacket = crate::version::v766::packets::CameraAimAssistPacket<Self>;
-        type CameraAimAssistPresetsPacket =
-            crate::version::v776::packets::CameraAimAssistPresetsPacket<Self>;
-        type CameraInstructionPacket = crate::version::v712::packets::CameraInstructionPacket<Self>;
-        type CameraPacket = crate::version::v662::packets::CameraPacket<Self>;
-        type CameraPresetsPacket = crate::version::v662::packets::CameraPresetsPacket<Self>;
-        type CameraShakePacket = crate::version::v662::packets::CameraShakePacket<Self>;
-        type CameraSplinePacket = ();
-        type ChangeDimensionPacket = crate::version::v712::packets::ChangeDimensionPacket;
-        type ChangeMobPropertyPacket = crate::version::v662::packets::ChangeMobPropertyPacket<Self>;
-        type ChunkRadiusUpdatedPacket = crate::version::v662::packets::ChunkRadiusUpdatedPacket;
-        type ClientBoundAttributeLayerSyncPacket = ();
-        type ClientBoundCloseFormPacket = crate::version::v686::packets::ClientBoundCloseFormPacket;
-        type ClientBoundControlSchemeSetPacket = ();
-        type ClientBoundDataDrivenUICloseAllScreensPacket = ();
-        type ClientBoundDataDrivenUICloseScreenPacket = ();
-        type ClientBoundDataDrivenUIReloadPacket = ();
-        type ClientBoundDataDrivenUIShowScreenPacket = ();
-        type ClientBoundDataStorePacket = ();
-        type ClientBoundDebugRendererPacket =
-            crate::version::v671::packets::ClientBoundDebugRendererPacket;
-        type ClientBoundMapItemDataPacket =
-            crate::version::v662::packets::ClientBoundMapItemDataPacket<Self>;
-        type ClientBoundTextureShiftPacket = ();
-        type ClientCacheBlobStatusPacket =
-            crate::version::v662::packets::ClientCacheBlobStatusPacket;
-        type ClientCacheMissResponsePacket =
-            crate::version::v662::packets::ClientCacheMissResponsePacket;
-        type ClientCacheStatusPacket = crate::version::v662::packets::ClientCacheStatusPacket;
-        type ClientToServerHandshakePacket =
-            crate::version::v662::packets::ClientToServerHandshakePacket;
-        type CodeBuilderPacket = crate::version::v662::packets::CodeBuilderPacket;
-        type CodeBuilderSourcePacket = crate::version::v685::packets::CodeBuilderSourcePacket<Self>;
-        type CommandBlockUpdatePacket =
-            crate::version::v776::packets::CommandBlockUpdatePacket<Self>;
-        type CommandOutputPacket = crate::version::v662::packets::CommandOutputPacket<Self>;
-        type CommandRequestPacket = crate::version::v662::packets::CommandRequestPacket<Self>;
-        type CompletedUsingItemPacket =
-            crate::version::v662::packets::CompletedUsingItemPacket<Self>;
-        type CompressedBiomeDefinitionListPacket =
-            crate::version::v662::packets::CompressedBiomeDefinitionListPacket;
-        type ContainerClosePacket = crate::version::v685::packets::ContainerClosePacket<Self>;
-        type ContainerOpenPacket = crate::version::v662::packets::ContainerOpenPacket<Self>;
-        type ContainerRegistryCleanupPacket =
-            crate::version::v729::packets::ContainerRegistryCleanupPacket<Self>;
-        type ContainerSetDataPacket = crate::version::v662::packets::ContainerSetDataPacket<Self>;
-        type CorrectPlayerMovePredictionPacket =
-            crate::version::v671::packets::CorrectPlayerMovePredictionPacket<Self>;
-        type CraftingDataPacket = crate::version::v685::packets::CraftingDataPacket<Self>;
-        type CreatePhotoPacket = crate::version::v662::packets::CreatePhotoPacket;
-        type CreativeContentPacket = crate::version::v776::packets::CreativeContentPacket<Self>;
-        type CurrentStructureFeaturePacket =
-            crate::version::v712::packets::CurrentStructureFeaturePacket;
-        type DeathInfoPacket = crate::version::v662::packets::DeathInfoPacket;
-        type DebugDrawerPacket = ();
-        type DebugInfoPacket = crate::version::v662::packets::DebugInfoPacket<Self>;
-        type DimensionDataPacket = crate::version::v662::packets::DimensionDataPacket<Self>;
-        type DisconnectPacket = crate::version::v712::packets::DisconnectPacket<Self>;
-        type EditorNetworkPacket = crate::version::v662::packets::EditorNetworkPacket;
-        type EduUriResourcePacket = crate::version::v662::packets::EduUriResourcePacket<Self>;
-        type EducationSettingsPacket = crate::version::v662::packets::EducationSettingsPacket<Self>;
-        type EmoteListPacket = crate::version::v662::packets::EmoteListPacket<Self>;
-        type EmotePacket = crate::version::v729::packets::EmotePacket<Self>;
-        type FeatureRegistryPacket = crate::version::v662::packets::FeatureRegistryPacket;
-        type FilterTextPacket = ();
-        type GameRulesChangedPacket = crate::version::v662::packets::GameRulesChangedPacket<Self>;
-        type GameTestRequestPacket = crate::version::v662::packets::GameTestRequestPacket<Self>;
-        type GameTestResultsPacket = crate::version::v662::packets::GameTestResultsPacket;
-        type GraphicsParameterOverridePacket = ();
-        type GuiDataPickItemPacket = crate::version::v662::packets::GuiDataPickItemPacket;
-        type HurtArmorPacket = crate::version::v662::packets::HurtArmorPacket;
-        type InteractPacket = crate::version::v662::packets::InteractPacket<Self>;
-        type InventoryContentPacket = crate::version::v748::packets::InventoryContentPacket<Self>;
-        type InventorySlotPacket = crate::version::v748::packets::InventorySlotPacket<Self>;
-        type InventoryTransactionPacket =
-            crate::version::v662::packets::InventoryTransactionPacket<Self>;
-        type ItemComponentPacket = crate::version::v776::packets::ItemComponentPacket<Self>;
-        type ItemStackRequestPacket = crate::version::v662::packets::ItemStackRequestPacket<Self>;
-        type ItemStackResponsePacket = crate::version::v662::packets::ItemStackResponsePacket<Self>;
-        type JigsawStructureDataPacket = crate::version::v712::packets::JigsawStructureDataPacket;
-        type LabTablePacket = crate::version::v662::packets::LabTablePacket<Self>;
-        type LecternUpdatePacket = crate::version::v662::packets::LecternUpdatePacket<Self>;
-        type LegacyTelemetryEventPacket =
-            crate::version::v685::packets::LegacyTelemetryEventPacket<Self>;
-        type LessonProgressPacket = crate::version::v662::packets::LessonProgressPacket<Self>;
-        type LevelChunkPacket = crate::version::v662::packets::LevelChunkPacket<Self>;
-        type LevelEventGenericPacket = crate::version::v662::packets::LevelEventGenericPacket<Self>;
-        type LevelEventPacket = crate::version::v662::packets::LevelEventPacket;
-        type LevelSoundEventPacket = crate::version::v662::packets::LevelSoundEventPacket<Self>;
-        type LevelSoundEventV1Packet = crate::version::v662::packets::LevelSoundEventV1Packet<Self>;
-        type LevelSoundEventV2Packet = crate::version::v662::packets::LevelSoundEventV2Packet<Self>;
-        type LocatorBarPacket = ();
-        type LoginPacket = crate::version::v662::packets::LoginPacket;
-        type MapCreateLockedCopyPacket =
-            crate::version::v662::packets::MapCreateLockedCopyPacket<Self>;
-        type MapInfoRequestPacket = crate::version::v662::packets::MapInfoRequestPacket<Self>;
-        type MobArmorEquipmentPacket = crate::version::v712::packets::MobArmorEquipmentPacket<Self>;
-        type MobEffectPacket = crate::version::v748::packets::MobEffectPacket<Self>;
-        type MobEquipmentPacket = crate::version::v662::packets::MobEquipmentPacket<Self>;
-        type ModalFormRequestPacket = crate::version::v662::packets::ModalFormRequestPacket;
-        type ModalFormResponsePacket = crate::version::v662::packets::ModalFormResponsePacket<Self>;
-        type MotionPredictionHintsPacket =
-            crate::version::v662::packets::MotionPredictionHintsPacket<Self>;
-        type MoveActorAbsolutePacket = crate::version::v662::packets::MoveActorAbsolutePacket<Self>;
-        type MoveActorDeltaPacket = crate::version::v662::packets::MoveActorDeltaPacket<Self>;
-        type MovePlayerPacket = crate::version::v662::packets::MovePlayerPacket<Self>;
-        type MovementEffectPacket = crate::version::v748::packets::MovementEffectPacket<Self>;
-        type MovementPredictionSyncPacket =
-            crate::version::v776::packets::MovementPredictionSyncPacket<Self>;
-        type MultiplayerSettingsPacket =
-            crate::version::v662::packets::MultiplayerSettingsPacket<Self>;
-        type NetworkChunkPublisherUpdatePacket =
-            crate::version::v662::packets::NetworkChunkPublisherUpdatePacket<Self>;
-        type NetworkSettingsPacket = crate::version::v662::packets::NetworkSettingsPacket<Self>;
-        type NetworkStackLatencyPacket = crate::version::v662::packets::NetworkStackLatencyPacket;
-        type NpcDialoguePacket = crate::version::v662::packets::NpcDialoguePacket;
-        type NpcRequestPacket = crate::version::v662::packets::NpcRequestPacket<Self>;
-        type OnScreenTextureAnimationPacket =
-            crate::version::v662::packets::OnScreenTextureAnimationPacket;
-        type OpenSignPacket = crate::version::v662::packets::OpenSignPacket<Self>;
-        type PacketViolationWarningPacket =
-            crate::version::v662::packets::PacketViolationWarningPacket<Self>;
-        type PartyChangedPacket = ();
-        type PassengerJumpPacket = crate::version::v662::packets::PassengerJumpPacket;
-        type PhotoTransferPacket = crate::version::v662::packets::PhotoTransferPacket<Self>;
-        type PlaySoundPacket = crate::version::v662::packets::PlaySoundPacket<Self>;
-        type PlayStatusPacket = crate::version::v662::packets::PlayStatusPacket<Self>;
-        type PlayerActionPacket = crate::version::v662::packets::PlayerActionPacket<Self>;
-        type PlayerArmorDamagePacket = crate::version::v712::packets::PlayerArmorDamagePacket;
-        type PlayerAuthInputPacket = crate::version::v766::packets::PlayerAuthInputPacket<Self>;
-        type PlayerEnchantOptionsPacket =
-            crate::version::v662::packets::PlayerEnchantOptionsPacket<Self>;
-        type PlayerFogPacket = crate::version::v662::packets::PlayerFogPacket;
-        type PlayerHotbarPacket = crate::version::v662::packets::PlayerHotbarPacket<Self>;
-        type PlayerInputPacket = crate::version::v662::packets::PlayerInputPacket;
-        type PlayerListPacket = crate::version::v662::packets::PlayerListPacket<Self>;
-        type PlayerLocationPacket = ();
-        type PlayerSkinPacket = crate::version::v662::packets::PlayerSkinPacket<Self>;
-        type PlayerStartItemCooldownPacket =
-            crate::version::v662::packets::PlayerStartItemCooldownPacket;
-        type PlayerToggleCrafterSlotRequestPacket =
-            crate::version::v662::packets::PlayerToggleCrafterSlotRequestPacket;
-        type PlayerUpdateEntityOverridesPacket = ();
-        type PlayerVideoCapturePacket = ();
-        type PositionTrackingDBClientRequestPacket =
-            crate::version::v662::packets::PositionTrackingDBClientRequestPacket<Self>;
-        type PositionTrackingDBServerBroadcastPacket =
-            crate::version::v662::packets::PositionTrackingDBServerBroadcastPacket<Self>;
-        type PurchaseReceiptPacket = crate::version::v662::packets::PurchaseReceiptPacket;
-        type RefreshEntitlementsPacket = crate::version::v662::packets::RefreshEntitlementsPacket;
-        type RemoveActorPacket = crate::version::v662::packets::RemoveActorPacket<Self>;
-        type RemoveObjectivePacket = crate::version::v662::packets::RemoveObjectivePacket;
-        type RemoveVolumeEntityPacket =
-            crate::version::v662::packets::RemoveVolumeEntityPacket<Self>;
-        type RequestAbilityPacket = crate::version::v662::packets::RequestAbilityPacket<Self>;
-        type RequestChunkRadiusPacket = crate::version::v662::packets::RequestChunkRadiusPacket;
-        type RequestNetworkSettingsPacket =
-            crate::version::v662::packets::RequestNetworkSettingsPacket;
-        type RequestPermissionsPacket =
-            crate::version::v662::packets::RequestPermissionsPacket<Self>;
-        type ResourcePackChunkDataPacket =
-            crate::version::v662::packets::ResourcePackChunkDataPacket;
-        type ResourcePackChunkRequestPacket =
-            crate::version::v662::packets::ResourcePackChunkRequestPacket;
-        type ResourcePackClientResponsePacket =
-            crate::version::v662::packets::ResourcePackClientResponsePacket<Self>;
-        type ResourcePackDataInfoPacket =
-            crate::version::v662::packets::ResourcePackDataInfoPacket<Self>;
-        type ResourcePackStackPacket = crate::version::v671::packets::ResourcePackStackPacket<Self>;
-        type ResourcePacksInfoPacket = crate::version::v766::packets::ResourcePacksInfoPacket;
-        type ResourcePacksReadyForValidationPacket = ();
-        type RespawnPacket = crate::version::v662::packets::RespawnPacket<Self>;
-        type ScriptMessagePacket = crate::version::v662::packets::ScriptMessagePacket;
-        type ServerBoundDataDrivenClosedPacket = ();
-        type ServerBoundDataStorePacket = ();
-        type ServerBoundDiagnosticsPacket =
-            crate::version::v712::packets::ServerBoundDiagnosticsPacket;
-        type ServerBoundLoadingScreenPacket =
-            crate::version::v712::packets::ServerBoundLoadingScreenPacket;
-        type ServerBoundPackSettingChangePacket = ();
-        type ServerPlayerPostMovePositionPacket =
-            crate::version::v662::packets::ServerPlayerPostMovePositionPacket;
-        type ServerPresenceInfoPacket = ();
-        type ServerSettingsRequestPacket =
-            crate::version::v662::packets::ServerSettingsRequestPacket;
-        type ServerSettingsResponsePacket =
-            crate::version::v662::packets::ServerSettingsResponsePacket;
-        type ServerStatsPacket = crate::version::v662::packets::ServerStatsPacket;
-        type ServerStoreInfoPacket = ();
-        type ServerToClientHandshakePacket =
-            crate::version::v662::packets::ServerToClientHandshakePacket;
-        type SetActorDataPacket = crate::version::v662::packets::SetActorDataPacket<Self>;
-        type SetActorLinkPacket = crate::version::v662::packets::SetActorLinkPacket<Self>;
-        type SetActorMotionPacket = crate::version::v662::packets::SetActorMotionPacket<Self>;
-        type SetCommandsEnabledPacket = crate::version::v662::packets::SetCommandsEnabledPacket;
-        type SetDefaultGameTypePacket =
-            crate::version::v662::packets::SetDefaultGameTypePacket<Self>;
-        type SetDifficultyPacket = crate::version::v662::packets::SetDifficultyPacket;
-        type SetDisplayObjectivePacket =
-            crate::version::v662::packets::SetDisplayObjectivePacket<Self>;
-        type SetHealthPacket = crate::version::v662::packets::SetHealthPacket;
-        type SetHudPacket = crate::version::v662::packets::SetHudPacket<Self>;
-        type SetLastHurtByPacket = crate::version::v662::packets::SetLastHurtByPacket<Self>;
-        type SetLocalPlayerAsInitializedPacket =
-            crate::version::v662::packets::SetLocalPlayerAsInitializedPacket<Self>;
-        type SetMovementAuthorityPacket =
-            crate::version::v748::packets::SetMovementAuthorityPacket<Self>;
-        type SetPlayerGameTypePacket = crate::version::v662::packets::SetPlayerGameTypePacket<Self>;
-        type SetPlayerInventoryOptionsPacket =
-            crate::version::v662::packets::SetPlayerInventoryOptionsPacket<Self>;
-        type SetScorePacket = crate::version::v662::packets::SetScorePacket<Self>;
-        type SetScoreboardIdentityPacket =
-            crate::version::v662::packets::SetScoreboardIdentityPacket<Self>;
-        type SetSpawnPositionPacket = crate::version::v662::packets::SetSpawnPositionPacket<Self>;
-        type SetTimePacket = crate::version::v662::packets::SetTimePacket;
-        type SetTitlePacket = crate::version::v712::packets::SetTitlePacket;
-        type SettingsCommandPacket = crate::version::v662::packets::SettingsCommandPacket;
-        type ShowCreditsPacket = crate::version::v662::packets::ShowCreditsPacket<Self>;
-        type ShowProfilePacket = crate::version::v662::packets::ShowProfilePacket;
-        type ShowStoreOfferPacket = crate::version::v662::packets::ShowStoreOfferPacket<Self>;
-        type SimpleEventPacket = crate::version::v662::packets::SimpleEventPacket;
-        type SimulationTypePacket = crate::version::v662::packets::SimulationTypePacket<Self>;
-        type SpawnExperienceOrbPacket = crate::version::v662::packets::SpawnExperienceOrbPacket;
-        type SpawnParticleEffectPacket =
-            crate::version::v662::packets::SpawnParticleEffectPacket<Self>;
-        type StartGamePacket = crate::version::v776::packets::StartGamePacket<Self>;
-        type StopSoundPacket = crate::version::v712::packets::StopSoundPacket;
-        type StructureBlockUpdatePacket =
-            crate::version::v662::packets::StructureBlockUpdatePacket<Self>;
-        type StructureDataRequestPacket =
-            crate::version::v662::packets::StructureDataRequestPacket<Self>;
-        type StructureDataResponsePacket =
-            crate::version::v662::packets::StructureDataResponsePacket<Self>;
-        type SubChunkPacket = crate::version::v662::packets::SubChunkPacket<Self>;
-        type SubChunkRequestPacket = crate::version::v662::packets::SubChunkRequestPacket<Self>;
-        type SubClientLoginPacket = crate::version::v662::packets::SubClientLoginPacket;
-        type SyncActorPropertyPacket = crate::version::v662::packets::SyncActorPropertyPacket;
-        type SyncWorldClocksPacket = ();
-        type TakeItemActorPacket = crate::version::v662::packets::TakeItemActorPacket<Self>;
-        type TextPacket = crate::version::v685::packets::TextPacket<Self>;
-        type TickSyncPacket = ();
-        type TickingAreaLoadStatusPacket =
-            crate::version::v662::packets::TickingAreaLoadStatusPacket;
-        type ToastRequestPacket = crate::version::v662::packets::ToastRequestPacket;
-        type TransferPlayerPacket = crate::version::v729::packets::TransferPlayerPacket;
-        type TrimDataPacket = crate::version::v662::packets::TrimDataPacket;
-        type UnlockedRecipesPacket = crate::version::v662::packets::UnlockedRecipesPacket;
-        type UpdateAbilitiesPacket = crate::version::v662::packets::UpdateAbilitiesPacket<Self>;
-        type UpdateAdventureSettingsPacket =
-            crate::version::v662::packets::UpdateAdventureSettingsPacket<Self>;
-        type UpdateAttributesPacket = crate::version::v729::packets::UpdateAttributesPacket<Self>;
-        type UpdateBlockPacket = crate::version::v662::packets::UpdateBlockPacket<Self>;
-        type UpdateBlockSyncedPacket = crate::version::v662::packets::UpdateBlockSyncedPacket<Self>;
-        type UpdateClientInputLocksPacket =
-            crate::version::v662::packets::UpdateClientInputLocksPacket;
-        type UpdateClientOptionsPacket = ();
-        type UpdateEquipPacket = crate::version::v662::packets::UpdateEquipPacket<Self>;
-        type UpdatePlayerGameTypePacket =
-            crate::version::v671::packets::UpdatePlayerGameTypePacket<Self>;
-        type UpdateSoftEnumPacket = crate::version::v662::packets::UpdateSoftEnumPacket<Self>;
-        type UpdateSubChunkBlocksPacket =
-            crate::version::v662::packets::UpdateSubChunkBlocksPacket<Self>;
-        type UpdateTradePacket = crate::version::v662::packets::UpdateTradePacket<Self>;
-        type VoxelShapesPacket = ();
-    }
-    impl ProtoVersionTypes for V776 {
-        type ActorLink = crate::version::v712::types::ActorLink<Self>;
-        type ActorRuntimeID = crate::version::v662::types::ActorRuntimeID;
-        type ActorUniqueID = crate::version::v662::types::ActorUniqueID;
-        type AdventureSettings = crate::version::v662::types::AdventureSettings;
-        type BaseDescription = crate::version::v662::types::BaseDescription<Self>;
-        type BaseGameVersion = crate::version::v662::types::BaseGameVersion;
-        type BiomeCappedSurfaceData = ();
-        type BiomeClimateData = ();
-        type BiomeConditionalTransformationData = ();
-        type BiomeConsolidatedFeatureList = ();
-        type BiomeCoordinateData = ();
-        type BiomeDefinition = ();
-        type BiomeDefinitionChunkGenData = ();
-        type BiomeElementData = ();
-        type BiomeLegacyWorldGenRulesData = ();
-        type BiomeMesaSurfaceData = ();
-        type BiomeMountainParamsData = ();
-        type BiomeMultinoiseGenRulesData = ();
-        type BiomeNoiseGradientSurfaceData = ();
-        type BiomeOverworldGenRulesData = ();
-        type BiomeReplacementData = ();
-        type BiomeScatterParamData = ();
-        type BiomeSurfaceBuilderData = ();
-        type BiomeSurfaceMaterialAdjustmentData = ();
-        type BiomeSurfaceMaterialData = ();
-        type BiomeWeightedData = ();
-        type BiomeWeightedTemperatureData = ();
-        type BlockPos = crate::version::v662::types::BlockPos;
-        type CameraAimAssistCategories =
-            crate::version::v766::types::CameraAimAssistCategories<Self>;
-        type CameraAimAssistCategory = crate::version::v766::types::CameraAimAssistCategory<Self>;
-        type CameraAimAssistItemSettings = crate::version::v766::types::CameraAimAssistItemSettings;
-        type CameraAimAssistPreset = crate::version::v766::types::CameraAimAssistPreset;
-        type CameraAimAssistPresetDefinition =
-            crate::version::v776::types::CameraAimAssistPresetDefinition<Self>;
-        type CameraAimAssistPriority = crate::version::v766::types::CameraAimAssistPriority;
-        type CameraInstruction = crate::version::v748::types::CameraInstruction<Self>;
-        type CameraPreset = crate::version::v776::types::CameraPreset<Self>;
-        type CameraPresets = crate::version::v662::types::CameraPresets<Self>;
-        type CameraSplineInstruction = ();
-        type ChunkPos = crate::version::v662::types::ChunkPos;
-        type Color = ();
-        type CommandOriginData = crate::version::v662::types::CommandOriginData<Self>;
-        type ContainerMixDataEntry = crate::version::v662::types::ContainerMixDataEntry;
-        type CraftingDataEntry = crate::version::v662::types::CraftingDataEntry<Self>;
-        type DataItem = crate::version::v662::types::DataItem<Self>;
-        type DebugShape = ();
-        type DimensionDefinitionGroup = crate::version::v662::types::DimensionDefinitionGroup;
-        type EduSharedUriResource = crate::version::v662::types::EduSharedUriResource;
-        type EducationLevelSettings = crate::version::v662::types::EducationLevelSettings;
-        type EntityNetID = crate::version::v662::types::EntityNetID;
-        type Experiments = crate::version::v662::types::Experiments;
-        type FullContainerName = crate::version::v729::types::FullContainerName<Self>;
-        type GameRulesChangedPacketData = crate::version::v662::types::GameRulesChangedPacketData;
-        type InventoryAction = crate::version::v662::types::InventoryAction<Self>;
-        type InventorySource = crate::version::v662::types::InventorySource<Self>;
-        type InventoryTransaction = crate::version::v662::types::InventoryTransaction<Self>;
-        type ItemData = crate::version::v662::types::ItemData;
-        type ItemEnchants = crate::version::v662::types::ItemEnchants<Self>;
-        type ItemStackRequestSlotInfo = crate::version::v712::types::ItemStackRequestSlotInfo<Self>;
-        type ItemStackResponseContainerInfo =
-            crate::version::v712::types::ItemStackResponseContainerInfo<Self>;
-        type ItemStackResponseInfo = crate::version::v662::types::ItemStackResponseInfo<Self>;
-        type ItemStackResponseSlotInfo = crate::version::v766::types::ItemStackResponseSlotInfo;
-        type LevelSettings = crate::version::v685::types::LevelSettings<Self>;
-        type MapDecoration = crate::version::v662::types::MapDecoration;
-        type MapItemTrackedActorUniqueID =
-            crate::version::v662::types::MapItemTrackedActorUniqueID<Self>;
-        type MaterialReducerDataEntry = crate::version::v662::types::MaterialReducerDataEntry;
-        type MolangVariableMap = crate::version::v662::types::MolangVariableMap;
-        type MoveActorAbsoluteData = crate::version::v662::types::MoveActorAbsoluteData<Self>;
-        type MoveActorDeltaData = crate::version::v662::types::MoveActorDeltaData<Self>;
-        type NetworkBlockPosition = crate::version::v662::types::NetworkBlockPosition;
-        type NetworkItemInstanceDescriptor =
-            crate::version::v662::types::NetworkItemInstanceDescriptor;
-        type NetworkItemStackDescriptor = crate::version::v662::types::NetworkItemStackDescriptor;
-        type NetworkPermissions = crate::version::v662::types::NetworkPermissions;
-        type PackedItemUseLegacyInventoryTransaction =
-            crate::version::v712::types::PackedItemUseLegacyInventoryTransaction<Self>;
-        type PlayerBlockActionData = crate::version::v662::types::PlayerBlockActionData<Self>;
-        type PositionTrackingId = crate::version::v662::types::PositionTrackingId;
-        type PotionMixDataEntry = crate::version::v662::types::PotionMixDataEntry;
-        type PropertySyncData = crate::version::v662::types::PropertySyncData;
-        type RecipeIngredient = crate::version::v662::types::RecipeIngredient<Self>;
-        type RecipeUnlockingRequirement =
-            crate::version::v685::types::RecipeUnlockingRequirement<Self>;
-        type ScoreboardId = crate::version::v662::types::ScoreboardId;
-        type SerializedAbilitiesData = crate::version::v776::types::SerializedAbilitiesData<Self>;
-        type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
-        type ShapedChemistryRecipe = crate::version::v662::types::ShapedChemistryRecipe<Self>;
-        type ShapedRecipe = crate::version::v685::types::ShapedRecipe<Self>;
-        type ShapelessChemistryRecipe = crate::version::v662::types::ShapelessChemistryRecipe<Self>;
-        type ShapelessRecipe = crate::version::v685::types::ShapelessRecipe<Self>;
-        type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
-        type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
-        type SmithingTrimRecipe = crate::version::v662::types::SmithingTrimRecipe<Self>;
-        type SpawnSettings = crate::version::v662::types::SpawnSettings<Self>;
-        type StructureEditorData = crate::version::v776::types::StructureEditorData<Self>;
-        type StructureSettings = crate::version::v662::types::StructureSettings<Self>;
-        type SubChunkPos = crate::version::v662::types::SubChunkPos;
-        type SubChunkPosOffset = crate::version::v662::types::SubChunkPosOffset;
-        type SyncedPlayerMovementSettings =
-            crate::version::v662::types::SyncedPlayerMovementSettings<Self>;
-        type WebSocketPacketData = crate::version::v662::types::WebSocketPacketData;
-    }
-    impl ProtoVersionEnums for V776 {
-        type AbilitiesIndex = crate::version::v776::enums::AbilitiesIndex;
-        type ActorBlockSyncMessageID = crate::version::v662::enums::ActorBlockSyncMessageID;
-        type ActorDamageCause = crate::version::v662::enums::ActorDamageCause;
-        type ActorDataIDs = crate::version::v776::enums::ActorDataIDs;
-        type ActorEvent = crate::version::v662::enums::ActorEvent;
-        type ActorFlags = crate::version::v776::enums::ActorFlags;
-        type ActorLinkType = crate::version::v662::enums::ActorLinkType;
-        type ActorType = crate::version::v662::enums::ActorType;
-        type AgentActionType = crate::version::v662::enums::AgentActionType;
-        type AimAssistAction = crate::version::v729::enums::AimAssistAction;
-        type AnimatedTextureType = crate::version::v662::enums::AnimatedTextureType;
-        type AnimationExpression = crate::version::v662::enums::AnimationExpression;
-        type AnimationMode = crate::version::v662::enums::AnimationMode;
-        type AttributeModifierOperation = crate::version::v662::enums::AttributeModifierOperation;
-        type AttributeOperands = crate::version::v662::enums::AttributeOperands;
-        type AuthoritativeMovementMode = crate::version::v748::enums::AuthoritativeMovementMode;
-        type BookEditAction = crate::version::v662::enums::BookEditAction;
-        type BossEventUpdateType = crate::version::v776::enums::BossEventUpdateType<Self>;
-        type BuildPlatform = crate::version::v662::enums::BuildPlatform;
-        type CameraAimAssistOperation = crate::version::v776::enums::CameraAimAssistOperation;
-        type CameraShakeAction = crate::version::v662::enums::CameraShakeAction;
-        type CameraShakeType = crate::version::v662::enums::CameraShakeType;
-        type CameraSplineEaseType = ();
-        type CameraSplineType = ();
-        type ChatRestrictionLevel = crate::version::v662::enums::ChatRestrictionLevel;
-        type CodeBuilderCodeStatus = crate::version::v685::enums::CodeBuilderCodeStatus;
-        type CodeBuilderStorageCategory = crate::version::v662::enums::CodeBuilderStorageCategory;
-        type CodeBuilderStorageOperation = crate::version::v662::enums::CodeBuilderStorageOperation;
-        type CommandBlockMode = crate::version::v662::enums::CommandBlockMode;
-        type CommandOriginType = crate::version::v662::enums::CommandOriginType;
-        type CommandOutputType = crate::version::v662::enums::CommandOutputType;
-        type CommandParameterOption = crate::version::v662::enums::CommandParameterOption;
-        type CommandPermissionLevel = crate::version::v662::enums::CommandPermissionLevel;
-        type ComplexInventoryTransactionType =
-            crate::version::v662::enums::ComplexInventoryTransactionType;
-        type ConnectionFailReason = crate::version::v662::enums::ConnectionFailReason;
-        type ContainerEnumName = crate::version::v712::enums::ContainerEnumName;
-        type ContainerID = crate::version::v662::enums::ContainerID;
-        type ContainerType = crate::version::v662::enums::ContainerType;
-        type ControlScheme = ();
-        type CraftingDataEntryType = crate::version::v662::enums::CraftingDataEntryType<Self>;
-        type DataItemType = crate::version::v662::enums::DataItemType<Self>;
-        type Difficulty = crate::version::v662::enums::Difficulty;
-        type EasingType = crate::version::v662::enums::EasingType;
-        type EditorWorldType = crate::version::v662::enums::EditorWorldType;
-        type EducationEditionOffer = crate::version::v662::enums::EducationEditionOffer;
-        type EnchantType = crate::version::v662::enums::EnchantType;
-        type GamePublishSetting = crate::version::v662::enums::GamePublishSetting;
-        type GameType = crate::version::v662::enums::GameType;
-        type GeneratorType = crate::version::v662::enums::GeneratorType;
-        type HudElement = crate::version::v662::enums::HudElement;
-        type HudVisibility = crate::version::v662::enums::HudVisibility;
-        type IdentityDefinitionType = crate::version::v662::enums::IdentityDefinitionType<Self>;
-        type InputMode = crate::version::v662::enums::InputMode;
-        type InteractionType = crate::version::v662::enums::InteractionType;
-        type InventoryLayout = crate::version::v662::enums::InventoryLayout;
-        type InventoryLeftTabIndex = crate::version::v662::enums::InventoryLeftTabIndex;
-        type InventoryRightTabIndex = crate::version::v662::enums::InventoryRightTabIndex;
-        type InventorySourceFlags = crate::version::v662::enums::InventorySourceFlags;
-        type InventorySourceType = crate::version::v662::enums::InventorySourceType<Self>;
-        type ItemDescriptorType = crate::version::v662::enums::ItemDescriptorType;
-        type ItemReleaseInventoryTransactionType =
-            crate::version::v662::enums::ItemReleaseInventoryTransactionType;
-        type ItemStackNetResult = crate::version::v662::enums::ItemStackNetResult<Self>;
-        type ItemStackRequestActionType =
-            crate::version::v712::enums::ItemStackRequestActionType<Self>;
-        type ItemUseInventoryTransactionType =
-            crate::version::v662::enums::ItemUseInventoryTransactionType;
-        type ItemUseMethod = crate::version::v662::enums::ItemUseMethod;
-        type ItemUseOnActorInventoryTransactionType =
-            crate::version::v662::enums::ItemUseOnActorInventoryTransactionType;
-        type ItemVersion = crate::version::v776::enums::ItemVersion;
-        type LabTableReactionType = crate::version::v662::enums::LabTableReactionType;
-        type LessonAction = crate::version::v662::enums::LessonAction;
-        type LevelEvent = crate::version::v766::enums::LevelEvent;
-        type LevelSoundEventType = crate::version::v766::enums::LevelSoundEventType;
-        type MinecraftPacketIds = crate::version::v662::enums::MinecraftPacketIds;
-        type Mirror = crate::version::v662::enums::Mirror;
-        type ModalFormCancelReason = crate::version::v662::enums::ModalFormCancelReason;
-        type MolangVersion = crate::version::v662::enums::MolangVersion;
-        type MovementEffectType = crate::version::v748::enums::MovementEffectType;
-        type MultiplayerSettingsPacketType =
-            crate::version::v662::enums::MultiplayerSettingsPacketType;
-        type NewInteractionModel = crate::version::v662::enums::NewInteractionModel;
-        type ObjectiveSortOrder = crate::version::v662::enums::ObjectiveSortOrder;
-        type POIBlockInteractionType = crate::version::v662::enums::POIBlockInteractionType;
-        type PackType = crate::version::v662::enums::PackType;
-        type PacketCompressionAlgorithm = crate::version::v662::enums::PacketCompressionAlgorithm;
-        type PacketViolationSeverity = crate::version::v662::enums::PacketViolationSeverity;
-        type PacketViolationType = crate::version::v662::enums::PacketViolationType;
-        type ParticleType = crate::version::v766::enums::ParticleType;
-        type PhotoType = crate::version::v662::enums::PhotoType;
-        type PlayStatus = crate::version::v662::enums::PlayStatus;
-        type PlayerPermissionLevel = crate::version::v662::enums::PlayerPermissionLevel;
-        type PlayerPositionMode = crate::version::v662::enums::PlayerPositionMode;
-        type PlayerRespawnState = crate::version::v662::enums::PlayerRespawnState;
-        type PredictionType = crate::version::v712::enums::PredictionType;
-        type ResourcePackResponse = crate::version::v662::enums::ResourcePackResponse;
-        type Rotation = crate::version::v662::enums::Rotation;
-        type ServerAuthMovementMode = crate::version::v662::enums::ServerAuthMovementMode;
-        type ShowStoreOfferRedirectType = crate::version::v662::enums::ShowStoreOfferRedirectType;
-        type SimulationType = crate::version::v662::enums::SimulationType;
-        type SoftEnumUpdateType = crate::version::v662::enums::SoftEnumUpdateType;
-        type SpawnBiomeType = crate::version::v662::enums::SpawnBiomeType;
-        type SpawnPositionType = crate::version::v662::enums::SpawnPositionType;
-        type StructureBlockType = crate::version::v662::enums::StructureBlockType;
-        type StructureRedstoneSaveMode = crate::version::v662::enums::StructureRedstoneSaveMode;
-        type StructureTemplateRequestOperation =
-            crate::version::v662::enums::StructureTemplateRequestOperation;
-        type StructureTemplateResponseType =
-            crate::version::v662::enums::StructureTemplateResponseType;
-        type TeleportationCause = crate::version::v662::enums::TeleportationCause;
-        type TextPacketType = crate::version::v662::enums::TextPacketType;
-        type TextProcessingEventOrigin = crate::version::v662::enums::TextProcessingEventOrigin;
-        type UIProfile = crate::version::v662::enums::UIProfile;
-    }
-    impl ProtoVersion for V776 {
-        const PROTOCOL_VERSION: u32 = 776u32;
-        const PROTOCOL_BRANCH: &str = "r/21_u6";
-        const GAME_VERSION: &str = "1.21.60";
-        const RAKNET_VERSION: u8 = 11u8;
     }
 }
 #[cfg(feature = "v776")]

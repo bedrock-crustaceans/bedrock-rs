@@ -10,6 +10,7 @@ export!(graphics_parameter_override);
 export!(inventory_slot);
 export!(level_sound_event);
 export!(locator_bar);
+export!(mob_equipment);
 export!(movement_prediction_sync);
 export!(party_changed);
 export!(play_sound);

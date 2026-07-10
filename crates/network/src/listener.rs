@@ -1,22 +1,23 @@
 use core::net::SocketAddr;
 
-use rak_rs::Motd;
-use rak_rs::mcpe::motd::Gamemode;
 use rand::random;
 
 use crate::connection::Connection;
-use crate::error::{ListenerError, RakNetError, TransportLayerError};
+use crate::error::ListenerError;
 use crate::info::MINECRAFT_EDITION_MOTD;
 use crate::transport::TransportLayerListener;
 use bedrock_protocol_core::Packets;
+
+use crate::motd::BedrockMOTD;
+use raknet_tokio::prelude::*;
 
 #[allow(dead_code)]
 pub struct Listener {
     listener: TransportLayerListener,
     name: String,
     sub_name: String,
-    player_max: u32,
-    player_count: u32,
+    player_max: i32,
+    player_count: i32,
     socket_addr: SocketAddr,
     guid: u64,
 }
@@ -29,41 +30,37 @@ impl Listener {
         sub_name: String,
         display_version: String,
         protocol: u32,
+        // TODO: expose in raknet crate
         rak_version: u8,
-        player_max: u32,
-        player_count: u32,
+        player_max: i32,
+        player_count: i32,
         nintendo_limited: bool,
     ) -> Result<Self, ListenerError> {
-        let mut rak_listener = rak_rs::Listener::bind(socket_addr).await.map_err(|err| {
-            ListenerError::TransportListenerError(TransportLayerError::RakNetError(
-                RakNetError::ServerError(err),
-            ))
-        })?;
-
         // generate a random guid
         let guid: u64 = random::<u64>();
 
-        // Set the RakNet version
-        rak_listener.versions = Box::leak(Box::new([rak_version])); // Currently rak_rs gave an array to us, but obviously we won't use multi rak versions
-
-        // Set up the motd
-        rak_listener.motd = Motd {
-            edition: String::from(MINECRAFT_EDITION_MOTD),
-            version: display_version,
-            name: name.clone(),
-            sub_name: sub_name.clone(),
-            player_max,
-            player_count,
-            protocol: protocol as u16,
-            server_guid: guid,
-            gamemode: Gamemode::Survival,
-            port: Some(socket_addr.clone().port().to_string()),
-            ipv6_port: Some(socket_addr.clone().port().to_string()),
-            nintendo_limited: Some(nintendo_limited),
-        };
+        let rak_server = RakServer::new(socket_addr, |conf| {
+            conf.guid = guid;
+            conf.protocols = Box::new([rak_version]);
+            conf.message = BedrockMOTD {
+                edition: MINECRAFT_EDITION_MOTD.to_owned(),
+                version: display_version,
+                name: name.clone(),
+                sub_name: sub_name.clone(),
+                player_max,
+                player_count,
+                protocol,
+                guid,
+                game_mode: "Survival".to_string(),
+                port_v4: Some(socket_addr.port()),
+                port_v6: Some(socket_addr.port()),
+                nintendo_limited: Some(nintendo_limited),
+            }
+            .into()
+        });
 
         Ok(Self {
-            listener: TransportLayerListener::RakNet(rak_listener),
+            listener: TransportLayerListener::RakNet(rak_server),
             name,
             sub_name,
             player_max,

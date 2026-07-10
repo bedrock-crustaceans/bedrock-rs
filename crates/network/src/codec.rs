@@ -37,7 +37,7 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError
         .iter()
         .map(|p| {
             let packet_size = p.size_hint(&PacketHeader {
-                packet_id: p.inner().id(),
+                packet_id: p.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
             });
@@ -52,7 +52,7 @@ fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError
         .iter()
         .try_for_each(|packet| -> Result<(), NetworkCodecError> {
             let header = PacketHeader {
-                packet_id: packet.inner().id(),
+                packet_id: packet.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
             };
@@ -82,7 +82,18 @@ fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, Netwo
         let buf_len = <u32 as ProtoCodecVAR>::deserialize(&mut packets_stream)?;
         let mut buf = packets_stream.by_ref().take(buf_len as u64);
 
-        packets.push(T::deserialize(&mut buf)?.0);
+        let (packet, header) = T::deserialize(&mut buf)?;
+        packets.push(packet);
+
+        // drain bytes the deserializer left behind so the next packet's length prefix stays aligned
+        if buf.limit() > 0 {
+            tracing::warn!(
+                "packet {} deserializer left {} unread bytes, skipping to next packet",
+                header.packet_id,
+                buf.limit()
+            );
+            std::io::copy(&mut buf, &mut std::io::sink())?;
+        }
     }
 
     Ok(packets)

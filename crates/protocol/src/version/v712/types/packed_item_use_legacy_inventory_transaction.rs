@@ -54,7 +54,7 @@ impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> 
         match &self.id {
             0 => {}
             _ => {
-                let vec = self.container_slots.as_ref().unwrap();
+                let vec = self.container_slots.as_ref().ok_or(ProtoCodecError::ExpectedSome("container_slots"))?;
                 let len: u32 = vec.len().try_into()?;
                 ProtoCodecVAR::serialize(&len, stream)?;
                 for i in vec {
@@ -125,8 +125,7 @@ impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> 
             + match &self.id {
                 0 => 0,
                 _ => {
-                    let vec = self.container_slots.as_ref().unwrap();
-                    vec.len() + vec.iter().map(|i| i.size_hint()).sum::<usize>()
+                    self.container_slots.as_ref().map_or(0, |vec| vec.len() + vec.iter().map(|i| i.size_hint()).sum::<usize>())
                 }
             }
             + self.action.size_hint()

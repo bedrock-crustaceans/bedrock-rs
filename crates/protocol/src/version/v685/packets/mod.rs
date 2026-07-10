@@ -8,6 +8,5 @@ macro_rules! export {
 export!(award_achievement);
 export!(code_builder_source);
 export!(container_close);
-export!(crafting_data);
 export!(legacy_telemetry_event);
 export!(text);

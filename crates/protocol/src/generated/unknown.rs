@@ -109,17 +109,12 @@ mod inner {
                 }
         }
         #[inline]
-        fn inner(&self) -> &dyn bedrock_protocol_core::DynPacket {
+        fn id(&self) -> u16 {
             match self {
-                Unknown::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
-                Unknown::Unknown(pk) => pk.as_ref(),
-            }
-        }
-        #[inline]
-        fn into_inner(self) -> Box<dyn bedrock_protocol_core::DynPacket> {
-            match self {
-                Unknown::RequestNetworkSettingsPacket(pk) => pk,
-                Unknown::Unknown(pk) => pk,
+                Unknown::RequestNetworkSettingsPacket(_) => {
+                    <<Unknown as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::Packet>::ID
+                }
+                Unknown::Unknown(pk) => pk.id,
             }
         }
     }
@@ -170,6 +165,7 @@ mod inner {
         type ClientBoundDebugRendererPacket = ();
         type ClientBoundMapItemDataPacket = ();
         type ClientBoundTextureShiftPacket = ();
+        type ClientBoundUpdateSoundDataPacket = ();
         type ClientCacheBlobStatusPacket = ();
         type ClientCacheMissResponsePacket = ();
         type ClientCacheStatusPacket = ();
@@ -251,6 +247,7 @@ mod inner {
         type OpenSignPacket = ();
         type PacketViolationWarningPacket = ();
         type PartyChangedPacket = ();
+        type PartyDestinationCookieResponsePacket = ();
         type PassengerJumpPacket = ();
         type PhotoTransferPacket = ();
         type PlaySoundPacket = ();
@@ -290,6 +287,7 @@ mod inner {
         type ResourcePacksReadyForValidationPacket = ();
         type RespawnPacket = ();
         type ScriptMessagePacket = ();
+        type SendPartyDestinationCookiePacket = ();
         type ServerBoundDataDrivenClosedPacket = ();
         type ServerBoundDataStorePacket = ();
         type ServerBoundDiagnosticsPacket = ();
@@ -433,6 +431,7 @@ mod inner {
         type NetworkBlockPosition = ();
         type NetworkItemInstanceDescriptor = ();
         type NetworkItemStackDescriptor = ();
+        type NetworkItemStackDescriptorV2 = ();
         type NetworkPermissions = ();
         type PackedItemUseLegacyInventoryTransaction = ();
         type PlayerBlockActionData = ();
@@ -444,9 +443,7 @@ mod inner {
         type ScoreboardId = ();
         type SerializedAbilitiesData = ();
         type SerializedSkin = ();
-        type ShapedChemistryRecipe = ();
         type ShapedRecipe = ();
-        type ShapelessChemistryRecipe = ();
         type ShapelessRecipe = ();
         type ShulkerBoxRecipe = ();
         type SmithingTransformRecipe = ();
@@ -573,6 +570,24 @@ mod inner {
         const PROTOCOL_BRANCH: &str = "r/0_u0";
         const GAME_VERSION: &str = "0.0.0";
         const RAKNET_VERSION: u8 = 10u8;
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl AsRef<dyn bedrock_protocol_core::PacketDyn> for Unknown {
+        fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+            match self {
+                Unknown::RequestNetworkSettingsPacket(pk) => pk.as_ref(),
+                Unknown::Unknown(pk) => pk.as_ref(),
+            }
+        }
+    }
+    #[cfg(feature = "packet-dyn")]
+    impl From<Unknown> for Box<dyn bedrock_protocol_core::PacketDyn> {
+        fn from(val: Unknown) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+            match val {
+                Unknown::RequestNetworkSettingsPacket(pk) => pk,
+                Unknown::Unknown(pk) => pk,
+            }
+        }
     }
 }
 #[cfg(feature = "unknown")]

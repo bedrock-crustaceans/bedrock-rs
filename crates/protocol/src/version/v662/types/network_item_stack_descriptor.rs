@@ -9,7 +9,7 @@ pub struct NetworkItemStackDescriptor {
     aux_value: Option<u32>,
     net_id_variant: Option<Option<i32>>,
     block_runtime_id: Option<i32>,
-    user_data_buffer: Option<String>,
+    user_data_buffer: Option<Vec<u8>>,
 }
 
 impl ProtoCodec for NetworkItemStackDescriptor {
@@ -19,14 +19,14 @@ impl ProtoCodec for NetworkItemStackDescriptor {
         match &self.id {
             0 => {}
             _ => {
-                ProtoCodecLE::serialize(self.stack_size.as_ref().unwrap(), stream)?;
-                ProtoCodecVAR::serialize(self.aux_value.as_ref().unwrap(), stream)?;
+                ProtoCodecLE::serialize(self.stack_size.as_ref().ok_or(ProtoCodecError::ExpectedSome("stack_size"))?, stream)?;
+                ProtoCodecVAR::serialize(self.aux_value.as_ref().ok_or(ProtoCodecError::ExpectedSome("aux_value"))?, stream)?;
                 <Option<i32> as ProtoCodecVAR>::serialize(
-                    self.net_id_variant.as_ref().unwrap(),
+                    self.net_id_variant.as_ref().ok_or(ProtoCodecError::ExpectedSome("net_id_variant"))?,
                     stream,
                 )?;
-                ProtoCodecVAR::serialize(self.block_runtime_id.as_ref().unwrap(), stream)?;
-                String::serialize(self.user_data_buffer.as_ref().unwrap(), stream)?;
+                ProtoCodecVAR::serialize(self.block_runtime_id.as_ref().ok_or(ProtoCodecError::ExpectedSome("block_runtime_id"))?, stream)?;
+                ProtoCodec::serialize(self.user_data_buffer.as_ref().ok_or(ProtoCodecError::ExpectedSome("user_data_buffer"))?, stream)?;
             }
         }
 
@@ -43,7 +43,7 @@ impl ProtoCodec for NetworkItemStackDescriptor {
                 let aux_value = <u32 as ProtoCodecVAR>::deserialize(stream)?;
                 let net_id_variant = <Option<i32> as ProtoCodecVAR>::deserialize(stream)?;
                 let block_runtime_id = <i32 as ProtoCodecVAR>::deserialize(stream)?;
-                let user_data_buffer = String::deserialize(stream)?;
+                let user_data_buffer = ProtoCodec::deserialize(stream)?;
 
                 (
                     Some(stack_size),
@@ -70,13 +70,11 @@ impl ProtoCodec for NetworkItemStackDescriptor {
             + match &self.id {
                 0 => 0,
                 _ => {
-                    ProtoCodecLE::size_hint(self.stack_size.as_ref().unwrap())
-                        + ProtoCodecVAR::size_hint(self.aux_value.as_ref().unwrap())
-                        + <Option<i32> as ProtoCodecVAR>::size_hint(
-                            self.net_id_variant.as_ref().unwrap(),
-                        )
-                        + ProtoCodecVAR::size_hint(self.block_runtime_id.as_ref().unwrap())
-                        + String::size_hint(self.user_data_buffer.as_ref().unwrap())
+                    self.stack_size.as_ref().map_or(0, ProtoCodecLE::size_hint)
+                        + self.aux_value.as_ref().map_or(0, ProtoCodecVAR::size_hint)
+                        + self.net_id_variant.as_ref().map_or(0, ProtoCodecVAR::size_hint)
+                        + self.block_runtime_id.as_ref().map_or(0, ProtoCodecVAR::size_hint)
+                        + self.user_data_buffer.as_ref().map_or(0, ProtoCodec::size_hint)
                 }
             }
     }

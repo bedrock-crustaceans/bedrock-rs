@@ -8,7 +8,7 @@ pub struct NetworkItemInstanceDescriptor {
     stack_size: Option<u16>,
     aux_value: Option<u32>,
     block_runtime_id: Option<i32>,
-    user_data_buffer: Option<String>,
+    user_data_buffer: Option<Vec<u8>>,
 }
 
 impl ProtoCodec for NetworkItemInstanceDescriptor {
@@ -18,10 +18,10 @@ impl ProtoCodec for NetworkItemInstanceDescriptor {
         match &self.id {
             0 => {}
             _ => {
-                ProtoCodecLE::serialize(self.stack_size.as_ref().unwrap(), stream)?;
-                ProtoCodecVAR::serialize(self.aux_value.as_ref().unwrap(), stream)?;
-                ProtoCodecVAR::serialize(self.block_runtime_id.as_ref().unwrap(), stream)?;
-                ProtoCodec::serialize(self.user_data_buffer.as_ref().unwrap(), stream)?;
+                ProtoCodecLE::serialize(self.stack_size.as_ref().ok_or(ProtoCodecError::ExpectedSome("stack_size"))?, stream)?;
+                ProtoCodecVAR::serialize(self.aux_value.as_ref().ok_or(ProtoCodecError::ExpectedSome("aux_value"))?, stream)?;
+                ProtoCodecVAR::serialize(self.block_runtime_id.as_ref().ok_or(ProtoCodecError::ExpectedSome("block_runtime_id"))?, stream)?;
+                ProtoCodec::serialize(self.user_data_buffer.as_ref().ok_or(ProtoCodecError::ExpectedSome("user_data_buffer"))?, stream)?;
             }
         }
 
@@ -62,10 +62,10 @@ impl ProtoCodec for NetworkItemInstanceDescriptor {
             + match self.id {
                 0 => 0,
                 _ => {
-                    ProtoCodecLE::size_hint(self.stack_size.as_ref().unwrap())
-                        + ProtoCodecVAR::size_hint(self.aux_value.as_ref().unwrap())
-                        + ProtoCodecVAR::size_hint(self.block_runtime_id.as_ref().unwrap())
-                        + ProtoCodec::size_hint(self.user_data_buffer.as_ref().unwrap())
+                    self.stack_size.as_ref().map_or(0, ProtoCodecLE::size_hint)
+                    + self.aux_value.as_ref().map_or(0, ProtoCodecVAR::size_hint)
+                    + self.block_runtime_id.as_ref().map_or(0, ProtoCodecVAR::size_hint)
+                    + self.user_data_buffer.as_ref().map_or(0, ProtoCodec::size_hint)
                 }
             }
     }

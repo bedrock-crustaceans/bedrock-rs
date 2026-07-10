@@ -187,11 +187,29 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
 
         let event_type_discriminant = event_type_cursor.read_i32_varint()?;
 
+        let payload_type: u32 = match event_type_discriminant {
+            0..=7 => event_type_discriminant as u32,
+            11 => 8,
+            13 => 9,
+            15 => 10,
+            16 => 11,
+            17 => 12,
+            18 => 13,
+            19 => 14,
+            23 => 15,
+            24 => 16,
+            25 => 17,
+            26 => 18,
+            27 => 19,
+            31 => 20,
+            _ => return Err(ProtoCodecError::FormatMismatch("deprecated event type")),
+        };
+
         <V::ActorUniqueID as ProtoCodec>::serialize(&self.target_actor_id, stream)?;
         <i32 as ProtoCodecVAR>::serialize(&event_type_discriminant, stream)?;
         <bool as ProtoCodec>::serialize(&self.use_player_id, stream)?;
         copy(&mut event_type_cursor, stream)?;
-        <u32 as ProtoCodecVAR>::serialize(&(event_type_discriminant as u32), stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&payload_type, stream)?;
 
         Ok(())
     }
