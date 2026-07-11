@@ -115,28 +115,14 @@ impl Key {
         Ok(())
     }
 
-    pub fn deserialize<R>(reader: &mut Cursor<R>) -> Result<Key>
-    where
-        Cursor<R>: Seek + Read,
-    {
-        let start_position = reader.position();
-        let len = reader.stream_len_ext()?;
-
-        let x = reader.read_i32::<LittleEndian>()?;
-        let z = reader.read_i32::<LittleEndian>()?;
-
-        let chunk = ChunkPosition(x, z);
-        let dimension = if len > 10 {
-            Dimension::from(reader.read_u32::<LittleEndian>()? as i32)
-        } else {
-            Dimension::Overworld
-        };
-
-        let key_var = reader.read_u8()?;
-        let data = match key_var {
-            0x2f => KeyVariant::SubChunk {
-                index: reader.read_i8()?,
-            },
+    /// Maps a chunk key tag byte to its `KeyVariant`, if it is a recognized one.
+    ///
+    /// `SubChunk` is intentionally excluded: its wire tag additionally requires a
+    /// trailing index byte, which is handled by the caller based on key length.
+    /// `LocalPlayer` has no on-disk tag byte at all -- it is a string key -- so it
+    /// is likewise excluded.
+    fn known_tag(tag: u8) -> Option<KeyVariant> {
+        Some(match tag {
             0x2b => KeyVariant::Biome3d,
             0x2c => KeyVariant::ChunkVersion,
             0x2d => KeyVariant::HeightMap,
@@ -158,27 +144,260 @@ impl Key {
             0x41 => KeyVariant::ActorDigestVersion,
             0x76 => KeyVariant::LegacyVersion,
             0x77 => KeyVariant::AabbVolumes,
-            _ => {
-                // Check whether this was one of the strings
-                reader.set_position(start_position);
+            _ => return None,
+        })
+    }
 
-                let mut string = String::with_capacity(len as usize);
-                reader.read_to_string(&mut string)?;
+    pub fn deserialize<R>(reader: &mut Cursor<R>) -> Result<Key>
+    where
+        Cursor<R>: Seek + Read,
+    {
+        let start_position = reader.position();
+        let len = reader.stream_len_ext()?;
 
-                if string == LOCAL_PLAYER {
-                    KeyVariant::LocalPlayer
+        // Chunk keys have a fixed binary shape: `x:i32 | z:i32 | dimension:i32? | tag:u8 | index:i8?`.
+        // The dimension field is omitted for the overworld (dimension 0 is implied and never
+        // written on disk), and the trailing index byte is present only for `SubChunk`. That
+        // leaves exactly four valid lengths: 9/10 for the overworld, 13/14 for other dimensions.
+        // Anything else -- including any of these four lengths whose tag byte (and, for 13/14,
+        // whose dimension i32) doesn't decode to a known value -- is a string key instead.
+        //
+        // This is still a heuristic, not a guarantee: a string key that happens to be exactly
+        // 9, 10, 13, or 14 bytes long, whose byte at the tag offset collides with a known tag
+        // (and, for 13/14, whose bytes 8..12 collide with an accepted dimension id), is indistinguishable
+        // from a real chunk key on the wire and will be misparsed as one. The format gives no
+        // further signal to disambiguate.
+        if matches!(len, 9 | 10 | 13 | 14) {
+            let x = reader.read_i32::<LittleEndian>()?;
+            let z = reader.read_i32::<LittleEndian>()?;
+            let chunk = ChunkPosition(x, z);
+
+            let dimensioned = len == 13 || len == 14;
+            let dimension = if dimensioned {
+                // Accepted ids are exactly the on-disk dimension ids the format defines
+                // (1 = Nether, 2 = End) plus the undefined marker (3) that `serialize`
+                // can emit. 0 (overworld) is never written explicitly, and anything else
+                // is not a chunk key; reject and fall back to string-key parsing below.
+                match reader.read_i32::<LittleEndian>()? {
+                    1 => Some(Dimension::Nether),
+                    2 => Some(Dimension::End),
+                    3 => Some(Dimension::Undefined),
+                    _ => None,
+                }
+            } else {
+                Some(Dimension::Overworld)
+            };
+
+            if let Some(dimension) = dimension {
+                let has_index = len == 10 || len == 14;
+                let tag = reader.read_u8()?;
+
+                let data = if tag == 0x2f {
+                    // The index byte is mandatory for SubChunk and invalid for every other tag.
+                    has_index
+                        .then(|| reader.read_i8())
+                        .transpose()?
+                        .map(|index| KeyVariant::SubChunk { index })
+                } else if has_index {
+                    None
                 } else {
-                    return Err(Error::Invalid("invalid leveldb database key type"));
+                    Self::known_tag(tag)
+                };
+
+                if let Some(data) = data {
+                    return Ok(Self {
+                        chunk,
+                        dimension,
+                        data,
+                    });
                 }
             }
+        }
+
+        // Not a structurally valid chunk key: fall back to the known string keys.
+        reader.set_position(start_position);
+
+        let mut string = String::with_capacity(len as usize);
+        reader.read_to_string(&mut string)?;
+
+        if string == LOCAL_PLAYER {
+            return Ok(Self {
+                chunk: ChunkPosition(0, 0),
+                dimension: Dimension::Overworld,
+                data: KeyVariant::LocalPlayer,
+            });
+        }
+
+        Err(Error::Invalid("invalid leveldb database key type"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn roundtrip(key: &Key) {
+        let mut buf = Vec::new();
+        key.serialize(&mut buf).unwrap();
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let decoded = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(&decoded, key);
+    }
+
+    #[test]
+    fn overworld_chunk_key_9_bytes() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.push(0x2b); // Biome3d
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.chunk, ChunkPosition(1, 2));
+        assert_eq!(key.dimension, Dimension::Overworld);
+        assert_eq!(key.data, KeyVariant::Biome3d);
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn overworld_subchunk_key_10_bytes() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&(-4i32).to_le_bytes());
+        buf.extend_from_slice(&5i32.to_le_bytes());
+        buf.push(0x2f); // SubChunk
+        buf.push(7i8 as u8);
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.chunk, ChunkPosition(-4, 5));
+        assert_eq!(key.dimension, Dimension::Overworld);
+        assert_eq!(key.data, KeyVariant::SubChunk { index: 7 });
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn nether_chunk_key_13_bytes() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&10i32.to_le_bytes());
+        buf.extend_from_slice(&20i32.to_le_bytes());
+        buf.extend_from_slice(&1i32.to_le_bytes()); // Nether
+        buf.push(0x2d); // HeightMap
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.chunk, ChunkPosition(10, 20));
+        assert_eq!(key.dimension, Dimension::Nether);
+        assert_eq!(key.data, KeyVariant::HeightMap);
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn end_subchunk_key_14_bytes() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&(-1i32).to_le_bytes());
+        buf.extend_from_slice(&(-2i32).to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes()); // End
+        buf.push(0x2f); // SubChunk
+        buf.push((-3i8) as u8);
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.chunk, ChunkPosition(-1, -2));
+        assert_eq!(key.dimension, Dimension::End);
+        assert_eq!(key.data, KeyVariant::SubChunk { index: -3 });
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn undefined_dimension_chunk_key_13_bytes_round_trips() {
+        // `serialize` can emit dimension id 3 (Undefined), so `deserialize` must accept it.
+        let key = Key {
+            chunk: ChunkPosition(3, -8),
+            dimension: Dimension::Undefined,
+            data: KeyVariant::ChunkVersion,
         };
 
-        let key = Self {
-            chunk,
-            dimension,
-            data,
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn undefined_dimension_subchunk_key_14_bytes_round_trips() {
+        let key = Key {
+            chunk: ChunkPosition(-9, 12),
+            dimension: Dimension::Undefined,
+            data: KeyVariant::SubChunk { index: 4 },
         };
 
-        Ok(key)
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn local_player_string_key() {
+        let mut cursor = Cursor::new(LOCAL_PLAYER.as_bytes());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.data, KeyVariant::LocalPlayer);
+    }
+
+    #[test]
+    fn string_key_biome_data_9_bytes_is_not_a_chunk_key() {
+        // "BiomeData" happens to be 9 bytes, the same length as an overworld chunk key,
+        // but its byte at the tag offset does not decode to a known `KeyVariant`.
+        let mut cursor = Cursor::new(b"BiomeData".as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn string_key_scoreboard_10_bytes_is_not_a_chunk_key() {
+        // "scoreboard" is 10 bytes, the same length as an overworld subchunk key, but its
+        // tag byte is not 0x2f (SubChunk), so it is correctly rejected.
+        let mut cursor = Cursor::new(b"scoreboard".as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn string_key_overworld_9_bytes_is_not_a_chunk_key() {
+        let mut cursor = Cursor::new(b"Overworld".as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn string_key_digp_prefix_is_not_a_chunk_key() {
+        let mut cursor = Cursor::new(b"digp\x00\x00\x00\x00".as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn ten_byte_key_with_non_subchunk_tag_is_rejected() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.push(0x2b); // Biome3d, not SubChunk
+        buf.push(0x00); // stray trailing byte
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn thirteen_byte_key_with_invalid_dimension_is_rejected() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.extend_from_slice(&7i32.to_le_bytes()); // not a valid dimension id
+        buf.push(0x2d); // HeightMap
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
     }
 }
