@@ -14,6 +14,7 @@ pub mod settings;
 pub mod subchunk;
 pub mod traits;
 pub mod types;
+pub mod version;
 
 mod private {
     pub trait Sealed {}

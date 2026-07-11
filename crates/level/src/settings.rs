@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::version::GameVersion;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Write};
 
@@ -25,10 +26,14 @@ pub struct Abilities {
     pub teleport: bool,
     #[serde(rename = "flySpeed")]
     pub fly_speed: f32,
+    #[serde(rename = "verticalFlySpeed", default)]
+    pub vertical_fly_speed: f32,
     #[serde(rename = "walkSpeed")]
     pub walk_speed: f32,
-    #[serde(rename = "playerPermissionLevel")]
-    pub permission_level: i32,
+    // Absent on some worlds; permission level is tracked at the root level
+    // via `permissions_level` / `player_permissions_level` in that case.
+    #[serde(rename = "playerPermissionLevel", default)]
+    pub permission_level: Option<i32>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
@@ -48,8 +53,12 @@ pub struct Policies {
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
 pub struct LevelSettings {
+    // The i32 storage version from the 8-byte level.dat header, not part of
+    // the NBT payload itself. Kept alongside `storage_version` (the NBT
+    // `StorageVersion` field) since the two are set independently and can in
+    // principle disagree.
     #[serde(default)]
-    pub file_version: u32,
+    pub header_storage_version: u32,
     pub editor_world_type: i32,
     #[serde(rename = "isCreatedInEditor")]
     pub created_in_editor: bool,
@@ -80,13 +89,15 @@ pub struct LevelSettings {
     pub limited_world_origin_z: i32,
     pub limited_world_depth: i32,
     pub limited_world_width: i32,
-    #[serde(rename = "MinimumCompatibleClientVersion")]
-    pub minimum_compatible_client_version: [i32; 5],
-    // pub minimum_compatible_client_version: f32,
+    // Absent on worlds saved before this field was introduced.
+    #[serde(rename = "MinimumCompatibleClientVersion", default)]
+    pub minimum_compatible_client_version: Option<GameVersion>,
     #[serde(rename = "NetherScale")]
     pub nether_scale: i32,
-    #[serde(rename = "NetworkVersion")]
-    pub network_version: i32,
+    // Protocol version of the network codec the world was last saved with.
+    // Absent on worlds saved before this field was introduced.
+    #[serde(rename = "NetworkVersion", default)]
+    pub network_version: Option<i32>,
     #[serde(rename = "Platform")]
     pub platform: i32,
     #[serde(rename = "PlatformBroadcastIntent")]
@@ -101,12 +112,15 @@ pub struct LevelSettings {
     pub spawn_y: i32,
     #[serde(rename = "SpawnZ")]
     pub spawn_z: i32,
+    // The NBT `StorageVersion` field, distinct from the header's storage
+    // version stored in `header_storage_version`.
     #[serde(rename = "StorageVersion")]
     pub storage_version: i32,
     #[serde(rename = "Time")]
     pub time: i64,
-    #[serde(rename = "WorldVersion")]
-    pub world_version: i32,
+    // Absent on worlds saved before this field was introduced.
+    #[serde(rename = "WorldVersion", default)]
+    pub world_version: Option<i32>,
     #[serde(rename = "XBLBroadcastIntent")]
     pub xbox_broadcast_intent: i32,
     pub current_tick: i64,
@@ -115,7 +129,7 @@ pub struct LevelSettings {
     pub edu_offer: i32,
     pub education_features_enabled: bool,
     #[serde(rename = "lastOpenedWithVersion")]
-    pub last_opened_with_version: [i32; 5],
+    pub last_opened_with_version: GameVersion,
     pub bonus_chest_enabled: bool,
     pub bonus_chest_spawned: bool,
     #[serde(rename = "commandblockoutput")]
@@ -148,6 +162,9 @@ pub struct LevelSettings {
     pub tile_drops: bool,
     #[serde(rename = "doweathercycle")]
     pub weather_cycle: bool,
+    // Absent on worlds saved before this rule was introduced.
+    #[serde(rename = "projectilescanbreakblocks", default)]
+    pub projectiles_can_break_blocks: bool,
     #[serde(rename = "drowningdamage")]
     pub drowning_damage: bool,
     #[serde(rename = "falldamage")]
@@ -181,10 +198,19 @@ pub struct LevelSettings {
     pub show_death_messages: bool,
     #[serde(rename = "showtags")]
     pub show_tags: bool,
+    // Absent on worlds saved before these settings were introduced.
+    #[serde(rename = "showdaysplayed", default)]
+    pub show_days_played: bool,
+    #[serde(rename = "showrecipemessages", default)]
+    pub show_recipe_messages: bool,
+    #[serde(rename = "locatorbar", default)]
+    pub locator_bar: bool,
     #[serde(rename = "spawnradius")]
     pub spawn_radius: i32,
     #[serde(rename = "tntexplodes")]
     pub tnt_explodes: bool,
+    #[serde(rename = "tntexplosiondropdecay", default)]
+    pub tnt_explosion_drop_decay: bool,
     #[serde(rename = "ForceGameType")]
     pub force_game_mode: bool,
     pub has_been_loaded_in_creative: bool,
@@ -197,6 +223,13 @@ pub struct LevelSettings {
     pub is_world_template_option_locked: bool,
     pub requires_copied_pack_removal_check: bool,
     pub texture_packs_required: bool,
+    // Absent on worlds saved before these fields were introduced.
+    #[serde(rename = "IsHardcore", default)]
+    pub is_hardcore: bool,
+    #[serde(rename = "PlayerHasDied", default)]
+    pub player_has_died: bool,
+    #[serde(rename = "HasUncompleteWorldFileOnDisk", default)]
+    pub has_uncomplete_world_file_on_disk: bool,
     #[serde(rename = "LANBroadcast")]
     pub lan_broadcast: bool,
     #[serde(rename = "LANBroadcastIntent")]
@@ -207,13 +240,17 @@ pub struct LevelSettings {
     pub multiplayer_game_intent: i8,
     #[serde(rename = "LastPlayed")]
     pub last_played: i64,
-    pub base_game_version: String,
+    // Absent on worlds saved before this field was introduced; holds "*" or
+    // a version string like "1.17" once present.
+    #[serde(default)]
+    pub base_game_version: Option<String>,
     #[serde(rename = "BiomeOverride")]
     pub biome_override: String,
     #[serde(rename = "FlatWorldLayers")]
     pub flat_world_layers: String,
-    #[serde(rename = "InventoryVersion")]
-    pub inventory_version: String,
+    // Absent on worlds saved before this field was introduced.
+    #[serde(rename = "InventoryVersion", default)]
+    pub inventory_version: Option<String>,
     #[serde(rename = "LevelName")]
     pub level_name: String,
     pub use_msa_gamertags_only: bool,
@@ -226,14 +263,31 @@ pub struct LevelSettings {
     pub prid: String,
     #[serde(rename = "world_policies")]
     pub world_policies: Policies,
-    #[serde(rename = "PlatformBroadcast")]
-    pub platform_broadcast: i8,
-    #[serde(rename = "PlatformBroadcastMode")]
-    pub platform_broadcast_mode: i32,
-    #[serde(rename = "XBLBroadcast")]
-    pub xbl_broadcast: i8,
-    #[serde(rename = "XBLBroadcastMode")]
-    pub xbl_broadcast_mode: i32,
+    // Superseded by `PlatformBroadcastIntent` / `XBLBroadcastIntent` on
+    // newer worlds, which no longer write these.
+    #[serde(rename = "PlatformBroadcast", default)]
+    pub platform_broadcast: Option<i8>,
+    #[serde(rename = "PlatformBroadcastMode", default)]
+    pub platform_broadcast_mode: Option<i32>,
+    #[serde(rename = "XBLBroadcast", default)]
+    pub xbl_broadcast: Option<i8>,
+    #[serde(rename = "XBLBroadcastMode", default)]
+    pub xbl_broadcast_mode: Option<i32>,
+}
+
+/// How a world was written, gathered from level.dat's header and NBT
+/// version fields. Does not decide anything on its own; version-dispatch
+/// and upgrade logic build on top of this.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VersionInfo<'a> {
+    pub header_storage_version: u32,
+    pub storage_version: i32,
+    pub last_opened_with_version: GameVersion,
+    pub minimum_compatible_client_version: Option<GameVersion>,
+    pub base_game_version: Option<&'a str>,
+    pub network_version: Option<i32>,
+    pub inventory_version: Option<&'a str>,
+    pub world_version: Option<i32>,
 }
 
 impl LevelSettings {
@@ -242,17 +296,25 @@ impl LevelSettings {
     }
 
     pub fn read<R: Read>(mut data: R) -> Result<Self> {
-        let file_version = data.read_u32::<LittleEndian>()?;
+        let header_storage_version = data.read_u32::<LittleEndian>()?;
         let _file_size = data.read_u32::<LittleEndian>()?;
 
-        println!("version: {file_version}, size: {_file_size}");
-
-        // let mut settings: nbtx::Value = nbtx::from_le_bytes(&mut data)?;
-        // println!("{settings:?}");
-
         let mut settings: Self = nbtx::from_le_bytes(&mut data)?;
-        settings.file_version = file_version;
+        settings.header_storage_version = header_storage_version;
 
         Ok(settings)
+    }
+
+    pub fn version_info(&self) -> VersionInfo<'_> {
+        VersionInfo {
+            header_storage_version: self.header_storage_version,
+            storage_version: self.storage_version,
+            last_opened_with_version: self.last_opened_with_version,
+            minimum_compatible_client_version: self.minimum_compatible_client_version,
+            base_game_version: self.base_game_version.as_deref(),
+            network_version: self.network_version,
+            inventory_version: self.inventory_version.as_deref(),
+            world_version: self.world_version,
+        }
     }
 }

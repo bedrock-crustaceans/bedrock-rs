@@ -6,6 +6,7 @@ use bedrock_level::Greedy;
 use bedrock_level::biome::Biomes;
 use bedrock_level::player::PlayerData;
 use bedrock_level::settings::LevelSettings;
+use bedrock_level::version::GameVersion;
 use bedrock_level::subchunk::BlockDef;
 use bedrock_level::types::BlockPosition;
 use bedrock_level::{
@@ -37,7 +38,6 @@ fn open_test_db() -> Database {
 }
 
 #[test]
-#[ignore = "currently not properly implemented"]
 fn read_level_dat() {
     let tmp = extract_test_dir();
     let dat_path = tmp.path().join("debug/level.dat");
@@ -45,7 +45,21 @@ fn read_level_dat() {
     let data = std::fs::read(&dat_path).unwrap();
     let settings = LevelSettings::read(data.as_slice()).unwrap();
 
-    println!("{settings:?}");
+    let version = settings.version_info();
+    assert_eq!(version.header_storage_version, 10);
+    assert_eq!(version.storage_version, 10);
+    assert_eq!(
+        version.last_opened_with_version,
+        GameVersion::new(1, 26, 13, 1, 0)
+    );
+    assert_eq!(
+        version.minimum_compatible_client_version,
+        Some(GameVersion::new(1, 26, 10, 0, 0))
+    );
+    assert_eq!(version.base_game_version, Some("*"));
+    assert_eq!(version.network_version, Some(859));
+    assert_eq!(version.inventory_version, Some("1.21.120"));
+    assert_eq!(version.world_version, Some(1));
 }
 
 #[test]
