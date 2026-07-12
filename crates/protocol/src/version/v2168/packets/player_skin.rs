@@ -1,0 +1,12 @@
+use crate::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+use uuid::Uuid;
+
+#[packet(id = 93)]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct PlayerSkinPacket<V: ProtoVersion> {
+    pub uuid: Uuid,
+    pub serialized_skin: V::SerializedSkin,
+    pub old_skin_name: String,
+    pub new_skin_name: String,
+}

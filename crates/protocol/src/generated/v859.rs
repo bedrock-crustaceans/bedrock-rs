@@ -8475,6 +8475,7 @@ mod inner {
         type CommandOriginData = crate::version::v662::types::CommandOriginData<Self>;
         type ContainerMixDataEntry = crate::version::v662::types::ContainerMixDataEntry;
         type CraftingDataEntry = crate::version::v662::types::CraftingDataEntry<Self>;
+        type CraftingRecipeIngredient = ();
         type DataItem = crate::version::v662::types::DataItem<Self>;
         type DebugShape = crate::version::v859::types::DebugShape<Self>;
         type DimensionDefinitionGroup = crate::version::v662::types::DimensionDefinitionGroup;
@@ -8484,11 +8485,13 @@ mod inner {
         type Experiments = crate::version::v662::types::Experiments;
         type FullContainerName = crate::version::v729::types::FullContainerName<Self>;
         type GameRulesChangedPacketData = crate::version::v844::types::GameRulesChangedPacketData;
+        type GatheringsConfig = ();
         type InventoryAction = crate::version::v662::types::InventoryAction<Self>;
         type InventorySource = crate::version::v662::types::InventorySource<Self>;
         type InventoryTransaction = crate::version::v662::types::InventoryTransaction<Self>;
         type ItemData = crate::version::v662::types::ItemData;
         type ItemEnchants = crate::version::v662::types::ItemEnchants<Self>;
+        type ItemStackRequestNetworkItemInstanceDescriptor = ();
         type ItemStackRequestSlotInfo = crate::version::v712::types::ItemStackRequestSlotInfo<Self>;
         type ItemStackResponseContainerInfo =
             crate::version::v712::types::ItemStackResponseContainerInfo<Self>;
@@ -8502,6 +8505,8 @@ mod inner {
         type MolangVariableMap = crate::version::v662::types::MolangVariableMap;
         type MoveActorAbsoluteData = crate::version::v662::types::MoveActorAbsoluteData<Self>;
         type MoveActorDeltaData = crate::version::v662::types::MoveActorDeltaData<Self>;
+        type MovePlayerTeleportData = ();
+        type MultiRecipe = ();
         type NetworkBlockPosition = crate::version::v662::types::NetworkBlockPosition;
         type NetworkItemInstanceDescriptor =
             crate::version::v662::types::NetworkItemInstanceDescriptor;
@@ -8517,6 +8522,7 @@ mod inner {
         type RecipeIngredient = crate::version::v662::types::RecipeIngredient<Self>;
         type RecipeUnlockingRequirement =
             crate::version::v685::types::RecipeUnlockingRequirement<Self>;
+        type RedactableString = ();
         type ScoreboardId = crate::version::v662::types::ScoreboardId;
         type SerializedAbilitiesData = crate::version::v776::types::SerializedAbilitiesData<Self>;
         type SerializedSkin = crate::version::v662::types::SerializedSkin<Self>;
@@ -8525,6 +8531,7 @@ mod inner {
         type ShulkerBoxRecipe = crate::version::v748::types::ShulkerBoxRecipe<Self>;
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
         type SmithingTrimRecipe = crate::version::v662::types::SmithingTrimRecipe<Self>;
+        type SoundData = ();
         type SpawnSettings = crate::version::v662::types::SpawnSettings<Self>;
         type StructureEditorData = crate::version::v776::types::StructureEditorData<Self>;
         type StructureSettings = crate::version::v662::types::StructureSettings<Self>;
@@ -8548,6 +8555,7 @@ mod inner {
         type AnimatedTextureType = crate::version::v662::enums::AnimatedTextureType;
         type AnimationExpression = crate::version::v662::enums::AnimationExpression;
         type AnimationMode = crate::version::v662::enums::AnimationMode;
+        type ArmSizeType = ();
         type AttributeModifierOperation = crate::version::v662::enums::AttributeModifierOperation;
         type AttributeOperands = crate::version::v662::enums::AttributeOperands;
         type AuthoritativeMovementMode = crate::version::v748::enums::AuthoritativeMovementMode;
@@ -8626,8 +8634,10 @@ mod inner {
         type PacketViolationSeverity = crate::version::v662::enums::PacketViolationSeverity;
         type PacketViolationType = crate::version::v662::enums::PacketViolationType;
         type ParticleType = crate::version::v844::enums::ParticleType;
+        type PersonaPieceType = ();
         type PhotoType = crate::version::v662::enums::PhotoType;
         type PlayStatus = crate::version::v662::enums::PlayStatus;
+        type PlayerAuthInputData = ();
         type PlayerPermissionLevel = crate::version::v662::enums::PlayerPermissionLevel;
         type PlayerPositionMode = crate::version::v662::enums::PlayerPositionMode;
         type PlayerRespawnState = crate::version::v662::enums::PlayerRespawnState;

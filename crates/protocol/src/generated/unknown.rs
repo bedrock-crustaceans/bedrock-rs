@@ -403,6 +403,7 @@ mod inner {
         type CommandOriginData = ();
         type ContainerMixDataEntry = ();
         type CraftingDataEntry = ();
+        type CraftingRecipeIngredient = ();
         type DataItem = ();
         type DebugShape = ();
         type DimensionDefinitionGroup = ();
@@ -412,11 +413,13 @@ mod inner {
         type Experiments = ();
         type FullContainerName = ();
         type GameRulesChangedPacketData = ();
+        type GatheringsConfig = ();
         type InventoryAction = ();
         type InventorySource = ();
         type InventoryTransaction = ();
         type ItemData = ();
         type ItemEnchants = ();
+        type ItemStackRequestNetworkItemInstanceDescriptor = ();
         type ItemStackRequestSlotInfo = ();
         type ItemStackResponseContainerInfo = ();
         type ItemStackResponseInfo = ();
@@ -428,6 +431,8 @@ mod inner {
         type MolangVariableMap = ();
         type MoveActorAbsoluteData = ();
         type MoveActorDeltaData = ();
+        type MovePlayerTeleportData = ();
+        type MultiRecipe = ();
         type NetworkBlockPosition = ();
         type NetworkItemInstanceDescriptor = ();
         type NetworkItemStackDescriptor = ();
@@ -440,6 +445,7 @@ mod inner {
         type PropertySyncData = ();
         type RecipeIngredient = ();
         type RecipeUnlockingRequirement = ();
+        type RedactableString = ();
         type ScoreboardId = ();
         type SerializedAbilitiesData = ();
         type SerializedSkin = ();
@@ -448,6 +454,7 @@ mod inner {
         type ShulkerBoxRecipe = ();
         type SmithingTransformRecipe = ();
         type SmithingTrimRecipe = ();
+        type SoundData = ();
         type SpawnSettings = ();
         type StructureEditorData = ();
         type StructureSettings = ();
@@ -470,6 +477,7 @@ mod inner {
         type AnimatedTextureType = ();
         type AnimationExpression = ();
         type AnimationMode = ();
+        type ArmSizeType = ();
         type AttributeModifierOperation = ();
         type AttributeOperands = ();
         type AuthoritativeMovementMode = ();
@@ -542,8 +550,10 @@ mod inner {
         type PacketViolationSeverity = ();
         type PacketViolationType = ();
         type ParticleType = ();
+        type PersonaPieceType = ();
         type PhotoType = ();
         type PlayStatus = ();
+        type PlayerAuthInputData = ();
         type PlayerPermissionLevel = ();
         type PlayerPositionMode = ();
         type PlayerRespawnState = ();
