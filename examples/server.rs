@@ -13,10 +13,10 @@ use bedrock::protocol::v662::types::{
 };
 use bedrock::protocol::v818::types::SyncedPlayerMovementSettings;
 use bedrock::protocol::v898::packets::ResourcePackStackPacket;
-use bedrock::protocol::v2168::enums::EducationEditionOffer;
-use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
 use bedrock::protocol::v944::packets::VoxelShapesPacket;
 use bedrock::protocol::v944::types::NetworkBlockPosition;
+use bedrock::protocol::v2168::enums::EducationEditionOffer;
+use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
 use bedrock::protocol::{ProtoVersion, Unknown, V2168};
 use bedrock_protocol::v2168::packets::StartGamePacket;
 use bedrock_protocol::v2168::types::{GameRuleLegacyData, LevelSettings};
