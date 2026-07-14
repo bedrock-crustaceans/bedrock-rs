@@ -3,18 +3,18 @@ use bedrock::network::compression::Compression;
 use bedrock::network::connection::Connection;
 use bedrock::network::listener::Listener;
 use bedrock::protocol::v662::enums::{
-    ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting,
-    GameType, GeneratorType, PacketCompressionAlgorithm, PlayStatus, PlayerPermissionLevel,
-    SpawnBiomeType,
+    ChatRestrictionLevel, Difficulty, EditorWorldType, GamePublishSetting, GameType, GeneratorType,
+    PacketCompressionAlgorithm, PlayStatus, SpawnBiomeType,
 };
 use bedrock::protocol::v662::packets::{NetworkSettingsPacket, PlayStatusPacket};
 use bedrock::protocol::v662::types::{
     ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments,
     NetworkPermissions, SpawnSettings,
 };
-use bedrock::protocol::v818::packets::ResourcePacksInfoPacket;
 use bedrock::protocol::v818::types::SyncedPlayerMovementSettings;
 use bedrock::protocol::v898::packets::ResourcePackStackPacket;
+use bedrock::protocol::v2168::enums::EducationEditionOffer;
+use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
 use bedrock::protocol::v944::packets::VoxelShapesPacket;
 use bedrock::protocol::v944::types::NetworkBlockPosition;
 use bedrock::protocol::{ProtoVersion, Unknown, V2168};
@@ -184,7 +184,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             },
             bonus_chest_enabled: false,
             starting_map_enabled: false,
-            player_permissions: PlayerPermissionLevel::Custom,
+            player_permissions: 3,
             server_chunk_tick_range: 4,
             locked_behaviour_pack: false,
             locked_resource_pack: false,
@@ -232,7 +232,6 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
         network_permissions: NetworkPermissions {
             server_auth_sound_enabled: false,
         },
-        is_logging_chat: false,
         server_join_information: None,
         server_id: "".to_string(),
         world_id: "".to_string(),
