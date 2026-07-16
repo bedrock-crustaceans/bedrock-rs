@@ -1683,6 +1683,12 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
+    type CraftingRecipeIngredient: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type DataItem: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -1737,6 +1743,12 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
+    type GatheringsConfig: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type InventoryAction: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -1762,6 +1774,12 @@ pub trait ProtoVersionTypes {
         + Sync
         + 'static;
     type ItemEnchants: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ItemStackRequestNetworkItemInstanceDescriptor: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -1828,6 +1846,18 @@ pub trait ProtoVersionTypes {
         + Sync
         + 'static;
     type MoveActorDeltaData: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type MovePlayerTeleportData: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type MultiRecipe: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -1905,6 +1935,12 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
+    type RedactableString: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type ScoreboardId: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -1948,6 +1984,12 @@ pub trait ProtoVersionTypes {
         + Sync
         + 'static;
     type SmithingTrimRecipe: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type SoundData: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -2070,6 +2112,12 @@ pub trait ProtoVersionEnums {
         + Sync
         + 'static;
     type AnimationMode: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ArmSizeType: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -2502,6 +2550,12 @@ pub trait ProtoVersionEnums {
         + Send
         + Sync
         + 'static;
+    type PersonaPieceType: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type PhotoType: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -2509,6 +2563,12 @@ pub trait ProtoVersionEnums {
         + Sync
         + 'static;
     type PlayStatus: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type PlayerAuthInputData: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -2693,3 +2753,5 @@ mod v975;
 pub use v975::*;
 mod v1001;
 pub use v1001::*;
+mod v2168;
+pub use v2168::*;
