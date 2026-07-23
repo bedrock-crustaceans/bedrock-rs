@@ -33,7 +33,7 @@ proc-macro2 = "1.0"
 syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
 jsonwebtoken = "10.3"
-base64 = "0.22"
+base64 = "0.23"
 nbtx = "3.0.1"
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
