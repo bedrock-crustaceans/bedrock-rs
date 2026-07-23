@@ -30,7 +30,7 @@ snap = "1.1"
 criterion = { version = "0.8.2", features = ["html_reports"] }
 seq-macro = "0.3"
 proc-macro2 = "1.0"
-syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
+syn = { version = "3.0", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
 jsonwebtoken = "10.3"
 base64 = "0.22"
