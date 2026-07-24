@@ -32,7 +32,7 @@ seq-macro = "0.3"
 proc-macro2 = "1.0"
 syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
-jsonwebtoken = "10.3"
+jsonwebtoken = "11.0"
 base64 = "0.22"
 nbtx = "3.0.1"
 xuid = "1.0"
