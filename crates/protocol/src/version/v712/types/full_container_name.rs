@@ -3,7 +3,7 @@ use bedrock_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct FullContainerName<V: ProtoVersion> {
-    container: V::ContainerEnumName,
+    pub container: V::ContainerEnumName,
     #[endianness(le)]
-    dynamic_id: i32,
+    pub dynamic_id: i32,
 }
