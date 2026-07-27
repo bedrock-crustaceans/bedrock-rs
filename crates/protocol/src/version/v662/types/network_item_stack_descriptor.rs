@@ -4,12 +4,12 @@ use std::io::{Read, Write};
 
 #[derive(Clone, Debug)]
 pub struct NetworkItemStackDescriptor {
-    id: i32,
-    stack_size: Option<u16>,
-    aux_value: Option<u32>,
-    net_id_variant: Option<Option<i32>>,
-    block_runtime_id: Option<i32>,
-    user_data_buffer: Option<Vec<u8>>,
+    pub id: i32,
+    pub stack_size: Option<u16>,
+    pub aux_value: Option<u32>,
+    pub net_id_variant: Option<Option<i32>>,
+    pub block_runtime_id: Option<i32>,
+    pub user_data_buffer: Option<Vec<u8>>,
 }
 
 impl ProtoCodec for NetworkItemStackDescriptor {
