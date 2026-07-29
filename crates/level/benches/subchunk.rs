@@ -54,7 +54,7 @@ fn benchmark(c: &mut Criterion) {
     let tmp_path = tmp_path.to_str().unwrap();
 
     let database = Database::open(tmp_path).unwrap();
-    let mut keys = database.keys();
+    let mut keys = database.keys().unwrap();
 
     // Find some usable subchunks.
     let chunks = keys
