@@ -250,8 +250,8 @@ pub struct LevelSettings {
 }
 
 impl LevelSettings {
-    pub fn write<W: Write>(self, mut writer: W) -> Result<(), Error> {
-        let settings = nbtx::to_le_bytes(&self)?;
+    pub fn write<W: Write>(&self, mut writer: W) -> Result<(), Error> {
+        let settings = nbtx::to_le_bytes(self)?;
 
         writer.write_u32::<LittleEndian>(self.file_version)?;
         writer.write_u32::<LittleEndian>(settings.len() as u32)?;
