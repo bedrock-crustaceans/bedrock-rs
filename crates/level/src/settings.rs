@@ -1,5 +1,5 @@
-use crate::error::Result;
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use nbtx::Error;
 use std::io::{Read, Write};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
@@ -25,10 +25,10 @@ pub struct Abilities {
     pub teleport: bool,
     #[serde(rename = "flySpeed")]
     pub fly_speed: f32,
+    #[serde(rename = "verticalFlySpeed")]
+    pub vertical_fly_speed: f32,
     #[serde(rename = "walkSpeed")]
     pub walk_speed: f32,
-    #[serde(rename = "playerPermissionLevel")]
-    pub permission_level: i32,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
@@ -49,6 +49,7 @@ pub struct Policies {
 #[serde(deny_unknown_fields)]
 pub struct LevelSettings {
     #[serde(default)]
+    #[serde(skip_serializing)]
     pub file_version: u32,
     pub editor_world_type: i32,
     #[serde(rename = "isCreatedInEditor")]
@@ -226,31 +227,45 @@ pub struct LevelSettings {
     pub prid: String,
     #[serde(rename = "world_policies")]
     pub world_policies: Policies,
-    #[serde(rename = "PlatformBroadcast")]
-    pub platform_broadcast: i8,
-    #[serde(rename = "PlatformBroadcastMode")]
-    pub platform_broadcast_mode: i32,
-    #[serde(rename = "XBLBroadcast")]
-    pub xbl_broadcast: i8,
-    #[serde(rename = "XBLBroadcastMode")]
-    pub xbl_broadcast_mode: i32,
+    #[serde(rename = "HasUncompleteWorldFileOnDisk")]
+    pub has_uncomplete_world_file_on_disk: bool,
+    #[serde(rename = "IsHardcore")]
+    pub is_hardcore: bool,
+    #[serde(rename = "PlayerHasDied")]
+    pub player_has_died: bool,
+    #[serde(rename = "allowAnonymousBlockDropsInEditorWorlds")]
+    pub allow_anonymous_block_drops_in_editor_worlds: bool,
+    #[serde(rename = "playerwaypoints")]
+    pub player_waypoints: i32,
+    #[serde(rename = "projectilescanbreakblocks")]
+    pub projectiles_can_break_blocks: bool,
+    #[serde(rename = "serverEditorConnectionPolicy")]
+    pub server_editor_connection_policy: i32,
+    #[serde(rename = "showdaysplayed")]
+    pub show_days_played: bool,
+    #[serde(rename = "showrecipemessages")]
+    pub show_recipe_messages: bool,
+    #[serde(rename = "tntexplosiondropdecay")]
+    pub tnt_explosion_drop_decay: bool,
 }
 
 impl LevelSettings {
-    pub fn write<W: Write>(&self, _writer: W) -> Result<()> {
-        todo!()
+    pub fn write<W: Write>(&self, mut writer: W) -> Result<(), Error> {
+        let settings = nbtx::to_le_bytes(self)?;
+
+        writer.write_u32::<LittleEndian>(self.file_version)?;
+        writer.write_u32::<LittleEndian>(settings.len() as u32)?;
+        writer.write_all(&settings)?;
+
+        Ok(())
     }
 
-    pub fn read<R: Read>(mut data: R) -> Result<Self> {
+    pub fn read<R: Read>(mut data: R) -> Result<Self, Error> {
         let file_version = data.read_u32::<LittleEndian>()?;
         let _file_size = data.read_u32::<LittleEndian>()?;
 
-        println!("version: {file_version}, size: {_file_size}");
-
-        // let mut settings: nbtx::Value = nbtx::from_le_bytes(&mut data)?;
-        // println!("{settings:?}");
-
         let mut settings: Self = nbtx::from_le_bytes(&mut data)?;
+
         settings.file_version = file_version;
 
         Ok(settings)
