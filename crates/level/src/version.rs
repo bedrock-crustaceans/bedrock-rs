@@ -11,12 +11,10 @@ use std::fmt;
 use facet::Facet;
 
 /// Note on the wire format: on disk this is an `IntArray`, not a compound.
-/// serde expressed that with a container-level `#[serde(try_from = "[i32; 5]",
-/// into = "[i32; 5]")]`; facet has no equivalent, and nbtx reflects a struct as
-/// a compound, so the array/struct conversion happens in
-/// [`LevelSettings::read`](crate::settings::LevelSettings::read) instead — see
+/// nbtx reflects any struct as a compound, so the array/struct conversion is
+/// done in [`LevelSettings::read`](crate::settings::LevelSettings::read) — see
 /// `settings::unpack_game_versions`. Reading a `GameVersion` through nbtx
-/// directly would look for a compound of the five fields below.
+/// directly looks for a compound of the five fields below.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Facet)]
 pub struct GameVersion {
     pub major: i32,

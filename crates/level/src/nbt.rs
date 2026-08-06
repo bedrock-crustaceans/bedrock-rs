@@ -5,27 +5,22 @@
 //! That is the rule Bedrock's own save data is written under, and it is the rule
 //! this crate has always decoded by.
 //!
-//! nbtx 4.0 reads a `bool` field strictly instead: only the byte `1` is `true`,
-//! and *every* other byte, `2` included, is `false` (see `read_scalar`'s
-//! `ScalarType::Bool` arm in nbtx). nbtx 3.0.1 — the version this crate used
-//! before — read `bool` as `byte != 0`, which is why
-//! `serde_helpers::deserialize_bool` (a `#[serde(deserialize_with)]` hook that
-//! spelled the same rule out by hand on ~24 fields) was in practice a no-op: the
-//! leniency applied to every `bool` field in the crate, annotated or not.
+//! nbtx reads a `bool` field strictly instead: only the byte `1` is `true`, and
+//! *every* other byte, `2` included, is `false`. Letting the ~120 `bool` fields
+//! in `LevelSettings`, `PlayerData` and the block entities take that reading
+//! would flip `0x02..=0xFF` from true to false everywhere, silently and with no
+//! compiler error to catch it.
 //!
-//! Dropping that hook and letting the ~120 `bool` fields in `LevelSettings`,
-//! `PlayerData` and the block entities fall through to nbtx's `bool` would flip
-//! `0x02..=0xFF` from true to false everywhere, silently. facet's attribute
-//! system is declarative and has no hook for a custom scalar conversion (no
-//! `deserialize_with` equivalent), and a newtype wrapper does not help either:
-//! nbtx resolves scalars by `TypeId`, so a `#[facet(transparent)] struct
-//! Flag(i8)` reflects as a *struct* and encodes as a compound, not a `Byte`.
+//! There is no per-field hook to reach for: the derive's attributes are
+//! declarative, so a field cannot name a conversion function, and a wrapper type
+//! does not help either — nbtx resolves scalars by `TypeId`, so a newtype over
+//! `i8` reflects as a struct and encodes as a compound rather than a `Byte`.
 //!
 //! So the rule is reapplied here instead, once, generically: decode into a
-//! dynamic [`nbtx::Value`], walk it against the target type's `facet` shape, and
+//! dynamic [`nbtx::Value`], walk it against the target type's shape, and
 //! canonicalise every `Byte` that is destined for a `bool` field to `1` before
-//! handing the tree to [`nbtx::from_value`]. The public field types stay `bool`
-//! and no call site changes.
+//! handing the tree over. The public field types stay `bool` and no call site
+//! changes. The same walk reconciles integer widths — see [`retag_integer`].
 
 use std::io::Read;
 
@@ -138,16 +133,14 @@ pub fn canonicalize_flags(value: &mut Value, shape: &'static Shape) {
 ///
 /// Bedrock does not write one fixed tag per field: a chest's `Findable` is a
 /// `Byte` in a world the game wrote, against an `i32` field, and other numeric
-/// keys vary the same way. That decoded before because serde buffered a
-/// `#[serde(tag = "id")]` enum's content and replayed it, and its replay hands
-/// any integer to any integer visitor that can hold it. nbtx has no such buffer
-/// and pairs each tag with exactly one width, so the widths are reconciled here
-/// instead — for every field, not just the block-entity ones, since a tag that
-/// fits the field is not ambiguous anywhere.
+/// keys vary the same way. nbtx pairs each tag with exactly one Rust width and
+/// rejects the rest, so the two are reconciled here — for every field, since a
+/// tag whose value fits the field is not ambiguous anywhere.
 ///
-/// A value that does not fit is left alone, and nbtx then reports the mismatch.
-/// Note this is a *read* accommodation only: writing always emits the tag the
-/// Rust type implies, so a `Byte` read into an `i32` is written back as an `Int`.
+/// A value that does not fit is left alone, and nbtx then reports the mismatch,
+/// so nothing is silently truncated. This is a *read* accommodation only:
+/// writing always emits the tag the Rust type implies, so a `Byte` read into an
+/// `i32` is written back as an `Int`.
 fn retag_integer(value: &mut Value, scalar: ScalarType) {
     let widened = match *value {
         Value::Byte(v) => i64::from(v),

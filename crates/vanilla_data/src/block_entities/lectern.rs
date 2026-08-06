@@ -70,10 +70,9 @@ pub struct LecternBook {
 
 /// A lectern, which holds a book's keys in its own compound or none at all.
 ///
-/// serde expressed that with `#[serde(flatten)] book: Option<LecternBook>`;
-/// facet has no `flatten` that nbtx honours, so the four keys are inlined as
-/// optional fields and [`Self::book`] reassembles them. An empty lectern has
-/// none of them, which is why every one is an `Option`.
+/// nbtx has no way to merge a field's keys into its parent's compound, so the
+/// four keys are inlined as optional fields and [`Self::book`] reassembles them.
+/// An empty lectern carries none of them, which is why every one is an `Option`.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "camelCase")]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]

@@ -5,10 +5,9 @@ use facet::Facet;
 /// A shulker box: a [`Chest`]'s keys plus the face it is attached to, in one
 /// flat compound.
 ///
-/// The container's keys are inlined rather than nested under a `Chest` field.
-/// serde expressed the same shape with `#[serde(flatten)]`, which facet has no
-/// equivalent for that nbtx honours; [`Self::contents`] and [`Self::from_parts`]
-/// convert between the two views.
+/// The container's keys are inlined rather than nested under a `Chest` field,
+/// because nbtx has no way to merge a field's keys into its parent's compound.
+/// [`Self::contents`] and [`Self::from_parts`] convert between the two views.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]

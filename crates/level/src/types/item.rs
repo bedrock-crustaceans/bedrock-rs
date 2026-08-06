@@ -26,15 +26,14 @@ pub struct ItemStack {
 /// # Wire shape
 ///
 /// One flat compound: `Slot` sits alongside the stack's own keys rather than
-/// nesting them. serde spelled that as `#[serde(flatten)] stack: ItemStack`;
-/// facet has no `flatten` attribute that nbtx honours, so the stack's fields are
-/// inlined here instead of composed. They keep the same order and the same NBT
-/// names, and [`Self::stack`]/[`Self::from_parts`] convert between the two views.
+/// nesting them. nbtx has no way to merge a field's keys into its parent's
+/// compound, so the stack's fields are inlined here instead of composed. They
+/// keep the same order and the same NBT names, and
+/// [`Self::stack`]/[`Self::from_parts`] convert between the two views.
 ///
-/// Inlining rather than hand-writing a `Value`-based codec is what lets this type
-/// keep working where it is actually used — as `Vec<ItemSlot>` inside other
-/// derived structs (`Dispenser`, `Furnace`, `Hopper`), which a hand-written
-/// decode on `ItemSlot` alone would never be reached from.
+/// Inlining rather than decoding this type by hand is what lets it keep working
+/// where it is used — as `Vec<ItemSlot>` inside `Dispenser`, `Furnace` and
+/// `Hopper`, which a hand-written `ItemSlot` codec would never be reached from.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]

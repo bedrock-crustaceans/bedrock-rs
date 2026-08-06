@@ -42,8 +42,6 @@ impl TryFrom<u8> for SubChunkVersion {
 }
 
 /// Definition of block in the sub chunk block palette.
-// The container-level `#[serde(rename = "")]` this carried is gone: nbtx always
-// writes an empty root name regardless, so it never affected the binary format.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct BlockDef {
@@ -52,12 +50,12 @@ pub struct BlockDef {
     /// Version of the block: one byte each of major, minor, patch and revision,
     /// most significant first, packed into the `Int` tag Bedrock stores.
     ///
-    /// Held packed rather than as the `[u8; 4]` it used to be. serde split it on
-    /// the way in and out with `#[serde(with = "block_version")]`; facet has no
-    /// per-field conversion hook, and this type is nested inside other derived
-    /// structs (`ItemStack::block`, `FlowerPot::plant_block`), so a hand-written
-    /// decode here would not be reached at those sites. Use [`Self::version_parts`]
-    /// and [`Self::pack_version`] for the split form.
+    /// Held as the word rather than the four bytes because there is no hook for
+    /// converting a single field on the way in and out, and this type is nested
+    /// inside other decoded structs (`ItemStack::block`,
+    /// `FlowerPot::plant_block`), so a conversion written here would not be
+    /// reached at those sites. [`Self::version_parts`] and [`Self::pack_version`]
+    /// give the split form.
     #[facet(default)]
     pub version: Option<i32>,
     /// Block-specific properties.
