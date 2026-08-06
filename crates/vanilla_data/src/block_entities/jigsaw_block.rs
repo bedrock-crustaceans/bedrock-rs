@@ -1,14 +1,17 @@
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+use facet::Facet;
+
+/// Stored as a `String` tag holding the joint name.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
+#[facet(nbtx::variant_as(str), rename_all = "snake_case")]
+#[repr(u8)]
 pub enum JigsawJoint {
     Rollable,
     Aligned,
 }
 
 /// A jigsaw block tile entity.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct JigsawBlock {
     /// The target name.
     pub target: String,

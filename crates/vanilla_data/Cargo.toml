@@ -10,9 +10,11 @@ default = ["deny-unknown-fields"]
 [dependencies]
 bedrock_level = { path = "../level" }
 nbtx = { workspace = true }
-
-serde = { workspace = true }
-serde_repr = { workspace = true }
+# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so a crate that
+# derives it needs facet directly, at the rev nbtx pins.
+facet = { workspace = true }
+# Compound keys are raw bytes (`bstr::BString`).
+bstr = { workspace = true }
 
 [dev-dependencies]
 tar = { workspace = true }
