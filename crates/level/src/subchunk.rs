@@ -248,10 +248,26 @@ impl Layer {
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            // Straight through nbtx rather than `crate::nbt`: a `BlockDef` holds
-            // no `bool` anywhere, so there is no flag byte to canonicalise, and
-            // this runs once per palette entry.
-            let entry = nbtx::from_le_bytes(reader)?;
+            // Palette decoding is the bulk of the cost of reading a subchunk, so
+            // it takes nbtx directly: routing every entry through `crate::nbt`
+            // measures ~28% slower over a whole world, and a `BlockDef` holds no
+            // `bool`, so the only rule that could apply to it is the numeric
+            // width reconciling — and `version` is an `Int` in everything the
+            // game writes.
+            //
+            // "Everything the game writes" is not "everything", though, so a
+            // failure rewinds and retries through the normalizing path, which
+            // accepts `version` under a narrower tag. The retry costs nothing
+            // until it happens, and this is a `Cursor`, so the entry's bytes are
+            // still there to read again.
+            let start = reader.position();
+            let entry = match nbtx::from_le_bytes(reader) {
+                Ok(entry) => entry,
+                Err(_) => {
+                    reader.set_position(start);
+                    crate::nbt::from_le_bytes(reader)?
+                }
+            };
             palette.push(entry);
         }
 
@@ -324,6 +340,66 @@ where
         let index = self.array.get(offset).expect("layer index out of bounds");
 
         &self.palette[index as usize]
+    }
+}
+
+#[cfg(test)]
+mod palette_tests {
+    use super::*;
+    use crate::Greedy;
+
+    /// Builds a one-layer legacy subchunk whose 4096 indices are all zero and
+    /// whose palette is the single entry `palette_entry`.
+    fn subchunk_with_palette(palette_entry: &nbtx::Value) -> Vec<u8> {
+        let mut out = vec![SubChunkVersion::Legacy as u8];
+        // One bit per index, so 4096 indices pack into 128 words, all zero.
+        out.push(1 << 1);
+        out.extend(std::iter::repeat_n(0u8, 128 * 4));
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend(nbtx::to_le_bytes(palette_entry).unwrap());
+        out
+    }
+
+    fn entry_with_version(version: nbtx::Value) -> nbtx::Value {
+        nbtx::Value::Compound(nbtx::Compound::from_iter([
+            ("name".into(), nbtx::Value::String("minecraft:stone".into())),
+            ("version".into(), version),
+            (
+                "states".into(),
+                nbtx::Value::Compound(nbtx::Compound::new()),
+            ),
+        ]))
+    }
+
+    /// The tag the game actually writes, read on the fast path.
+    #[test]
+    fn palette_entry_with_int_version() {
+        let bytes = subchunk_with_palette(&entry_with_version(nbtx::Value::Int(17_959_425)));
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let block = &chunk.get_layer(0).unwrap().palette()[0];
+        assert_eq!(block.version, Some(17_959_425));
+    }
+
+    /// A narrower tag than the field's width takes the rewind-and-retry path
+    /// rather than failing the whole layer.
+    #[test]
+    fn palette_entry_with_narrow_version_tag() {
+        let bytes = subchunk_with_palette(&entry_with_version(nbtx::Value::Short(1)));
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let block = &chunk.get_layer(0).unwrap().palette()[0];
+        assert_eq!(block.version, Some(1));
+        assert_eq!(block.name, "minecraft:stone");
+    }
+
+    /// A genuinely broken entry still fails, rather than the retry hiding it.
+    #[test]
+    fn palette_entry_with_wrong_name_type_still_fails() {
+        let entry = nbtx::Value::Compound(nbtx::Compound::from_iter([(
+            "name".into(),
+            nbtx::Value::Int(3),
+        )]));
+        let bytes = subchunk_with_palette(&entry);
+        assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
     }
 }
 
