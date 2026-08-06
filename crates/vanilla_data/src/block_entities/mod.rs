@@ -86,15 +86,20 @@ macro_rules! impl_block_data {
 
         impl<'a> From<$name> for &'a str {
             fn from(id: $name) -> &'a str {
-                match id {
+                id.id()
+            }
+        }
+
+        impl $name {
+            /// The block-entity id this variant is written under.
+            pub fn id(&self) -> &'static str {
+                match self {
                     $(
                         pattern_match!($name $variant $($vtype)?) => to_name!($variant, $($id)?),
                     )*
                 }
             }
-        }
 
-        impl $name {
             /// Decodes the payload for block-entity id `id` out of `rest`: the
             /// record's compound with the keys every record shares already
             /// removed.
@@ -209,6 +214,21 @@ fn take(entries: &mut Compound, key: &str) -> Result<Value> {
         .ok_or(Error::Invalid("block entity record: missing key"))
 }
 
+/// The number `value` holds, whatever integer tag it arrived under.
+///
+/// The shared keys get the same tolerance the payload's keys get from
+/// `bedrock_level::nbt`: the game does not write one fixed tag per key, and a
+/// coordinate that fits is a coordinate.
+fn as_integer(value: &Value) -> Option<i64> {
+    Some(match *value {
+        Value::Byte(v) => i64::from(v),
+        Value::Short(v) => i64::from(v),
+        Value::Int(v) => i64::from(v),
+        Value::Long(v) => v,
+        _ => return None,
+    })
+}
+
 impl BlockEntity {
     pub fn from_disk<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -225,18 +245,17 @@ impl BlockEntity {
         };
 
         let mut coordinate = |key| {
-            take(&mut entries, key)?
-                .into_int()
-                .map_err(|_| Error::Invalid("block entity record: coordinate is not an int"))
+            as_integer(&take(&mut entries, key)?)
+                .and_then(|v| i32::try_from(v).ok())
+                .ok_or(Error::Invalid("block entity record: coordinate is not an int"))
         };
         let x = coordinate("x")?;
         let y = coordinate("y")?;
         let z = coordinate("z")?;
 
         // A `Byte` flag: zero is false, any other value true.
-        let is_movable = take(&mut entries, "isMovable")?
-            .into_byte()
-            .map_err(|_| Error::Invalid("block entity record: isMovable is not a byte"))?
+        let is_movable = as_integer(&take(&mut entries, "isMovable")?)
+            .ok_or(Error::Invalid("block entity record: isMovable is not a byte"))?
             != 0;
 
         let id = take(&mut entries, "id")?
@@ -257,18 +276,23 @@ impl BlockEntity {
         })
     }
 
-    /// Rebuilds the record's compound: the payload's keys plus the shared ones.
+    /// Rebuilds the record's compound: the shared keys, then the payload's.
+    ///
+    /// The shared keys go first, in the order [`Self::from_value`] takes them
+    /// off, so that a record decoded and re-encoded keeps the key order it
+    /// arrived in. Compound order is part of the bytes.
     pub fn to_value(&self) -> Result<Value> {
-        let Value::Compound(mut entries) = self.data.to_value()? else {
+        let Value::Compound(payload) = self.data.to_value()? else {
             return Err(Error::Invalid("block entity payload: not a compound"));
         };
 
-        let id: &str = self.data.clone().into();
+        let mut entries = Compound::new();
         entries.insert(SHARED_KEYS[0].into(), Value::Int(self.x));
         entries.insert(SHARED_KEYS[1].into(), Value::Int(self.y));
         entries.insert(SHARED_KEYS[2].into(), Value::Int(self.z));
         entries.insert(SHARED_KEYS[3].into(), Value::Byte(i8::from(self.is_movable)));
-        entries.insert(SHARED_KEYS[4].into(), Value::String(id.into()));
+        entries.insert(SHARED_KEYS[4].into(), Value::String(self.data.id().into()));
+        entries.extend(payload);
 
         Ok(Value::Compound(entries))
     }
@@ -357,3 +381,82 @@ pub use skull::*;
 pub use structure_block::*;
 pub use trial_spawner::*;
 pub use vault::*;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn bell_record() -> Value {
+        Value::Compound(Compound::from_iter([
+            ("x".into(), Value::Int(1)),
+            ("y".into(), Value::Int(2)),
+            ("z".into(), Value::Int(3)),
+            ("isMovable".into(), Value::Byte(1)),
+            ("id".into(), Value::String("Bell".into())),
+            ("Direction".into(), Value::Int(0)),
+            ("Ringing".into(), Value::Byte(1)),
+            ("Ticks".into(), Value::Int(0)),
+        ]))
+    }
+
+    /// Decoding and re-encoding a record reproduces it exactly, key order
+    /// included: the shared keys lead, in the order they were taken off.
+    #[test]
+    fn record_round_trips_including_key_order() {
+        let record = bell_record();
+        let entity = BlockEntity::from_value(record.clone()).unwrap();
+        assert_eq!(entity.to_value().unwrap(), record);
+
+        let Value::Compound(entries) = entity.to_value().unwrap() else {
+            panic!("expected a compound");
+        };
+        let keys: Vec<_> = entries.keys().map(ToString::to_string).collect();
+        assert_eq!(
+            keys,
+            ["x", "y", "z", "isMovable", "id", "Direction", "Ringing", "Ticks"]
+        );
+    }
+
+    /// A flag byte other than `0`/`1` is true, for the shared `isMovable` key
+    /// and for a payload's own flags alike.
+    #[test]
+    fn flag_bytes_other_than_one_are_true() {
+        let Value::Compound(mut entries) = bell_record() else {
+            panic!("expected a compound");
+        };
+        entries.insert("isMovable".into(), Value::Byte(2));
+        entries.insert("Ringing".into(), Value::Byte(2));
+
+        let entity = BlockEntity::from_value(Value::Compound(entries)).unwrap();
+        assert!(entity.is_movable);
+        let BlockData::Bell(bell) = &entity.data else {
+            panic!("expected a bell");
+        };
+        assert!(bell.ringing);
+    }
+
+    /// A payload key written under a narrower tag than its field still reads.
+    #[test]
+    fn narrow_numeric_tags_are_accepted() {
+        let Value::Compound(mut entries) = bell_record() else {
+            panic!("expected a compound");
+        };
+        entries.insert("Direction".into(), Value::Byte(3));
+
+        let entity = BlockEntity::from_value(Value::Compound(entries)).unwrap();
+        let BlockData::Bell(bell) = &entity.data else {
+            panic!("expected a bell");
+        };
+        assert_eq!(bell.direction, 3);
+    }
+
+    /// An id no variant claims is reported rather than silently dropped.
+    #[test]
+    fn unknown_id_is_an_error() {
+        let Value::Compound(mut entries) = bell_record() else {
+            panic!("expected a compound");
+        };
+        entries.insert("id".into(), Value::String("NotABlockEntity".into()));
+        assert!(BlockEntity::from_value(Value::Compound(entries)).is_err());
+    }
+}
