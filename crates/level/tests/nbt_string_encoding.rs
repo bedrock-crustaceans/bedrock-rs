@@ -6,12 +6,26 @@
 //!   - a supplementary-plane scalar (e.g. an emoji) is written as a surrogate
 //!     pair of two three-byte sequences rather than one four-byte sequence
 //!
+//! The contract these tests pin: **those byte sequences round-trip verbatim, and
+//! are not interpreted.** `nbtx::Value::String` holds a `bstr::BString` — raw
+//! bytes — so a payload goes in and comes back out byte for byte whether or not
+//! it is valid standard UTF-8. That is lossless, which is what this crate wants
+//! (see `TODO.md`, "Lossless by default"), but it is *not* the same as decoding
+//! modified UTF-8: the NUL case yields the two bytes `C0 80`, not one `00`, and
+//! the surrogate-pair case yields six bytes, not one U+1F600 scalar. Nothing
+//! anywhere converts the escaping into Unicode scalars yet.
+//!
+//! Note the raw-bytes guarantee is specific to `Value` (and to a `BString`
+//! field). A `#[derive(Facet)]` struct field typed `String` still validates
+//! UTF-8 and errors on these payloads, exactly as it did before.
+//!
 //! These tests feed hand-built payloads through the same deserialization entry
 //! point the crate uses for palettes and settings, so any future change in how
 //! the codec treats those byte classes is caught here.
 
-use std::collections::HashMap;
 use std::io::Cursor;
+
+use bstr::{BStr, BString};
 
 /// Builds a little-endian NBT root compound `{ "s": TAG_String(payload) }`.
 ///
@@ -31,12 +45,12 @@ fn root_with_string(payload: &[u8]) -> Vec<u8> {
     b
 }
 
-fn decode_string_field(payload: &[u8]) -> Result<String, nbtx::Error> {
+fn decode_string_field(payload: &[u8]) -> Result<BString, nbtx::Error> {
     let bytes = root_with_string(payload);
     let mut cur = Cursor::new(bytes);
     let value: nbtx::Value = nbtx::from_le_bytes(&mut cur)?;
     match value {
-        nbtx::Value::Compound(mut m) => match m.remove("s") {
+        nbtx::Value::Compound(mut m) => match m.shift_remove(BStr::new("s")) {
             Some(nbtx::Value::String(s)) => Ok(s),
             other => panic!("expected string field, got {other:?}"),
         },
@@ -51,43 +65,39 @@ fn ascii_round_trips() {
     assert_eq!(decode_string_field(b"minecraft:stone").unwrap(), "minecraft:stone");
 }
 
-/// A NUL encoded as the modified-UTF-8 overlong sequence 0xC0 0x80 is currently
-/// rejected by the codec. When modified-UTF-8 support lands this must instead
-/// decode to a single U+0000.
+/// A NUL encoded as the modified-UTF-8 overlong sequence 0xC0 0x80 survives as
+/// those two bytes. It is *not* folded into a single U+0000 — nothing decodes
+/// the escaping — but it is no longer rejected either.
 #[test]
-fn embedded_nul_overlong_currently_rejected() {
-    let err = decode_string_field(&[b'a', 0xC0, 0x80, b'b']).unwrap_err();
-    let msg = err.to_string();
-    assert!(
-        msg.contains("utf-8"),
-        "expected a utf-8 decode failure, got: {msg}"
-    );
+fn embedded_nul_overlong_round_trips_as_raw_bytes() {
+    let payload: &[u8] = &[b'a', 0xC0, 0x80, b'b'];
+    assert_eq!(decode_string_field(payload).unwrap().as_slice(), payload);
 }
 
 /// A supplementary-plane scalar written as a surrogate pair (here U+1F600,
-/// surrogates D83D/DE00 -> ED A0 BD ED B8 80) is currently rejected. When
-/// modified-UTF-8 support lands this must decode to the single scalar U+1F600.
+/// surrogates D83D/DE00 -> ED A0 BD ED B8 80) survives as those six bytes,
+/// rather than being rejected as invalid UTF-8 or folded into one scalar.
 #[test]
-fn surrogate_pair_currently_rejected() {
-    let err = decode_string_field(&[0xED, 0xA0, 0xBD, 0xED, 0xB8, 0x80]).unwrap_err();
-    let msg = err.to_string();
-    assert!(
-        msg.contains("utf-8"),
-        "expected a utf-8 decode failure, got: {msg}"
-    );
+fn surrogate_pair_round_trips_as_raw_bytes() {
+    let payload: &[u8] = &[0xED, 0xA0, 0xBD, 0xED, 0xB8, 0x80];
+    assert_eq!(decode_string_field(payload).unwrap().as_slice(), payload);
 }
 
-/// Encoding currently emits standard UTF-8: a scalar NUL as a single 0x00 and a
-/// supplementary scalar as one four-byte sequence. A modified-UTF-8 writer would
-/// instead emit 0xC0 0x80 and a six-byte surrogate pair respectively. This pins
-/// the current output so a change in the write path is noticed.
+/// The write side is a passthrough too: whatever bytes a `Value::String` holds
+/// are the bytes that land on the wire. Encoding the raw modified-UTF-8 forms
+/// reproduces them exactly, so a decode/encode cycle is byte-identical.
 #[test]
-fn encoding_currently_emits_standard_utf8() {
-    let mut m = HashMap::new();
-    m.insert("s".to_string(), nbtx::Value::String("a\u{0}\u{1F600}".to_string()));
+fn encoding_emits_string_bytes_verbatim() {
+    let payload: &[u8] = &[b'a', 0xC0, 0x80, 0xED, 0xA0, 0xBD, 0xED, 0xB8, 0x80];
+
+    let mut m = nbtx::Compound::new();
+    m.insert("s".into(), nbtx::Value::String(BString::from(payload)));
     let out = nbtx::to_le_bytes(&nbtx::Value::Compound(m)).unwrap();
-    // Trailing byte is TAG_End; the six bytes before it are the string payload
-    // 61 00 F0 9F 98 80 (scalar NUL as one 0x00, emoji as one four-byte scalar).
-    let payload = &out[out.len() - 7..out.len() - 1];
-    assert_eq!(payload, &[0x61, 0x00, 0xF0, 0x9F, 0x98, 0x80]);
+
+    // Trailing byte is TAG_End; the payload sits immediately before it.
+    let written = &out[out.len() - 1 - payload.len()..out.len() - 1];
+    assert_eq!(written, payload);
+
+    // And the whole document round-trips back to the same bytes.
+    assert_eq!(decode_string_field(payload).unwrap().as_slice(), payload);
 }

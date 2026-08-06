@@ -1,217 +1,223 @@
 use crate::error::Result;
 use crate::version::GameVersion;
 use byteorder::{LittleEndian, ReadBytesExt};
+use facet::Facet;
+use nbtx::{Compound, Value};
 use std::io::{Read, Write};
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Facet, Debug, PartialEq)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct Abilities {
-    #[serde(rename = "attackmobs")]
+    #[facet(rename = "attackmobs")]
     pub attack_mobs: bool,
-    #[serde(rename = "attackplayers")]
+    #[facet(rename = "attackplayers")]
     pub attack_players: bool,
     pub build: bool,
-    #[serde(rename = "doorsandswitches")]
+    #[facet(rename = "doorsandswitches")]
     pub doors_and_switches: bool,
     pub flying: bool,
-    #[serde(rename = "instabuild")]
+    #[facet(rename = "instabuild")]
     pub instant_build: bool,
     pub invulnerable: bool,
     pub lightning: bool,
     pub mayfly: bool,
     pub mine: bool,
     pub op: bool,
-    #[serde(rename = "opencontainers")]
+    #[facet(rename = "opencontainers")]
     pub open_containers: bool,
     pub teleport: bool,
-    #[serde(rename = "flySpeed")]
+    #[facet(rename = "flySpeed")]
     pub fly_speed: f32,
-    #[serde(rename = "verticalFlySpeed", default)]
+    #[facet(rename = "verticalFlySpeed", default)]
     pub vertical_fly_speed: f32,
-    #[serde(rename = "walkSpeed")]
+    #[facet(rename = "walkSpeed")]
     pub walk_speed: f32,
     // Absent on some worlds; permission level is tracked at the root level
     // via `permissions_level` / `player_permissions_level` in that case.
-    #[serde(rename = "playerPermissionLevel", default)]
+    #[facet(rename = "playerPermissionLevel")]
     pub permission_level: Option<i32>,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Facet, Debug, PartialEq, Eq)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct Experiments {
     pub experiments_ever_used: bool,
     pub saved_with_toggled_experiments: bool,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Facet, Debug, PartialEq, Eq)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct Policies {
     // Not sure what is supposed to be in here
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Facet, Debug, PartialEq)]
+#[facet(rename_all = "camelCase")]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct LevelSettings {
     // The i32 storage version from the 8-byte level.dat header, not part of
     // the NBT payload itself. Kept alongside `storage_version` (the NBT
     // `StorageVersion` field) since the two are set independently and can in
     // principle disagree.
-    #[serde(default)]
-    pub header_storage_version: u32,
+    //
+    // `#[facet(default)]` because the key is never present in the payload; it is
+    // patched in by `read` afterwards. Typed `i32` rather than `u32` because NBT
+    // has no unsigned tag and nbtx refuses to encode a `u32` field at all.
+    #[facet(default)]
+    pub header_storage_version: i32,
     pub editor_world_type: i32,
-    #[serde(rename = "isCreatedInEditor")]
+    #[facet(rename = "isCreatedInEditor")]
     pub created_in_editor: bool,
-    #[serde(rename = "isExportedFromEditor")]
+    #[facet(rename = "isExportedFromEditor")]
     pub exported_from_editor: bool,
-    #[serde(rename = "isRandomSeedAllowed")]
+    #[facet(rename = "isRandomSeedAllowed")]
     pub random_seed_allowed: bool,
-    #[serde(rename = "playerssleepingpercentage")]
+    #[facet(rename = "playerssleepingpercentage")]
     pub sleeping_percentage: i32,
-    #[serde(rename = "recipesunlock")]
+    #[facet(rename = "recipesunlock")]
     pub recipes_unlock: bool,
     pub cheats_enabled: bool,
     pub lightning_level: f32,
     pub lightning_time: i32,
     pub rain_level: f32,
     pub rain_time: i32,
-    #[serde(rename = "Difficulty")]
+    #[facet(rename = "Difficulty")]
     pub difficulty: i32,
-    #[serde(rename = "GameType")]
+    #[facet(rename = "GameType")]
     pub game_mode: i32,
-    #[serde(rename = "Generator")]
+    #[facet(rename = "Generator")]
     pub generator: i32,
-    #[serde(rename = "LimitedWorldOriginX")]
+    #[facet(rename = "LimitedWorldOriginX")]
     pub limited_world_origin_x: i32,
-    #[serde(rename = "LimitedWorldOriginY")]
+    #[facet(rename = "LimitedWorldOriginY")]
     pub limited_world_origin_y: i32,
-    #[serde(rename = "LimitedWorldOriginZ")]
+    #[facet(rename = "LimitedWorldOriginZ")]
     pub limited_world_origin_z: i32,
     pub limited_world_depth: i32,
     pub limited_world_width: i32,
     // Absent on worlds saved before this field was introduced.
-    #[serde(rename = "MinimumCompatibleClientVersion", default)]
+    #[facet(rename = "MinimumCompatibleClientVersion")]
     pub minimum_compatible_client_version: Option<GameVersion>,
-    #[serde(rename = "NetherScale")]
+    #[facet(rename = "NetherScale")]
     pub nether_scale: i32,
     // Protocol version of the network codec the world was last saved with.
     // Absent on worlds saved before this field was introduced.
-    #[serde(rename = "NetworkVersion", default)]
+    #[facet(rename = "NetworkVersion")]
     pub network_version: Option<i32>,
-    #[serde(rename = "Platform")]
+    #[facet(rename = "Platform")]
     pub platform: i32,
-    #[serde(rename = "PlatformBroadcastIntent")]
+    #[facet(rename = "PlatformBroadcastIntent")]
     pub platform_broadcast_intent: i32,
-    #[serde(rename = "RandomSeed")]
+    #[facet(rename = "RandomSeed")]
     pub random_seed: i64,
-    #[serde(rename = "SpawnV1Villagers")]
+    #[facet(rename = "SpawnV1Villagers")]
     pub spawn_v1_villagers: bool,
-    #[serde(rename = "SpawnX")]
+    #[facet(rename = "SpawnX")]
     pub spawn_x: i32,
-    #[serde(rename = "SpawnY")]
+    #[facet(rename = "SpawnY")]
     pub spawn_y: i32,
-    #[serde(rename = "SpawnZ")]
+    #[facet(rename = "SpawnZ")]
     pub spawn_z: i32,
     // The NBT `StorageVersion` field, distinct from the header's storage
     // version stored in `header_storage_version`.
-    #[serde(rename = "StorageVersion")]
+    #[facet(rename = "StorageVersion")]
     pub storage_version: i32,
-    #[serde(rename = "Time")]
+    #[facet(rename = "Time")]
     pub time: i64,
     // Absent on worlds saved before this field was introduced.
-    #[serde(rename = "WorldVersion", default)]
+    #[facet(rename = "WorldVersion")]
     pub world_version: Option<i32>,
-    #[serde(rename = "XBLBroadcastIntent")]
+    #[facet(rename = "XBLBroadcastIntent")]
     pub xbox_broadcast_intent: i32,
     pub current_tick: i64,
     pub experiments: Experiments,
     pub abilities: Abilities,
     pub edu_offer: i32,
     pub education_features_enabled: bool,
-    #[serde(rename = "lastOpenedWithVersion")]
+    #[facet(rename = "lastOpenedWithVersion")]
     pub last_opened_with_version: GameVersion,
     pub bonus_chest_enabled: bool,
     pub bonus_chest_spawned: bool,
-    #[serde(rename = "commandblockoutput")]
+    #[facet(rename = "commandblockoutput")]
     pub command_block_output: bool,
-    #[serde(rename = "CenterMapsToOrigin")]
+    #[facet(rename = "CenterMapsToOrigin")]
     pub center_maps_to_origin: bool,
-    #[serde(rename = "commandblocksenabled")]
+    #[facet(rename = "commandblocksenabled")]
     pub command_blocks_enabled: bool,
     pub commands_enabled: bool,
-    #[serde(rename = "ConfirmedPlatformLockedContent")]
+    #[facet(rename = "ConfirmedPlatformLockedContent")]
     pub confirmed_platform_locked_content: bool,
     pub daylight_cycle: i32,
-    #[serde(rename = "dodaylightcycle")]
+    #[facet(rename = "dodaylightcycle")]
     pub daylight_lock: bool,
-    #[serde(rename = "dolimitedcrafting")]
+    #[facet(rename = "dolimitedcrafting")]
     pub limited_crafting: bool,
-    #[serde(rename = "doentitydrops")]
+    #[facet(rename = "doentitydrops")]
     pub entity_drops: bool,
-    #[serde(rename = "dofiretick")]
+    #[facet(rename = "dofiretick")]
     pub fire_tick: bool,
-    #[serde(rename = "doimmediaterespawn")]
+    #[facet(rename = "doimmediaterespawn")]
     pub immediate_respawn: bool,
-    #[serde(rename = "doinsomnia")]
+    #[facet(rename = "doinsomnia")]
     pub insomnia: bool,
-    #[serde(rename = "domobloot")]
+    #[facet(rename = "domobloot")]
     pub mob_loot: bool,
-    #[serde(rename = "domobspawning")]
+    #[facet(rename = "domobspawning")]
     pub mob_spawning: bool,
-    #[serde(rename = "dotiledrops")]
+    #[facet(rename = "dotiledrops")]
     pub tile_drops: bool,
-    #[serde(rename = "doweathercycle")]
+    #[facet(rename = "doweathercycle")]
     pub weather_cycle: bool,
     // Absent on worlds saved before this rule was introduced.
-    #[serde(rename = "projectilescanbreakblocks", default)]
+    #[facet(rename = "projectilescanbreakblocks", default)]
     pub projectiles_can_break_blocks: bool,
-    #[serde(rename = "drowningdamage")]
+    #[facet(rename = "drowningdamage")]
     pub drowning_damage: bool,
-    #[serde(rename = "falldamage")]
+    #[facet(rename = "falldamage")]
     pub fall_damage: bool,
-    #[serde(rename = "firedamage")]
+    #[facet(rename = "firedamage")]
     pub fire_damage: bool,
-    #[serde(rename = "freezedamage")]
+    #[facet(rename = "freezedamage")]
     pub freeze_damage: bool,
-    #[serde(rename = "keepinventory")]
+    #[facet(rename = "keepinventory")]
     pub keep_inventory: bool,
-    #[serde(rename = "maxcommandchainlength")]
+    #[facet(rename = "maxcommandchainlength")]
     pub max_command_chain_length: i32,
-    #[serde(rename = "mobgriefing")]
+    #[facet(rename = "mobgriefing")]
     pub mob_griefing: bool,
-    #[serde(rename = "naturalregeneration")]
+    #[facet(rename = "naturalregeneration")]
     pub natural_regeneration: bool,
-    #[serde(rename = "functioncommandlimit")]
+    #[facet(rename = "functioncommandlimit")]
     pub function_command_limit: i32,
     pub pvp: bool,
-    #[serde(rename = "randomtickspeed")]
+    #[facet(rename = "randomtickspeed")]
     pub random_tick_speed: i32,
-    #[serde(rename = "respawnblocksexplode")]
+    #[facet(rename = "respawnblocksexplode")]
     pub respawn_blocks_explode: bool,
-    #[serde(rename = "sendcommandfeedback")]
+    #[facet(rename = "sendcommandfeedback")]
     pub send_command_feedback: bool,
-    #[serde(rename = "showbordereffect")]
+    #[facet(rename = "showbordereffect")]
     pub show_border_effect: bool,
-    #[serde(rename = "showcoordinates")]
+    #[facet(rename = "showcoordinates")]
     pub show_coordinates: bool,
-    #[serde(rename = "showdeathmessages")]
+    #[facet(rename = "showdeathmessages")]
     pub show_death_messages: bool,
-    #[serde(rename = "showtags")]
+    #[facet(rename = "showtags")]
     pub show_tags: bool,
     // Absent on worlds saved before these settings were introduced.
-    #[serde(rename = "showdaysplayed", default)]
+    #[facet(rename = "showdaysplayed", default)]
     pub show_days_played: bool,
-    #[serde(rename = "showrecipemessages", default)]
+    #[facet(rename = "showrecipemessages", default)]
     pub show_recipe_messages: bool,
-    #[serde(rename = "locatorbar", default)]
+    #[facet(rename = "locatorbar", default)]
     pub locator_bar: bool,
-    #[serde(rename = "spawnradius")]
+    #[facet(rename = "spawnradius")]
     pub spawn_radius: i32,
-    #[serde(rename = "tntexplodes")]
+    #[facet(rename = "tntexplodes")]
     pub tnt_explodes: bool,
-    #[serde(rename = "tntexplosiondropdecay", default)]
+    #[facet(rename = "tntexplosiondropdecay", default)]
     pub tnt_explosion_drop_decay: bool,
-    #[serde(rename = "ForceGameType")]
+    #[facet(rename = "ForceGameType")]
     pub force_game_mode: bool,
     pub has_been_loaded_in_creative: bool,
     pub has_locked_behavior_pack: bool,
@@ -224,34 +230,33 @@ pub struct LevelSettings {
     pub requires_copied_pack_removal_check: bool,
     pub texture_packs_required: bool,
     // Absent on worlds saved before these fields were introduced.
-    #[serde(rename = "IsHardcore", default)]
+    #[facet(rename = "IsHardcore", default)]
     pub is_hardcore: bool,
-    #[serde(rename = "PlayerHasDied", default)]
+    #[facet(rename = "PlayerHasDied", default)]
     pub player_has_died: bool,
-    #[serde(rename = "HasUncompleteWorldFileOnDisk", default)]
+    #[facet(rename = "HasUncompleteWorldFileOnDisk", default)]
     pub has_uncomplete_world_file_on_disk: bool,
-    #[serde(rename = "LANBroadcast")]
+    #[facet(rename = "LANBroadcast")]
     pub lan_broadcast: bool,
-    #[serde(rename = "LANBroadcastIntent")]
+    #[facet(rename = "LANBroadcastIntent")]
     pub lan_broadcast_intent: i8,
-    #[serde(rename = "MultiplayerGame")]
+    #[facet(rename = "MultiplayerGame")]
     pub multiplayer_game: bool,
-    #[serde(rename = "MultiplayerGameIntent")]
+    #[facet(rename = "MultiplayerGameIntent")]
     pub multiplayer_game_intent: i8,
-    #[serde(rename = "LastPlayed")]
+    #[facet(rename = "LastPlayed")]
     pub last_played: i64,
     // Absent on worlds saved before this field was introduced; holds "*" or
     // a version string like "1.17" once present.
-    #[serde(default)]
     pub base_game_version: Option<String>,
-    #[serde(rename = "BiomeOverride")]
+    #[facet(rename = "BiomeOverride")]
     pub biome_override: String,
-    #[serde(rename = "FlatWorldLayers")]
+    #[facet(rename = "FlatWorldLayers")]
     pub flat_world_layers: String,
     // Absent on worlds saved before this field was introduced.
-    #[serde(rename = "InventoryVersion", default)]
+    #[facet(rename = "InventoryVersion")]
     pub inventory_version: Option<String>,
-    #[serde(rename = "LevelName")]
+    #[facet(rename = "LevelName")]
     pub level_name: String,
     pub use_msa_gamertags_only: bool,
     pub world_start_count: i64,
@@ -261,17 +266,17 @@ pub struct LevelSettings {
     pub permissions_level: i32,
     pub player_permissions_level: i32,
     pub prid: String,
-    #[serde(rename = "world_policies")]
+    #[facet(rename = "world_policies")]
     pub world_policies: Policies,
     // Superseded by `PlatformBroadcastIntent` / `XBLBroadcastIntent` on
     // newer worlds, which no longer write these.
-    #[serde(rename = "PlatformBroadcast", default)]
+    #[facet(rename = "PlatformBroadcast")]
     pub platform_broadcast: Option<i8>,
-    #[serde(rename = "PlatformBroadcastMode", default)]
+    #[facet(rename = "PlatformBroadcastMode")]
     pub platform_broadcast_mode: Option<i32>,
-    #[serde(rename = "XBLBroadcast", default)]
+    #[facet(rename = "XBLBroadcast")]
     pub xbl_broadcast: Option<i8>,
-    #[serde(rename = "XBLBroadcastMode", default)]
+    #[facet(rename = "XBLBroadcastMode")]
     pub xbl_broadcast_mode: Option<i32>,
 }
 
@@ -280,7 +285,7 @@ pub struct LevelSettings {
 /// and upgrade logic build on top of this.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VersionInfo<'a> {
-    pub header_storage_version: u32,
+    pub header_storage_version: i32,
     pub storage_version: i32,
     pub last_opened_with_version: GameVersion,
     pub minimum_compatible_client_version: Option<GameVersion>,
@@ -290,7 +295,65 @@ pub struct VersionInfo<'a> {
     pub world_version: Option<i32>,
 }
 
+/// The two NBT keys that hold a [`GameVersion`] as an int list rather than a
+/// compound. Both are read with the key spelling level.dat uses on disk.
+const GAME_VERSION_KEYS: [&str; 2] = ["lastOpenedWithVersion", "MinimumCompatibleClientVersion"];
+
+/// Reshapes the two game-version keys from the int list they are on disk into
+/// the compound [`GameVersion`]'s five fields decode from.
+///
+/// serde expressed this with `#[serde(try_from = "[i32; 5]", into = "[i32; 5]")]`
+/// on `GameVersion` itself. facet has no container-level conversion attribute,
+/// and nbtx reflects any struct as a compound, so the reshaping is done here on
+/// the decoded tree instead. It is confined to this one function because these
+/// are the only two places in the format where a `GameVersion` appears; nothing
+/// else in the crate nests one.
+///
+/// A key that is absent, or already a compound, or holds anything other than a
+/// five-element int list is left exactly as it is — `from_value` then reports
+/// the mismatch as it would have anyway.
+fn unpack_game_versions(value: &mut Value) {
+    let Value::Compound(entries) = value else {
+        return;
+    };
+
+    for key in GAME_VERSION_KEYS {
+        let Some(entry) = entries.get_mut(bstr::BStr::new(key)) else {
+            continue;
+        };
+        // `IntArray` is what Bedrock writes; a `List` of `Int` decoded into the
+        // same `[i32; 5]` under serde, so accept it too.
+        let parts: Vec<i32> = match entry {
+            Value::IntArray(parts) => parts.clone(),
+            Value::List(items) => {
+                let ints: Option<Vec<i32>> = items.iter().map(|i| i.as_int().copied()).collect();
+                match ints {
+                    Some(ints) => ints,
+                    None => continue,
+                }
+            }
+            _ => continue,
+        };
+        let [major, minor, patch, revision, beta] = parts[..] else {
+            continue;
+        };
+
+        *entry = Value::Compound(Compound::from_iter([
+            ("major".into(), Value::Int(major)),
+            ("minor".into(), Value::Int(minor)),
+            ("patch".into(), Value::Int(patch)),
+            ("revision".into(), Value::Int(revision)),
+            ("beta".into(), Value::Int(beta)),
+        ]));
+    }
+}
+
 impl LevelSettings {
+    /// # Note
+    ///
+    /// Unimplemented. A writer has to undo what [`unpack_game_versions`] does —
+    /// fold the two [`GameVersion`] compounds back into `IntArray`s — or the
+    /// file it produces will not read back in Bedrock.
     pub fn write<W: Write>(&self, _writer: W) -> Result<()> {
         todo!()
     }
@@ -299,8 +362,15 @@ impl LevelSettings {
         let header_storage_version = data.read_u32::<LittleEndian>()?;
         let _file_size = data.read_u32::<LittleEndian>()?;
 
-        let mut settings: Self = nbtx::from_le_bytes(&mut data)?;
-        settings.header_storage_version = header_storage_version;
+        // Decoded through a `Value` rather than straight into `Self`: the two
+        // game-version keys need reshaping (below), and `crate::nbt` has to see
+        // the tree to apply Bedrock's "any non-zero byte is true" rule to this
+        // struct's ~90 `bool` fields.
+        let mut value: Value = nbtx::from_le_bytes(&mut data)?;
+        unpack_game_versions(&mut value);
+
+        let mut settings: Self = crate::nbt::from_value(value)?;
+        settings.header_storage_version = header_storage_version as i32;
 
         Ok(settings)
     }

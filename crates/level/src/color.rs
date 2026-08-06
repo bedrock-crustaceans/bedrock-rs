@@ -1,13 +1,8 @@
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    serde_repr::Serialize_repr,
-    serde_repr::Deserialize_repr,
-)]
+use facet::Facet;
+
+/// A Bedrock dye colour, stored in NBT as a `Byte` tag holding the numeric id.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
+#[facet(nbtx::variant_as(i8))]
 #[repr(i8)]
 pub enum Color {
     White = 0,
