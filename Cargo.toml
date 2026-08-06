@@ -34,7 +34,15 @@ syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macr
 quote = { version = "1.0" }
 jsonwebtoken = "10.3"
 base64 = "0.22"
-nbtx = "3.0.1"
+# nbtx 4.0 is a from-scratch rewrite on `facet` and has not shipped to
+# crates.io yet, so track the branch it lives on.
+nbtx = { git = "https://github.com/bedrock-crustaceans/bedrockrs-nbt", branch = "facet-migration" }
+# Pinned to the exact rev nbtx pins for facet/facet-reflect/facet-core.
+# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so every crate that
+# derives it needs facet as a direct dependency, and a second facet in the graph
+# would give the derive a different `Shape` type than nbtx reflects against.
+facet = { git = "https://github.com/facet-rs/facet", rev = "93e597980313f53ce81d242910adc9bdf34f9665", features = ["bstr"] }
+bstr = "1"
 xuid = "1.0"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
