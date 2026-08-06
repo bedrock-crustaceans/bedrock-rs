@@ -21,7 +21,8 @@
 //! dynamic [`nbtx::Value`], walk it against the target type's shape, and
 //! canonicalise every `Byte` that is destined for a `bool` field to `1` before
 //! handing the tree over. The public field types stay `bool` and no call site
-//! changes. The same walk reconciles integer widths — see [`retag_integer`].
+//! changes. The same walk reconciles numeric tag widths — see [`retag_integer`]
+//! and [`retag_float`] — since the game does not write one fixed tag per key.
 
 use std::io::Read;
 
@@ -49,10 +50,12 @@ pub fn from_value<'f, T: Facet<'f>>(mut value: Value) -> Result<T, nbtx::Error> 
     nbtx::from_value(value)
 }
 
-/// Reconciles `value`'s scalars with the fields of `shape` they are bound for:
-/// a `Byte` headed for a `bool` is canonicalised to `1` when it is non-zero, and
-/// an integer is re-tagged to its field's width when it fits (see
-/// [`retag_integer`]). Every other node is left untouched.
+/// Reconciles `value`'s scalars with the targets in `shape` they are bound for:
+/// a `Byte` headed for a `bool` is canonicalised to `1` when it is non-zero; an
+/// integer, whether it fills a number or selects an enum variant, is re-tagged
+/// to the width its target expects when it fits (see [`retag_integer`]); and a
+/// float is re-tagged to its field's width (see [`retag_float`]). Every other
+/// node is left untouched.
 ///
 /// The walk mirrors the one nbtx's own decoder performs — `Option` unwraps to its
 /// inner shape, a compound matches keys against `effective_name()` so
@@ -83,10 +86,22 @@ pub fn normalize_scalars(value: &mut Value, shape: &'static Shape) {
                     *byte = 1;
                 }
             }
-            ScalarType::I8 | ScalarType::I16 | ScalarType::I32 | ScalarType::I64 => {
-                retag_integer(value, scalar);
-            }
+            ScalarType::I8 => retag_integer(value, IntWidth::Byte { signed: true }),
+            ScalarType::I16 => retag_integer(value, IntWidth::Short { signed: true }),
+            ScalarType::I32 => retag_integer(value, IntWidth::Int { signed: true }),
+            ScalarType::I64 => retag_integer(value, IntWidth::Long { signed: true }),
+            ScalarType::F32 | ScalarType::F64 => retag_float(value, scalar),
             _ => {}
+        }
+        return;
+    }
+
+    // An enum arrives as the tag its `#[facet(nbtx::variant_as(...))]` declares.
+    // A numeric mode is a fixed-width integer holding the discriminant, so it
+    // needs the same reconciling a plain integer field does.
+    if let Type::User(UserType::Enum(_)) = shape.ty {
+        if let Some(width) = variant_as_width(shape) {
+            retag_integer(value, width);
         }
         return;
     }
@@ -131,20 +146,68 @@ pub fn normalize_scalars(value: &mut Value, shape: &'static Shape) {
     }
 }
 
-/// Re-tags an integer value to the width its target field expects, when the
-/// value fits.
+/// The integer tag a field is read from, and whether the number it carries is
+/// signed.
 ///
-/// Bedrock does not write one fixed tag per field: a chest's `Findable` is a
+/// An unsigned target stores its bit pattern in the signed tag — discriminant
+/// 200 under a `u8` mode is `Byte(-56)` — so the range a value has to fit
+/// depends on the sign as well as the width.
+#[derive(Clone, Copy)]
+enum IntWidth {
+    Byte { signed: bool },
+    Short { signed: bool },
+    Int { signed: bool },
+    Long { signed: bool },
+}
+
+/// The width an enum's `#[facet(nbtx::variant_as(<mode>))]` declares, or `None`
+/// for the `str` mode and for an enum that declares nothing (which nbtx rejects
+/// on its own).
+fn variant_as_width(shape: &'static Shape) -> Option<IntWidth> {
+    let mode = shape
+        .attributes
+        .iter()
+        .find(|attr| attr.ns == Some("nbtx") && attr.key == "variant_as")?
+        .get_as::<Shape>()?;
+
+    let id = mode.id;
+    Some(if id == <i8 as Facet>::SHAPE.id {
+        IntWidth::Byte { signed: true }
+    } else if id == <u8 as Facet>::SHAPE.id {
+        IntWidth::Byte { signed: false }
+    } else if id == <i16 as Facet>::SHAPE.id {
+        IntWidth::Short { signed: true }
+    } else if id == <u16 as Facet>::SHAPE.id {
+        IntWidth::Short { signed: false }
+    } else if id == <i32 as Facet>::SHAPE.id {
+        IntWidth::Int { signed: true }
+    } else if id == <u32 as Facet>::SHAPE.id {
+        IntWidth::Int { signed: false }
+    } else if id == <i64 as Facet>::SHAPE.id {
+        IntWidth::Long { signed: true }
+    } else if id == <u64 as Facet>::SHAPE.id {
+        IntWidth::Long { signed: false }
+    } else {
+        // `str` mode: the variant arrives as its name, not a number.
+        return None;
+    })
+}
+
+/// Re-tags an integer value to the width its target expects, when the value
+/// fits.
+///
+/// Bedrock does not write one fixed tag per key: a chest's `Findable` is a
 /// `Byte` in a world the game wrote, against an `i32` field, and other numeric
-/// keys vary the same way. nbtx pairs each tag with exactly one Rust width and
-/// rejects the rest, so the two are reconciled here — for every field, since a
-/// tag whose value fits the field is not ambiguous anywhere.
+/// keys vary the same way — including the ones that select an enum variant, such
+/// as a structure block's `data`. nbtx pairs each tag with exactly one width and
+/// rejects the rest, so the two are reconciled here, for every numeric target,
+/// since a tag whose value fits is not ambiguous anywhere.
 ///
 /// A value that does not fit is left alone, and nbtx then reports the mismatch,
 /// so nothing is silently truncated. This is a *read* accommodation only:
 /// writing always emits the tag the Rust type implies, so a `Byte` read into an
 /// `i32` is written back as an `Int`.
-fn retag_integer(value: &mut Value, scalar: ScalarType) {
+fn retag_integer(value: &mut Value, width: IntWidth) {
     let widened = match *value {
         Value::Byte(v) => i64::from(v),
         Value::Short(v) => i64::from(v),
@@ -153,16 +216,46 @@ fn retag_integer(value: &mut Value, scalar: ScalarType) {
         _ => return,
     };
 
-    let retagged = match scalar {
-        ScalarType::I8 => i8::try_from(widened).ok().map(Value::Byte),
-        ScalarType::I16 => i16::try_from(widened).ok().map(Value::Short),
-        ScalarType::I32 => i32::try_from(widened).ok().map(Value::Int),
-        ScalarType::I64 => Some(Value::Long(widened)),
-        _ => None,
+    // An unsigned target keeps the bit pattern rather than the number, matching
+    // how nbtx narrows a discriminant on the way out.
+    let retagged = match width {
+        IntWidth::Byte { signed: true } => i8::try_from(widened).ok().map(Value::Byte),
+        IntWidth::Byte { signed: false } => u8::try_from(widened)
+            .ok()
+            .map(|v| Value::Byte(v.cast_signed())),
+        IntWidth::Short { signed: true } => i16::try_from(widened).ok().map(Value::Short),
+        IntWidth::Short { signed: false } => u16::try_from(widened)
+            .ok()
+            .map(|v| Value::Short(v.cast_signed())),
+        IntWidth::Int { signed: true } => i32::try_from(widened).ok().map(Value::Int),
+        IntWidth::Int { signed: false } => u32::try_from(widened)
+            .ok()
+            .map(|v| Value::Int(v.cast_signed())),
+        IntWidth::Long { signed: true } => Some(Value::Long(widened)),
+        IntWidth::Long { signed: false } => u64::try_from(widened)
+            .ok()
+            .map(|v| Value::Long(v.cast_signed())),
     };
 
     if let Some(retagged) = retagged {
         *value = retagged;
+    }
+}
+
+/// Re-tags a `Float` as a `Double` or the reverse, to match the width of the
+/// field it is bound for.
+///
+/// The same tag inconsistency [`retag_integer`] handles, in the float pair: an
+/// item frame's `ItemRotation` is an `f32` field that a record may carry as
+/// either tag. Unlike the integers this needs no range check — a float
+/// conversion in either direction is defined for every value, saturating to an
+/// infinity rather than trapping — so the cast is unconditional and, when
+/// narrowing, lossy in the low bits.
+fn retag_float(value: &mut Value, scalar: ScalarType) {
+    match (scalar, &*value) {
+        (ScalarType::F32, Value::Double(v)) => *value = Value::Float(*v as f32),
+        (ScalarType::F64, Value::Float(v)) => *value = Value::Double(f64::from(*v)),
+        _ => {}
     }
 }
 
@@ -283,5 +376,63 @@ mod tests {
             ("huge".into(), Value::Byte(0)),
         ]));
         assert!(from_value::<Widths>(value).is_err());
+    }
+
+    #[derive(Facet, Debug, PartialEq)]
+    #[facet(nbtx::variant_as(i32))]
+    #[repr(i32)]
+    enum Mode {
+        Data = 0,
+        Save = 1,
+    }
+
+    #[derive(Facet, Debug, PartialEq)]
+    #[facet(nbtx::variant_as(str))]
+    #[repr(u8)]
+    enum Named {
+        Base,
+    }
+
+    #[derive(Facet, Debug, PartialEq)]
+    struct Tagged {
+        mode: Mode,
+        named: Named,
+        rotation: f32,
+        precise: f64,
+    }
+
+    /// The number selecting an enum variant arrives under whichever tag the game
+    /// wrote, exactly like a plain number, and a float likewise.
+    #[test]
+    fn enum_and_float_tags_are_reconciled_too() {
+        let value = Value::Compound(Compound::from_iter([
+            // `Int` is the width `variant_as(i32)` expects; a `Byte` still fills it.
+            ("mode".into(), Value::Byte(1)),
+            ("named".into(), Value::String("Base".into())),
+            ("rotation".into(), Value::Double(1.5)),
+            ("precise".into(), Value::Float(0.5)),
+        ]));
+        assert_eq!(
+            from_value::<Tagged>(value).unwrap(),
+            Tagged {
+                mode: Mode::Save,
+                named: Named::Base,
+                rotation: 1.5,
+                precise: 0.5,
+            }
+        );
+    }
+
+    /// A discriminant no variant claims stays as it is, so nbtx reports it
+    /// rather than this pass inventing a variant.
+    #[test]
+    fn unknown_discriminants_still_fail() {
+        let value = Value::Compound(Compound::from_iter([
+            ("mode".into(), Value::Byte(9)),
+            ("named".into(), Value::String("Base".into())),
+            ("rotation".into(), Value::Float(0.0)),
+            ("precise".into(), Value::Double(0.0)),
+        ]));
+        assert!(from_value::<Tagged>(value).is_err());
     }
 }
