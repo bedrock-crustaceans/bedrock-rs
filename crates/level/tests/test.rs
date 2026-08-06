@@ -75,7 +75,7 @@ fn read_local_player() {
         let Ok(key) = key else { continue };
         if matches!(key.data, KeyVariant::LocalPlayer) {
             let data = kv.value();
-            let nbt: PlayerData = nbtx::from_le_bytes(&mut data.as_ref()).unwrap();
+            let nbt = PlayerData::read(data.as_ref()).unwrap();
             println!("{nbt:#?}");
         }
     }

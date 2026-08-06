@@ -1,5 +1,9 @@
-use crate::settings::Abilities;
+use std::io::Read;
+
 use facet::Facet;
+
+use crate::error::Result;
+use crate::settings::Abilities;
 
 #[derive(Facet, Debug)]
 // A player record carries keys this crate does not model yet, and an
@@ -154,4 +158,48 @@ pub struct PlayerData {
     pub spawn_x: i32,
     pub sitting: bool,
     pub player_level_progress: f32,
+}
+
+impl PlayerData {
+    /// Reads a player record from little-endian (on-disk) NBT.
+    ///
+    /// Goes through [`crate::nbt`] rather than nbtx directly: a player record is
+    /// dense with `Byte` flags, and Bedrock counts every non-zero one as true.
+    pub fn read<R: Read>(mut data: R) -> Result<Self> {
+        Ok(crate::nbt::from_le_bytes(&mut data)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use nbtx::{Compound, Value};
+
+    /// A record the game wrote can carry a flag byte other than `0`/`1`; every
+    /// non-zero one is true. Pins the read path, not just the fold itself: these
+    /// records only get the rule if they are decoded through [`crate::nbt`].
+    #[test]
+    fn flag_bytes_other_than_one_are_true() {
+        let effect = Value::Compound(Compound::from_iter([
+            ("Id".into(), Value::Byte(1)),
+            ("Duration".into(), Value::Int(100)),
+            ("DurationEasy".into(), Value::Int(100)),
+            ("DurationNormal".into(), Value::Int(100)),
+            ("DurationHard".into(), Value::Int(100)),
+            ("Ambient".into(), Value::Byte(2)),
+            ("Amplifier".into(), Value::Byte(0)),
+            ("ShowParticles".into(), Value::Byte(-1)),
+        ]));
+        let bytes = nbtx::to_le_bytes(&effect).unwrap();
+
+        let decoded: StatusEffect = crate::nbt::from_le_bytes(&mut bytes.as_slice()).unwrap();
+        assert!(decoded.ambient);
+        assert!(decoded.show_particles);
+
+        // The same bytes read straight through nbtx say the opposite, which is
+        // what `PlayerData::read` exists to avoid.
+        let strict: StatusEffect = nbtx::from_le_bytes(&mut bytes.as_slice()).unwrap();
+        assert!(!strict.ambient);
+        assert!(!strict.show_particles);
+    }
 }
