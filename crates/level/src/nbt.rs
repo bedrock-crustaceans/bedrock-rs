@@ -1,4 +1,5 @@
-//! Decoding NBT into this crate's types, with Bedrock's boolean rule applied.
+//! Decoding NBT into this crate's types, with the accommodations Bedrock's own
+//! save data needs.
 //!
 //! Everything here exists for one reason: **an NBT `Byte` tag used as a flag is
 //! false only when it is zero.** Any other value — `2`, `-1`, `0xFF` — is true.
@@ -27,29 +28,31 @@ use std::io::Read;
 use facet::{Def, Facet, ScalarType, Shape, Type, UserType};
 use nbtx::Value;
 
-/// Reads a `T` from little-endian (on-disk) NBT, treating any non-zero `Byte`
-/// destined for a `bool` field as `true`.
+/// Reads a `T` from little-endian (on-disk) NBT, applying [`normalize_scalars`]
+/// on the way.
 ///
-/// A drop-in replacement for [`nbtx::from_le_bytes`] for types that contain
-/// `bool` fields. It costs one intermediate [`Value`] tree; use nbtx's function
-/// directly for types with no `bool` anywhere in them.
+/// A drop-in replacement for [`nbtx::from_le_bytes`] for any type with a `bool`
+/// or a narrow integer field. It costs one intermediate [`Value`] tree; use
+/// nbtx's function directly for a type that has neither.
 pub fn from_le_bytes<'f, T: Facet<'f>>(reader: &mut impl Read) -> Result<T, nbtx::Error> {
     let value: Value = nbtx::from_le_bytes(reader)?;
     from_value(value)
 }
 
-/// Builds a `T` from an already-decoded [`Value`], treating any non-zero `Byte`
-/// destined for a `bool` field as `true`.
+/// Builds a `T` from an already-decoded [`Value`], applying
+/// [`normalize_scalars`] on the way.
 ///
-/// Use this when the tree has already been read (to inspect a discriminating key
-/// before choosing the target type, say) so it is not decoded twice.
+/// Use this when the tree has already been read — to inspect a discriminating
+/// key before choosing the target type, say — so it is not decoded twice.
 pub fn from_value<'f, T: Facet<'f>>(mut value: Value) -> Result<T, nbtx::Error> {
-    canonicalize_flags(&mut value, T::SHAPE);
+    normalize_scalars(&mut value, T::SHAPE);
     nbtx::from_value(value)
 }
 
-/// Rewrites every `Byte` in `value` that a field of `shape` would read as a
-/// `bool` to the canonical `1`, leaving every other node untouched.
+/// Reconciles `value`'s scalars with the fields of `shape` they are bound for:
+/// a `Byte` headed for a `bool` is canonicalised to `1` when it is non-zero, and
+/// an integer is re-tagged to its field's width when it fits (see
+/// [`retag_integer`]). Every other node is left untouched.
 ///
 /// The walk mirrors the one nbtx's own decoder performs — `Option` unwraps to its
 /// inner shape, a compound matches keys against `effective_name()` so
@@ -62,10 +65,10 @@ pub fn from_value<'f, T: Facet<'f>>(mut value: Value) -> Result<T, nbtx::Error> 
 ///
 /// `i8`/`u8` fields are deliberately untouched — that is the whole reason this
 /// walks the shape rather than clamping every `Byte` in the tree.
-pub fn canonicalize_flags(value: &mut Value, shape: &'static Shape) {
+pub fn normalize_scalars(value: &mut Value, shape: &'static Shape) {
     // An `Option<T>` field carries `T`'s shape once the key is present.
     if let Def::Option(def) = shape.def {
-        canonicalize_flags(value, def.t());
+        normalize_scalars(value, def.t());
         return;
     }
 
@@ -99,12 +102,12 @@ pub fn canonicalize_flags(value: &mut Value, shape: &'static Shape) {
                         .iter()
                         .find(|f| f.effective_name().as_bytes() == key.as_slice())
                     {
-                        canonicalize_flags(entry, field.shape());
+                        normalize_scalars(entry, field.shape());
                     }
                 }
             } else if let Def::Map(def) = shape.def {
                 for (_, entry) in entries.iter_mut() {
-                    canonicalize_flags(entry, def.v());
+                    normalize_scalars(entry, def.v());
                 }
             }
         }
@@ -120,7 +123,7 @@ pub fn canonicalize_flags(value: &mut Value, shape: &'static Shape) {
             };
             if let Some(elem) = elem {
                 for item in items {
-                    canonicalize_flags(item, elem);
+                    normalize_scalars(item, elem);
                 }
             }
         }
@@ -235,7 +238,7 @@ mod tests {
     #[test]
     fn integer_bytes_are_left_alone() {
         let mut value = outer(-7);
-        canonicalize_flags(&mut value, Outer::SHAPE);
+        normalize_scalars(&mut value, Outer::SHAPE);
         let Value::Compound(entries) = &value else {
             panic!("expected a compound");
         };
