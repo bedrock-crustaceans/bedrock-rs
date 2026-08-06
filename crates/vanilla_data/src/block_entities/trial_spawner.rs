@@ -1,33 +1,35 @@
-// #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+use facet::Facet;
+
+// #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
+// #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 // pub struct SpawnPotentialEntity {
 //     pub id: String,
 // }
 
-// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// #[derive(Debug, Clone, PartialEq, Facet)]
+// #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 // pub struct SpawnPotentialData {
 //     pub entity: SpawnPotentialEntity,
 //     pub equipment: Option<Equipment>,
 // }
 
-// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// #[derive(Debug, Clone, PartialEq, Facet)]
+// #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 // pub struct SpawnPotential {
 //     pub weight: i32,
 //     pub data: SpawnPotentialData,
 // }
 
-// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// #[derive(Debug, Clone, PartialEq, Facet)]
+// #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 // pub struct EjectableLootTable {
 //     pub weight: i32,
 //     /// Path to a loot table.
 //     pub data: String,
 // }
 
-// #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-// #[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// #[derive(Debug, Clone, PartialEq, Facet)]
+// #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 // pub struct SpawnerConfig {
 //     pub spawn_range: i32,
 //     pub total_mobs: f32,
@@ -43,8 +45,8 @@
 // }
 
 /// Chances for the equipment to drop upon death.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct DropChances {
     pub head: f32,
     pub chest: f32,
@@ -54,30 +56,32 @@ pub struct DropChances {
     pub offhand: f32,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct Equipment {
     pub loot_table: String,
     pub slot_drop_chances: Option<DropChances>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[facet(rename_all = "PascalCase")]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct SpawnData {
     pub type_id: String,
     pub weight: i32,
-    #[serde(rename = "equipment")]
+    #[facet(rename = "equipment")]
     pub equipment: Option<Equipment>,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
+// Never denied unknown keys under serde; nbtx 4.0 denies by default.
+#[facet(nbtx::allow_unknown_fields)]
 pub struct RegisteredEntity {
     pub uuid: i64,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct TrialSpawner {
     pub ominous_config: String,
     pub spawn_data: SpawnData,

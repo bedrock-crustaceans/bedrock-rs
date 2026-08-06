@@ -1,6 +1,8 @@
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+use facet::Facet;
+
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[facet(rename_all = "PascalCase")]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct MobSpawner {
     pub display_entity_height: f32,
     pub display_entity_scale: f32,

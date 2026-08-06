@@ -1,17 +1,18 @@
 use bedrock_level::types::ItemStack;
+use facet::Facet;
 
 // Known sherds are: minecraft:brick, minecraft:guster_pottery_sherd
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[facet(rename_all = "PascalCase")]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct DecoratedPot {
     pub loot_table: Option<String>,
     pub loot_table_seed: Option<i32>,
-    #[serde(rename = "animation")]
+    #[facet(rename = "animation")]
     pub animation: i8,
-    #[serde(rename = "item")]
+    #[facet(rename = "item")]
     pub item: ItemStack,
-    #[serde(rename = "sherds")]
+    #[facet(rename = "sherds")]
     pub sherds: Option<Vec<String>>,
 }

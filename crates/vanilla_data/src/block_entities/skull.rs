@@ -1,15 +1,9 @@
-use bedrock_level::serde_helpers::deserialize_bool;
+use facet::Facet;
 
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    serde_repr::Serialize_repr,
-    serde_repr::Deserialize_repr,
-)]
+
+/// Stored as a `Byte` tag holding the numeric type.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
+#[facet(nbtx::variant_as(i8))]
 #[repr(i8)]
 pub enum SkullType {
     Skeleton,
@@ -21,11 +15,10 @@ pub enum SkullType {
     Piglin,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "PascalCase")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[facet(rename_all = "PascalCase")]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct Skull {
-    #[serde(deserialize_with = "deserialize_bool")]
     pub doing_animation: bool,
     pub mouth_tick_count: i32,
     pub rotation: f32,
