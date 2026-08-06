@@ -11,9 +11,7 @@ pub struct VaultData {
 
 /// The item a vault accepts, stored as a `String` tag holding the item id.
 ///
-/// The hand-written serde impls this replaces did exactly what
-/// `variant_as(str)` plus a per-variant rename does: match the id, reject
-/// anything else.
+/// Any other id is rejected: these are the only two the game writes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Facet)]
 #[facet(nbtx::variant_as(str))]
 #[repr(u8)]

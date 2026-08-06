@@ -74,7 +74,7 @@ pub struct SpawnData {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
-// Never denied unknown keys under serde; nbtx 4.0 denies by default.
+// Shape only partly known; an unrecognised key is an error unless opted out.
 #[facet(nbtx::allow_unknown_fields)]
 pub struct RegisteredEntity {
     pub uuid: i64,

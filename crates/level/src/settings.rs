@@ -302,12 +302,10 @@ const GAME_VERSION_KEYS: [&str; 2] = ["lastOpenedWithVersion", "MinimumCompatibl
 /// Reshapes the two game-version keys from the int list they are on disk into
 /// the compound [`GameVersion`]'s five fields decode from.
 ///
-/// serde expressed this with `#[serde(try_from = "[i32; 5]", into = "[i32; 5]")]`
-/// on `GameVersion` itself. facet has no container-level conversion attribute,
-/// and nbtx reflects any struct as a compound, so the reshaping is done here on
-/// the decoded tree instead. It is confined to this one function because these
-/// are the only two places in the format where a `GameVersion` appears; nothing
-/// else in the crate nests one.
+/// nbtx reflects any struct as a compound and has no hook for converting one
+/// on the way in, so the reshaping is done here on the decoded tree. It stays
+/// confined to this function because these are the only two places in the
+/// format where a game version appears; nothing else nests one.
 ///
 /// A key that is absent, or already a compound, or holds anything other than a
 /// five-element int list is left exactly as it is — `from_value` then reports
@@ -322,7 +320,7 @@ fn unpack_game_versions(value: &mut Value) {
             continue;
         };
         // `IntArray` is what Bedrock writes; a `List` of `Int` decoded into the
-        // same `[i32; 5]` under serde, so accept it too.
+        // same five ints, so accept it too.
         let parts: Vec<i32> = match entry {
             Value::IntArray(parts) => parts.clone(),
             Value::List(items) => {

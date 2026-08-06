@@ -2,8 +2,8 @@ use crate::settings::Abilities;
 use facet::Facet;
 
 #[derive(Facet, Debug)]
-// These records were never `deny_unknown_fields` under serde, and nbtx 4.0
-// rejects unknown keys by default, so keep them lenient explicitly.
+// A player record carries keys this crate does not model yet, and an
+// unrecognised key is an error unless the record opts out.
 #[facet(nbtx::allow_unknown_fields)]
 #[facet(rename_all = "PascalCase")]
 pub struct InventoryItemWithSlot {
@@ -15,8 +15,8 @@ pub struct InventoryItemWithSlot {
 }
 
 #[derive(Facet, Debug)]
-// These records were never `deny_unknown_fields` under serde, and nbtx 4.0
-// rejects unknown keys by default, so keep them lenient explicitly.
+// A player record carries keys this crate does not model yet, and an
+// unrecognised key is an error unless the record opts out.
 #[facet(nbtx::allow_unknown_fields)]
 #[facet(rename_all = "PascalCase")]
 pub struct InventoryItem {
@@ -27,8 +27,8 @@ pub struct InventoryItem {
 }
 
 #[derive(Facet, Debug)]
-// These records were never `deny_unknown_fields` under serde, and nbtx 4.0
-// rejects unknown keys by default, so keep them lenient explicitly.
+// A player record carries keys this crate does not model yet, and an
+// unrecognised key is an error unless the record opts out.
 #[facet(nbtx::allow_unknown_fields)]
 #[facet(rename_all = "PascalCase")]
 pub struct StatusEffect {
@@ -43,8 +43,8 @@ pub struct StatusEffect {
 }
 
 #[derive(Facet, Debug)]
-// These records were never `deny_unknown_fields` under serde, and nbtx 4.0
-// rejects unknown keys by default, so keep them lenient explicitly.
+// A player record carries keys this crate does not model yet, and an
+// unrecognised key is an error unless the record opts out.
 #[facet(nbtx::allow_unknown_fields)]
 #[facet(rename_all = "PascalCase")]
 pub struct Attribute {
@@ -61,8 +61,8 @@ pub struct Attribute {
 }
 
 #[derive(Facet, Debug)]
-// These records were never `deny_unknown_fields` under serde, and nbtx 4.0
-// rejects unknown keys by default, so keep them lenient explicitly.
+// A player record carries keys this crate does not model yet, and an
+// unrecognised key is an error unless the record opts out.
 #[facet(nbtx::allow_unknown_fields)]
 #[facet(rename_all = "PascalCase")]
 pub struct PlayerData {
