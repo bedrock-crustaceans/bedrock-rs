@@ -19,7 +19,7 @@ impl <V: ProtoVersion> ProtoCodec for StructureDataResponsePacket<V> {
         match &self.structure_nbt {
             Some(nbt) => {
                 bool::serialize(&true, stream)?;
-                nbtx::to_bytes_in::<nbtx::NetworkLittleEndian>(stream, &nbt)?;
+                nbtx::to_bytes_in::<nbtx::VarintEndian>(stream, &nbt)?;
             },
             None => bool::serialize(&false, stream)?
         }
@@ -32,7 +32,7 @@ impl <V: ProtoVersion> ProtoCodec for StructureDataResponsePacket<V> {
         let structure_name = String::deserialize(stream)?;
         let structure_nbt = match bool::deserialize(stream)? {
             true => {
-                Some(nbtx::from_bytes::<nbtx::NetworkLittleEndian, HashMap<String, nbtx::Value>>(stream)?)
+                Some(nbtx::from_bytes::<nbtx::VarintEndian, HashMap<String, nbtx::Value>>(stream)?)
             },
             false => None
         };

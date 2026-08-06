@@ -69,7 +69,7 @@ fn build_ser_field(
 
             if flags.nbt {
                 return quote! {
-                    ::nbtx::to_bytes_in::<::nbtx::NetworkLittleEndian>(stream, &#final_name)?;
+                    ::nbtx::to_bytes_in::<::nbtx::VarintEndian>(stream, &#final_name)?;
                 };
             }
 

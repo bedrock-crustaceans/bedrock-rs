@@ -51,7 +51,7 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
 
             if flags.nbt {
                 return quote! {
-                    let #name: #ty = ::nbtx::from_bytes::<::nbtx::NetworkLittleEndian, _>(stream)?;
+                    let #name: #ty = ::nbtx::from_bytes::<::nbtx::VarintEndian, _>(stream)?;
                 };
             }
 
