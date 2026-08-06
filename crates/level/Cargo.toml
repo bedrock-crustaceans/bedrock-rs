@@ -21,16 +21,19 @@ miniz_oxide = { version = "0.9.0" }
 
 bedrock_shared = { path = "../shared" }
 nbtx = { workspace = true }
+# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so a crate that
+# derives it needs facet directly, at the rev nbtx pins.
+facet = { workspace = true }
+# `nbtx::Value::String` and `Compound` keys are raw bytes (`bstr::BString`).
+bstr = { workspace = true }
 
 thiserror = { workspace = true }
-serde = { workspace = true }
 byteorder = { workspace = true }
 bytemuck = { workspace = true }
 smallvec = "1.15.1"
 rustc-hash = "2.1.1"
 nohash-hasher = "0.2.0"
 paste.workspace = true
-serde_repr.workspace = true
 
 [dev-dependencies]
 tar = { workspace = true }

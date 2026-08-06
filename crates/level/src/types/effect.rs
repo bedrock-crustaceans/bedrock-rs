@@ -1,15 +1,8 @@
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    serde_repr::Serialize_repr,
-    serde_repr::Deserialize_repr,
-)]
+use facet::Facet;
+
+/// A status effect, stored in NBT as an `Int` tag holding the numeric id.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Facet)]
+#[facet(nbtx::variant_as(i32))]
 #[repr(i32)]
 pub enum Effect {
     None = 0,

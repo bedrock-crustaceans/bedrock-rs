@@ -146,7 +146,7 @@ fn read_subchunk() {
                                 String::from("test2"),
                                 nbtx::Value::Byte(i as i8),
                             )]),
-                            version: Some([1, 2, 3, 4]),
+                            version: Some(BlockDef::pack_version([1, 2, 3, 4])),
                         },
                     );
                 }

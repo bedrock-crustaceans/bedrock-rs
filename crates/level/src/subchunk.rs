@@ -5,10 +5,10 @@ use std::iter::FusedIterator;
 use std::ops::Index;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use facet::Facet;
 use nbtx::LittleEndian;
 use nohash_hasher::BuildNoHashHasher;
 use rustc_hash::FxHasher;
-use serde::{Deserialize, Serialize};
 
 use crate::bits::{BitArray, BitArrayIter, IndicesType};
 use crate::error::{Error, Result};
@@ -41,46 +41,44 @@ impl TryFrom<u8> for SubChunkVersion {
     }
 }
 
-mod block_version {
-    use serde::{Deserialize, Deserializer, Serializer};
-
-    /// Deserializes a block version.
-    pub fn deserialize<'de, D>(de: D) -> Result<Option<[u8; 4]>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let word = Option::<i32>::deserialize(de)?;
-        Ok(word.map(i32::to_be_bytes))
-    }
-
-    /// Serializes a block version.
-    #[allow(clippy::trivially_copy_pass_by_ref)] // Serde requirement.
-    pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if let Some(b) = v {
-            ser.serialize_i32(i32::from_be_bytes(*b))
-        } else {
-            ser.serialize_none()
-        }
-    }
-}
-
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename = "")]
-#[cfg_attr(feature = "deny-unknown-fields", serde(deny_unknown_fields))]
+// The container-level `#[serde(rename = "")]` this carried is gone: nbtx always
+// writes an empty root name regardless, so it never affected the binary format.
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct BlockDef {
     /// Name of the block.
     pub name: String,
-    /// Version of the block.
-    #[serde(default)]
-    #[serde(with = "block_version")]
-    pub version: Option<[u8; 4]>,
+    /// Version of the block: one byte each of major, minor, patch and revision,
+    /// most significant first, packed into the `Int` tag Bedrock stores.
+    ///
+    /// Held packed rather than as the `[u8; 4]` it used to be. serde split it on
+    /// the way in and out with `#[serde(with = "block_version")]`; facet has no
+    /// per-field conversion hook, and this type is nested inside other derived
+    /// structs (`ItemStack::block`, `FlowerPot::plant_block`), so a hand-written
+    /// decode here would not be reached at those sites. Use [`Self::version_parts`]
+    /// and [`Self::pack_version`] for the split form.
+    #[facet(default)]
+    pub version: Option<i32>,
     /// Block-specific properties.
-    #[serde(default)]
+    #[facet(default)]
     pub states: HashMap<String, nbtx::Value>,
+}
+
+impl BlockDef {
+    /// The packed [`version`](Self::version) split into
+    /// `[major, minor, patch, revision]`.
+    #[inline]
+    pub fn version_parts(&self) -> Option<[u8; 4]> {
+        self.version.map(i32::to_be_bytes)
+    }
+
+    /// Packs `[major, minor, patch, revision]` into the word stored in
+    /// [`version`](Self::version).
+    #[inline]
+    pub const fn pack_version(parts: [u8; 4]) -> i32 {
+        i32::from_be_bytes(parts)
+    }
 }
 
 impl Hash for BlockDef {
@@ -252,6 +250,9 @@ impl Layer {
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
+            // Straight through nbtx rather than `crate::nbt`: a `BlockDef` holds
+            // no `bool` anywhere, so there is no flag byte to canonicalise, and
+            // this runs once per palette entry.
             let entry = nbtx::from_le_bytes(reader)?;
             palette.push(entry);
         }
