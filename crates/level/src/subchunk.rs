@@ -43,7 +43,10 @@ impl TryFrom<u8> for SubChunkVersion {
 
 /// Definition of block in the sub chunk block palette.
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct BlockDef {
     /// Name of the block.
     pub name: String,
@@ -81,12 +84,24 @@ impl BlockDef {
 
 impl Hash for BlockDef {
     /// Hashes this block.
+    ///
+    /// `states` is a `HashMap`, whose iteration order is not guaranteed to match between
+    /// two maps holding the same entries -- hashing it in encounter order would make this
+    /// value's hash depend on that unspecified order, breaking the rule that equal values
+    /// hash equally. Each entry is hashed on its own with a fresh hasher and the resulting
+    /// values combined with a commutative fold (wrapping add), so the result depends only
+    /// on the entry set, never on the order iteration happens to visit it in, without
+    /// collecting the map into an intermediate `Vec` to sort first.
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(self.name.as_bytes());
-        for (k, v) in &self.states {
-            state.write(k.as_bytes());
-            v.hash(state);
-        }
+
+        let combined = self.states.iter().fold(0u64, |acc, (k, v)| {
+            let mut entry_hasher = FxHasher::default();
+            k.hash(&mut entry_hasher);
+            v.hash(&mut entry_hasher);
+            acc.wrapping_add(entry_hasher.finish())
+        });
+        state.write_u64(combined);
     }
 }
 
@@ -147,6 +162,10 @@ impl<'l> From<&'l Layer> for LayerIter<'l> {
 /// Immediately following the indices, the palette starts.
 /// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
+///
+/// A bit size of 0 is a distinct, more compact layout: every index is implicitly 0, there is
+/// no index array and no palette-length word, and exactly one NBT compound -- the sole
+/// palette entry -- follows the header byte directly.
 #[doc(alias = "storage record")]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Layer {
@@ -231,30 +250,35 @@ impl Layer {
         Cursor<R>: Read,
     {
         let array = match BitArray::from_disk::<M, _>(reader)? {
-            IndicesType::Empty => {
-                return Err(Error::Invalid(
-                    "found empty bit array while deserializing chunk, expected data",
-                ));
-            }
+            IndicesType::Empty => BitArray::Empty,
             IndicesType::Inherit => {
                 return Err(Error::Invalid(
-                    "chunks do not support inheriting bit arrays",
+                    "block layer bit-array header is 0x7f (inherit), which block/liquid layers do not support",
                 ));
             }
             IndicesType::Data(array) => array,
         };
 
-        let len = reader.read_u32::<LittleEndian>()? as usize;
-        let mut palette = Vec::with_capacity(len);
-
-        for _ in 0..len {
-            // No fallback or `lenient_width` here: every palette entry across
-            // the whole real test world (every layer of every subchunk) has
-            // `version` written as an `Int`, so there is nothing to reconcile,
-            // and this runs once per entry.
+        // A zero bits-per-index layer (`BitArray::Empty`) has no palette-length word: the
+        // single palette entry it implies follows the header directly.
+        let palette = if let BitArray::Empty = array {
             let entry: BlockDef = nbtx::from_le_bytes(reader)?;
-            palette.push(entry);
-        }
+            vec![entry]
+        } else {
+            let len = reader.read_u32::<LittleEndian>()? as usize;
+            let mut palette = Vec::with_capacity(len);
+
+            for _ in 0..len {
+                // No fallback or `lenient_width` here: every palette entry across
+                // the whole real test world (every layer of every subchunk) has
+                // `version` written as an `Int`, so there is nothing to reconcile,
+                // and this runs once per entry.
+                let entry: BlockDef = nbtx::from_le_bytes(reader)?;
+                palette.push(entry);
+            }
+
+            palette
+        };
 
         let mut hashes =
             HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
@@ -278,6 +302,13 @@ impl Layer {
         let plen = self.palette.len();
 
         self.array.to_disk(writer, plen)?;
+
+        // A zero bits-per-index layer writes its single palette entry directly after the
+        // header, with no palette-length word -- see `BitArray::Empty`.
+        if let BitArray::Empty = self.array {
+            nbtx::to_le_bytes_in(writer, &self.palette[0])?;
+            return Ok(());
+        }
 
         writer.write_u32::<LittleEndian>(plen as u32)?;
         for entry in &self.palette {
@@ -383,6 +414,123 @@ mod palette_tests {
         )]));
         let bytes = subchunk_with_palette(&entry);
         assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
+    }
+
+    /// Builds a one-layer legacy subchunk with a zero bits-per-index header: no index
+    /// words, no palette-length word, just the single entry directly after the header.
+    fn subchunk_with_zero_bit_layer(palette_entry: &nbtx::Value) -> Vec<u8> {
+        let mut out = vec![SubChunkVersion::Legacy as u8];
+        out.push(0); // header byte: 0 bits per index, `>> 1` gives 0x00 (Empty).
+        out.extend(nbtx::to_le_bytes(palette_entry).unwrap());
+        out
+    }
+
+    /// Confirmed against 23 real zero-bit block/liquid layers across the fixture worlds
+    /// (`tests/bit_layers.rs`): the header byte is followed directly by one NBT compound,
+    /// with no palette-length word and no index words at all.
+    #[test]
+    fn zero_bit_header_decodes_a_single_entry_palette_and_every_index_is_zero() {
+        let entry = entry_with_version(nbtx::Value::Int(17_959_425));
+        let bytes = subchunk_with_zero_bit_layer(&entry);
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let layer = chunk.get_layer(0).unwrap();
+
+        assert_eq!(layer.palette().len(), 1);
+        assert_eq!(layer.palette()[0].version, Some(17_959_425));
+        for offset in [0usize, 1, 2048, 4095] {
+            assert_eq!(layer.array.get(offset), Some(0));
+        }
+    }
+
+    /// Decoding a zero-bit layer and writing it back out reproduces the original bytes
+    /// exactly -- no index words or palette-length word get synthesized on the way out.
+    #[test]
+    fn zero_bit_header_round_trips_byte_identical() {
+        let entry = entry_with_version(nbtx::Value::Int(17_959_425));
+        let bytes = subchunk_with_zero_bit_layer(&entry);
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+
+        let mut out = Cursor::new(Vec::new());
+        chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+        assert_eq!(out.into_inner(), bytes);
+    }
+
+    /// A block/liquid layer never carries the biome-only inherit sentinel (header `0x7f`
+    /// after `>> 1`) -- confirmed by scanning every subchunk layer of all 14 fixture worlds
+    /// in `tests/bit_layers.rs` (zero occurrences). Rejecting it is still checked here, and
+    /// the message names the header value that triggered it.
+    #[test]
+    fn inherit_header_is_rejected_and_names_the_header_value() {
+        let mut out = vec![SubChunkVersion::Legacy as u8];
+        out.push(0x7f << 1); // header byte: `>> 1` gives the 0x7f inherit sentinel.
+        let err = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(out.as_slice())).unwrap_err();
+        assert!(
+            err.to_string().contains("0x7f"),
+            "error message should name the header value: {err}"
+        );
+    }
+
+    /// A legacy (version 1) subchunk carries no layer-count byte on disk -- `from_disk`
+    /// never reads one for this version, so `to_disk` must not write one either, or the
+    /// record grows an extra byte on every round trip.
+    #[test]
+    fn legacy_subchunk_round_trip_writes_no_layer_count_byte() {
+        let entry = entry_with_version(nbtx::Value::Int(17_959_425));
+        let bytes = subchunk_with_palette(&entry);
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+
+        let mut out = Cursor::new(Vec::new());
+        chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+        let out = out.into_inner();
+
+        // Byte 1 is the packed-array header in a legacy record (no layer-count byte
+        // between it and the version byte); if a layer-count byte had been written, byte 1
+        // would be `1` (one layer) instead.
+        assert_eq!(out.len(), bytes.len());
+        assert_eq!(
+            out[1],
+            1 << 1,
+            "byte 1 should be the header, not a layer count"
+        );
+        assert_eq!(out, bytes);
+    }
+
+    /// Two `BlockDef`s whose `states` maps hold the same entries, inserted in opposite
+    /// order, must be equal and hash equal -- the `Hash` impl must not depend on the
+    /// `HashMap`'s unspecified iteration order.
+    #[test]
+    fn identical_states_hash_equal_regardless_of_insertion_order() {
+        use std::collections::hash_map::DefaultHasher;
+
+        let keys = ["a", "b", "c", "d", "e", "f", "g"];
+
+        let mut forward = HashMap::new();
+        for (i, k) in keys.iter().enumerate() {
+            forward.insert(k.to_string(), nbtx::Value::Int(i as i32));
+        }
+        let mut backward = HashMap::new();
+        for (i, k) in keys.iter().enumerate().rev() {
+            backward.insert(k.to_string(), nbtx::Value::Int(i as i32));
+        }
+
+        let a = BlockDef {
+            name: "minecraft:test".into(),
+            version: Some(1),
+            states: forward,
+        };
+        let b = BlockDef {
+            name: "minecraft:test".into(),
+            version: Some(1),
+            states: backward,
+        };
+
+        assert_eq!(a, b);
+
+        let mut ha = DefaultHasher::new();
+        a.hash(&mut ha);
+        let mut hb = DefaultHasher::new();
+        b.hash(&mut hb);
+        assert_eq!(ha.finish(), hb.finish());
     }
 }
 
@@ -522,7 +670,12 @@ impl SubChunk {
         Cursor<W>: Write,
     {
         writer.write_u8(self.version as u8)?;
-        writer.write_u8(self.layers.len() as u8)?;
+
+        // A legacy subchunk always has exactly one layer and carries no layer-count byte
+        // -- `from_disk` never reads one for this version either.
+        if self.version != SubChunkVersion::Legacy {
+            writer.write_u8(self.layers.len() as u8)?;
+        }
 
         if self.version == SubChunkVersion::Limitless {
             writer.write_i8(self.index)?;
