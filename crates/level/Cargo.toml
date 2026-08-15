@@ -40,3 +40,8 @@ tar = { workspace = true }
 flate2 = { workspace = true }
 tempfile = { workspace = true }
 criterion = { workspace = true }
+# Parses the test-fixture index (`tests/fixtures/index.json`) through the
+# same `#[derive(Facet)]` machinery `nbtx` uses, rather than adding a second
+# JSON stack. Pinned to the exact rev `facet` uses above, so the graph keeps
+# one `facet-core` rather than two incompatible `Shape` types.
+facet-json = { git = "https://github.com/facet-rs/facet", rev = "bbce10cbd1ddd535b0d812ccbf9456f7ff7d58cf" }

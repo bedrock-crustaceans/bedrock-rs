@@ -1,0 +1,1122 @@
+{
+  "fixtures": [
+    {
+      "name": "v1_12",
+      "tarball": "v1_12.tar.gz",
+      "origin": {
+        "project": "Chunker",
+        "upstream_path": "cli/src/test/resources/integration/worlds/BEDROCK_R12.zip",
+        "license": "MIT (Hive Games)",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          12,
+          0,
+          28,
+          1
+        ],
+        "minimum_compatible_client": [
+          1,
+          12,
+          0,
+          25,
+          1
+        ],
+        "base_game_version": null,
+        "network_version": 361,
+        "inventory_version": "1.12.0",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [15],
+      "subchunk_versions": [8],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          16
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": true,
+        "biomes_3d": false
+      },
+      "scan": {
+        "keys_scanned": 4713,
+        "keys_failed": 21
+      },
+      "sidecar": null
+    },
+    {
+      "name": "v1_16",
+      "tarball": "v1_16.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_16",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          16,
+          200,
+          52,
+          1
+        ],
+        "minimum_compatible_client": [
+          1,
+          16,
+          0,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 421,
+        "inventory_version": "1.16.200-beta52",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [21],
+      "subchunk_versions": [8],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          112
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": true,
+        "biomes_3d": false
+      },
+      "scan": {
+        "keys_scanned": 4174,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.16.0",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_17_20",
+      "tarball": "v1_17_20.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_17_20/vanilla",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          17,
+          20,
+          22,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          17,
+          20,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 456,
+        "inventory_version": "1.17.20",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [22],
+      "subchunk_versions": [8],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          112
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": true,
+        "biomes_3d": false
+      },
+      "scan": {
+        "keys_scanned": 895,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.17.20",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_17_20_caves_and_cliffs",
+      "tarball": "v1_17_20_caves_and_cliffs.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_17_20/caves_and_cliffs",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          17,
+          20,
+          22,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          17,
+          20,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 456,
+        "inventory_version": "1.17.20",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [25],
+      "subchunk_versions": [8],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          176
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 2450,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.17.20",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              -64,
+              -30000000
+            ],
+            [
+              30000000,
+              320,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_17_40",
+      "tarball": "v1_17_40.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_17_40/vanilla",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          17,
+          40,
+          20,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          17,
+          40,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 471,
+        "inventory_version": "1.17.40",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [22],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          96
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": true,
+        "biomes_3d": false
+      },
+      "scan": {
+        "keys_scanned": 1759,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.17.40",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_17_40_caves_and_cliffs",
+      "tarball": "v1_17_40_caves_and_cliffs.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_17_40/caves_and_cliffs",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          17,
+          40,
+          20,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          17,
+          40,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 471,
+        "inventory_version": "1.17.40",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [31],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          -64,
+          112
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": true,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 1675,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.17.40",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              -64,
+              -30000000
+            ],
+            [
+              30000000,
+              320,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_17_40_superflat",
+      "tarball": "v1_17_40_superflat.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_17_40/superflat",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          17,
+          40,
+          20,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          17,
+          40,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 471,
+        "inventory_version": "1.17.40",
+        "world_version": null
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [22],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          16
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": true,
+        "biomes_3d": false
+      },
+      "scan": {
+        "keys_scanned": 299,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.17.40",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_18",
+      "tarball": "v1_18.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_18/vanilla",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          18,
+          0,
+          25,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          18,
+          0,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 475,
+        "inventory_version": "1.18.0",
+        "world_version": 1
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld",
+        "nether",
+        "end"
+      ],
+      "chunk_versions": [39],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "end": [
+          0,
+          112
+        ],
+        "nether": [
+          0,
+          128
+        ],
+        "overworld": [
+          -64,
+          160
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": true,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 48210,
+        "keys_failed": 9
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.18.0",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              -64,
+              -30000000
+            ],
+            [
+              30000000,
+              320,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_18_30",
+      "tarball": "v1_18_30.tar.gz",
+      "origin": {
+        "project": "Chunker",
+        "upstream_path": "cli/src/test/resources/integration/worlds/BEDROCK_R18_30.zip",
+        "license": "MIT (Hive Games)",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          18,
+          30,
+          4,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          18,
+          30,
+          0,
+          0
+        ],
+        "base_game_version": null,
+        "network_version": 503,
+        "inventory_version": "1.18.30",
+        "world_version": 0
+      },
+      "header_storage_version": 9,
+      "storage_version": 9,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [40],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          32
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 10597,
+        "keys_failed": 4575
+      },
+      "sidecar": null
+    },
+    {
+      "name": "v1_18_superflat",
+      "tarball": "v1_18_superflat.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_18/superflat",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          18,
+          0,
+          25,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          18,
+          0,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 475,
+        "inventory_version": "1.18.0",
+        "world_version": 1
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [39],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          -64,
+          -48
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": true,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 42,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.18.0",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              -64,
+              -30000000
+            ],
+            [
+              30000000,
+              320,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_18_updated_superflat",
+      "tarball": "v1_18_updated_superflat.tar.gz",
+      "origin": {
+        "project": "Amulet-Core",
+        "upstream_path": "tests/data/worlds_src/bedrock/vanilla/1_18/updated_superflat",
+        "license": "proprietary (Amulet-Team) -- test worlds only, by permission",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          18,
+          0,
+          25,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          18,
+          0,
+          0,
+          0
+        ],
+        "base_game_version": "*",
+        "network_version": 471,
+        "inventory_version": "1.17.40",
+        "world_version": 0
+      },
+      "header_storage_version": 8,
+      "storage_version": 8,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [22,39],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          16
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": true,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 315,
+        "keys_failed": 6
+      },
+      "sidecar": {
+        "world_data": {
+          "platform": "bedrock",
+          "version": "1.18.0",
+          "origin": "vanilla"
+        },
+        "dim_height": {
+          "minecraft:overworld": [
+            [
+              -30000000,
+              -64,
+              -30000000
+            ],
+            [
+              30000000,
+              320,
+              30000000
+            ]
+          ],
+          "minecraft:the_end": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              256,
+              30000000
+            ]
+          ],
+          "minecraft:the_nether": [
+            [
+              -30000000,
+              0,
+              -30000000
+            ],
+            [
+              30000000,
+              128,
+              30000000
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "v1_19_30",
+      "tarball": "v1_19_30.tar.gz",
+      "origin": {
+        "project": "Chunker",
+        "upstream_path": "cli/src/test/resources/integration/worlds/BEDROCK_R19_30.zip",
+        "license": "MIT (Hive Games)",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          19,
+          30,
+          4,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          19,
+          30,
+          0,
+          0
+        ],
+        "base_game_version": null,
+        "network_version": 503,
+        "inventory_version": "1.18.30",
+        "world_version": 0
+      },
+      "header_storage_version": 9,
+      "storage_version": 9,
+      "dimensions": [
+        "overworld"
+      ],
+      "chunk_versions": [40],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "overworld": [
+          0,
+          32
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": false,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 10862,
+        "keys_failed": 4583
+      },
+      "sidecar": null
+    },
+    {
+      "name": "v1_20_81",
+      "tarball": "v1_20_81.tar.gz",
+      "origin": {
+        "project": "Chunker",
+        "upstream_path": "cli/src/test/resources/integration/worlds/BEDROCK_R20_80.zip",
+        "license": "MIT (Hive Games)",
+        "permission_note": "imported with explicit permission; see README.md"
+      },
+      "game_version": {
+        "last_opened_with": [
+          1,
+          20,
+          81,
+          1,
+          0
+        ],
+        "minimum_compatible_client": [
+          1,
+          20,
+          80,
+          0,
+          0
+        ],
+        "base_game_version": null,
+        "network_version": 671,
+        "inventory_version": "1.20.81",
+        "world_version": 1
+      },
+      "header_storage_version": 10,
+      "storage_version": 10,
+      "dimensions": [
+        "overworld",
+        "nether",
+        "end"
+      ],
+      "chunk_versions": [40],
+      "subchunk_versions": [9],
+      "subchunk_height_range": {
+        "end": [
+          0,
+          256
+        ],
+        "nether": [
+          0,
+          256
+        ],
+        "overworld": [
+          -80,
+          320
+        ]
+      },
+      "capabilities": {
+        "paletted": true,
+        "negative_y": true,
+        "biomes_2d": false,
+        "biomes_3d": true
+      },
+      "scan": {
+        "keys_scanned": 90707,
+        "keys_failed": 3188
+      },
+      "sidecar": null
+    }
+  ]
+}
