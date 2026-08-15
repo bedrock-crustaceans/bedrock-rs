@@ -38,45 +38,59 @@ fn open_test_db() -> (tempfile::TempDir, Database) {
 }
 
 /// Every block-entity id known to fail against the real test-world fixture,
-/// and why. None of these are tag-width or bool-decode issues — nothing here
-/// is a `lenient_width` candidate — each needs its own field-by-field fix,
-/// tracked in `crates/level/TODO.md`.
+/// why, and exactly how many of its records currently decode successfully
+/// despite that.
+///
+/// None of these are tag-width or bool-decode issues — nothing here is a
+/// `lenient_width` candidate — each needs its own field-by-field fix, tracked
+/// in `crates/level/TODO.md`.
+///
+/// Most of these ids are a gap only some of their records hit (a required
+/// field a minority of records omit, say), so most of their own records
+/// decode fine — the second element pins exactly how many. Pinning a full
+/// count, not just "this id fails sometimes", matters because a tolerance can
+/// regress from "some records fail" to "all records fail" without changing
+/// which ids show up as failing at all — e.g. if `ShulkerBox::findable`'s
+/// `lenient_width` were dropped, `ShulkerBox` would stay in this list (it
+/// already fails 100% of its records for the unrelated `facing` bug) with no
+/// other signal that a second, real tolerance silently vanished.
 ///
 /// Kept as an explicit allowlist rather than an `#[ignore]` on the whole test
-/// so the 4169 records (89.5%) that already decode correctly stay covered:
-/// a decode failure for an id *not* on this list is a real regression, and an
-/// id on this list that stops failing is a stale entry to remove.
-const KNOWN_FAILING_IDS: &[&str] = &[
+/// so the 4169 records (89.5%) that already decode correctly stay covered: a
+/// decode failure for an id *not* on this list is a real regression, and any
+/// drift in a listed id's exact ok-count — including to zero, or up to its
+/// full total — is a stale entry to update or investigate.
+const KNOWN_FAILING_IDS: &[(&str, usize)] = &[
     // `SculkSensor::vibration_listener` is required but absent on these
     // records; `CalibratedSculkSensor` and `SculkSensor` share the struct.
-    "CalibratedSculkSensor",
-    "SculkSensor",
+    ("CalibratedSculkSensor", 180),
+    ("SculkSensor", 64),
     // `ShulkerBox::facing` is typed `f32`; real records write a face-index
     // `Byte`. A modeling bug, not a tag-width gap — `lenient_width` would
     // accept the tag but not resolve it to the right value.
-    "ShulkerBox",
+    ("ShulkerBox", 0),
     // `SignText::filtered_text` is required but absent on these records.
-    "Sign",
+    ("Sign", 413),
     // `DecoratedPot::item` is required but absent on these records.
-    "DecoratedPot",
+    ("DecoratedPot", 45),
     // `JigsawBlock::placement_priority` is required but absent.
-    "JigsawBlock",
+    ("JigsawBlock", 1),
     // `Dispenser::loot_table` is required but absent; `Dropper` and
     // `Dispenser` share the struct. `Chest::loot_table` already models the
     // same key as `Option<String>`, so this is likely just a missed `Option`.
-    "Dropper",
-    "Dispenser",
+    ("Dropper", 0),
+    ("Dispenser", 44),
     // `Furnace::stored_xp` is required but absent; `BlastFurnace` shares the
     // struct.
-    "BlastFurnace",
+    ("BlastFurnace", 0),
     // `StructureBlock::last_touched_player_id` is required but absent.
-    "StructureBlock",
+    ("StructureBlock", 1),
     // No struct registered for these ids at all yet.
-    "DaylightDetector",
-    "EnderChest",
-    "SculkShrieker",
-    "Smoker",
-    "SporeBlossom",
+    ("DaylightDetector", 0),
+    ("EnderChest", 0),
+    ("SculkShrieker", 0),
+    ("Smoker", 0),
+    ("SporeBlossom", 0),
 ];
 
 /// The `id` string a raw block-entity record's `id` key holds, or `"?"` if
@@ -93,17 +107,15 @@ fn record_id(value: &nbtx::Value) -> &str {
 }
 
 /// Decodes every block-entity record in the real test-world fixture and
-/// checks the *set* of ids that produced at least one decode failure against
-/// [`KNOWN_FAILING_IDS`].
+/// checks two things against [`KNOWN_FAILING_IDS`]: that no id outside the
+/// list produced a failure, and that every listed id's exact ok-count still
+/// matches — not just that it failed *at all*.
 ///
-/// This is a set comparison, not "every record with a listed id must fail":
-/// several of these ids (`Sign`, `Dispenser`, `DecoratedPot`, `JigsawBlock`,
-/// `StructureBlock`, `CalibratedSculkSensor`, `SculkSensor`, `BlastFurnace`)
-/// are missing-field gaps that only some records happen to hit, so most of
-/// their records decode fine — that's expected and fine. What is not
-/// expected: a *new* id showing up in the failure set (a real regression), or
-/// a listed id no longer producing *any* failure (a stale allowlist entry,
-/// most likely because it just got fixed).
+/// The exact-count check is what makes this a real regression guard rather
+/// than an easily-satisfied one: an id whose ok-count silently drops (partial
+/// failure becoming total failure, most dangerously) or rises (a fix landed
+/// but the entry was not updated) fails the assertion either way, even though
+/// the *set* of failing ids never changed.
 #[test]
 fn block_entity_decode_failures_match_known_gaps() {
     let (_tmp, db) = open_test_db();
@@ -111,6 +123,7 @@ fn block_entity_decode_failures_match_known_gaps() {
 
     let mut total = 0usize;
     let mut ok = 0usize;
+    let mut ok_by_id: std::collections::HashMap<String, usize> = Default::default();
     let mut failing_ids: std::collections::BTreeSet<String> = Default::default();
 
     for kv in &mut keys {
@@ -129,7 +142,10 @@ fn block_entity_decode_failures_match_known_gaps() {
 
                 let id = record_id(&raw).to_string();
                 match BlockEntity::from_value(raw) {
-                    Ok(_) => ok += 1,
+                    Ok(_) => {
+                        ok += 1;
+                        *ok_by_id.entry(id).or_insert(0) += 1;
+                    }
                     Err(_) => {
                         failing_ids.insert(id);
                     }
@@ -140,21 +156,31 @@ fn block_entity_decode_failures_match_known_gaps() {
 
     println!("total records: {total}, ok: {ok}, known-failing: {}", total - ok);
 
-    let known: std::collections::BTreeSet<String> =
-        KNOWN_FAILING_IDS.iter().map(|s| s.to_string()).collect();
-
-    let regressions: Vec<_> = failing_ids.difference(&known).collect();
-    let stale: Vec<_> = known.difference(&failing_ids).collect();
-
+    let known: std::collections::BTreeSet<&str> =
+        KNOWN_FAILING_IDS.iter().map(|(id, _)| *id).collect();
+    let regressions: Vec<_> = failing_ids
+        .iter()
+        .filter(|id| !known.contains(id.as_str()))
+        .collect();
     assert!(
         regressions.is_empty(),
         "id(s) outside KNOWN_FAILING_IDS failed to decode - a real regression: {regressions:?}"
     );
+
+    let mut drifted = Vec::new();
+    for (id, expected_ok) in KNOWN_FAILING_IDS {
+        let actual_ok = ok_by_id.get(*id).copied().unwrap_or(0);
+        if actual_ok != *expected_ok {
+            drifted.push(format!("{id}: expected {expected_ok} ok, got {actual_ok}"));
+        }
+    }
     assert!(
-        stale.is_empty(),
-        "id(s) in KNOWN_FAILING_IDS produced no failures - stale allowlist entries, remove: \
-         {stale:?}"
+        drifted.is_empty(),
+        "KNOWN_FAILING_IDS ok-count(s) drifted from the fixture - a fix landed and the entry \
+         needs updating, or a tolerance regressed:\n{}",
+        drifted.join("\n")
     );
+
     // A sanity floor on top of the per-id checks above: if the fixture or the
     // decode path changes in a way that stops touching real records
     // altogether, this catches it even though no single id looks wrong.
