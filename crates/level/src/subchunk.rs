@@ -62,8 +62,19 @@ pub struct BlockDef {
     #[facet(default)]
     pub version: Option<i32>,
     /// Block-specific properties.
+    ///
+    /// Order-preserving (an [`indexmap::IndexMap`], not a [`HashMap`]): a
+    /// real `states` compound routinely carries more than one key (up to six
+    /// in the fixture corpus), and the game writes them in a fixed order
+    /// per block, not alphabetically or by insertion into some other
+    /// structure. `nbtx`'s struct/map codec both reads and writes a map
+    /// field in the same order -- entries are appended to the map as they
+    /// are read off the wire, and written back out in the map's iteration
+    /// order -- so this alone reproduces `states`' on-disk key order with no
+    /// extra bookkeeping. [`HashMap`]'s iteration order is unspecified and
+    /// would scramble it.
     #[facet(default)]
-    pub states: HashMap<String, nbtx::Value>,
+    pub states: indexmap::IndexMap<String, nbtx::Value>,
 }
 
 impl BlockDef {
@@ -85,13 +96,16 @@ impl BlockDef {
 impl Hash for BlockDef {
     /// Hashes this block.
     ///
-    /// `states` is a `HashMap`, whose iteration order is not guaranteed to match between
-    /// two maps holding the same entries -- hashing it in encounter order would make this
-    /// value's hash depend on that unspecified order, breaking the rule that equal values
-    /// hash equally. Each entry is hashed on its own with a fresh hasher and the resulting
-    /// values combined with a commutative fold (wrapping add), so the result depends only
-    /// on the entry set, never on the order iteration happens to visit it in, without
-    /// collecting the map into an intermediate `Vec` to sort first.
+    /// `states` is order-preserving (see its doc comment) precisely so a decoded entry
+    /// re-encodes with the key order it was read in, but two maps holding the same entries
+    /// in different orders must still be the same block for every purpose *other than*
+    /// re-encoding -- palette deduplication (`Layer::set`) has to recognize them as one
+    /// entry regardless of which order either was built in. Hashing in iteration order
+    /// would make this value's hash depend on that order, breaking the rule that equal
+    /// values hash equally. Each entry is hashed on its own with a fresh hasher and the
+    /// resulting values combined with a commutative fold (wrapping add), so the result
+    /// depends only on the entry set, never on the order iteration happens to visit it in,
+    /// without collecting the map into an intermediate `Vec` to sort first.
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(self.name.as_bytes());
 
@@ -103,6 +117,109 @@ impl Hash for BlockDef {
         });
         state.write_u64(combined);
     }
+}
+
+/// The order a palette entry's `version` and `states` keys were written in
+/// the on-disk NBT compound, as a top-level sibling of `name`.
+///
+/// `#[derive(Facet)]`-driven struct decode/encode both use the struct's fixed
+/// field declaration order (`name, version, states`), because `nbtx` has no
+/// mechanism to remember or replay the order a struct's keys arrived in --
+/// unlike a map field (see [`BlockDef::states`]), a struct's shape fixes its
+/// field order at compile time. The game does not follow one order
+/// consistently: a corpus scan of every `0x2f` record across all fourteen
+/// imported fixtures plus the 1.26 seed world (585,804 modern
+/// name/version/states entries) found eleven of the fourteen fixtures write
+/// every record `name, states, version`; `v1_18_30`, `v1_19_30` and
+/// `v1_20_81` write both orders, freely mixed between different palette
+/// records within the same world. So no single struct field order matches
+/// every record, and reordering `BlockDef`'s fields would only have fixed
+/// the eleven uniform fixtures. `name` leads in every real record observed,
+/// and among the 43,733 real records carrying more than one modern entry,
+/// every entry in a given record agreed on the order of the other two --
+/// order is a per-record property, never mixed within one record's own
+/// palette. Recording this one bit per entry is what makes a byte-identical
+/// re-encode possible.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+enum FieldOrder {
+    /// `name, states, version` -- the order the majority of real records use
+    /// (480,372 of 585,804 modern entries surveyed), and what a freshly
+    /// built entry not read from disk is written as.
+    #[default]
+    StatesThenVersion,
+    /// `name, version, states` -- `BlockDef`'s own struct field order.
+    VersionThenStates,
+}
+
+impl FieldOrder {
+    /// Reads the order of a decoded entry's `version` and `states` keys from
+    /// its dynamic form, before it is converted into a [`BlockDef`] (which
+    /// does not retain it on its own).
+    fn of(value: &nbtx::Value) -> Self {
+        let nbtx::Value::Compound(compound) = value else {
+            return Self::default();
+        };
+        // `name` leads every real record's compound (corpus-checked, see this type's doc
+        // comment); this only tracks `version`/`states`' relative order on that assumption,
+        // so a violation here would silently mispredict the order rather than error --
+        // surfaced in a debug build rather than left invisible.
+        debug_assert!(
+            matches!(compound.get_index_of(b"name".as_slice()), None | Some(0)),
+            "a palette entry's `name` key is not first in the compound"
+        );
+        let version_pos = compound.get_index_of(b"version".as_slice());
+        let states_pos = compound.get_index_of(b"states".as_slice());
+        match (version_pos, states_pos) {
+            (Some(v), Some(s)) if v < s => Self::VersionThenStates,
+            _ => Self::default(),
+        }
+    }
+}
+
+/// Decodes one palette entry, keeping the order its `version`/`states` keys
+/// were written in (see [`FieldOrder`]).
+///
+/// Goes through [`nbtx::Value`] rather than decoding straight into
+/// [`BlockDef`]: a `Value::Compound` is order-preserving (an `IndexMap`
+/// under the hood), so the key order survives long enough to inspect, and
+/// [`nbtx::from_value`] then does the same name-matching, default-filling,
+/// unknown-field handling the direct byte decode would have -- reused rather
+/// than duplicated.
+fn read_palette_entry<R: Read>(reader: &mut R) -> Result<(BlockDef, FieldOrder)> {
+    // No fallback or `lenient_width` here: every palette entry across the
+    // whole real test world (every layer of every subchunk) has `version`
+    // written as an `Int`, so there is nothing to reconcile, and this runs
+    // once per entry.
+    let value: nbtx::Value = nbtx::from_le_bytes(reader)?;
+    let order = FieldOrder::of(&value);
+    let entry = nbtx::from_value(value)?;
+    Ok((entry, order))
+}
+
+/// Encodes one palette entry in the given field order.
+///
+/// [`nbtx::to_value`] converts `entry` to a `Value::Compound` in `BlockDef`'s
+/// struct order (`name, version, states` -- `version` omitted if `None`).
+/// That is already [`FieldOrder::VersionThenStates`]; for the other order,
+/// moving `version` to the end of the compound (a no-op if it was already
+/// absent) leaves `states` before it, matching what [`FieldOrder::of`]
+/// detects on the way back in.
+fn write_palette_entry<W: Write>(
+    writer: &mut W,
+    entry: &BlockDef,
+    order: FieldOrder,
+) -> Result<()> {
+    let value = nbtx::to_value(entry)?;
+    let nbtx::Value::Compound(mut compound) = value else {
+        unreachable!("a struct always converts to a compound")
+    };
+    if order == FieldOrder::StatesThenVersion
+        && let Some(version) = compound.shift_remove(b"version".as_slice())
+    {
+        compound.insert("version".into(), version);
+    }
+    nbtx::to_le_bytes_in(writer, &nbtx::Value::Compound(compound))?;
+    Ok(())
 }
 
 /// Iterates over all blocks in a layer.
@@ -167,7 +284,7 @@ impl<'l> From<&'l Layer> for LayerIter<'l> {
 /// no index array and no palette-length word, and exactly one NBT compound -- the sole
 /// palette entry -- follows the header byte directly.
 #[doc(alias = "storage record")]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Layer {
     /// List of indices into the palette.
     ///
@@ -178,6 +295,21 @@ pub struct Layer {
     /// Used to check which blocks are already in the palette. Block definitions are hashed manually and compared with their hash in this set.
     /// This is because `BlockDef` does not implement `Eq` and we also prevent cloning the entire block definition on each insertion.
     hashes: HashMap<u64, u16, BuildNoHashHasher<u64>>,
+    /// The field order each `palette` entry re-encodes with, kept in lock step with
+    /// `palette` by index -- both are only ever pushed to, together, in `set` and
+    /// `from_disk`, never independently. See [`FieldOrder`].
+    entry_order: Vec<FieldOrder>,
+}
+
+impl PartialEq for Layer {
+    /// Compares `array` and `palette` only. `hashes` is a cache fully determined by
+    /// `palette` (same hash function, so it never disagrees with a `palette` comparison
+    /// on its own), and `entry_order` is on-disk serialization metadata, not part of a
+    /// block's identity -- two layers holding the same blocks are equal regardless of
+    /// which order either happened to read or write them in.
+    fn eq(&self, other: &Self) -> bool {
+        self.array == other.array && self.palette == other.palette
+    }
 }
 
 impl Layer {
@@ -204,8 +336,10 @@ impl Layer {
         // Check whether the block is in the palette
         let hash = Self::hash_def(&block);
         let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
-            // Block does not exist in palette, push it.
+            // Block does not exist in palette, push it. A newly built entry was not read
+            // off disk, so it gets the default (and dominant) field order.
             self.palette.push(block);
+            self.entry_order.push(FieldOrder::default());
             self.palette.len() as u16 - 1
         });
 
@@ -261,24 +395,23 @@ impl Layer {
 
         // A zero bits-per-index layer (`BitArray::Empty`) has no palette-length word: the
         // single palette entry it implies follows the header directly.
-        let palette = if let BitArray::Empty = array {
-            let entry: BlockDef = nbtx::from_le_bytes(reader)?;
-            vec![entry]
-        } else {
-            let len = reader.read_u32::<LittleEndian>()? as usize;
-            let mut palette = Vec::with_capacity(len);
+        let (palette, entry_order): (Vec<BlockDef>, Vec<FieldOrder>) =
+            if let BitArray::Empty = array {
+                let (entry, order) = read_palette_entry(reader)?;
+                (vec![entry], vec![order])
+            } else {
+                let len = reader.read_u32::<LittleEndian>()? as usize;
+                let mut palette = Vec::with_capacity(len);
+                let mut entry_order = Vec::with_capacity(len);
 
-            for _ in 0..len {
-                // No fallback or `lenient_width` here: every palette entry across
-                // the whole real test world (every layer of every subchunk) has
-                // `version` written as an `Int`, so there is nothing to reconcile,
-                // and this runs once per entry.
-                let entry: BlockDef = nbtx::from_le_bytes(reader)?;
-                palette.push(entry);
-            }
+                for _ in 0..len {
+                    let (entry, order) = read_palette_entry(reader)?;
+                    palette.push(entry);
+                    entry_order.push(order);
+                }
 
-            palette
-        };
+                (palette, entry_order)
+            };
 
         let mut hashes =
             HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
@@ -291,6 +424,7 @@ impl Layer {
             array,
             hashes,
             palette,
+            entry_order,
         })
     }
 
@@ -306,13 +440,13 @@ impl Layer {
         // A zero bits-per-index layer writes its single palette entry directly after the
         // header, with no palette-length word -- see `BitArray::Empty`.
         if let BitArray::Empty = self.array {
-            nbtx::to_le_bytes_in(writer, &self.palette[0])?;
+            write_palette_entry(writer, &self.palette[0], self.entry_order[0])?;
             return Ok(());
         }
 
         writer.write_u32::<LittleEndian>(plen as u32)?;
-        for entry in &self.palette {
-            nbtx::to_le_bytes_in(writer, entry)?;
+        for (entry, &order) in self.palette.iter().zip(&self.entry_order) {
+            write_palette_entry(writer, entry, order)?;
         }
 
         Ok(())
@@ -416,6 +550,102 @@ mod palette_tests {
         assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
     }
 
+    /// A palette entry compound with `name`, `version` and `states` in the given order --
+    /// unlike [`entry_with_version`], which always writes `BlockDef`'s own struct order.
+    fn entry_with_order(
+        order: FieldOrder,
+        version: nbtx::Value,
+        states: nbtx::Compound,
+    ) -> nbtx::Value {
+        let mut c = nbtx::Compound::new();
+        c.insert("name".into(), nbtx::Value::String("minecraft:stone".into()));
+        match order {
+            FieldOrder::StatesThenVersion => {
+                c.insert("states".into(), nbtx::Value::Compound(states));
+                c.insert("version".into(), version);
+            }
+            FieldOrder::VersionThenStates => {
+                c.insert("version".into(), version);
+                c.insert("states".into(), nbtx::Value::Compound(states));
+            }
+        }
+        nbtx::Value::Compound(c)
+    }
+
+    /// Both real on-disk orders of the top-level `version`/`states` keys round-trip
+    /// byte-identically -- not just the order that happens to match `BlockDef`'s own
+    /// struct field order.
+    #[test]
+    fn palette_entry_round_trips_byte_identical_regardless_of_field_order() {
+        for order in [FieldOrder::StatesThenVersion, FieldOrder::VersionThenStates] {
+            let entry =
+                entry_with_order(order, nbtx::Value::Int(17_959_425), nbtx::Compound::new());
+            let bytes = subchunk_with_palette(&entry);
+
+            let chunk =
+                SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+            let mut out = Cursor::new(Vec::new());
+            chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+
+            assert_eq!(
+                out.into_inner(),
+                bytes,
+                "{order:?} did not round-trip byte-identically"
+            );
+        }
+    }
+
+    /// A `states` compound with more than one key keeps the exact key order it was read
+    /// in, in both directions -- `states` being order-preserving (see its doc comment) is
+    /// what makes this possible, not anything specific to the top-level field order.
+    #[test]
+    fn states_inner_key_order_round_trips_byte_identical() {
+        for keys in [
+            ["persistent_bit", "update_bit"],
+            ["update_bit", "persistent_bit"],
+        ] {
+            let mut states = nbtx::Compound::new();
+            for k in keys {
+                states.insert(k.into(), nbtx::Value::Byte(1));
+            }
+            let entry =
+                entry_with_order(FieldOrder::StatesThenVersion, nbtx::Value::Int(1), states);
+            let bytes = subchunk_with_palette(&entry);
+
+            let chunk =
+                SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+            let mut out = Cursor::new(Vec::new());
+            chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+
+            assert_eq!(
+                out.into_inner(),
+                bytes,
+                "{keys:?} states order did not round-trip byte-identically"
+            );
+        }
+    }
+
+    /// An entry never read from disk -- built directly through [`Layer::set`] -- writes
+    /// in the dominant real-world order, not `BlockDef`'s own struct order.
+    #[test]
+    fn freshly_set_entry_gets_the_default_field_order() {
+        let mut layer = Layer {
+            array: BitArray::Empty,
+            palette: Vec::new(),
+            hashes: HashMap::with_hasher(BuildNoHashHasher::default()),
+            entry_order: Vec::new(),
+        };
+        layer.set(
+            (0u8, 0u8, 0u8),
+            BlockDef {
+                name: "minecraft:test".into(),
+                version: Some(1),
+                states: indexmap::IndexMap::new(),
+            },
+        );
+        assert_eq!(layer.entry_order, vec![FieldOrder::StatesThenVersion]);
+    }
+
     /// Builds a one-layer legacy subchunk with a zero bits-per-index header: no index
     /// words, no palette-length word, just the single entry directly after the header.
     fn subchunk_with_zero_bit_layer(palette_entry: &nbtx::Value) -> Vec<u8> {
@@ -496,19 +726,19 @@ mod palette_tests {
     }
 
     /// Two `BlockDef`s whose `states` maps hold the same entries, inserted in opposite
-    /// order, must be equal and hash equal -- the `Hash` impl must not depend on the
-    /// `HashMap`'s unspecified iteration order.
+    /// order, must be equal and hash equal -- the `Hash` impl must not depend on
+    /// `states`' insertion order, even though that order is preserved for re-encoding.
     #[test]
     fn identical_states_hash_equal_regardless_of_insertion_order() {
         use std::collections::hash_map::DefaultHasher;
 
         let keys = ["a", "b", "c", "d", "e", "f", "g"];
 
-        let mut forward = HashMap::new();
+        let mut forward = indexmap::IndexMap::new();
         for (i, k) in keys.iter().enumerate() {
             forward.insert(k.to_string(), nbtx::Value::Int(i as i32));
         }
-        let mut backward = HashMap::new();
+        let mut backward = indexmap::IndexMap::new();
         for (i, k) in keys.iter().enumerate().rev() {
             backward.insert(k.to_string(), nbtx::Value::Int(i as i32));
         }
