@@ -9,6 +9,9 @@ pub use bedrock_level::types::ItemStack;
 pub struct Chest {
     /// A real chest record has been observed writing this as a `Byte` rather
     /// than the `Int` every other field's width would suggest.
+    ///
+    /// `lenient_width` is decode-only: a `Byte`-tagged record read and
+    /// written back re-encodes as the declared `Int`, widening on write.
     #[facet(nbtx::lenient_width(i8))]
     pub findable: i32,
     #[facet(rename = "forceunpair")]

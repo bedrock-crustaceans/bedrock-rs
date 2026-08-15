@@ -483,6 +483,31 @@ mod tests {
         assert_eq!(banner.base, bedrock_level::color::Color::Green);
     }
 
+    /// `lenient_width` is decode-only: encoding always writes the field's own
+    /// declared tag, never the wider one it also accepted on the way in. So
+    /// the `Int`-tagged `Base` a real `Banner` record arrives with does not
+    /// round-trip byte for byte — re-encoding narrows it to `Byte`, the tag
+    /// `variant_as(i8)` declares. Pinned here rather than left as an
+    /// unstated side effect of `lenient_width`'s definition.
+    #[test]
+    fn banner_base_narrows_to_byte_on_re_encode() {
+        let record = Value::Compound(Compound::from_iter([
+            ("x".into(), Value::Int(1)),
+            ("y".into(), Value::Int(2)),
+            ("z".into(), Value::Int(3)),
+            ("isMovable".into(), Value::Byte(0)),
+            ("id".into(), Value::String("Banner".into())),
+            ("Base".into(), Value::Int(13)),
+            ("Type".into(), Value::Int(0)),
+        ]));
+
+        let entity = BlockEntity::from_value(record).unwrap();
+        let Value::Compound(entries) = entity.to_value().unwrap() else {
+            panic!("expected a compound");
+        };
+        assert_eq!(entries[BStr::new("Base")], Value::Byte(13));
+    }
+
     /// An id no variant claims is reported rather than silently dropped.
     #[test]
     fn unknown_id_is_an_error() {

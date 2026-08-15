@@ -5,6 +5,10 @@ use facet::Facet;
 /// holds the same id under an `Int` tag instead: both forms are real, in the
 /// same world, for the same enum, so the wider tag is accepted rather than
 /// rejected.
+///
+/// `lenient_width` is decode-only, so this acceptance is one-directional: a
+/// `Base` decoded from an `Int` re-encodes as `Byte`, `variant_as`'s declared
+/// tag. A record read and written back narrows this way; it is never widened.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
 #[facet(nbtx::variant_as(i8), nbtx::lenient_width(i32))]
 #[repr(i8)]
