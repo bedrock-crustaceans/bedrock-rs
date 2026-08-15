@@ -30,11 +30,17 @@ fn extract_test_dir() -> tempfile::TempDir {
     tmp
 }
 
-fn open_test_db() -> Database {
+/// Opens the fixture database, returning the `TempDir` alongside it.
+///
+/// The `TempDir` unlinks its contents when dropped, and `Database` keeps no
+/// reference back to it, so the caller has to hold onto it for as long as the
+/// `Database` is in use — dropping it early silently truncates whatever the
+/// database can still see to leftover file-descriptor state.
+fn open_test_db() -> (Database, tempfile::TempDir) {
     let tmp = extract_test_dir();
     let db_path = tmp.path().join("debug/db");
 
-    Database::open(db_path.to_str().unwrap()).unwrap()
+    (Database::open(db_path.to_str().unwrap()).unwrap(), tmp)
 }
 
 #[test]
@@ -65,7 +71,7 @@ fn read_level_dat() {
 #[test]
 #[ignore = "currently not properly implemented"]
 fn read_local_player() {
-    let db = open_test_db();
+    let (db, _tmp) = open_test_db();
     let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
@@ -83,7 +89,7 @@ fn read_local_player() {
 
 #[test]
 fn read_biome() {
-    let db = open_test_db();
+    let (db, _tmp) = open_test_db();
     let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
@@ -117,7 +123,7 @@ fn read_biome() {
 
 #[test]
 fn read_subchunk() {
-    let db = open_test_db();
+    let (db, _tmp) = open_test_db();
     let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
