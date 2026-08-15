@@ -44,7 +44,6 @@ reqwest = "0.13.2"
 
 [dependencies]
 bedrock_auth = { path = "crates/auth", optional = true }
-bedrock_core = { path = "crates/core" }
 bedrock_shared = { path = "crates/shared" }
 bedrock_macros = { path = "crates/macros", optional = true }
 bedrock_addon = { path = "crates/addon", optional = true }

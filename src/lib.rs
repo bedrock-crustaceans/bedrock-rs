@@ -1,8 +1,6 @@
 #![allow(unused_imports)]
 
 pub mod core {
-    pub use ::bedrock_core::*;
-
     pub use ::bedrock_shared::*;
 }
 
