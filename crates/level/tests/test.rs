@@ -98,25 +98,22 @@ fn read_biome() {
             continue;
         };
 
-        match key.data {
-            KeyVariant::Biome3d => {
-                let mut value = Cursor::new(kv.value());
-                let biome = Biomes::from_disk::<Greedy, _>(&mut value).unwrap();
+        if key.data == KeyVariant::Biome3d {
+            let mut value = Cursor::new(kv.value());
+            let biome = Biomes::from_disk::<Greedy, _>(&mut value).unwrap();
 
-                let mut writer = Cursor::new(Vec::new());
-                biome.to_disk(&mut writer).unwrap();
+            let mut writer = Cursor::new(Vec::new());
+            biome.to_disk(&mut writer).unwrap();
 
-                let value = writer.into_inner();
-                let mut reader = Cursor::new(value.as_slice());
-                let biome2 = Biomes::from_disk::<Greedy, _>(&mut reader).unwrap();
+            let value = writer.into_inner();
+            let mut reader = Cursor::new(value.as_slice());
+            let biome2 = Biomes::from_disk::<Greedy, _>(&mut reader).unwrap();
 
-                assert_eq!(biome, biome2);
+            assert_eq!(biome, biome2);
 
-                println!("{biome:?}");
+            println!("{biome:?}");
 
-                // break
-            }
-            _ => {}
+            // break
         }
     }
 }
@@ -132,34 +129,31 @@ fn read_subchunk() {
             continue;
         };
 
-        match key.data {
-            KeyVariant::SubChunk { .. } => {
-                println!("{key:?}");
+        if let KeyVariant::SubChunk { .. } = key.data {
+            println!("{key:?}");
 
-                let mut buf = Vec::new();
-                key.serialize(&mut buf).unwrap();
+            let mut buf = Vec::new();
+            key.serialize(&mut buf).unwrap();
 
-                let mut val = Cursor::new(db.get(buf).unwrap().unwrap());
-                let mut chunk = SubChunk::from_disk_lazy(&mut val).unwrap();
+            let mut val = Cursor::new(db.get(buf).unwrap().unwrap());
+            let mut chunk = SubChunk::from_disk_lazy(&mut val).unwrap();
 
-                let layer = chunk.get_layer_mut(0).unwrap();
-                for i in 0..40 {
-                    layer.set(
-                        BlockPosition(0, i, 0),
-                        BlockDef {
-                            name: "test".to_string(),
-                            states: HashMap::from([(
-                                String::from("test2"),
-                                nbtx::Value::Byte(i as i8),
-                            )]),
-                            version: Some(BlockDef::pack_version([1, 2, 3, 4])),
-                        },
-                    );
-                }
-
-                break;
+            let layer = chunk.get_layer_mut(0).unwrap();
+            for i in 0..40 {
+                layer.set(
+                    BlockPosition(0, i, 0),
+                    BlockDef {
+                        name: "test".to_string(),
+                        states: HashMap::from([(
+                            String::from("test2"),
+                            nbtx::Value::Byte(i as i8),
+                        )]),
+                        version: Some(BlockDef::pack_version([1, 2, 3, 4])),
+                    },
+                );
             }
-            _ => {}
+
+            break;
         }
     }
 }
