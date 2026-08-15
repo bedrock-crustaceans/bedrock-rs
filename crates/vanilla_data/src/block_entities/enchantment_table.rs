@@ -6,7 +6,15 @@ use facet::Facet;
 pub struct EnchantmentTable {
     /// The custom name of this enchantment table.
     ///
-    /// May not exist.
+    /// May not exist. Unverified against a real record — the one real
+    /// `EnchantTable` record checked so far has no `CustomName` key at all —
+    /// but every other block entity with a custom name in this crate writes
+    /// it under the key `CustomName` (`CommandBlock::custom_name`, via its
+    /// struct's `rename_all = "PascalCase"`), and this struct has no
+    /// `rename_all`, so the field needs the rename spelled out explicitly to
+    /// match: without it, the field would look for the literal key
+    /// `custom_name`, which is not what the format uses anywhere else.
+    #[facet(rename = "CustomName")]
     pub custom_name: Option<String>,
     /// The clockwise rotation of the book on the enchantment table in radians.
     ///
