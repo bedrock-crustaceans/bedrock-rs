@@ -12,6 +12,9 @@ use facet::Facet;
 #[facet(rename_all = "PascalCase")]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct ShulkerBox {
+    /// See [`Chest::findable`]: a real record has been observed writing this
+    /// as a `Byte` rather than an `Int`.
+    #[facet(nbtx::lenient_width(i8))]
     pub findable: i32,
     #[facet(rename = "forceunpair")]
     pub force_unpair: Option<bool>,
