@@ -33,15 +33,22 @@ impl GreedyArray {
     }
 
     /// Packs the array into a given array of words using the given amount of bits per block.
+    ///
+    /// For bit sizes that do not divide 32 evenly (3, 5, 6), the last word holds fewer than
+    /// `32 / bits` indices; its unused high bits are left zero rather than reading past the
+    /// end of the 4096-index array.
     pub(crate) fn pack_into(&self, words: &mut [u32], bits: u8) {
         // Amount of indices that fit in a single 32-bit integer.
         let per_word = u32::BITS / bits as u32;
-        let word_count = 4096 / per_word as usize;
+        let word_count = 4096u32.div_ceil(per_word) as usize;
 
         let mut offset = 0;
         for out in words.iter_mut().take(word_count) {
             let mut word = 0;
             for w in 0..per_word {
+                if offset == 4096 {
+                    break;
+                }
                 let index = self.array[offset] as u32;
                 word |= index << (w * bits as u32);
                 offset += 1;
@@ -52,17 +59,24 @@ impl GreedyArray {
     }
 
     /// Serializes the array to disk using the given amount of bits per block.
+    ///
+    /// For bit sizes that do not divide 32 evenly (3, 5, 6), the final word holds fewer than
+    /// `32 / bits` indices; its unused high bits are written zero.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, bits: u32) -> Result<()>
     where
         Cursor<W>: Write,
     {
         // Amount of indices that fit in a single 32-bit integer.
         let per_word = u32::BITS / bits;
+        let word_count = 4096u32.div_ceil(per_word);
 
         let mut offset = 0;
-        while offset < 4096 {
+        for _ in 0..word_count {
             let mut word = 0;
             for w in 0..per_word {
+                if offset == 4096 {
+                    break;
+                }
                 let index = self.array[offset] as u32;
                 word |= index << (w * bits);
 
@@ -194,9 +208,10 @@ impl GreedyArray {
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm_loadu_epi32, _mm_set_epi32, _mm_set1_epi32, _mm_storeu_epi16,
-            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64, _mm256_set_epi32,
-            _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32, _mm256_srlv_epi32,
+            __m256i, _mm_cvtsi32_si128, _mm_loadu_epi32, _mm_set_epi32, _mm_set1_epi32,
+            _mm_storeu_epi16, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+            _mm256_set_epi32, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32,
+            _mm256_srlv_epi32,
         };
 
         const SIMD_LANES: u32 = 8;
@@ -230,8 +245,13 @@ impl GreedyArray {
                     0,
                 );
 
-                // Shifts all lanes to their next location in the word.
-                let vshiftall = _mm_set1_epi32(8 * bits);
+                // Shifts all lanes to their next location in the word. `_mm256_srl_epi32`
+                // reads its shift amount as a single scalar from the low 64 bits of this
+                // operand, not per-lane -- broadcasting the count into every 32-bit lane
+                // (as `_mm_set1_epi32` would) packs a second copy into bits 32..64 and the
+                // combined 64-bit value blows past 31, which this instruction defines as an
+                // all-zero result. The count must sit alone in the low lane, zero elsewhere.
+                let vshiftall = _mm_cvtsi32_si128(8 * bits);
 
                 let mut w = 0;
                 let mut offset = 0;
@@ -328,7 +348,7 @@ impl GreedyArray {
                     let vperm = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
 
                     debug_assert!(
-                        indices.len() - offset > 8,
+                        indices.len() - offset >= 8,
                         "unpack_oct<8> buffer overflow, this is a bug"
                     );
 
@@ -380,7 +400,10 @@ impl GreedyArray {
     #[inline]
     pub fn unpack_nonsimd(bits: u8, mut words: &[u32], indices: &mut [u16]) {
         let per_word = u32::BITS / bits as u32;
-        let max_len = 4096 / per_word;
+        // `div_ceil`, not `/`: for bit sizes that do not divide 32 evenly (3, 5, 6) the
+        // last word is only partially filled and must still be included, or its indices
+        // are silently dropped.
+        let max_len = 4096u32.div_ceil(per_word);
         words = &words[..max_len as usize];
 
         let mask = !(!0u32 << bits);
@@ -452,5 +475,136 @@ impl From<&LazyArray> for GreedyArray {
     fn from(array: &LazyArray) -> GreedyArray {
         let words = array.words();
         GreedyArray::unpack(words, array.bits())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bits::{VALID_BITS, expected_word_count};
+
+    fn deterministic_array(bits: u8) -> GreedyArray {
+        let max = if bits == 16 {
+            u16::MAX as u32
+        } else {
+            (1u32 << bits) - 1
+        };
+        let mut array = Box::new([0u16; 4096]);
+        for (i, slot) in array.iter_mut().enumerate() {
+            *slot = (i as u32 % (max + 1)) as u16;
+        }
+        GreedyArray::from(array)
+    }
+
+    #[test]
+    fn word_count_matches_expected_for_every_valid_width() {
+        for bits in VALID_BITS {
+            let expected_words = expected_word_count(bits);
+            let array = deterministic_array(bits);
+
+            let mut buf = Cursor::new(Vec::new());
+            array.to_disk(&mut buf, bits as u32).unwrap();
+            let bytes = buf.into_inner();
+
+            assert_eq!(
+                bytes.len(),
+                expected_words * 4,
+                "bits={bits}: encoded byte length"
+            );
+
+            let decoded = GreedyArray::from_disk(&mut Cursor::new(bytes.as_slice()), bits).unwrap();
+            assert_eq!(decoded, array, "bits={bits}: round trip through from_disk");
+        }
+    }
+
+    #[test]
+    fn decode_encode_byte_identity_for_every_valid_width() {
+        for bits in VALID_BITS {
+            let array = deterministic_array(bits);
+
+            let mut first = Cursor::new(Vec::new());
+            array.to_disk(&mut first, bits as u32).unwrap();
+            let first_bytes = first.into_inner();
+
+            let decoded =
+                GreedyArray::from_disk(&mut Cursor::new(first_bytes.as_slice()), bits).unwrap();
+
+            let mut second = Cursor::new(Vec::new());
+            decoded.to_disk(&mut second, bits as u32).unwrap();
+            let second_bytes = second.into_inner();
+
+            assert_eq!(
+                first_bytes, second_bytes,
+                "bits={bits}: decode -> encode is not byte-identical"
+            );
+        }
+    }
+
+    /// For bit sizes that do not divide 32 evenly (3, 5, 6), the final word's slots past
+    /// the 4096th index are padding. Garbage left in them by whatever wrote the record must
+    /// not leak into the decoded indices.
+    #[test]
+    fn trailing_slot_garbage_is_ignored_on_decode() {
+        for bits in [3u8, 5, 6] {
+            let per_word = u32::BITS / bits as u32;
+            let word_count = expected_word_count(bits);
+            let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
+
+            let mut words = vec![0u32; word_count];
+            let tail_values: Vec<u16> = (0..used_in_last_word as u16)
+                .map(|i| i % (1 << bits))
+                .collect();
+
+            let mut last_word = 0u32;
+            for (i, &v) in tail_values.iter().enumerate() {
+                last_word |= (v as u32) << (i as u32 * bits as u32);
+            }
+            // Poison every bit past the slots actually used in the last word.
+            let used_bits = used_in_last_word as u32 * bits as u32;
+            last_word |= u32::MAX << used_bits;
+            words[word_count - 1] = last_word;
+
+            let array = GreedyArray::unpack(&words, bits);
+            let base = 4096 - used_in_last_word;
+            for (i, &expected) in tail_values.iter().enumerate() {
+                assert_eq!(
+                    array.get(base + i),
+                    Some(expected),
+                    "bits={bits}: trailing slot {i} corrupted by padding garbage"
+                );
+            }
+        }
+    }
+
+    /// The reverse direction: encoding must zero-fill the unused high bits of a padded
+    /// final word rather than leaving whatever was in the output buffer.
+    #[test]
+    fn encode_zero_fills_the_padded_final_word() {
+        for bits in [3u8, 5, 6] {
+            let per_word = u32::BITS / bits as u32;
+            let word_count = expected_word_count(bits);
+            let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
+
+            let mut array = Box::new([0u16; 4096]);
+            // Max value that fits, so any bit that should be zero but isn't would show up.
+            for slot in array[4096 - used_in_last_word..].iter_mut() {
+                *slot = (1u16 << bits) - 1;
+            }
+            let array = GreedyArray::from(array);
+
+            let mut buf = Cursor::new(Vec::new());
+            array.to_disk(&mut buf, bits as u32).unwrap();
+            let bytes = buf.into_inner();
+
+            let last_word_bytes = &bytes[(word_count - 1) * 4..word_count * 4];
+            let last_word = u32::from_le_bytes(last_word_bytes.try_into().unwrap());
+
+            let used_bits = used_in_last_word as u32 * bits as u32;
+            assert_eq!(
+                last_word & (u32::MAX << used_bits),
+                0,
+                "bits={bits}: padded high bits of the final word were not zero-filled"
+            );
+        }
     }
 }
