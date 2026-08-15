@@ -45,7 +45,7 @@ macro_rules! bind_match {
 /// compound; a payload-less one ignores it.
 macro_rules! decode_variant {
     ($name:ident $variant:ident $vtype:ty, $rest:ident) => {
-        $name::$variant(bedrock_level::nbt::from_value::<$vtype>($rest)?)
+        $name::$variant(nbtx::from_value::<$vtype>($rest)?)
     };
 
     ($name:ident $variant:ident, $rest:ident) => {
@@ -216,9 +216,10 @@ fn take(entries: &mut Compound, key: &str) -> Result<Value> {
 
 /// The number `value` holds, whatever integer tag it arrived under.
 ///
-/// The shared keys get the same tolerance the payload's keys get from
-/// `bedrock_level::nbt`: the game does not write one fixed tag per key, and a
-/// coordinate that fits is a coordinate.
+/// The shared keys are hand-decoded rather than through a `#[derive(Facet)]`
+/// struct, so this stands in for the strict single-tag check nbtx would
+/// otherwise apply: a coordinate that fits is a coordinate, whichever of the
+/// four integer tags it was written under.
 fn as_integer(value: &Value) -> Option<i64> {
     Some(match *value {
         Value::Byte(v) => i64::from(v),
@@ -417,10 +418,13 @@ mod tests {
         );
     }
 
-    /// A flag byte other than `0`/`1` is true, for the shared `isMovable` key
-    /// and for a payload's own flags alike.
+    /// `isMovable` is one of the shared keys, hand-decoded through
+    /// [`as_integer`] rather than nbtx's own `bool` handling, so a flag byte
+    /// other than `0`/`1` still folds to `true` there. A payload's own `bool`
+    /// field, like `Ringing`, has no such tolerance: nbtx reads it strictly,
+    /// `true` only for the exact byte `1`.
     #[test]
-    fn flag_bytes_other_than_one_are_true() {
+    fn shared_flag_folds_nonzero_but_payload_flag_does_not() {
         let Value::Compound(mut entries) = bell_record() else {
             panic!("expected a compound");
         };
@@ -432,22 +436,22 @@ mod tests {
         let BlockData::Bell(bell) = &entity.data else {
             panic!("expected a bell");
         };
-        assert!(bell.ringing);
+        assert!(!bell.ringing);
     }
 
-    /// A payload key written under a narrower tag than its field still reads.
+    /// A shared coordinate key written under a narrower tag than `i32` still
+    /// reads: [`as_integer`] tolerates any of the four integer tags, the same
+    /// way nbtx would with `#[facet(nbtx::lenient_width(...))]` on a struct
+    /// field.
     #[test]
-    fn narrow_numeric_tags_are_accepted() {
+    fn narrow_coordinate_tags_are_accepted() {
         let Value::Compound(mut entries) = bell_record() else {
             panic!("expected a compound");
         };
-        entries.insert("Direction".into(), Value::Byte(3));
+        entries.insert("x".into(), Value::Byte(3));
 
         let entity = BlockEntity::from_value(Value::Compound(entries)).unwrap();
-        let BlockData::Bell(bell) = &entity.data else {
-            panic!("expected a bell");
-        };
-        assert_eq!(bell.direction, 3);
+        assert_eq!(entity.x, 3);
     }
 
     /// An id no variant claims is reported rather than silently dropped.

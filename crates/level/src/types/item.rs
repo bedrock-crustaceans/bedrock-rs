@@ -15,9 +15,6 @@ pub struct ItemStack {
     #[facet(rename = "tag")]
     pub tag: Option<nbtx::Value>,
     /// Whether the stack has been picked up.
-    ///
-    /// A `Byte` flag: zero is false, any other value true. Decode through
-    /// [`crate::nbt`] to get that rule; nbtx on its own reads only `1` as true.
     pub was_picked_up: bool,
 }
 
