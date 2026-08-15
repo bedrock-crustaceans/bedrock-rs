@@ -5,17 +5,12 @@ use facet::Facet;
 #[facet(rename_all = "PascalCase")]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct ItemFrame {
-    /// Degrees of rotation, always a `Float` in every record this crate has
-    /// been checked against.
-    ///
-    /// Pre-1.13 records wrote this as a `Byte` step index (0-7, 45° per
-    /// step), not degrees, so a bare `lenient_width(i8)` on this field would
-    /// decode the raw byte as degrees directly — silently wrong, and, since
-    /// widening is decode-only, permanently baked in on the next write.
-    /// Reading that legacy encoding correctly needs the `* 45` conversion
-    /// applied on the way in, which is out of scope here; until that lands,
-    /// a pre-1.13 record's rotation is left unreadable rather than
-    /// misread.
+    /// Degrees of rotation. `Float` in the only 2 real records checked so
+    /// far (this crate's test fixture is a 1.26 world with no older item
+    /// frames in it) — not enough to say what other versions write. No
+    /// `lenient_width` here without more evidence: see `TODO.md` for a
+    /// specific, externally-sourced reason to expect older records need one,
+    /// and why a bare `lenient_width(i8)` would be the wrong fix for it.
     pub item_rotation: f32,
     pub item_drop_chance: f32,
     pub item: ItemStack,
