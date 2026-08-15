@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Cursor;
 
@@ -144,7 +143,7 @@ fn read_subchunk() {
                     BlockPosition(0, i, 0),
                     BlockDef {
                         name: "test".to_string(),
-                        states: HashMap::from([(
+                        states: indexmap::IndexMap::from([(
                             String::from("test2"),
                             nbtx::Value::Byte(i as i8),
                         )]),

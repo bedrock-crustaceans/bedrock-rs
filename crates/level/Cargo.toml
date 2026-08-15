@@ -26,6 +26,11 @@ nbtx = { workspace = true }
 facet = { workspace = true }
 # `nbtx::Value::String` and `Compound` keys are raw bytes (`bstr::BString`).
 bstr = { workspace = true }
+# Order-preserving map for `BlockDef::states`: the pinned `facet`/`facet-core`
+# already implement `Facet` for it (nbtx's own default `preserve_order`
+# feature turns that on in the shared dependency graph), so this only needs
+# to be nameable here. Version pinned to what nbtx itself depends on.
+indexmap = "2.2"
 
 thiserror = { workspace = true }
 byteorder = { workspace = true }
