@@ -13,7 +13,9 @@ use facet::Facet;
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct ShulkerBox {
     /// See [`Chest::findable`]: a real record has been observed writing this
-    /// as a `Byte` rather than an `Int`.
+    /// as a `Byte` rather than an `Int`, and, since `lenient_width` is
+    /// decode-only, a record read and written back re-encodes as the
+    /// declared `Int` regardless of which tag it arrived under.
     #[facet(nbtx::lenient_width(i8))]
     pub findable: i32,
     #[facet(rename = "forceunpair")]
