@@ -184,7 +184,10 @@ impl_block_data! {
         ShulkerBox(ShulkerBox),
         Skull(Skull),
         Sign(Sign),
-        NetherReactor(NetherReactor)
+        NetherReactor(NetherReactor),
+        Conduit(Conduit),
+        EnchantmentTable(EnchantmentTable) renamed "EnchantTable",
+        Lodestone(Lodestone)
     }
 }
 
@@ -327,7 +330,10 @@ mod jukebox;
 mod lectern;
 mod lodestone;
 mod mob_spawner;
-mod moving_block;
+// `MovingBlock` (the piston's in-transit block entity) has no struct here
+// yet — unlike `conduit`/`enchantment_table`/`lodestone`, which only needed
+// registering in the macro invocation above, this one needs the type built
+// from scratch. See TODO.md.
 mod nether_reactor;
 mod noteblock;
 mod piston_arm;
@@ -369,7 +375,6 @@ pub use jukebox::*;
 pub use lectern::*;
 pub use lodestone::*;
 pub use mob_spawner::*;
-pub use moving_block::*;
 pub use nether_reactor::*;
 pub use noteblock::*;
 pub use piston_arm::*;
