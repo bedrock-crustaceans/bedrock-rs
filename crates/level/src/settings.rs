@@ -361,13 +361,12 @@ impl LevelSettings {
         let _file_size = data.read_u32::<LittleEndian>()?;
 
         // Decoded through a `Value` rather than straight into `Self`: the two
-        // game-version keys need reshaping (below), and `crate::nbt` has to see
-        // the tree to apply Bedrock's "any non-zero byte is true" rule to this
-        // struct's ~90 `bool` fields.
+        // game-version keys need reshaping (below) before the struct can be
+        // built from them.
         let mut value: Value = nbtx::from_le_bytes(&mut data)?;
         unpack_game_versions(&mut value);
 
-        let mut settings: Self = crate::nbt::from_value(value)?;
+        let mut settings: Self = nbtx::from_value(value)?;
         settings.header_storage_version = header_storage_version as i32;
 
         Ok(settings)

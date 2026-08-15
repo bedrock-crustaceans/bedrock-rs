@@ -8,7 +8,6 @@ pub mod height_map;
 pub mod iter;
 pub mod key;
 pub mod lazy;
-pub mod nbt;
 pub mod player;
 pub mod provider;
 pub mod settings;

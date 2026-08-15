@@ -248,26 +248,11 @@ impl Layer {
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            // Palette decoding is the bulk of the cost of reading a subchunk, so
-            // it takes nbtx directly: routing every entry through `crate::nbt`
-            // measures ~28% slower over a whole world, and a `BlockDef` holds no
-            // `bool`, so the only rule that could apply to it is the numeric
-            // width reconciling — and `version` is an `Int` in everything the
-            // game writes.
-            //
-            // "Everything the game writes" is not "everything", though, so a
-            // failure rewinds and retries through the normalizing path, which
-            // accepts `version` under a narrower tag. The retry costs nothing
-            // until it happens, and this is a `Cursor`, so the entry's bytes are
-            // still there to read again.
-            let start = reader.position();
-            let entry = match nbtx::from_le_bytes(reader) {
-                Ok(entry) => entry,
-                Err(_) => {
-                    reader.set_position(start);
-                    crate::nbt::from_le_bytes(reader)?
-                }
-            };
+            // No fallback or `lenient_width` here: every palette entry across
+            // the whole real test world (every layer of every subchunk) has
+            // `version` written as an `Int`, so there is nothing to reconcile,
+            // and this runs once per entry.
+            let entry: BlockDef = nbtx::from_le_bytes(reader)?;
             palette.push(entry);
         }
 
@@ -380,15 +365,13 @@ mod palette_tests {
         assert_eq!(block.version, Some(17_959_425));
     }
 
-    /// A narrower tag than the field's width takes the rewind-and-retry path
-    /// rather than failing the whole layer.
+    /// A narrower tag than `version`'s declared `Int` width is rejected: no
+    /// real palette entry has ever been observed writing it any other way, so
+    /// there is no `lenient_width` accepting one.
     #[test]
-    fn palette_entry_with_narrow_version_tag() {
+    fn palette_entry_with_narrow_version_tag_still_fails() {
         let bytes = subchunk_with_palette(&entry_with_version(nbtx::Value::Short(1)));
-        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
-        let block = &chunk.get_layer(0).unwrap().palette()[0];
-        assert_eq!(block.version, Some(1));
-        assert_eq!(block.name, "minecraft:stone");
+        assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
     }
 
     /// A genuinely broken entry still fails, rather than the retry hiding it.

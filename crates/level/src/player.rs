@@ -162,11 +162,8 @@ pub struct PlayerData {
 
 impl PlayerData {
     /// Reads a player record from little-endian (on-disk) NBT.
-    ///
-    /// Goes through [`crate::nbt`] rather than nbtx directly: a player record is
-    /// dense with `Byte` flags, and Bedrock counts every non-zero one as true.
     pub fn read<R: Read>(mut data: R) -> Result<Self> {
-        Ok(crate::nbt::from_le_bytes(&mut data)?)
+        Ok(nbtx::from_le_bytes(&mut data)?)
     }
 }
 
@@ -175,11 +172,11 @@ mod tests {
     use super::*;
     use nbtx::{Compound, Value};
 
-    /// A record the game wrote can carry a flag byte other than `0`/`1`; every
-    /// non-zero one is true. Pins the read path, not just the fold itself: these
-    /// records only get the rule if they are decoded through [`crate::nbt`].
+    /// A `bool` field is `true` only for the exact byte `1`; any other byte,
+    /// `2` included, is `false`. This is nbtx's own decode rule for `bool` —
+    /// unlike a numeric field's tag width, nothing here widens it.
     #[test]
-    fn flag_bytes_other_than_one_are_true() {
+    fn flag_byte_is_true_only_for_exactly_one() {
         let effect = Value::Compound(Compound::from_iter([
             ("Id".into(), Value::Byte(1)),
             ("Duration".into(), Value::Int(100)),
@@ -188,18 +185,12 @@ mod tests {
             ("DurationHard".into(), Value::Int(100)),
             ("Ambient".into(), Value::Byte(2)),
             ("Amplifier".into(), Value::Byte(0)),
-            ("ShowParticles".into(), Value::Byte(-1)),
+            ("ShowParticles".into(), Value::Byte(1)),
         ]));
         let bytes = nbtx::to_le_bytes(&effect).unwrap();
 
-        let decoded: StatusEffect = crate::nbt::from_le_bytes(&mut bytes.as_slice()).unwrap();
-        assert!(decoded.ambient);
+        let decoded: StatusEffect = nbtx::from_le_bytes(&mut bytes.as_slice()).unwrap();
+        assert!(!decoded.ambient);
         assert!(decoded.show_particles);
-
-        // The same bytes read straight through nbtx say the opposite, which is
-        // what `PlayerData::read` exists to avoid.
-        let strict: StatusEffect = nbtx::from_le_bytes(&mut bytes.as_slice()).unwrap();
-        assert!(!strict.ambient);
-        assert!(!strict.show_particles);
     }
 }
