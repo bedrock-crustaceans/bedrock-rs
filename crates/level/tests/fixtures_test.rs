@@ -77,47 +77,20 @@ fn fixtures_cover_expected_capabilities() {
     assert!(all.iter().all(|f| f.capabilities.paletted));
 }
 
-/// `LevelSettings` was modeled against the single pre-existing fixture (a
-/// 1.26 world) and does not yet parse every payload shape older worlds
-/// write under the crate's strict decode. Tracked here, not hidden: a fix
-/// that widens coverage has to shrink this list rather than pass silently
-/// with no signal that anything changed.
+/// Every fixture's `level.dat` parses under the crate's strict decode
+/// (`deny-unknown-fields`, the default feature). `LevelSettings` was
+/// originally modeled against a single 1.26 world; this pins that the model
+/// now covers the field set every imported world actually writes, across
+/// the 1.12-to-1.20.81 range these fixtures cover.
 #[test]
-fn level_dat_strict_decode_known_gaps() {
+fn every_fixture_level_dat_parses_strictly() {
     use bedrock_level::settings::LevelSettings;
 
-    let known_failures: BTreeSet<&str> = [
-        "v1_12",
-        "v1_16",
-        "v1_17_20",
-        "v1_17_20_caves_and_cliffs",
-        "v1_17_40",
-        "v1_17_40_caves_and_cliffs",
-        "v1_17_40_superflat",
-        "v1_18",
-        "v1_18_30",
-        "v1_18_superflat",
-        "v1_18_updated_superflat",
-        "v1_19_30",
-        "v1_20_81",
-    ]
-    .into_iter()
-    .collect();
-
-    let mut actual_failures = BTreeSet::new();
     for fixture in support::fixtures() {
         let (tmp, _db) = fixture.open();
         let data = std::fs::read(fixture.level_dat_path(&tmp))
             .unwrap_or_else(|e| panic!("{}: failed to read level.dat: {e}", fixture.name));
-        if LevelSettings::read(data.as_slice()).is_err() {
-            actual_failures.insert(fixture.name.clone());
-        }
+        LevelSettings::read(data.as_slice())
+            .unwrap_or_else(|e| panic!("{}: LevelSettings::read failed: {e}", fixture.name));
     }
-
-    let actual_failures: BTreeSet<&str> = actual_failures.iter().map(String::as_str).collect();
-    assert_eq!(
-        actual_failures, known_failures,
-        "the set of fixtures LevelSettings::read fails on has changed; \
-         update known_failures to match"
-    );
 }

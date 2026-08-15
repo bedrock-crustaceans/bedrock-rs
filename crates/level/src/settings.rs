@@ -6,7 +6,10 @@ use nbtx::{Compound, Value};
 use std::io::{Read, Write};
 
 #[derive(Facet, Debug, PartialEq)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Abilities {
     #[facet(rename = "attackmobs")]
     pub attack_mobs: bool,
@@ -32,28 +35,50 @@ pub struct Abilities {
     pub vertical_fly_speed: f32,
     #[facet(rename = "walkSpeed")]
     pub walk_speed: f32,
-    // Absent on some worlds; permission level is tracked at the root level
-    // via `permissions_level` / `player_permissions_level` in that case.
-    #[facet(rename = "playerPermissionLevel")]
-    pub permission_level: Option<i32>,
+    // Older worlds duplicate the root-level `permissionsLevel` /
+    // `playerPermissionsLevel` pair into `abilities`; newer worlds only
+    // write them at the root (see `LevelSettings::permissions_level`).
+    #[facet(rename = "permissionsLevel")]
+    pub permissions_level: Option<i32>,
+    #[facet(rename = "playerPermissionsLevel")]
+    pub player_permissions_level: Option<i32>,
 }
 
 #[derive(Facet, Debug, PartialEq, Eq)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Experiments {
     pub experiments_ever_used: bool,
     pub saved_with_toggled_experiments: bool,
+    // Individual experiment toggles. Which of these a world carries depends
+    // on which experiments existed and were surfaced in the world-create UI
+    // at the time it was saved, so each is absent rather than false on a
+    // world saved before it existed.
+    #[facet(default)]
+    pub caves_and_cliffs: bool,
+    #[facet(default)]
+    pub armadillo: bool,
+    #[facet(rename = "updateAnnouncedLive2023", default)]
+    pub update_announced_live_2023: bool,
 }
 
 #[derive(Facet, Debug, PartialEq, Eq)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Policies {
     // Not sure what is supposed to be in here
 }
 
 #[derive(Facet, Debug, PartialEq)]
 #[facet(rename_all = "camelCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct LevelSettings {
     // The i32 storage version from the 8-byte level.dat header, not part of
     // the NBT payload itself. Kept alongside `storage_version` (the NBT
@@ -65,17 +90,20 @@ pub struct LevelSettings {
     // has no unsigned tag and nbtx refuses to encode a `u32` field at all.
     #[facet(default)]
     pub header_storage_version: i32,
-    pub editor_world_type: i32,
-    #[facet(rename = "isCreatedInEditor")]
+    // Absent on worlds saved before the world-editor feature existed.
+    pub editor_world_type: Option<i32>,
+    #[facet(rename = "isCreatedInEditor", default)]
     pub created_in_editor: bool,
-    #[facet(rename = "isExportedFromEditor")]
+    #[facet(rename = "isExportedFromEditor", default)]
     pub exported_from_editor: bool,
-    #[facet(rename = "isRandomSeedAllowed")]
+    #[facet(rename = "isRandomSeedAllowed", default)]
     pub random_seed_allowed: bool,
+    // Absent on worlds saved before this rule was introduced.
     #[facet(rename = "playerssleepingpercentage")]
-    pub sleeping_percentage: i32,
-    #[facet(rename = "recipesunlock")]
+    pub sleeping_percentage: Option<i32>,
+    #[facet(rename = "recipesunlock", default)]
     pub recipes_unlock: bool,
+    #[facet(default)]
     pub cheats_enabled: bool,
     pub lightning_level: f32,
     pub lightning_time: i32,
@@ -93,8 +121,9 @@ pub struct LevelSettings {
     pub limited_world_origin_y: i32,
     #[facet(rename = "LimitedWorldOriginZ")]
     pub limited_world_origin_z: i32,
-    pub limited_world_depth: i32,
-    pub limited_world_width: i32,
+    // Absent on worlds saved before the limited-world generator existed.
+    pub limited_world_depth: Option<i32>,
+    pub limited_world_width: Option<i32>,
     // Absent on worlds saved before this field was introduced.
     #[facet(rename = "MinimumCompatibleClientVersion")]
     pub minimum_compatible_client_version: Option<GameVersion>,
@@ -130,9 +159,20 @@ pub struct LevelSettings {
     #[facet(rename = "XBLBroadcastIntent")]
     pub xbox_broadcast_intent: i32,
     pub current_tick: i64,
-    pub experiments: Experiments,
+    // Absent on the oldest worlds, which instead write the single
+    // `experimentalgameplay` flag below rather than a compound of
+    // individually named experiments.
+    pub experiments: Option<Experiments>,
+    // Predecessor to `experiments`: one flag standing in for all
+    // experimental toggles at once, on worlds saved before the compound
+    // existed.
+    #[facet(rename = "experimentalgameplay", default)]
+    pub experimental_gameplay: bool,
     pub abilities: Abilities,
-    pub edu_offer: i32,
+    // Absent on worlds saved before this field was introduced; `eduLevel`
+    // is what the same setting was called before.
+    pub edu_offer: Option<i32>,
+    pub edu_level: Option<i8>,
     pub education_features_enabled: bool,
     #[facet(rename = "lastOpenedWithVersion")]
     pub last_opened_with_version: GameVersion,
@@ -147,10 +187,11 @@ pub struct LevelSettings {
     pub commands_enabled: bool,
     #[facet(rename = "ConfirmedPlatformLockedContent")]
     pub confirmed_platform_locked_content: bool,
-    pub daylight_cycle: i32,
+    // Absent on worlds saved before this field was introduced.
+    pub daylight_cycle: Option<i32>,
     #[facet(rename = "dodaylightcycle")]
     pub daylight_lock: bool,
-    #[facet(rename = "dolimitedcrafting")]
+    #[facet(rename = "dolimitedcrafting", default)]
     pub limited_crafting: bool,
     #[facet(rename = "doentitydrops")]
     pub entity_drops: bool,
@@ -177,7 +218,7 @@ pub struct LevelSettings {
     pub fall_damage: bool,
     #[facet(rename = "firedamage")]
     pub fire_damage: bool,
-    #[facet(rename = "freezedamage")]
+    #[facet(rename = "freezedamage", default)]
     pub freeze_damage: bool,
     #[facet(rename = "keepinventory")]
     pub keep_inventory: bool,
@@ -192,17 +233,17 @@ pub struct LevelSettings {
     pub pvp: bool,
     #[facet(rename = "randomtickspeed")]
     pub random_tick_speed: i32,
-    #[facet(rename = "respawnblocksexplode")]
+    #[facet(rename = "respawnblocksexplode", default)]
     pub respawn_blocks_explode: bool,
     #[facet(rename = "sendcommandfeedback")]
     pub send_command_feedback: bool,
-    #[facet(rename = "showbordereffect")]
+    #[facet(rename = "showbordereffect", default)]
     pub show_border_effect: bool,
     #[facet(rename = "showcoordinates")]
     pub show_coordinates: bool,
     #[facet(rename = "showdeathmessages")]
     pub show_death_messages: bool,
-    #[facet(rename = "showtags")]
+    #[facet(rename = "showtags", default)]
     pub show_tags: bool,
     // Absent on worlds saved before these settings were introduced.
     #[facet(rename = "showdaysplayed", default)]
@@ -225,6 +266,7 @@ pub struct LevelSettings {
     pub immutable_world: bool,
     pub is_from_locked_template: bool,
     pub is_from_world_template: bool,
+    #[facet(default)]
     pub is_single_use_world: bool,
     pub is_world_template_option_locked: bool,
     pub requires_copied_pack_removal_check: bool,
@@ -249,7 +291,11 @@ pub struct LevelSettings {
     // Absent on worlds saved before this field was introduced; holds "*" or
     // a version string like "1.17" once present.
     pub base_game_version: Option<String>,
-    #[facet(rename = "BiomeOverride")]
+    // Every fixture that writes this key writes it as an empty string when
+    // no override is set; only the oldest worlds, which predate the
+    // per-world biome override feature, omit the key. Absence and "" are
+    // therefore the same state, so defaulting to "" loses nothing.
+    #[facet(rename = "BiomeOverride", default)]
     pub biome_override: String,
     #[facet(rename = "FlatWorldLayers")]
     pub flat_world_layers: String,
@@ -263,11 +309,14 @@ pub struct LevelSettings {
     pub start_with_map_enabled: bool,
     pub spawn_mobs: bool,
     pub server_chunk_tick_range: i32,
-    pub permissions_level: i32,
-    pub player_permissions_level: i32,
+    // Absent at the root on worlds that instead write these two inside
+    // `abilities` (see `Abilities::permissions_level`).
+    pub permissions_level: Option<i32>,
+    pub player_permissions_level: Option<i32>,
     pub prid: String,
+    // Absent on worlds saved before this key was introduced.
     #[facet(rename = "world_policies")]
-    pub world_policies: Policies,
+    pub world_policies: Option<Policies>,
     // Superseded by `PlatformBroadcastIntent` / `XBLBroadcastIntent` on
     // newer worlds, which no longer write these.
     #[facet(rename = "PlatformBroadcast")]
