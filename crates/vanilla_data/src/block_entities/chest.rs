@@ -7,6 +7,9 @@ pub use bedrock_level::types::ItemStack;
 #[facet(rename_all = "PascalCase")]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct Chest {
+    /// A real chest record has been observed writing this as a `Byte` rather
+    /// than the `Int` every other field's width would suggest.
+    #[facet(nbtx::lenient_width(i8))]
     pub findable: i32,
     #[facet(rename = "forceunpair")]
     pub force_unpair: Option<bool>,
