@@ -1,8 +1,12 @@
 use facet::Facet;
 
-/// A Bedrock dye colour, stored in NBT as a `Byte` tag holding the numeric id.
+/// A Bedrock dye colour, stored in NBT as a `Byte` tag holding the numeric id
+/// in most records — a `Bed`'s `color` key, for one. A `Banner`'s `Base` key
+/// holds the same id under an `Int` tag instead: both forms are real, in the
+/// same world, for the same enum, so the wider tag is accepted rather than
+/// rejected.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
-#[facet(nbtx::variant_as(i8))]
+#[facet(nbtx::variant_as(i8), nbtx::lenient_width(i32))]
 #[repr(i8)]
 pub enum Color {
     White = 0,
