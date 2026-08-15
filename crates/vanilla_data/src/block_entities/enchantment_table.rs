@@ -10,6 +10,8 @@ pub struct EnchantmentTable {
     pub custom_name: Option<String>,
     /// The clockwise rotation of the book on the enchantment table in radians.
     ///
-    /// Top of the book points west when set to 0.
+    /// Top of the book points west when set to 0. Stored under the key
+    /// `rott`, confirmed against a real record.
+    #[facet(rename = "rott")]
     pub rotation: f32,
 }
