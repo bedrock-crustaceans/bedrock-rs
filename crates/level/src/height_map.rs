@@ -2,10 +2,9 @@ use std::io::{Cursor, Read, Seek, Write};
 
 use bedrock_shared::read::SeekExt;
 
+use crate::biome::{Biomes2d, COLUMNS, column_index};
 use crate::error::{Error, Result};
 
-/// Column count of a 16x16 chunk.
-const COLUMNS: usize = 256;
 /// Size in bytes of the heightmap half of the payload: 256 little-endian `i16` values.
 const HEIGHTS_SIZE: usize = COLUMNS * size_of::<i16>();
 /// Size in bytes of the biome half of the payload: one id per column.
@@ -14,25 +13,34 @@ const PAYLOAD_SIZE: usize = HEIGHTS_SIZE + BIOMES_SIZE;
 
 /// Pre-1.18 per-chunk column data (LevelDB key tag `0x2d`).
 ///
-/// Holds a 16x16 column heightmap paired with a single biome id per column, in the
-/// same x/z order as the heightmap. Chunks using this record predate 3D biomes
-/// (`0x2b`), where every column has one biome for its whole height.
+/// Holds a 16x16 column heightmap paired with a single biome id per column
+/// ([`Biomes2d`]). Chunks using this record predate 3D biomes (`0x2b`),
+/// where every column has one biome for its whole height. Both halves share
+/// the same column order: for column `(x, z)` the flat index is
+/// `z * 16 + x`, so the 16 `x` values for a given `z` are contiguous.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HeightMap {
     heights: Box<[i16; COLUMNS]>,
-    biomes: Box<[u8; COLUMNS]>,
+    biomes: Biomes2d,
 }
 
 impl HeightMap {
-    /// The column heightmap, in x/z order.
+    /// The column heightmap, in `z * 16 + x` order.
     #[inline]
     pub fn heights(&self) -> &[i16; COLUMNS] {
         &self.heights
     }
 
-    /// The per-column biome ids, in the same x/z order as [`Self::heights`].
+    /// The height of column `(x, z)`, or `None` if either coordinate is
+    /// outside `0..16`.
     #[inline]
-    pub fn biomes(&self) -> &[u8; COLUMNS] {
+    pub fn height_at(&self, x: usize, z: usize) -> Option<i16> {
+        column_index(x, z).map(|i| self.heights[i])
+    }
+
+    /// The per-column biome ids, in the same layout as [`Self::heights`].
+    #[inline]
+    pub fn biomes(&self) -> &Biomes2d {
         &self.biomes
     }
 
@@ -45,7 +53,7 @@ impl HeightMap {
         Cursor<W>: Write,
     {
         writer.write_all(bytemuck::cast_slice::<i16, u8>(self.heights.as_slice()))?;
-        writer.write_all(self.biomes.as_slice())?;
+        self.biomes.to_disk(writer)?;
 
         Ok(())
     }
@@ -64,8 +72,7 @@ impl HeightMap {
         let mut heights: Box<[i16; COLUMNS]> = Box::new([0; COLUMNS]);
         reader.read_exact(bytemuck::cast_slice_mut::<i16, u8>(heights.as_mut()))?;
 
-        let mut biomes: Box<[u8; COLUMNS]> = Box::new([0; COLUMNS]);
-        reader.read_exact(biomes.as_mut())?;
+        let biomes = Biomes2d::from_disk(reader)?;
 
         Ok(HeightMap { heights, biomes })
     }
@@ -77,13 +84,16 @@ mod tests {
 
     fn sample() -> HeightMap {
         let mut heights = Box::new([0i16; COLUMNS]);
-        let mut biomes = Box::new([0u8; COLUMNS]);
-        for (i, (h, b)) in heights.iter_mut().zip(biomes.iter_mut()).enumerate() {
+        let mut ids = Box::new([0u8; COLUMNS]);
+        for (i, (h, b)) in heights.iter_mut().zip(ids.iter_mut()).enumerate() {
             *h = (i as i16) * 3 - 128;
             *b = (i % 256) as u8;
         }
 
-        HeightMap { heights, biomes }
+        HeightMap {
+            heights,
+            biomes: ids.into(),
+        }
     }
 
     #[test]
@@ -122,5 +132,25 @@ mod tests {
 
         let mut reader = Cursor::new(bytes.as_slice());
         assert!(HeightMap::from_disk(&mut reader).is_err());
+    }
+
+    #[test]
+    fn height_at_matches_z_major_flat_index() {
+        let map = sample();
+
+        for z in 0..16usize {
+            for x in 0..16usize {
+                assert_eq!(map.height_at(x, z), Some(map.heights()[z * 16 + x]));
+            }
+        }
+    }
+
+    #[test]
+    fn height_at_rejects_out_of_range_coordinates() {
+        let map = sample();
+
+        assert_eq!(map.height_at(16, 0), None);
+        assert_eq!(map.height_at(0, 16), None);
+        assert_eq!(map.height_at(16, 16), None);
     }
 }
