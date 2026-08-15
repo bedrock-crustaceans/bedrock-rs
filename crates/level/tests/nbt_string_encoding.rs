@@ -22,6 +22,12 @@
 //! These tests feed hand-built payloads through the same deserialization entry
 //! point the crate uses for palettes and settings, so any future change in how
 //! the codec treats those byte classes is caught here.
+//!
+//! The payloads here are synthetic. `nbt_actor_storage_key.rs` pins the same
+//! contract against a real one: the field
+//! `internalComponents.EntityStorageKeyComponent.StorageKey` in real
+//! `actorprefix` records is exactly this kind of string tag, and its 8-byte
+//! payload is frequently not valid UTF-8 in practice.
 
 use std::io::Cursor;
 
@@ -62,7 +68,10 @@ fn decode_string_field(payload: &[u8]) -> Result<BString, nbtx::Error> {
 /// palette names and record keys.
 #[test]
 fn ascii_round_trips() {
-    assert_eq!(decode_string_field(b"minecraft:stone").unwrap(), "minecraft:stone");
+    assert_eq!(
+        decode_string_field(b"minecraft:stone").unwrap(),
+        "minecraft:stone"
+    );
 }
 
 /// A NUL encoded as the modified-UTF-8 overlong sequence 0xC0 0x80 survives as
