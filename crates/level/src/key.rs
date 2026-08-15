@@ -82,6 +82,66 @@ pub struct Key {
     pub data: KeyVariant,
 }
 
+/// Chunk-version window, inclusive, in which an Overworld subchunk key's
+/// index byte is the subchunk's absolute vertical index plus 4, keeping the
+/// extended floor's sections at non-negative bytes. Outside this window, or
+/// outside the Overworld, the stored byte is the absolute index directly.
+const SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_START: u8 = 25;
+/// See [`SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_START`].
+const SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_END: u8 = 28;
+
+/// The shift applied to a subchunk key's index byte inside
+/// [`SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_START`]..=[`SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_END`].
+const SUBCHUNK_KEY_INDEX_OFFSET: i8 = 4;
+
+/// Whether `chunk_version`/`dimension` falls inside the window where a
+/// subchunk key's index byte carries the `+4` offset.
+fn subchunk_key_index_is_offset(chunk_version: u8, dimension: Dimension) -> bool {
+    dimension == Dimension::Overworld
+        && (SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_START..=SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_END)
+            .contains(&chunk_version)
+}
+
+/// Converts a subchunk key's raw, on-disk index byte to the subchunk's
+/// absolute vertical index.
+///
+/// `chunk_version` is the owning chunk's own version stamp (`0x2c`/`0x76`):
+/// a key carries no version of its own, so this cannot be folded into
+/// [`Key::deserialize`], which only ever sees the raw byte. Outside the
+/// offset window, or outside the Overworld, this is the identity
+/// conversion.
+///
+/// A version-9 subchunk record embeds this same absolute index directly, as
+/// the byte immediately following the version and layer count. Where a
+/// record's embedded byte and this conversion disagree, **the record's byte
+/// is authoritative** -- this function is for a key read before its record
+/// body, or paired with a version-1/8 record, neither of which carries an
+/// embedded index to check against.
+///
+/// Saturates rather than overflowing: a raw index near `i8::MIN` inside the
+/// offset window has no valid absolute equivalent representable in `i8`, and
+/// no real subchunk index comes anywhere close, so clamping is harmless.
+pub fn subchunk_index_from_key(raw_index: i8, chunk_version: u8, dimension: Dimension) -> i8 {
+    if subchunk_key_index_is_offset(chunk_version, dimension) {
+        raw_index.saturating_sub(SUBCHUNK_KEY_INDEX_OFFSET)
+    } else {
+        raw_index
+    }
+}
+
+/// Inverse of [`subchunk_index_from_key`]: converts a subchunk's absolute
+/// vertical index to the raw index byte that belongs on its key.
+///
+/// Saturates rather than overflowing, for the same reason as
+/// [`subchunk_index_from_key`].
+pub fn subchunk_index_to_key(absolute_index: i8, chunk_version: u8, dimension: Dimension) -> i8 {
+    if subchunk_key_index_is_offset(chunk_version, dimension) {
+        absolute_index.saturating_add(SUBCHUNK_KEY_INDEX_OFFSET)
+    } else {
+        absolute_index
+    }
+}
+
 impl Key {
     pub fn size_hint(&self) -> usize {
         let dim_size = if self.dimension == Dimension::Overworld {
@@ -113,6 +173,22 @@ impl Key {
         }
 
         Ok(())
+    }
+
+    /// If this key is a [`KeyVariant::SubChunk`], returns the subchunk's
+    /// absolute vertical index -- see [`subchunk_index_from_key`] for what
+    /// `chunk_version` means and the invariant that a version-9 record's own
+    /// embedded byte takes precedence over this conversion. Returns `None`
+    /// for every other key variant.
+    pub fn subchunk_absolute_index(&self, chunk_version: u8) -> Option<i8> {
+        match self.data {
+            KeyVariant::SubChunk { index } => Some(subchunk_index_from_key(
+                index,
+                chunk_version,
+                self.dimension,
+            )),
+            _ => None,
+        }
     }
 
     /// Maps a chunk key tag byte to its `KeyVariant`, if it is a recognized one.
@@ -399,5 +475,91 @@ mod tests {
 
         let mut cursor = Cursor::new(buf.as_slice());
         assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn subchunk_index_offset_applies_at_window_boundaries() {
+        // Chunk version 25 is the first version in the offset window.
+        assert_eq!(subchunk_index_from_key(4, 25, Dimension::Overworld), 0);
+        assert_eq!(subchunk_index_to_key(0, 25, Dimension::Overworld), 4);
+
+        // Chunk version 28 is the last version in the window.
+        assert_eq!(subchunk_index_from_key(0, 28, Dimension::Overworld), -4);
+        assert_eq!(subchunk_index_to_key(-4, 28, Dimension::Overworld), 0);
+    }
+
+    #[test]
+    fn subchunk_index_offset_absent_just_outside_window() {
+        // 24 and 29 are one step outside the window on either side.
+        assert_eq!(subchunk_index_from_key(4, 24, Dimension::Overworld), 4);
+        assert_eq!(subchunk_index_from_key(4, 29, Dimension::Overworld), 4);
+    }
+
+    #[test]
+    fn subchunk_index_offset_absent_outside_overworld() {
+        for dimension in [Dimension::Nether, Dimension::End, Dimension::Undefined] {
+            assert_eq!(subchunk_index_from_key(4, 26, dimension), 4);
+            assert_eq!(subchunk_index_to_key(4, 26, dimension), 4);
+        }
+    }
+
+    #[test]
+    fn subchunk_index_offset_round_trips_across_the_whole_window() {
+        for chunk_version in 20..=35u8 {
+            for raw in -20i8..20 {
+                let absolute = subchunk_index_from_key(raw, chunk_version, Dimension::Overworld);
+                let back_to_raw =
+                    subchunk_index_to_key(absolute, chunk_version, Dimension::Overworld);
+                assert_eq!(back_to_raw, raw);
+            }
+        }
+    }
+
+    #[test]
+    fn subchunk_index_offset_saturates_instead_of_overflowing_at_the_extremes() {
+        // Inside the window, `raw - 4` would overflow `i8` for raw in
+        // -128..=-125, and `absolute + 4` would overflow for absolute in
+        // 124..=127. The conversions saturate there instead of panicking or
+        // silently wrapping, so round-trip identity does not hold at these
+        // extremes -- only the saturated bound does.
+        for raw in i8::MIN..=i8::MIN + 3 {
+            assert_eq!(
+                subchunk_index_from_key(raw, 25, Dimension::Overworld),
+                i8::MIN
+            );
+        }
+        for absolute in i8::MAX - 3..=i8::MAX {
+            assert_eq!(
+                subchunk_index_to_key(absolute, 25, Dimension::Overworld),
+                i8::MAX
+            );
+        }
+    }
+
+    #[test]
+    fn key_subchunk_absolute_index_uses_the_key_dimension() {
+        let overworld = Key {
+            chunk: ChunkPosition(0, 0),
+            dimension: Dimension::Overworld,
+            data: KeyVariant::SubChunk { index: 4 },
+        };
+        assert_eq!(overworld.subchunk_absolute_index(25), Some(0));
+
+        // Same chunk version and raw index, but not the Overworld: the
+        // key's own dimension must reach the conversion, not just the
+        // window's chunk version, so no offset is applied here.
+        let nether = Key {
+            chunk: ChunkPosition(0, 0),
+            dimension: Dimension::Nether,
+            data: KeyVariant::SubChunk { index: 4 },
+        };
+        assert_eq!(nether.subchunk_absolute_index(25), Some(4));
+
+        let non_subchunk = Key {
+            chunk: ChunkPosition(0, 0),
+            dimension: Dimension::Overworld,
+            data: KeyVariant::ChunkVersion,
+        };
+        assert_eq!(non_subchunk.subchunk_absolute_index(25), None);
     }
 }
