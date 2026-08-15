@@ -1,5 +1,6 @@
 pub mod biome;
 pub mod bits;
+pub mod chunk;
 pub mod color;
 pub mod db;
 pub mod error;

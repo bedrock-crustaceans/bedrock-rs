@@ -42,6 +42,44 @@ pub enum KeyVariant {
 }
 
 impl KeyVariant {
+    /// Whether this variant's on-disk key carries a real chunk position and
+    /// dimension, as opposed to [`KeyVariant::LocalPlayer`], whose `Key` is
+    /// a fixed placeholder because the underlying key is a bare string with
+    /// no coordinates in it at all. Used to decide chunk record-group
+    /// membership: only chunk-scoped variants can belong to one.
+    ///
+    /// Written as an exhaustive match with no wildcard arm, like
+    /// [`Self::discriminant`] just below -- a variant added later must be
+    /// placed here explicitly rather than silently inheriting `true` from a
+    /// catch-all.
+    pub const fn is_chunk_scoped(&self) -> bool {
+        match self {
+            KeyVariant::Biome3d => true,
+            KeyVariant::ChunkVersion => true,
+            KeyVariant::HeightMap => true,
+            KeyVariant::SubChunk { .. } => true,
+            KeyVariant::LegacyTerrain => true,
+            KeyVariant::BlockEntity => true,
+            KeyVariant::Entity => true,
+            KeyVariant::PendingTicks => true,
+            KeyVariant::BiomeState => true,
+            KeyVariant::FinalizedState => true,
+            KeyVariant::BorderBlocks => true,
+            KeyVariant::HardcodedSpawnAreas => true,
+            KeyVariant::RandomTicks => true,
+            KeyVariant::Checksums => true,
+            KeyVariant::GenerationSeed => true,
+            KeyVariant::GeneratedPreCavesAndCliffsBlending => true,
+            KeyVariant::BlendingBiomeHeight => true,
+            KeyVariant::MetadataHash => true,
+            KeyVariant::BlendingData => true,
+            KeyVariant::ActorDigestVersion => true,
+            KeyVariant::LegacyVersion => true,
+            KeyVariant::AabbVolumes => true,
+            KeyVariant::LocalPlayer => false,
+        }
+    }
+
     /// Returns the discriminant of `self`.
     pub const fn discriminant(&self) -> u8 {
         match self {
@@ -561,5 +599,29 @@ mod tests {
             data: KeyVariant::ChunkVersion,
         };
         assert_eq!(non_subchunk.subchunk_absolute_index(25), None);
+    }
+
+    #[test]
+    fn is_chunk_scoped_is_false_only_for_local_player() {
+        assert!(!KeyVariant::LocalPlayer.is_chunk_scoped());
+
+        for variant in [
+            KeyVariant::Biome3d,
+            KeyVariant::ChunkVersion,
+            KeyVariant::HeightMap,
+            KeyVariant::SubChunk { index: 3 },
+            KeyVariant::LegacyTerrain,
+            KeyVariant::BlockEntity,
+            KeyVariant::Entity,
+            KeyVariant::FinalizedState,
+            KeyVariant::Checksums,
+            KeyVariant::LegacyVersion,
+            KeyVariant::AabbVolumes,
+        ] {
+            assert!(
+                variant.is_chunk_scoped(),
+                "{variant:?} should be chunk-scoped"
+            );
+        }
     }
 }
