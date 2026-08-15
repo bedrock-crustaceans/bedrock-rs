@@ -20,21 +20,31 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 ### Crate Breakdown:
 
 - [`bedrock::shared`](crates/shared)  
-    - Shared data types used across other crates.
-    - Support for deriving macros defined in other modules.  
+    - Shared data types (vectors, actor runtime/unique IDs, world enums) used across other crates.  
+    - Common codec traits that other crates build their (de)serialization on.  
 
-- [`bedrock::form`](crates/form)  
-    - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
+- [`bedrock::protocol`](crates/protocol)  
+    - Complete implementation of the Minecraft Bedrock protocol.  
+    - Support for both server-side and client-side operations.  
+    - Multi-protocol compatibility for handling multiple versions seamlessly.  
+
+- [`bedrock::network`](crates/network)  
+    - RakNet-based transport layer for accepting, tracking, and communicating with client connections.  
+    - Packet batching/codec support, including Zlib/Snappy compression and AES encryption.  
+    - Server MOTD (server list ping) construction and connection listener utilities.  
+
+- [`bedrock::auth`](crates/auth)  
+    - Validation of Xbox Live login identity chains (JWTs) against Microsoft’s OIDC discovery service.  
+    - Support for online, offline, and guest authentication types.  
+    - Optional async API, enabled via the `auth-async` feature.  
 
 - [`bedrock::addon`](crates/addon)  
     - Datatypes for defining Minecraft Addon structures.  
     - Serialization and deserialization support for Addons.  
     - A programmatic approach to creating Addons easily.  
 
-- [`bedrock::protocol`](crates/protocol)  
-    - Complete implementation of the Minecraft Bedrock protocol.  
-    - Support for both server-side and client-side operations.  
-    - Multi-protocol compatibility for handling multiple versions seamlessly.  
+- [`bedrock::form`](crates/form)  
+    - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
 
 - [`bedrock::level`](crates/level)  
     - Data structures for managing Minecraft Bedrock levels.  
