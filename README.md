@@ -8,7 +8,7 @@
 - **Common Implementations:** Reusable components for various Minecraft Bedrock needs.  
 - **Easy-to-Use API:** Streamlined interfaces to make development efficient and enjoyable.  
 
-Join our growing community on Discord to learn more about the project’s future, seek support, or collaborate with others:  
+Join our growing community on Discord to learn more about the project’s future, seek support, or collaborate with others:
 **[Join our Discord](https://discord.com/invite/VCVcrvt3JC)**  
 
 ---
