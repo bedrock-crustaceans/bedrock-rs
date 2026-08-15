@@ -454,6 +454,30 @@ mod tests {
         assert_eq!(entity.x, 3);
     }
 
+    /// A `Banner`'s `Base` key is a real, confirmed case of a payload field
+    /// arriving under a wider tag than its declared type: the same real
+    /// world writes `Color` as a `Byte` in every `Bed` record and as an `Int`
+    /// in every `Banner` record, so `Color`'s `lenient_width(i32)` is load
+    /// bearing, not defensive.
+    #[test]
+    fn banner_base_accepts_a_wider_tag_than_color_declares() {
+        let record = Value::Compound(Compound::from_iter([
+            ("x".into(), Value::Int(1)),
+            ("y".into(), Value::Int(2)),
+            ("z".into(), Value::Int(3)),
+            ("isMovable".into(), Value::Byte(0)),
+            ("id".into(), Value::String("Banner".into())),
+            ("Base".into(), Value::Int(13)),
+            ("Type".into(), Value::Int(0)),
+        ]));
+
+        let entity = BlockEntity::from_value(record).unwrap();
+        let BlockData::Banner(banner) = &entity.data else {
+            panic!("expected a banner");
+        };
+        assert_eq!(banner.base, bedrock_level::color::Color::Green);
+    }
+
     /// An id no variant claims is reported rather than silently dropped.
     #[test]
     fn unknown_id_is_an_error() {
