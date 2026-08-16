@@ -11,17 +11,22 @@
 //! everything else exactly as read, and write the result back unchanged in
 //! every byte it did not touch.
 //!
-//! **Entities are not part of this group.** On 1.18.30+ worlds an entity
-//! lives under `digp`/`actorprefix` keys, a different wire shape (an ASCII
-//! prefix plus coordinates, no tag byte) that this layer does not parse yet
-//! -- that is the not-yet-implemented Phase 2 actor-storage task's job, and
-//! entities routing through `digp`/`actorprefix` are also a *recomputed
-//! index* rather than a preserve-verbatim record, so they do not belong in
-//! this generic byte-preservation container even once that parsing exists.
-//! A world can carry thousands of these per chunk (one imported fixture has
-//! 793 `digp` and 3748 `actorprefix` keys) and none of them are read,
-//! written, or otherwise touched by [`ChunkRecords`]: a caller copying
-//! chunks through this API alone drops every entity.
+//! **Entities are split across two keys, and only one of them is part of
+//! this group.** On 1.18.30+ worlds an entity lives under `digp`/
+//! `actorprefix`: `digp` is this chunk's actor digest -- a flat array of
+//! `actorprefix` storage keys, chunk-scoped like everything else here, so it
+//! is a normal member of the group under [`KeyVariant::ActorDigest`] and its
+//! raw bytes pass through a read-modify-write exactly like any other record.
+//! `actorprefix` itself is *not* a member: it is keyed by an 8-byte storage
+//! key with no chunk coordinates in it at all (so, unlike `digp`, there is
+//! no `(chunk, dimension)` to file it under), and per architecture decision
+//! 13 the digest is a recomputed index over it rather than a
+//! preserve-verbatim record -- see `crate::actor` for reading the resolved
+//! `actorprefix` records a chunk's digest points at, and for the legacy
+//! inline `0x32` list this group already carries as an ordinary member. A
+//! world can carry thousands of `actorprefix` keys (one imported fixture has
+//! 793 `digp` and 3748 `actorprefix` keys); none of the latter are read,
+//! written, or otherwise touched by [`ChunkRecords`] itself.
 
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
@@ -44,11 +49,13 @@ use crate::types::ChunkPosition;
 /// with [`take`] and putting their re-encoded replacements back with
 /// [`insert`]; whatever is never taken passes through untouched.
 ///
-/// This does **not** include entities. `digp`/`actorprefix` keys are a
-/// different wire shape this layer does not parse (see the module docs),
-/// so a group built here never contains them and writing one back never
-/// touches them either -- they are neither preserved nor destroyed by this
-/// type, simply untouched, and the future actor-storage layer owns them.
+/// This includes `digp` (the actor digest) but **not** `actorprefix`. `digp`
+/// is chunk-scoped like every other record here, so it is a normal member of
+/// the group, carried through a read-modify-write like any other raw record.
+/// `actorprefix` has no chunk coordinates in its own key at all, so it can
+/// never be a member of any group here -- see the module docs and
+/// `crate::actor` for resolving a chunk's `digp` entries to their
+/// `actorprefix` records.
 ///
 /// [`take`]: ChunkRecords::take
 /// [`insert`]: ChunkRecords::insert
@@ -170,8 +177,9 @@ impl ChunkRecords {
     /// read from a database and written back through this reproduces every
     /// record byte for byte, which is architecture decision 3's raw-layer
     /// guarantee at its rawest -- this type adds grouping on top of that
-    /// guarantee, not a relaxation of it. Entities under `digp`/`actorprefix`
-    /// are outside this group entirely (see the module docs) and this never
+    /// guarantee, not a relaxation of it -- including for this chunk's
+    /// `digp` record, which is an ordinary member. `actorprefix` records are
+    /// outside this group entirely (see the module docs) and this never
     /// touches them, in either direction.
     pub fn write(&self, db: &Database) -> Result<()> {
         let mut key_buf = Vec::new();
@@ -206,8 +214,9 @@ impl ChunkRecords {
     ///
     /// Returns `Ok(None)` if no record for this position/dimension exists at
     /// all -- an absent chunk is an ordinary outcome, not an error. The
-    /// returned group never includes entities: see the module docs for why
-    /// `digp`/`actorprefix` are out of scope here.
+    /// returned group includes this chunk's `digp` record if it has one, but
+    /// never `actorprefix` records: see the module docs for why the two are
+    /// treated differently.
     pub fn read(
         db: &Database,
         position: ChunkPosition,
@@ -223,8 +232,8 @@ impl ChunkRecords {
     ///
     /// This is the efficient way to build groups for many chunks: the scan
     /// cost is paid once for the whole call, not once per chunk. As with
-    /// [`read`](Self::read), no returned group includes entities -- see the
-    /// module docs.
+    /// [`read`](Self::read), a returned group includes its `digp` record but
+    /// never `actorprefix` records -- see the module docs.
     pub fn read_many<I>(
         db: &Database,
         wanted: I,
@@ -243,8 +252,9 @@ impl ChunkRecords {
     /// which is the right trade-off for a whole-world pass (a migration
     /// tool, a bulk export) and the wrong one for touching a handful of
     /// chunks, where [`read_many`](Self::read_many) does the same single
-    /// scan without materializing the rest of the world. No returned group
-    /// includes entities -- see the module docs.
+    /// scan without materializing the rest of the world. A returned group
+    /// includes its `digp` record but never `actorprefix` records -- see the
+    /// module docs.
     pub fn read_all(db: &Database) -> Result<HashMap<(ChunkPosition, Dimension), Self>> {
         Self::scan(db, |_| true)
     }
@@ -255,11 +265,12 @@ impl ChunkRecords {
     /// `accept`.
     ///
     /// A key that does not decode as a [`Key`] at all -- a global key such
-    /// as the local-player record, or an entity key (`digp`/`actorprefix`,
-    /// a different wire shape this crate does not parse; see the module
-    /// docs) -- is simply not a member of any chunk's group and is skipped
-    /// rather than erroring: decision 11 only requires failing loudly on a
-    /// malformed *member* of a group, and a key that never parses as a
+    /// as the local-player record, or an `actorprefix` key (keyed by an
+    /// 8-byte storage key with no chunk coordinates at all, so it can never
+    /// parse as a [`Key`]; see the module docs and `crate::actor`) -- is
+    /// simply not a member of any chunk's group and is skipped rather than
+    /// erroring: decision 11 only requires failing loudly on a malformed
+    /// *member* of a group, and a key that never parses as a
     /// chunk key was never a candidate member in the first place. Likewise
     /// [`KeyVariant::LocalPlayer`] is excluded even though it does parse --
     /// its `Key` carries a fixed placeholder position rather than real
