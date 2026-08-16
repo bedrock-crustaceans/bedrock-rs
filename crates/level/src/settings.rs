@@ -58,6 +58,11 @@ pub struct Experiments {
     // world saved before it existed.
     #[facet(default)]
     pub caves_and_cliffs: bool,
+    // No fixture carries this one -- it is modeled so a level.dat that does isn't
+    // rejected outright under `deny-unknown-fields`, and so a world saved with it
+    // set is honored the same as `caves_and_cliffs` rather than silently ignored.
+    #[facet(default)]
+    pub caves_and_cliffs_internal: bool,
     #[facet(default)]
     pub armadillo: bool,
     #[facet(rename = "updateAnnouncedLive2023", default)]

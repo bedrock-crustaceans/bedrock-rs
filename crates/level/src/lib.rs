@@ -8,6 +8,7 @@ pub mod db;
 pub mod error;
 pub mod greedy;
 pub mod height_map;
+pub mod height_range;
 pub mod iter;
 pub mod key;
 pub mod lazy;
