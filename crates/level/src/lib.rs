@@ -1,3 +1,4 @@
+pub mod actor;
 pub mod biome;
 pub mod bits;
 pub mod chunk;

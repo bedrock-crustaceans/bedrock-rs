@@ -13,13 +13,23 @@ pub const AUTONOMOUS_ENTITIES: &str = "AutonomousEntities";
 pub const LOCAL_PLAYER: &str = "~local_player";
 pub const VILLAGES: &str = "mVillages";
 
+/// The ASCII prefix on a `digp` (actor digest) key. Unlike every other
+/// chunk-scoped key, `digp` has no single tag byte after the coordinates --
+/// this prefix stands in its place, and comes *before* the coordinates
+/// rather than after, so it needs its own shape in [`Key::serialize`]/
+/// [`Key::deserialize`] rather than flowing through [`KeyVariant::discriminant`]
+/// and [`Key::known_tag`].
+pub const ACTOR_DIGEST_PREFIX: &[u8; 4] = b"digp";
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum KeyVariant {
     Biome3d = 0x2b,
     ChunkVersion = 0x2c,
     HeightMap = 0x2d,
-    SubChunk { index: i8 } = 0x2f,
+    SubChunk {
+        index: i8,
+    } = 0x2f,
     LegacyTerrain = 0x30,
     BlockEntity = 0x31,
     Entity = 0x32,
@@ -39,6 +49,16 @@ pub enum KeyVariant {
     LegacyVersion = 0x76,
     AabbVolumes = 0x77,
     LocalPlayer,
+    /// `digp`: the actor digest, a flat array of `actorprefix` storage keys
+    /// belonging to this chunk. Chunk-scoped (its on-disk key carries the
+    /// same X/Z/dimension coordinates as every other chunk key) but shaped
+    /// differently on the wire -- see [`ACTOR_DIGEST_PREFIX`]. Per
+    /// architecture decision 13 this is a recomputed index, not a preserved
+    /// cache: a value read here is carried through this raw layer verbatim
+    /// like everything else in a [`crate::chunk::ChunkRecords`] group, but a
+    /// write path that edits actors must regenerate it rather than trust a
+    /// stale copy (Phase 5's GC/maintenance work, not this layer's).
+    ActorDigest,
 }
 
 impl KeyVariant {
@@ -77,6 +97,14 @@ impl KeyVariant {
             KeyVariant::LegacyVersion => true,
             KeyVariant::AabbVolumes => true,
             KeyVariant::LocalPlayer => false,
+            // Unlike `LocalPlayer`, `digp`'s on-disk key really does carry
+            // this chunk's X/Z/dimension -- it is the digest *of* this
+            // chunk's actors, not a global record wearing a placeholder
+            // position. `actorprefix` records are the ones with no
+            // coordinates at all, and they are not `Key`s/`KeyVariant`s in
+            // the first place (see `crate::actor`), so there is no arm for
+            // them here.
+            KeyVariant::ActorDigest => true,
         }
     }
 
@@ -105,7 +133,15 @@ impl KeyVariant {
             KeyVariant::ActorDigestVersion => 0x41,
             KeyVariant::LegacyVersion => 0x76,
             KeyVariant::AabbVolumes => 0x77,
+            // Neither of these has a real on-disk tag byte: `LocalPlayer` is
+            // a bare string key, and `digp` is identified by
+            // `ACTOR_DIGEST_PREFIX` instead (see its doc comment). Both are
+            // excluded from `known_tag` below and special-cased in
+            // `Key::serialize`/`Key::deserialize`, so this value is never
+            // actually written to disk for either -- it only exists to keep
+            // this match exhaustive.
             KeyVariant::LocalPlayer => u8::MAX,
+            KeyVariant::ActorDigest => u8::MAX,
         }
     }
 }
@@ -134,7 +170,7 @@ const SUBCHUNK_KEY_INDEX_OFFSET: i8 = 4;
 
 /// Whether `chunk_version`/`dimension` falls inside the window where a
 /// subchunk key's index byte carries the `+4` offset.
-fn subchunk_key_index_is_offset(chunk_version: u8, dimension: Dimension) -> bool {
+pub(crate) fn subchunk_key_index_is_offset(chunk_version: u8, dimension: Dimension) -> bool {
     dimension == Dimension::Overworld
         && (SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_START..=SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_END)
             .contains(&chunk_version)
@@ -180,6 +216,20 @@ pub fn subchunk_index_to_key(absolute_index: i8, chunk_version: u8, dimension: D
     }
 }
 
+/// Maps an on-disk dimension `i32` field to a [`Dimension`], if it is one of
+/// the ids [`Key::serialize`] can produce (1 = Nether, 2 = End, 3 =
+/// Undefined; 0/overworld is never written explicitly and has no arm here).
+/// Shared by every chunk-key shape that carries an explicit dimension field
+/// -- the tag-byte scheme and `digp` alike.
+fn known_dimension_id(id: i32) -> Option<Dimension> {
+    match id {
+        1 => Some(Dimension::Nether),
+        2 => Some(Dimension::End),
+        3 => Some(Dimension::Undefined),
+        _ => None,
+    }
+}
+
 impl Key {
     pub fn size_hint(&self) -> usize {
         let dim_size = if self.dimension == Dimension::Overworld {
@@ -188,16 +238,35 @@ impl Key {
             4
         };
 
-        let data_size = if let KeyVariant::SubChunk { .. } = &self.data {
-            1
-        } else {
-            0
-        };
-
-        4 + 4 + dim_size + 1 + data_size
+        match &self.data {
+            KeyVariant::LocalPlayer => LOCAL_PLAYER.len(),
+            // Prefix instead of a tag byte, and no index byte -- see
+            // `ACTOR_DIGEST_PREFIX`.
+            KeyVariant::ActorDigest => ACTOR_DIGEST_PREFIX.len() + 4 + 4 + dim_size,
+            KeyVariant::SubChunk { .. } => 4 + 4 + dim_size + 1 + 1,
+            _ => 4 + 4 + dim_size + 1,
+        }
     }
 
     pub fn serialize<W: Write>(&self, mut writer: W) -> Result<()> {
+        // Both of these are string-shaped keys with no tag byte, not the
+        // generic `x | z | dimension? | tag | index?` layout every other
+        // variant shares below -- `LocalPlayer` has no coordinates at all,
+        // and `digp` puts its identifying prefix *before* the coordinates
+        // rather than a tag byte after them.
+        if self.data == KeyVariant::LocalPlayer {
+            return Ok(writer.write_all(LOCAL_PLAYER.as_bytes())?);
+        }
+        if self.data == KeyVariant::ActorDigest {
+            writer.write_all(ACTOR_DIGEST_PREFIX)?;
+            writer.write_i32::<LittleEndian>(self.chunk.0)?;
+            writer.write_i32::<LittleEndian>(self.chunk.1)?;
+            if self.dimension != Dimension::Overworld {
+                writer.write_i32::<LittleEndian>(self.dimension as i32)?;
+            }
+            return Ok(());
+        }
+
         writer.write_i32::<LittleEndian>(self.chunk.0)?;
         writer.write_i32::<LittleEndian>(self.chunk.1)?;
 
@@ -233,8 +302,10 @@ impl Key {
     ///
     /// `SubChunk` is intentionally excluded: its wire tag additionally requires a
     /// trailing index byte, which is handled by the caller based on key length.
-    /// `LocalPlayer` has no on-disk tag byte at all -- it is a string key -- so it
-    /// is likewise excluded.
+    /// `LocalPlayer` and `ActorDigest` have no on-disk tag byte at all -- one is a
+    /// bare string key, the other is identified by [`ACTOR_DIGEST_PREFIX`] instead
+    /// -- so both are likewise excluded and handled by their own branches in
+    /// [`Key::deserialize`].
     fn known_tag(tag: u8) -> Option<KeyVariant> {
         Some(match tag {
             0x2b => KeyVariant::Biome3d,
@@ -269,6 +340,41 @@ impl Key {
         let start_position = reader.position();
         let len = reader.stream_len_ext()?;
 
+        // `digp` has its own binary shape -- `ACTOR_DIGEST_PREFIX | x:i32 | z:i32 | dimension:i32?`
+        // -- disjoint in length from every other chunk-key shape below (12/16 bytes here vs.
+        // 9/10/13/14 there), so there is no ambiguity between the two checks on length alone.
+        // Checked first because, unlike the tag-byte shapes, the identifying bytes come before
+        // the coordinates rather than after them.
+        //
+        // This is still a heuristic, not a guarantee, exactly like the tag-byte shapes below: a
+        // string key that happens to be exactly 12 or 16 bytes long and literally starts with
+        // `digp` (and, at 16 bytes, whose bytes 12..16 collide with an accepted dimension id) is
+        // indistinguishable from a real `digp` key on the wire and will be misparsed as one.
+        if matches!(len, 12 | 16) {
+            let mut prefix = [0u8; 4];
+            reader.read_exact(&mut prefix)?;
+            if &prefix == ACTOR_DIGEST_PREFIX {
+                let x = reader.read_i32::<LittleEndian>()?;
+                let z = reader.read_i32::<LittleEndian>()?;
+                let chunk = ChunkPosition(x, z);
+
+                let dimension = if len == 16 {
+                    known_dimension_id(reader.read_i32::<LittleEndian>()?)
+                } else {
+                    Some(Dimension::Overworld)
+                };
+
+                if let Some(dimension) = dimension {
+                    return Ok(Self {
+                        chunk,
+                        dimension,
+                        data: KeyVariant::ActorDigest,
+                    });
+                }
+            }
+            reader.set_position(start_position);
+        }
+
         // Chunk keys have a fixed binary shape: `x:i32 | z:i32 | dimension:i32? | tag:u8 | index:i8?`.
         // The dimension field is omitted for the overworld (dimension 0 is implied and never
         // written on disk), and the trailing index byte is present only for `SubChunk`. That
@@ -292,12 +398,7 @@ impl Key {
                 // (1 = Nether, 2 = End) plus the undefined marker (3) that `serialize`
                 // can emit. 0 (overworld) is never written explicitly, and anything else
                 // is not a chunk key; reject and fall back to string-key parsing below.
-                match reader.read_i32::<LittleEndian>()? {
-                    1 => Some(Dimension::Nether),
-                    2 => Some(Dimension::End),
-                    3 => Some(Dimension::Undefined),
-                    _ => None,
-                }
+                known_dimension_id(reader.read_i32::<LittleEndian>()?)
             } else {
                 Some(Dimension::Overworld)
             };
@@ -463,6 +564,101 @@ mod tests {
         assert_eq!(key.data, KeyVariant::LocalPlayer);
     }
 
+    /// `Key::serialize` previously fell through to the generic tag-byte shape
+    /// for `LocalPlayer` (writing 8 zero coordinate bytes plus a `0xff` tag
+    /// rather than `~local_player`'s 13 ASCII bytes), so it never actually
+    /// round-tripped -- nothing exercised `serialize` on this variant before.
+    /// Fixed alongside `digp`'s equally string-shaped key.
+    #[test]
+    fn local_player_key_round_trips() {
+        let key = Key {
+            chunk: ChunkPosition(0, 0),
+            dimension: Dimension::Overworld,
+            data: KeyVariant::LocalPlayer,
+        };
+
+        let mut buf = Vec::new();
+        key.serialize(&mut buf).unwrap();
+        assert_eq!(buf, LOCAL_PLAYER.as_bytes());
+        assert_eq!(key.size_hint(), LOCAL_PLAYER.len());
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn overworld_digp_key_12_bytes() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(ACTOR_DIGEST_PREFIX);
+        buf.extend_from_slice(&3i32.to_le_bytes());
+        buf.extend_from_slice(&(-7i32).to_le_bytes());
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.chunk, ChunkPosition(3, -7));
+        assert_eq!(key.dimension, Dimension::Overworld);
+        assert_eq!(key.data, KeyVariant::ActorDigest);
+        assert!(key.data.is_chunk_scoped());
+
+        let mut re_encoded = Vec::new();
+        key.serialize(&mut re_encoded).unwrap();
+        assert_eq!(re_encoded, buf, "digp key must re-encode byte-identically");
+        assert_eq!(key.size_hint(), buf.len());
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn nether_digp_key_16_bytes() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(ACTOR_DIGEST_PREFIX);
+        buf.extend_from_slice(&11i32.to_le_bytes());
+        buf.extend_from_slice(&22i32.to_le_bytes());
+        buf.extend_from_slice(&1i32.to_le_bytes()); // Nether
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.chunk, ChunkPosition(11, 22));
+        assert_eq!(key.dimension, Dimension::Nether);
+        assert_eq!(key.data, KeyVariant::ActorDigest);
+
+        let mut re_encoded = Vec::new();
+        key.serialize(&mut re_encoded).unwrap();
+        assert_eq!(re_encoded, buf, "digp key must re-encode byte-identically");
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn digp_key_with_invalid_dimension_is_rejected() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(ACTOR_DIGEST_PREFIX);
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.extend_from_slice(&99i32.to_le_bytes()); // not a valid dimension id
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    /// A 12/16-byte key that merely starts with `digp` bytes but isn't
+    /// actually the digest prefix (i.e. a string key that happens to share
+    /// the first four bytes) must not be misparsed. This is a synthetic
+    /// stress on the length/prefix check, distinct from the existing
+    /// 8-byte `string_key_digp_prefix_is_not_a_chunk_key` case above, which
+    /// exercises a length neither shape accepts.
+    #[test]
+    fn twelve_byte_key_with_wrong_prefix_is_not_a_digp_key() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(b"DIGP"); // wrong case, not ACTOR_DIGEST_PREFIX
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
     #[test]
     fn string_key_biome_data_9_bytes_is_not_a_chunk_key() {
         // "BiomeData" happens to be 9 bytes, the same length as an overworld chunk key,
@@ -617,6 +813,7 @@ mod tests {
             KeyVariant::Checksums,
             KeyVariant::LegacyVersion,
             KeyVariant::AabbVolumes,
+            KeyVariant::ActorDigest,
         ] {
             assert!(
                 variant.is_chunk_scoped(),
