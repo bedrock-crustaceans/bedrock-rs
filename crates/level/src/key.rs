@@ -216,17 +216,36 @@ pub fn subchunk_index_to_key(absolute_index: i8, chunk_version: u8, dimension: D
     }
 }
 
-/// Maps an on-disk dimension `i32` field to a [`Dimension`], if it is one of
-/// the ids [`Key::serialize`] can produce (1 = Nether, 2 = End, 3 =
-/// Undefined; 0/overworld is never written explicitly and has no arm here).
-/// Shared by every chunk-key shape that carries an explicit dimension field
-/// -- the tag-byte scheme and `digp` alike.
+/// Highest dimension id [`known_dimension_id`] accepts as a real dimension field rather
+/// than rejecting it back to string-key parsing.
+///
+/// Bedrock's own custom-dimension registration starts well above the vanilla ids and
+/// assigns them sequentially: ids are handed out starting at 1000 and walk upward by one
+/// each time a new one is needed, so no known world's dimension id comes anywhere close to
+/// this bound, and a world would need thousands of distinct add-on dimensions to approach
+/// it. It is also comfortably below
+/// what four bytes of incidental string content would decode to: reinterpreted as a
+/// little-endian `i32`, four printable-ASCII bytes land at 538 million or higher (`0x20`
+/// is the lowest printable byte), so this bound keeps rejecting essentially all of that
+/// collision space while accepting any id a real add-on world could plausibly register.
+/// It is a heuristic, not a guarantee -- see the residual-ambiguity note on
+/// [`Key::deserialize`] -- chosen to keep as much of the old check's discriminating power
+/// as widening the accepted set allows.
+const MAX_ACCEPTED_DIMENSION_ID: i32 = u16::MAX as i32;
+
+/// Maps an on-disk dimension `i32` field to a [`Dimension`], if it is structurally
+/// plausible as one: strictly between 0 (exclusive -- overworld is never written
+/// explicitly, so a dimensioned key carrying literal 0 is not a valid chunk key) and
+/// [`MAX_ACCEPTED_DIMENSION_ID`] (inclusive). Ids 1-3 map to the named
+/// [`Dimension`] variants for the same reasons as before this bound existed; anything
+/// else in range becomes [`Dimension::Other`], carrying the id unchanged. Shared by every
+/// chunk-key shape that carries an explicit dimension field -- the tag-byte scheme and
+/// `digp` alike.
 fn known_dimension_id(id: i32) -> Option<Dimension> {
-    match id {
-        1 => Some(Dimension::Nether),
-        2 => Some(Dimension::End),
-        3 => Some(Dimension::Undefined),
-        _ => None,
+    if (1..=MAX_ACCEPTED_DIMENSION_ID).contains(&id) {
+        Some(Dimension::from(id))
+    } else {
+        None
     }
 }
 
@@ -262,7 +281,7 @@ impl Key {
             writer.write_i32::<LittleEndian>(self.chunk.0)?;
             writer.write_i32::<LittleEndian>(self.chunk.1)?;
             if self.dimension != Dimension::Overworld {
-                writer.write_i32::<LittleEndian>(self.dimension as i32)?;
+                writer.write_i32::<LittleEndian>(i32::from(self.dimension))?;
             }
             return Ok(());
         }
@@ -271,7 +290,7 @@ impl Key {
         writer.write_i32::<LittleEndian>(self.chunk.1)?;
 
         if self.dimension != Dimension::Overworld {
-            writer.write_i32::<LittleEndian>(self.dimension as i32)?;
+            writer.write_i32::<LittleEndian>(i32::from(self.dimension))?;
         }
 
         writer.write_u8(self.data.discriminant())?;
@@ -386,7 +405,12 @@ impl Key {
         // 9, 10, 13, or 14 bytes long, whose byte at the tag offset collides with a known tag
         // (and, for 13/14, whose bytes 8..12 collide with an accepted dimension id), is indistinguishable
         // from a real chunk key on the wire and will be misparsed as one. The format gives no
-        // further signal to disambiguate.
+        // further signal to disambiguate. Accepting add-on ids weakened this: the dimension
+        // field used to rule out all but 3 of the 2^32 possible i32 values (1, 2, 3), and now
+        // rules out all but `MAX_ACCEPTED_DIMENSION_ID` of them -- see that constant's doc
+        // comment for why the residual window is still a small, deliberately chosen slice of
+        // the id space rather than the whole thing. The tag-byte check carries the remaining
+        // discriminating power and still has to agree independently.
         if matches!(len, 9 | 10 | 13 | 14) {
             let x = reader.read_i32::<LittleEndian>()?;
             let z = reader.read_i32::<LittleEndian>()?;
@@ -394,10 +418,7 @@ impl Key {
 
             let dimensioned = len == 13 || len == 14;
             let dimension = if dimensioned {
-                // Accepted ids are exactly the on-disk dimension ids the format defines
-                // (1 = Nether, 2 = End) plus the undefined marker (3) that `serialize`
-                // can emit. 0 (overworld) is never written explicitly, and anything else
-                // is not a chunk key; reject and fall back to string-key parsing below.
+                // See `known_dimension_id` for exactly which ids are accepted and why.
                 known_dimension_id(reader.read_i32::<LittleEndian>()?)
             } else {
                 Some(Dimension::Overworld)
@@ -636,10 +657,36 @@ mod tests {
         buf.extend_from_slice(ACTOR_DIGEST_PREFIX);
         buf.extend_from_slice(&1i32.to_le_bytes());
         buf.extend_from_slice(&2i32.to_le_bytes());
-        buf.extend_from_slice(&99i32.to_le_bytes()); // not a valid dimension id
+        // Outside `MAX_ACCEPTED_DIMENSION_ID`, unlike the add-on-dimension-range case
+        // covered by `digp_key_with_an_add_on_dimension_id_round_trips` below.
+        buf.extend_from_slice(&(MAX_ACCEPTED_DIMENSION_ID + 1).to_le_bytes());
 
         let mut cursor = Cursor::new(buf.as_slice());
         assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    /// A dimension id in the widened but still-bounded accepted range (here, a value in
+    /// the id space real add-on dimensions actually use) parses as [`Dimension::Other`]
+    /// rather than being rejected -- this is the behavior change this widening exists for.
+    #[test]
+    fn digp_key_with_an_add_on_dimension_id_round_trips() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(ACTOR_DIGEST_PREFIX);
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.extend_from_slice(&1000i32.to_le_bytes());
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.dimension, Dimension::Other(1000));
+        assert_eq!(key.data, KeyVariant::ActorDigest);
+
+        let mut re_encoded = Vec::new();
+        key.serialize(&mut re_encoded).unwrap();
+        assert_eq!(re_encoded, buf, "digp key must re-encode byte-identically");
+
+        roundtrip(&key);
     }
 
     /// A 12/16-byte key that merely starts with `digp` bytes but isn't
@@ -704,11 +751,68 @@ mod tests {
         let mut buf = Vec::new();
         buf.extend_from_slice(&1i32.to_le_bytes());
         buf.extend_from_slice(&2i32.to_le_bytes());
-        buf.extend_from_slice(&7i32.to_le_bytes()); // not a valid dimension id
+        // Negative ids are never valid: no real dimension id is negative, so
+        // `known_dimension_id` rejects them regardless of magnitude.
+        buf.extend_from_slice(&(-7i32).to_le_bytes());
         buf.push(0x2d); // HeightMap
 
         let mut cursor = Cursor::new(buf.as_slice());
         assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn thirteen_byte_key_just_past_the_accepted_dimension_bound_is_rejected() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.extend_from_slice(&(MAX_ACCEPTED_DIMENSION_ID + 1).to_le_bytes());
+        buf.push(0x2d); // HeightMap
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        assert!(Key::deserialize(&mut cursor).is_err());
+    }
+
+    #[test]
+    fn thirteen_byte_key_at_the_accepted_dimension_bound_round_trips() {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&1i32.to_le_bytes());
+        buf.extend_from_slice(&2i32.to_le_bytes());
+        buf.extend_from_slice(&MAX_ACCEPTED_DIMENSION_ID.to_le_bytes());
+        buf.push(0x2d); // HeightMap
+
+        let mut cursor = Cursor::new(buf.as_slice());
+        let key = Key::deserialize(&mut cursor).unwrap();
+
+        assert_eq!(key.dimension, Dimension::Other(MAX_ACCEPTED_DIMENSION_ID));
+        assert_eq!(key.data, KeyVariant::HeightMap);
+
+        roundtrip(&key);
+    }
+
+    /// A dimension id well inside the widened range but outside 0-3 parses as
+    /// [`Dimension::Other`] and re-encodes to the identical bytes -- the widened
+    /// round-trip pinned at the type level in `dimension.rs`, exercised here through
+    /// the actual key wire format.
+    #[test]
+    fn thirteen_byte_key_with_an_add_on_dimension_id_round_trips() {
+        let key = Key {
+            chunk: ChunkPosition(5, -6),
+            dimension: Dimension::Other(1000),
+            data: KeyVariant::ChunkVersion,
+        };
+
+        roundtrip(&key);
+    }
+
+    #[test]
+    fn fourteen_byte_subchunk_key_with_an_add_on_dimension_id_round_trips() {
+        let key = Key {
+            chunk: ChunkPosition(5, -6),
+            dimension: Dimension::Other(2024),
+            data: KeyVariant::SubChunk { index: -12 },
+        };
+
+        roundtrip(&key);
     }
 
     #[test]
