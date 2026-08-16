@@ -1,6 +1,8 @@
+pub mod aabb_volumes;
 pub mod actor;
 pub mod biome;
 pub mod bits;
+pub mod border_blocks;
 pub mod chunk;
 pub mod chunk_version;
 pub mod color;
