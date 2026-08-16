@@ -30,7 +30,7 @@ fn lazy_load_benchmark(data: &[u8]) {
 fn lazy_iter_benchmark(data: &SubChunk) {
     let iter = data.get_layer(0).unwrap().iter();
     for block in iter {
-        let name = &block.name;
+        let name = block.name();
         std::hint::black_box(name);
     }
 }
@@ -43,7 +43,7 @@ fn greedy_load_benchmark(data: &[u8]) {
 fn greedy_iter_benchmark(data: &SubChunk) {
     let iter = data.get_layer(0).unwrap().iter();
     for block in iter {
-        let name = &block.name;
+        let name = block.name();
         std::hint::black_box(name);
     }
 }
