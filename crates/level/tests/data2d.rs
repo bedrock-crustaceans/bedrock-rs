@@ -44,10 +44,14 @@ fn decodes_and_round_trips_every_record() {
             }
 
             let dim_name = match key.dimension {
-                bedrock_shared::world::dimension::Dimension::Overworld => "overworld",
-                bedrock_shared::world::dimension::Dimension::Nether => "nether",
-                bedrock_shared::world::dimension::Dimension::End => "end",
-                bedrock_shared::world::dimension::Dimension::Undefined => "undefined",
+                bedrock_shared::world::dimension::Dimension::Overworld => "overworld".to_string(),
+                bedrock_shared::world::dimension::Dimension::Nether => "nether".to_string(),
+                bedrock_shared::world::dimension::Dimension::End => "end".to_string(),
+                bedrock_shared::world::dimension::Dimension::Undefined => "undefined".to_string(),
+                // No vanilla fixture carries an add-on dimension (see
+                // `crates/level/tests/key_dimension_widening.rs`), so this arm is
+                // structurally required but never exercised by the corpus.
+                bedrock_shared::world::dimension::Dimension::Other(id) => format!("dimension {id}"),
             };
 
             let bytes: Vec<u8> = kv.value().into();
@@ -64,7 +68,7 @@ fn decodes_and_round_trips_every_record() {
             // column), so it must fall within the block range the fixture's
             // subchunks actually span, with one block of slack below the
             // floor for an all-air column.
-            if let Some([min, max]) = fixture.subchunk_height_range.get(dim_name) {
+            if let Some([min, max]) = fixture.subchunk_height_range.get(&dim_name) {
                 for &h in decoded.heights().iter() {
                     let h = h as i32;
                     assert!(
