@@ -12,20 +12,47 @@ use rustc_hash::FxHasher;
 
 use crate::bits::{BitArray, BitArrayIter, IndicesType};
 use crate::error::{Error, Result};
+use crate::greedy::GreedyArray;
 use crate::types::BlockPosition;
 use crate::{Greedy, Lazy, UnpackingMethod};
 
 /// Version of the subchunk.
+///
+/// Carries no explicit discriminants of its own -- [`Self::raw`] gives the on-disk byte --
+/// because [`NonPaletted`](Self::NonPaletted) holds one, and a variant that carries data
+/// forecloses `as u8` for every other variant in the same enum, not just itself.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkVersion {
+    /// The pre-palette layout: a raw `u8` block id per position plus a nibble of metadata,
+    /// with no palette and no bit-packed index array at all. Every version byte other than
+    /// 1, 8 and 9 uses this layout (0 and 2 through 7 are the ones this format is known to
+    /// have used -- no fixture in the corpus carries any of them), and the byte itself
+    /// carries no further meaning beyond distinguishing one on-disk stamp from another --
+    /// decode is identical for all of them. Held here (rather than collapsed to a single
+    /// unit variant) so a decoded subchunk's exact version byte survives a
+    /// read-modify-write.
+    NonPaletted(u8),
     /// Legacy sub chunks are from before the Aquatic update.
     /// These sub chunks only contain a single layer.
-    Legacy = 1,
+    Legacy,
     /// Limited sub chunks are from before the Caves and Cliffs update.
-    Limited = 8,
+    Limited,
     /// Limitless are post Caves and Cliffs. The only difference between `Limitless` and `Limited` is the fact that limitless
     /// contains a sub chunk index.
-    Limitless = 9,
+    Limitless,
+}
+
+impl SubChunkVersion {
+    /// The on-disk version byte for this variant.
+    #[inline]
+    pub const fn raw(self) -> u8 {
+        match self {
+            Self::NonPaletted(v) => v,
+            Self::Legacy => 1,
+            Self::Limited => 8,
+            Self::Limitless => 9,
+        }
+    }
 }
 
 impl TryFrom<u8> for SubChunkVersion {
@@ -33,6 +60,7 @@ impl TryFrom<u8> for SubChunkVersion {
 
     fn try_from(v: u8) -> Result<Self> {
         Ok(match v {
+            0 | 2..=7 => Self::NonPaletted(v),
             1 => Self::Legacy,
             8 => Self::Limited,
             9 => Self::Limitless,
@@ -116,22 +144,26 @@ struct LegacyBlockDef {
     val: i16,
 }
 
-/// One entry in a subchunk layer's palette: either the modern, flattened form
-/// (`name` plus optional `version` and `states`) or the pre-flattening
-/// `{name, val}` form a legacy world's palette stores instead.
+/// One entry in a subchunk layer's palette: the modern, flattened form (`name` plus
+/// optional `version` and `states`), the pre-flattening `{name, val}` form a legacy
+/// world's NBT palette stores instead, or the pre-palette `(id, data)` pair a non-paletted
+/// subchunk's raw arrays carry with no NBT at all.
 ///
-/// A `Vec<PaletteEntry>` rather than folding `val` into [`BlockDef`] as an extra optional
-/// field: `BlockDef` is a public type other decoded structs embed directly
-/// (`ItemStack::block`, `FlowerPot::plant_block`), and those never carry a legacy `val` --
-/// they are always modern flattened states. Adding a field there would widen every one of
-/// those call sites for a case that cannot occur in them. Keeping the two forms as
-/// variants of one palette-entry type instead means a layer's palette is one first-class
-/// list covering both eras, with no second parallel palette or optional-legacy-list
-/// bolted on beside it.
+/// A `Vec<PaletteEntry>` rather than folding the other forms' fields into [`BlockDef`] as
+/// extra optional fields: `BlockDef` is a public type other decoded structs embed directly
+/// (`ItemStack::block`, `FlowerPot::plant_block`), and those never carry a legacy `val` or
+/// a numeric id -- they are always modern flattened states. Adding fields there would widen
+/// every one of those call sites for cases that cannot occur in them. Keeping the three
+/// forms as variants of one palette-entry type instead means a layer's palette is one
+/// first-class list covering every era, with no second or third parallel palette bolted on
+/// beside it -- [`Numeric`](Self::Numeric) extends that same split rather than reopening
+/// the question `Legacy` already settled: on-disk shape differs by era, and a palette entry
+/// models whichever shape it was actually read as.
 ///
-/// `val` is carried opaquely -- an `i16`, not interpreted as a block/data-value pair or
-/// resolved against any table. Deciding what a given `(name, val)` pair actually means is
-/// the upgrade provider's job (Phase 3), not this type's.
+/// `val` and `(id, data)` are carried opaquely -- not interpreted as a block/data-value
+/// pair or resolved against any table. Deciding what either one actually means is the
+/// upgrade provider's job (Phase 3, whose numeric lookup is keyed on exactly the `(id,
+/// data)` pair [`Numeric`](Self::Numeric) preserves), not this type's.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaletteEntry {
     /// The modern, flattened form.
@@ -143,32 +175,54 @@ pub enum PaletteEntry {
         /// The on-disk data value. Opaque -- see this type's doc comment.
         val: i16,
     },
+    /// The pre-palette form a non-paletted subchunk's raw id+nibble arrays carry: a numeric
+    /// block id with no name at all, plus its opaque metadata nibble. Never has a name --
+    /// unlike [`Legacy`](Self::Legacy), which still names the block by string, this era
+    /// predates string block identifiers being written to a subchunk at all.
+    Numeric {
+        /// The on-disk block id.
+        id: u8,
+        /// The on-disk metadata nibble (0..=15). Opaque -- see this type's doc comment.
+        data: u8,
+    },
 }
 
 impl PaletteEntry {
-    /// This entry's block name, regardless of which form it is.
-    pub fn name(&self) -> &str {
+    /// This entry's block name, or `None` for a [`Numeric`](Self::Numeric) entry, which has
+    /// none -- see this type's doc comment.
+    pub fn name(&self) -> Option<&str> {
         match self {
-            Self::Modern(block) => &block.name,
-            Self::Legacy { name, .. } => name,
+            Self::Modern(block) => Some(&block.name),
+            Self::Legacy { name, .. } => Some(name),
+            Self::Numeric { .. } => None,
         }
     }
 
-    /// Borrows the modern form, or `None` if this is a legacy `{name, val}` entry.
+    /// Borrows the modern form, or `None` if this is a legacy or numeric entry.
     pub fn as_block(&self) -> Option<&BlockDef> {
         match self {
             Self::Modern(block) => Some(block),
-            Self::Legacy { .. } => None,
+            Self::Legacy { .. } | Self::Numeric { .. } => None,
         }
     }
 
-    /// The legacy data value, or `None` if this is a modern entry.
+    /// The legacy data value, or `None` if this is not a [`Legacy`](Self::Legacy) entry.
     ///
     /// See this type's doc comment: opaque, not interpreted here.
     pub fn legacy_val(&self) -> Option<i16> {
         match self {
-            Self::Modern(_) => None,
             Self::Legacy { val, .. } => Some(*val),
+            Self::Modern(_) | Self::Numeric { .. } => None,
+        }
+    }
+
+    /// The `(id, data)` pair, or `None` if this is not a [`Numeric`](Self::Numeric) entry.
+    ///
+    /// See this type's doc comment: opaque, not interpreted here.
+    pub fn numeric(&self) -> Option<(u8, u8)> {
+        match self {
+            Self::Numeric { id, data } => Some((*id, *data)),
+            Self::Modern(_) | Self::Legacy { .. } => None,
         }
     }
 }
@@ -205,13 +259,19 @@ impl Hash for PaletteEntry {
     /// analogue of `states` (`minecraft:wool` at different `val`s is a different colour, the
     /// same way two `states` compounds with different entries are different blocks) -- unlike
     /// `BlockDef`'s own `Hash`, which excludes `version` because `version` is a provenance
-    /// stamp, not part of what block a `BlockDef` names.
+    /// stamp, not part of what block a `BlockDef` names. For the numeric form, hashes `id`
+    /// together with `data` -- the same reasoning as `Legacy`, one level further back: `id`
+    /// alone is not the block's whole content identity, `data` is part of it too.
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Self::Modern(block) => block.hash(state),
             Self::Legacy { name, val } => {
                 state.write(name.as_bytes());
                 state.write_i16(*val);
+            }
+            Self::Numeric { id, data } => {
+                state.write_u8(*id);
+                state.write_u8(*data);
             }
         }
     }
@@ -362,13 +422,19 @@ fn write_palette_entry<W: Write>(
             ]));
             nbtx::to_le_bytes_in(writer, &value)?;
         }
+        PaletteEntry::Numeric { .. } => unreachable!(
+            "a numeric palette entry never reaches the NBT-based palette writer -- the only \
+             way to obtain one is decoding a non-paletted subchunk, and that always writes \
+             back through the raw column encoder instead"
+        ),
     }
     Ok(())
 }
 
 /// Iterates over all palette entries in a layer, one per block position. Each yielded entry
 /// resolves to the palette, so it may be a legacy `{name, val}` entry ([`PaletteEntry::Legacy`])
-/// rather than a resolved modern block -- see [`PaletteEntry`].
+/// or a numeric `(id, data)` entry ([`PaletteEntry::Numeric`]) rather than a resolved modern
+/// block -- see [`PaletteEntry`].
 pub struct LayerIter<'l> {
     /// An iterator over the indices
     array_iter: BitArrayIter<'l>,
@@ -436,7 +502,7 @@ pub struct Layer {
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
     array: BitArray,
-    /// List of all different block types in this sub chunk layer -- both eras a real
+    /// List of all different block types in this sub chunk layer -- every era a real
     /// palette can hold, see [`PaletteEntry`].
     palette: Vec<PaletteEntry>,
     /// Used to check which blocks are already in the palette. Block definitions are hashed manually and compared with their hash in this set.
@@ -445,8 +511,9 @@ pub struct Layer {
     /// The field order each *modern* `palette` entry re-encodes with, kept in lock step
     /// with `palette` by index -- both are only ever pushed to, together, in `set` and
     /// `from_disk`, never independently. See [`FieldOrder`]. Meaningless (and never read)
-    /// at an index whose `palette` entry is [`PaletteEntry::Legacy`] -- a legacy entry has
-    /// a fixed field order, nothing for this to track.
+    /// at an index whose `palette` entry is [`PaletteEntry::Legacy`] or
+    /// [`PaletteEntry::Numeric`] -- neither has a `version`/`states` compound to order,
+    /// nothing for this to track.
     entry_order: Vec<FieldOrder>,
 }
 
@@ -471,8 +538,9 @@ impl Layer {
     }
 
     /// Retrieves the palette entry at `position`. The entry may be a legacy `{name, val}`
-    /// entry ([`PaletteEntry::Legacy`]) rather than a resolved modern block, if this layer
-    /// was decoded from a pre-flattening world -- see [`PaletteEntry`].
+    /// entry ([`PaletteEntry::Legacy`]) or a numeric `(id, data)` entry
+    /// ([`PaletteEntry::Numeric`]) rather than a resolved modern block, if this layer was
+    /// decoded from a pre-flattening or pre-palette world -- see [`PaletteEntry`].
     pub fn get<K: Into<BlockPosition>>(&self, position: K) -> Option<&PaletteEntry> {
         let pos = position.into();
         let offset = to_offset(pos);
@@ -645,8 +713,9 @@ where
     type Output = PaletteEntry;
 
     /// Indexes into this layer's resolved palette entries -- the entry returned may be a
-    /// legacy `{name, val}` entry ([`PaletteEntry::Legacy`]) rather than a resolved modern
-    /// block, if this layer was decoded from a pre-flattening world -- see [`PaletteEntry`].
+    /// legacy `{name, val}` entry ([`PaletteEntry::Legacy`]) or a numeric `(id, data)` entry
+    /// ([`PaletteEntry::Numeric`]) rather than a resolved modern block, if this layer was
+    /// decoded from a pre-flattening or pre-palette world -- see [`PaletteEntry`].
     ///
     /// # Panics
     ///
@@ -669,7 +738,7 @@ mod palette_tests {
     /// Builds a one-layer legacy subchunk whose 4096 indices are all zero and
     /// whose palette is the single entry `palette_entry`.
     fn subchunk_with_palette(palette_entry: &nbtx::Value) -> Vec<u8> {
-        let mut out = vec![SubChunkVersion::Legacy as u8];
+        let mut out = vec![SubChunkVersion::Legacy.raw()];
         // One bit per index, so 4096 indices pack into 128 words, all zero.
         out.push(1 << 1);
         out.extend(std::iter::repeat_n(0u8, 128 * 4));
@@ -817,7 +886,7 @@ mod palette_tests {
     /// Builds a one-layer legacy subchunk with a zero bits-per-index header: no index
     /// words, no palette-length word, just the single entry directly after the header.
     fn subchunk_with_zero_bit_layer(palette_entry: &nbtx::Value) -> Vec<u8> {
-        let mut out = vec![SubChunkVersion::Legacy as u8];
+        let mut out = vec![SubChunkVersion::Legacy.raw()];
         out.push(0); // header byte: 0 bits per index, `>> 1` gives 0x00 (Empty).
         out.extend(nbtx::to_le_bytes(palette_entry).unwrap());
         out
@@ -862,7 +931,7 @@ mod palette_tests {
     /// the message names the header value that triggered it.
     #[test]
     fn inherit_header_is_rejected_and_names_the_header_value() {
-        let mut out = vec![SubChunkVersion::Legacy as u8];
+        let mut out = vec![SubChunkVersion::Legacy.raw()];
         out.push(0x7f << 1); // header byte: `>> 1` gives the 0x7f inherit sentinel.
         let err = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(out.as_slice())).unwrap_err();
         assert!(
@@ -952,7 +1021,7 @@ mod palette_tests {
         let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
         let entry = &chunk.get_layer(0).unwrap().palette()[0];
 
-        assert_eq!(entry.name(), "minecraft:wool");
+        assert_eq!(entry.name(), Some("minecraft:wool"));
         assert_eq!(entry.legacy_val(), Some(4));
         assert!(entry.as_block().is_none());
     }
@@ -1003,7 +1072,7 @@ mod palette_tests {
     /// happens to contain one (checked: `v1_12`'s 6,246 legacy entries never sit beside a
     /// modern one in the same record).
     fn subchunk_with_two_entry_palette(entries: [&nbtx::Value; 2]) -> Vec<u8> {
-        let mut out = vec![SubChunkVersion::Legacy as u8];
+        let mut out = vec![SubChunkVersion::Legacy.raw()];
         out.push(1 << 1); // 1 bit per index.
         out.extend(std::iter::repeat_n(0u8, 128 * 4));
         out.extend_from_slice(&2u32.to_le_bytes());
@@ -1026,7 +1095,7 @@ mod palette_tests {
         let palette = chunk.get_layer(0).unwrap().palette();
         assert_eq!(palette.len(), 2);
         assert!(palette[0].as_block().is_some());
-        assert_eq!(palette[1].name(), "minecraft:wool");
+        assert_eq!(palette[1].name(), Some("minecraft:wool"));
         assert_eq!(palette[1].legacy_val(), Some(4));
 
         let mut out = Cursor::new(Vec::new());
@@ -1071,6 +1140,276 @@ pub const fn from_offset(offset: usize) -> BlockPosition {
     let z = (offset >> 4) as u8 & 0xf;
 
     BlockPosition(x, y, z)
+}
+
+/// Builds one non-paletted [`Layer`] incrementally: dedups `(id, data)` pairs into a
+/// palette the same way [`Layer::set`] dedups `BlockDef`s, but keyed on the raw pair rather
+/// than a hashed [`BlockDef`].
+struct NonPalettedLayerBuilder {
+    array: GreedyArray,
+    palette: Vec<PaletteEntry>,
+    entry_order: Vec<FieldOrder>,
+    hashes: HashMap<u64, u16, BuildNoHashHasher<u64>>,
+}
+
+impl NonPalettedLayerBuilder {
+    fn new() -> Self {
+        Self {
+            array: GreedyArray::from(Box::new([0u16; 4096])),
+            palette: Vec::new(),
+            entry_order: Vec::new(),
+            hashes: HashMap::with_hasher(BuildNoHashHasher::default()),
+        }
+    }
+
+    /// Records `(id, data)` at `offset` (a [`to_offset`] index), reusing an existing
+    /// palette entry for the pair if one has already been seen in this layer.
+    fn set(&mut self, offset: usize, id: u8, data: u8) {
+        let entry = PaletteEntry::Numeric { id, data };
+        let hash = Layer::hash_entry(&entry);
+        let index = *self.hashes.entry(hash).or_insert_with(|| {
+            self.palette.push(entry);
+            self.entry_order.push(FieldOrder::default());
+            self.palette.len() as u16 - 1
+        });
+        self.array.set(offset, index);
+    }
+
+    fn finish(self) -> Layer {
+        Layer {
+            array: BitArray::Greedy(self.array),
+            palette: self.palette,
+            hashes: self.hashes,
+            entry_order: self.entry_order,
+        }
+    }
+}
+
+/// Decodes a 16x16xheight raw id+nibble column (`height` a positive multiple of 16) into
+/// one non-paletted [`Layer`] per 16-block vertical slice, bottom slice first.
+///
+/// This is the layout shared by every non-paletted subchunk version byte (0 and 2 through
+/// 7, `height == 16`) and by the established portion of `0x30` LegacyTerrain (`height ==
+/// 128`, giving the eight vertical slices a whole pre-subchunk column is split into):
+/// `16*16*height` raw block ids, X-major then Z then Y (Y fastest), followed by
+/// `16*16*height/2` metadata nibbles in the same order, even index in the low nibble and
+/// odd in the high nibble. A single decoder is correct for both heights because the
+/// on-disk column order and [`to_offset`]'s own X/Z/Y convention for a slice agree on every
+/// axis except how far Y counts before wrapping into the next slice -- routing each
+/// position by `y / 16` into a slice and reusing `to_offset` for its local Y is the whole
+/// difference between the two callers.
+pub(crate) fn decode_nonpaletted_column<R: Read>(
+    reader: &mut R,
+    height: usize,
+) -> Result<Vec<Layer>> {
+    let block_count = 16 * 16 * height;
+    let mut ids = vec![0u8; block_count];
+    reader.read_exact(&mut ids)?;
+    let mut nibbles = vec![0u8; block_count / 2];
+    reader.read_exact(&mut nibbles)?;
+
+    let mut builders: Vec<NonPalettedLayerBuilder> = (0..height / 16)
+        .map(|_| NonPalettedLayerBuilder::new())
+        .collect();
+
+    for (raw_index, &id) in ids.iter().enumerate() {
+        let data = if raw_index % 2 == 0 {
+            nibbles[raw_index / 2] & 0x0f
+        } else {
+            nibbles[raw_index / 2] >> 4
+        };
+
+        // The column is X-major, then Z, then Y fastest: `raw_index` unravels the same way
+        // in reverse, Y first (fastest-varying), then Z, then X.
+        let y = raw_index % height;
+        let xz = raw_index / height;
+        let z = (xz % 16) as u8;
+        let x = (xz / 16) as u8;
+
+        let cy = y / 16;
+        let local_offset = to_offset(BlockPosition(x, (y % 16) as u8, z));
+        builders[cy].set(local_offset, id, data);
+    }
+
+    Ok(builders
+        .into_iter()
+        .map(NonPalettedLayerBuilder::finish)
+        .collect())
+}
+
+/// Encodes `layers` (one per 16-block vertical slice, bottom first) back to the raw
+/// id+nibble column [`decode_nonpaletted_column`] reads, at `layers.len() * 16` total
+/// height.
+///
+/// Every entry in every layer must be [`PaletteEntry::Numeric`] -- this is the inverse of
+/// [`decode_nonpaletted_column`], which never produces anything else, so a non-numeric
+/// entry here means a layer built some other way was passed in by mistake.
+pub(crate) fn encode_nonpaletted_column<W: Write>(writer: &mut W, layers: &[Layer]) -> Result<()> {
+    let height = layers.len() * 16;
+    let block_count = 16 * 16 * height;
+    let mut ids = vec![0u8; block_count];
+    let mut nibbles = vec![0u8; block_count / 2];
+
+    for (raw_index, id_out) in ids.iter_mut().enumerate() {
+        let y = raw_index % height;
+        let xz = raw_index / height;
+        let z = (xz % 16) as u8;
+        let x = (xz / 16) as u8;
+
+        let cy = y / 16;
+        let position = BlockPosition(x, (y % 16) as u8, z);
+        let entry = layers[cy]
+            .get(position)
+            .ok_or(Error::Invalid("non-paletted column layer position"))?;
+        let (id, data) = entry.numeric().ok_or(Error::Invalid(
+            "non-paletted column palette entry is not numeric",
+        ))?;
+
+        *id_out = id;
+        if raw_index % 2 == 0 {
+            nibbles[raw_index / 2] |= data & 0x0f;
+        } else {
+            nibbles[raw_index / 2] |= (data & 0x0f) << 4;
+        }
+    }
+
+    writer.write_all(&ids)?;
+    writer.write_all(&nibbles)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod nonpaletted_tests {
+    use super::*;
+
+    /// Builds a raw non-paletted subchunk record: the version byte, then 4096 ids and 2048
+    /// nibble bytes, each set from `id_at`/`data_at` (called with the on-disk raw index,
+    /// `0..4096`) so a test can place a known value at a hand-computed offset.
+    fn nonpaletted_bytes(
+        version: u8,
+        id_at: impl Fn(usize) -> u8,
+        data_at: impl Fn(usize) -> u8,
+    ) -> Vec<u8> {
+        let mut out = vec![version];
+        for i in 0..4096 {
+            out.push(id_at(i));
+        }
+        for pair in 0..2048 {
+            let low = data_at(pair * 2) & 0x0f;
+            let high = data_at(pair * 2 + 1) & 0x0f;
+            out.push(low | (high << 4));
+        }
+        out
+    }
+
+    /// Every non-paletted version byte round-trips through `SubChunk::from_disk`/`to_disk`
+    /// byte-identically, with a palette built from every id/data pair actually present.
+    #[test]
+    fn every_nonpaletted_version_byte_round_trips_byte_identical() {
+        for version in [0u8, 2, 3, 4, 5, 6, 7] {
+            let bytes = nonpaletted_bytes(version, |i| (i % 251) as u8, |i| (i % 13) as u8);
+
+            let chunk =
+                SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+            assert_eq!(chunk.version(), SubChunkVersion::NonPaletted(version));
+            assert_eq!(chunk.version().raw(), version);
+
+            let mut out = Cursor::new(Vec::new());
+            chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+            assert_eq!(
+                out.into_inner(),
+                bytes,
+                "version {version} did not round-trip"
+            );
+        }
+    }
+
+    /// Hand-computed order pin: a block at `(x, y, z) = (1, 2, 3)` sits at raw on-disk index
+    /// `x*256 + z*16 + y` -- X-major, then Z, then Y fastest -- which is `1*256 + 3*16 + 2 =
+    /// 306`, matching `to_offset`. The id placed at that raw index must resolve back at
+    /// exactly that block position and nowhere else.
+    #[test]
+    fn order_convention_places_a_known_id_at_the_hand_computed_offset() {
+        let (x, y, z) = (1usize, 2usize, 3usize);
+        let target = x * 256 + z * 16 + y;
+        assert_eq!(target, to_offset(BlockPosition(1, 2, 3)));
+
+        let bytes = nonpaletted_bytes(0, |i| if i == target { 0xab } else { 0x00 }, |_| 0);
+
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let layer = chunk.get_layer(0).unwrap();
+
+        assert_eq!(
+            layer.get((1u8, 2u8, 3u8)).unwrap().numeric(),
+            Some((0xab, 0))
+        );
+        // A neighbouring position (Y off by one) must not see the same id.
+        assert_eq!(layer.get((1u8, 1u8, 3u8)).unwrap().numeric(), Some((0, 0)));
+        assert_eq!(layer.get((1u8, 3u8, 3u8)).unwrap().numeric(), Some((0, 0)));
+    }
+
+    /// Nibble-packing pin: raw index 10 (even) is the low nibble of nibble byte 5, raw index
+    /// 11 (odd) is its high nibble. Setting them to different values and decoding must not
+    /// cross-contaminate the two positions.
+    #[test]
+    fn nibble_packing_pins_even_low_odd_high() {
+        let bytes = nonpaletted_bytes(
+            0,
+            |_| 1,
+            |i| {
+                if i == 10 {
+                    3
+                } else if i == 11 {
+                    9
+                } else {
+                    0
+                }
+            },
+        );
+
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let layer = chunk.get_layer(0).unwrap();
+
+        let pos_10 = from_offset(10);
+        let pos_11 = from_offset(11);
+        assert_eq!(layer.get(pos_10).unwrap().numeric(), Some((1, 3)));
+        assert_eq!(layer.get(pos_11).unwrap().numeric(), Some((1, 9)));
+
+        // The packed byte itself carries the low nibble in the low bits.
+        assert_eq!(bytes[1 + 4096 + 5], 0x93);
+    }
+
+    /// A record too short to hold the full 4096 ids and 2048 nibbles errors rather than
+    /// silently decoding a partial or zero-filled layer.
+    #[test]
+    fn truncated_nonpaletted_record_errors() {
+        let mut bytes = nonpaletted_bytes(0, |i| i as u8, |i| (i % 16) as u8);
+        bytes.truncate(bytes.len() - 1);
+        assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
+    }
+
+    /// A record with nothing but the version byte errors -- there is no id/nibble data to
+    /// read at all.
+    #[test]
+    fn empty_nonpaletted_record_errors() {
+        let bytes = vec![2u8];
+        assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
+    }
+
+    /// Two positions sharing the same `(id, data)` pair collapse to one palette entry, and
+    /// the round trip still reproduces both original bytes exactly -- palette deduplication
+    /// does not lose which position had which value.
+    #[test]
+    fn duplicate_id_data_pairs_share_a_palette_entry_and_still_round_trip() {
+        let bytes = nonpaletted_bytes(0, |_| 7, |_| 5);
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let layer = chunk.get_layer(0).unwrap();
+        assert_eq!(layer.palette().len(), 1);
+
+        let mut out = Cursor::new(Vec::new());
+        chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+        assert_eq!(out.into_inner(), bytes);
+    }
 }
 
 /// A Minecraft sub chunk.
@@ -1125,7 +1464,9 @@ impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
     ///
     /// The generic `M` is the unpacking method to use. See [`from_disk_lazy`] and [`from_disk_greedy`]
-    /// for more information.
+    /// for more information. `M` is honored only for the paletted layouts -- a
+    /// [`SubChunkVersion::NonPaletted`] record has no packed index array for it to govern at
+    /// all, so both unpacking methods decode it identically; see the branch below.
     ///
     /// [`from_disk_lazy`]: Self::from_disk_lazy
     /// [`from_disk_greedy`]: Self::from_disk_greedy
@@ -1134,6 +1475,28 @@ impl SubChunk {
         Cursor<R>: Read,
     {
         let version = SubChunkVersion::try_from(reader.read_u8()?)?;
+
+        // The non-paletted layout has nothing else in common with the paletted ones below
+        // it -- no layer-count byte, no per-layer header, no NBT palette -- so it is handled
+        // entirely separately rather than folded into the loop over `Layer::from_disk`.
+        //
+        // `M` is deliberately not threaded through here: lazy unpacking exists to defer
+        // expanding a packed index array until a block is actually looked up, and this
+        // format has no packed array to defer -- decoding it requires reading every id and
+        // nibble up front regardless, to know how many distinct entries the palette needs.
+        // `decode_nonpaletted_column` always builds the eagerly-unpacked (`Greedy`) form.
+        if let SubChunkVersion::NonPaletted(_) = version {
+            let mut layers = decode_nonpaletted_column(reader, 16)?;
+            let layer = layers
+                .pop()
+                .expect("decode_nonpaletted_column(_, 16) always returns exactly one layer");
+            return Ok(Self {
+                version,
+                index: 0,
+                layers: vec![layer],
+            });
+        }
+
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
             _ => reader.read_u8()?,
@@ -1164,6 +1527,10 @@ impl SubChunk {
     /// This makes deserialising slightly faster but iteration a lot slower. This method is unable to make use of SIMD while [`from_disk_greedy`]
     /// uses a SIMD-accelerated deserializer. Additionally using this method means that editing the subchunk might cause the bit array to be repacked
     /// to accomodate the larger palette size.
+    ///
+    /// None of that applies to a [`SubChunkVersion::NonPaletted`] record: it has no packed
+    /// index array to defer unpacking of, so this and [`from_disk_greedy`] decode it
+    /// identically, with the same eager cost either way.
     #[inline]
     pub fn from_disk_lazy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -1188,7 +1555,14 @@ impl SubChunk {
     where
         Cursor<W>: Write,
     {
-        writer.write_u8(self.version as u8)?;
+        writer.write_u8(self.version.raw())?;
+
+        // The non-paletted layout writes the raw id+nibble column directly, with none of
+        // the paletted layouts' layer-count byte, per-layer header, or NBT palette -- see
+        // the matching branch in `from_disk`.
+        if let SubChunkVersion::NonPaletted(_) = self.version {
+            return encode_nonpaletted_column(writer, &self.layers);
+        }
 
         // A legacy subchunk always has exactly one layer and carries no layer-count byte
         // -- `from_disk` never reads one for this version either.

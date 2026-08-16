@@ -14,6 +14,7 @@ pub mod height_range;
 pub mod iter;
 pub mod key;
 pub mod lazy;
+pub mod legacy_terrain;
 pub mod metadata_dictionary;
 pub mod player;
 pub mod provider;
