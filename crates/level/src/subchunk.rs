@@ -93,6 +93,86 @@ impl BlockDef {
     }
 }
 
+/// A pre-flattening palette entry: `name` plus an opaque `val` short, and no `states`
+/// compound at all. Its own private decode target -- distinct from [`BlockDef`] rather
+/// than a variant of it, because [`BlockDef`]'s field set is a public type other code in
+/// this crate (`ItemStack::block`, `FlowerPot::plant_block`) already relies on, and this
+/// format has nothing in common with it beyond `name`.
+///
+/// Confirmed against every one of `v1_12`'s 6,246 real legacy entries (the corpus's one
+/// pre-flattening fixture): the compound is always exactly these two fields, `name` before
+/// `val`, uniformly -- no entry carries `version` or `states`, none reverse the field
+/// order, and `val` is always in `[0, 15]` (a nibble range, consistent with a pre-
+/// flattening block's data value). So unlike [`BlockDef`]'s `version`/`states` ordering,
+/// there is nothing here for [`FieldOrder`] to track: a fixed struct field order already
+/// matches every real record.
+#[derive(Debug, Clone, Facet)]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
+struct LegacyBlockDef {
+    name: String,
+    val: i16,
+}
+
+/// One entry in a subchunk layer's palette: either the modern, flattened form
+/// (`name` plus optional `version` and `states`) or the pre-flattening
+/// `{name, val}` form a legacy world's palette stores instead.
+///
+/// A `Vec<PaletteEntry>` rather than folding `val` into [`BlockDef`] as an extra optional
+/// field: `BlockDef` is a public type other decoded structs embed directly
+/// (`ItemStack::block`, `FlowerPot::plant_block`), and those never carry a legacy `val` --
+/// they are always modern flattened states. Adding a field there would widen every one of
+/// those call sites for a case that cannot occur in them. Keeping the two forms as
+/// variants of one palette-entry type instead means a layer's palette is one first-class
+/// list covering both eras, with no second parallel palette or optional-legacy-list
+/// bolted on beside it.
+///
+/// `val` is carried opaquely -- an `i16`, not interpreted as a block/data-value pair or
+/// resolved against any table. Deciding what a given `(name, val)` pair actually means is
+/// the upgrade provider's job (Phase 3), not this type's.
+#[derive(Debug, Clone, PartialEq)]
+pub enum PaletteEntry {
+    /// The modern, flattened form.
+    Modern(BlockDef),
+    /// The pre-flattening form: a block name plus its opaque data value.
+    Legacy {
+        /// Name of the block.
+        name: String,
+        /// The on-disk data value. Opaque -- see this type's doc comment.
+        val: i16,
+    },
+}
+
+impl PaletteEntry {
+    /// This entry's block name, regardless of which form it is.
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Modern(block) => &block.name,
+            Self::Legacy { name, .. } => name,
+        }
+    }
+
+    /// Borrows the modern form, or `None` if this is a legacy `{name, val}` entry.
+    pub fn as_block(&self) -> Option<&BlockDef> {
+        match self {
+            Self::Modern(block) => Some(block),
+            Self::Legacy { .. } => None,
+        }
+    }
+
+    /// The legacy data value, or `None` if this is a modern entry.
+    ///
+    /// See this type's doc comment: opaque, not interpreted here.
+    pub fn legacy_val(&self) -> Option<i16> {
+        match self {
+            Self::Modern(_) => None,
+            Self::Legacy { val, .. } => Some(*val),
+        }
+    }
+}
+
 impl Hash for BlockDef {
     /// Hashes this block.
     ///
@@ -116,6 +196,24 @@ impl Hash for BlockDef {
             acc.wrapping_add(entry_hasher.finish())
         });
         state.write_u64(combined);
+    }
+}
+
+impl Hash for PaletteEntry {
+    /// Delegates to [`BlockDef`]'s `Hash` for the modern form. For the legacy form, hashes
+    /// `name` together with `val`: `val` is a legacy entry's content identity, the legacy
+    /// analogue of `states` (`minecraft:wool` at different `val`s is a different colour, the
+    /// same way two `states` compounds with different entries are different blocks) -- unlike
+    /// `BlockDef`'s own `Hash`, which excludes `version` because `version` is a provenance
+    /// stamp, not part of what block a `BlockDef` names.
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Modern(block) => block.hash(state),
+            Self::Legacy { name, val } => {
+                state.write(name.as_bytes());
+                state.write_i16(*val);
+            }
+        }
     }
 }
 
@@ -176,8 +274,25 @@ impl FieldOrder {
     }
 }
 
-/// Decodes one palette entry, keeping the order its `version`/`states` keys
-/// were written in (see [`FieldOrder`]).
+/// Whether a decoded palette entry compound is the pre-flattening `{name, val}` form
+/// rather than the modern `name`/`version`/`states` one.
+///
+/// `val` present and `states` absent is what distinguishes the two: every real legacy
+/// entry carries `val` and never `states` (and vice versa for modern entries -- see
+/// [`LegacyBlockDef`]'s doc comment), so checking both rather than just one guards against
+/// a hypothetical record that carries `val` alongside a full modern shape, which would
+/// otherwise be misrouted into the legacy decode path and lose `states`/`version`.
+fn is_legacy_entry(value: &nbtx::Value) -> bool {
+    let nbtx::Value::Compound(compound) = value else {
+        return false;
+    };
+    compound.contains_key(b"val".as_slice()) && !compound.contains_key(b"states".as_slice())
+}
+
+/// Decodes one palette entry, keeping the order a modern entry's `version`/`states` keys
+/// were written in (see [`FieldOrder`]). A legacy `{name, val}` entry has no such order to
+/// keep (see [`LegacyBlockDef`]'s doc comment), so the returned [`FieldOrder`] is
+/// meaningless for it -- [`write_palette_entry`] never consults it in that case.
 ///
 /// Goes through [`nbtx::Value`] rather than decoding straight into
 /// [`BlockDef`]: a `Value::Compound` is order-preserving (an `IndexMap`
@@ -185,55 +300,86 @@ impl FieldOrder {
 /// [`nbtx::from_value`] then does the same name-matching, default-filling,
 /// unknown-field handling the direct byte decode would have -- reused rather
 /// than duplicated.
-fn read_palette_entry<R: Read>(reader: &mut R) -> Result<(BlockDef, FieldOrder)> {
-    // No fallback or `lenient_width` here: every palette entry across the
-    // whole real test world (every layer of every subchunk) has `version`
-    // written as an `Int`, so there is nothing to reconcile, and this runs
-    // once per entry.
+fn read_palette_entry<R: Read>(reader: &mut R) -> Result<(PaletteEntry, FieldOrder)> {
+    // No fallback or `lenient_width` here: every modern palette entry across the whole
+    // real test world (every layer of every subchunk) has `version` written as an `Int`,
+    // so there is nothing to reconcile, and this runs once per entry.
     let value: nbtx::Value = nbtx::from_le_bytes(reader)?;
+    if is_legacy_entry(&value) {
+        let legacy: LegacyBlockDef = nbtx::from_value(value)?;
+        return Ok((
+            PaletteEntry::Legacy {
+                name: legacy.name,
+                val: legacy.val,
+            },
+            FieldOrder::default(),
+        ));
+    }
     let order = FieldOrder::of(&value);
     let entry = nbtx::from_value(value)?;
-    Ok((entry, order))
+    Ok((PaletteEntry::Modern(entry), order))
 }
 
-/// Encodes one palette entry in the given field order.
+/// Encodes one palette entry in the given field order (a modern entry's `version`/`states`
+/// order -- ignored for a legacy entry, which has a fixed two-field shape).
 ///
-/// [`nbtx::to_value`] converts `entry` to a `Value::Compound` in `BlockDef`'s
-/// struct order (`name, version, states` -- `version` omitted if `None`).
+/// For the modern form, [`nbtx::to_value`] converts `entry` to a `Value::Compound` in
+/// `BlockDef`'s struct order (`name, version, states` -- `version` omitted if `None`).
 /// That is already [`FieldOrder::VersionThenStates`]; for the other order,
 /// moving `version` to the end of the compound (a no-op if it was already
 /// absent) leaves `states` before it, matching what [`FieldOrder::of`]
 /// detects on the way back in.
 fn write_palette_entry<W: Write>(
     writer: &mut W,
-    entry: &BlockDef,
+    entry: &PaletteEntry,
     order: FieldOrder,
 ) -> Result<()> {
-    let value = nbtx::to_value(entry)?;
-    let nbtx::Value::Compound(mut compound) = value else {
-        unreachable!("a struct always converts to a compound")
-    };
-    if order == FieldOrder::StatesThenVersion
-        && let Some(version) = compound.shift_remove(b"version".as_slice())
-    {
-        compound.insert("version".into(), version);
+    match entry {
+        PaletteEntry::Modern(block) => {
+            let value = nbtx::to_value(block)?;
+            let nbtx::Value::Compound(mut compound) = value else {
+                unreachable!("a struct always converts to a compound")
+            };
+            if order == FieldOrder::StatesThenVersion
+                && let Some(version) = compound.shift_remove(b"version".as_slice())
+            {
+                compound.insert("version".into(), version);
+            }
+            nbtx::to_le_bytes_in(writer, &nbtx::Value::Compound(compound))?;
+        }
+        PaletteEntry::Legacy { name, val } => {
+            // Built directly as a `Value::Compound` rather than through `LegacyBlockDef` and
+            // `nbtx::to_value` (as the modern arm above does): `LegacyBlockDef::name` is an
+            // owned `String`, so populating one from this `&str` borrow to hand it to
+            // `to_value` would clone `name` once into the temporary struct and then again
+            // when the Facet serializer turns that into a `Value::String`. Writing the
+            // compound by hand still copies `name`'s bytes exactly once, into the `Value`
+            // tree, the same single allocation the modern arm's `to_value(block)` pays
+            // internally for its own `String` fields.
+            let value = nbtx::Value::Compound(nbtx::Compound::from_iter([
+                ("name".into(), nbtx::Value::String(name.as_str().into())),
+                ("val".into(), nbtx::Value::Short(*val)),
+            ]));
+            nbtx::to_le_bytes_in(writer, &value)?;
+        }
     }
-    nbtx::to_le_bytes_in(writer, &nbtx::Value::Compound(compound))?;
     Ok(())
 }
 
-/// Iterates over all blocks in a layer.
+/// Iterates over all palette entries in a layer, one per block position. Each yielded entry
+/// resolves to the palette, so it may be a legacy `{name, val}` entry ([`PaletteEntry::Legacy`])
+/// rather than a resolved modern block -- see [`PaletteEntry`].
 pub struct LayerIter<'l> {
     /// An iterator over the indices
     array_iter: BitArrayIter<'l>,
     /// The palette.
-    palette: &'l [BlockDef],
+    palette: &'l [PaletteEntry],
 }
 
 impl<'l> Iterator for LayerIter<'l> {
-    type Item = &'l BlockDef;
+    type Item = &'l PaletteEntry;
 
-    fn next(&mut self) -> Option<&'l BlockDef> {
+    fn next(&mut self) -> Option<&'l PaletteEntry> {
         let index = self.array_iter.next()?;
         Some(&self.palette[index as usize])
     }
@@ -290,14 +436,17 @@ pub struct Layer {
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
     array: BitArray,
-    /// List of all different block types in this sub chunk layer.
-    palette: Vec<BlockDef>,
+    /// List of all different block types in this sub chunk layer -- both eras a real
+    /// palette can hold, see [`PaletteEntry`].
+    palette: Vec<PaletteEntry>,
     /// Used to check which blocks are already in the palette. Block definitions are hashed manually and compared with their hash in this set.
-    /// This is because `BlockDef` does not implement `Eq` and we also prevent cloning the entire block definition on each insertion.
+    /// This is because `PaletteEntry` does not implement `Eq` and we also prevent cloning the entire block definition on each insertion.
     hashes: HashMap<u64, u16, BuildNoHashHasher<u64>>,
-    /// The field order each `palette` entry re-encodes with, kept in lock step with
-    /// `palette` by index -- both are only ever pushed to, together, in `set` and
-    /// `from_disk`, never independently. See [`FieldOrder`].
+    /// The field order each *modern* `palette` entry re-encodes with, kept in lock step
+    /// with `palette` by index -- both are only ever pushed to, together, in `set` and
+    /// `from_disk`, never independently. See [`FieldOrder`]. Meaningless (and never read)
+    /// at an index whose `palette` entry is [`PaletteEntry::Legacy`] -- a legacy entry has
+    /// a fixed field order, nothing for this to track.
     entry_order: Vec<FieldOrder>,
 }
 
@@ -321,8 +470,10 @@ impl Layer {
         self.array.is_lazy()
     }
 
-    /// Retrieves the block at `position`.
-    pub fn get<K: Into<BlockPosition>>(&self, position: K) -> Option<&BlockDef> {
+    /// Retrieves the palette entry at `position`. The entry may be a legacy `{name, val}`
+    /// entry ([`PaletteEntry::Legacy`]) rather than a resolved modern block, if this layer
+    /// was decoded from a pre-flattening world -- see [`PaletteEntry`].
+    pub fn get<K: Into<BlockPosition>>(&self, position: K) -> Option<&PaletteEntry> {
         let pos = position.into();
         let offset = to_offset(pos);
         let index = self.array.get(offset)?;
@@ -331,14 +482,16 @@ impl Layer {
 
     /// Sets the block at `position` to `block`.
     ///
-    ///
+    /// Always inserts (or reuses) a modern palette entry -- there is no public way to
+    /// construct a [`PaletteEntry::Legacy`], since that form only ever arrives by decoding
+    /// an old world (see [`PaletteEntry`]'s doc comment).
     pub fn set<K: Into<BlockPosition>>(&mut self, position: K, block: BlockDef) {
         // Check whether the block is in the palette
         let hash = Self::hash_def(&block);
         let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
             // Block does not exist in palette, push it. A newly built entry was not read
             // off disk, so it gets the default (and dominant) field order.
-            self.palette.push(block);
+            self.palette.push(PaletteEntry::Modern(block));
             self.entry_order.push(FieldOrder::default());
             self.palette.len() as u16 - 1
         });
@@ -347,20 +500,30 @@ impl Layer {
         self.array.set(index, palette_index);
     }
 
-    /// Computes the hash of the block.
+    /// Computes the hash of a modern block, for looking it up against this layer's
+    /// palette (which may also hold legacy entries -- [`Self::hash_entry`] covers both).
     pub(crate) fn hash_def(block: &BlockDef) -> u64 {
         let mut state = FxHasher::with_seed(Self::HASH_SEED);
         block.hash(&mut state);
         state.finish()
     }
 
-    /// Determines the index in the palette of the block.
+    /// Computes the hash of a palette entry, modern or legacy, the way [`Self::from_disk`]
+    /// populates `hashes` for both -- see [`PaletteEntry`]'s `Hash` impl for what each form
+    /// hashes over.
+    fn hash_entry(entry: &PaletteEntry) -> u64 {
+        let mut state = FxHasher::with_seed(Self::HASH_SEED);
+        entry.hash(&mut state);
+        state.finish()
+    }
+
+    /// Determines the index in the palette of the (modern) block.
     pub fn palette_index(&self, block: &BlockDef) -> Option<u16> {
         let hash = Self::hash_def(block);
         self.hashes.get(&hash).copied()
     }
 
-    /// Whether the palette contains the given block.
+    /// Whether the palette contains the given (modern) block.
     pub fn contains(&self, block: &BlockDef) -> bool {
         let hash = Self::hash_def(block);
         self.hashes.contains_key(&hash)
@@ -368,7 +531,7 @@ impl Layer {
 
     /// Returns the palette used for this chunk
     #[inline]
-    pub fn palette(&self) -> &[BlockDef] {
+    pub fn palette(&self) -> &[PaletteEntry] {
         &self.palette
     }
 
@@ -395,7 +558,7 @@ impl Layer {
 
         // A zero bits-per-index layer (`BitArray::Empty`) has no palette-length word: the
         // single palette entry it implies follows the header directly.
-        let (palette, entry_order): (Vec<BlockDef>, Vec<FieldOrder>) =
+        let (palette, entry_order): (Vec<PaletteEntry>, Vec<FieldOrder>) =
             if let BitArray::Empty = array {
                 let (entry, order) = read_palette_entry(reader)?;
                 (vec![entry], vec![order])
@@ -415,8 +578,8 @@ impl Layer {
 
         let mut hashes =
             HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
-        hashes.extend(palette.iter().enumerate().map(|(i, block)| {
-            let hash = Self::hash_def(block);
+        hashes.extend(palette.iter().enumerate().map(|(i, entry)| {
+            let hash = Self::hash_entry(entry);
             (hash, i as u16)
         }));
 
@@ -452,7 +615,8 @@ impl Layer {
         Ok(())
     }
 
-    /// Creates an iterator over the blocks in this layer.
+    /// Creates an iterator over the palette entries in this layer, one per block position,
+    /// resolved through the palette -- see [`LayerIter`] for what a yielded entry can be.
     ///
     /// This iterates over every indices
     pub fn iter(&self) -> LayerIter<'_> {
@@ -466,7 +630,7 @@ impl Layer {
 }
 
 impl<'a> IntoIterator for &'a Layer {
-    type Item = &'a BlockDef;
+    type Item = &'a PaletteEntry;
     type IntoIter = LayerIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -478,13 +642,17 @@ impl<I> Index<I> for Layer
 where
     I: Into<BlockPosition>,
 {
-    type Output = BlockDef;
+    type Output = PaletteEntry;
 
+    /// Indexes into this layer's resolved palette entries -- the entry returned may be a
+    /// legacy `{name, val}` entry ([`PaletteEntry::Legacy`]) rather than a resolved modern
+    /// block, if this layer was decoded from a pre-flattening world -- see [`PaletteEntry`].
+    ///
     /// # Panics
     ///
     /// This function panics if the given position is out of range.
     /// In other words, it requires that `x <= 16`, `y <= 16` and `z <= 16`.
-    fn index(&self, position: I) -> &BlockDef {
+    fn index(&self, position: I) -> &PaletteEntry {
         let position = position.into();
         let offset = to_offset(position);
         let index = self.array.get(offset).expect("layer index out of bounds");
@@ -526,8 +694,8 @@ mod palette_tests {
     fn palette_entry_with_int_version() {
         let bytes = subchunk_with_palette(&entry_with_version(nbtx::Value::Int(17_959_425)));
         let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
-        let block = &chunk.get_layer(0).unwrap().palette()[0];
-        assert_eq!(block.version, Some(17_959_425));
+        let entry = &chunk.get_layer(0).unwrap().palette()[0];
+        assert_eq!(entry.as_block().unwrap().version, Some(17_959_425));
     }
 
     /// A narrower tag than `version`'s declared `Int` width is rejected: no
@@ -666,7 +834,10 @@ mod palette_tests {
         let layer = chunk.get_layer(0).unwrap();
 
         assert_eq!(layer.palette().len(), 1);
-        assert_eq!(layer.palette()[0].version, Some(17_959_425));
+        assert_eq!(
+            layer.palette()[0].as_block().unwrap().version,
+            Some(17_959_425)
+        );
         for offset in [0usize, 1, 2048, 4095] {
             assert_eq!(layer.array.get(offset), Some(0));
         }
@@ -761,6 +932,124 @@ mod palette_tests {
         let mut hb = DefaultHasher::new();
         b.hash(&mut hb);
         assert_eq!(ha.finish(), hb.finish());
+    }
+
+    /// A pre-flattening `{name, val}` compound, in the order every real record uses (see
+    /// [`LegacyBlockDef`]'s doc comment).
+    fn legacy_entry(name: &str, val: i16) -> nbtx::Value {
+        nbtx::Value::Compound(nbtx::Compound::from_iter([
+            ("name".into(), nbtx::Value::String(name.into())),
+            ("val".into(), nbtx::Value::Short(val)),
+        ]))
+    }
+
+    /// The shape confirmed against real `v1_12` records (`tests/bit_layers.rs`): a legacy
+    /// entry decodes into `PaletteEntry::Legacy` with its name and opaque `val` intact, no
+    /// `states`/`version` synthesized for it.
+    #[test]
+    fn legacy_palette_entry_decodes_name_and_val() {
+        let bytes = subchunk_with_palette(&legacy_entry("minecraft:wool", 4));
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let entry = &chunk.get_layer(0).unwrap().palette()[0];
+
+        assert_eq!(entry.name(), "minecraft:wool");
+        assert_eq!(entry.legacy_val(), Some(4));
+        assert!(entry.as_block().is_none());
+    }
+
+    /// A legacy entry decodes and re-encodes to the exact original bytes -- no `states` or
+    /// `version` key gets added, and the field order stays `name, val`.
+    #[test]
+    fn legacy_palette_entry_round_trips_byte_identical() {
+        let bytes = subchunk_with_palette(&legacy_entry("minecraft:wood", 3));
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+
+        let mut out = Cursor::new(Vec::new());
+        chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+        assert_eq!(out.into_inner(), bytes);
+    }
+
+    /// A legacy entry through the zero-bits-per-index layout (header `0x00`) -- the same
+    /// compact layer layout `zero_bit_header_round_trips_byte_identical` confirms for a
+    /// modern entry, but with a legacy palette entry following the header.
+    #[test]
+    fn legacy_palette_entry_round_trips_through_a_zero_bit_layer() {
+        let bytes = subchunk_with_zero_bit_layer(&legacy_entry("minecraft:sapling", 0));
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let entry = &chunk.get_layer(0).unwrap().palette()[0];
+        assert_eq!(entry.legacy_val(), Some(0));
+
+        let mut out = Cursor::new(Vec::new());
+        chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+        assert_eq!(out.into_inner(), bytes);
+    }
+
+    /// `val`'s type is checked like every other field -- a narrower or wider tag than the
+    /// `Short` every real record uses is rejected outright rather than coerced.
+    #[test]
+    fn legacy_palette_entry_with_wrong_val_type_still_fails() {
+        let entry = nbtx::Value::Compound(nbtx::Compound::from_iter([
+            ("name".into(), nbtx::Value::String("minecraft:wool".into())),
+            ("val".into(), nbtx::Value::Int(4)),
+        ]));
+        let bytes = subchunk_with_palette(&entry);
+        assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
+    }
+
+    /// Builds a one-layer legacy subchunk whose palette holds two entries (indices packed
+    /// at 1 bit each) and whose 4096 indices are all zero, i.e. every block resolves to
+    /// `entries[0]`. Used to build a palette mixing a modern and a legacy entry -- the
+    /// crate's decode/encode path must handle that even though no fixture in the corpus
+    /// happens to contain one (checked: `v1_12`'s 6,246 legacy entries never sit beside a
+    /// modern one in the same record).
+    fn subchunk_with_two_entry_palette(entries: [&nbtx::Value; 2]) -> Vec<u8> {
+        let mut out = vec![SubChunkVersion::Legacy as u8];
+        out.push(1 << 1); // 1 bit per index.
+        out.extend(std::iter::repeat_n(0u8, 128 * 4));
+        out.extend_from_slice(&2u32.to_le_bytes());
+        for entry in entries {
+            out.extend(nbtx::to_le_bytes(entry).unwrap());
+        }
+        out
+    }
+
+    /// A palette holding one modern and one legacy entry, in the same layer, decodes both
+    /// correctly and re-encodes byte-identically -- the two forms are first-class members
+    /// of one palette, not mutually exclusive per layer.
+    #[test]
+    fn mixed_modern_and_legacy_palette_round_trips_byte_identical() {
+        let modern = entry_with_version(nbtx::Value::Int(17_959_425));
+        let legacy = legacy_entry("minecraft:wool", 4);
+        let bytes = subchunk_with_two_entry_palette([&modern, &legacy]);
+
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let palette = chunk.get_layer(0).unwrap().palette();
+        assert_eq!(palette.len(), 2);
+        assert!(palette[0].as_block().is_some());
+        assert_eq!(palette[1].name(), "minecraft:wool");
+        assert_eq!(palette[1].legacy_val(), Some(4));
+
+        let mut out = Cursor::new(Vec::new());
+        chunk.to_disk::<Greedy, _>(&mut out).unwrap();
+        assert_eq!(out.into_inner(), bytes);
+    }
+
+    /// Two legacy entries with the same name but different `val` are distinct palette
+    /// entries -- `val` is part of a legacy entry's identity (pre-flattening,
+    /// `minecraft:wool` at different `val`s is a different colour), so the palette must not
+    /// collapse them the way it would if only `name` were hashed.
+    #[test]
+    fn legacy_entries_with_different_val_are_distinct_palette_entries() {
+        let bytes = subchunk_with_two_entry_palette([
+            &legacy_entry("minecraft:wool", 0),
+            &legacy_entry("minecraft:wool", 4),
+        ]);
+        let chunk = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let palette = chunk.get_layer(0).unwrap().palette();
+
+        assert_eq!(palette.len(), 2);
+        assert_eq!(palette[0].legacy_val(), Some(0));
+        assert_eq!(palette[1].legacy_val(), Some(4));
     }
 }
 

@@ -13,11 +13,11 @@
 //!   abundantly in real data, and a sample of real records at those widths decodes and
 //!   re-encodes to an equal value, both greedily and lazily unpacked.
 //! - Every palette entry's NBT field order round-trips byte-identically -- top-level
-//!   (`name`/`version`/`states`) and `states`' own internal key order alike
-//!   (`palette_entries_round_trip_byte_identical_across_all_fixtures`), with two
-//!   independent, exactly-counted exclusions that are not palette bugs: the unmodelled
-//!   legacy `{name, val}` format, and a pre-existing packed-index-word limitation (see
-//!   `packed_index_padding_bits_are_not_always_zero`).
+//!   (`name`/`version`/`states` for modern entries, `name`/`val` for the pre-flattening
+//!   `PaletteEntry::Legacy` form) and `states`' own internal key order alike
+//!   (`palette_entries_round_trip_byte_identical_across_all_fixtures`), with one
+//!   exactly-counted exclusion that is not a palette bug: a pre-existing packed-index-word
+//!   limitation (see `packed_index_padding_bits_are_not_always_zero`).
 //! - `BitArray::to_disk` deriving the header's bit width from the palette size, rather than
 //!   retaining a read width, needs no change: every real layer's header already is that
 //!   minimal width (same test).
@@ -281,9 +281,9 @@ enum MismatchRegion {
 struct PaletteFindings {
     records: u64,
     byte_identical: u64,
-    /// Records whose `SubChunk::from_disk` failed -- exclusively the legacy `{name, val}`
-    /// palette format (Phase 2's "Legacy `{name, val}` palette entries" task; this crate does
-    /// not model it yet), keyed by source so the exact count is visible per fixture.
+    /// Records whose `SubChunk::from_disk` failed. Pinned empty below: every record in the
+    /// corpus, including `v1_12`'s pre-flattening `{name, val}` palettes (Phase 2's "Legacy
+    /// `{name, val}` palette entries" task), now decodes.
     decode_failed_by_source: BTreeMap<String, u64>,
     /// Records that decoded but did not re-encode byte-identically, keyed by
     /// `(bit width, which region the first differing byte falls in)`. See
@@ -395,19 +395,15 @@ fn scan_palette_fidelity(source: &str, db: &Database, f: &mut PaletteFindings) {
 }
 
 /// The corpus-wide payoff of the palette-entry field-order fix (`subchunk.rs`'s
-/// `FieldOrder`/order-preserving `states`): every `0x2f` record whose palette this crate
-/// models (every "modern" `name`/`version`/`states` entry, at every bit width, not a
-/// sample) decodes and re-encodes with its palette bytes matching the original exactly --
-/// pinned by asserting the `MismatchRegion::Palette` bucket of `not_byte_identical` stays
-/// empty. Two things this test found are *not* palette bugs and are excluded by name
-/// rather than folded into a blanket byte-identity assertion:
-///
-/// - The legacy `{name, val}` palette format (pre-flattening worlds) isn't modeled yet
-///   (Phase 2's task), so `SubChunk::from_disk` rejects it outright. Every occurrence is in
-///   `v1_12`, the corpus's one pre-flattening fixture -- pinned as a known, exact-counted
-///   decode-failure set below.
-/// - [`packed_index_padding_bits_are_not_always_zero`] is an unrelated, pre-existing
-///   limitation in the packed *index* words, nothing to do with the palette or this fix.
+/// `FieldOrder`/order-preserving `states`) plus the legacy `{name, val}` palette entry
+/// (`subchunk.rs`'s `PaletteEntry::Legacy`): every `0x2f` record in the corpus -- every
+/// "modern" `name`/`version`/`states` entry and every pre-flattening `name`/`val` entry, at
+/// every bit width, not a sample -- decodes, and re-encodes with its palette bytes matching
+/// the original exactly, pinned by asserting the `MismatchRegion::Palette` bucket of
+/// `not_byte_identical` stays empty. One thing this test found is *not* a palette bug and
+/// is excluded by name rather than folded into a blanket byte-identity assertion:
+/// [`packed_index_padding_bits_are_not_always_zero`] is an unrelated, pre-existing
+/// limitation in the packed *index* words, nothing to do with the palette or either fix.
 ///
 /// Also settles the bit-width-retention question from the same TODO entry: every real
 /// layer's header already carries the minimal width for its palette size, so
@@ -466,14 +462,13 @@ fn palette_entries_round_trip_byte_identical_across_all_fixtures() {
         "packed-index-padding mismatch set changed shape"
     );
 
-    // The only fixture carrying the legacy `{name, val}` palette format (a
-    // pre-flattening world) is `v1_12`; every one of its subchunk records fails to decode
-    // under the modern `name`/`version`/`states` schema this crate models, and that is the
-    // only source of decode failure across the whole corpus.
+    // Every record in the corpus decodes, `v1_12`'s 1,118 pre-flattening `{name, val}`
+    // records (the only fixture carrying that format) included: `PaletteEntry::Legacy`
+    // models it, so there is no longer a decode-failure source at all.
     assert_eq!(
         f.decode_failed_by_source,
-        BTreeMap::from([("v1_12".to_string(), 1118)]),
-        "the legacy-palette decode-failure set should be exactly v1_12's records"
+        BTreeMap::new(),
+        "every record in the corpus should decode -- the legacy-palette format is modeled now"
     );
     assert_eq!(
         f.byte_identical,
@@ -492,7 +487,7 @@ fn palette_entries_round_trip_byte_identical_across_all_fixtures() {
 /// re-encode cycle is a lossy-on-paper, lossless-in-practice normalization: every decoded
 /// block position is still exactly what was on disk, but the specific bytes differ.
 ///
-/// It does happen: of the 148,528 real subchunk records this crate can decode at all
+/// It does happen: of the 149,646 real subchunk records this crate can decode at all
 /// (`palette_entries_round_trip_byte_identical_across_all_fixtures`), exactly 20 -- all
 /// 3-bit, spread across `v1_16`, `v1_17_20_caves_and_cliffs`, `v1_17_40` and `v1_18` --
 /// carry non-zero padding bits inside an interior word (never the palette, and never
