@@ -2,6 +2,7 @@ pub mod actor;
 pub mod biome;
 pub mod bits;
 pub mod chunk;
+pub mod chunk_version;
 pub mod color;
 pub mod db;
 pub mod error;
