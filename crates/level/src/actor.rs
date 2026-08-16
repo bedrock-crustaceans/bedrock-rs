@@ -17,6 +17,10 @@
 //!   of little-endian NBT compounds with no count prefix, read until the
 //!   value is exhausted. Also an ordinary `ChunkRecords` member.
 //!
+//! A subset of `digp`-era worlds additionally carry [`KeyVariant::ActorDigestVersion`]
+//! (`0x41`), a one-byte stamp for the digest scheme's own revision -- see
+//! [`decode_actor_digest_version`].
+//!
 //! Neither shape's NBT payload is modeled field by field here -- per
 //! architecture decision 8 (vanilla data lives in a separate crate; core
 //! stays independent of it), an actor's fields are game content, not format,
@@ -161,6 +165,33 @@ pub fn encode_legacy_entities(values: &[nbtx::Value]) -> Result<Vec<u8>> {
         nbtx::to_le_bytes_in(&mut out, value)?;
     }
     Ok(out)
+}
+
+/// Decodes a `0x41` [`KeyVariant::ActorDigestVersion`] value: a single byte
+/// stamping the revision of the `digp`/`actorprefix` digest scheme a
+/// chunk's actor storage was written under. Every real record in the
+/// corpus (597 across three fixtures) is exactly one byte holding `0`, the
+/// only digest-scheme revision this format has shipped so far -- this
+/// decode does not assume that value, only the one-byte length, so a future
+/// revision stamped differently still round-trips.
+///
+/// Per decision 11, a value that is not exactly one byte is malformed
+/// rather than unmodelled, since "the version marker" is definitionally a
+/// single byte and nothing about a different length is a recognizable
+/// variant of it.
+pub fn decode_actor_digest_version(bytes: &[u8]) -> Result<u8> {
+    match bytes {
+        [version] => Ok(*version),
+        _ => Err(Error::Invalid(
+            "actorDigestVersion value is not exactly one byte",
+        )),
+    }
+}
+
+/// Encodes a `0x41` [`KeyVariant::ActorDigestVersion`] value: the inverse of
+/// [`decode_actor_digest_version`].
+pub fn encode_actor_digest_version(version: u8) -> Vec<u8> {
+    vec![version]
 }
 
 /// One actor reached through a chunk's `digp` digest: the storage key the
@@ -328,5 +359,32 @@ mod tests {
     fn chunk_actors_default_is_empty() {
         assert!(ChunkActors::default().is_empty());
         assert_eq!(ChunkActors::default().len(), 0);
+    }
+
+    #[test]
+    fn decode_actor_digest_version_accepts_the_observed_value() {
+        assert_eq!(decode_actor_digest_version(&[0x00]).unwrap(), 0);
+    }
+
+    #[test]
+    fn decode_actor_digest_version_accepts_any_single_byte() {
+        // Only the length is asserted -- an unobserved but well-formed
+        // revision byte must not be rejected as malformed.
+        assert_eq!(decode_actor_digest_version(&[0x01]).unwrap(), 1);
+        assert_eq!(decode_actor_digest_version(&[0xff]).unwrap(), 255);
+    }
+
+    #[test]
+    fn decode_actor_digest_version_rejects_wrong_length() {
+        assert!(decode_actor_digest_version(&[]).is_err());
+        assert!(decode_actor_digest_version(&[0x00, 0x00]).is_err());
+    }
+
+    #[test]
+    fn actor_digest_version_round_trips() {
+        for version in [0u8, 1, 255] {
+            let bytes = encode_actor_digest_version(version);
+            assert_eq!(decode_actor_digest_version(&bytes).unwrap(), version);
+        }
     }
 }
