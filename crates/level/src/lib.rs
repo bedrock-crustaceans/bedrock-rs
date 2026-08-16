@@ -11,6 +11,7 @@ pub mod height_map;
 pub mod iter;
 pub mod key;
 pub mod lazy;
+pub mod metadata_dictionary;
 pub mod player;
 pub mod provider;
 pub mod settings;
