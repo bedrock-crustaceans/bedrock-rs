@@ -34,8 +34,10 @@ pub enum KeyVariant {
     BlockEntity = 0x31,
     Entity = 0x32,
     PendingTicks = 0x33,
+    LegacyBlockExtraData = 0x34,
     BiomeState = 0x35,
     FinalizedState = 0x36,
+    ConversionData = 0x37,
     BorderBlocks = 0x38,
     HardcodedSpawnAreas = 0x39,
     RandomTicks = 0x3a,
@@ -82,8 +84,10 @@ impl KeyVariant {
             KeyVariant::BlockEntity => true,
             KeyVariant::Entity => true,
             KeyVariant::PendingTicks => true,
+            KeyVariant::LegacyBlockExtraData => true,
             KeyVariant::BiomeState => true,
             KeyVariant::FinalizedState => true,
+            KeyVariant::ConversionData => true,
             KeyVariant::BorderBlocks => true,
             KeyVariant::HardcodedSpawnAreas => true,
             KeyVariant::RandomTicks => true,
@@ -119,8 +123,10 @@ impl KeyVariant {
             KeyVariant::BlockEntity => 0x31,
             KeyVariant::Entity => 0x32,
             KeyVariant::PendingTicks => 0x33,
+            KeyVariant::LegacyBlockExtraData => 0x34,
             KeyVariant::BiomeState => 0x35,
             KeyVariant::FinalizedState => 0x36,
+            KeyVariant::ConversionData => 0x37,
             KeyVariant::BorderBlocks => 0x38,
             KeyVariant::HardcodedSpawnAreas => 0x39,
             KeyVariant::RandomTicks => 0x3a,
@@ -334,8 +340,10 @@ impl Key {
             0x31 => KeyVariant::BlockEntity,
             0x32 => KeyVariant::Entity,
             0x33 => KeyVariant::PendingTicks,
+            0x34 => KeyVariant::LegacyBlockExtraData,
             0x35 => KeyVariant::BiomeState,
             0x36 => KeyVariant::FinalizedState,
+            0x37 => KeyVariant::ConversionData,
             0x38 => KeyVariant::BorderBlocks,
             0x39 => KeyVariant::HardcodedSpawnAreas,
             0x3a => KeyVariant::RandomTicks,
@@ -497,6 +505,28 @@ mod tests {
         assert_eq!(key.data, KeyVariant::Biome3d);
 
         roundtrip(&key);
+    }
+
+    #[test]
+    fn legacy_block_extra_data_and_conversion_data_are_recognized_tags() {
+        for (tag, variant) in [
+            (0x34u8, KeyVariant::LegacyBlockExtraData),
+            (0x37u8, KeyVariant::ConversionData),
+        ] {
+            let mut buf = Vec::new();
+            buf.extend_from_slice(&5i32.to_le_bytes());
+            buf.extend_from_slice(&6i32.to_le_bytes());
+            buf.push(tag);
+
+            let mut cursor = Cursor::new(buf.as_slice());
+            let key = Key::deserialize(&mut cursor).unwrap();
+
+            assert_eq!(key.chunk, ChunkPosition(5, 6));
+            assert_eq!(key.dimension, Dimension::Overworld);
+            assert_eq!(key.data, variant);
+
+            roundtrip(&key);
+        }
     }
 
     #[test]

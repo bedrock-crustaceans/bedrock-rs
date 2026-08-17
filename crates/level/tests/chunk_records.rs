@@ -383,6 +383,51 @@ fn local_player_key_is_excluded_from_every_group() {
     }
 }
 
+/// `0x34` LegacyBlockExtraData and `0x37` ConversionData are recognized
+/// `KeyVariant`s with no payload decode -- absent from the whole corpus, so
+/// nothing above (which is entirely fixture-driven) ever exercises them.
+/// A synthetic record under either tag must still flow into a
+/// `ChunkRecords` group rather than being silently skipped (architecture
+/// decision 7), and round-trip through a write byte-identically like any
+/// other unmodelled key.
+#[test]
+fn legacy_block_extra_data_and_conversion_data_flow_through_a_group() {
+    let (_tmp, db) = open_fresh_db();
+    let pos = ChunkPosition(3, 4);
+    let dim = Dimension::Overworld;
+
+    let mut group = ChunkRecords::new(pos, dim);
+    let records = [
+        (KeyVariant::LegacyBlockExtraData, vec![1u8, 2, 3, 4]),
+        (KeyVariant::ConversionData, vec![9u8, 8, 7]),
+    ];
+    for (variant, bytes) in &records {
+        let key = Key {
+            chunk: pos,
+            dimension: dim,
+            data: *variant,
+        };
+        assert_eq!(group.insert(key, bytes.clone()), None);
+    }
+    assert_eq!(group.len(), records.len());
+
+    group
+        .write(&db)
+        .expect("write of a synthetic group must succeed");
+
+    let read_back = ChunkRecords::read(&db, pos, dim)
+        .expect("read must succeed")
+        .expect("chunk just written must be readable");
+    assert_eq!(read_back.len(), records.len());
+    for (variant, bytes) in &records {
+        assert_eq!(
+            read_back.get(*variant),
+            Some(bytes.as_slice()),
+            "{variant:?} was not carried through a write/read cycle byte-identically"
+        );
+    }
+}
+
 /// A record that is `take`n and never `insert`ed back must actually be
 /// deleted from the database on `write`, not merely omitted -- otherwise a
 /// read -> take -> write cycle against the same database leaves the stale
