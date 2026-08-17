@@ -8,3 +8,10 @@ proc-macro2 = "1.0.106"
 quote = "1.0.45"
 syn = "2.0.117"
 prettyplease = "0.2.37"
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

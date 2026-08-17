@@ -1,0 +1,49 @@
+{
+  "_comment": "Provenance for the vendored block-palette dumps this directory holds. Each entry names the exact upstream release the file was pulled from, byte-for-byte, so the chain back to the game stays auditable (architecture decision 12). Re-pin by re-running the fetch against the named tag and checking the sha256 still matches what upstream serves -- a mismatch means the tag was force-moved upstream, which is worth investigating rather than silently accepting.",
+  "source_repository": "https://github.com/Mojang/bedrock-samples",
+  "source_path": "metadata/vanilladata_modules/mojang-blocks.json",
+  "entries": [
+    {
+      "tag": "v1.20.10.1",
+      "game_version": [1, 20, 10],
+      "file": "v1.20.10.1/mojang-blocks.json",
+      "sha256": "868465c8c2acf4ed5dbc3296090134d12157bf5f0b0b0db2cd9239673b4b13b0",
+      "note": "Earliest tag that carries metadata/vanilladata_modules at all -- see COVERAGE.md."
+    },
+    {
+      "tag": "v1.21.0.3",
+      "game_version": [1, 21, 0],
+      "file": "v1.21.0.3/mojang-blocks.json",
+      "sha256": "7ce27807e5edf48c7add9f2957fa0aff4230d67ee3832b6bebeb8384dcc26c62"
+    },
+    {
+      "tag": "v1.21.60.10",
+      "game_version": [1, 21, 60],
+      "file": "v1.21.60.10/mojang-blocks.json",
+      "sha256": "0758346095fc09b8e9be6b1abc0fb9d1711fbcb018a0685e83c0eb58d00b8ec5"
+    },
+    {
+      "tag": "v1.21.130.3",
+      "game_version": [1, 21, 130],
+      "file": "v1.21.130.3/mojang-blocks.json",
+      "sha256": "7a6379eedcae3d909400027cdb95c9e0a24a82ada2fcabe494d6dd2532e061f2",
+      "note": "Byte-identical to v1.26.0.2's dump -- no block-palette change shipped between them despite the version-number jump."
+    },
+    {
+      "tag": "v1.26.0.2",
+      "game_version": [1, 26, 0],
+      "file": "v1.26.0.2/mojang-blocks.json",
+      "sha256": "7a6379eedcae3d909400027cdb95c9e0a24a82ada2fcabe494d6dd2532e061f2",
+      "note": "Byte-identical to v1.21.130.3's dump -- see above."
+    },
+    {
+      "tag": "v1.26.40.05",
+      "game_version": [1, 26, 40],
+      "file": "v1.26.40.05/mojang-blocks.json",
+      "sha256": "f361039eecafd437727a837aba7261b8346241ab60709024f453cdecce7515ff",
+      "note": "Latest stable tag as of the pin date below; byte-identical to the repository's main branch at the same date."
+    }
+  ],
+  "pinned_date": "2026-08-17",
+  "coverage_note": "This is a representative subset of the stable (non -preview) tags that carry the dump, not the full ladder. bedrock-samples has published the dump on every stable tag from v1.20.10.1 through the current release (26 stable tags as surveyed on the pin date); adding the rest is a matter of extending this manifest with the same fields and re-running `cargo xtask generate-palette` -- the generator does not special-case which versions are present."
+}

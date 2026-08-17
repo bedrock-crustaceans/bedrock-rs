@@ -6,6 +6,10 @@ edition = "2024"
 [features]
 deny-unknown-fields = []
 default = ["deny-unknown-fields"]
+# Compiles in the generated per-version block-palette tables (architecture decision 12).
+# Not in `default` yet -- its cost/benefit is exactly what the Phase 3 measurement task
+# decides; see `crates/level/TODO.md`.
+generated-palettes = []
 
 [dependencies]
 bedrock_level = { path = "../level" }

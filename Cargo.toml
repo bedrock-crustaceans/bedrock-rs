@@ -34,6 +34,7 @@ syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macr
 quote = { version = "1.0" }
 jsonwebtoken = "10.3"
 base64 = "0.22"
+sha2 = "0.11"
 # nbtx 4.0 is a from-scratch rewrite on `facet` and has not shipped to
 # crates.io yet, so track the branch it lives on.
 nbtx = { git = "https://github.com/bedrock-crustaceans/bedrockrs-nbt", branch = "facet-migration" }
