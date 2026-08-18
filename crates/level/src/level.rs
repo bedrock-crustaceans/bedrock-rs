@@ -12,12 +12,13 @@ use std::path::{Path, PathBuf};
 
 use bedrock_shared::world::dimension::Dimension;
 
+use crate::actor::{ActorStorageKey, actorprefix_key_bytes, decode_actor_digest};
 use crate::chunk::ChunkRecords;
 use crate::chunk_version::KNOWN_CHUNK_VERSION_CEILING;
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::height_range::{self, HeightRange};
-use crate::key::Key;
+use crate::key::{Key, KeyVariant};
 use crate::level_chunk::Chunk;
 use crate::metadata_dictionary::{self, MetadataDictionary};
 use crate::settings::{LevelSettings, VersionInfo};
@@ -251,7 +252,21 @@ impl Level {
 
     /// Writes `chunk` to `position` in `dimension`, re-encoding its
     /// terrain, biomes, and preserved records (see
-    /// [`Chunk::encode_at`]) and updating the position index.
+    /// [`Chunk::encode_at`]) and updating the position index -- and, since
+    /// `chunk`'s actor edits reach only as far as [`Chunk::encode_at`]
+    /// itself can carry them (its regenerated `digp` value, chunk-scoped
+    /// like everything else in [`ChunkRecords`]), also applies
+    /// [`Chunk::encode_actor_writes`] against this level's own database:
+    /// the `actorprefix` half decision 13's recomputed-digest policy needs,
+    /// which has no chunk coordinates of its own and so can never be a
+    /// member of the [`ChunkRecords`] group `encode_at` returns. A caller
+    /// going through this method never has to apply that separately, or
+    /// even know it exists -- an actor added or removed via
+    /// [`Chunk::actors_mut`] before this call reaches disk as a matched
+    /// pair, new `digp` value and new/deleted `actorprefix` records alike.
+    /// (A caller driving [`Chunk::encode_at`] directly, without a `Level`,
+    /// still owns that second write itself -- see that method's own doc
+    /// comment.)
     ///
     /// Writes straight through to `db/` regardless of whether this handle
     /// came from [`Level::open`] or [`Level::open_rw`] -- see [`Level::open`]'s
@@ -267,6 +282,22 @@ impl Level {
     /// find and clear whatever the target position already holds that the
     /// new content does not cover -- unavoidable given the backend's
     /// scan-only access (see [`Database::keys`]).
+    ///
+    /// **The two writes below are not transactional.**
+    /// [`ActorWriteSet::apply`](crate::actor::ActorWriteSet::apply) and
+    /// [`ChunkRecords::write`] are separate calls against `db/`, with no
+    /// shared transaction wrapping them, so a process failure between them
+    /// leaves whichever ran first durable and the other not. That ordering
+    /// is chosen deliberately, applying the actor writes *before* the record
+    /// group, so the failure modes are both recoverable rather than lossy: a
+    /// crash after only the actor writes land leaves a newly added actor's
+    /// `actorprefix` record durably on disk but not yet referenced by any
+    /// `digp` (an ordinary dangling-style entry, resolved on the next
+    /// successful `put_chunk`) and leaves a removed actor's `actorprefix`
+    /// record briefly un-GC'd (an ordinary orphan). The reverse order would
+    /// instead risk a `digp` referencing a record that was never written at
+    /// all -- a real loss, not just a stale pointer -- if the process died
+    /// after the group write but before the actor write.
     ///
     /// **Caveat on the fast path's stale-record guarantee.** "Matches
     /// `chunk`'s own" is judged purely by coordinates
@@ -293,6 +324,7 @@ impl Level {
     ) -> Result<()> {
         let same_spot = dimension == chunk.dimension() && position == chunk.position();
         let encoded = chunk.encode_at(position, dimension)?;
+        let actor_writes = chunk.encode_actor_writes()?;
 
         if !same_spot && let Some(existing) = ChunkRecords::read(&self.db, position, dimension)? {
             let mut key_buf = Vec::new();
@@ -305,6 +337,7 @@ impl Level {
             }
         }
 
+        actor_writes.apply(&self.db)?;
         encoded.write(&self.db)?;
 
         let positions = self.positions.entry(dimension).or_default();
@@ -323,17 +356,40 @@ impl Level {
     /// one exists, and removes it from the position index. A no-op, not an
     /// error, if no chunk is there.
     ///
+    /// Also deletes that chunk's own `actorprefix` records -- every storage
+    /// key its `digp` digest names, read before the chunk's own records are
+    /// taken. This includes a dangling entry (a digest key with no backing
+    /// record) exactly as readily as a resolved one: deleting a key that
+    /// turns out to already be absent is a documented no-op (see
+    /// [`crate::actor::ActorWriteSet::apply`]), so there is no reason to
+    /// filter dangling entries out first -- including them is simply safe,
+    /// self-cleaning GC rather than a special case to avoid. What this does
+    /// *not* touch is any `actorprefix` key some *other* chunk's digest
+    /// names, or a pre-existing orphan neither this nor any digest ever
+    /// named -- exactly the same scope [`Chunk::encode_actor_writes`]'s GC
+    /// keeps to for an edit rather than a removal.
+    ///
     /// Writes straight through to `db/` regardless of whether this handle
     /// came from [`Level::open`] or [`Level::open_rw`] -- see [`Level::open`]'s
     /// doc comment for the read-only boundary this crate currently draws
     /// (`level.dat`/`levelname.txt` only, via [`Level::save`]).
     pub fn remove_chunk(&mut self, dimension: Dimension, position: ChunkPosition) -> Result<()> {
         if let Some(mut records) = ChunkRecords::read(&self.db, position, dimension)? {
+            let actor_storage_keys: Vec<ActorStorageKey> = records
+                .get(KeyVariant::ActorDigest)
+                .map(decode_actor_digest)
+                .transpose()?
+                .unwrap_or_default();
+
             let variants: Vec<_> = records.iter().map(|(key, _)| key.data).collect();
             for variant in variants {
                 records.take(variant);
             }
             records.write(&self.db)?;
+
+            for storage_key in actor_storage_keys {
+                self.db.remove(actorprefix_key_bytes(&storage_key))?;
+            }
         }
 
         if let Some(positions) = self.positions.get_mut(&dimension) {

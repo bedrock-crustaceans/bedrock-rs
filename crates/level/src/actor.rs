@@ -34,9 +34,44 @@
 //! merely go stale like a cache, it leaks or hides entities. This module's
 //! read side tolerates an existing disagreement without panicking or
 //! aborting the rest of the chunk's actor read (see [`ChunkActors::dangling`]
-//! and decision 11's malformed/unmodelled split); regenerating the digest on
-//! write is Phase 5's GC/maintenance work, out of scope here.
+//! and decision 11's malformed/unmodelled split).
+//!
+//! ## Write-side maintenance
+//!
+//! [`ChunkActors::add`]/[`ChunkActors::remove`] are the mutable actor
+//! surface: [`crate::level_chunk::Chunk::actors_mut`] exposes them, and
+//! [`crate::level_chunk::Chunk::encode_at`] regenerates the `digp` value
+//! from the resulting [`ChunkActors::resolved`] set on every encode (decision
+//! 13's "always recomputed" policy for this record) -- which is also where a
+//! dangling entry left over from before an edit quietly drops out, since a
+//! digest recomputed from the actual actor set never re-includes something
+//! it could not resolve to a record in the first place. [`ChunkActors::add`]
+//! requires the caller to supply the storage key rather than deriving one
+//! from the entity's `UniqueID`: as the module docs above state, this crate
+//! does not know that derivation, so guessing at it here would be exactly
+//! the kind of fabrication decision 11 rules out -- a caller that has (or
+//! can compute) the real derivation passes the key it produces; a caller
+//! that does not has no honest way to synthesize one.
+//!
+//! `actorprefix` writes and deletions are a separate concern from `digp`
+//! itself, because `actorprefix` keys have no chunk coordinates and so can
+//! never be members of a [`ChunkRecords`] group (see `crate::chunk`'s module
+//! docs) -- [`Chunk::encode_at`](crate::level_chunk::Chunk::encode_at) cannot
+//! carry them. [`Chunk::encode_actor_writes`](crate::level_chunk::Chunk::encode_actor_writes)
+//! is the other half: it reports the [`ActorWriteSet`] -- new/changed
+//! `actorprefix` records to upsert, plus every storage key the *previous*
+//! `digp` (as decoded) named that the *new* one does not, which is exactly
+//! the removed-actor keys and any GC-eligible orphans this chunk's own
+//! digest used to vouch for. `crate::level::Level::put_chunk` applies it
+//! alongside the `ChunkRecords` write automatically; a caller driving
+//! `Chunk::encode_at` directly, without going through a `Level`, still owns
+//! that second write itself -- see `Chunk::encode_actor_writes`'s own docs.
+//! `Level::remove_chunk` covers the deletion side of the same problem for a
+//! chunk removed outright: it deletes the `actorprefix` records that
+//! chunk's own `digp` named, dangling entries included (deleting an already-
+//! absent key is a documented no-op -- see [`ActorWriteSet::apply`]).
 
+use std::collections::HashSet;
 use std::io::Cursor;
 
 use crate::chunk::ChunkRecords;
@@ -220,6 +255,16 @@ pub struct ChunkActors {
     /// Entities from this chunk's legacy inline `0x32` record, if it has
     /// one, in on-disk order.
     pub legacy: Vec<nbtx::Value>,
+    /// Storage keys [`Self::add`] has placed into [`Self::resolved`] since
+    /// this value was read (or built fresh) -- these are exactly the
+    /// entries [`Self::write_plan`] must write a fresh `actorprefix` record
+    /// for, because they are the only ones whose NBT this crate actually
+    /// changed. An entry that arrived through [`ChunkActors::read`] and was
+    /// never touched keeps its on-disk `actorprefix` record untouched too,
+    /// which is what makes an unmodified chunk's encode a no-op on this
+    /// side. Not `pub`: a caller mutates this set only through
+    /// [`Self::add`]/[`Self::remove`], never directly.
+    added: HashSet<ActorStorageKey>,
 }
 
 impl ChunkActors {
@@ -273,6 +318,155 @@ impl ChunkActors {
     /// by the digest but have no record to count as an actor.
     pub fn len(&self) -> usize {
         self.resolved.len() + self.legacy.len()
+    }
+
+    /// Adds a new actor under `storage_key`, or replaces the value of one
+    /// already present under it -- an add-or-modify, not add-only, since
+    /// this crate has no separate "edit an existing actor's NBT" entry
+    /// point and remove-then-add through the same key is the only way to
+    /// change one. `storage_key` is never derived here: see the module
+    /// docs' write-side section for why a caller-supplied key is the only
+    /// honest contract this crate can offer, whether the entity is
+    /// genuinely new or being re-added under a key recovered some other
+    /// way. Also clears `storage_key` out of [`Self::dangling`] if it was
+    /// there -- a caller that supplies a record for a previously-dangling
+    /// reference has just resolved it.
+    ///
+    /// The record only actually reaches disk once this chunk is encoded and
+    /// the resulting [`ActorWriteSet`] (see [`Self::write_plan`]) is applied
+    /// to a database.
+    pub fn add(&mut self, storage_key: ActorStorageKey, value: nbtx::Value) {
+        match self
+            .resolved
+            .iter_mut()
+            .find(|record| record.storage_key == storage_key)
+        {
+            Some(existing) => existing.value = value,
+            None => self.resolved.push(ActorRecord { storage_key, value }),
+        }
+        self.dangling.retain(|key| *key != storage_key);
+        self.added.insert(storage_key);
+    }
+
+    /// Removes and returns the resolved actor stored under `storage_key`,
+    /// if this chunk has one. `None` if `storage_key` names no resolved
+    /// actor -- including if it only ever named a [`Self::dangling`] entry,
+    /// which is not an actor this crate can "remove" (there was never a
+    /// record backing it); a dangling entry drops out on its own the next
+    /// time the digest is recomputed, precisely because recomputing never
+    /// re-includes something with no record.
+    ///
+    /// Like [`Self::add`], the removal only reaches disk once this chunk is
+    /// encoded and the resulting [`ActorWriteSet`] is applied.
+    pub fn remove(&mut self, storage_key: &ActorStorageKey) -> Option<ActorRecord> {
+        let index = self
+            .resolved
+            .iter()
+            .position(|record| &record.storage_key == storage_key)?;
+        let removed = self.resolved.remove(index);
+        self.added.remove(storage_key);
+        Some(removed)
+    }
+
+    /// The storage keys of every resolved actor, in [`Self::resolved`]'s own
+    /// order -- exactly the entries a recomputed `digp` digest must name.
+    /// Order matters here only insofar as it makes an unmodified chunk's
+    /// recomputed digest byte-identical to the one it was decoded from:
+    /// [`ChunkActors::read`] appends to `resolved` in on-disk digest order
+    /// and skips dangling entries entirely, so replaying `resolved`'s own
+    /// order (unless a caller has since added or removed something)
+    /// reproduces the original digest exactly.
+    pub fn digest_keys(&self) -> Vec<ActorStorageKey> {
+        self.resolved
+            .iter()
+            .map(|record| record.storage_key)
+            .collect()
+    }
+
+    /// Computes the `actorprefix` maintenance this chunk's actor edits
+    /// require, given `original_digest` -- the storage keys the `digp`
+    /// digest named as read, dangling entries included (their absence from
+    /// [`Self::digest_keys`] means they are naturally covered by the
+    /// deletion side below).
+    ///
+    /// Per decision 13 and the Phase 5 GC task: [`ActorWriteSet::upserts`]
+    /// covers exactly the keys [`Self::add`] touched -- untouched resolved
+    /// actors are excluded, since their on-disk record is already correct;
+    /// [`ActorWriteSet::deletions`] covers exactly the keys
+    /// `original_digest` named that [`Self::digest_keys`] no longer does --
+    /// removed actors, and any stale orphan this chunk's own shrinking
+    /// digest used to vouch for. It deliberately does **not** attempt to
+    /// GC `actorprefix` keys the wider database holds that no `digp`
+    /// anywhere ever named going into this call -- decision 13's index
+    /// policy is scoped to what *this* index used to assert, not to the
+    /// database's `actorprefix` keyspace as a whole, which no single
+    /// chunk's encode has enough information to reason about.
+    pub fn write_plan(&self, original_digest: &[ActorStorageKey]) -> Result<ActorWriteSet> {
+        let new_keys: HashSet<ActorStorageKey> = self
+            .resolved
+            .iter()
+            .map(|record| record.storage_key)
+            .collect();
+        let deletions: Vec<ActorStorageKey> = original_digest
+            .iter()
+            .copied()
+            .filter(|key| !new_keys.contains(key))
+            .collect();
+
+        let mut upserts = Vec::with_capacity(self.added.len());
+        for record in &self.resolved {
+            if self.added.contains(&record.storage_key) {
+                upserts.push((record.storage_key, encode_actor_record(&record.value)?));
+            }
+        }
+
+        Ok(ActorWriteSet { upserts, deletions })
+    }
+}
+
+/// The `actorprefix` half of writing an edited chunk: which storage keys
+/// need a fresh record written, and which need their record deleted. See
+/// [`ChunkActors::write_plan`] for how this is computed and
+/// [`crate::level_chunk::Chunk::encode_actor_writes`] for how a caller gets
+/// one.
+///
+/// Kept separate from [`ChunkRecords`] deliberately: `actorprefix` keys
+/// carry no chunk coordinates, so unlike `digp` they can never be members of
+/// a chunk-scoped record group (see `crate::chunk`'s module docs) and this
+/// crate has no chunk-scoped container to put them in. Applying this value
+/// is therefore a second, explicit database write a caller issues alongside
+/// (not instead of) writing the chunk's own `ChunkRecords` group.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ActorWriteSet {
+    /// `(storage key, encoded actorprefix value)` pairs to insert or
+    /// overwrite.
+    pub upserts: Vec<(ActorStorageKey, Vec<u8>)>,
+    /// Storage keys whose `actorprefix` record should be deleted.
+    pub deletions: Vec<ActorStorageKey>,
+}
+
+impl ActorWriteSet {
+    /// Whether this plan has nothing to do -- the common case for a chunk
+    /// whose actors were never touched.
+    pub fn is_empty(&self) -> bool {
+        self.upserts.is_empty() && self.deletions.is_empty()
+    }
+
+    /// Applies every upsert and deletion in this plan to `db`. Deleting a
+    /// key that turns out to already be absent (a dangling reference that
+    /// was never backed by a record to begin with) is not an error -- the
+    /// end state is the same either way. The two lists are always disjoint
+    /// by construction (see [`ChunkActors::write_plan`]: every upsert key is
+    /// in the new digest, and no deletion key is), so the order the two
+    /// loops below run in can never matter.
+    pub fn apply(&self, db: &Database) -> Result<()> {
+        for (storage_key, bytes) in &self.upserts {
+            db.insert(actorprefix_key_bytes(storage_key), bytes.as_slice())?;
+        }
+        for storage_key in &self.deletions {
+            db.remove(actorprefix_key_bytes(storage_key))?;
+        }
+        Ok(())
     }
 }
 
@@ -350,6 +544,7 @@ mod tests {
             }],
             dangling: vec![[1; 8], [2; 8]],
             legacy: vec![nbtx::Value::Byte(1)],
+            ..Default::default()
         };
         assert_eq!(actors.len(), 2);
         assert!(!actors.is_empty());
@@ -386,5 +581,126 @@ mod tests {
             let bytes = encode_actor_digest_version(version);
             assert_eq!(decode_actor_digest_version(&bytes).unwrap(), version);
         }
+    }
+
+    #[test]
+    fn add_appends_a_new_actor_and_marks_it_added() {
+        let mut actors = ChunkActors::default();
+        actors.add([1; 8], nbtx::Value::Byte(9));
+
+        assert_eq!(actors.resolved.len(), 1);
+        assert_eq!(actors.resolved[0].storage_key, [1; 8]);
+        assert_eq!(actors.digest_keys(), vec![[1; 8]]);
+
+        let plan = actors.write_plan(&[]).unwrap();
+        assert_eq!(
+            plan.upserts,
+            vec![([1; 8], encode_actor_record(&nbtx::Value::Byte(9)).unwrap())]
+        );
+        assert!(plan.deletions.is_empty());
+    }
+
+    #[test]
+    fn add_under_an_existing_key_replaces_its_value_in_place() {
+        let mut actors = ChunkActors::default();
+        actors.resolved.push(ActorRecord {
+            storage_key: [1; 8],
+            value: nbtx::Value::Byte(1),
+        });
+
+        actors.add([1; 8], nbtx::Value::Byte(2));
+
+        assert_eq!(actors.resolved.len(), 1);
+        assert_eq!(actors.resolved[0].value, nbtx::Value::Byte(2));
+    }
+
+    #[test]
+    fn add_clears_the_same_key_out_of_dangling() {
+        let mut actors = ChunkActors {
+            dangling: vec![[1; 8]],
+            ..Default::default()
+        };
+
+        actors.add([1; 8], nbtx::Value::Byte(0));
+
+        assert!(actors.dangling.is_empty());
+        assert_eq!(actors.resolved.len(), 1);
+    }
+
+    #[test]
+    fn remove_takes_a_resolved_actor_out_and_unmarks_it_added() {
+        let mut actors = ChunkActors::default();
+        actors.add([1; 8], nbtx::Value::Byte(9));
+
+        let removed = actors.remove(&[1; 8]);
+
+        assert_eq!(
+            removed,
+            Some(ActorRecord {
+                storage_key: [1; 8],
+                value: nbtx::Value::Byte(9),
+            })
+        );
+        assert!(actors.resolved.is_empty());
+        // Re-adding must write a fresh record again -- removing an
+        // actor that was `added` this session must not leave it
+        // permanently excluded from `write_plan`'s upsert list.
+        actors.add([1; 8], nbtx::Value::Byte(9));
+        let plan = actors.write_plan(&[]).unwrap();
+        assert_eq!(plan.upserts.len(), 1);
+    }
+
+    #[test]
+    fn remove_of_an_absent_key_is_none() {
+        let mut actors = ChunkActors::default();
+        assert_eq!(actors.remove(&[0xAB; 8]), None);
+    }
+
+    #[test]
+    fn write_plan_deletes_keys_the_old_digest_named_that_the_new_one_does_not() {
+        let mut actors = ChunkActors::default();
+        actors.resolved.push(ActorRecord {
+            storage_key: [1; 8],
+            value: nbtx::Value::Byte(1),
+        });
+        // [2; 8] was read from disk as part of this chunk's digest but is
+        // not carried into `resolved` at all -- as if it were a dangling
+        // entry that never had a backing record.
+        let original_digest = vec![[1; 8], [2; 8]];
+
+        actors.remove(&[1; 8]);
+
+        let plan = actors.write_plan(&original_digest).unwrap();
+        // Both [1; 8] (explicitly removed) and [2; 8] (never resolved, so
+        // implicitly dropped by the recompute) are gone from the new
+        // digest, so both are GC'd.
+        let mut deletions = plan.deletions.clone();
+        deletions.sort();
+        assert_eq!(deletions, vec![[1; 8], [2; 8]]);
+        assert!(plan.upserts.is_empty());
+    }
+
+    #[test]
+    fn write_plan_leaves_unmodified_resolved_actors_out_of_the_upsert_list() {
+        let mut actors = ChunkActors::default();
+        actors.resolved.push(ActorRecord {
+            storage_key: [1; 8],
+            value: nbtx::Value::Byte(1),
+        });
+        let original_digest = vec![[1; 8]];
+
+        let plan = actors.write_plan(&original_digest).unwrap();
+        assert!(plan.upserts.is_empty());
+        assert!(plan.deletions.is_empty());
+    }
+
+    #[test]
+    fn actor_write_set_is_empty_reports_correctly() {
+        assert!(ActorWriteSet::default().is_empty());
+        let non_empty = ActorWriteSet {
+            upserts: vec![([1; 8], vec![0])],
+            deletions: vec![],
+        };
+        assert!(!non_empty.is_empty());
     }
 }

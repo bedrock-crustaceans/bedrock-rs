@@ -47,12 +47,14 @@ use std::io::Cursor;
 use bedrock_shared::world::dimension::Dimension;
 
 use crate::Greedy;
-use crate::actor::ChunkActors;
+use crate::actor::{
+    ActorStorageKey, ActorWriteSet, ChunkActors, decode_actor_digest, encode_actor_digest,
+};
 use crate::biome::{Biomes3d, COLUMNS};
 use crate::chunk::ChunkRecords;
 use crate::chunk_version::{DecodeVersion, FormatProfile, TerrainLocation};
 use crate::db::Database;
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::height_map::HeightMap;
 use crate::key::{Key, KeyVariant, subchunk_index_from_key, subchunk_index_to_key};
 use crate::legacy_terrain::LegacyTerrain;
@@ -136,6 +138,16 @@ pub enum ChunkBiomes {
     Volumes(Biomes3d),
 }
 
+/// See [`Chunk::heightmap_origin`].
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum HeightmapOrigin {
+    /// The heightmap is the value this chunk was decoded with (or has none
+    /// at all), untouched.
+    Preserved,
+    /// The heightmap was recomputed from this chunk's own terrain.
+    Recomputed,
+}
+
 /// One chunk, decoded from its [`ChunkRecords`] group into this crate's
 /// normalized in-memory model. See the module docs for exactly what
 /// "normalized" does and does not mean in this wave.
@@ -158,6 +170,14 @@ pub struct Chunk {
     terrain: Terrain,
     biomes: Option<ChunkBiomes>,
     actors: ChunkActors,
+    /// The `digp` digest exactly as decoded -- every storage key it named,
+    /// dangling entries included, in on-disk order. `Chunk::decode`'s own
+    /// snapshot, kept alongside `actors` (which drops dangling entries
+    /// entirely) purely so [`Chunk::encode_actor_writes`] can diff "what the
+    /// digest used to name" against "what it names now" and GC exactly the
+    /// keys that fell out. Empty for a chunk with no `digp` record at all,
+    /// including every [`Chunk::new`] chunk.
+    actor_digest_at_decode: Vec<ActorStorageKey>,
     /// Every chunk-scoped record this crate does not model, preserved
     /// verbatim (decision 7). Also carries the on-disk `0x2c`/`0x76`
     /// version keys, which are never taken out of it at all -- this wave
@@ -188,6 +208,7 @@ impl Chunk {
             terrain,
             biomes: None,
             actors: ChunkActors::default(),
+            actor_digest_at_decode: Vec::new(),
             records: ChunkRecords::new(position, dimension),
         }
     }
@@ -217,6 +238,16 @@ impl Chunk {
         let chunk_version = source_version.chunk_version();
 
         let actors = ChunkActors::read(&records, db)?;
+        // Independent of `actors` deliberately: `ChunkActors::read` already
+        // drops a dangling entry out of `resolved`, but the GC diff in
+        // `encode_actor_writes` needs the digest exactly as it was written,
+        // dangling entries included, to know which keys the *old* digest
+        // vouched for.
+        let actor_digest_at_decode = records
+            .get(KeyVariant::ActorDigest)
+            .map(decode_actor_digest)
+            .transpose()?
+            .unwrap_or_default();
 
         let terrain = match format.terrain {
             TerrainLocation::LegacyTerrain => {
@@ -283,6 +314,7 @@ impl Chunk {
             terrain,
             biomes,
             actors,
+            actor_digest_at_decode,
             records,
         })
     }
@@ -318,6 +350,29 @@ impl Chunk {
     /// target was reached.
     pub fn achieved_chunk_version(&self) -> u8 {
         self.source_version.chunk_version()
+    }
+
+    /// Whether this chunk's heightmap reflects its stored value or a fresh
+    /// recomputation from terrain -- the `achieved_chunk_version`-shaped
+    /// reporting hook decision 13's heightmap row calls for ("recompute
+    /// with a provider, else preserve").
+    ///
+    /// Always [`HeightmapOrigin::Preserved`] in this wave, honestly: nothing
+    /// in this crate recomputes a heightmap yet. Two things are missing,
+    /// both outside this module's own file ownership so they are reported
+    /// rather than built here: (1) [`crate::provider::ContentProvider`] has
+    /// no "is this entry air" query -- classifying a legacy/numeric entry
+    /// needs content knowledge this crate does not have, per decision 9,
+    /// and a name-based check for modern entries alone would still be
+    /// guessing at a fixed string this crate is not supposed to know,
+    /// per decision 8; (2) [`HeightMap`]/[`Biomes3d`] expose their stored
+    /// heights only by shared reference (see [`Chunk::heightmap`]), with no
+    /// setter or reconstruction path to write a recomputed array back into
+    /// either. This method exists now so the reporting shape is in place
+    /// once both land, the same way [`Chunk::achieved_chunk_version`]
+    /// existed before anything moved a record toward a different version.
+    pub fn heightmap_origin(&self) -> HeightmapOrigin {
+        HeightmapOrigin::Preserved
     }
 
     /// This chunk's terrain, in whichever on-disk shape it uses.
@@ -408,12 +463,88 @@ impl Chunk {
     }
 
     /// This chunk's resolved actor (entity) set -- see [`ChunkActors`] for
-    /// what each field means. The underlying `digp`/`0x32` records are
-    /// never taken out of [`Chunk::unmodelled_records`], so they always
-    /// pass through a read-modify-write untouched regardless of whether a
-    /// caller reads this accessor at all.
+    /// what each field means. The `0x32` legacy list is never taken out of
+    /// [`Chunk::unmodelled_records`], so it always passes through a
+    /// read-modify-write untouched regardless of whether a caller reads
+    /// this accessor at all. `digp` is different: [`Chunk::encode_at`]
+    /// regenerates it from this value's resolved set on every encode (see
+    /// [`Chunk::actors_mut`]), so an edit made through the mutable accessor
+    /// is what a subsequent encode actually writes.
     pub fn actors(&self) -> &ChunkActors {
         &self.actors
+    }
+
+    /// Mutable access to this chunk's actor set -- the write-side surface
+    /// for [`ChunkActors::add`]/[`ChunkActors::remove`]. An edit made here
+    /// has no effect on disk until this chunk is encoded (regenerating
+    /// `digp` -- see [`Chunk::encode_at`]) and [`Chunk::encode_actor_writes`]
+    /// is applied (writing/deleting the affected `actorprefix` records) --
+    /// both of which `crate::level::Level::put_chunk` does for a caller
+    /// going through it, in one call.
+    pub fn actors_mut(&mut self) -> &mut ChunkActors {
+        &mut self.actors
+    }
+
+    /// Moves this chunk's legacy inline `0x32` entities into the modern
+    /// `digp`/`actorprefix` scheme, pairing each legacy entity (in on-disk
+    /// order) with the storage key `keys` yields for it and clearing the
+    /// `0x32` record on the next encode.
+    ///
+    /// An explicit opt-in, not something [`Chunk::decode`]/[`Chunk::encode`]
+    /// ever does on their own: this format's storage key is derived from
+    /// the entity's `UniqueID` (see `crate::actor`'s module docs), a
+    /// derivation this crate does not implement, so `keys` must supply one
+    /// per legacy entity from wherever the caller can produce or has
+    /// already computed it -- there is no honest way to synthesize one
+    /// here. This also does not address *when* migrating is appropriate:
+    /// the digest scheme is understood to be tied to a chunk-version-era
+    /// boundary, and this crate has no write-target machinery yet (see the
+    /// Phase 5 TODO entry) to know whether this chunk's own version is one
+    /// the digest scheme applies to -- that judgment stays the caller's.
+    ///
+    /// Errors (without mutating anything) if `keys` does not yield exactly
+    /// one key per legacy entity; on success, returns the number migrated.
+    pub fn migrate_legacy_entities(
+        &mut self,
+        keys: impl IntoIterator<Item = ActorStorageKey>,
+    ) -> Result<usize> {
+        let keys: Vec<ActorStorageKey> = keys.into_iter().collect();
+        if keys.len() != self.actors.legacy.len() {
+            return Err(Error::Invalid(
+                "migrate_legacy_entities: key count does not match legacy entity count",
+            ));
+        }
+
+        let legacy = std::mem::take(&mut self.actors.legacy);
+        let migrated = legacy.len();
+        for (storage_key, value) in keys.into_iter().zip(legacy) {
+            self.actors.add(storage_key, value);
+        }
+        self.records.take(KeyVariant::Entity);
+
+        Ok(migrated)
+    }
+
+    /// Computes the `actorprefix` writes and deletions this chunk's actor
+    /// edits require -- the counterpart to [`Chunk::encode_at`] regenerating
+    /// `digp`, covering the part of decision 13's actor-digest policy that
+    /// [`ChunkRecords`] cannot carry (`actorprefix` keys have no chunk
+    /// coordinates, so they can never be members of that group -- see
+    /// `crate::chunk`'s module docs).
+    ///
+    /// **This is not applied by [`Chunk::encode`]/[`Chunk::encode_at`] or by
+    /// writing the resulting [`ChunkRecords`].** [`crate::level::Level::put_chunk`]
+    /// calls this and applies the result for you -- a caller going through
+    /// it never needs to touch this method at all. It matters directly only
+    /// for a caller driving [`Chunk::encode_at`] on its own, outside a
+    /// `Level` (against the raw layer, or some other database entirely):
+    /// that caller must call this too and apply the returned
+    /// [`ActorWriteSet`] to the same database itself, or added/removed
+    /// actors will not actually reach disk (`digp` will point at records
+    /// that were never written, or stop pointing at ones that were never
+    /// deleted).
+    pub fn encode_actor_writes(&self) -> Result<ActorWriteSet> {
+        self.actors.write_plan(&self.actor_digest_at_decode)
     }
 
     /// The record group left over after taking out everything this type
@@ -545,6 +676,135 @@ impl Chunk {
             None => {}
         }
 
+        // Decision 13: `digp` is a recomputed index, not a preserved cache
+        // -- regenerate it from this chunk's own resolved actor set rather
+        // than carrying the on-disk bytes through. For an untouched chunk
+        // this reproduces the original bytes exactly: `ChunkActors::read`
+        // builds `resolved` in on-disk digest order, and the real corpus
+        // carries no dangling entries to drop (see `crate::actor`'s module
+        // docs), so recomputing is a no-op in content even though it is not
+        // a no-op in code. A chunk edited through `Chunk::actors_mut` gets
+        // the digest its new actor set actually implies, dangling entries
+        // included, none of which survive being recomputed from a set that
+        // never had them (self-healing, not merely GC of what was
+        // explicitly removed).
+        let new_digest_keys = self.actors.digest_keys();
+        if new_digest_keys.is_empty() {
+            if !self.actor_digest_at_decode.is_empty() {
+                // The digest held entries at decode and holds none now --
+                // every actor this chunk had was removed. Delete the key
+                // entirely rather than leave a stale record with zero
+                // entries, per the Phase 5 "deleting empty digp" task.
+                records.take(KeyVariant::ActorDigest);
+            }
+            // Otherwise there was nothing to begin with -- no key, or a key
+            // already carrying zero entries, the common shape for a chunk
+            // with no actors (see the corpus counts in `crate::actor`'s
+            // test suite) -- and nothing was added either. Leave `records`
+            // exactly as it already is (the clone/copy above already
+            // carries whatever the original had, present-empty or absent),
+            // which is what keeps this path byte-identical for the
+            // no-actors-either-way case rather than deleting a key real
+            // worlds keep present.
+        } else {
+            records.insert(
+                Key {
+                    chunk: position,
+                    dimension,
+                    data: KeyVariant::ActorDigest,
+                },
+                encode_actor_digest(&new_digest_keys),
+            );
+        }
+
         Ok(records)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::actor::{decode_actor_digest, encode_actor_record};
+
+    /// A synthetic, never-persisted chunk -- these tests are about the
+    /// mutation surface and encode-time bookkeeping in this module, not
+    /// about real on-disk shapes (the fixture-driven suite in
+    /// `tests/actor_write.rs` covers those).
+    fn new_chunk() -> Chunk {
+        Chunk::new(ChunkPosition(0, 0), Dimension::Overworld, 40)
+    }
+
+    #[test]
+    fn adding_an_actor_to_a_fresh_chunk_produces_a_digest_and_a_matching_upsert() {
+        let mut chunk = new_chunk();
+        let key: ActorStorageKey = [7; 8];
+        let value = nbtx::Value::Byte(1);
+        chunk.actors_mut().add(key, value.clone());
+
+        let encoded = chunk.encode().unwrap();
+        let digest_bytes = encoded
+            .get(KeyVariant::ActorDigest)
+            .expect("digp key present after adding an actor");
+        assert_eq!(decode_actor_digest(digest_bytes).unwrap(), vec![key]);
+
+        let writes = chunk.encode_actor_writes().unwrap();
+        assert_eq!(
+            writes.upserts,
+            vec![(key, encode_actor_record(&value).unwrap())]
+        );
+        assert!(writes.deletions.is_empty());
+    }
+
+    #[test]
+    fn removing_the_only_actor_deletes_the_digest_key_entirely() {
+        let mut chunk = new_chunk();
+        let key: ActorStorageKey = [3; 8];
+        chunk.actors_mut().add(key, nbtx::Value::Byte(0));
+        chunk.actors_mut().remove(&key);
+
+        let encoded = chunk.encode().unwrap();
+        assert!(!encoded.contains(KeyVariant::ActorDigest));
+    }
+
+    #[test]
+    fn a_chunk_with_no_actors_encodes_with_no_digest_key_at_all() {
+        let chunk = new_chunk();
+        let encoded = chunk.encode().unwrap();
+        assert!(!encoded.contains(KeyVariant::ActorDigest));
+    }
+
+    #[test]
+    fn migrate_legacy_entities_rejects_a_key_count_mismatch_without_mutating() {
+        let mut chunk = new_chunk();
+        chunk.actors_mut().legacy = vec![nbtx::Value::Byte(1), nbtx::Value::Byte(2)];
+        let before = chunk.actors().legacy.clone();
+
+        let result = chunk.migrate_legacy_entities([[1u8; 8]]);
+
+        assert!(result.is_err());
+        assert_eq!(chunk.actors().legacy, before);
+        assert!(chunk.actors().resolved.is_empty());
+    }
+
+    #[test]
+    fn migrate_legacy_entities_moves_each_entity_to_its_given_key_in_order() {
+        let mut chunk = new_chunk();
+        chunk.actors_mut().legacy = vec![nbtx::Value::Byte(1), nbtx::Value::Byte(2)];
+
+        let migrated = chunk.migrate_legacy_entities([[1u8; 8], [2u8; 8]]).unwrap();
+
+        assert_eq!(migrated, 2);
+        assert!(chunk.actors().legacy.is_empty());
+        assert_eq!(chunk.actors().digest_keys(), vec![[1u8; 8], [2u8; 8]]);
+
+        let encoded = chunk.encode().unwrap();
+        assert!(!encoded.contains(KeyVariant::Entity));
+        assert!(encoded.contains(KeyVariant::ActorDigest));
+    }
+
+    #[test]
+    fn heightmap_origin_is_always_preserved_in_this_wave() {
+        let chunk = new_chunk();
+        assert_eq!(chunk.heightmap_origin(), HeightmapOrigin::Preserved);
     }
 }
