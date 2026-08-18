@@ -8,7 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use bedrock_shared::world::dimension::Dimension;
 
@@ -43,6 +43,12 @@ use crate::types::ChunkPosition;
 /// or writing a chunk's actual content still goes through the raw layer
 /// each time -- the index never caches record bytes.
 pub struct Level {
+    /// The world directory [`Level::open`]/[`Level::open_rw`] was given --
+    /// the one containing `db/`, `level.dat`, and `levelname.txt`. Kept so
+    /// [`Level::save`] knows where to write the latter two back to; `db`
+    /// itself needs no such path, since every write to it already goes
+    /// through `self.db` directly.
+    path: PathBuf,
     db: Database,
     settings: LevelSettings,
     dictionary: Option<MetadataDictionary>,
@@ -67,6 +73,11 @@ pub struct Level {
     /// exists so the API surface and the caller-visible preference are in
     /// place for when that machinery lands.
     write_version: u8,
+    /// `true` for a [`Level::open`] handle, `false` for [`Level::open_rw`].
+    /// The two constructors otherwise do identical work (see
+    /// [`Level::open_rw`]'s doc comment) -- this is the one place that
+    /// distinction is actually enforced, in [`Level::save`].
+    read_only: bool,
 }
 
 impl Level {
@@ -78,26 +89,33 @@ impl Level {
     /// that costs. Returns an error if `level.dat` cannot be read or
     /// decoded, or if the database fails to open -- both fatal, unlike a
     /// missing chunk, which [`Level::chunk`] reports as `Ok(None)`.
+    ///
+    /// The returned handle is read-only: [`Level::save`] returns an error
+    /// on it rather than writing. [`Level::put_chunk`]/[`Level::remove_chunk`]
+    /// are unaffected by that -- they write straight through to `db/`
+    /// regardless of which constructor opened the handle, exactly as
+    /// before this distinction existed; only `level.dat`/`levelname.txt`
+    /// writes are gated on it. Use [`Level::open_rw`] for a handle
+    /// [`Level::save`] will actually write through.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        Self::open_impl(path.as_ref())
+        Self::open_impl(path.as_ref(), true)
     }
 
     /// Opens a Bedrock world for reading and writing. `path` is the world
     /// directory, exactly as for [`Level::open`].
     ///
     /// Distinct from [`Level::open`] per C-CUSTOM-TYPE, matching the public
-    /// API design's rationale: today the two constructors do identical
-    /// work (the underlying `rusty-leveldb` handle is opened read-write
-    /// either way, and there is no separate write-side setup to skip yet),
-    /// but keeping them as separate entry points keeps the read-only
-    /// caller's intent explicit at the call site and leaves room for
-    /// write-side setup to land behind this constructor alone later,
-    /// without a signature change.
+    /// API design's rationale: the underlying `rusty-leveldb` handle is
+    /// opened read-write either way, and there is no other write-side setup
+    /// to skip, so the two constructors still do identical work *opening*
+    /// the level. What now differs is [`Level::save`]: only a handle from
+    /// this constructor will actually write `level.dat`/`levelname.txt` --
+    /// see its doc comment.
     pub fn open_rw(path: impl AsRef<Path>) -> Result<Self> {
-        Self::open_impl(path.as_ref())
+        Self::open_impl(path.as_ref(), false)
     }
 
-    fn open_impl(path: &Path) -> Result<Self> {
+    fn open_impl(path: &Path, read_only: bool) -> Result<Self> {
         let db_path = path.join("db");
         let db_path = db_path
             .to_str()
@@ -126,12 +144,14 @@ impl Level {
         dimensions.sort_by_key(|&dimension| i32::from(dimension));
 
         Ok(Self {
+            path: path.to_path_buf(),
             db,
             settings,
             dictionary,
             positions,
             dimensions,
             write_version: KNOWN_CHUNK_VERSION_CEILING,
+            read_only,
         })
     }
 
@@ -143,6 +163,16 @@ impl Level {
     /// This level's declared name.
     pub fn name(&self) -> &str {
         &self.settings.level_name
+    }
+
+    /// Renames this level. Takes effect the next time [`Level::save`]
+    /// writes `level.dat`/`levelname.txt`; a caller that never calls `save`
+    /// leaves the on-disk files untouched, same as any other in-memory-only
+    /// edit. See [`Level::save`]'s doc comment for why this is the whole
+    /// mutation surface this wave adds rather than exposing every
+    /// [`LevelSettings`] field for editing.
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.settings.level_name = name.into();
     }
 
     /// The chunk version [`Level::put_chunk`] targets by default. See the
@@ -223,6 +253,11 @@ impl Level {
     /// terrain, biomes, and preserved records (see
     /// [`Chunk::encode_at`]) and updating the position index.
     ///
+    /// Writes straight through to `db/` regardless of whether this handle
+    /// came from [`Level::open`] or [`Level::open_rw`] -- see [`Level::open`]'s
+    /// doc comment for the read-only boundary this crate currently draws
+    /// (`level.dat`/`levelname.txt` only, via [`Level::save`]).
+    ///
     /// When `dimension`/`position` match `chunk`'s own (the common case: a
     /// chunk read from this level, edited, and written back), this reuses
     /// `chunk`'s own preserved-record bookkeeping to delete any record it
@@ -287,6 +322,11 @@ impl Level {
     /// Deletes every record of the chunk at `position` in `dimension`, if
     /// one exists, and removes it from the position index. A no-op, not an
     /// error, if no chunk is there.
+    ///
+    /// Writes straight through to `db/` regardless of whether this handle
+    /// came from [`Level::open`] or [`Level::open_rw`] -- see [`Level::open`]'s
+    /// doc comment for the read-only boundary this crate currently draws
+    /// (`level.dat`/`levelname.txt` only, via [`Level::save`]).
     pub fn remove_chunk(&mut self, dimension: Dimension, position: ChunkPosition) -> Result<()> {
         if let Some(mut records) = ChunkRecords::read(&self.db, position, dimension)? {
             let variants: Vec<_> = records.iter().map(|(key, _)| key.data).collect();
@@ -310,13 +350,59 @@ impl Level {
         &self.db
     }
 
-    /// Persists pending changes. See the struct docs for why this
-    /// currently has nothing left to do: every [`Level::put_chunk`]/
-    /// [`Level::remove_chunk`] call already writes straight through to the
-    /// database, and this crate cannot yet rewrite `level.dat`
-    /// (`LevelSettings::write` is unimplemented -- Phase 5). Safe to call
-    /// at any time; always succeeds today.
+    /// Persists pending changes: (re)writes `level.dat` and its
+    /// `levelname.txt` sidecar from this level's current settings.
+    ///
+    /// [`Level::put_chunk`]/[`Level::remove_chunk`] already write straight
+    /// through to `db/` on every call (see their own doc comments), so
+    /// those need no separate flush here -- `save`'s only remaining job is
+    /// the two small metadata files that sit beside `db/` rather than in
+    /// it. `level.dat` is written through [`LevelSettings::write`]; see its
+    /// doc comment for the exact field-set and field-order contract that
+    /// gives the file. `levelname.txt` is written as [`Level::name`]'s
+    /// current value, plain text, nothing else -- the whole of what that
+    /// sidecar ever holds.
+    ///
+    /// Settings themselves stay effectively immutable this wave beyond
+    /// [`Level::set_name`], the one mutator `save` makes meaningful right
+    /// now: there is no public way yet to edit a game rule, an ability, or
+    /// any other `LevelSettings` field. So an `open_rw`-edit-`save` cycle
+    /// that never calls `set_name` writes back exactly the settings that
+    /// were read, modulo `LevelSettings::write`'s own fidelity contract
+    /// (semantically faithful; not always byte-identical -- defaulted
+    /// boolean fields the source world omitted are re-emitted explicit).
+    /// Widening the mutation surface further is deferred until a caller
+    /// need motivates which field to expose next, rather than opening every
+    /// field speculatively.
+    ///
+    /// # Read-only handles
+    ///
+    /// Returns [`Error::Invalid`] on a [`Level::open`] handle instead of
+    /// silently doing nothing. This is the one place `open`'s read-only
+    /// status (see its doc comment) is actually enforced -- it gates only
+    /// `level.dat`/`levelname.txt`, exactly the two files this method
+    /// writes, not `db/` (see [`Level::put_chunk`]/[`Level::remove_chunk`],
+    /// unaffected either way). A `save` that quietly no-op'd on a read-only
+    /// handle would make that guarantee easy to violate by accident -- a
+    /// caller who called [`Level::set_name`] then `save` on an `open`
+    /// handle would see no error and no effect. An explicit error is louder
+    /// and cheaper to notice than a write that silently didn't happen. Use
+    /// [`Level::open_rw`] to get a handle this actually writes through.
     pub fn save(&self) -> Result<()> {
+        if self.read_only {
+            return Err(Error::Invalid(
+                "a read-only level (opened via Level::open; use Level::open_rw to save)",
+            ));
+        }
+
+        let mut level_dat = Vec::new();
+        self.settings.write(&mut level_dat)?;
+        write_atomic(&self.path.join("level.dat"), &level_dat)?;
+        write_atomic(
+            &self.path.join("levelname.txt"),
+            self.settings.level_name.as_bytes(),
+        )?;
+
         Ok(())
     }
 
@@ -331,6 +417,36 @@ impl Level {
             dimension,
         }
     }
+}
+
+/// Writes `contents` to `path` atomically: to a fresh temp file in the same
+/// directory, then an atomic same-filesystem rename over `path`. Guards
+/// [`Level::save`] against a reader (the game, or another tool scanning the
+/// world directory) ever observing a partially written `level.dat` or
+/// `levelname.txt` -- a plain truncate-in-place write has no such
+/// guarantee, since a crash or a concurrent read between the truncate and
+/// the last byte sees a corrupt file where a working one used to be. The
+/// rename itself is atomic because the temp file is created next to its
+/// target rather than in a separate temp directory, which keeps both on
+/// the same filesystem (a cross-filesystem rename is not atomic, and on
+/// some platforms is not even a rename).
+fn write_atomic(path: &Path, contents: &[u8]) -> Result<()> {
+    let dir = path
+        .parent()
+        .ok_or(Error::Invalid("path has no parent directory"))?;
+    let file_name = path
+        .file_name()
+        .ok_or(Error::Invalid("path has no file name"))?;
+
+    let mut tmp_name = std::ffi::OsString::from(".");
+    tmp_name.push(file_name);
+    tmp_name.push(".tmp");
+    let tmp_path = dir.join(tmp_name);
+
+    std::fs::write(&tmp_path, contents)?;
+    std::fs::rename(&tmp_path, path)?;
+
+    Ok(())
 }
 
 /// One pass over every key in `db`, keeping only each chunk-scoped key's

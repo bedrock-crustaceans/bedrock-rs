@@ -626,3 +626,73 @@ fn put_chunk_moves_a_chunk_to_a_different_occupied_position() {
         Some(source_position)
     );
 }
+
+/// [`Level::save`] on an `open_rw` handle rewrites `level.dat` (decodable
+/// strictly, carrying the new name) and `levelname.txt` (exactly the new
+/// name, plain text, nothing else) after [`Level::set_name`] -- the one
+/// mutation `save` currently makes meaningful, per `Level::save`'s doc
+/// comment.
+#[test]
+fn save_writes_level_dat_and_levelname_txt() {
+    use bedrock_level::settings::LevelSettings;
+
+    let fixture = support::fixtures()
+        .into_iter()
+        .find(|f| f.name == "v1_18_superflat")
+        .expect("v1_18_superflat fixture is present");
+    let tmp = extract_fixture(&fixture);
+    let world_path = tmp.path().join("world");
+
+    let mut level = Level::open_rw(&world_path).unwrap();
+    assert_ne!(level.name(), "a renamed test world");
+    level.set_name("a renamed test world");
+    level.save().unwrap_or_else(|e| panic!("save failed: {e}"));
+
+    let level_dat = std::fs::read(world_path.join("level.dat")).expect("level.dat written");
+    let settings = LevelSettings::read(level_dat.as_slice())
+        .expect("freshly saved level.dat decodes strictly");
+    assert_eq!(settings.level_name, "a renamed test world");
+
+    let levelname =
+        std::fs::read_to_string(world_path.join("levelname.txt")).expect("levelname.txt written");
+    assert_eq!(levelname, "a renamed test world");
+
+    // Reopening through `Level::open` sees the rename too -- `save`
+    // actually reached disk, not just this handle's in-memory settings.
+    // `rusty-leveldb` holds an exclusive lock on `db/` for as long as any
+    // handle on it is alive (see `extract_fixture`'s doc comment), so the
+    // first handle must be dropped before a second one can open the same
+    // store.
+    drop(level);
+    let reopened = Level::open(&world_path).unwrap();
+    assert_eq!(reopened.name(), "a renamed test world");
+}
+
+/// [`Level::save`] on an `open` (read-only) handle returns an error rather
+/// than silently doing nothing, and leaves `level.dat` untouched -- the
+/// read-only decision documented on [`Level::open`] and [`Level::save`].
+#[test]
+fn save_on_read_only_handle_errors_and_does_not_write() {
+    let fixture = support::fixtures()
+        .into_iter()
+        .find(|f| f.name == "v1_18_superflat")
+        .expect("v1_18_superflat fixture is present");
+    let tmp = extract_fixture(&fixture);
+    let world_path = tmp.path().join("world");
+
+    let before = std::fs::read(world_path.join("level.dat")).unwrap();
+    let levelname_existed_before = world_path.join("levelname.txt").exists();
+
+    let mut level = Level::open(&world_path).unwrap();
+    level.set_name("should never reach disk");
+    let result = level.save();
+    assert!(result.is_err(), "save on a read-only handle should error");
+
+    let after = std::fs::read(world_path.join("level.dat")).unwrap();
+    assert_eq!(before, after, "read-only save must not modify level.dat");
+    assert_eq!(
+        world_path.join("levelname.txt").exists(),
+        levelname_existed_before,
+        "read-only save must not create levelname.txt"
+    );
+}

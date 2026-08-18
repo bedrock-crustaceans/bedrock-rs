@@ -1,6 +1,6 @@
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::version::GameVersion;
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use facet::Facet;
 use nbtx::{Compound, Value};
 use std::io::{Read, Write};
@@ -373,8 +373,12 @@ fn unpack_game_versions(value: &mut Value) {
         let Some(entry) = entries.get_mut(bstr::BStr::new(key)) else {
             continue;
         };
-        // `IntArray` is what Bedrock writes; a `List` of `Int` decoded into the
-        // same five ints, so accept it too.
+        // `List<Int>` is what Bedrock writes (confirmed corpus-wide: all 14
+        // real level.dats sampled during implementation, zero exceptions);
+        // an `IntArray` of the same five ints is accepted too, on the
+        // chance some writer emits that tag instead -- nothing in the
+        // corpus rules it out as firmly as it rules out anything but a
+        // five-element list of ints for the tag actually observed.
         let parts: Vec<i32> = match entry {
             Value::IntArray(parts) => parts.clone(),
             Value::List(items) => {
@@ -400,14 +404,158 @@ fn unpack_game_versions(value: &mut Value) {
     }
 }
 
+/// Inverse of [`unpack_game_versions`]: refolds the two [`GameVersion`]
+/// compounds `nbtx::to_value` produced back into the five-element
+/// `List<Int>`s Bedrock actually stores on disk -- confirmed corpus-wide
+/// (all 14 real level.dats sampled during implementation write `TAG_List`
+/// here, zero `TAG_IntArray`). A key that is absent (an unset
+/// `MinimumCompatibleClientVersion`, already omitted by `to_value`'s
+/// `None`-skipping) or that is not the compound shape `unpack_game_versions`
+/// builds is left alone.
+fn pack_game_versions(value: &mut Value) {
+    let Value::Compound(entries) = value else {
+        return;
+    };
+
+    for key in GAME_VERSION_KEYS {
+        let Some(entry) = entries.get_mut(bstr::BStr::new(key)) else {
+            continue;
+        };
+        let Value::Compound(fields) = entry else {
+            continue;
+        };
+        let field = |name: &str| match fields.get(bstr::BStr::new(name)) {
+            Some(Value::Int(v)) => Some(*v),
+            _ => None,
+        };
+        let (Some(major), Some(minor), Some(patch), Some(revision), Some(beta)) = (
+            field("major"),
+            field("minor"),
+            field("patch"),
+            field("revision"),
+            field("beta"),
+        ) else {
+            continue;
+        };
+        *entry = Value::List(vec![
+            Value::Int(major),
+            Value::Int(minor),
+            Value::Int(patch),
+            Value::Int(revision),
+            Value::Int(beta),
+        ]);
+    }
+}
+
+/// Recursively sorts every compound's keys into ascending byte order.
+///
+/// This is the order every one of the fourteen real level.dats sampled
+/// during implementation used, uniformly, at every nesting depth (the root
+/// compound and each of `abilities`/`experiments`/`world_policies`) — 53
+/// compounds checked, zero exceptions. It is not merely plausible-looking:
+/// it is exactly what `Vec<u8>`/`BString`'s `Ord` produces, which sorts
+/// every ASCII uppercase letter before every lowercase one, and the sampled
+/// files interleave `PascalCase` and `camelCase` keys at the root in
+/// exactly that byte order rather than, say, a case-insensitive one.
+/// [`LevelSettings::write`] applies this after reshaping the struct's own
+/// declaration order (ad hoc, per the strict-decode task) into a `Value`
+/// tree, so the file it produces matches the game's own ordering rather
+/// than reproducing this crate's field layout.
+fn sort_compound_keys(value: &mut Value) {
+    match value {
+        Value::Compound(entries) => {
+            for child in entries.values_mut() {
+                sort_compound_keys(child);
+            }
+            entries.sort_unstable_keys();
+        }
+        Value::List(items) => {
+            for item in items {
+                sort_compound_keys(item);
+            }
+        }
+        _ => {}
+    }
+}
+
 impl LevelSettings {
-    /// # Note
+    /// Encodes `self` as a level.dat: the 8-byte header (`i32` header
+    /// storage version, `i32` payload length, both little-endian) followed
+    /// by that many bytes of uncompressed little-endian NBT, with nothing
+    /// after it.
     ///
-    /// Unimplemented. A writer has to undo what [`unpack_game_versions`] does —
-    /// fold the two [`GameVersion`] compounds back into `IntArray`s — or the
-    /// file it produces will not read back in Bedrock.
-    pub fn write<W: Write>(&self, _writer: W) -> Result<()> {
-        todo!()
+    /// # Field-set fidelity contract
+    ///
+    /// `Option` fields round-trip absence faithfully: a `None` is omitted
+    /// from the written compound exactly as `nbtx::to_value` omits it
+    /// (`unpack_game_versions`'s inverse, [`pack_game_versions`], does not
+    /// change that — it only reshapes the two game-version fields that are
+    /// present). Decode such a settings value, write it, and every field the
+    /// source world omitted is still omitted.
+    ///
+    /// The fields behind `#[facet(default)]` do **not** have that property:
+    /// plain `bool`s (the great majority), `abilities.verticalFlySpeed`
+    /// (`f32`), and `BiomeOverride` (`String`, defaulting to `""` -- see
+    /// its own field doc for why empty and absent are the same observed
+    /// state). That attribute exists so `read` can accept a key some
+    /// worlds never wrote — the pre-experiments-compound `armadillo` flag,
+    /// `respawnblocksexplode`, and the rest — by defaulting it on decode;
+    /// nothing in nbtx (checked against the vendored attribute grammar:
+    /// `allow_unknown_fields`, `variant_as`, `lenient_width`, none of which
+    /// skip a default-valued field on encode) can tell the decoded struct
+    /// "this was absent" after the fact, and turning every one of these
+    /// fields into an `Option` to recover that distinction would ripple
+    /// through every reader of this struct for a write-side nicety. So the
+    /// contract here is the pragmatic one: **write re-emits every
+    /// `#[facet(default)]` field explicitly**, its type's default value
+    /// where the source omitted it. A decode-write-decode round trip is
+    /// therefore semantically faithful — `LevelSettings::read` on the freshly written
+    /// file, compared with `PartialEq` against a version of the original
+    /// with every defaulted field materialized, matches — but not always
+    /// byte-identical to the original file. See `tests/settings_write.rs`
+    /// for exactly which fixtures do and do not survive as identical bytes,
+    /// and why.
+    ///
+    /// # Field order
+    ///
+    /// Fields are written in ascending byte order of their on-disk key
+    /// name, at every nesting depth, not the struct's own declaration
+    /// order. See [`sort_compound_keys`] for the corpus evidence this is
+    /// uniform across real worlds.
+    ///
+    /// # `RandomSeed`
+    ///
+    /// Always written as a `Long`, regardless of `header_storage_version`.
+    /// The storage-version-8 boundary sometimes described for this field
+    /// is about the game truncating the *value* to 32 bits for older
+    /// clients, not the tag width changing — `random_seed` is `i64` on this
+    /// struct unconditionally, so this is automatic rather than something
+    /// this method branches on.
+    pub fn write<W: Write>(&self, mut writer: W) -> Result<()> {
+        let mut value = nbtx::to_value(self)?;
+
+        // `header_storage_version` (on disk: `headerStorageVersion`, via the
+        // struct's `camelCase` renaming) exists only to carry the 8-byte
+        // header's version field alongside the NBT-decoded one -- see the
+        // field's own doc comment. It has no on-disk key of its own; `read`
+        // patches it in after decoding rather than reading it from the
+        // payload, and it must not be written into the payload either.
+        if let Value::Compound(entries) = &mut value {
+            entries.shift_remove(bstr::BStr::new("headerStorageVersion"));
+        }
+
+        pack_game_versions(&mut value);
+        sort_compound_keys(&mut value);
+
+        let payload = nbtx::to_le_bytes(&value)?;
+        let payload_len =
+            i32::try_from(payload.len()).map_err(|_| Error::Invalid("level.dat payload size"))?;
+
+        writer.write_i32::<LittleEndian>(self.header_storage_version)?;
+        writer.write_i32::<LittleEndian>(payload_len)?;
+        writer.write_all(&payload)?;
+
+        Ok(())
     }
 
     pub fn read<R: Read>(mut data: R) -> Result<Self> {
