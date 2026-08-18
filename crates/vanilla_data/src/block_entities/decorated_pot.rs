@@ -11,8 +11,11 @@ pub struct DecoratedPot {
     pub loot_table_seed: Option<i32>,
     #[facet(rename = "animation")]
     pub animation: i8,
+    /// Absent on 16 of 61 real records — the same ones that also omit
+    /// [`Self::loot_table`]/[`Self::loot_table_seed`], a pot whose contents
+    /// come from a loot table rather than a fixed placed item.
     #[facet(rename = "item")]
-    pub item: ItemStack,
+    pub item: Option<ItemStack>,
     #[facet(rename = "sherds")]
     pub sherds: Option<Vec<String>>,
 }

@@ -17,8 +17,13 @@ pub struct JigsawBlock {
     pub target: String,
     /// The block that this jigsaw block will become.
     pub final_state: String,
-    pub placement_priority: i32,
-    pub selection_priority: i32,
+    /// Absent together with [`Self::selection_priority`] on 12 of the 13
+    /// real records in the fixture — always both missing or both present,
+    /// never one without the other.
+    pub placement_priority: Option<i32>,
+    /// See [`Self::placement_priority`]: the two are always omitted
+    /// together.
+    pub selection_priority: Option<i32>,
     /// The joint option. See [`JigsawJoint`].
     pub joint: JigsawJoint,
     /// The jigsaw block's name.

@@ -41,57 +41,19 @@ fn open_test_db() -> (tempfile::TempDir, Database) {
 /// why, and exactly how many of its records currently decode successfully
 /// despite that.
 ///
-/// None of these are tag-width or bool-decode issues — nothing here is a
-/// `lenient_width` candidate — each needs its own field-by-field fix, tracked
-/// in `crates/level/TODO.md`.
-///
-/// Most of these ids are a gap only some of their records hit (a required
-/// field a minority of records omit, say), so most of their own records
-/// decode fine — the second element pins exactly how many. Pinning a full
-/// count, not just "this id fails sometimes", matters because a tolerance can
-/// regress from "some records fail" to "all records fail" without changing
-/// which ids show up as failing at all — e.g. if `ShulkerBox::findable`'s
-/// `lenient_width` were dropped, `ShulkerBox` would stay in this list (it
-/// already fails 100% of its records for the unrelated `facing` bug) with no
-/// other signal that a second, real tolerance silently vanished.
+/// Empty: every id the fixture carries now decodes, across all 4655 real
+/// block-entity records. The gaps that used to live here — five missing
+/// ids (`DaylightDetector`, `EnderChest`, `SculkShrieker`, `Smoker`,
+/// `SporeBlossom`), seven required-but-sometimes-absent fields, and
+/// `ShulkerBox::facing`'s wrong type — are fixed; see `crates/level/TODO.md`
+/// for what each one was.
 ///
 /// Kept as an explicit allowlist rather than an `#[ignore]` on the whole test
-/// so the 4169 records (89.5%) that already decode correctly stay covered: a
-/// decode failure for an id *not* on this list is a real regression, and any
-/// drift in a listed id's exact ok-count — including to zero, or up to its
-/// full total — is a stale entry to update or investigate.
-const KNOWN_FAILING_IDS: &[(&str, usize)] = &[
-    // `SculkSensor::vibration_listener` is required but absent on these
-    // records; `CalibratedSculkSensor` and `SculkSensor` share the struct.
-    ("CalibratedSculkSensor", 180),
-    ("SculkSensor", 64),
-    // `ShulkerBox::facing` is typed `f32`; real records write a face-index
-    // `Byte`. A modeling bug, not a tag-width gap — `lenient_width` would
-    // accept the tag but not resolve it to the right value.
-    ("ShulkerBox", 0),
-    // `SignText::filtered_text` is required but absent on these records.
-    ("Sign", 413),
-    // `DecoratedPot::item` is required but absent on these records.
-    ("DecoratedPot", 45),
-    // `JigsawBlock::placement_priority` is required but absent.
-    ("JigsawBlock", 1),
-    // `Dispenser::loot_table` is required but absent; `Dropper` and
-    // `Dispenser` share the struct. `Chest::loot_table` already models the
-    // same key as `Option<String>`, so this is likely just a missed `Option`.
-    ("Dropper", 0),
-    ("Dispenser", 44),
-    // `Furnace::stored_xp` is required but absent; `BlastFurnace` shares the
-    // struct.
-    ("BlastFurnace", 0),
-    // `StructureBlock::last_touched_player_id` is required but absent.
-    ("StructureBlock", 1),
-    // No struct registered for these ids at all yet.
-    ("DaylightDetector", 0),
-    ("EnderChest", 0),
-    ("SculkShrieker", 0),
-    ("Smoker", 0),
-    ("SporeBlossom", 0),
-];
+/// so every record stays covered: a decode failure for any id is a real
+/// regression, and any drift in a listed id's exact ok-count — including a
+/// tolerance silently regressing from "some records fail" to "all records
+/// fail" without the failing *set* changing at all — is caught the same way.
+const KNOWN_FAILING_IDS: &[(&str, usize)] = &[];
 
 /// The `id` string a raw block-entity record's `id` key holds, or `"?"` if
 /// the record is not a compound or the key is missing/not a string — either

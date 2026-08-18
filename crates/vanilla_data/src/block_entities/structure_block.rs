@@ -27,8 +27,10 @@ pub struct StructureBlock {
     pub show_bounding_box: bool,
     pub include_players: bool,
 
+    /// Absent on 4 of the 5 real records in the fixture — a structure block
+    /// no player has interacted with since it was placed.
     #[facet(rename = "lastTouchedPlayerId")]
-    pub last_touched_player_id: i64,
+    pub last_touched_player_id: Option<i64>,
 
     pub mirror: bool,
     pub remove_blocks: bool,

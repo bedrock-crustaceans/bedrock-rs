@@ -9,6 +9,10 @@ pub struct Furnace {
     pub burn_time: i16,
     pub cook_time: i16,
     pub items: Vec<ItemSlot>,
+    /// Absent on every real `BlastFurnace` and `Smoker` record in the
+    /// fixture (0/8 each) and present on every real `Furnace` record (8/8) —
+    /// the same struct backs all three ids (see `mod.rs`), and only the
+    /// plain furnace writes this key.
     #[facet(rename = "StoredXPInt")]
-    pub stored_xp: i32,
+    pub stored_xp: Option<i32>,
 }

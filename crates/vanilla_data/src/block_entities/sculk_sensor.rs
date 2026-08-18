@@ -3,8 +3,12 @@ use facet::Facet;
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
 pub struct SculkSensor {
+    /// Absent on a real record whenever the sensor has not yet detected a
+    /// vibration to listen for — 236 records across `SculkSensor` and
+    /// `CalibratedSculkSensor` (which shares this struct) omit the key
+    /// entirely rather than writing an empty listener.
     #[facet(rename = "VibrationListener")]
-    pub vibration_listener: VibrationListener,
+    pub vibration_listener: Option<VibrationListener>,
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]

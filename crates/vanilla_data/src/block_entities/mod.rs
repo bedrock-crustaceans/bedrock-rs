@@ -153,6 +153,11 @@ impl_block_data! {
         Jukebox(Jukebox),
         Hopper(Hopper),
         EndGateway(EndGateway),
+        DaylightDetector,
+        EnderChest(EnderChest),
+        SculkShrieker,
+        Smoker(Furnace),
+        SporeBlossom,
         ItemFrame(ItemFrame),
         GlowItemFrame(ItemFrame),
         Beacon(Beacon),
@@ -321,6 +326,7 @@ mod decorated_pot;
 mod dispenser;
 mod enchantment_table;
 mod end_gateway;
+mod ender_chest;
 mod flower_pot;
 mod furnace;
 mod hopper;
@@ -366,6 +372,7 @@ pub use decorated_pot::*;
 pub use dispenser::*;
 pub use enchantment_table::*;
 pub use end_gateway::*;
+pub use ender_chest::*;
 pub use flower_pot::*;
 pub use furnace::*;
 pub use hopper::*;

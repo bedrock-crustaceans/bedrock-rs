@@ -2,6 +2,24 @@ use crate::block_entities::Chest;
 use bedrock_level::types::ItemStack;
 use facet::Facet;
 
+/// The face a shulker box is attached to, stored as a `Byte` tag holding a
+/// numeric face index — confirmed by 102 real records spanning every value
+/// `0..=5`. This is the standard Bedrock block-face index: `Down = 0,
+/// Up = 1, North = 2, South = 3, West = 4, East = 5`. The facing lives only
+/// here, never in block state — the generated block-palette data shows
+/// `minecraft:*_shulker_box` carries no state properties at all.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
+#[facet(nbtx::variant_as(i8))]
+#[repr(i8)]
+pub enum Facing {
+    Down = 0,
+    Up = 1,
+    North = 2,
+    South = 3,
+    West = 4,
+    East = 5,
+}
+
 /// A shulker box: a [`Chest`]'s keys plus the face it is attached to, in one
 /// flat compound.
 ///
@@ -28,14 +46,19 @@ pub struct ShulkerBox {
     pub pair_x: Option<i32>,
     #[facet(rename = "pairz")]
     pub pair_z: Option<i32>,
+    /// Absent entirely on 8 of the 102 real records in the fixture — an
+    /// empty box, rather than an empty `Items` list written out. Defaulted
+    /// rather than modeled as `Option` because the two are indistinguishable
+    /// in meaning here: either way, the box holds nothing.
+    #[facet(default)]
     pub items: Vec<ItemStack>,
     #[facet(rename = "facing")]
-    pub facing: f32,
+    pub facing: Facing,
 }
 
 impl ShulkerBox {
     /// Splits this box into the container it is and the face it is on.
-    pub fn into_parts(self) -> (Chest, f32) {
+    pub fn into_parts(self) -> (Chest, Facing) {
         (
             Chest {
                 findable: self.findable,
@@ -57,7 +80,7 @@ impl ShulkerBox {
     }
 
     /// Builds a box from a container and the face it is on.
-    pub fn from_parts(contents: Chest, facing: f32) -> Self {
+    pub fn from_parts(contents: Chest, facing: Facing) -> Self {
         Self {
             findable: contents.findable,
             force_unpair: contents.force_unpair,
