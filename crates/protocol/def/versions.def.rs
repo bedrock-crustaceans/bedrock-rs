@@ -892,5 +892,10 @@ versions![
             % PlayerPositionMode: PlayerPositionMode,
             % StructureRedstoneSaveMode: StructureRedstoneSaveMode,
         ] in crate::version::v2168::enums,
-    }
+    },
+    (2168, "r/26_u4-hotfix4", "1.26.44"): { // they literally didn't bump the protocol version
+        packets: [
+            % SetScorePacket: SetScorePacket^,
+        ] in crate::version::v2168_hotfix4::packets,
+    } as V2168Hotfix4
 ];

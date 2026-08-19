@@ -1,6 +1,7 @@
 pub mod unknown;
 pub mod v1001;
 pub mod v2168;
+pub mod v2168_hotfix4;
 pub mod v662;
 pub mod v671;
 pub mod v685;
