@@ -7,7 +7,7 @@ pub struct SyncWorldClocksPacket {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-#[enum_endianness(le)]
+#[enum_endianness(var)]
 #[enum_repr(u32)]
 #[repr(u32)]
 pub enum SyncWorldClocks {
@@ -58,5 +58,5 @@ pub struct TimeMarker {
     #[endianness(var)]
     pub time: i32,
     #[endianness(var)]
-    pub period: i32,
+    pub period: Option<i32>,
 }

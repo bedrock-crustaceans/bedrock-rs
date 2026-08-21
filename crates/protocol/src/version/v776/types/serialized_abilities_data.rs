@@ -8,6 +8,7 @@ pub struct SerializedAbilitiesData<V: ProtoVersion> {
     // TODO: use enum with #[as(u8)] after proto refactor
     pub player_permissions: u8,
     pub command_permissions: V::CommandPermissionLevel,
+    #[vec_repr(u8)]
     pub layers: Vec<SerializedLayer>,
 }
 
