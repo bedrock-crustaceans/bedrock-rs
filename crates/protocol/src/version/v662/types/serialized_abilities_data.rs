@@ -8,6 +8,7 @@ pub struct SerializedAbilitiesData<V: ProtoVersion> {
     pub player_permissions: V::PlayerPermissionLevel,
     pub command_permissions: V::CommandPermissionLevel,
 
+    #[vec_repr(u8)]
     pub layers: Vec<SerializedLayer>,
 }
 

@@ -97,7 +97,7 @@ pub mod player_auth_input_packet {
     #[derive(ProtoCodec, Clone, Debug)]
     pub struct PerformItemStackRequestData<V: ProtoVersion> {
         #[endianness(var)]
-        pub client_request_id: u32,
+        pub client_request_id: i32,
         pub actions: Vec<ActionsEntry<V>>,
         pub strings_to_filter: Vec<String>,
         pub strings_to_filter_origin: V::TextProcessingEventOrigin,
