@@ -1,6 +1,7 @@
 pub mod unknown;
 pub mod v1001;
 pub mod v2168;
+pub mod v2192;
 pub mod v662;
 pub mod v671;
 pub mod v685;

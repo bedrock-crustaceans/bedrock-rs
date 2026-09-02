@@ -900,6 +900,12 @@ pub trait ProtoVersionPackets {
         + Send
         + Sync
         + 'static;
+    type RecordStartedPacket: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type RefreshEntitlementsPacket: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -1147,6 +1153,12 @@ pub trait ProtoVersionPackets {
         + Sync
         + 'static;
     type SetMovementAuthorityPacket: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type SetPlayerFurnaceOptionsPacket: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -2755,3 +2767,5 @@ mod v1001;
 pub use v1001::*;
 mod v2168;
 pub use v2168::*;
+mod v2192;
+pub use v2192::*;

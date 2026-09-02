@@ -7749,6 +7749,7 @@ mod inner {
         type PositionTrackingDBServerBroadcastPacket =
             crate::version::v662::packets::PositionTrackingDBServerBroadcastPacket<Self>;
         type PurchaseReceiptPacket = crate::version::v662::packets::PurchaseReceiptPacket;
+        type RecordStartedPacket = ();
         type RefreshEntitlementsPacket = crate::version::v662::packets::RefreshEntitlementsPacket;
         type RemoveActorPacket = crate::version::v662::packets::RemoveActorPacket<Self>;
         type RemoveObjectivePacket = crate::version::v662::packets::RemoveObjectivePacket;
@@ -7805,6 +7806,7 @@ mod inner {
         type SetLocalPlayerAsInitializedPacket =
             crate::version::v662::packets::SetLocalPlayerAsInitializedPacket<Self>;
         type SetMovementAuthorityPacket = ();
+        type SetPlayerFurnaceOptionsPacket = ();
         type SetPlayerGameTypePacket = crate::version::v662::packets::SetPlayerGameTypePacket<Self>;
         type SetPlayerInventoryOptionsPacket =
             crate::version::v662::packets::SetPlayerInventoryOptionsPacket<Self>;
