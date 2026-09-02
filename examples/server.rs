@@ -17,14 +17,14 @@ use bedrock::protocol::v944::packets::VoxelShapesPacket;
 use bedrock::protocol::v944::types::NetworkBlockPosition;
 use bedrock::protocol::v2168::enums::EducationEditionOffer;
 use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
-use bedrock::protocol::{ProtoVersion, Unknown, V2168};
+use bedrock::protocol::{ProtoVersion, Unknown, V2192};
 use bedrock_protocol::v2168::packets::StartGamePacket;
 use bedrock_protocol::v2168::types::{GameRuleLegacyData, LevelSettings};
 use std::collections::HashMap;
 use tokio::time::Instant;
 use uuid::Uuid;
 
-type Protocol = V2168;
+type Protocol = V2192;
 
 #[tokio::main]
 async fn main() {

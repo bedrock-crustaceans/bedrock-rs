@@ -106,4 +106,4 @@ protocol-packet-meta = ["bedrock_protocol/packet-meta"]
 [[example]]
 name = "server"
 path = "examples/server.rs"
-required-features = ["network", "protocol-v944", "protocol-unknown"]
+required-features = ["network", "protocol-v2192", "protocol-unknown"]
