@@ -892,5 +892,32 @@ versions![
             % PlayerPositionMode: PlayerPositionMode,
             % StructureRedstoneSaveMode: StructureRedstoneSaveMode,
         ] in crate::version::v2168::enums,
+    },
+    (2192, "r/26_u5", "1.26.50"): {
+        packets: [
+            + RecordStartedPacket: RecordStartedPacket^,
+            + SetPlayerFurnaceOptionsPacket: SetPlayerFurnaceOptionsPacket,
+            % BossEventPacket: BossEventPacket^,
+            % ClientBoundUpdateSoundDataPacket: ClientBoundUpdateSoundDataPacket^,
+            % InventoryTransactionPacket: InventoryTransactionPacket^,
+            % PlaySoundPacket: PlaySoundPacket^,
+            % PlayerAuthInputPacket: PlayerAuthInputPacket^,
+            % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
+            % ServerBoundPackSettingChangePacket: ServerBoundPackSettingChangePacket,
+            % SubChunkPacket: SubChunkPacket^,
+        ] in crate::version::v2192::packets,
+        types: [
+            % CameraPreset: CameraPreset^,
+            % DebugShape: DebugShape^,
+            % DimensionDefinitionGroup: DimensionDefinitionGroup,
+            % ItemStackResponseInfo: ItemStackResponseInfo^,
+            % ItemStackResponseSlotInfo: ItemStackResponseSlotInfo^,
+            % MoveActorDeltaData: MoveActorDeltaData^,
+            % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
+        ] in crate::version::v2192::types,
+        enums: [
+            % ConnectionFailReason: ConnectionFailReason,
+            % PersonaPieceType: PersonaPieceType,
+        ] in crate::version::v2192::enums,
     }
 ];

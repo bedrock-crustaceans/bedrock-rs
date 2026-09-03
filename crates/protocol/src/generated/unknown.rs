@@ -269,6 +269,7 @@ mod inner {
         type PositionTrackingDBClientRequestPacket = ();
         type PositionTrackingDBServerBroadcastPacket = ();
         type PurchaseReceiptPacket = ();
+        type RecordStartedPacket = ();
         type RefreshEntitlementsPacket = ();
         type RemoveActorPacket = ();
         type RemoveObjectivePacket = ();
@@ -312,6 +313,7 @@ mod inner {
         type SetLastHurtByPacket = ();
         type SetLocalPlayerAsInitializedPacket = ();
         type SetMovementAuthorityPacket = ();
+        type SetPlayerFurnaceOptionsPacket = ();
         type SetPlayerGameTypePacket = ();
         type SetPlayerInventoryOptionsPacket = ();
         type SetScorePacket = ();
