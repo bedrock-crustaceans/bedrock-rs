@@ -1,10 +1,18 @@
-//! Pins `VanillaContent`'s honest-no-entry behaviour (architecture decision 9): with
-//! no generated tables yet, every lookup reports "unknown" rather than fabricating an
-//! answer, and `upgrade_block_state` always answers `NoEntry`, handing the entry back
-//! unchanged instead of stamping it as upgraded. This is the contract other crates are
-//! expected to rely on until the schema generator (Phase 3's `xtask` track) lands.
+//! Pins `VanillaContent`'s honest-no-entry behaviour (architecture decision 9).
+//!
+//! `legacy_block_state`/`numeric_block_state` stay `None` unconditionally -- no dump
+//! this generator can regenerate from covers the pre-flattening era at all (see
+//! `lib.rs`'s `VanillaContent` doc comment), so those two are pinned here regardless of
+//! the `generated-palettes` feature. `biome_name` and `upgrade_block_state` are
+//! different: once real generated tables exist (`generated-palettes` on), both can and
+//! do answer real lookups -- see `generated_palette_provider.rs` and
+//! `cross_version_upgrade.rs` for those. The two tests below stay scoped to the
+//! no-tables-compiled-in build, where "unknown" is not an approximation but the
+//! honestly correct answer.
 
-use bedrock_level::provider::{ContentProvider, StateUpgrade, States};
+#[cfg(not(feature = "generated-palettes"))]
+use bedrock_level::provider::StateUpgrade;
+use bedrock_level::provider::{ContentProvider, States};
 use bedrock_level::subchunk::BlockDef;
 use bedrock_vanilla_data::VanillaContent;
 
@@ -38,6 +46,7 @@ fn numeric_block_state_has_no_entries() {
 }
 
 #[test]
+#[cfg(not(feature = "generated-palettes"))]
 fn upgrade_block_state_is_always_no_entry_and_preserves_the_original() {
     let provider = VanillaContent;
     let original = state("minecraft:stone", Some(17_760_256));
@@ -49,6 +58,7 @@ fn upgrade_block_state_is_always_no_entry_and_preserves_the_original() {
 }
 
 #[test]
+#[cfg(not(feature = "generated-palettes"))]
 fn biome_name_has_no_entries() {
     let provider = VanillaContent;
 

@@ -8,6 +8,7 @@
 //! Rust source. [`generate`] drives the whole thing and writes the result under
 //! `crates/vanilla_data/src/generated/`.
 
+pub mod diff;
 pub mod emit;
 pub mod input;
 pub mod manifest;
@@ -59,6 +60,23 @@ pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
         });
     }
 
+    // Cross-version diffing (the schema-driven state upgrade's data half): every adjacent
+    // pair in the sorted, deduplicated ladder above, merged against the hand-authored
+    // rename supplement. Computed here rather than lazily at upgrade time, so a bad
+    // rename entry (see `diff::diff`'s doc comment) fails the generator run loudly
+    // instead of surfacing as a silent no-op the first time something tries to upgrade
+    // across that step.
+    let rename_entries = diff::load_renames(&dumps_dir)?;
+    let mut diffs = Vec::with_capacity(palettes.len().saturating_sub(1));
+    for pair in palettes.windows(2) {
+        diffs.push(diff::diff(&pair[0], &pair[1], &rename_entries)?);
+    }
+
+    // The biome id->name tables: a separate, smaller pipeline (see
+    // `codegen::biome`'s module docs for why), folded into this same write pass so the
+    // two pipelines never race over the shared output directory's lifecycle.
+    let biomes = super::biome::build_all(&dumps_dir, &manifest)?;
+
     if out_dir.exists() {
         std::fs::remove_dir_all(&out_dir).map_err(|source| GeneratorError::ClearOutputDir {
             path: out_dir.clone(),
@@ -70,19 +88,43 @@ pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
         source,
     })?;
 
-    let mut module_names = Vec::with_capacity(palettes.len());
+    let mut palette_module_names = Vec::with_capacity(palettes.len());
     for palette in &palettes {
         let name = emit::module_name(palette.game_version);
         write_pretty(
             &out_dir.join(format!("{name}.rs")),
             emit::render_version_file(palette),
         )?;
-        module_names.push(name);
+        palette_module_names.push(name);
+    }
+
+    let mut diff_module_names = Vec::with_capacity(diffs.len());
+    for d in &diffs {
+        let name = emit::diff_module_name(d.from_version, d.to_version);
+        write_pretty(
+            &out_dir.join(format!("{name}.rs")),
+            emit::render_diff_file(d),
+        )?;
+        diff_module_names.push(name);
+    }
+
+    let mut biome_module_names = Vec::with_capacity(biomes.len());
+    for b in &biomes {
+        let name = super::biome::emit::module_name(b.game_version);
+        write_pretty(
+            &out_dir.join(format!("{name}.rs")),
+            super::biome::emit::render_version_file(b),
+        )?;
+        biome_module_names.push(name);
     }
 
     write_pretty(
         &out_dir.join("mod.rs"),
-        emit::render_mod_file(&module_names),
+        emit::render_mod_file(
+            &palette_module_names,
+            &diff_module_names,
+            &biome_module_names,
+        ),
     )?;
 
     Ok(())
@@ -230,6 +272,49 @@ pub enum GeneratorError {
         path: PathBuf,
         status: std::process::ExitStatus,
     },
+    #[error("reading rename supplement {path}: {source}")]
+    ReadRenames {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    #[error("parsing rename supplement {path}: {source}")]
+    ParseRenames {
+        path: PathBuf,
+        source: serde_json::Error,
+    },
+    #[error(
+        "{path}: rename supplement entry `{from}` -> `{to}` carries no `provenance` -- see \
+         renames.json's own `requirements` field for what an entry must cite"
+    )]
+    RenameMissingProvenance {
+        path: PathBuf,
+        from: String,
+        to: String,
+    },
+    #[error(
+        "rename supplement entry `{from}` -> `{to}` does not apply to the step it names: {reason}"
+    )]
+    RenameEntryNotApplicable {
+        from: String,
+        to: String,
+        reason: String,
+    },
+    #[error("reading biome dump {path}: {source}")]
+    ReadBiomeDump {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    #[error("parsing biome dump for {tag}: {source}")]
+    ParseBiomeDump {
+        tag: String,
+        source: serde_json::Error,
+    },
+    #[error("{tag}: biome dump has an empty biome name")]
+    EmptyBiomeName { tag: String },
+    #[error("{tag}: biome id {id} is assigned to more than one biome")]
+    DuplicateBiomeId { tag: String, id: i32 },
+    #[error("{tag}: biome name `{name}` appears more than once")]
+    DuplicateBiomeName { tag: String, name: String },
 }
 
 #[cfg(test)]

@@ -45,5 +45,32 @@
     }
   ],
   "pinned_date": "2026-08-17",
-  "coverage_note": "This is a representative subset of the stable (non -preview) tags that carry the dump, not the full ladder. bedrock-samples has published the dump on every stable tag from v1.20.10.1 through the current release (26 stable tags as surveyed on the pin date); adding the rest is a matter of extending this manifest with the same fields and re-running `cargo xtask generate-palette` -- the generator does not special-case which versions are present."
+  "coverage_note": "This is a representative subset of the stable (non -preview) tags that carry the dump, not the full ladder. bedrock-samples has published the dump on every stable tag from v1.20.10.1 through the current release (26 stable tags as surveyed on the pin date); adding the rest is a matter of extending this manifest with the same fields and re-running `cargo xtask generate-palette` -- the generator does not special-case which versions are present.",
+  "biome_comment": "Provenance for the vendored biome dumps, surveyed separately from the block dumps above because their coverage differs: `mojang-biomes.json` does not exist at all at v1.20.10.1 (first appears at v1.21.0.3), and even once present it carries no numeric `id` field until v1.21.130.3 -- confirmed directly against the upstream tag trees on the survey date below, not assumed. Only the tags that carry a numeric id are pinned here, since a name-only dump cannot answer the id-to-name lookup `ContentProvider::biome_name` needs. Re-pin the same way as the block entries: re-fetch the named tag and confirm the sha256 still matches.",
+  "biome_source_path": "metadata/vanilladata_modules/mojang-biomes.json",
+  "biome_survey_date": "2026-09-16",
+  "biome_survey_note": "Surveyed all six block-dump tags via the GitHub API tree listing for metadata/vanilladata_modules at each tag. v1.20.10.1: no mojang-biomes.json at all. v1.21.0.3 and v1.21.60.10: mojang-biomes.json present but every data_items entry is name-only, no id field. v1.21.130.3, v1.26.0.2, v1.26.40.05: every entry carries a numeric id alongside the name. v1.21.130.3 and v1.26.0.2 are byte-identical (same as the block dumps at those two tags) -- no biome-table change shipped between them either.",
+  "biome_entries": [
+    {
+      "tag": "v1.21.130.3",
+      "game_version": [1, 21, 130],
+      "file": "v1.21.130.3/mojang-biomes.json",
+      "sha256": "bcaf6971fcce94c28b8e18cee6bf2ee395de41dfefee578689bb475615fbd1d7",
+      "note": "Earliest tag whose biome dump carries a numeric id. Byte-identical to v1.26.0.2's dump."
+    },
+    {
+      "tag": "v1.26.0.2",
+      "game_version": [1, 26, 0],
+      "file": "v1.26.0.2/mojang-biomes.json",
+      "sha256": "bcaf6971fcce94c28b8e18cee6bf2ee395de41dfefee578689bb475615fbd1d7",
+      "note": "Byte-identical to v1.21.130.3's dump -- see above."
+    },
+    {
+      "tag": "v1.26.40.05",
+      "game_version": [1, 26, 40],
+      "file": "v1.26.40.05/mojang-biomes.json",
+      "sha256": "d0b49b0e9c89aa50936e7daa467f4b07daa04c38e267c8506a9ea92ff941b567",
+      "note": "Latest pinned tag; adds several biome ids beyond v1.26.0.2 (89 entries vs. 87)."
+    }
+  ]
 }

@@ -108,16 +108,20 @@ fn upgrade_block_state_no_entry_for_a_version_with_no_generated_table() {
 }
 
 #[test]
-fn upgrade_block_state_no_entry_across_two_different_versions() {
+fn upgrade_block_state_walks_across_two_different_versions() {
     let provider = VanillaContent;
     let v1_21_0 = BlockDef::pack_version([1, 21, 0, 0]);
     let original = state("minecraft:acacia_fence");
 
-    // Both versions have real generated tables and both contain this block, but
-    // cross-version diffing is not implemented -- see the module docs.
+    // `minecraft:acacia_fence` declares no properties at either version and its name
+    // persists, so the walker (see `lib.rs`'s `VanillaContent::upgrade_block_state` doc
+    // comment) reaches the target in one step.
     match provider.upgrade_block_state(original.clone(), V1_20_10, v1_21_0) {
-        StateUpgrade::NoEntry(returned) => assert_eq!(returned, original),
-        other => panic!("expected NoEntry, got {other:?}"),
+        StateUpgrade::Upgraded(upgraded) => {
+            assert_eq!(upgraded.version, v1_21_0);
+            assert_eq!(upgraded.block.name, "minecraft:acacia_fence");
+        }
+        other => panic!("expected Upgraded, got {other:?}"),
     }
 }
 

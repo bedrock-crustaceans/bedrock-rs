@@ -65,6 +65,28 @@ changed between those two releases. That is corroborating evidence, not an assum
 generated Rust being the right shape here: most of the table does not change release to
 release, which is exactly what makes per-version diffs worth keeping readable.
 
+## Biome dump coverage
+
+Surveyed separately from the block dump, at the same six tags this manifest already pins for
+`mojang-blocks.json`, via the GitHub API tree listing for `metadata/vanilladata_modules` at
+each tag:
+
+- `v1.20.10.1`: no `mojang-biomes.json` at all -- the directory only carries
+  `mojang-blocks.json`, `mojang-dimensions.json`, `mojang-effects.json`,
+  `mojang-enchantments.json`, `mojang-entities.json`, `mojang-items.json`.
+- `v1.21.0.3` and `v1.21.60.10`: `mojang-biomes.json` exists (`{"data_items": [{"name": ...}]}`),
+  but every entry is name-only -- no numeric id anywhere in the file.
+- `v1.21.130.3`, `v1.26.0.2`, `v1.26.40.05`: every entry carries a numeric `id` alongside
+  `name` (e.g. `{"id": 48, "name": "minecraft:bamboo_jungle"}`). `v1.21.130.3` and `v1.26.0.2`
+  are byte-identical, the same pairing already noted above for the block dump at those two
+  tags.
+
+Consequence: `ContentProvider::biome_name` resolves a numeric id to a name, so only the three
+tags whose dump carries a numeric id are useful input, and only those three are vendored
+(`manifest.json`'s `biome_entries`). The two name-only tags are recorded here as a fact about
+upstream coverage, not vendored, since there is nothing an id-keyed table could be built from
+in them.
+
 ## Licensing
 
 The vendored files under this directory are Mojang's own published data, distributed from
