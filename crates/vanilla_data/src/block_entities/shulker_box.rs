@@ -28,7 +28,10 @@ pub enum Facing {
 /// [`Self::contents`] and [`Self::from_parts`] convert between the two views.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct ShulkerBox {
     /// See [`Chest::findable`]: a real record has been observed writing this
     /// as a `Byte` rather than an `Int`, and, since `lenient_width` is

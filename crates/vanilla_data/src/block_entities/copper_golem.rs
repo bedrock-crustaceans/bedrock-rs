@@ -1,7 +1,10 @@
 use facet::Facet;
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct CopperGolemActor {
     #[facet(rename = "ActorIdentifier")]
     pub identifier: String,
@@ -22,7 +25,10 @@ pub enum CopperGolemPose {
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct CopperGolemStatue {
     pub actor: CopperGolemActor,
     pub pose: CopperGolemPose,

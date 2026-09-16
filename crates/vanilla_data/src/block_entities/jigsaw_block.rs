@@ -11,7 +11,10 @@ pub enum JigsawJoint {
 
 /// A jigsaw block tile entity.
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct JigsawBlock {
     /// The target name.
     pub target: String,

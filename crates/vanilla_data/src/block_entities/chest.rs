@@ -5,7 +5,10 @@ pub use bedrock_level::types::ItemStack;
 // TODO: TEST ITEMS AND PAIRING
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Chest {
     /// A real chest record has been observed writing this as a `Byte` rather
     /// than the `Int` every other field's width would suggest.

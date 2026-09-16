@@ -1,6 +1,5 @@
 use facet::Facet;
 
-
 /// Stored as an `Int` tag holding the numeric mode.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
 #[facet(nbtx::variant_as(i32))]
@@ -16,7 +15,10 @@ pub enum StructureBlockMode {
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "camelCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct StructureBlock {
     pub redstone_save_mode: i32,
     pub structure_name: String,

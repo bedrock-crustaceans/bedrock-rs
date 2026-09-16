@@ -51,7 +51,10 @@ pub enum BannerPatternType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct BannerPattern {
     pub color: Color,
     pub pattern: BannerPatternType,
@@ -59,7 +62,10 @@ pub struct BannerPattern {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Banner {
     /// Base colour of the banner.
     pub base: Color,

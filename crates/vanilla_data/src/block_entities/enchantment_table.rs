@@ -2,7 +2,10 @@ use facet::Facet;
 
 /// An enchantment table tile entity.
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct EnchantmentTable {
     /// The custom name of this enchantment table.
     ///

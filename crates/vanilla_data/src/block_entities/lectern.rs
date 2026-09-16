@@ -75,7 +75,10 @@ pub struct LecternBook {
 /// An empty lectern carries none of them, which is why every one is an `Option`.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "camelCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Lectern {
     pub total_pages: Option<i32>,
     pub page: Option<i32>,

@@ -1,7 +1,10 @@
 use facet::Facet;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct SculkCatalystCursor {
     pub charge: i16,
     pub decay: i16,
@@ -13,7 +16,10 @@ pub struct SculkCatalystCursor {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct SculkCatalyst {
     pub cursors: Option<Vec<SculkCatalystCursor>>,
 }

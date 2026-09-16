@@ -3,7 +3,10 @@ use facet::Facet;
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct ItemFrame {
     /// Degrees of rotation. `Float` in the only 2 real records checked so
     /// far (this crate's test fixture is a 1.26 world with no older item

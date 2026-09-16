@@ -1,7 +1,10 @@
 use facet::Facet;
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct SculkSensor {
     /// Absent on a real record whenever the sensor has not yet detected a
     /// vibration to listen for — 236 records across `SculkSensor` and
@@ -12,7 +15,10 @@ pub struct SculkSensor {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct PendingVibration {
     pub distance: f32,
     pub source: i64,
@@ -23,7 +29,10 @@ pub struct PendingVibration {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct VibrationListener {
     pub event: Option<i32>,
     pub pending: Option<PendingVibration>,

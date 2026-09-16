@@ -256,16 +256,18 @@ impl BlockEntity {
         let mut coordinate = |key| {
             as_integer(&take(&mut entries, key)?)
                 .and_then(|v| i32::try_from(v).ok())
-                .ok_or(Error::Invalid("block entity record: coordinate is not an int"))
+                .ok_or(Error::Invalid(
+                    "block entity record: coordinate is not an int",
+                ))
         };
         let x = coordinate("x")?;
         let y = coordinate("y")?;
         let z = coordinate("z")?;
 
         // A `Byte` flag: zero is false, any other value true.
-        let is_movable = as_integer(&take(&mut entries, "isMovable")?)
-            .ok_or(Error::Invalid("block entity record: isMovable is not a byte"))?
-            != 0;
+        let is_movable = as_integer(&take(&mut entries, "isMovable")?).ok_or(Error::Invalid(
+            "block entity record: isMovable is not a byte",
+        ))? != 0;
 
         let id = take(&mut entries, "id")?
             .into_string()
@@ -299,7 +301,10 @@ impl BlockEntity {
         entries.insert(SHARED_KEYS[0].into(), Value::Int(self.x));
         entries.insert(SHARED_KEYS[1].into(), Value::Int(self.y));
         entries.insert(SHARED_KEYS[2].into(), Value::Int(self.z));
-        entries.insert(SHARED_KEYS[3].into(), Value::Byte(i8::from(self.is_movable)));
+        entries.insert(
+            SHARED_KEYS[3].into(),
+            Value::Byte(i8::from(self.is_movable)),
+        );
         entries.insert(SHARED_KEYS[4].into(), Value::String(self.data.id().into()));
         entries.extend(payload);
 
@@ -426,7 +431,16 @@ mod tests {
         let keys: Vec<_> = entries.keys().map(ToString::to_string).collect();
         assert_eq!(
             keys,
-            ["x", "y", "z", "isMovable", "id", "Direction", "Ringing", "Ticks"]
+            [
+                "x",
+                "y",
+                "z",
+                "isMovable",
+                "id",
+                "Direction",
+                "Ringing",
+                "Ticks"
+            ]
         );
     }
 

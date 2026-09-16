@@ -1,9 +1,11 @@
 use facet::Facet;
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct SignText {
     pub hide_glow_outline: bool,
     pub ignore_lighting: bool,
@@ -20,7 +22,10 @@ pub struct SignText {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Sign {
     pub back_text: SignText,
     pub front_text: SignText,

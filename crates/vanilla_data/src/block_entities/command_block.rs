@@ -1,10 +1,12 @@
 use facet::Facet;
 
-
 /// A command block tile entity.
 #[derive(Debug, Clone, PartialEq, Eq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct CommandBlock {
     pub execute_on_first_tick: bool,
     #[facet(rename = "powered")]

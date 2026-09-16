@@ -46,7 +46,10 @@ use facet::Facet;
 
 /// Chances for the equipment to drop upon death.
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct DropChances {
     pub head: f32,
     pub chest: f32,
@@ -57,7 +60,10 @@ pub struct DropChances {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Equipment {
     pub loot_table: String,
     pub slot_drop_chances: Option<DropChances>,
@@ -65,7 +71,10 @@ pub struct Equipment {
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct SpawnData {
     pub type_id: String,
     pub weight: i32,
@@ -81,7 +90,10 @@ pub struct RegisteredEntity {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct TrialSpawner {
     pub ominous_config: String,
     pub spawn_data: SpawnData,

@@ -1,7 +1,10 @@
 use facet::Facet;
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct BrushableBlock {
     pub brush_count: i32,
     pub brush_direction: i8,

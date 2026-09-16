@@ -1,6 +1,5 @@
 use facet::Facet;
 
-
 /// Stored as a `Byte` tag holding the numeric state.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Facet)]
 #[facet(nbtx::variant_as(i8))]
@@ -51,7 +50,10 @@ impl TryFrom<f32> for PistonProgress {
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct PistonArm {
     /// Not sure how this is actually stored. Will need to create a custom type for this for clarity.
     pub attached_blocks: Vec<i32>,

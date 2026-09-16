@@ -10,7 +10,10 @@ use facet::Facet;
 /// re-derived; nothing in the corpus distinguishes the two shapes here.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct EnderChest {
     /// Every real record writes this as a `Byte`, uniformly — unlike
     /// `Chest::findable`, no `Int`-tagged record has been seen, but the same

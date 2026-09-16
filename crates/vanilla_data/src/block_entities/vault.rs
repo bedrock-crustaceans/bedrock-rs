@@ -2,7 +2,10 @@ use bedrock_level::types::ItemStack;
 use facet::Facet;
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct VaultData {
     pub items_to_eject: Vec<ItemStack>,
     pub rewarded_players: Vec<i64>,
@@ -24,7 +27,10 @@ pub enum VaultKeyType {
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct VaultKeyItem {
     #[facet(rename = "Name")]
     pub ty: VaultKeyType,
@@ -34,7 +40,10 @@ pub struct VaultKeyItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct VaultConfig {
     pub loot_table: String,
     pub activation_range: f32,
@@ -44,7 +53,10 @@ pub struct VaultConfig {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Vault {
     pub data: VaultData,
     pub config: VaultConfig,
