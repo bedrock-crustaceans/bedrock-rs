@@ -579,6 +579,41 @@ impl Chunk {
     /// is the caller's job (see [`crate::level::Level::put_chunk`]) to
     /// clear anything already on disk at the new spot that this encode
     /// does not cover.
+    ///
+    /// # The version stamp is written only where there is something real to stamp
+    ///
+    /// A record group can arrive at this point missing both `0x2c` and
+    /// `0x76` for two structurally different reasons, and they get
+    /// different treatment because only one of them is asserting a fact
+    /// about this chunk's version:
+    ///
+    /// - [`Chunk::new`] always knows a real, explicit version --
+    ///   [`DecodeVersion::Found`], the version the caller passed in -- it
+    ///   simply has not written it into a group yet, because a group built
+    ///   from scratch starts with nothing in it. Writing that explicit
+    ///   version is not a claim about anything; it is the version the
+    ///   caller already chose. This case always gets its stamp, independent
+    ///   of whether the chunk has any terrain or biomes yet -- a caller
+    ///   building a chunk up piece by piece should not have its version
+    ///   stamp appear and disappear as it adds and removes content.
+    /// - A **decoded chunk whose group never had either key**
+    ///   ([`DecodeVersion::Unversioned`]) is different: nothing observed on
+    ///   disk said what version this chunk is. Real worlds carry exactly
+    ///   this shape for generation-progress stubs (a `digp`, a
+    ///   finalized-state byte, hardcoded spawn areas -- administrative
+    ///   records with no terrain or biome data at all, never a legacy
+    ///   pre-versioning chunk in the modern corpus). Synthesizing `0x2c = 0`
+    ///   for one of those would assert "Alpha-era legacy terrain" for a
+    ///   chunk that carries none, add a record decision 7 says was never
+    ///   there, and break the byte-identical unmodified-round-trip
+    ///   guarantee decision 3 makes for exactly this case. This crate has no
+    ///   way to tell "genuinely versionless administrative stub" apart from
+    ///   "genuinely pre-versioning legacy terrain" except by looking at
+    ///   whether real terrain or biomes are actually present -- so an
+    ///   `Unversioned` chunk only gets a synthesized stamp when it has real
+    ///   terrain or biome content to decode that stamp against; an
+    ///   `Unversioned` chunk with neither stays exactly as versionless on
+    ///   the way out as it was on the way in.
     pub fn encode_at(&self, position: ChunkPosition, dimension: Dimension) -> Result<ChunkRecords> {
         let mut records = if position == self.position && dimension == self.dimension {
             self.records.clone()
@@ -597,11 +632,19 @@ impl Chunk {
             fresh
         };
 
-        // A chunk built with `Chunk::new` (or one whose version keys were
-        // otherwise never present) has no `0x2c`/`0x76` record to carry
-        // through -- give it one rather than writing a chunk with no
-        // version stamp at all.
-        if !records.contains(KeyVariant::ChunkVersion)
+        let has_versioned_content = matches!(&self.terrain, Terrain::Legacy(Some(_)))
+            || matches!(&self.terrain, Terrain::SubChunks(subchunks) if !subchunks.is_empty())
+            || self.biomes.is_some();
+        let should_stamp_version = match self.source_version {
+            DecodeVersion::Found(_) => true,
+            DecodeVersion::Unversioned => has_versioned_content,
+        };
+
+        // See this method's doc comment for why the stamp is conditioned on
+        // `should_stamp_version` rather than written unconditionally for
+        // any group missing both version keys.
+        if should_stamp_version
+            && !records.contains(KeyVariant::ChunkVersion)
             && !records.contains(KeyVariant::LegacyVersion)
         {
             records.insert(
