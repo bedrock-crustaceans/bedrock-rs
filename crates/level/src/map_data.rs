@@ -99,6 +99,78 @@ pub fn id_from_key(key_bytes: &[u8]) -> Option<i64> {
     suffix.parse().ok()
 }
 
+/// An NBT value paired with the exact bytes it was decoded from, if any.
+///
+/// Shared by [`MapRecord`] and [`crate::raw_keys::RawCompound`], which are
+/// both, underneath their own typed accessors (or lack thereof), a decoded
+/// [`nbtx::Value`] that needs to re-emit its original on-disk bytes when
+/// unmodified rather than re-deriving them: [`nbtx::Value::List`] cannot
+/// always reproduce a real record's on-disk element-type byte for an empty
+/// list through a generic re-derivation (a real `map_<id>` record's
+/// `decorations` field, empty on most real records, is written with element
+/// type `Compound` even though it has no elements to derive that type
+/// from -- `Value::List` has nowhere to store a declared element type
+/// independent of its, here absent, elements, so `nbtx` falls back to
+/// `TAG_End` for an empty list on re-derivation, correct by the same
+/// convention vanilla Minecraft itself uses for an empty list, but not what
+/// this one real field does). Re-emitting the original bytes sidesteps the
+/// question entirely for a record that was not modified; a record built
+/// fresh (no original bytes to fall back to) or mutated after decode always
+/// re-derives from `value` and is subject to that same limitation.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct RetainedNbt {
+    value: nbtx::Value,
+    original: Option<Vec<u8>>,
+}
+
+impl RetainedNbt {
+    /// Wraps an already-decoded NBT value with no original on-disk bytes to
+    /// fall back to -- see the type docs for the consequence of that on a
+    /// value with an empty list field.
+    pub(crate) fn new(value: nbtx::Value) -> Self {
+        Self {
+            value,
+            original: None,
+        }
+    }
+
+    /// Wraps a decoded NBT value together with the exact bytes it was
+    /// decoded from.
+    pub(crate) fn decoded(value: nbtx::Value, original: Vec<u8>) -> Self {
+        Self {
+            value,
+            original: Some(original),
+        }
+    }
+
+    pub(crate) fn value(&self) -> &nbtx::Value {
+        &self.value
+    }
+
+    /// Mutable access to the wrapped value. Clears the preserved original
+    /// bytes -- see the type docs -- so the next [`Self::encode`]
+    /// re-derives from the edited value instead of returning stale bytes.
+    pub(crate) fn value_mut(&mut self) -> &mut nbtx::Value {
+        self.original = None;
+        &mut self.value
+    }
+
+    pub(crate) fn into_value(self) -> nbtx::Value {
+        self.value
+    }
+
+    /// Encodes the wrapped value: returns the preserved original bytes
+    /// verbatim if there are any, else re-derives from `value` -- see the
+    /// type docs for why these two paths can disagree on an empty list
+    /// field.
+    pub(crate) fn encode(&self) -> Result<Vec<u8>> {
+        if let Some(original) = &self.original {
+            return Ok(original.clone());
+        }
+        Ok(nbtx::to_le_bytes(&self.value)?)
+    }
+}
+
 /// One decoded `map_<id>` record: an opaque NBT compound plus typed
 /// accessors for the fields listed in the module docs.
 ///
@@ -107,27 +179,19 @@ pub fn id_from_key(key_bytes: &[u8]) -> Option<i64> {
 /// reproduce every real record byte-identically. `Value::Compound` is
 /// order-preserving, which is what makes a re-derived encoding reproduce a
 /// decoded record's field layout exactly -- with one further wrinkle
-/// [`encode`]'s doc comment covers.
+/// [`RetainedNbt`]'s doc comment covers.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapRecord {
-    value: nbtx::Value,
-    /// The exact bytes this record was decoded from, if it was -- see
-    /// [`encode`]'s doc comment for why this, not a re-derivation from
-    /// `value`, is what [`encode`] returns for a decoded record. Any
-    /// future mutator added to this type (there is none today -- `value`
-    /// is only ever read) must clear this back to `None`, or a mutated
-    /// record would silently re-encode its stale pre-mutation bytes.
-    original: Option<Vec<u8>>,
+    inner: RetainedNbt,
 }
 
 impl MapRecord {
     /// Wraps an already-decoded NBT value as a record with no original
-    /// on-disk bytes to fall back to -- see [`encode`]'s doc comment for
-    /// the consequence of that on a value with an empty list field.
+    /// on-disk bytes to fall back to -- see [`RetainedNbt`]'s doc comment
+    /// for the consequence of that on a value with an empty list field.
     pub fn new(value: nbtx::Value) -> Self {
         Self {
-            value,
-            original: None,
+            inner: RetainedNbt::new(value),
         }
     }
 
@@ -135,11 +199,11 @@ impl MapRecord {
     /// on-disk order. The escape hatch for `decorations`' internal shape
     /// and anything else the typed accessors below do not cover.
     pub fn value(&self) -> &nbtx::Value {
-        &self.value
+        self.inner.value()
     }
 
     fn field(&self, name: &str) -> Option<&nbtx::Value> {
-        let nbtx::Value::Compound(compound) = &self.value else {
+        let nbtx::Value::Compound(compound) = self.inner.value() else {
             return None;
         };
         compound.get(name.as_bytes())
@@ -274,36 +338,16 @@ pub fn decode(bytes: &[u8]) -> Result<MapRecord> {
         ));
     }
     Ok(MapRecord {
-        value,
-        original: Some(bytes.to_vec()),
+        inner: RetainedNbt::decoded(value, bytes.to_vec()),
     })
 }
 
-/// Encodes a `map_<id>` value: the inverse of [`decode`].
-///
-/// A record that came from [`decode`] re-emits its stored original bytes
-/// verbatim rather than re-deriving them from `value`, because
-/// [`nbtx::Value::List`] cannot always round-trip through a re-derivation.
-/// A real record's `decorations` field, empty on most real records (see
-/// the module docs), is written with element type `Compound` even though
-/// it has no elements to derive that type from; `Value::List` has nowhere
-/// to store a declared element type independent of its (here, absent)
-/// elements, so `nbtx` falls back to `TAG_End` for an empty list on
-/// re-derivation -- correct by the same convention vanilla Minecraft
-/// itself uses for an empty list, but not what this one real field does.
-/// Re-emitting the original bytes sidesteps the question entirely for a
-/// record that was not modified.
-///
-/// A record built directly through [`MapRecord::new`] has no original
-/// bytes to fall back to, so it always re-derives from `value` and is
-/// subject to the same limitation: an empty list field on a fresh record
-/// always encodes with a `TAG_End` element type, regardless of what the
-/// caller intended.
+/// Encodes a `map_<id>` value: the inverse of [`decode`]. See
+/// [`RetainedNbt`]'s doc comment for how a decoded-but-unmodified record's
+/// original bytes are preferred over a re-derivation, and why that matters
+/// for this record's `decorations` field specifically.
 pub fn encode(record: &MapRecord) -> Result<Vec<u8>> {
-    if let Some(original) = &record.original {
-        return Ok(original.clone());
-    }
-    Ok(nbtx::to_le_bytes(&record.value)?)
+    record.inner.encode()
 }
 
 /// Every map id present in `db`, found by a full-database key scan --
