@@ -696,3 +696,157 @@ fn save_on_read_only_handle_errors_and_does_not_write() {
         "read-only save must not create levelname.txt"
     );
 }
+
+/// [`Level::put_chunk`] on an `open` (read-only) handle returns an error
+/// rather than writing straight through to `db/` -- the guard extended
+/// alongside [`Level::save`]'s (see [`Level::open`]'s doc comment).
+#[test]
+fn put_chunk_on_read_only_handle_errors_and_does_not_write() {
+    let fixture = support::fixtures()
+        .into_iter()
+        .find(|f| f.name == "v1_18_superflat")
+        .expect("v1_18_superflat fixture is present");
+    let tmp = extract_fixture(&fixture);
+    let world_path = tmp.path().join("world");
+
+    let mut level = Level::open(&world_path).unwrap();
+    let dimension = Dimension::Overworld;
+    let new_position = ChunkPosition(100_000, 100_000);
+    assert!(level.chunk(dimension, new_position).unwrap().is_none());
+
+    let chunk = Chunk::new(new_position, dimension, level.write_version());
+    let result = level.put_chunk(dimension, new_position, &chunk);
+    assert!(
+        result.is_err(),
+        "put_chunk on a read-only handle should error"
+    );
+
+    assert!(
+        level.chunk(dimension, new_position).unwrap().is_none(),
+        "read-only put_chunk must not write the chunk"
+    );
+    assert!(
+        !level.chunk_positions(dimension).any(|p| p == new_position),
+        "read-only put_chunk must not update the position index"
+    );
+}
+
+/// [`Level::remove_chunk`] on an `open` (read-only) handle returns an error
+/// rather than deleting anything from `db/`.
+#[test]
+fn remove_chunk_on_read_only_handle_errors_and_does_not_remove() {
+    let fixture = support::fixtures()
+        .into_iter()
+        .find(|f| f.name == "v1_18_superflat")
+        .expect("v1_18_superflat fixture is present");
+    let tmp = extract_fixture(&fixture);
+    let world_path = tmp.path().join("world");
+
+    let mut level = Level::open(&world_path).unwrap();
+    let dimension = Dimension::Overworld;
+    let position = level
+        .chunk_positions(dimension)
+        .next()
+        .expect("v1_18_superflat has at least one overworld chunk");
+    assert!(level.chunk(dimension, position).unwrap().is_some());
+
+    let result = level.remove_chunk(dimension, position);
+    assert!(
+        result.is_err(),
+        "remove_chunk on a read-only handle should error"
+    );
+
+    assert!(
+        level.chunk(dimension, position).unwrap().is_some(),
+        "read-only remove_chunk must not delete the chunk"
+    );
+    assert!(
+        level.chunk_positions(dimension).any(|p| p == position),
+        "read-only remove_chunk must not update the position index"
+    );
+}
+
+/// [`Level::chunks`]' per-item error names the chunk that failed:
+/// [`bedrock_level::error::ChunkError`] carries the position and dimension
+/// alongside the underlying decode error. Fixtures carry no malformed
+/// chunks (they are all real, game-written data), so this synthesizes one
+/// directly: a `0x30` LegacyTerrain record too short to hold the established
+/// 49,152-byte column, which `Chunk::decode` cannot decode at all --
+/// wired in through a raw `db/` write and a fresh position-index scan
+/// (`Level::open`), rather than through any public chunk-writing API.
+#[test]
+fn chunks_bulk_error_names_the_failing_chunk_position_and_dimension() {
+    let fixture = support::fixtures()
+        .into_iter()
+        .find(|f| f.name == "v1_18_superflat")
+        .expect("v1_18_superflat fixture is present");
+    let tmp = extract_fixture(&fixture);
+    let world_path = tmp.path().join("world");
+
+    let dimension = Dimension::Overworld;
+    let bad_position = ChunkPosition(424_242, 424_242);
+
+    {
+        let level = Level::open_rw(&world_path).unwrap();
+        assert!(
+            level.chunk(dimension, bad_position).unwrap().is_none(),
+            "bad_position must not collide with a real chunk from the fixture"
+        );
+
+        let bad_key = Key {
+            chunk: bad_position,
+            dimension,
+            data: KeyVariant::LegacyTerrain,
+        };
+        let mut key_bytes = Vec::new();
+        bad_key.serialize(&mut key_bytes).unwrap();
+        // Far short of `legacy_terrain::ESTABLISHED_LEN`: `LegacyTerrain::from_disk`
+        // errors reading the id array before it gets anywhere near the tail.
+        level.raw().insert(&key_bytes, [0u8; 4]).unwrap();
+        // `rusty-leveldb` holds an exclusive lock on `db/` for as long as any
+        // handle is alive (see `extract_fixture`'s doc comment); the position
+        // index is only built at open time, so this handle must be dropped and
+        // a fresh one opened for the new key to be picked up by the scan.
+    }
+
+    let level = Level::open(&world_path).unwrap();
+    assert!(
+        level.chunk_positions(dimension).any(|p| p == bad_position),
+        "the synthesized malformed record should surface through the position index like any other"
+    );
+
+    let results: Vec<_> = level.chunks(dimension).unwrap().collect();
+    let mut ok_count = 0;
+    let mut bad_error = None;
+    for result in results {
+        match result {
+            Ok((position, _)) => {
+                assert_ne!(
+                    position, bad_position,
+                    "the malformed record must not decode successfully"
+                );
+                ok_count += 1;
+            }
+            Err(err) => {
+                assert!(
+                    bad_error.is_none(),
+                    "only the one synthesized chunk should fail to decode"
+                );
+                bad_error = Some(err);
+            }
+        }
+    }
+
+    assert!(
+        ok_count > 0,
+        "the fixture's real chunks should still decode"
+    );
+    let err = bad_error.expect("the malformed chunk should surface as an Err");
+    assert_eq!(err.position, bad_position);
+    assert_eq!(err.dimension, dimension);
+    let message = err.to_string();
+    assert!(
+        message.contains("424242"),
+        "ChunkError's Display should name the failing position: {message}"
+    );
+}

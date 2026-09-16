@@ -507,6 +507,16 @@ pub struct Layer {
     palette: Vec<PaletteEntry>,
     /// Used to check which blocks are already in the palette. Block definitions are hashed manually and compared with their hash in this set.
     /// This is because `PaletteEntry` does not implement `Eq` and we also prevent cloning the entire block definition on each insertion.
+    ///
+    /// This is a fast-path cache, not a source of truth: it can hold at most one palette
+    /// index per 64-bit hash, so two distinct entries that collide cannot both live in it.
+    /// [`Self::set`] handles that by verifying equality on every hash hit and falling back
+    /// to a linear scan of `palette` on mismatch -- see its doc comment. [`Self::contains`]
+    /// and [`Self::palette_index`] do not: they trust a hash hit outright, so on the same
+    /// (astronomically unlikely, birthday-bound on 64 bits) collision they can report a
+    /// false positive or return a different entry's index. Widening them the same way `set`
+    /// is widened would cost a linear scan on every lookup rather than only on collision;
+    /// left as documented behavior until a real collision is ever observed.
     hashes: HashMap<u64, u16, BuildNoHashHasher<u64>>,
     /// The field order each *modern* `palette` entry re-encodes with, kept in lock step
     /// with `palette` by index -- both are only ever pushed to, together, in `set` and
@@ -553,16 +563,53 @@ impl Layer {
     /// Always inserts (or reuses) a modern palette entry -- there is no public way to
     /// construct a [`PaletteEntry::Legacy`], since that form only ever arrives by decoding
     /// an old world (see [`PaletteEntry`]'s doc comment).
+    ///
+    /// Deduplication is hash-first, equality-verified: `hashes` maps a 64-bit digest to one
+    /// palette index, which cannot represent two distinct entries sharing a hash. A hash hit
+    /// is therefore checked against the actual entry before being trusted; on a mismatch this
+    /// falls back to a linear scan of `palette` for a true match, and only pushes a new entry
+    /// if that scan also comes up empty. A freshly pushed entry from the fallback path is
+    /// deliberately *not* written into `hashes` -- the hash is already claimed by the other
+    /// entry, and overwriting it would make a later lookup for that other entry resolve to
+    /// this one instead. `hashes` stays a fast path only; this method's correctness never
+    /// depends on it holding every entry, only on it never claiming the wrong one.
+    ///
+    /// The verify-on-hit comparison is not a new complexity class on the common
+    /// (no-collision) path: `PartialEq` on `BlockDef` walks the same `name`/`version`/
+    /// `states` fields the hash was just computed over, so confirming a hit costs about as
+    /// much as the hash itself did -- proportional to one block's size, not the palette's.
+    /// Only a genuine collision (or a distinct block that happens to share the digest) pays
+    /// for the linear scan below.
     pub fn set<K: Into<BlockPosition>>(&mut self, position: K, block: BlockDef) {
-        // Check whether the block is in the palette
         let hash = Self::hash_def(&block);
-        let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
+
+        let palette_index = if let Some(&candidate) = self.hashes.get(&hash) {
+            if self.palette[candidate as usize].as_block() == Some(&block) {
+                candidate
+            } else if let Some(found) = self
+                .palette
+                .iter()
+                .position(|entry| entry.as_block() == Some(&block))
+            {
+                // A different, earlier entry (pushed before the collision, or itself a
+                // prior fallback push) is the true match.
+                found as u16
+            } else {
+                // Genuinely new, but its hash collides with `candidate`'s. Push it without
+                // touching `hashes` -- see this method's doc comment.
+                self.palette.push(PaletteEntry::Modern(block));
+                self.entry_order.push(FieldOrder::default());
+                self.palette.len() as u16 - 1
+            }
+        } else {
             // Block does not exist in palette, push it. A newly built entry was not read
             // off disk, so it gets the default (and dominant) field order.
             self.palette.push(PaletteEntry::Modern(block));
             self.entry_order.push(FieldOrder::default());
-            self.palette.len() as u16 - 1
-        });
+            let index = self.palette.len() as u16 - 1;
+            self.hashes.insert(hash, index);
+            index
+        };
 
         let index = to_offset(position.into());
         self.array.set(index, palette_index);
@@ -586,12 +633,20 @@ impl Layer {
     }
 
     /// Determines the index in the palette of the (modern) block.
+    ///
+    /// Trusts a `hashes` hit outright, unlike [`Self::set`]: on the astronomically unlikely
+    /// event of a 64-bit hash collision with a different palette entry, this can return that
+    /// other entry's index instead of `None`. See the `hashes` field's doc comment.
     pub fn palette_index(&self, block: &BlockDef) -> Option<u16> {
         let hash = Self::hash_def(block);
         self.hashes.get(&hash).copied()
     }
 
     /// Whether the palette contains the given (modern) block.
+    ///
+    /// Trusts a `hashes` hit outright, unlike [`Self::set`]: on the astronomically unlikely
+    /// event of a 64-bit hash collision with a different palette entry, this can report a
+    /// false positive. See the `hashes` field's doc comment.
     pub fn contains(&self, block: &BlockDef) -> bool {
         let hash = Self::hash_def(block);
         self.hashes.contains_key(&hash)
@@ -881,6 +936,53 @@ mod palette_tests {
             },
         );
         assert_eq!(layer.entry_order, vec![FieldOrder::StatesThenVersion]);
+    }
+
+    /// Directly exercises `Layer::set`'s verify-on-hit fallback. Forcing a genuine 64-bit
+    /// `FxHasher` collision between two live `BlockDef`s is impractical, so the collision is
+    /// fabricated instead: `hashes` is seeded to map `dirt`'s *real* hash to the index that
+    /// actually holds `stone` -- exactly the state a true collision would leave behind (the
+    /// first entry claims the bucket, and the map has no room for a second index under the
+    /// same key). `set` must not trust that hit at face value.
+    #[test]
+    fn set_falls_back_to_a_linear_scan_on_a_hash_collision() {
+        let stone = BlockDef {
+            name: "minecraft:stone".into(),
+            version: Some(1),
+            states: indexmap::IndexMap::new(),
+        };
+        let dirt = BlockDef {
+            name: "minecraft:dirt".into(),
+            version: Some(1),
+            states: indexmap::IndexMap::new(),
+        };
+
+        let mut layer = Layer {
+            array: BitArray::Greedy(GreedyArray::from(Box::new([0u16; 4096]))),
+            palette: vec![PaletteEntry::Modern(stone.clone())],
+            hashes: HashMap::with_hasher(BuildNoHashHasher::default()),
+            entry_order: vec![FieldOrder::default()],
+        };
+        let dirt_hash = Layer::hash_def(&dirt);
+        layer.hashes.insert(dirt_hash, 0); // Points at `stone`'s slot -- the forced collision.
+
+        layer.set((0u8, 0u8, 0u8), dirt.clone());
+
+        // A distinct palette slot was pushed for `dirt` rather than the hash hit silently
+        // resolving to `stone` -- the two entries never merge.
+        assert_eq!(layer.palette().len(), 2);
+        assert_eq!(layer.get((0u8, 0u8, 0u8)).unwrap().as_block(), Some(&dirt));
+        assert_eq!(layer.palette()[0].as_block(), Some(&stone));
+
+        // The fallback push deliberately does not touch `hashes`: the bucket is already
+        // claimed by `stone`'s index, and overwriting it would corrupt lookups for `stone`.
+        assert_eq!(layer.hashes.get(&dirt_hash), Some(&0));
+
+        // Setting `dirt` again finds the fallback entry via the linear scan rather than
+        // pushing a second duplicate.
+        layer.set((1u8, 0u8, 0u8), dirt.clone());
+        assert_eq!(layer.palette().len(), 2);
+        assert_eq!(layer.get((1u8, 0u8, 0u8)).unwrap().as_block(), Some(&dirt));
     }
 
     /// Builds a one-layer legacy subchunk with a zero bits-per-index header: no index

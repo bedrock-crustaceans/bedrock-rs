@@ -16,7 +16,7 @@ use crate::actor::{ActorStorageKey, actorprefix_key_bytes, decode_actor_digest};
 use crate::chunk::ChunkRecords;
 use crate::chunk_version::KNOWN_CHUNK_VERSION_CEILING;
 use crate::db::Database;
-use crate::error::{Error, Result};
+use crate::error::{ChunkError, Error, Result};
 use crate::height_range::{self, HeightRange};
 use crate::key::{Key, KeyVariant};
 use crate::level_chunk::Chunk;
@@ -77,7 +77,9 @@ pub struct Level {
     /// `true` for a [`Level::open`] handle, `false` for [`Level::open_rw`].
     /// The two constructors otherwise do identical work (see
     /// [`Level::open_rw`]'s doc comment) -- this is the one place that
-    /// distinction is actually enforced, in [`Level::save`].
+    /// distinction is stored, checked at the top of every write path that
+    /// touches disk: [`Level::save`] (`level.dat`/`levelname.txt`) and
+    /// [`Level::put_chunk`]/[`Level::remove_chunk`] (`db/`).
     read_only: bool,
 }
 
@@ -91,13 +93,10 @@ impl Level {
     /// decoded, or if the database fails to open -- both fatal, unlike a
     /// missing chunk, which [`Level::chunk`] reports as `Ok(None)`.
     ///
-    /// The returned handle is read-only: [`Level::save`] returns an error
-    /// on it rather than writing. [`Level::put_chunk`]/[`Level::remove_chunk`]
-    /// are unaffected by that -- they write straight through to `db/`
-    /// regardless of which constructor opened the handle, exactly as
-    /// before this distinction existed; only `level.dat`/`levelname.txt`
-    /// writes are gated on it. Use [`Level::open_rw`] for a handle
-    /// [`Level::save`] will actually write through.
+    /// The returned handle is read-only: [`Level::save`], [`Level::put_chunk`],
+    /// and [`Level::remove_chunk`] all return [`Error::Invalid`] on it rather
+    /// than writing, to `level.dat`/`levelname.txt` or to `db/` alike. Use
+    /// [`Level::open_rw`] for a handle that actually writes through.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Self::open_impl(path.as_ref(), true)
     }
@@ -109,9 +108,10 @@ impl Level {
     /// API design's rationale: the underlying `rusty-leveldb` handle is
     /// opened read-write either way, and there is no other write-side setup
     /// to skip, so the two constructors still do identical work *opening*
-    /// the level. What now differs is [`Level::save`]: only a handle from
-    /// this constructor will actually write `level.dat`/`levelname.txt` --
-    /// see its doc comment.
+    /// the level. What now differs is every write path: only a handle from
+    /// this constructor will actually write through [`Level::save`]
+    /// (`level.dat`/`levelname.txt`), [`Level::put_chunk`], or
+    /// [`Level::remove_chunk`] (`db/`) -- see their doc comments.
     pub fn open_rw(path: impl AsRef<Path>) -> Result<Self> {
         Self::open_impl(path.as_ref(), false)
     }
@@ -232,7 +232,11 @@ impl Level {
     /// database (via [`ChunkRecords::read_many`], seeded from the position
     /// index -- see the struct docs) rather than one scan per chunk. Each
     /// item is a per-chunk `Result`, per architecture decision 11: one
-    /// malformed chunk does not abort the rest of the walk.
+    /// malformed chunk does not abort the rest of the walk. A failed item's
+    /// `Err` is a [`ChunkError`], naming the position and dimension of the
+    /// chunk that failed alongside the underlying [`Error`] -- a caller
+    /// skipping or logging bad chunks during a bulk walk can say which ones
+    /// they were, which a bare `Error` cannot.
     ///
     /// Diverges from the API sketch's `chunks(&self, dim) -> Chunks<'_>`
     /// (infallible): building the iterator itself requires a database
@@ -268,10 +272,9 @@ impl Level {
     /// still owns that second write itself -- see that method's own doc
     /// comment.)
     ///
-    /// Writes straight through to `db/` regardless of whether this handle
-    /// came from [`Level::open`] or [`Level::open_rw`] -- see [`Level::open`]'s
-    /// doc comment for the read-only boundary this crate currently draws
-    /// (`level.dat`/`levelname.txt` only, via [`Level::save`]).
+    /// Returns [`Error::Invalid`] without writing anything on a [`Level::open`]
+    /// handle -- see [`Level::open`]'s doc comment. Use [`Level::open_rw`]
+    /// for a handle this actually writes through.
     ///
     /// When `dimension`/`position` match `chunk`'s own (the common case: a
     /// chunk read from this level, edited, and written back), this reuses
@@ -322,6 +325,12 @@ impl Level {
         position: ChunkPosition,
         chunk: &Chunk,
     ) -> Result<()> {
+        if self.read_only {
+            return Err(Error::Invalid(
+                "a read-only level (opened via Level::open; use Level::open_rw to write chunks)",
+            ));
+        }
+
         let same_spot = dimension == chunk.dimension() && position == chunk.position();
         let encoded = chunk.encode_at(position, dimension)?;
         let actor_writes = chunk.encode_actor_writes()?;
@@ -369,11 +378,16 @@ impl Level {
     /// named -- exactly the same scope [`Chunk::encode_actor_writes`]'s GC
     /// keeps to for an edit rather than a removal.
     ///
-    /// Writes straight through to `db/` regardless of whether this handle
-    /// came from [`Level::open`] or [`Level::open_rw`] -- see [`Level::open`]'s
-    /// doc comment for the read-only boundary this crate currently draws
-    /// (`level.dat`/`levelname.txt` only, via [`Level::save`]).
+    /// Returns [`Error::Invalid`] without removing anything on a
+    /// [`Level::open`] handle -- see [`Level::open`]'s doc comment. Use
+    /// [`Level::open_rw`] for a handle this actually writes through.
     pub fn remove_chunk(&mut self, dimension: Dimension, position: ChunkPosition) -> Result<()> {
+        if self.read_only {
+            return Err(Error::Invalid(
+                "a read-only level (opened via Level::open; use Level::open_rw to remove chunks)",
+            ));
+        }
+
         if let Some(mut records) = ChunkRecords::read(&self.db, position, dimension)? {
             let actor_storage_keys: Vec<ActorStorageKey> = records
                 .get(KeyVariant::ActorDigest)
@@ -434,16 +448,17 @@ impl Level {
     /// # Read-only handles
     ///
     /// Returns [`Error::Invalid`] on a [`Level::open`] handle instead of
-    /// silently doing nothing. This is the one place `open`'s read-only
-    /// status (see its doc comment) is actually enforced -- it gates only
-    /// `level.dat`/`levelname.txt`, exactly the two files this method
-    /// writes, not `db/` (see [`Level::put_chunk`]/[`Level::remove_chunk`],
-    /// unaffected either way). A `save` that quietly no-op'd on a read-only
-    /// handle would make that guarantee easy to violate by accident -- a
-    /// caller who called [`Level::set_name`] then `save` on an `open`
-    /// handle would see no error and no effect. An explicit error is louder
-    /// and cheaper to notice than a write that silently didn't happen. Use
-    /// [`Level::open_rw`] to get a handle this actually writes through.
+    /// silently doing nothing -- gating `level.dat`/`levelname.txt`, exactly
+    /// the two files this method writes. [`Level::put_chunk`] and
+    /// [`Level::remove_chunk`] carry the same guard for `db/` (see their own
+    /// doc comments), so `open`'s read-only status (see its doc comment) is
+    /// enforced everywhere a `Level` writes, not only here. A `save` that
+    /// quietly no-op'd on a read-only handle would make that guarantee easy
+    /// to violate by accident -- a caller who called [`Level::set_name`]
+    /// then `save` on an `open` handle would see no error and no effect. An
+    /// explicit error is louder and cheaper to notice than a write that
+    /// silently didn't happen. Use [`Level::open_rw`] to get a handle this
+    /// actually writes through.
     pub fn save(&self) -> Result<()> {
         if self.read_only {
             return Err(Error::Invalid(
@@ -578,18 +593,28 @@ impl DoubleEndedIterator for ChunkPositions<'_> {
     }
 }
 
-/// Iterator over every decoded chunk in one dimension. See [`Level::chunks`].
+/// Iterator over every decoded chunk in one dimension. See [`Level::chunks`]. Yields
+/// [`ChunkError`] rather than a bare [`Error`] on a per-item failure, so a caller can tell
+/// which chunk it was.
 pub struct Chunks<'a> {
     level: &'a Level,
     inner: std::collections::hash_map::IntoIter<(ChunkPosition, Dimension), ChunkRecords>,
 }
 
 impl Iterator for Chunks<'_> {
-    type Item = Result<(ChunkPosition, Chunk)>;
+    type Item = std::result::Result<(ChunkPosition, Chunk), ChunkError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ((position, _dimension), records) = self.inner.next()?;
-        Some(Chunk::decode(records, &self.level.db).map(|chunk| (position, chunk)))
+        let ((position, dimension), records) = self.inner.next()?;
+        Some(
+            Chunk::decode(records, &self.level.db)
+                .map(|chunk| (position, chunk))
+                .map_err(|source| ChunkError {
+                    position,
+                    dimension,
+                    source,
+                }),
+        )
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
