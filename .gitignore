@@ -25,3 +25,7 @@ crates/level/test_level
 
 # Ignore CMake build directory
 build
+
+# proptest saves failing-case seeds alongside the test file that found them
+# on the first local failure; local scratch, not checked in.
+proptest-regressions/

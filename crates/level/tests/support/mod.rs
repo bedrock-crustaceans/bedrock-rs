@@ -12,6 +12,13 @@ use facet::Facet;
 use flate2::read::GzDecoder;
 use tar::Archive;
 
+/// Shared bit-packing helpers for property tests that build canonical
+/// paletted-storage bytes by hand. See the module's own doc comment.
+pub mod bit_packing;
+/// A shared primitive-typed NBT leaf generator for property tests. See the
+/// module's own doc comment.
+pub mod nbt;
+
 #[derive(Facet, Debug, Clone)]
 pub struct FixtureIndex {
     pub fixtures: Vec<Fixture>,
