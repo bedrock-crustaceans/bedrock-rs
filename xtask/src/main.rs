@@ -1,4 +1,5 @@
 pub mod codegen;
+pub mod oracle;
 
 use proc_macro2::TokenStream;
 use std::path::{Path, PathBuf};
@@ -16,6 +17,7 @@ fn main() {
     match args.next().as_deref() {
         Some("protocol") => run_protocol(&project_root),
         Some("generate-palette") => run_generate_palette(&project_root),
+        Some("diff-oracle") => run_diff_oracle(args.collect()),
         Some(other) => {
             eprintln!("unrecognized xtask command `{other}`");
             print_usage();
@@ -39,6 +41,72 @@ fn print_usage() {
         "  generate-palette   regenerate crates/vanilla_data/src/generated from the pinned \
          bedrock-samples dumps"
     );
+    eprintln!(
+        "  diff-oracle        dump a fixture world through this crate and diff it against \
+         whichever reference-implementation oracles are available; see \
+         crates/level/tests/support/oracle.md"
+    );
+}
+
+fn run_diff_oracle(args: Vec<String>) {
+    let mut world_dir: Option<PathBuf> = None;
+    let mut work_dir: Option<PathBuf> = None;
+    let mut java_jar: Option<PathBuf> = None;
+    let mut python_bin: Option<PathBuf> = None;
+    let mut python_oracle_permission_acknowledged = false;
+
+    let usage = "usage: cargo xtask diff-oracle <world-dir> [--work-dir <dir>] \
+                 [--java-jar <path/to/jar>] [--python-bin <path/to/python>] \
+                 [--python-oracle-permission-acknowledged]";
+
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "--work-dir" => match iter.next() {
+                Some(value) => work_dir = Some(PathBuf::from(value)),
+                None => {
+                    eprintln!("--work-dir needs a value\n{usage}");
+                    process::exit(1);
+                }
+            },
+            "--java-jar" => match iter.next() {
+                Some(value) => java_jar = Some(PathBuf::from(value)),
+                None => {
+                    eprintln!("--java-jar needs a value\n{usage}");
+                    process::exit(1);
+                }
+            },
+            "--python-bin" => match iter.next() {
+                Some(value) => python_bin = Some(PathBuf::from(value)),
+                None => {
+                    eprintln!("--python-bin needs a value\n{usage}");
+                    process::exit(1);
+                }
+            },
+            "--python-oracle-permission-acknowledged" => {
+                python_oracle_permission_acknowledged = true;
+            }
+            other if world_dir.is_none() => world_dir = Some(PathBuf::from(other)),
+            other => {
+                eprintln!("unrecognized diff-oracle argument `{other}`\n{usage}");
+                process::exit(1);
+            }
+        }
+    }
+
+    let Some(world_dir) = world_dir else {
+        eprintln!("{usage}");
+        process::exit(1);
+    };
+    let work_dir = work_dir.unwrap_or_else(|| PathBuf::from("target/diff-oracle"));
+
+    oracle::run::run(&oracle::run::OracleConfig {
+        world_dir,
+        work_dir,
+        java_jar,
+        python_bin,
+        python_oracle_permission_acknowledged,
+    });
 }
 
 fn run_protocol(project_root: &Path) {
