@@ -159,7 +159,7 @@ pub fn ticking_area_key(id: &str) -> Vec<u8> {
 /// module's keys, with typed accessors deliberately absent -- this is the
 /// pre-structured-decode baseline, so there is nothing to type yet. See
 /// [`crate::map_data::MapRecord`], which this mirrors, and
-/// [`RetainedNbt`], whose doc comment covers the retained-original-bytes
+/// `RetainedNbt`, whose doc comment covers the retained-original-bytes
 /// behavior both share.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RawCompound {
@@ -181,7 +181,7 @@ impl RawCompound {
     }
 
     /// Mutable access to the record's NBT value. Clears the preserved
-    /// original bytes -- see [`RetainedNbt`]'s doc comment -- so the next
+    /// original bytes -- see `RetainedNbt`'s doc comment -- so the next
     /// [`encode`] re-derives from the edited value instead of returning
     /// stale bytes.
     pub fn value_mut(&mut self) -> &mut nbtx::Value {
@@ -211,7 +211,7 @@ pub fn decode(bytes: &[u8]) -> Result<RawCompound> {
 }
 
 /// Encodes one of this module's records: the inverse of [`decode`]. See
-/// [`RetainedNbt`]'s doc comment for how a decoded-but-unmodified record's
+/// `RetainedNbt`'s doc comment for how a decoded-but-unmodified record's
 /// original bytes are preferred over a re-derivation from `value`, and why
 /// [`crate::map_data`] uses the same mechanism for the same reason.
 pub fn encode(record: &RawCompound) -> Result<Vec<u8>> {

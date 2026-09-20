@@ -11,6 +11,7 @@ pub mod color;
 pub mod db;
 pub mod error;
 pub mod finalized_state;
+pub mod flat_records;
 pub mod greedy;
 pub mod hardcoded_spawn_areas;
 pub mod height_map;

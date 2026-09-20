@@ -171,6 +171,78 @@ impl RetainedNbt {
     }
 }
 
+/// Reads a named field out of a compound value, or `None` if the value is
+/// not a compound or has no such field. The single definition site for
+/// field access shared by every typed accessor over a decoded
+/// [`nbtx::Value`] compound in this crate -- [`MapRecord`] below and every
+/// record type in [`crate::flat_records`] read named fields the same way,
+/// so they all call through here instead of each re-implementing it.
+pub(crate) fn field<'a>(value: &'a nbtx::Value, name: &str) -> Option<&'a nbtx::Value> {
+    let nbtx::Value::Compound(compound) = value else {
+        return None;
+    };
+    compound.get(name.as_bytes())
+}
+
+pub(crate) fn byte(value: &nbtx::Value, name: &str) -> Option<i8> {
+    match field(value, name)? {
+        nbtx::Value::Byte(v) => Some(*v),
+        _ => None,
+    }
+}
+
+pub(crate) fn short(value: &nbtx::Value, name: &str) -> Option<i16> {
+    match field(value, name)? {
+        nbtx::Value::Short(v) => Some(*v),
+        _ => None,
+    }
+}
+
+pub(crate) fn int(value: &nbtx::Value, name: &str) -> Option<i32> {
+    match field(value, name)? {
+        nbtx::Value::Int(v) => Some(*v),
+        _ => None,
+    }
+}
+
+pub(crate) fn long(value: &nbtx::Value, name: &str) -> Option<i64> {
+    match field(value, name)? {
+        nbtx::Value::Long(v) => Some(*v),
+        _ => None,
+    }
+}
+
+pub(crate) fn float(value: &nbtx::Value, name: &str) -> Option<f32> {
+    match field(value, name)? {
+        nbtx::Value::Float(v) => Some(*v),
+        _ => None,
+    }
+}
+
+pub(crate) fn list<'a>(value: &'a nbtx::Value, name: &str) -> Option<&'a [nbtx::Value]> {
+    match field(value, name)? {
+        nbtx::Value::List(items) => Some(items.as_slice()),
+        _ => None,
+    }
+}
+
+/// Reads a named field as a boolean-flag `Byte`: `Some(true)` only for the
+/// exact byte `1`, `Some(false)` for any other byte value, `None` if the
+/// field is absent or not a `Byte` at all.
+///
+/// Exact-1-is-true rather than "nonzero is true": this matches nbtx's own
+/// typed `bool` decode (a `#[derive(Facet)]` `bool` field errors on any byte
+/// but 0 or 1, rather than normalizing), and the crate's established
+/// convention for a boolean-as-byte field elsewhere (`player.rs`'s
+/// documented handling, and the `LevelSettings` write-side normalization
+/// decision in `TODO.md`). No record in this crate's fixture corpus has
+/// ever carried a value other than 0 or 1 in a field read through this
+/// helper, so the choice is for internal consistency, not something the
+/// corpus demanded.
+pub(crate) fn bool_byte(value: &nbtx::Value, name: &str) -> Option<bool> {
+    Some(byte(value, name)? == 1)
+}
+
 /// One decoded `map_<id>` record: an opaque NBT compound plus typed
 /// accessors for the fields listed in the module docs.
 ///
@@ -179,7 +251,7 @@ impl RetainedNbt {
 /// reproduce every real record byte-identically. `Value::Compound` is
 /// order-preserving, which is what makes a re-derived encoding reproduce a
 /// decoded record's field layout exactly -- with one further wrinkle
-/// [`RetainedNbt`]'s doc comment covers.
+/// `RetainedNbt`'s doc comment covers.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MapRecord {
     inner: RetainedNbt,
@@ -187,7 +259,7 @@ pub struct MapRecord {
 
 impl MapRecord {
     /// Wraps an already-decoded NBT value as a record with no original
-    /// on-disk bytes to fall back to -- see [`RetainedNbt`]'s doc comment
+    /// on-disk bytes to fall back to -- see `RetainedNbt`'s doc comment
     /// for the consequence of that on a value with an empty list field.
     pub fn new(value: nbtx::Value) -> Self {
         Self {
@@ -203,42 +275,27 @@ impl MapRecord {
     }
 
     fn field(&self, name: &str) -> Option<&nbtx::Value> {
-        let nbtx::Value::Compound(compound) = self.inner.value() else {
-            return None;
-        };
-        compound.get(name.as_bytes())
+        field(self.inner.value(), name)
     }
 
     fn long(&self, name: &str) -> Option<i64> {
-        match self.field(name)? {
-            nbtx::Value::Long(v) => Some(*v),
-            _ => None,
-        }
+        long(self.inner.value(), name)
     }
 
     fn byte(&self, name: &str) -> Option<i8> {
-        match self.field(name)? {
-            nbtx::Value::Byte(v) => Some(*v),
-            _ => None,
-        }
+        byte(self.inner.value(), name)
     }
 
     fn short(&self, name: &str) -> Option<i16> {
-        match self.field(name)? {
-            nbtx::Value::Short(v) => Some(*v),
-            _ => None,
-        }
+        short(self.inner.value(), name)
     }
 
     fn int(&self, name: &str) -> Option<i32> {
-        match self.field(name)? {
-            nbtx::Value::Int(v) => Some(*v),
-            _ => None,
-        }
+        int(self.inner.value(), name)
     }
 
     fn bool_byte(&self, name: &str) -> Option<bool> {
-        self.byte(name).map(|v| v != 0)
+        bool_byte(self.inner.value(), name)
     }
 
     /// The `mapId` field: this map's own id, matching its key's suffix on
@@ -343,7 +400,7 @@ pub fn decode(bytes: &[u8]) -> Result<MapRecord> {
 }
 
 /// Encodes a `map_<id>` value: the inverse of [`decode`]. See
-/// [`RetainedNbt`]'s doc comment for how a decoded-but-unmodified record's
+/// `RetainedNbt`'s doc comment for how a decoded-but-unmodified record's
 /// original bytes are preferred over a re-derivation, and why that matters
 /// for this record's `decorations` field specifically.
 pub fn encode(record: &MapRecord) -> Result<Vec<u8>> {
@@ -560,5 +617,23 @@ mod tests {
 
         let wrong_type = MapRecord::new(nbtx::Value::Byte(0));
         assert_eq!(wrong_type.map_id(), None);
+    }
+
+    /// [`bool_byte`] is exact-1-is-true, not "nonzero is true" -- see its
+    /// doc comment. A byte of `2` or `15` reads as `false`, not `true`.
+    #[test]
+    fn bool_byte_is_exact_1_is_true_not_nonzero_is_true() {
+        let mut compound = nbtx::Compound::new();
+        compound.insert("flag_true".into(), nbtx::Value::Byte(1));
+        compound.insert("flag_zero".into(), nbtx::Value::Byte(0));
+        compound.insert("flag_two".into(), nbtx::Value::Byte(2));
+        compound.insert("flag_fifteen".into(), nbtx::Value::Byte(15));
+        let value = nbtx::Value::Compound(compound);
+
+        assert_eq!(bool_byte(&value, "flag_true"), Some(true));
+        assert_eq!(bool_byte(&value, "flag_zero"), Some(false));
+        assert_eq!(bool_byte(&value, "flag_two"), Some(false));
+        assert_eq!(bool_byte(&value, "flag_fifteen"), Some(false));
+        assert_eq!(bool_byte(&value, "absent"), None);
     }
 }
