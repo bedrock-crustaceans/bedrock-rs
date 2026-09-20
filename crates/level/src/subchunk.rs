@@ -658,6 +658,88 @@ impl Layer {
         &self.palette
     }
 
+    /// A placeholder momentarily written into a palette slot while its real content is
+    /// taken by value in [`Self::update_palette_entry`] -- the cheapest [`PaletteEntry`]
+    /// variant this type has (two `u8`s, no heap allocation at all), never actually
+    /// observed by any caller, since every taker overwrites the slot again before
+    /// returning control.
+    const TAKEN_PLACEHOLDER: PaletteEntry = PaletteEntry::Numeric { id: 0, data: 0 };
+
+    /// Takes the palette entry at `index` by value -- no clone, regardless of which of
+    /// the three [`PaletteEntry`] forms it is -- hands it to `f`, and writes the result
+    /// back into the same slot, leaving the bit-packed index array untouched: every
+    /// position that pointed at `index` still does, only what that slot *means* can
+    /// change. This is the mutation the level layer's content-upgrade pass
+    /// (`Chunk::upgrade_content`) needs: bringing a `Legacy`/`Numeric` entry to its
+    /// modern form, or advancing a `Modern` entry to a newer schema version, changes what
+    /// a slot means without changing which positions share it, unlike [`Self::set`],
+    /// which always resolves (or creates) a slot for one *position*.
+    ///
+    /// `f` returns `(Result<BlockDef, PaletteEntry>, R)`. `Err(original)` means
+    /// "unchanged": `f` hands back the exact value it was given (no clone needed to do
+    /// so -- it already owns it), the slot is restored to that value verbatim, and the
+    /// `hashes` dedup cache is left completely untouched, since nothing about the slot's
+    /// content moved. This is what makes a provider that declines most of a palette
+    /// (`NoEntry`) cost no allocation: nothing here ever clones a `Legacy`/`Modern`
+    /// entry's `String` or a `Modern` entry's `states` map merely to ask a provider about
+    /// it. `Ok(block)` replaces the slot with `PaletteEntry::Modern(block)` -- the only
+    /// shape any caller of this method ever *writes* a palette entry as, mirroring
+    /// [`Self::set`]'s own "always modern" contract -- and repairs `hashes` the same way
+    /// [`Self::set`]'s fallback path does: a mapping that pointed at `index` under the
+    /// old content's hash is dropped, and the new content's hash is claimed for `index`
+    /// unless a different index already claims it, rather than stealing another entry's
+    /// claim. Also resets `index`'s recorded on-disk field order to the default in that
+    /// case: a replaced entry's content no longer matches what was actually read off
+    /// disk, so there is nothing for the old order to be faithful to.
+    ///
+    /// Replacing a slot with content equal to another slot's is accepted, not merged: the
+    /// two indices end up as genuine duplicate palette entries, one of them unreachable
+    /// through `hashes` (which keeps pointing at whichever index claimed that hash
+    /// first). This is safe -- the bit-packed indices are never touched here, so nothing
+    /// desyncs -- merely redundant, and correcting it would mean rewriting every index
+    /// that pointed at the entry being merged away, which is out of scope for a method
+    /// whose whole contract is that indices never move.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds for this layer's palette.
+    ///
+    /// If `f` itself unwinds, the slot is left holding the placeholder it was taken
+    /// against (`Numeric { id: 0, data: 0 }`), since the write-back only runs once `f`
+    /// returns. A caller that catches that unwind and keeps using the layer would see a
+    /// synthetic entry there, indistinguishable from a real one -- so do not catch it;
+    /// the layer is not meaningful after a panic inside `f`.
+    pub fn update_palette_entry<R>(
+        &mut self,
+        index: u16,
+        f: impl FnOnce(PaletteEntry) -> (std::result::Result<BlockDef, PaletteEntry>, R),
+    ) -> R {
+        let old_hash = Self::hash_entry(&self.palette[index as usize]);
+        let taken = std::mem::replace(&mut self.palette[index as usize], Self::TAKEN_PLACEHOLDER);
+
+        let (outcome, result) = f(taken);
+
+        match outcome {
+            Ok(block) => {
+                if self.hashes.get(&old_hash) == Some(&index) {
+                    self.hashes.remove(&old_hash);
+                }
+                let new_hash = Self::hash_def(&block);
+                self.hashes.entry(new_hash).or_insert(index);
+
+                self.palette[index as usize] = PaletteEntry::Modern(block);
+                if let Some(order) = self.entry_order.get_mut(index as usize) {
+                    *order = FieldOrder::default();
+                }
+            }
+            Err(original) => {
+                self.palette[index as usize] = original;
+            }
+        }
+
+        result
+    }
+
     /// Returns the indices
     #[inline]
     pub fn indices(&self) -> &BitArray {

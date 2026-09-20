@@ -58,8 +58,15 @@ use crate::error::{Error, Result};
 use crate::height_map::HeightMap;
 use crate::key::{Key, KeyVariant, subchunk_index_from_key, subchunk_index_to_key};
 use crate::legacy_terrain::LegacyTerrain;
-use crate::subchunk::{Layer, PaletteEntry, SubChunk, SubChunkVersion};
+use crate::provider::{
+    ContentProvider, ContextResolution, RelativeOffset, StateUpgrade, VersionedBlockDef,
+};
+use crate::subchunk::{BlockDef, Layer, PaletteEntry, SubChunk, SubChunkVersion, from_offset};
 use crate::types::{BlockPosition, ChunkPosition};
+use crate::upgrade::{
+    EARLIEST_BLOCK_STATE_VERSION, EntryLocation, EntryOutcome, NeighbourOutcome,
+    PRE_NBT_BLOCKSTATE_VERSION, UnconvertedReason, UpgradeReport,
+};
 
 /// A block position spanning a whole chunk column, rather than one
 /// subchunk. `x`/`z` stay the usual subchunk-local `0..16` range;
@@ -184,6 +191,13 @@ pub struct Chunk {
     /// never rewrites them, so leaving them untouched is what makes an
     /// unmodified decode-then-encode reproduce them exactly.
     records: ChunkRecords,
+    /// The content-upgrade pass's report, if [`Chunk::upgrade_content`] has run --
+    /// [`crate::level::Level::chunk`] runs it automatically whenever a
+    /// [`ContentProvider`] is attached (architecture decision 4), so this is `Some` for
+    /// every chunk a caller gets back that way, and `None` for a chunk decoded or built
+    /// with no provider involved at all (the no-provider path this crate's other tests
+    /// pin as byte-identical to before this pass existed). See [`Chunk::content_upgrade`].
+    content_upgrade: Option<UpgradeReport>,
 }
 
 impl Chunk {
@@ -210,6 +224,7 @@ impl Chunk {
             actors: ChunkActors::default(),
             actor_digest_at_decode: Vec::new(),
             records: ChunkRecords::new(position, dimension),
+            content_upgrade: None,
         }
     }
 
@@ -316,6 +331,7 @@ impl Chunk {
             actors,
             actor_digest_at_decode,
             records,
+            content_upgrade: None,
         })
     }
 
@@ -341,15 +357,41 @@ impl Chunk {
         self.format
     }
 
-    /// The version this chunk's terrain and biome records will report as
-    /// achieved on the next [`Chunk::encode`]. Decision 6's per-record
-    /// achieved-version reporting hook: honestly, in this wave, it always
-    /// equals [`Chunk::chunk_version`], because nothing here moves a
-    /// record's content toward a different version (see the module docs)
-    /// -- a caller must not read this as evidence that a level's write
-    /// target was reached.
+    /// The **structural container** version this chunk's terrain and biome records will
+    /// report as achieved on the next [`Chunk::encode`] -- the `0x2c` chunk-version byte
+    /// that picks a terrain layout and a biome layout (see [`FormatProfile`]), not the
+    /// per-palette-entry block-state schema version [`Chunk::achieved_block_state_version`]
+    /// reports. The two are different axes stamped in different places on disk (one byte
+    /// on the chunk record, a packed `int` on every individual palette entry), and this
+    /// wave is what first makes the distinction matter: nothing here moves the *structural*
+    /// container version toward a different one (see the module docs), so this always
+    /// equals [`Chunk::chunk_version`] regardless of whether a content-upgrade pass ran --
+    /// a caller must not read this as evidence that a level's write target was reached, nor
+    /// as a proxy for how far this chunk's block states were actually upgraded.
     pub fn achieved_chunk_version(&self) -> u8 {
         self.source_version.chunk_version()
+    }
+
+    /// This chunk's honestly achieved block-state (content) version: the minimum achieved
+    /// packed version across every palette entry the last [`Chunk::upgrade_content`] pass
+    /// visited (decision 6 -- the chunk is only as upgraded as its least-upgraded entry).
+    /// `None` if no pass has run yet ([`Chunk::content_upgrade`] is `None`) or the pass
+    /// visited no entries at all. See [`crate::upgrade::UpgradeReport::
+    /// achieved_block_state_version`] for the exact floor conventions an unconverted entry
+    /// contributes.
+    pub fn achieved_block_state_version(&self) -> Option<i32> {
+        self.content_upgrade
+            .as_ref()
+            .and_then(UpgradeReport::achieved_block_state_version)
+    }
+
+    /// The last content-upgrade pass's full report, if [`Chunk::upgrade_content`] has run.
+    /// [`crate::level::Level::chunk`]/[`crate::level::Level::chunks`] run it automatically
+    /// whenever a [`ContentProvider`] is attached to the [`crate::level::Level`]; a chunk
+    /// read or built with no provider involved carries `None` here, honestly, rather than an
+    /// empty report that would suggest a pass ran and found nothing to do.
+    pub fn content_upgrade(&self) -> Option<&UpgradeReport> {
+        self.content_upgrade.as_ref()
     }
 
     /// Whether this chunk's heightmap reflects its stored value or a fresh
@@ -555,6 +597,188 @@ impl Chunk {
     /// that, read through [`crate::level::Level::raw`] instead.
     pub fn unmodelled_records(&self) -> &ChunkRecords {
         &self.records
+    }
+
+    /// Walks every palette entry of every layer in this chunk's terrain and asks
+    /// `provider` to bring each one forward toward `target` (a packed block-state
+    /// version), then revisits every position whose entry `provider` flags via
+    /// [`ContentProvider::needs_neighbours`]. See [`crate::upgrade`]'s module docs for the
+    /// two version floors this uses, and [`crate::provider::ContentProvider::
+    /// resolve_with_neighbours`]'s doc comment for the collect-then-apply shape the
+    /// neighbour pass follows.
+    ///
+    /// Stores the resulting [`UpgradeReport`] on this chunk (see
+    /// [`Chunk::content_upgrade`]), replacing any previous one, and returns a borrow of it.
+    ///
+    /// Not called by [`Chunk::decode`]/[`Chunk::new`] themselves -- [`crate::level::Level::
+    /// chunk`]/[`crate::level::Level::chunks`] call this automatically once a chunk is
+    /// decoded, whenever a [`ContentProvider`] is attached to the level (architecture
+    /// decision 4: automatic, with no separate call for a caller going through `Level` to
+    /// remember). A caller driving `Chunk::decode` directly, outside a `Level`, calls this
+    /// itself if it wants the pass at all.
+    ///
+    /// # Scope: `Terrain::SubChunks` only
+    ///
+    /// Only [`Terrain::SubChunks`] terrain is walked. A [`Terrain::Legacy`] chunk (chunk
+    /// versions 0-2, `0x30` LegacyTerrain) is left untouched: those chunks predate
+    /// flattening entirely, so every one of their entries is already
+    /// [`PaletteEntry::Numeric`], and correctly upgrading them needs the same
+    /// [`ContentProvider::numeric_block_state`] lookup this pass already applies to a
+    /// paletted chunk's own `Numeric` entries -- the gap here is not a different rule, only
+    /// that `LegacyTerrain` currently exposes no mutable access to its slices for this pass
+    /// to write a converted entry back through. Reported honestly rather than worked
+    /// around: a `Terrain::Legacy` chunk's [`Chunk::content_upgrade`] report is always
+    /// empty, and its [`Chunk::achieved_block_state_version`] is always `None`.
+    pub fn upgrade_content(
+        &mut self,
+        provider: &dyn ContentProvider,
+        target: i32,
+    ) -> &UpgradeReport {
+        let mut report = UpgradeReport::default();
+        self.upgrade_palette_entries(provider, target, &mut report);
+        self.run_neighbour_pass(provider, &mut report);
+        self.content_upgrade.insert(report)
+    }
+
+    /// The schema-upgrade half of [`Chunk::upgrade_content`]: `Legacy`/`Numeric` entries
+    /// resolved through the provider's legacy lookups, `Modern` entries advanced through
+    /// [`ContentProvider::upgrade_block_state`]. Runs once per palette *entry*, never once
+    /// per position -- see [`EntryLocation`]'s doc comment.
+    fn upgrade_palette_entries(
+        &mut self,
+        provider: &dyn ContentProvider,
+        target: i32,
+        report: &mut UpgradeReport,
+    ) {
+        let Terrain::SubChunks(subchunks) = &mut self.terrain else {
+            return;
+        };
+
+        for (&subchunk_index, subchunk) in subchunks.iter_mut() {
+            let mut layer_index = 0usize;
+            while let Some(layer) = subchunk.get_layer_mut(layer_index) {
+                let count = layer.palette().len();
+                for palette_index in 0..count {
+                    let outcome = layer.update_palette_entry(palette_index as u16, |entry| {
+                        upgrade_one_entry(entry, provider, target)
+                    });
+                    report.push_entry(
+                        EntryLocation {
+                            subchunk: subchunk_index,
+                            layer: layer_index,
+                            palette_index: palette_index as u16,
+                        },
+                        outcome,
+                    );
+                }
+                layer_index += 1;
+            }
+        }
+    }
+
+    /// The neighbour-revisit half of [`Chunk::upgrade_content`]. Collect-then-apply, per
+    /// [`ContentProvider::resolve_with_neighbours`]'s doc comment: every flagged position is
+    /// resolved under a shared borrow of this chunk's post-schema-upgrade state before
+    /// anything is written back, so a same-pass neighbour never sees another same-pass
+    /// neighbour's already-computed resolution.
+    ///
+    /// Only layer 0 (blocks) is considered -- every known neighbour-dependent case (stair
+    /// shape, fence/wall connections, redstone routing, double-chest pairing, note-block
+    /// instrument, stem attachment) is a block-layer property; see the Phase 3 TODO entry
+    /// this pass implements.
+    ///
+    /// # Cross-chunk boundary: a documented gap, not a silent one
+    ///
+    /// A flagged position's neighbour callback answers `None` whenever the requested offset
+    /// would land outside this chunk's own `x`/`z` range (`0..16`), rather than reading into
+    /// a different chunk. `Level::chunk` decodes one chunk at a time and does not keep any
+    /// other chunk resident to answer such a read; honoring a genuine cross-chunk lookup
+    /// would mean opening and decoding a second chunk per boundary position, which this
+    /// pass does not do. This matches [`ContentProvider::resolve_with_neighbours`]'s own
+    /// contract for an absent neighbour (`None`, never synthetic air) and is exactly the
+    /// gap architecture decision 11 asks to be stated rather than papered over. A vertical
+    /// offset is not subject to this limit: it is answered from this same chunk's other
+    /// subchunks (or `None` if the target subchunk is not present), since a chunk column
+    /// always owns its own full height range.
+    fn run_neighbour_pass(&mut self, provider: &dyn ContentProvider, report: &mut UpgradeReport) {
+        let flagged = self.collect_flagged_positions(provider);
+        if flagged.is_empty() {
+            return;
+        }
+
+        let resolved: Vec<(ChunkBlockPosition, ContextResolution)> = {
+            let this: &Chunk = self;
+            flagged
+                .into_iter()
+                .map(|(pos, block)| {
+                    let outcome = provider.resolve_with_neighbours(block, &mut |offset| {
+                        neighbour_block(this, pos, offset)
+                    });
+                    (pos, outcome)
+                })
+                .collect()
+        };
+
+        for (pos, outcome) in resolved {
+            match outcome {
+                ContextResolution::Resolved(block) => {
+                    let (subchunk_index, local) = pos.split();
+                    if let Ok(subchunk_index) = i8::try_from(subchunk_index)
+                        && let Terrain::SubChunks(subchunks) = &mut self.terrain
+                        && let Some(layer) = subchunks
+                            .get_mut(&subchunk_index)
+                            .and_then(|subchunk| subchunk.get_layer_mut(0))
+                    {
+                        layer.set(local, block);
+                    }
+                    report.push_neighbour(pos, NeighbourOutcome::Resolved);
+                }
+                ContextResolution::NoEntry(_) => {
+                    report.push_neighbour(pos, NeighbourOutcome::NoEntry);
+                }
+                ContextResolution::Malformed(_, reason) => {
+                    report.push_neighbour(pos, NeighbourOutcome::Malformed(reason.0));
+                }
+            }
+        }
+    }
+
+    /// Every layer-0 position whose (already schema-upgraded) entry `provider` flags via
+    /// [`ContentProvider::needs_neighbours`], paired with a clone of that entry's resolved
+    /// block -- cloned so the pass can move on to a mutable borrow afterward, per
+    /// [`Chunk::run_neighbour_pass`]'s collect-then-apply shape.
+    fn collect_flagged_positions(
+        &self,
+        provider: &dyn ContentProvider,
+    ) -> Vec<(ChunkBlockPosition, crate::subchunk::BlockDef)> {
+        let mut flagged = Vec::new();
+        let Terrain::SubChunks(subchunks) = &self.terrain else {
+            return flagged;
+        };
+
+        for (&subchunk_index, subchunk) in subchunks.iter() {
+            let Some(layer) = subchunk.get_layer(0) else {
+                continue;
+            };
+            for offset in 0..4096usize {
+                let local = from_offset(offset);
+                let Some(entry) = layer.get(local) else {
+                    continue;
+                };
+                let Some(block) = entry.as_block() else {
+                    continue;
+                };
+                if provider.needs_neighbours(block) {
+                    let absolute_y = (subchunk_index as i32) * 16 + local.1 as i32;
+                    flagged.push((
+                        ChunkBlockPosition::new(local.0, absolute_y, local.2),
+                        block.clone(),
+                    ));
+                }
+            }
+        }
+
+        flagged
     }
 
     /// Encodes this chunk back to its own [`Chunk::position`]/
@@ -764,6 +988,139 @@ impl Chunk {
     }
 }
 
+/// Reads the block at `pos` offset by `offset`, for the neighbour pass's callback -- `None`
+/// at this chunk's own `x`/`z` boundary (a documented gap, see
+/// [`Chunk::run_neighbour_pass`]) or wherever [`Chunk::block`] itself would answer `None`
+/// (an absent subchunk, or a non-`Modern` entry there).
+fn neighbour_block(
+    chunk: &Chunk,
+    pos: ChunkBlockPosition,
+    offset: RelativeOffset,
+) -> Option<&BlockDef> {
+    let x = pos.x as i32 + offset.dx;
+    let z = pos.z as i32 + offset.dz;
+    let y = pos.y + offset.dy;
+
+    if !(0..16).contains(&x) || !(0..16).contains(&z) {
+        return None;
+    }
+
+    let neighbour = ChunkBlockPosition::new(x as u8, y, z as u8);
+    chunk.block(neighbour).and_then(PaletteEntry::as_block)
+}
+
+/// The schema-upgrade decision for one palette entry: a `Legacy`/`Numeric` entry is
+/// resolved through the provider's legacy lookups (continuing on to
+/// [`ContentProvider::upgrade_block_state`] if the lookup's own version falls short of
+/// `target`); a `Modern` entry goes straight to [`ContentProvider::upgrade_block_state`],
+/// from its own stamp or [`EARLIEST_BLOCK_STATE_VERSION`] if it has none.
+///
+/// Takes `entry` by value and returns it (or the value the provider itself handed back
+/// unchanged) in the `Err` half of the result on every declined path, never a clone --
+/// see [`Layer::update_palette_entry`], which this is written to be passed straight to as
+/// its closure. `Ok` carries the `BlockDef` to write back as `PaletteEntry::Modern`.
+fn upgrade_one_entry(
+    entry: PaletteEntry,
+    provider: &dyn ContentProvider,
+    target: i32,
+) -> (std::result::Result<BlockDef, PaletteEntry>, EntryOutcome) {
+    match entry {
+        PaletteEntry::Legacy { ref name, val } => match provider.legacy_block_state(name, val) {
+            Some(mapped) => finish_legacy_resolution(mapped, provider, target),
+            None => (
+                Err(entry),
+                EntryOutcome::unconverted(PRE_NBT_BLOCKSTATE_VERSION, UnconvertedReason::NoEntry),
+            ),
+        },
+        PaletteEntry::Numeric { id, data } => match provider.numeric_block_state(id, data) {
+            Some(mapped) => finish_legacy_resolution(mapped, provider, target),
+            None => (
+                Err(entry),
+                EntryOutcome::unconverted(PRE_NBT_BLOCKSTATE_VERSION, UnconvertedReason::NoEntry),
+            ),
+        },
+        PaletteEntry::Modern(block) => {
+            if let Some(version) = block.version
+                && version >= target
+            {
+                // Already at or past the target -- confirmed, not merely assumed, since
+                // this entry actually carries a stamp. Nothing to ask the provider.
+                return (
+                    Err(PaletteEntry::Modern(block)),
+                    EntryOutcome::Converted(version),
+                );
+            }
+            let source = block.version.unwrap_or(EARLIEST_BLOCK_STATE_VERSION);
+            match provider.upgrade_block_state(block, source, target) {
+                StateUpgrade::Upgraded(VersionedBlockDef { mut block, version }) => {
+                    block.version = Some(version);
+                    (Ok(block), EntryOutcome::Converted(version))
+                }
+                StateUpgrade::NoEntry(block) => {
+                    let achieved = block.version.unwrap_or(EARLIEST_BLOCK_STATE_VERSION);
+                    (
+                        Err(PaletteEntry::Modern(block)),
+                        EntryOutcome::unconverted(achieved, UnconvertedReason::NoEntry),
+                    )
+                }
+                StateUpgrade::Malformed(block, reason) => {
+                    let achieved = block.version.unwrap_or(EARLIEST_BLOCK_STATE_VERSION);
+                    (
+                        Err(PaletteEntry::Modern(block)),
+                        EntryOutcome::unconverted(achieved, UnconvertedReason::Malformed(reason.0)),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// Continues a successful legacy/numeric resolution on toward `target` via
+/// [`ContentProvider::upgrade_block_state`], if the resolution's own version does not
+/// already reach it.
+///
+/// The three outcomes of that follow-up call are *not* symmetric with
+/// [`upgrade_one_entry`]'s own `Modern` branch, because a legacy/numeric resolution that
+/// already succeeded is real, provider-approved progress the schema step cannot take back
+/// -- only fail to extend:
+/// - [`StateUpgrade::Upgraded`]: carried further, as usual -- `Converted` at the new
+///   version.
+/// - [`StateUpgrade::NoEntry`]: the schema step has no rule to advance this entry past
+///   `version`, but the entry *did* move from `Legacy`/`Numeric` to `Modern`, which is
+///   real progress even though nothing beyond it happened -- still `Converted(version)`,
+///   and the palette is written at that version.
+/// - [`StateUpgrade::Malformed`]: different from `NoEntry` -- the provider looked at the
+///   resolved entry and found it does not match what its own version promises. The
+///   palette slot still gets the resolved `Modern` entry at `version` (that resolution
+///   was real and is kept), but the outcome reported is
+///   [`EntryOutcome::unconverted`] with the provider's reason, per architecture decisions
+///   6 and 11: a malformed compound is not silently reported as fully converted, even
+///   though the slot's content did change.
+fn finish_legacy_resolution(
+    mapped: VersionedBlockDef,
+    provider: &dyn ContentProvider,
+    target: i32,
+) -> (std::result::Result<BlockDef, PaletteEntry>, EntryOutcome) {
+    let VersionedBlockDef { mut block, version } = mapped;
+    block.version = Some(version);
+
+    if version >= target {
+        return (Ok(block), EntryOutcome::Converted(version));
+    }
+
+    match provider.upgrade_block_state(block, version, target) {
+        StateUpgrade::Upgraded(VersionedBlockDef { mut block, version }) => {
+            block.version = Some(version);
+            (Ok(block), EntryOutcome::Converted(version))
+        }
+        StateUpgrade::NoEntry(block) => (Ok(block), EntryOutcome::Converted(version)),
+        StateUpgrade::Malformed(block, reason) => (
+            Ok(block),
+            EntryOutcome::unconverted(version, UnconvertedReason::Malformed(reason.0)),
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -775,6 +1132,337 @@ mod tests {
     /// `tests/actor_write.rs` covers those).
     fn new_chunk() -> Chunk {
         Chunk::new(ChunkPosition(0, 0), Dimension::Overworld, 40)
+    }
+
+    /// A minimal in-test provider covering every outcome the schema-upgrade pass can
+    /// produce, mirroring `provider.rs`'s own `TestProvider` but kept separate: that one
+    /// is private to `provider.rs`'s test module, and this module needs its own fixed
+    /// inputs to drive `Chunk::upgrade_content` end to end rather than the trait in
+    /// isolation.
+    struct TestProvider;
+
+    fn versioned(name: &str, version: i32) -> VersionedBlockDef {
+        VersionedBlockDef {
+            block: BlockDef {
+                name: name.to_string(),
+                version: None,
+                states: Default::default(),
+            },
+            version,
+        }
+    }
+
+    impl ContentProvider for TestProvider {
+        fn legacy_block_state(&self, name: &str, val: i16) -> Option<VersionedBlockDef> {
+            match (name, val) {
+                ("legacy:wood", 0) => Some(versioned("minecraft:oak_planks", 1)),
+                // Resolves cleanly, but the name it resolves to is the one
+                // `upgrade_block_state` always rejects below -- the fixture for the
+                // "legacy resolution succeeds, schema step finds it malformed" case.
+                ("legacy:malformed", 0) => Some(versioned("malformed:entry", 5)),
+                _ => None,
+            }
+        }
+
+        fn numeric_block_state(&self, id: u8, data: u8) -> Option<VersionedBlockDef> {
+            match (id, data) {
+                (5, 0) => Some(versioned("minecraft:oak_planks", 1)),
+                _ => None,
+            }
+        }
+
+        fn upgrade_block_state(&self, state: BlockDef, source: i32, target: i32) -> StateUpgrade {
+            if state.name == "malformed:entry" {
+                return StateUpgrade::Malformed(
+                    state,
+                    crate::provider::MalformedState("bad state".to_string()),
+                );
+            }
+            if source == 99 {
+                return StateUpgrade::NoEntry(state);
+            }
+            if source == 1 && target == 3 {
+                // A rule exists but only reaches an intermediate version.
+                return StateUpgrade::Upgraded(versioned(&state.name, 2));
+            }
+            if source < target {
+                return StateUpgrade::Upgraded(versioned(&state.name, target));
+            }
+            StateUpgrade::NoEntry(state)
+        }
+
+        fn needs_neighbours(&self, state: &BlockDef) -> bool {
+            state.name == "minecraft:oak_stairs"
+        }
+
+        fn resolve_with_neighbours<'n>(
+            &self,
+            state: BlockDef,
+            neighbour: &mut dyn FnMut(RelativeOffset) -> Option<&'n BlockDef>,
+        ) -> ContextResolution {
+            match neighbour(RelativeOffset::new(0, 1, 0)) {
+                Some(above) if above.name == "minecraft:air" => {
+                    let mut resolved = state;
+                    resolved.states.insert(
+                        "shape".to_string(),
+                        nbtx::Value::String("outer_left".into()),
+                    );
+                    ContextResolution::Resolved(resolved)
+                }
+                Some(_) => ContextResolution::NoEntry(state),
+                None => ContextResolution::NoEntry(state),
+            }
+        }
+
+        fn biome_name(&self, _id: i32) -> Option<&str> {
+            None
+        }
+    }
+
+    /// A modern palette-entry NBT compound: `name`, `version` (as whichever tag `version`
+    /// carries, `Int` here since that is the tag every real record uses), `states`.
+    fn modern_entry_nbt(name: &str, version: Option<i32>) -> nbtx::Value {
+        let mut compound = nbtx::Compound::new();
+        compound.insert("name".into(), nbtx::Value::String(name.into()));
+        if let Some(version) = version {
+            compound.insert("version".into(), nbtx::Value::Int(version));
+        }
+        compound.insert(
+            "states".into(),
+            nbtx::Value::Compound(nbtx::Compound::new()),
+        );
+        nbtx::Value::Compound(compound)
+    }
+
+    /// One layer-0, one-subchunk `Terrain::SubChunks` chunk whose sole palette entry is
+    /// `first`, built from the zero-bits-per-index wire form (header byte `0x00`, one NBT
+    /// compound, no index array at all -- see `Layer::from_disk`'s doc comment). Starting
+    /// from this and growing the palette through the public [`Layer::set`] afterward avoids
+    /// hand-packing a bit-indexed array by hand.
+    fn chunk_with_one_entry(entry: nbtx::Value) -> Chunk {
+        let mut bytes = vec![SubChunkVersion::Legacy.raw(), 0u8];
+        bytes.extend(nbtx::to_le_bytes(&entry).unwrap());
+        let subchunk =
+            SubChunk::from_disk::<crate::Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+
+        let mut chunk = Chunk::new(ChunkPosition(0, 0), Dimension::Overworld, 40);
+        if let Terrain::SubChunks(subchunks) = chunk.terrain_mut() {
+            subchunks.insert(0, subchunk);
+        }
+        chunk
+    }
+
+    #[test]
+    fn upgrade_content_resolves_legacy_and_continues_toward_target() {
+        let mut chunk = chunk_with_one_entry(nbtx::Value::Compound(nbtx::Compound::from_iter([
+            ("name".into(), nbtx::Value::String("legacy:wood".into())),
+            ("val".into(), nbtx::Value::Short(0)),
+        ])));
+
+        let report = chunk.upgrade_content(&TestProvider, 3).clone();
+        let (_, outcome) = report.entries().next().unwrap();
+        // `legacy:wood` resolves at version 1, then the schema pass carries it from 1 to
+        // 3 only as far as 2 (the fixed `(1, 3) => ... 2` rule) -- falls short of the
+        // target, still `Converted`.
+        assert_eq!(outcome, &EntryOutcome::Converted(2));
+        assert_eq!(chunk.achieved_block_state_version(), Some(2));
+
+        let entry = chunk.layer(0, 0).unwrap().palette().first().unwrap();
+        let block = entry.as_block().expect("resolved to Modern");
+        assert_eq!(block.name, "minecraft:oak_planks");
+        assert_eq!(block.version, Some(2));
+    }
+
+    #[test]
+    fn upgrade_content_leaves_an_unrecognized_legacy_entry_unconverted() {
+        let mut chunk = chunk_with_one_entry(nbtx::Value::Compound(nbtx::Compound::from_iter([
+            ("name".into(), nbtx::Value::String("legacy:unknown".into())),
+            ("val".into(), nbtx::Value::Short(0)),
+        ])));
+
+        let report = chunk.upgrade_content(&TestProvider, 3).clone();
+        let (_, outcome) = report.entries().next().unwrap();
+        assert_eq!(
+            outcome,
+            &EntryOutcome::unconverted(PRE_NBT_BLOCKSTATE_VERSION, UnconvertedReason::NoEntry)
+        );
+
+        let entry = chunk.layer(0, 0).unwrap().palette().first().unwrap();
+        assert!(matches!(entry, PaletteEntry::Legacy { .. }));
+    }
+
+    #[test]
+    fn upgrade_content_reports_malformed_and_leaves_the_entry_unchanged() {
+        let mut chunk = chunk_with_one_entry(modern_entry_nbt("malformed:entry", Some(1)));
+
+        let report = chunk.upgrade_content(&TestProvider, 5).clone();
+        let (_, outcome) = report.entries().next().unwrap();
+        match outcome {
+            EntryOutcome::Unconverted { achieved, reason } => {
+                assert_eq!(*achieved, 1);
+                assert_eq!(
+                    *reason,
+                    UnconvertedReason::Malformed("bad state".to_string())
+                );
+            }
+            other => panic!("expected Unconverted, got {other:?}"),
+        }
+
+        let entry = chunk.layer(0, 0).unwrap().palette().first().unwrap();
+        assert_eq!(entry.as_block().unwrap().name, "malformed:entry");
+        assert_eq!(entry.as_block().unwrap().version, Some(1));
+    }
+
+    /// A `Legacy` entry the provider resolves cleanly to `V`, whose *schema* step then
+    /// reports `Malformed`: the legacy resolution's progress is real and kept (the palette
+    /// slot becomes `Modern` at `V`, not left as `Legacy`), but the outcome reported is
+    /// `Unconverted` with the provider's reason, not `Converted` -- the blocker this test
+    /// pins: `finish_legacy_resolution` must not collapse `Malformed` into `NoEntry`'s
+    /// "still progress" treatment, since a malformed compound is a different, worse
+    /// situation than "no rule exists" (architecture decisions 6 and 11).
+    #[test]
+    fn upgrade_content_legacy_resolution_then_malformed_schema_step_keeps_progress_but_reports_unconverted()
+     {
+        let mut chunk = chunk_with_one_entry(nbtx::Value::Compound(nbtx::Compound::from_iter([
+            (
+                "name".into(),
+                nbtx::Value::String("legacy:malformed".into()),
+            ),
+            ("val".into(), nbtx::Value::Short(0)),
+        ])));
+
+        let report = chunk.upgrade_content(&TestProvider, 10).clone();
+        let (_, outcome) = report.entries().next().unwrap();
+        match outcome {
+            EntryOutcome::Unconverted { achieved, reason } => {
+                assert_eq!(*achieved, 5);
+                assert_eq!(
+                    *reason,
+                    UnconvertedReason::Malformed("bad state".to_string())
+                );
+            }
+            other => panic!("expected Unconverted, got {other:?}"),
+        }
+
+        // The palette slot itself did move: legacy resolution succeeded and is kept,
+        // stamped at the version that resolution reached, even though the outcome above
+        // reports `Unconverted`.
+        let entry = chunk.layer(0, 0).unwrap().palette().first().unwrap();
+        let block = entry
+            .as_block()
+            .expect("legacy resolution succeeded, so the slot is Modern");
+        assert_eq!(block.name, "malformed:entry");
+        assert_eq!(block.version, Some(5));
+
+        // The chunk-wide minimum reflects that real, if capped, progress.
+        assert_eq!(chunk.achieved_block_state_version(), Some(5));
+    }
+
+    #[test]
+    fn upgrade_content_stamps_a_stampless_modern_entry_from_the_nbt_blockstate_floor() {
+        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", None));
+
+        chunk.upgrade_content(&TestProvider, EARLIEST_BLOCK_STATE_VERSION + 1);
+
+        let entry = chunk.layer(0, 0).unwrap().palette().first().unwrap();
+        assert_eq!(
+            entry.as_block().unwrap().version,
+            Some(EARLIEST_BLOCK_STATE_VERSION + 1)
+        );
+    }
+
+    #[test]
+    fn upgrade_content_leaves_an_already_target_entry_untouched_and_uncalled() {
+        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", Some(42)));
+
+        let report = chunk.upgrade_content(&TestProvider, 10).clone();
+        let (_, outcome) = report.entries().next().unwrap();
+        // Target 10 <= the entry's own stamp of 42: already there, confirmed rather than
+        // merely assumed, since the entry actually carries a real stamp.
+        assert_eq!(outcome, &EntryOutcome::Converted(42));
+    }
+
+    #[test]
+    fn achieved_block_state_version_is_the_minimum_across_entries() {
+        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", Some(1)));
+        if let Terrain::SubChunks(subchunks) = chunk.terrain_mut() {
+            let layer = subchunks.get_mut(&0).unwrap().get_layer_mut(0).unwrap();
+            layer.set(
+                BlockPosition(1, 0, 0),
+                BlockDef {
+                    name: "legacy:unknown".to_string(),
+                    version: None,
+                    states: Default::default(),
+                },
+            );
+        }
+        // The second `set` above always inserts a *Modern* entry (see `Layer::set`'s doc
+        // comment -- there is no public way to construct a `Legacy` one), so both palette
+        // entries here are `Modern`: one stamped `1`, the other stampless. The unstamped
+        // one's `NoEntry` outcome (source == target, `(1, 1)` matches no rule) is exactly
+        // what should drag the chunk-wide minimum down to the stampless floor.
+        let report = chunk
+            .upgrade_content(&TestProvider, EARLIEST_BLOCK_STATE_VERSION)
+            .clone();
+        assert_eq!(report.entries().count(), 2);
+        assert_eq!(
+            chunk.achieved_block_state_version(),
+            Some(EARLIEST_BLOCK_STATE_VERSION)
+        );
+    }
+
+    #[test]
+    fn neighbour_pass_resolves_from_a_same_chunk_neighbour_above() {
+        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:oak_stairs", Some(1)));
+        if let Terrain::SubChunks(subchunks) = chunk.terrain_mut() {
+            let layer = subchunks.get_mut(&0).unwrap().get_layer_mut(0).unwrap();
+            // Every position defaults to the stairs entry (index 0); place air directly
+            // above the position under test, (0, 0, 0).
+            layer.set(
+                BlockPosition(0, 1, 0),
+                BlockDef {
+                    name: "minecraft:air".to_string(),
+                    version: Some(1),
+                    states: Default::default(),
+                },
+            );
+        }
+
+        chunk.upgrade_content(&TestProvider, 1);
+
+        let stairs = chunk
+            .block(ChunkBlockPosition::new(0, 0, 0))
+            .and_then(PaletteEntry::as_block)
+            .expect("resolved stairs entry");
+        assert_eq!(
+            stairs.states.get("shape"),
+            Some(&nbtx::Value::String("outer_left".into()))
+        );
+
+        let report = chunk.content_upgrade().unwrap();
+        let outcomes: Vec<_> = report.neighbour_resolutions().collect();
+        assert!(
+            outcomes
+                .iter()
+                .any(|(pos, outcome)| *pos == ChunkBlockPosition::new(0, 0, 0)
+                    && *outcome == &NeighbourOutcome::Resolved)
+        );
+        // A stairs position with another stairs block above it (the default everywhere
+        // else) has no `air` neighbour, so it is flagged and revisited but left
+        // unresolved.
+        assert!(
+            outcomes
+                .iter()
+                .any(|(pos, outcome)| *pos != ChunkBlockPosition::new(0, 0, 0)
+                    && *outcome == &NeighbourOutcome::NoEntry)
+        );
+    }
+
+    #[test]
+    fn no_provider_pass_leaves_content_upgrade_absent() {
+        let chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", Some(1)));
+        assert!(chunk.content_upgrade().is_none());
+        assert_eq!(chunk.achieved_block_state_version(), None);
     }
 
     #[test]

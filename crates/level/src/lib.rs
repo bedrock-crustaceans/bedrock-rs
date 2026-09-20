@@ -36,6 +36,7 @@ pub mod subchunk;
 pub mod ticks;
 pub mod traits;
 pub mod types;
+pub mod upgrade;
 pub mod version;
 
 mod private {

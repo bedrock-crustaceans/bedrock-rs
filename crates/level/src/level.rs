@@ -14,15 +14,18 @@ use bedrock_shared::world::dimension::Dimension;
 
 use crate::actor::{ActorStorageKey, actorprefix_key_bytes, decode_actor_digest};
 use crate::chunk::ChunkRecords;
-use crate::chunk_version::KNOWN_CHUNK_VERSION_CEILING;
+use crate::chunk_version::{FormatProfile, KNOWN_CHUNK_VERSION_CEILING};
 use crate::db::Database;
 use crate::error::{ChunkError, Error, Result};
 use crate::height_range::{self, HeightRange};
 use crate::key::{Key, KeyVariant};
 use crate::level_chunk::Chunk;
 use crate::metadata_dictionary::{self, MetadataDictionary};
+use crate::provider::ContentProvider;
 use crate::settings::{LevelSettings, VersionInfo};
+use crate::subchunk::BlockDef;
 use crate::types::ChunkPosition;
+use crate::upgrade::EARLIEST_BLOCK_STATE_VERSION;
 
 /// One opened Bedrock world: `level.dat` (metadata) plus the `db/` LevelDB
 /// store (chunks and everything else), opened together from the world
@@ -81,6 +84,25 @@ pub struct Level {
     /// touches disk: [`Level::save`] (`level.dat`/`levelname.txt`) and
     /// [`Level::put_chunk`]/[`Level::remove_chunk`] (`db/`).
     read_only: bool,
+    /// The content-mapping hook (architecture decision 9). `None` is the default and is
+    /// what every constructor produces -- attaching one is an explicit opt-in via
+    /// [`Level::with_provider`]. Its presence is exactly what gates the content-upgrade
+    /// pass [`Level::chunk`]/[`Level::chunks`] run: no provider means today's behavior
+    /// exactly, byte-identical, the same carve-out `crate::provider`'s module docs describe
+    /// for every other content-dependent step in this crate.
+    ///
+    /// `Box`, not a borrowed `&dyn ContentProvider`: a borrow would put a lifetime
+    /// parameter on `Level` itself, which cascades into every type that already borrows
+    /// `Level` for a different reason ([`Chunks<'a>`], [`DimensionRef<'a>`]) and turns a
+    /// single added lifetime into two independent ones a caller has to reconcile at every
+    /// call site, for no benefit `Level` needs: it already owns everything else it holds
+    /// ([`Database`], [`LevelSettings`]), and a provider is exactly the kind of long-lived,
+    /// singly-owned dependency that shape fits. A caller who genuinely needs to share one
+    /// provider across several levels reaches for `Arc<dyn ContentProvider>` at their own
+    /// call site (implementing `ContentProvider` for a thin wrapper around it, since `Arc`
+    /// does not implement a foreign trait on the caller's behalf) rather than this type
+    /// borrowing one.
+    provider: Option<Box<dyn ContentProvider>>,
 }
 
 impl Level {
@@ -153,7 +175,24 @@ impl Level {
             dimensions,
             write_version: KNOWN_CHUNK_VERSION_CEILING,
             read_only,
+            provider: None,
         })
+    }
+
+    /// Attaches a content-mapping provider, builder-style: `Level::open(path)?.with_provider(p)`.
+    /// See the `provider` field's doc comment for why this takes ownership rather than a
+    /// borrow, and `crate::provider`'s module docs for what attaching one changes -- most
+    /// concretely, [`Level::chunk`]/[`Level::chunks`] start running the content-upgrade pass
+    /// automatically once this has been called.
+    pub fn with_provider(mut self, provider: impl ContentProvider + 'static) -> Self {
+        self.provider = Some(Box::new(provider));
+        self
+    }
+
+    /// This level's attached content-mapping provider, if any. `None` is the default for
+    /// every constructor; see [`Level::with_provider`] to attach one.
+    pub fn provider(&self) -> Option<&dyn ContentProvider> {
+        self.provider.as_deref()
     }
 
     /// This level's version fields, as recorded in `level.dat`.
@@ -186,6 +225,74 @@ impl Level {
     /// Overrides the chunk version [`Level::put_chunk`] targets by default.
     pub fn set_write_version(&mut self, version: u8) {
         self.write_version = version;
+    }
+
+    /// The packed block-state version [`Level::chunk`]/[`Level::chunks`]' content-upgrade
+    /// pass targets when a [`ContentProvider`] is attached (see [`Level::with_provider`]).
+    ///
+    /// # Reconciling two version notions that used to be one
+    ///
+    /// Before this pass existed, [`Level::write_version`] meant one thing: the `0x2c`
+    /// chunk-version byte [`Level::put_chunk`] targets. That byte and a block-state
+    /// entry's own packed `int` stamp are different axes stored in different places (see
+    /// [`crate::level_chunk::Chunk::achieved_chunk_version`]'s doc comment), so
+    /// `write_version` cannot directly *be* the content target -- it is a `u8`, and a
+    /// packed block-state version is an `i32` with room for a real `major.minor.patch`.
+    /// Rather than adding a second, independently settable version a caller has to keep in
+    /// sync with the first, this derives the content target *from* `write_version`: every
+    /// chunk version this crate's format table knows about already carries the game version
+    /// that introduced it ([`FormatProfile::introduced_in`]), so the block-state target is
+    /// that game version, packed. Pinning `write_version` (decision 6's caller override)
+    /// therefore pins the content target too, with no second knob to forget.
+    ///
+    /// # This is a best-available approximation, not a corpus-verified mapping
+    ///
+    /// "The game version that introduced this chunk version" is not the same fact as "the
+    /// block-state version every entry in a chunk at this version actually carries," and a
+    /// scan of the fixture corpus's real palette stamps against their chunks' own
+    /// `introduced_in` shows the two commonly disagree, always in the same direction (the
+    /// stamp trailing behind): `v1_18` (chunk version 39, table says 1.18.0) carries real
+    /// entries stamped 1.16.210.3; `v1_16` (chunk version 21, table says 1.16.100.58)
+    /// carries entries stamped 1.16.0.16; `v1_17_40_caves_and_cliffs` (chunk version 31,
+    /// table says 1.17.40) carries entries stamped 1.17.40.8. A chunk's container version
+    /// advances when the game changes the *chunk* format; a block's own stamp advances only
+    /// when something actually touched that block's schema, and those two events are not
+    /// the same event. So this target is honestly a reasonable **upper bound** to drive the
+    /// pass with -- not a claim that any particular fixture's entries are already at it --
+    /// and it is exactly why decision 6's per-entry achieved-version reporting
+    /// ([`crate::level_chunk::Chunk::achieved_block_state_version`], [`crate::upgrade::
+    /// UpgradeReport`]) exists at all: a caller checks what was actually achieved rather
+    /// than assuming this target was met.
+    ///
+    /// A chunk version with no recorded introducing release (`introduced_in` is `None` --
+    /// two specific versions in the middle of the known range, see [`FormatProfile`]'s
+    /// module docs), or whose recorded release has a component too large to fit the `u8`
+    /// [`BlockDef::pack_version`] packs each field into, is treated the same way: no usable
+    /// `introduced_in` at this version, so the walk falls through to the nearest lower
+    /// chunk version that has one. Every fact-boundary chunk version this crate's
+    /// structural decoder actually branches on is one of the ones with a known release, so
+    /// a caller pinning `write_version` to a gap version still gets a real, non-fabricated
+    /// target this way rather than an arbitrary default. The walk-down cannot run past
+    /// version 0 without finding one (version 0 itself always resolves, and every recorded
+    /// component in this table fits a `u8`), but falls back to
+    /// [`EARLIEST_BLOCK_STATE_VERSION`] as a final floor rather than panicking, for a
+    /// `write_version` this table has literally nothing usable recorded below.
+    pub fn block_state_write_target(&self) -> i32 {
+        let mut version = self.write_version;
+        loop {
+            if let Some(game_version) = FormatProfile::for_version(version).introduced_in
+                && let Ok(major) = u8::try_from(game_version.major)
+                && let Ok(minor) = u8::try_from(game_version.minor)
+                && let Ok(patch) = u8::try_from(game_version.patch)
+                && let Ok(revision) = u8::try_from(game_version.revision)
+            {
+                return BlockDef::pack_version([major, minor, patch, revision]);
+            }
+            match version.checked_sub(1) {
+                Some(lower) => version = lower,
+                None => return EARLIEST_BLOCK_STATE_VERSION,
+            }
+        }
     }
 
     /// Every dimension this level has anything under, in ascending id
@@ -223,8 +330,24 @@ impl Level {
     /// a sparse world -- and `Err` only for a read or decode failure.
     pub fn chunk(&self, dimension: Dimension, position: ChunkPosition) -> Result<Option<Chunk>> {
         match ChunkRecords::read(&self.db, position, dimension)? {
-            Some(records) => Ok(Some(Chunk::decode(records, &self.db)?)),
+            Some(records) => {
+                let mut chunk = Chunk::decode(records, &self.db)?;
+                self.upgrade_content(&mut chunk);
+                Ok(Some(chunk))
+            }
             None => Ok(None),
+        }
+    }
+
+    /// Runs the content-upgrade pass on `chunk` if a provider is attached -- the shared
+    /// step [`Level::chunk`] and [`crate::level::Chunks::next`] both need, so a chunk
+    /// reached either way gets the same automatic treatment (architecture decision 4). A
+    /// no-op, leaving `chunk` exactly as [`Chunk::decode`] produced it, when
+    /// [`Level::provider`] is `None`.
+    fn upgrade_content(&self, chunk: &mut Chunk) {
+        if let Some(provider) = self.provider.as_deref() {
+            let target = self.block_state_write_target();
+            chunk.upgrade_content(provider, target);
         }
     }
 
@@ -608,7 +731,10 @@ impl Iterator for Chunks<'_> {
         let ((position, dimension), records) = self.inner.next()?;
         Some(
             Chunk::decode(records, &self.level.db)
-                .map(|chunk| (position, chunk))
+                .map(|mut chunk| {
+                    self.level.upgrade_content(&mut chunk);
+                    (position, chunk)
+                })
                 .map_err(|source| ChunkError {
                     position,
                     dimension,
