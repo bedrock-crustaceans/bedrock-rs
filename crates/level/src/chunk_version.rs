@@ -11,6 +11,7 @@
 //! preview offset. This module is pure data and lookup -- it decodes
 //! nothing itself.
 
+use std::num::NonZeroUsize;
 use std::ops::RangeInclusive;
 
 use bedrock_shared::world::dimension::Dimension;
@@ -279,6 +280,49 @@ impl FormatProfile {
     }
 }
 
+/// The world-wide `0x2b` fragment count a real write carries for `target_version`, used by
+/// [`crate::level_chunk::Chunk::encode_as`]'s 2D-to-3D biome promotion (the 8-24 family
+/// stamped at `target_version` and above) to build a fresh [`crate::biome::Biomes3d`] via
+/// [`crate::biome::Biomes3d::from_columns`]. This is a **write-time constant per version**,
+/// not a per-chunk derivation -- see [`crate::biome::Biomes3d`]'s own doc comment for why a
+/// dimension-derived count is wrong for a real record.
+///
+/// Established by joining each corpus fixture's own chunk version with its own fragment-count
+/// histogram (`tests/biomes3d_write.rs`'s `corpus_survey_fragment_counts_vs_subchunk_counts`,
+/// which this function's boundaries are pinned against by
+/// `fragment_count_for_matches_the_corpus_histogram`):
+///
+/// | Chunk version | Fixture | Fragment count |
+/// | --- | --- | --- |
+/// | 25 | `v1_17_20_caves_and_cliffs` | 32 (182 records) |
+/// | 31 | `v1_17_40_caves_and_cliffs` | 32 (138 records) |
+/// | 39 | `v1_18`, `v1_18_superflat`, `v1_18_updated_superflat` | 25 (2,833 records) |
+/// | 40 | `v1_18_30`, `v1_19_30`, `v1_20_81` | 24 (4,642 records; `v1_20_81` also carries 3
+/// |    |  | stray records at 25, not modeled here as a target -- see the survey's own doc |
+/// |    |  | comment) |
+///
+/// Versions 25 and 31 agree (32), so the whole 25-38 span resolves to one boundary rather
+/// than two. No fixture carries 26-30, 32-38, or 41-42; those resolve by **nearest-below**,
+/// the same convention [`FormatProfile::for_version`] already uses for terrain/biome facts:
+/// 26-30 and 32-38 join the 25-boundary's 32 (consistent with the confirmed value at 31
+/// inside that span), and 41-42 join the 40-boundary's 24. This is stated as an assumption
+/// for those nine versions, not a corpus fact -- do not read the table above as covering
+/// them.
+///
+/// Undefined for `target_version < 25` (no chunk this crate promotes ever targets below the
+/// 25+ family, and no fixture below 25 writes `0x2b` at all): such a call falls through to
+/// the oldest known boundary (32) as a harmless placeholder rather than panicking, since
+/// nothing in this crate ever calls it that way.
+pub fn fragment_count_for(target_version: u8) -> NonZeroUsize {
+    const BOUNDARIES: &[(u8, usize)] = &[(25, 32), (39, 25), (40, 24)];
+    let count = BOUNDARIES
+        .iter()
+        .rev()
+        .find(|(from, _)| *from <= target_version)
+        .map_or(32, |(_, count)| *count);
+    NonZeroUsize::new(count).expect("every BOUNDARIES entry is a nonzero literal")
+}
+
 /// The outcome of resolving a chunk's decode version from its raw `0x2c`
 /// (`ChunkVersion`) and `0x76` (`LegacyVersion`) record bytes.
 ///
@@ -482,6 +526,31 @@ mod tests {
         let a = FormatProfile::version_family(27);
         let b = FormatProfile::version_family(40);
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn fragment_count_for_matches_the_corpus_histogram() {
+        // The four confirmed points from `tests/biomes3d_write.rs`'s corpus survey.
+        assert_eq!(fragment_count_for(25).get(), 32);
+        assert_eq!(fragment_count_for(31).get(), 32);
+        assert_eq!(fragment_count_for(39).get(), 25);
+        assert_eq!(fragment_count_for(40).get(), 24);
+    }
+
+    #[test]
+    fn fragment_count_for_unconfirmed_versions_join_the_nearest_below_boundary() {
+        // 26-30 and 32-38: no fixture, nearest-below join the 25-boundary's 32.
+        for v in [26, 27, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38] {
+            assert_eq!(fragment_count_for(v).get(), 32, "version {v}");
+        }
+        // 41-42: no fixture, nearest-below join the 40-boundary's 24.
+        assert_eq!(fragment_count_for(41).get(), 24);
+        assert_eq!(fragment_count_for(42).get(), 24);
+    }
+
+    #[test]
+    fn fragment_count_for_extrapolates_past_the_known_ceiling() {
+        assert_eq!(fragment_count_for(255).get(), 24);
     }
 
     #[test]

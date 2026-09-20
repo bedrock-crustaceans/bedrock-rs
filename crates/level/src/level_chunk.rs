@@ -52,11 +52,13 @@ use crate::actor::{
 };
 use crate::biome::{Biomes3d, COLUMNS};
 use crate::chunk::ChunkRecords;
-use crate::chunk_version::{DecodeVersion, FormatProfile, TerrainLocation};
+use crate::chunk_version::{DecodeVersion, FormatProfile, TerrainLocation, fragment_count_for};
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::height_map::HeightMap;
-use crate::key::{Key, KeyVariant, subchunk_index_from_key, subchunk_index_to_key};
+use crate::key::{
+    Key, KeyVariant, subchunk_index_from_key, subchunk_index_to_key, subchunk_index_to_key_checked,
+};
 use crate::legacy_terrain::LegacyTerrain;
 use crate::provider::{
     ContentProvider, ContextResolution, RelativeOffset, StateUpgrade, VersionedBlockDef,
@@ -173,6 +175,20 @@ pub enum StructuralShortfall {
     /// in-window version to fall back to the way [`DifferentFamily`](Self::DifferentFamily)
     /// falls back to a family ceiling.
     DepthUnrepresentableInOffsetWindow,
+    /// The source chunk sits in the 8-24 family (2D `0x2d` biomes) and `target` calls for a
+    /// promotion into the 25+ family (3D `0x2b` volumes, [`Chunk::encode_as`]'s "Cross-family
+    /// promotion" section), but this chunk has no `0x2d` record at all to promote --
+    /// [`Chunk::biomes`] is `None`, or (a corpus-unseen edge case) already holds
+    /// [`ChunkBiomes::Volumes`] despite the chunk's own decode version sitting below 25.
+    /// Fabricating biome data to promote would violate architecture decision 11, so the
+    /// write stays at this chunk's own current version, unretargeted, exactly like
+    /// [`DepthUnrepresentableInOffsetWindow`](Self::DepthUnrepresentableInOffsetWindow) --
+    /// there is no lower promotable target to fall back to, since the chunk has nothing to
+    /// promote regardless of which 25+ version is asked for. Corpus-unexercised: 0 of the
+    /// 1,924 real 8-24-family chunks across every pure-2D fixture lack a `0x2d` record (see
+    /// `COVERAGE.md`'s "Cross-family promotion" section), so this variant is reachable only
+    /// through a synthetic [`Chunk`] built without one.
+    MissingColumnBiomes,
 }
 
 /// What [`Chunk::encode_as`] actually achieved against the chunk version it was asked to
@@ -186,7 +202,7 @@ pub enum StructuralShortfall {
 /// Every field here is read-only in practice: nothing in this crate constructs one outside
 /// [`Chunk::encode_as`], and there is no code anywhere that checks a hand-built value for
 /// internal agreement (`achieved` actually reachable from `requested` given `shortfall`, or
-/// `retargeted` actually matching `achieved != source`) -- treat a value you did not get
+/// `retarget` actually matching `achieved != source`) -- treat a value you did not get
 /// back from `encode_as` as untrustworthy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[must_use]
@@ -197,13 +213,12 @@ pub struct StructuralWriteReport {
     /// whenever `shortfall` is `None`; otherwise see the matching [`StructuralShortfall`]
     /// variant for what `achieved` falls back to.
     pub achieved: u8,
-    /// Whether `achieved` differs from this chunk's own decode/source version
-    /// ([`Chunk::chunk_version`]). `false` for a plain re-encode at the chunk's own
-    /// version, `true` whenever the write actually moved the stamp -- independent of
-    /// `shortfall`, since a same-family retarget (say, an old paletted-2D-biome chunk
-    /// moved to a newer version still inside 8..=24) is a real retarget with no shortfall
-    /// at all.
-    pub retargeted: bool,
+    /// What kind of restamp this write actually performed, if any -- see
+    /// [`RetargetOutcome`]. Replaces two independent booleans (`retargeted`/`promoted`) from
+    /// an earlier revision: a promotion is structurally a retarget (it always moves the
+    /// stamp), and one enum makes that implication impossible to violate the way two bools
+    /// that happened to agree by convention could.
+    pub retarget: RetargetOutcome,
     /// `Some` when `achieved` fell short of `requested`, naming why; `None` when
     /// `achieved == requested`.
     pub shortfall: Option<StructuralShortfall>,
@@ -213,40 +228,119 @@ pub struct StructuralWriteReport {
     pub achieved_block_state_version: Option<i32>,
 }
 
+/// What kind of restamp (if any) [`Chunk::encode_as`] actually performed -- the outcome half
+/// of [`RetargetDecision`] and [`StructuralWriteReport::retarget`]. A single enum rather than
+/// the `retargeted: bool` / `promoted: bool` pair an earlier revision carried: those two were
+/// never independent (`promoted` implies `retargeted`, since a promotion always moves the
+/// stamp), and a struct with two bools that merely happen to always agree invites a
+/// hand-built value that violates the implication silently. Making the states one type
+/// makes `Promoted` a variant of "moved", not a second flag beside it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RetargetOutcome {
+    /// `achieved == source`: no restamp happened. `shortfall` may still explain why the
+    /// requested target was not reached (a refused cross-family clamp, a refused promotion,
+    /// or a depth refusal), or the caller may simply have asked for the chunk's own version.
+    Unretargeted,
+    /// `achieved != source`, both versions inside the chunk's own format family -- a plain
+    /// re-stamp with no change to which records are on disk.
+    SameFamily,
+    /// `achieved != source`, crossing from the 8-24 family to the 25+ family -- the
+    /// `0x2d`-to-`0x2b` cross-family promotion (see [`Chunk::encode_as`]'s "Cross-family
+    /// promotion" section). Always pairs with `shortfall: None`: a refused promotion attempt
+    /// reports [`RetargetOutcome::Unretargeted`] instead, never this variant.
+    Promoted,
+}
+
+impl RetargetOutcome {
+    /// `true` for [`Self::SameFamily`] or [`Self::Promoted`] -- i.e. `achieved != source`.
+    /// `false` only for [`Self::Unretargeted`].
+    pub fn moved(self) -> bool {
+        !matches!(self, RetargetOutcome::Unretargeted)
+    }
+}
+
 /// The pure decision [`Chunk::encode_as`] applies: what to actually stamp, given `source`
-/// (the chunk's own decode version), `target` (what the caller asked for), and
+/// (the chunk's own decode version), `target` (what the caller asked for),
 /// `min_subchunk_index` -- the chunk's lowest actual subchunk absolute index, but *only*
 /// when the write is going to the Overworld (`Some` then; `None` both for a non-Overworld
 /// write, where the offset window never applies regardless of version, and for a chunk with
-/// no subchunks to have a minimum of). Factored out of `encode_as` so the decision itself
-/// -- not the record-encoding plumbing around it -- can be unit tested directly.
+/// no subchunks to have a minimum of) -- and `has_columns_biomes`, whether this chunk's own
+/// [`Chunk::biomes`] is [`ChunkBiomes::Columns`] (the one piece of chunk *content*, rather
+/// than chunk *version*, this otherwise-pure decision needs -- see the promotion case below).
+/// Factored out of `encode_as` so the decision itself -- not the record-encoding plumbing
+/// around it -- can be unit tested directly.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RetargetDecision {
     achieved: u8,
-    retargeted: bool,
+    retarget: RetargetOutcome,
     shortfall: Option<StructuralShortfall>,
 }
 
-/// See [`RetargetDecision`] for the parameters. Two shortfalls compose here, checked in
+/// See [`RetargetDecision`] for the parameters. Three shortfalls compose here, checked in
 /// order:
 ///
-/// 1. **Family.** `target` outside [`FormatProfile::version_family(source)`] clamps down to
-///    the family's own ceiling when `target` is *above* the family (the useful "modernize
-///    an old chunk" case), but does **not** clamp up to the family floor when `target` is
-///    *below* it: clamping up would manufacture a version the caller never asked for, and
-///    -- concretely, for the `25..=255` family -- can walk the chunk into the 25-28 offset
-///    window as a side effect of a request that had nothing to do with that window. Below
-///    the family, this leaves the chunk at its own current version instead, unretargeted.
+/// 0. **Promotion.** `source` in the 8-24 family and `target >= 25` is not a family clamp at
+///    all -- it is the one cross-family conversion this crate performs without a content
+///    provider (2D `0x2d` columns to 3D `0x2b` volumes, [`Chunk::encode_as`]'s "Cross-family
+///    promotion" section). `achieved` becomes `target` directly (there is no family ceiling
+///    to clamp to inside `25..=255` -- the whole family is reachable), unless one of the two
+///    refusals below applies, in which case the chunk stays at `source`, unretargeted, the
+///    same as every other refusal in this function.
+///    - No `0x2d` record to promote (`!has_columns_biomes`):
+///      [`StructuralShortfall::MissingColumnBiomes`].
+///    - `target` lands inside the 25-28 offset window and `min_subchunk_index` is too deep
+///      for it (checked exactly like ordinary in-family retargeting, case 2 below):
+///      [`StructuralShortfall::DepthUnrepresentableInOffsetWindow`].
+/// 1. **Family.** For every other `source`, `target` outside
+///    [`FormatProfile::version_family(source)`] clamps down to the family's own ceiling when
+///    `target` is *above* the family (the useful "modernize an old chunk" case), but does
+///    **not** clamp up to the family floor when `target` is *below* it: clamping up would
+///    manufacture a version the caller never asked for, and -- concretely, for the
+///    `25..=255` family -- can walk the chunk into the 25-28 offset window as a side effect
+///    of a request that had nothing to do with that window. Below the family, this leaves
+///    the chunk at its own current version instead, unretargeted. The reverse of promotion
+///    (`source` in 25+, `target` in 8-24) is an ordinary family-clamp refusal here, not a
+///    case 0 promotion -- 3D-to-2D is lossy and this crate never attempts it.
 /// 2. **Offset-window depth.** Once family clamping picks a candidate version, if that
 ///    candidate falls inside the 25-28 window and `min_subchunk_index` is deeper than the
 ///    window can represent, the whole retarget is refused (not merely re-clamped to a
 ///    different in-window version, since every version inside the window has the identical
 ///    problem for this chunk) and the chunk stays at `source`.
 ///
-/// Both checks can independently leave `achieved == source`; `shortfall` always names
-/// whichever one actually fired.
-fn resolve_retarget(source: u8, target: u8, min_subchunk_index: Option<i8>) -> RetargetDecision {
+/// Every refusal leaves `achieved == source` and `retarget: RetargetOutcome::Unretargeted`;
+/// `shortfall` always names whichever one actually fired, and `retarget` is
+/// [`RetargetOutcome::Promoted`] only for a successful case-0 promotion.
+fn resolve_retarget(
+    source: u8,
+    target: u8,
+    min_subchunk_index: Option<i8>,
+    has_columns_biomes: bool,
+) -> RetargetDecision {
     let family = FormatProfile::version_family(source);
+
+    if family == (8..=24) && target >= 25 {
+        if !has_columns_biomes {
+            return RetargetDecision {
+                achieved: source,
+                retarget: RetargetOutcome::Unretargeted,
+                shortfall: Some(StructuralShortfall::MissingColumnBiomes),
+            };
+        }
+        if let Some(min_index) = min_subchunk_index
+            && subchunk_index_to_key_checked(min_index, target, Dimension::Overworld).is_none()
+        {
+            return RetargetDecision {
+                achieved: source,
+                retarget: RetargetOutcome::Unretargeted,
+                shortfall: Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow),
+            };
+        }
+        return RetargetDecision {
+            achieved: target,
+            retarget: RetargetOutcome::Promoted,
+            shortfall: None,
+        };
+    }
 
     let (candidate, shortfall) = if family.contains(&target) {
         (target, None)
@@ -257,19 +351,22 @@ fn resolve_retarget(source: u8, target: u8, min_subchunk_index: Option<i8>) -> R
     };
 
     if let Some(min_index) = min_subchunk_index
-        && crate::key::subchunk_index_to_key_checked(min_index, candidate, Dimension::Overworld)
-            .is_none()
+        && subchunk_index_to_key_checked(min_index, candidate, Dimension::Overworld).is_none()
     {
         return RetargetDecision {
             achieved: source,
-            retargeted: false,
+            retarget: RetargetOutcome::Unretargeted,
             shortfall: Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow),
         };
     }
 
     RetargetDecision {
         achieved: candidate,
-        retargeted: candidate != source,
+        retarget: if candidate != source {
+            RetargetOutcome::SameFamily
+        } else {
+            RetargetOutcome::Unretargeted
+        },
         shortfall,
     }
 }
@@ -946,7 +1043,7 @@ impl Chunk {
     /// through this; a caller driving `Chunk` directly gets the same retargeting by calling
     /// it here.
     ///
-    /// # Retargeting: within a format family only
+    /// # Retargeting: within a format family, plus one cross-family promotion
     ///
     /// `target` is honored exactly when it falls inside this chunk's own **format
     /// family** -- [`FormatProfile::version_family`], the widest span of chunk versions
@@ -958,22 +1055,47 @@ impl Chunk {
     /// chunk's original decode version, so a chunk retargeted into or out of that window
     /// gets the correct key form on either side.
     ///
-    /// When `target` sits in a *different* family -- crossing 2D biomes to/from 3D, legacy
-    /// `0x30` terrain to/from `0x2f` subchunks, or non-paletted to/from paletted subchunks
-    /// -- this does not perform that conversion. Doing so needs biome/palette construction
-    /// this module does not own (concurrently landing elsewhere in the crate); instead the
-    /// write stays at the highest version reachable inside this chunk's *own* family that
-    /// is `<= target` when `target` sits above the family (the "modernize an old chunk"
-    /// case), or at this chunk's own current version, unretargeted, when `target` sits
-    /// *below* the whole family -- clamping up to the family floor there would manufacture
-    /// a version nobody asked for and, in the `25..=255` family, silently re-enter the
-    /// 25-28 offset window as a side effect. See [`resolve_retarget`] for the full decision
-    /// and [`StructuralShortfall`] for the two distinct ways a target can fall short (family
-    /// crossing, and this chunk having a subchunk too deep for the offset window to
-    /// represent even after a family clamp lands inside it). The returned
-    /// [`StructuralWriteReport`] names whichever one applies via `shortfall`. **The stamp
-    /// written is always the achieved version, never the requested one** -- decision 6's
-    /// rule that a version stamp must not overstate what was actually converted.
+    /// ## Cross-family promotion: 8-24 (2D biomes) to 25+ (3D biomes)
+    ///
+    /// This is the one cross-family conversion `encode_as` performs, because it is the one
+    /// that needs no content provider: a `target >= 25` for a chunk whose own family is
+    /// `8..=24` promotes rather than refuses. `achieved` becomes `target` directly -- the
+    /// whole `25..=255` family is reachable, so there is no family ceiling to clamp to the
+    /// way an ordinary above-family target clamps -- and the biome record actually written
+    /// changes kind: this chunk's `0x2d` heightmap and per-column biome ids become a fresh
+    /// `0x2b` volume via [`crate::biome::Biomes3d::from_columns`] (bottom fragment carrying
+    /// the real data, every fragment above it `Inherit`), using [`crate::chunk_version::
+    /// fragment_count_for`] to pick how many fragments a real write at `achieved` carries;
+    /// `0x2d` is not written at all. The heightmap bytes themselves are unchanged, just
+    /// reinterpreted from `0x2d`'s signed 16-bit form into `0x2b`'s unsigned one (a same-size
+    /// bit-preserving cast, not a value conversion). [`StructuralWriteReport::retarget`] is
+    /// [`RetargetOutcome::Promoted`] to distinguish this from a same-family retarget; both
+    /// leave `shortfall` `None` on success.
+    ///
+    /// A promotion can still be refused, exactly like an in-family retarget: this chunk
+    /// having no `0x2d` record to promote at all
+    /// ([`StructuralShortfall::MissingColumnBiomes`] -- fabricating one would violate
+    /// architecture decision 11), or `target` landing inside the 25-28 offset window at a
+    /// depth that window cannot represent
+    /// ([`StructuralShortfall::DepthUnrepresentableInOffsetWindow`], the same check an
+    /// in-family retarget into that window makes). Either refusal leaves the chunk at its
+    /// own current version, `retarget: RetargetOutcome::Unretargeted`.
+    ///
+    /// The reverse direction (3D to 2D) is lossy and stays refused, and so does every other
+    /// cross-family case -- legacy `0x30` terrain to/from `0x2f` subchunks, or non-paletted
+    /// to/from paletted subchunks -- since those need a provider this crate does not invoke
+    /// here. For all of those, the write stays at the highest version reachable inside this
+    /// chunk's *own* family that is `<= target` when `target` sits above the family (the
+    /// "modernize an old chunk" case), or at this chunk's own current version, unretargeted,
+    /// when `target` sits *below* the whole family -- clamping up to the family floor there
+    /// would manufacture a version nobody asked for and, in the `25..=255` family, silently
+    /// re-enter the 25-28 offset window as a side effect. See [`resolve_retarget`] for the
+    /// full decision and [`StructuralShortfall`] for the three distinct ways a target can
+    /// fall short (family crossing, offset-window depth, and a promotion with nothing to
+    /// promote). The returned [`StructuralWriteReport`] names whichever one applies via
+    /// `shortfall`. **The stamp written is always the achieved version, never the requested
+    /// one** -- decision 6's rule that a version stamp must not overstate what was actually
+    /// converted.
     ///
     /// The rest of this method's behavior (preserved-record reuse at matching coordinates,
     /// the digest-regeneration and version-stamp-presence rules) is unchanged from
@@ -1043,11 +1165,17 @@ impl Chunk {
         } else {
             None
         };
+        let has_columns_biomes = matches!(&self.biomes, Some(ChunkBiomes::Columns(_)));
         let RetargetDecision {
             achieved,
-            retargeted,
+            retarget,
             shortfall,
-        } = resolve_retarget(source_chunk_version, target, min_subchunk_index);
+        } = resolve_retarget(
+            source_chunk_version,
+            target,
+            min_subchunk_index,
+            has_columns_biomes,
+        );
 
         let mut records = if position == self.position && dimension == self.dimension {
             self.records.clone()
@@ -1091,7 +1219,7 @@ impl Chunk {
         // never touched either way -- see `DecodeVersion::select`'s doc
         // comment for why it can legitimately disagree with `0x2c` already.
         if should_stamp_version
-            && (retargeted
+            && (retarget.moved()
                 || (!records.contains(KeyVariant::ChunkVersion)
                     && !records.contains(KeyVariant::LegacyVersion)))
         {
@@ -1140,6 +1268,23 @@ impl Chunk {
         }
 
         match &self.biomes {
+            // The promoted case comes first: a chunk decoded with 2D `0x2d` biomes still
+            // carries `ChunkBiomes::Columns` in memory (this method never rewrites `self`),
+            // so the ordinary `Columns` arm below would otherwise fire and write the old
+            // `0x2d` record back at the achieved 25+ version, which is the wrong record for
+            // that family and would leave the promoted chunk with no `0x2b` at all.
+            Some(ChunkBiomes::Columns(heightmap))
+                if matches!(retarget, RetargetOutcome::Promoted) =>
+            {
+                records.insert(
+                    Key {
+                        chunk: position,
+                        dimension,
+                        data: KeyVariant::Biome3d,
+                    },
+                    promoted_biomes_record(heightmap, achieved)?,
+                );
+            }
             Some(ChunkBiomes::Columns(heightmap)) => {
                 let mut out = Cursor::new(Vec::new());
                 heightmap.to_disk(&mut out)?;
@@ -1211,13 +1356,29 @@ impl Chunk {
         let report = StructuralWriteReport {
             requested: target,
             achieved,
-            retargeted,
+            retarget,
             shortfall,
             achieved_block_state_version: self.achieved_block_state_version(),
         };
 
         Ok((records, report))
     }
+}
+
+/// Builds the `0x2b` record bytes a promotion writes: this chunk's `0x2d` heightmap and
+/// per-column biomes, reencoded as a fresh [`Biomes3d`] via [`Biomes3d::from_columns`] with
+/// [`fragment_count_for(achieved)`](fragment_count_for)'s fragment count. Factored out of
+/// [`Chunk::encode_as`] so the promoted record's construction can be built and decoded back
+/// in a unit test without going through a whole fixture-backed chunk.
+fn promoted_biomes_record(heightmap: &HeightMap, achieved: u8) -> Result<Vec<u8>> {
+    // `0x2d` heights are signed `i16`; `0x2b` heights are unsigned `u16`. `as u16` on a
+    // same-width integer is a bit-preserving reinterpretation, not a value conversion --
+    // the promoted record's heightmap bytes equal the source's exactly.
+    let heights: Box<[u16; COLUMNS]> = Box::new((*heightmap.heights()).map(|h| h as u16));
+    let volumes = Biomes3d::from_columns(heights, heightmap.biomes(), fragment_count_for(achieved));
+    let mut out = Cursor::new(Vec::new());
+    volumes.to_disk(&mut out)?;
+    Ok(out.into_inner())
 }
 
 /// Reads the block at `pos` offset by `offset`, for the neighbour pass's callback -- `None`
@@ -1360,26 +1521,29 @@ mod tests {
 
     #[test]
     fn resolve_retarget_same_family_is_a_plain_restamp() {
-        let decision = resolve_retarget(10, 20, None);
+        let decision = resolve_retarget(10, 20, None, false);
         assert_eq!(decision.achieved, 20);
-        assert!(decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::SameFamily);
         assert_eq!(decision.shortfall, None);
     }
 
     #[test]
     fn resolve_retarget_own_version_is_a_no_op() {
-        let decision = resolve_retarget(15, 15, None);
+        let decision = resolve_retarget(15, 15, None, false);
         assert_eq!(decision.achieved, 15);
-        assert!(!decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
         assert_eq!(decision.shortfall, None);
     }
 
     #[test]
     fn resolve_retarget_above_family_clamps_down_to_the_family_ceiling() {
-        // Source 15 is in family 8..=24; a target of 30 sits above it entirely.
-        let decision = resolve_retarget(15, 30, None);
-        assert_eq!(decision.achieved, 24);
-        assert!(decision.retargeted);
+        // Source 5 is in family 3..=7; a target of 10 sits above it entirely. (A source in
+        // 8..=24 targeted at 25+ is the promotion case, tested separately below -- this test
+        // picks a family with no cross-family conversion at all, so the plain clamp-to-
+        // ceiling behavior stays isolated from that case.)
+        let decision = resolve_retarget(5, 10, None, false);
+        assert_eq!(decision.achieved, 7);
+        assert_eq!(decision.retarget, RetargetOutcome::SameFamily);
         assert_eq!(
             decision.shortfall,
             Some(StructuralShortfall::DifferentFamily)
@@ -1392,9 +1556,9 @@ mod tests {
         // NOT clamp up to 25 (that would manufacture a version nobody asked for and, worse,
         // silently enter the 25-28 offset window as a side effect -- see the SHOULD-FIX
         // item this pins).
-        let decision = resolve_retarget(25, 5, None);
+        let decision = resolve_retarget(25, 5, None, false);
         assert_eq!(decision.achieved, 25);
-        assert!(!decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
         assert_eq!(
             decision.shortfall,
             Some(StructuralShortfall::DifferentFamily)
@@ -1404,10 +1568,12 @@ mod tests {
     #[test]
     fn resolve_retarget_below_family_edge_case_lands_exactly_on_the_chunks_own_version() {
         // Source already sits at its own family's floor (25); a target just below the
-        // family (24) must reproduce the source version untouched, not clamp anywhere.
-        let decision = resolve_retarget(25, 24, None);
+        // family (24) must reproduce the source version untouched, not clamp anywhere. Note
+        // this is the *reverse* of promotion (3D source, 2D-family target) -- always a plain
+        // family-clamp refusal, never attempted as a conversion.
+        let decision = resolve_retarget(25, 24, None, false);
         assert_eq!(decision.achieved, 25);
-        assert!(!decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
         assert_eq!(
             decision.shortfall,
             Some(StructuralShortfall::DifferentFamily)
@@ -1419,9 +1585,9 @@ mod tests {
         // Source 40 (family 25..=255) targeted at 27 (inside the 25-28 offset window) would
         // ordinarily be a plain in-family restamp, but this chunk's minimum subchunk index
         // (-5) has no valid key byte inside that window.
-        let decision = resolve_retarget(40, 27, Some(-5));
+        let decision = resolve_retarget(40, 27, Some(-5), false);
         assert_eq!(decision.achieved, 40);
-        assert!(!decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
         assert_eq!(
             decision.shortfall,
             Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow)
@@ -1430,9 +1596,9 @@ mod tests {
 
     #[test]
     fn resolve_retarget_allows_a_window_target_at_exactly_the_representable_floor() {
-        let decision = resolve_retarget(40, 27, Some(-4));
+        let decision = resolve_retarget(40, 27, Some(-4), false);
         assert_eq!(decision.achieved, 27);
-        assert!(decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::SameFamily);
         assert_eq!(decision.shortfall, None);
     }
 
@@ -1440,9 +1606,9 @@ mod tests {
     fn resolve_retarget_ignores_depth_when_the_effective_target_is_outside_the_window() {
         // Same too-deep chunk, but targeting 40 (outside 25-28) -- depth is irrelevant
         // there, since the window's offset never applies.
-        let decision = resolve_retarget(40, 40, Some(-5));
+        let decision = resolve_retarget(40, 40, Some(-5), false);
         assert_eq!(decision.achieved, 40);
-        assert!(!decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
         assert_eq!(decision.shortfall, None);
     }
 
@@ -1451,10 +1617,103 @@ mod tests {
         // `None` stands for "not the Overworld, or no subchunks" -- the offset window never
         // applies to either, so depth can never be the reason for a shortfall here even
         // when the effective target lands inside 25-28.
-        let decision = resolve_retarget(40, 27, None);
+        let decision = resolve_retarget(40, 27, None, false);
         assert_eq!(decision.achieved, 27);
-        assert!(decision.retargeted);
+        assert_eq!(decision.retarget, RetargetOutcome::SameFamily);
         assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_promotes_8_24_family_targeted_at_25_plus() {
+        let decision = resolve_retarget(15, 40, None, true);
+        assert_eq!(decision.achieved, 40);
+        assert_eq!(decision.retarget, RetargetOutcome::Promoted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_promotion_refuses_a_chunk_with_no_biomes_to_promote() {
+        let decision = resolve_retarget(15, 40, None, false);
+        assert_eq!(decision.achieved, 15);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
+        assert_eq!(
+            decision.shortfall,
+            Some(StructuralShortfall::MissingColumnBiomes)
+        );
+    }
+
+    #[test]
+    fn resolve_retarget_promotion_into_the_offset_window_still_checks_depth() {
+        // Source 15 (family 8..=24), target 27 (inside the 25-28 offset window), a chunk
+        // too deep for that window to represent -- the depth refusal applies to a
+        // promotion exactly like it does to an in-family retarget.
+        let decision = resolve_retarget(15, 27, Some(-5), true);
+        assert_eq!(decision.achieved, 15);
+        assert_eq!(decision.retarget, RetargetOutcome::Unretargeted);
+        assert_eq!(
+            decision.shortfall,
+            Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow)
+        );
+    }
+
+    #[test]
+    fn resolve_retarget_promotion_into_the_offset_window_succeeds_when_representable() {
+        let decision = resolve_retarget(15, 27, Some(-4), true);
+        assert_eq!(decision.achieved, 27);
+        assert_eq!(decision.retarget, RetargetOutcome::Promoted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_promotion_outside_the_window_ignores_depth() {
+        let decision = resolve_retarget(15, 40, Some(-5), true);
+        assert_eq!(decision.achieved, 40);
+        assert_eq!(decision.retarget, RetargetOutcome::Promoted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn retarget_outcome_moved_is_false_only_for_unretargeted() {
+        assert!(!RetargetOutcome::Unretargeted.moved());
+        assert!(RetargetOutcome::SameFamily.moved());
+        assert!(RetargetOutcome::Promoted.moved());
+    }
+
+    #[test]
+    fn promoted_biomes_record_builds_a_valid_0x2b_record_decodable_back_to_the_source() {
+        // Build a synthetic `0x2d` payload by hand (heights, then one biome id per column)
+        // and decode it into a `HeightMap`, the same shape `Chunk::decode` hands
+        // `promoted_biomes_record` in practice.
+        let heights: [i16; COLUMNS] = std::array::from_fn(|i| (i as i16) * 3 - 128);
+        let biome_ids: [u8; COLUMNS] = std::array::from_fn(|i| (i % 7) as u8);
+        let mut payload = Vec::new();
+        for h in heights {
+            payload.extend_from_slice(&h.to_le_bytes());
+        }
+        payload.extend_from_slice(&biome_ids);
+        let heightmap = HeightMap::from_disk(&mut Cursor::new(payload.as_slice())).unwrap();
+
+        let achieved = 40u8;
+        let record_bytes = promoted_biomes_record(&heightmap, achieved).unwrap();
+        let volumes =
+            Biomes3d::from_disk::<Greedy, _>(&mut Cursor::new(record_bytes.as_slice())).unwrap();
+
+        assert_eq!(
+            volumes.fragments().len(),
+            fragment_count_for(achieved).get()
+        );
+        for (i, &h) in heights.iter().enumerate() {
+            assert_eq!(volumes.heightmap()[i], h as u16, "column {i}");
+        }
+        for z in 0..16usize {
+            for x in 0..16usize {
+                let expected = biome_ids[z * 16 + x] as u32;
+                let actual = volumes
+                    .biome_at(0, BlockPosition(x as u8, 0, z as u8))
+                    .unwrap();
+                assert_eq!(actual, expected, "column ({x}, {z})");
+            }
+        }
     }
 
     /// A synthetic, never-persisted chunk -- these tests are about the

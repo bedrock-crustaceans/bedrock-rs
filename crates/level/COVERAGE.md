@@ -19,7 +19,7 @@ value (`0x2c` preferred, `0x76` as fallback, `DecodeVersion::select` in
 | --- | --- | --- | --- | --- | --- | --- |
 | 0-2 | `0x30` LegacyTerrain | `0x2d` 2D columns | Implemented | Implemented; retarget within family 0-2 only (see "Write target" below) | Structural: N/A (this family has no `Terrain::Legacy` mutable-write path for the content pass -- see `level_chunk.rs`'s `upgrade_content` doc comment). Content: as for any chunk, per-entry, gated on a provider | Synthetic only -- no fixture predates chunk version 15 (`tests/fixtures/README.md`). `tests/legacy_terrain.rs` (`round_trips_byte_identical_with_a_synthetic_tail`, `order_convention_places_a_known_id_in_the_right_slice_and_local_position`, `nibble_packing_pins_even_low_odd_high`) pins the codec against hand-built columns, not a real record. |
 | 3-7 | `0x2f` subchunks, non-paletted (`SubChunkVersion::NonPaletted`) | `0x2d` 2D columns | Implemented | Implemented; retarget within family 3-7 only | Content: per-entry, gated on a provider | Synthetic only -- same gap as above; no fixture carries a non-paletted subchunk (all real corpus subchunks are version 8 or 9, per `tests/fixtures/index.json`'s `subchunk_versions`). `SubChunk::from_disk`'s non-paletted branch is exercised only by hand-built inputs in `crates/level/src/subchunk.rs`'s own unit tests. |
-| 8-24 | `0x2f` subchunks, paletted (`Limited`, subchunk version 8) | `0x2d` 2D columns | Implemented | Implemented; retarget within family 8-24 only | Content: per-entry, gated on a provider | Real fixtures: `v1_12` (15), `v1_16` (21), `v1_17_20`/`v1_17_40`/`v1_17_40_superflat` (22 -- see note below). `tests/version_matrix.rs`'s `every_chunk_round_trips_at_both_layers` round-trips every chunk of every one of these fixtures at both layers; `tests/data2d.rs` pins `0x2d` decode/encode against the same corpus; `tests/bit_layers.rs`'s `palette_entries_round_trip_byte_identical_across_all_fixtures` pins every real `0x2f` record's palette bytes. `tests/write_target.rs` retargets a real chunk from this family up to its family ceiling (24) and confirms the shortfall reported when a target outside 8-24 is requested. |
+| 8-24 | `0x2f` subchunks, paletted (`Limited`, subchunk version 8) | `0x2d` 2D columns | Implemented | Implemented; retarget within family 8-24, **plus a cross-family promotion to 25+** (`0x2b`, see "Cross-family promotion" below) | Content: per-entry, gated on a provider | Real fixtures: `v1_12` (15), `v1_16` (21), `v1_17_20`/`v1_17_40`/`v1_17_40_superflat` (22 -- see note below). `tests/version_matrix.rs`'s `every_chunk_round_trips_at_both_layers` round-trips every chunk of every one of these fixtures at both layers; `tests/data2d.rs` pins `0x2d` decode/encode against the same corpus; `tests/bit_layers.rs`'s `palette_entries_round_trip_byte_identical_across_all_fixtures` pins every real `0x2f` record's palette bytes. `tests/write_target.rs` retargets a real chunk from this family up to its family ceiling (24) and confirms both outcomes a target outside 8-24 produces: the ordinary `DifferentFamily` shortfall below the family, and the cross-family promotion itself (target 25, `shortfall: None`) above it. `tests/retarget_biomes.rs` covers the 25+ promotion in full detail against every pure-2D fixture (`biomes_2d && !biomes_3d`). |
 | 25-38 | `0x2f` subchunks, paletted | `0x2b` 3D volumes | Implemented | Implemented; retarget within family 25-255 (see note below on why 39-42 joins this family) | Content: per-entry, gated on a provider | Real fixtures: `v1_17_20_caves_and_cliffs` (25), `v1_17_40_caves_and_cliffs` (31). Versions 26-28 inherit the 25 boundary by nearest-below with no fixture carrying them directly -- see `chunk_version.rs`'s `FACT_BOUNDARIES` doc comment and the Phase 2 "Chunk-version -> format dispatch" TODO entry for the reasoning and the disagreement with one reference table (which places the 2D->3D boundary at 29, not 25). `tests/version_matrix.rs` covers every real chunk at 25 and 31; `tests/biome3d.rs`'s `decodes_and_round_trips_every_record` covers `0x2b` specifically. |
 | 39-42 | `0x2f` subchunks, paletted, negative-Y | `0x2b` 3D volumes | Implemented | Implemented; retarget within family 25-255 | Content: per-entry, gated on a provider | Real fixtures: `v1_18`/`v1_18_superflat` (39), `v1_18_30`/`v1_19_30`/`v1_20_81` (40). No fixture carries 41 or 42; both inherit the same 25-boundary facts by nearest-below and are otherwise untested. `tests/version_matrix.rs` covers every real chunk at 39 and 40, including `v1_20_81`'s out-of-nominal-range subchunks (see `tests/height_range.rs`). `tests/write_target.rs`'s `retargeting_a_negative_y_chunk_through_the_offset_window_round_trips_semantically` retargets a real 39/40 chunk down to 27 (inside the 25-28 subchunk key-index offset window) and back, pinning the key-form change each way against a real negative-Y subchunk index. |
 | 43+ | Extrapolated from 42's facts | Extrapolated from 42's facts | Best-effort (nearest-below) | Best-effort; same family as 25-255 (nearest-below facts apply) | Content: per-entry, gated on a provider | No fixture; `FormatProfile::extrapolated` flags the fact, `chunk_version.rs`'s `version_past_the_ceiling_extrapolates_the_newest_known_facts` pins the extrapolation logic itself, not real data. |
@@ -42,11 +42,14 @@ recomputed against the *target*, not the chunk's original decode version -- so a
 retargeted into or out of that window gets the correct key form on either side, pinned by
 `tests/write_target.rs` against a real fixture.
 
-**Crossing families is refused, not attempted.** A target in a different family from the
-chunk's own -- 2D biomes to/from 3D, legacy `0x30` terrain to/from `0x2f` subchunks, or
-non-paletted to/from paletted subchunks -- needs constructing a different terrain container
-or biome layout, which `encode_as` does not do. What happens instead is **not symmetric**
-between the two directions, by design (`fn resolve_retarget` in `src/level_chunk.rs`):
+**Crossing families is refused, not attempted -- with one exception.** A target in a
+different family from the chunk's own -- legacy `0x30` terrain to/from `0x2f` subchunks,
+non-paletted to/from paletted subchunks, or 3D biomes down to 2D -- needs constructing a
+different terrain container or biome layout, which `encode_as` does not do. The one
+exception is **promotion**, 2D `0x2d` biomes (8-24) up to 3D `0x2b` volumes (25+), which needs
+no content provider and is implemented -- see "Cross-family promotion" below. For every other
+cross-family case, what happens is **not symmetric** between the two directions, by design
+(`fn resolve_retarget` in `src/level_chunk.rs`):
 - **Target above the family**: clamps down to the highest version reachable inside the
   chunk's *own* family (its ceiling) -- the useful "modernize an old chunk toward a newer
   target" case.
@@ -61,7 +64,80 @@ Either way the returned `StructuralWriteReport` names this a
 achieved version, never the requested one** -- architecture decision 6's rule that a version
 stamp must never claim more than what was actually converted. `tests/write_target.rs`'s
 `every_fixture_reports_a_shortfall_and_stamps_the_achieved_version_across_families` pins this
-for every fixture that contributes a chunk with terrain, in both directions.
+for every fixture whose *chosen* chunk-with-terrain does not sit in the promotable 8-24
+family, and separately pins the promotion itself (achieved = target = 25, `shortfall: None`,
+`0x2b` present, `0x2d` absent) for the fixtures whose chosen chunk does.
+
+## Cross-family promotion: 2D (`0x2d`) biomes to 3D (`0x2b`) volumes
+
+The one cross-family conversion `encode_as` performs without a content provider: a chunk
+whose own family is `8..=24` (2D `0x2d` biomes), targeted at `25` or above, is **promoted**
+rather than clamped or refused. `achieved` becomes `target` directly -- unlike an ordinary
+above-family clamp, there is no family ceiling to stop at, since the whole `25..=255` family
+is reachable this way -- and the biome record written changes kind: the chunk's `0x2d`
+heightmap and per-column biome ids become a fresh `0x2b` volume via
+[`Biomes3d::from_columns`](src/biome.rs) (a bottom fragment carrying the real data --
+`Single` if every column shares one id, `Palette` otherwise -- and `Inherit` for every
+fragment above it), using [`fragment_count_for`](src/chunk_version.rs) to pick how many
+fragments a real write at `achieved` carries. `0x2d` is dropped entirely; only `0x2b` is
+written. The heightmap bytes are unchanged -- `0x2d`'s signed 16-bit heights become `0x2b`'s
+unsigned 16-bit ones by a same-size bit-preserving cast, not a value conversion, so the
+promoted `0x2b` prefix's heightmap bytes equal the source `0x2d`'s.
+[`StructuralWriteReport::retarget`] is [`RetargetOutcome::Promoted`] for a successful
+promotion, [`RetargetOutcome::SameFamily`] for an ordinary in-family restamp, and
+[`RetargetOutcome::Unretargeted`] whenever `achieved == source` (whether or not a shortfall
+explains why) -- one enum rather than the two independent `retargeted`/`promoted` booleans an
+earlier revision carried, since `Promoted` structurally implies "moved" and a pair of bools
+could disagree about that by construction error.
+
+**`fragment_count_for`: the per-target-version fragment count.** A real `0x2b` write's
+fragment count is world-wide (see the "Data3D write semantics" note above) and varies by
+*chunk version*, not by anything this crate derives from a dimension. Joining each corpus
+fixture's own chunk version with its own fragment-count histogram
+(`tests/biomes3d_write.rs`'s `corpus_survey_fragment_counts_vs_subchunk_counts`) gives four
+confirmed points -- chunk version 25 and 31 both carry 32 (the 1.17 Caves-and-Cliffs preview
+releases), 39 carries 25 (the 1.18 family), 40 carries 24 (1.18.30/1.19.30/1.20.81, with
+three stray 25s in `v1_20_81` not modeled as a target). No fixture carries 26-30, 32-38, or
+41-42; those resolve by nearest-below, the same convention `FormatProfile::for_version`
+already uses for terrain/biome facts -- 26-30 and 32-38 join 25's/31's 32 (the two agree, so
+the boundary is unobservable either way), and 41-42 join 40's 24. `chunk_version.rs`'s
+`fragment_count_for` doc comment carries the full table;
+`fragment_count_for_matches_the_corpus_histogram`/
+`fragment_count_for_unconfirmed_versions_join_the_nearest_below_boundary` in
+`chunk_version.rs` pin it.
+
+**What a promotion refuses.** Exactly like an in-family retarget, a promotion can fail two
+ways, both leaving the chunk at its own current version,
+`retarget: RetargetOutcome::Unretargeted`:
+- **No `0x2d` record to promote** (`StructuralShortfall::MissingColumnBiomes`) -- the chunk
+  has no `ChunkBiomes::Columns` at all (a rare administrative stub, or the corpus-unseen edge
+  case of a sub-25 chunk already carrying `0x2b`). Fabricating biome data would violate
+  architecture decision 11. **Corpus-unexercised**: 0 of the 1,924 real 8-24-family chunks
+  across every pure-2D fixture (`v1_12` 1,118 + `v1_16` 436 + `v1_17_20` 82 + `v1_17_40` 216 +
+  `v1_17_40_superflat` 72, per `tests/data2d.rs`'s per-fixture `0x2d` counts) lack a `0x2d`
+  record, so this variant is reachable only through a synthetic chunk built without one --
+  `resolve_retarget_promotion_refuses_a_chunk_with_no_biomes_to_promote` in `src/level_chunk.rs`
+  exercises it that way. Also unexercised: no pure-2D fixture carries a Nether or End
+  dimension (all five are Overworld-only, per `tests/fixtures/index.json`), so promoting a
+  non-Overworld 8-24 chunk is untested against real data.
+- **Offset-window depth** (`StructuralShortfall::DepthUnrepresentableInOffsetWindow`) --
+  `target` lands inside the 25-28 subchunk key-index offset window and this chunk has a
+  subchunk too deep for that window to represent, the same check an in-family retarget into
+  that window makes. Not exercised by any real 2D-biomes fixture (negative-Y worlds postdate
+  this family entirely), which `tests/retarget_biomes.rs`'s
+  `every_2d_fixture_promotes_into_the_offset_window_with_correct_subchunk_keys` asserts
+  explicitly rather than silently branching around.
+
+`tests/retarget_biomes.rs` covers promotion against every fixture whose capabilities are
+`biomes_2d && !biomes_3d` (`v1_12`, `v1_16`, `v1_17_20`, `v1_17_40`,
+`v1_17_40_superflat`): decode strictly at the achieved version with `Biomes3d` present,
+per-column `biome_at` equality against the source's 2D id for every subchunk index up to
+`fragment_count_for(achieved)`, heightmap byte equality, `0x2d` absent, `0x2b` present, and
+the report naming the write a promotion -- plus the same into the 25-28 offset window, and a
+3D fixture targeted at 8-24 still reporting `DifferentFamily` at its own achieved version
+(the reverse direction, always refused). `tests/write_target.rs`'s
+`every_fixture_reports_a_shortfall_and_stamps_the_achieved_version_across_families` covers the
+same promotion from the cross-family-shortfall test's own angle (see above).
 
 **A second, independent shortfall: offset-window depth.** Even a same-family, in-window
 retarget can fail. The 25-28 offset window's `+4` key-byte shift can only represent an

@@ -15,7 +15,7 @@ use bedrock_level::chunk_version::{
 use bedrock_level::db::Database;
 use bedrock_level::key::{KeyVariant, subchunk_index_to_key};
 use bedrock_level::level::Level;
-use bedrock_level::level_chunk::{Chunk, StructuralShortfall, Terrain};
+use bedrock_level::level_chunk::{Chunk, RetargetOutcome, StructuralShortfall, Terrain};
 use bedrock_level::types::ChunkPosition;
 use bedrock_shared::world::dimension::Dimension;
 use flate2::read::GzDecoder;
@@ -119,7 +119,12 @@ fn every_fixture_encodes_byte_identical_at_its_own_version() {
 
         assert_eq!(report.requested, own_version, "{}", fixture.name);
         assert_eq!(report.achieved, own_version, "{}", fixture.name);
-        assert!(!report.retargeted, "{}: {report:?}", fixture.name);
+        assert_eq!(
+            report.retarget,
+            RetargetOutcome::Unretargeted,
+            "{}: {report:?}",
+            fixture.name
+        );
         assert_eq!(report.shortfall, None, "{}: {report:?}", fixture.name);
 
         let original_map: HashMap<_, Vec<u8>> = original
@@ -168,7 +173,7 @@ fn every_fixture_retargets_to_its_family_ceiling_and_decodes_strictly() {
         assert_eq!(report.achieved, target, "{}: {report:?}", fixture.name);
         assert_eq!(report.shortfall, None, "{}: {report:?}", fixture.name);
         assert_eq!(
-            report.retargeted,
+            report.retarget.moved(),
             target != chunk.chunk_version(),
             "{}: {report:?}",
             fixture.name
@@ -223,52 +228,103 @@ fn every_fixture_reports_a_shortfall_and_stamps_the_achieved_version_across_fami
             .unwrap_or_else(|e| panic!("{}: encode_as(cross-family) failed: {e}", fixture.name));
 
         assert_eq!(report.requested, target, "{}", fixture.name);
-        assert_eq!(
-            report.shortfall,
-            Some(StructuralShortfall::DifferentFamily),
-            "{}: {report:?}",
-            fixture.name
-        );
-        // Above the family, this clamps down to the family's own ceiling. Below the
-        // family, it does NOT clamp up to the family floor -- that would manufacture a
-        // version nobody asked for (and, for the 25..=255 family, could silently walk the
-        // chunk into the 25-28 offset window as a side effect). Below-family instead
-        // leaves the chunk at its own current version, unretargeted. Either way the
-        // achieved version is never the requested target itself, since that would
-        // overstate what the write actually did (architecture decision 6).
-        let expected_achieved = if target > *family.end() {
-            *family.end()
-        } else {
-            chunk.chunk_version()
-        };
-        assert_eq!(
-            report.achieved, expected_achieved,
-            "{}: {report:?}",
-            fixture.name
-        );
-        assert_ne!(report.achieved, target, "{}: {report:?}", fixture.name);
-        // `retargeted` tracks whether the stamp actually moved off the chunk's own decode
-        // version -- not whether a shortfall occurred. The two usually coincide for a
-        // cross-family request, but not when the chunk already sat exactly at its own
-        // family's edge (clamping then reproduces its own version).
-        assert_eq!(
-            report.retargeted,
-            report.achieved != chunk.chunk_version(),
-            "{}: {report:?}",
-            fixture.name
-        );
 
-        // The stamp written on disk is the achieved version, never the requested one.
-        let stamp = records
-            .iter()
-            .find(|(key, _)| key.data == KeyVariant::ChunkVersion)
-            .map(|(_, bytes)| bytes[0]);
-        assert_eq!(
-            stamp,
-            Some(report.achieved),
-            "{}: the 0x2c stamp must equal the achieved version, not the requested target",
-            fixture.name
-        );
+        if family == (8..=24) {
+            // 8-24 targeted one version past its own ceiling lands on 25 -- the one
+            // cross-family conversion this crate actually performs: promoting 2D `0x2d`
+            // biomes to 3D `0x2b` volumes (see the Phase 5 "Cross-family retargeting: 2D ->
+            // 3D biomes" task in TODO.md). This is not a refusal: `achieved` reaches
+            // `target` directly, `shortfall` stays `None`, and the biome record on disk
+            // changes kind. Every other family below still refuses (asserted in the `else`
+            // branch), since the reverse (3D to 2D) is lossy and non-paletted/legacy-terrain
+            // conversions need a provider this crate does not invoke here.
+            assert_eq!(
+                target, 25,
+                "{}: test bug, expected the promotion target to be 25",
+                fixture.name
+            );
+            assert_eq!(report.achieved, target, "{}: {report:?}", fixture.name);
+            assert_eq!(report.shortfall, None, "{}: {report:?}", fixture.name);
+            assert_eq!(
+                report.retarget,
+                RetargetOutcome::Promoted,
+                "{}: {report:?}",
+                fixture.name
+            );
+
+            assert!(
+                records
+                    .iter()
+                    .any(|(key, _)| key.data == KeyVariant::Biome3d),
+                "{}: a promoted chunk must carry 0x2b",
+                fixture.name
+            );
+            assert!(
+                !records
+                    .iter()
+                    .any(|(key, _)| key.data == KeyVariant::HeightMap),
+                "{}: a promoted chunk must not carry 0x2d",
+                fixture.name
+            );
+
+            let stamp = records
+                .iter()
+                .find(|(key, _)| key.data == KeyVariant::ChunkVersion)
+                .map(|(_, bytes)| bytes[0]);
+            assert_eq!(
+                stamp,
+                Some(25),
+                "{}: the 0x2c stamp must equal the promoted (achieved) version",
+                fixture.name
+            );
+        } else {
+            assert_eq!(
+                report.shortfall,
+                Some(StructuralShortfall::DifferentFamily),
+                "{}: {report:?}",
+                fixture.name
+            );
+            // Above the family, this clamps down to the family's own ceiling. Below the
+            // family, it does NOT clamp up to the family floor -- that would manufacture a
+            // version nobody asked for (and, for the 25..=255 family, could silently walk
+            // the chunk into the 25-28 offset window as a side effect). Below-family
+            // instead leaves the chunk at its own current version, unretargeted. Either way
+            // the achieved version is never the requested target itself, since that would
+            // overstate what the write actually did (architecture decision 6).
+            let expected_achieved = if target > *family.end() {
+                *family.end()
+            } else {
+                chunk.chunk_version()
+            };
+            assert_eq!(
+                report.achieved, expected_achieved,
+                "{}: {report:?}",
+                fixture.name
+            );
+            assert_ne!(report.achieved, target, "{}: {report:?}", fixture.name);
+            // `retarget.moved()` tracks whether the stamp actually moved off the chunk's
+            // own decode version -- not whether a shortfall occurred. The two usually
+            // coincide for a cross-family request, but not when the chunk already sat
+            // exactly at its own family's edge (clamping then reproduces its own version).
+            assert_eq!(
+                report.retarget.moved(),
+                report.achieved != chunk.chunk_version(),
+                "{}: {report:?}",
+                fixture.name
+            );
+
+            // The stamp written on disk is the achieved version, never the requested one.
+            let stamp = records
+                .iter()
+                .find(|(key, _)| key.data == KeyVariant::ChunkVersion)
+                .map(|(_, bytes)| bytes[0]);
+            assert_eq!(
+                stamp,
+                Some(report.achieved),
+                "{}: the 0x2c stamp must equal the achieved version, not the requested target",
+                fixture.name
+            );
+        }
 
         checked += 1;
     }
@@ -494,7 +550,12 @@ fn retargeting_into_the_offset_window_is_refused_for_a_chunk_too_deep_to_represe
 
     assert_eq!(report.requested, target_in_window, "{}", fixture.name);
     assert_eq!(report.achieved, own_version, "{}: {report:?}", fixture.name);
-    assert!(!report.retargeted, "{}: {report:?}", fixture.name);
+    assert_eq!(
+        report.retarget,
+        RetargetOutcome::Unretargeted,
+        "{}: {report:?}",
+        fixture.name
+    );
     assert_eq!(
         report.shortfall,
         Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow),
