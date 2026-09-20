@@ -62,9 +62,59 @@
 //! seed on its own, so a read-modify-write must carry every entry through
 //! untouched. [`MetadataDictionary::insert`] exists for the one write-side
 //! carve-out decision 13 names -- writing a fresh entry when a chunk lands
-//! in a dimension the dictionary has no entry for -- but choosing *when*
-//! to call it needs level.dat's declared height-range flags and is out of
-//! scope here (see the roadmap's per-dimension height-range task).
+//! in a dimension the dictionary has no entry for.
+//!
+//! **That carve-out is not implemented, and stays that way until the key
+//! derivation below is settled.** Calling `insert` for a synthesized entry
+//! requires an 8-byte [`DictionaryKey`] for it, and per architecture
+//! decision 11 a key this crate cannot derive from the entry it names is a
+//! fabrication, not a conservative guess -- a chunk's `0x3f` record would
+//! then point at a key nothing else in the world (and no future save by the
+//! real game) would ever produce. `Level::put_chunk` therefore does not call
+//! `insert` on any path today.
+//!
+//! ## Key derivation: tried, not established
+//!
+//! Every entry's [`DictionaryKey`] was checked against a broad set of
+//! 64-bit hash candidates over the entry's own stored NBT bytes (as-is, and
+//! with the trailing `TAG_End` dropped), over a canonical field subset
+//! (`DimensionName` plus both height-range compounds), and over
+//! `DimensionName` alone: FNV-1a 64, xxHash64 (seed 0), MurmurHash64A (seed
+//! 0), CRC-64/XZ, SipHash-1-3 and SipHash-2-4 (zero key), and plain
+//! truncation to the first 8 bytes, each checked both little- and
+//! big-endian. **Every candidate matches zero of the 23 real entries in the
+//! fixture corpus** -- pinned by
+//! `dictionary_key_candidates_match_no_real_entry` in
+//! `tests/metadata_dictionary_write.rs`, which also prints every real key
+//! for inspection.
+//!
+//! Neither reference checkout offers a mechanism either: one only *reads*
+//! this record (to fold its height ranges into a dimension's bounds) and
+//! never writes one, and the other's format notes describe `0x3f` as a
+//! dictionary lookup key with no derivation given. Neither ever constructs
+//! a `DictionaryKey` from scratch.
+//!
+//! The 23 real keys show no counter-like or seed-like structure -- no
+//! shared prefix, no small or sequential values -- consistent with a hash
+//! output or an opaque session-derived value, and against a plain
+//! incrementing id. Three keys repeat, each pair spanning exactly the two
+//! fixtures `v1_18_30`/`v1_19_30` with byte-identical entry content -- but
+//! both fixtures are the same upstream integration world exported at two
+//! different game versions (see `tests/fixtures/index.json`), so a shared
+//! key there is equally explained by "the entry was carried forward
+//! unmodified, key included" as by "the key is a function of the content."
+//! The corpus has no pair of *independently generated* worlds sharing
+//! identical entry content to distinguish the two, so this is not treated
+//! as evidence of content-derivation. See
+//! `tests/metadata_dictionary_write.rs`'s module docs for the full
+//! writeup, including the per-dimension `0x3f`-presence finding that
+//! motivated checking this in the first place.
+//!
+//! If a future corpus addition (a second world sharing content with an
+//! existing one, independently generated) or a documented reference
+//! mechanism settles the derivation, a `MetadataDictionary::key_for` is
+//! where it belongs, with `Level::put_chunk` calling it on the
+//! dimension-has-no-entry path this module docs' carve-out describes.
 
 use std::io::{Cursor, Read};
 
