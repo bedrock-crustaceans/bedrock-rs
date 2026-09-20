@@ -75,6 +75,24 @@
 //! chunk removed outright: it deletes the `actorprefix` records that
 //! chunk's own `digp` named, dangling entries included (deleting an already-
 //! absent key is a documented no-op -- see [`ActorWriteSet::apply`]).
+//!
+//! ## Minting a brand-new actor
+//!
+//! [`ChunkActors::add`]/[`ChunkActors::add_with_derived_key`] both assume the
+//! record already has an identity -- a `UniqueID`, embedded key, or both.
+//! [`ChunkActors::add_new`] is the entry point for a record with neither:
+//! given an [`ActorSession`] (obtained from
+//! `crate::level::Level::begin_actor_session`, which reserves the session
+//! half collision-safely via `Level::reserve_actor_session_id`), it
+//! allocates the session's next low word (run-local, never persisted -- see
+//! [`ActorSession`]'s own doc comment), then [`stamp_new_actor`] assigns the
+//! resulting `UniqueID` and writes the matching derived key into the
+//! record's own `internalComponents.EntityStorageKeyComponent.StorageKey`
+//! before the record is added under it. Reserve, allocate, stamp, add --
+//! `ChunkActors::add`/`add_with_derived_key`/`add_new` is the complete trio
+//! this module offers for getting an actor onto a chunk, from "I already
+//! have a key" through "I have a record with an identity" to "I have
+//! nothing but the NBT."
 
 use std::collections::HashSet;
 use std::io::Cursor;
@@ -225,6 +243,76 @@ fn embedded_storage_key(record: &nbtx::Value) -> Option<ActorStorageKey> {
         return None;
     };
     ActorStorageKey::try_from(key.as_slice()).ok()
+}
+
+/// Stamps a not-yet-stored actor record with a fresh `UniqueID` and the
+/// embedded copy of the storage key the game itself writes alongside it,
+/// returning the derived key -- the piece [`ChunkActors::add_new`] needs in
+/// order to hand the record to [`ChunkActors::add`] under the right key.
+///
+/// Refuses -- [`Error::Invalid`] -- rather than overwriting, if `value`
+/// already carries a `UniqueID` `Long` field: this function is only for a
+/// record that has never been assigned one. Silently replacing an
+/// existing id would orphan whatever `actorprefix` record that id already
+/// resolves to.
+///
+/// # The one field this crate synthesizes
+///
+/// `internalComponents.EntityStorageKeyComponent.StorageKey` is the one
+/// field this function creates outright rather than carrying through
+/// data this crate found on disk (architecture decision 7 is about
+/// *preserving* fields this crate does not understand, not about refusing
+/// to ever write a new one -- this field did not exist before this call).
+/// Every reference implementation creates this compound path
+/// unconditionally when minting a new actor, and the corpus shows its
+/// value is nothing but the derived key's own bytes -- equal to the
+/// digest key in 7,631 of 7,631 real records that carry it (see
+/// [`storage_key_for_record`]'s doc comment). So this does not invent a
+/// value: it writes the same bytes [`derive_storage_key`] just computed
+/// into the one place the game expects to find them, under formula A
+/// unconditionally -- creating this exact compound path is what formula
+/// A's dispatch rule requires in the first place.
+///
+/// An existing `internalComponents` compound is extended, not replaced --
+/// only the `StorageKey` leaf itself is ever written. A non-compound value
+/// already occupying `internalComponents` or `EntityStorageKeyComponent`
+/// is malformed input this function reports rather than overwrites.
+pub fn stamp_new_actor(value: &mut nbtx::Value, unique_id: i64) -> Result<ActorStorageKey> {
+    let nbtx::Value::Compound(root) = value else {
+        return Err(Error::Invalid("actor record is not an NBT compound"));
+    };
+    if root.get("UniqueID".as_bytes()).is_some() {
+        return Err(Error::Invalid(
+            "actor record already has a UniqueID -- stamp_new_actor is only for a record that \
+             has not been assigned one",
+        ));
+    }
+    root.insert("UniqueID".into(), nbtx::Value::Long(unique_id));
+
+    let storage_key = derive_storage_key(unique_id, true);
+
+    let internal_components = root
+        .entry("internalComponents".into())
+        .or_insert_with(|| nbtx::Value::Compound(nbtx::Compound::default()));
+    let nbtx::Value::Compound(internal_components) = internal_components else {
+        return Err(Error::Invalid(
+            "actor record's internalComponents field is not an NBT compound",
+        ));
+    };
+    let component = internal_components
+        .entry("EntityStorageKeyComponent".into())
+        .or_insert_with(|| nbtx::Value::Compound(nbtx::Compound::default()));
+    let nbtx::Value::Compound(component) = component else {
+        return Err(Error::Invalid(
+            "actor record's EntityStorageKeyComponent field is not an NBT compound",
+        ));
+    };
+    component.insert(
+        "StorageKey".into(),
+        nbtx::Value::String(storage_key.to_vec().into()),
+    );
+
+    Ok(storage_key)
 }
 
 /// Decodes a `digp` value: a flat array of [`ActorStorageKey`]s with no
@@ -461,6 +549,41 @@ impl ChunkActors {
         Ok(storage_key)
     }
 
+    /// [`Self::add_with_derived_key`]'s counterpart for a record that has no
+    /// identity at all yet: mints a brand-new actor under `session`'s next
+    /// allocated `UniqueID` and adds it under the resulting derived key,
+    /// returning that key. `session` comes from
+    /// [`crate::level::Level::begin_actor_session`] -- the session half of a
+    /// full actor-add path, this method the low-word half.
+    ///
+    /// `value` reaches [`Self::add`] only after [`stamp_new_actor`] has
+    /// assigned it `session`'s `UniqueID` and written the matching
+    /// `internalComponents.EntityStorageKeyComponent.StorageKey` -- see that
+    /// function's own doc comment for exactly what it writes and why doing
+    /// so is safe rather than a fabrication. `self` is left untouched if
+    /// either step fails: a record that already has a `UniqueID`
+    /// ([`stamp_new_actor`]'s own refusal) or a `session` whose low-word
+    /// counter is already exhausted ([`ActorSession::next_unique_id`]
+    /// returned `None`) are both reported as [`Error::Invalid`] rather than
+    /// silently doing nothing or fabricating a colliding id.
+    ///
+    /// This never consults anything already on `value` to derive a key --
+    /// unlike [`Self::add_with_derived_key`], which is for a record that
+    /// already carries its own identity, this is specifically for a caller
+    /// handing over a record with none yet.
+    pub fn add_new(
+        &mut self,
+        session: &mut ActorSession,
+        mut value: nbtx::Value,
+    ) -> Result<ActorStorageKey> {
+        let unique_id = session.next_unique_id().ok_or(Error::Invalid(
+            "actor session's low-word counter is exhausted (next_low already at u32::MAX)",
+        ))?;
+        let storage_key = stamp_new_actor(&mut value, unique_id)?;
+        self.add(storage_key, value);
+        Ok(storage_key)
+    }
+
     /// Removes and returns the resolved actor stored under `storage_key`,
     /// if this chunk has one. `None` if `storage_key` names no resolved
     /// actor -- including if it only ever named a [`Self::dangling`] entry,
@@ -580,6 +703,113 @@ impl ActorWriteSet {
             db.remove(actorprefix_key_bytes(storage_key))?;
         }
         Ok(())
+    }
+}
+
+/// A run-local allocator over one freshly
+/// [`crate::level::Level::begin_actor_session`]-reserved actor session: hands
+/// out `UniqueID`s whose high 32 bits are the reserved session and whose low
+/// 32 bits count up from [`Self::FIRST_LOW`], one at a time, never repeating
+/// and never wrapping. [`ChunkActors::add_new`] is the only intended way to
+/// spend an allocated id; [`Self::next_unique_id`] is exposed on its own for
+/// a caller that wants the id without immediately adding a record under it.
+///
+/// Deliberately not `Clone`/`Copy`: the whole point of this type is that
+/// nothing else can hand out the same id twice, and two clones of one
+/// `ActorSession` would immediately violate that -- both would allocate
+/// starting from the same `next_low`, so the first `next_unique_id` call on
+/// each would return the identical `UniqueID`. A single owned counter with no
+/// way to duplicate it is what keeps that impossible.
+///
+/// # What is persisted and what is not
+///
+/// `session` is the one piece of state that must survive a crash between
+/// allocations without ever being handed out twice --
+/// [`crate::level::Level::begin_actor_session`] gets it from
+/// [`crate::level::Level::reserve_actor_session_id`], which writes
+/// `level.dat` immediately, before this type exists at all (see that
+/// method's own doc comment for why deferring would reopen the exact race it
+/// closes). `next_low`, by contrast, is not level.dat state in either
+/// reference implementation or in this crate's corpus (see
+/// [`crate::settings::LevelSettings::next_actor_session_id`]'s doc comment),
+/// and it needs none: every `UniqueID` this allocator hands out carries a
+/// session that has never named an actor before -- that is exactly what
+/// "reserved" means -- so no low word this allocator produces can ever
+/// collide with one already on disk, regardless of where its own counter
+/// happens to start or how far it gets before the process stops. Session
+/// isolation alone is what makes this safe; the start value is not doing any
+/// collision-avoidance work. An `ActorSession` dropped mid-run, with some
+/// allocated ids never written anywhere, simply abandons the unused tail of
+/// its session's low-word space -- wasteful (billions of ids go unclaimed)
+/// but never unsafe, since the next `begin_actor_session` call claims a
+/// session of its own and starts counting from [`Self::FIRST_LOW`] again.
+///
+/// # Start value
+///
+/// [`Self::FIRST_LOW`] is 1, not 0. This is a stylistic match to the corpus,
+/// not a correctness requirement -- per the "What is persisted" section
+/// above, session isolation is what actually prevents collisions, and any
+/// start value would be equally safe. The corpus settles what real actors'
+/// low words start at directly: across the newest session in each of the
+/// four real worlds with `actorprefix` data (`v1_18_30`, `v1_19_30`,
+/// `v1_20_81`, the 1.26 seed world), the lowest low word any actor record
+/// uses is 1 in every one -- 0 appears in no session of any of those worlds,
+/// actor or (separately checked) `~local_player`. See
+/// `tests/actor_add_path.rs` for the per-world pin this is built on; nothing
+/// in either reference implementation's own source was found to corroborate
+/// or contradict `1` specifically, since neither reference's write path
+/// numbers the player character through the same in-process counter it uses
+/// for other entities.
+#[derive(Debug)]
+pub struct ActorSession {
+    session: i32,
+    next_low: u32,
+}
+
+impl ActorSession {
+    /// The low word [`Self::new`] seeds a fresh allocator with -- see the
+    /// struct docs' "Start value" section for the corpus evidence behind `1`
+    /// rather than `0`.
+    const FIRST_LOW: u32 = 1;
+
+    /// Builds an allocator bound to `session`, its low-word counter starting
+    /// at [`Self::FIRST_LOW`]. `pub(crate)` rather than public: the only
+    /// correct way to obtain a `session` id is
+    /// [`crate::level::Level::reserve_actor_session_id`] (via
+    /// [`crate::level::Level::begin_actor_session`]), which persists the
+    /// reservation before handing it back -- a public constructor would let
+    /// a caller build an `ActorSession` over an unreserved or already-used
+    /// session, defeating the collision safety this type exists to provide.
+    pub(crate) fn new(session: i32) -> Self {
+        Self {
+            session,
+            next_low: Self::FIRST_LOW,
+        }
+    }
+
+    /// The reserved session id this allocator hands out `UniqueID`s under --
+    /// [`crate::level::Level::reserve_actor_session_id`]'s return value at
+    /// the moment this allocator was created.
+    pub fn session(&self) -> i32 {
+        self.session
+    }
+
+    /// The next `UniqueID` this session has not yet handed out: `session` in
+    /// the high 32 bits, the current low word in the low 32 bits, zero-
+    /// extended. `None` once the low-word counter has reached `u32::MAX` --
+    /// refuses rather than wrapping back to a low word this same session has
+    /// already handed out, the same "never repeat, never wrap" invariant
+    /// [`crate::settings::LevelSettings::reserve_actor_session_id`] upholds
+    /// for the session half. Every call that returns `Some` advances the
+    /// counter by exactly one, so two calls on the same `ActorSession` never
+    /// return the same id.
+    pub fn next_unique_id(&mut self) -> Option<i64> {
+        if self.next_low == u32::MAX {
+            return None;
+        }
+        let unique_id = ((self.session as i64) << 32) | (self.next_low as i64);
+        self.next_low += 1;
+        Some(unique_id)
     }
 }
 
@@ -975,5 +1205,47 @@ mod tests {
 
         assert!(actors.add_with_derived_key(record).is_err());
         assert!(actors.is_empty());
+    }
+
+    /// [`ActorSession::next_unique_id`]'s exhaustion boundary
+    /// (`next_low == u32::MAX`) is otherwise unreachable except by actually
+    /// allocating `u32::MAX` ids, so -- like
+    /// `tests/actor_counter.rs::reserve_actor_session_id_refuses_to_wrap_past_i32_min`
+    /// seeding `LevelSettings::world_start_count` directly at its own
+    /// boundary -- this seeds `ActorSession`'s private `next_low` field
+    /// directly rather than looping to it. `ActorSession`'s fields are
+    /// deliberately private everywhere else (C-STRUCT-PRIVATE: the type has
+    /// an invariant, "never hand out the same id twice," that a public field
+    /// would let a caller violate), so this boundary check lives here as a
+    /// unit test rather than in `tests/actor_add_path.rs`, which only has
+    /// the public API to drive it with.
+    #[test]
+    fn actor_session_next_unique_id_refuses_to_wrap_past_u32_max() {
+        let mut session = ActorSession {
+            session: -1,
+            next_low: u32::MAX,
+        };
+
+        assert_eq!(session.next_unique_id(), None);
+        // Refused, not merely `None` once -- the counter must stay pinned
+        // at the boundary rather than drifting past it on repeated calls.
+        assert_eq!(session.next_unique_id(), None);
+        assert_eq!(session.next_low, u32::MAX);
+    }
+
+    /// One step below the boundary, the last valid id is handed out and the
+    /// call immediately after it hits the same refusal -- pins that the
+    /// boundary is `next_low == u32::MAX` exactly, not one off in either
+    /// direction.
+    #[test]
+    fn actor_session_next_unique_id_hands_out_the_last_id_below_the_boundary() {
+        let mut session = ActorSession {
+            session: -1,
+            next_low: u32::MAX - 1,
+        };
+
+        let last = session.next_unique_id();
+        assert_eq!(last, Some(((-1i64) << 32) | (u32::MAX - 1) as i64));
+        assert_eq!(session.next_unique_id(), None);
     }
 }

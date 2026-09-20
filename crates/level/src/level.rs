@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 use bedrock_shared::world::dimension::Dimension;
 
-use crate::actor::{ActorStorageKey, actorprefix_key_bytes, decode_actor_digest};
+use crate::actor::{ActorSession, ActorStorageKey, actorprefix_key_bytes, decode_actor_digest};
 use crate::chunk::ChunkRecords;
 use crate::chunk_version::{DEFAULT_WRITE_VERSION, FormatProfile};
 use crate::db::Database;
@@ -693,6 +693,26 @@ impl Level {
             level: self,
             dimension,
         }
+    }
+
+    /// Reserves a fresh actor session (see [`Self::reserve_actor_session_id`]
+    /// for what that persists, and why it must happen before any actor is
+    /// minted under it) and hands back an [`ActorSession`] allocator bound
+    /// to it -- the session half of a full actor-add path, paired with
+    /// [`crate::actor::ChunkActors::add_new`] for the low-word half. A caller minting
+    /// several new actors, across one chunk or several, calls this once and
+    /// threads the returned `ActorSession` through every
+    /// [`crate::actor::ChunkActors::add_new`] call in that batch, so they all land under
+    /// the one reserved session rather than each claiming (and persisting)
+    /// a session of its own.
+    ///
+    /// Returns [`Error::Invalid`] without reserving or writing anything on
+    /// a [`Level::open`] handle, or once the session counter is exhausted
+    /// at `i32::MIN` -- both exactly [`Self::reserve_actor_session_id`]'s
+    /// own failure modes; see its doc comment.
+    pub fn begin_actor_session(&mut self) -> Result<ActorSession> {
+        let session = self.reserve_actor_session_id()?;
+        Ok(ActorSession::new(session))
     }
 }
 
