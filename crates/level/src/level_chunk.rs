@@ -145,6 +145,135 @@ pub enum ChunkBiomes {
     Volumes(Biomes3d),
 }
 
+/// Why [`Chunk::encode_as`] could not honor the requested target chunk version exactly --
+/// the reason half of [`StructuralWriteReport`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[must_use]
+pub enum StructuralShortfall {
+    /// The requested target sits in a different chunk-version family than this chunk's
+    /// own decoded family ([`FormatProfile::version_family`]) -- a different terrain
+    /// container, or a different biome layout. Crossing families needs a structural
+    /// conversion this crate does not perform this wave (legacy terrain to subchunks,
+    /// non-paletted to paletted, 2D biomes to 3D biomes -- see [`Chunk::encode_as`]'s doc
+    /// comment), so the write stayed at a version this chunk's own family can honestly
+    /// claim instead: the family's own ceiling for a target *above* the family, or this
+    /// chunk's own current version, unretargeted, for a target *below* it (see
+    /// [`resolve_retarget`]'s doc comment for why the two directions are not symmetric).
+    DifferentFamily,
+    /// The *effective* target (after any [`DifferentFamily`](Self::DifferentFamily) clamp)
+    /// falls inside the 25-28 subchunk key-index offset window, but this chunk has a
+    /// subchunk whose absolute vertical index is below
+    /// [`crate::key::SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR`] (`-4`) -- deeper than that
+    /// window's `+4` key-byte arithmetic can represent as a non-negative byte. The window
+    /// was sized for the Caves-and-Cliffs preview's own extended floor (`-64`, absolute
+    /// index `-4`); a world with a deeper floor (the real `-80`, index `-5`, fixture this
+    /// case is modeled on) has no valid key byte inside it at all for its deepest sections.
+    /// The write stays at this chunk's own current version, unretargeted -- every version
+    /// inside the window has the identical problem for this chunk, so there is no "lower"
+    /// in-window version to fall back to the way [`DifferentFamily`](Self::DifferentFamily)
+    /// falls back to a family ceiling.
+    DepthUnrepresentableInOffsetWindow,
+}
+
+/// What [`Chunk::encode_as`] actually achieved against the chunk version it was asked to
+/// target -- the per-record structural half of architecture decision 6's honesty
+/// requirement: a write must report what it achieved rather than assert the target was met
+/// everywhere. [`Chunk::achieved_block_state_version`] is the companion content-axis report
+/// (a different value stamped in a different place on disk); this type carries it alongside
+/// rather than making a caller fetch it separately and risk reading it against a stale
+/// encode.
+///
+/// Every field here is read-only in practice: nothing in this crate constructs one outside
+/// [`Chunk::encode_as`], and there is no code anywhere that checks a hand-built value for
+/// internal agreement (`achieved` actually reachable from `requested` given `shortfall`, or
+/// `retargeted` actually matching `achieved != source`) -- treat a value you did not get
+/// back from `encode_as` as untrustworthy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[must_use]
+pub struct StructuralWriteReport {
+    /// The chunk version [`Chunk::encode_as`] was asked to target.
+    pub requested: u8,
+    /// The chunk version actually stamped (`0x2c`) and encoded to. Equals `requested`
+    /// whenever `shortfall` is `None`; otherwise see the matching [`StructuralShortfall`]
+    /// variant for what `achieved` falls back to.
+    pub achieved: u8,
+    /// Whether `achieved` differs from this chunk's own decode/source version
+    /// ([`Chunk::chunk_version`]). `false` for a plain re-encode at the chunk's own
+    /// version, `true` whenever the write actually moved the stamp -- independent of
+    /// `shortfall`, since a same-family retarget (say, an old paletted-2D-biome chunk
+    /// moved to a newer version still inside 8..=24) is a real retarget with no shortfall
+    /// at all.
+    pub retargeted: bool,
+    /// `Some` when `achieved` fell short of `requested`, naming why; `None` when
+    /// `achieved == requested`.
+    pub shortfall: Option<StructuralShortfall>,
+    /// This chunk's honestly achieved block-state (content) version, carried alongside
+    /// from [`Chunk::achieved_block_state_version`] rather than recomputed -- see that
+    /// method's doc comment for what `None` means here (no content-upgrade pass has run).
+    pub achieved_block_state_version: Option<i32>,
+}
+
+/// The pure decision [`Chunk::encode_as`] applies: what to actually stamp, given `source`
+/// (the chunk's own decode version), `target` (what the caller asked for), and
+/// `min_subchunk_index` -- the chunk's lowest actual subchunk absolute index, but *only*
+/// when the write is going to the Overworld (`Some` then; `None` both for a non-Overworld
+/// write, where the offset window never applies regardless of version, and for a chunk with
+/// no subchunks to have a minimum of). Factored out of `encode_as` so the decision itself
+/// -- not the record-encoding plumbing around it -- can be unit tested directly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct RetargetDecision {
+    achieved: u8,
+    retargeted: bool,
+    shortfall: Option<StructuralShortfall>,
+}
+
+/// See [`RetargetDecision`] for the parameters. Two shortfalls compose here, checked in
+/// order:
+///
+/// 1. **Family.** `target` outside [`FormatProfile::version_family(source)`] clamps down to
+///    the family's own ceiling when `target` is *above* the family (the useful "modernize
+///    an old chunk" case), but does **not** clamp up to the family floor when `target` is
+///    *below* it: clamping up would manufacture a version the caller never asked for, and
+///    -- concretely, for the `25..=255` family -- can walk the chunk into the 25-28 offset
+///    window as a side effect of a request that had nothing to do with that window. Below
+///    the family, this leaves the chunk at its own current version instead, unretargeted.
+/// 2. **Offset-window depth.** Once family clamping picks a candidate version, if that
+///    candidate falls inside the 25-28 window and `min_subchunk_index` is deeper than the
+///    window can represent, the whole retarget is refused (not merely re-clamped to a
+///    different in-window version, since every version inside the window has the identical
+///    problem for this chunk) and the chunk stays at `source`.
+///
+/// Both checks can independently leave `achieved == source`; `shortfall` always names
+/// whichever one actually fired.
+fn resolve_retarget(source: u8, target: u8, min_subchunk_index: Option<i8>) -> RetargetDecision {
+    let family = FormatProfile::version_family(source);
+
+    let (candidate, shortfall) = if family.contains(&target) {
+        (target, None)
+    } else if target < *family.start() {
+        (source, Some(StructuralShortfall::DifferentFamily))
+    } else {
+        (*family.end(), Some(StructuralShortfall::DifferentFamily))
+    };
+
+    if let Some(min_index) = min_subchunk_index
+        && crate::key::subchunk_index_to_key_checked(min_index, candidate, Dimension::Overworld)
+            .is_none()
+    {
+        return RetargetDecision {
+            achieved: source,
+            retargeted: false,
+            shortfall: Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow),
+        };
+    }
+
+    RetargetDecision {
+        achieved: candidate,
+        retargeted: candidate != source,
+        shortfall,
+    }
+}
+
 /// See [`Chunk::heightmap_origin`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum HeightmapOrigin {
@@ -357,17 +486,27 @@ impl Chunk {
         self.format
     }
 
-    /// The **structural container** version this chunk's terrain and biome records will
-    /// report as achieved on the next [`Chunk::encode`] -- the `0x2c` chunk-version byte
-    /// that picks a terrain layout and a biome layout (see [`FormatProfile`]), not the
-    /// per-palette-entry block-state schema version [`Chunk::achieved_block_state_version`]
-    /// reports. The two are different axes stamped in different places on disk (one byte
-    /// on the chunk record, a packed `int` on every individual palette entry), and this
-    /// wave is what first makes the distinction matter: nothing here moves the *structural*
-    /// container version toward a different one (see the module docs), so this always
-    /// equals [`Chunk::chunk_version`] regardless of whether a content-upgrade pass ran --
-    /// a caller must not read this as evidence that a level's write target was reached, nor
-    /// as a proxy for how far this chunk's block states were actually upgraded.
+    /// This chunk's **decode/source** structural container version -- the `0x2c`
+    /// chunk-version byte that picked a terrain layout and a biome layout (see
+    /// [`FormatProfile`]) when this chunk was decoded (or the version [`Chunk::new`] was
+    /// given), not the per-palette-entry block-state schema version
+    /// [`Chunk::achieved_block_state_version`] reports. The two are different axes stamped
+    /// in different places on disk (one byte on the chunk record, a packed `int` on every
+    /// individual palette entry).
+    ///
+    /// **This reports the decode version, consistently -- never the last encode's achieved
+    /// version.** `Chunk::encode_at`/`Chunk::encode`/`Chunk::encode_as` all take `&self` and
+    /// never mutate it, so there is no single "last encode" to reflect here even if this
+    /// method wanted to; a chunk can be encoded at several different targets (a caller
+    /// probing what each one achieves) without any of them being *the* one this method
+    /// would need to remember. A caller who needs to know what a particular encode actually
+    /// achieved reads the [`StructuralWriteReport`] that call returned instead -- this
+    /// method and that report answer different questions ("what version did this chunk come
+    /// from" versus "what version did this specific write reach") and are not
+    /// interchangeable. Exactly identical to [`Chunk::chunk_version`]; kept as a separate
+    /// name because the "achieved" framing matters when read next to
+    /// [`Chunk::achieved_block_state_version`], which genuinely does move as upgrade passes
+    /// run.
     pub fn achieved_chunk_version(&self) -> u8 {
         self.source_version.chunk_version()
     }
@@ -782,14 +921,63 @@ impl Chunk {
     }
 
     /// Encodes this chunk back to its own [`Chunk::position`]/
-    /// [`Chunk::dimension`]. Equivalent to
-    /// `self.encode_at(self.position(), self.dimension())`.
+    /// [`Chunk::dimension`], at its own [`Chunk::chunk_version`] (no retarget). Equivalent
+    /// to `self.encode_at(self.position(), self.dimension())`.
     pub fn encode(&self) -> Result<ChunkRecords> {
         self.encode_at(self.position, self.dimension)
     }
 
-    /// Encodes this chunk's terrain, biomes, and preserved records into a
-    /// fresh [`ChunkRecords`] group keyed at `position`/`dimension`.
+    /// Encodes this chunk's terrain, biomes, and preserved records into a fresh
+    /// [`ChunkRecords`] group keyed at `position`/`dimension`, at this chunk's own
+    /// [`Chunk::chunk_version`] (no retarget). Equivalent to
+    /// `self.encode_as(position, dimension, self.chunk_version())` with the
+    /// [`StructuralWriteReport`] discarded -- see [`Chunk::encode_as`] for the version-stamp
+    /// and record-layout details this shares with it, and for the retargeting form of this
+    /// call.
+    pub fn encode_at(&self, position: ChunkPosition, dimension: Dimension) -> Result<ChunkRecords> {
+        self.encode_as(position, dimension, self.chunk_version())
+            .map(|(records, _report)| records)
+    }
+
+    /// Encodes this chunk's terrain, biomes, and preserved records into a fresh
+    /// [`ChunkRecords`] group keyed at `position`/`dimension`, targeting `target` as the
+    /// structural (`0x2c`) chunk version -- architecture decision 6's per-write override.
+    /// [`crate::level::Level::put_chunk`]/[`crate::level::Level::put_chunk_at`] route
+    /// through this; a caller driving `Chunk` directly gets the same retargeting by calling
+    /// it here.
+    ///
+    /// # Retargeting: within a format family only
+    ///
+    /// `target` is honored exactly when it falls inside this chunk's own **format
+    /// family** -- [`FormatProfile::version_family`], the widest span of chunk versions
+    /// sharing this chunk's terrain container and biome layout. Inside that span,
+    /// retargeting is genuinely just re-stamping: the `0x2c` byte moves to `target`, and
+    /// every version-dependent key choice the profile table encodes (today, the subchunk
+    /// key-index offset window at versions 25-28 -- see [`crate::key::
+    /// subchunk_index_to_key`]) is recomputed against `target` rather than against this
+    /// chunk's original decode version, so a chunk retargeted into or out of that window
+    /// gets the correct key form on either side.
+    ///
+    /// When `target` sits in a *different* family -- crossing 2D biomes to/from 3D, legacy
+    /// `0x30` terrain to/from `0x2f` subchunks, or non-paletted to/from paletted subchunks
+    /// -- this does not perform that conversion. Doing so needs biome/palette construction
+    /// this module does not own (concurrently landing elsewhere in the crate); instead the
+    /// write stays at the highest version reachable inside this chunk's *own* family that
+    /// is `<= target` when `target` sits above the family (the "modernize an old chunk"
+    /// case), or at this chunk's own current version, unretargeted, when `target` sits
+    /// *below* the whole family -- clamping up to the family floor there would manufacture
+    /// a version nobody asked for and, in the `25..=255` family, silently re-enter the
+    /// 25-28 offset window as a side effect. See [`resolve_retarget`] for the full decision
+    /// and [`StructuralShortfall`] for the two distinct ways a target can fall short (family
+    /// crossing, and this chunk having a subchunk too deep for the offset window to
+    /// represent even after a family clamp lands inside it). The returned
+    /// [`StructuralWriteReport`] names whichever one applies via `shortfall`. **The stamp
+    /// written is always the achieved version, never the requested one** -- decision 6's
+    /// rule that a version stamp must not overstate what was actually converted.
+    ///
+    /// The rest of this method's behavior (preserved-record reuse at matching coordinates,
+    /// the digest-regeneration and version-stamp-presence rules) is unchanged from
+    /// [`Chunk::encode_at`]'s prior, non-retargeting behavior; see the sections below.
     ///
     /// When `position`/`dimension` match this chunk's own, the preserved
     /// group ([`Chunk::unmodelled_records`]) is reused directly: it still
@@ -838,7 +1026,29 @@ impl Chunk {
     ///   terrain or biome content to decode that stamp against; an
     ///   `Unversioned` chunk with neither stays exactly as versionless on
     ///   the way out as it was on the way in.
-    pub fn encode_at(&self, position: ChunkPosition, dimension: Dimension) -> Result<ChunkRecords> {
+    pub fn encode_as(
+        &self,
+        position: ChunkPosition,
+        dimension: Dimension,
+        target: u8,
+    ) -> Result<(ChunkRecords, StructuralWriteReport)> {
+        let source_chunk_version = self.source_version.chunk_version();
+        // Only meaningful for an Overworld write -- see `RetargetDecision`'s doc comment --
+        // and only when there is a subchunk to have a minimum of at all.
+        let min_subchunk_index = if dimension == Dimension::Overworld {
+            match &self.terrain {
+                Terrain::SubChunks(subchunks) => subchunks.keys().next().copied(),
+                Terrain::Legacy(_) => None,
+            }
+        } else {
+            None
+        };
+        let RetargetDecision {
+            achieved,
+            retargeted,
+            shortfall,
+        } = resolve_retarget(source_chunk_version, target, min_subchunk_index);
+
         let mut records = if position == self.position && dimension == self.dimension {
             self.records.clone()
         } else {
@@ -866,10 +1076,24 @@ impl Chunk {
 
         // See this method's doc comment for why the stamp is conditioned on
         // `should_stamp_version` rather than written unconditionally for
-        // any group missing both version keys.
+        // any group missing both version keys. The stamp written is always
+        // `achieved`, never `target` -- see the "retargeting" section above.
+        //
+        // `records` can arrive here already carrying a `0x2c` (or only a
+        // `0x76`) key from `self.records` -- both version keys are
+        // preserved, never taken (see this type's own field docs), so a
+        // plain re-encode at the chunk's own version leaves whichever one
+        // was there untouched and byte-identical. A genuine retarget is
+        // different: `achieved` no longer matches whatever byte that
+        // preserved `0x2c` carries, so the guard below writes over it
+        // (`insert` replaces an existing value) rather than skipping on the
+        // grounds that *some* version key is already present. `0x76` is
+        // never touched either way -- see `DecodeVersion::select`'s doc
+        // comment for why it can legitimately disagree with `0x2c` already.
         if should_stamp_version
-            && !records.contains(KeyVariant::ChunkVersion)
-            && !records.contains(KeyVariant::LegacyVersion)
+            && (retargeted
+                || (!records.contains(KeyVariant::ChunkVersion)
+                    && !records.contains(KeyVariant::LegacyVersion)))
         {
             records.insert(
                 Key {
@@ -877,11 +1101,11 @@ impl Chunk {
                     dimension,
                     data: KeyVariant::ChunkVersion,
                 },
-                vec![self.source_version.chunk_version()],
+                vec![achieved],
             );
         }
 
-        let chunk_version = self.source_version.chunk_version();
+        let chunk_version = achieved;
 
         match &self.terrain {
             Terrain::Legacy(legacy) => {
@@ -984,7 +1208,15 @@ impl Chunk {
             );
         }
 
-        Ok(records)
+        let report = StructuralWriteReport {
+            requested: target,
+            achieved,
+            retargeted,
+            shortfall,
+            achieved_block_state_version: self.achieved_block_state_version(),
+        };
+
+        Ok((records, report))
     }
 }
 
@@ -1125,6 +1357,105 @@ fn finish_legacy_resolution(
 mod tests {
     use super::*;
     use crate::actor::{decode_actor_digest, encode_actor_record};
+
+    #[test]
+    fn resolve_retarget_same_family_is_a_plain_restamp() {
+        let decision = resolve_retarget(10, 20, None);
+        assert_eq!(decision.achieved, 20);
+        assert!(decision.retargeted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_own_version_is_a_no_op() {
+        let decision = resolve_retarget(15, 15, None);
+        assert_eq!(decision.achieved, 15);
+        assert!(!decision.retargeted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_above_family_clamps_down_to_the_family_ceiling() {
+        // Source 15 is in family 8..=24; a target of 30 sits above it entirely.
+        let decision = resolve_retarget(15, 30, None);
+        assert_eq!(decision.achieved, 24);
+        assert!(decision.retargeted);
+        assert_eq!(
+            decision.shortfall,
+            Some(StructuralShortfall::DifferentFamily)
+        );
+    }
+
+    #[test]
+    fn resolve_retarget_below_family_does_not_clamp_up_and_stays_unretargeted() {
+        // Source 25 is in family 25..=255; a target of 5 sits below it entirely. This must
+        // NOT clamp up to 25 (that would manufacture a version nobody asked for and, worse,
+        // silently enter the 25-28 offset window as a side effect -- see the SHOULD-FIX
+        // item this pins).
+        let decision = resolve_retarget(25, 5, None);
+        assert_eq!(decision.achieved, 25);
+        assert!(!decision.retargeted);
+        assert_eq!(
+            decision.shortfall,
+            Some(StructuralShortfall::DifferentFamily)
+        );
+    }
+
+    #[test]
+    fn resolve_retarget_below_family_edge_case_lands_exactly_on_the_chunks_own_version() {
+        // Source already sits at its own family's floor (25); a target just below the
+        // family (24) must reproduce the source version untouched, not clamp anywhere.
+        let decision = resolve_retarget(25, 24, None);
+        assert_eq!(decision.achieved, 25);
+        assert!(!decision.retargeted);
+        assert_eq!(
+            decision.shortfall,
+            Some(StructuralShortfall::DifferentFamily)
+        );
+    }
+
+    #[test]
+    fn resolve_retarget_refuses_a_window_target_the_chunk_is_too_deep_for() {
+        // Source 40 (family 25..=255) targeted at 27 (inside the 25-28 offset window) would
+        // ordinarily be a plain in-family restamp, but this chunk's minimum subchunk index
+        // (-5) has no valid key byte inside that window.
+        let decision = resolve_retarget(40, 27, Some(-5));
+        assert_eq!(decision.achieved, 40);
+        assert!(!decision.retargeted);
+        assert_eq!(
+            decision.shortfall,
+            Some(StructuralShortfall::DepthUnrepresentableInOffsetWindow)
+        );
+    }
+
+    #[test]
+    fn resolve_retarget_allows_a_window_target_at_exactly_the_representable_floor() {
+        let decision = resolve_retarget(40, 27, Some(-4));
+        assert_eq!(decision.achieved, 27);
+        assert!(decision.retargeted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_ignores_depth_when_the_effective_target_is_outside_the_window() {
+        // Same too-deep chunk, but targeting 40 (outside 25-28) -- depth is irrelevant
+        // there, since the window's offset never applies.
+        let decision = resolve_retarget(40, 40, Some(-5));
+        assert_eq!(decision.achieved, 40);
+        assert!(!decision.retargeted);
+        assert_eq!(decision.shortfall, None);
+    }
+
+    #[test]
+    fn resolve_retarget_none_min_index_never_triggers_the_depth_shortfall() {
+        // `None` stands for "not the Overworld, or no subchunks" -- the offset window never
+        // applies to either, so depth can never be the reason for a shortfall here even
+        // when the effective target lands inside 25-28.
+        let decision = resolve_retarget(40, 27, None);
+        assert_eq!(decision.achieved, 27);
+        assert!(decision.retargeted);
+        assert_eq!(decision.shortfall, None);
+    }
 
     /// A synthetic, never-persisted chunk -- these tests are about the
     /// mutation surface and encode-time bookkeeping in this module, not

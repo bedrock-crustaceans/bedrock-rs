@@ -201,6 +201,14 @@ pub(crate) fn subchunk_key_index_is_offset(chunk_version: u8, dimension: Dimensi
 /// Saturates rather than overflowing: a raw index near `i8::MIN` inside the
 /// offset window has no valid absolute equivalent representable in `i8`, and
 /// no real subchunk index comes anywhere close, so clamping is harmless.
+///
+/// No checked counterpart exists for this direction the way
+/// [`subchunk_index_to_key_checked`] exists for the inverse. That function's `None` case
+/// is about a *write* asking this window to represent a depth it structurally cannot; this
+/// function only ever runs against a raw byte that is already on disk, so there is no
+/// "unrepresentable" outcome to reject here -- whatever byte a real key carries decodes to
+/// *some* absolute index, and if that index looks wrong, that is a fact about the world's
+/// data, not something this conversion could have caught or should refuse to perform.
 pub fn subchunk_index_from_key(raw_index: i8, chunk_version: u8, dimension: Dimension) -> i8 {
     if subchunk_key_index_is_offset(chunk_version, dimension) {
         raw_index.saturating_sub(SUBCHUNK_KEY_INDEX_OFFSET)
@@ -219,6 +227,41 @@ pub fn subchunk_index_to_key(absolute_index: i8, chunk_version: u8, dimension: D
         absolute_index.saturating_add(SUBCHUNK_KEY_INDEX_OFFSET)
     } else {
         absolute_index
+    }
+}
+
+/// The lowest absolute subchunk index the 25-28 offset window can represent as a
+/// non-negative key byte: `-`[`SUBCHUNK_KEY_INDEX_OFFSET`]. The window exists to keep the
+/// Caves-and-Cliffs preview's extended floor (`-64`, absolute index `-4`) at a non-negative
+/// key byte, and `-4` is exactly as deep as that floor goes -- it was never designed to
+/// represent anything below it. A world with a deeper floor (the real `-80`, index `-5`,
+/// floor this constant is modeled on -- see [`subchunk_index_to_key_checked`]) has no valid
+/// key byte inside this window at all for its deepest sections.
+pub const SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR: i8 = -SUBCHUNK_KEY_INDEX_OFFSET;
+
+/// The checked counterpart to [`subchunk_index_to_key`]: `None` when `chunk_version`/
+/// `dimension` puts the key in the 25-28 offset window *and* `absolute_index` is below
+/// [`SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR`], i.e. has no valid representation as a
+/// non-negative key byte inside that window. [`subchunk_index_to_key`] itself stays
+/// infallible (saturating) because every real record this crate has ever decoded through
+/// that function already came from a key that was written successfully -- it is only a
+/// *retarget* (moving an index that was never bound for this window into it) that can ask
+/// for an index the window cannot honestly represent, which is what this function exists to
+/// catch. Outside the window, or outside the Overworld, this always agrees with
+/// [`subchunk_index_to_key`], just wrapped in `Some`.
+pub fn subchunk_index_to_key_checked(
+    absolute_index: i8,
+    chunk_version: u8,
+    dimension: Dimension,
+) -> Option<i8> {
+    if subchunk_key_index_is_offset(chunk_version, dimension) {
+        if absolute_index < SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR {
+            None
+        } else {
+            Some(absolute_index.saturating_add(SUBCHUNK_KEY_INDEX_OFFSET))
+        }
+    } else {
+        Some(absolute_index)
     }
 }
 
@@ -854,6 +897,55 @@ mod tests {
         // Chunk version 28 is the last version in the window.
         assert_eq!(subchunk_index_from_key(0, 28, Dimension::Overworld), -4);
         assert_eq!(subchunk_index_to_key(-4, 28, Dimension::Overworld), 0);
+    }
+
+    #[test]
+    fn subchunk_index_to_key_checked_rejects_below_the_window_floor() {
+        // -4 is the deepest index the window can represent (byte 0); -5 has no valid byte.
+        assert_eq!(
+            subchunk_index_to_key_checked(-4, 25, Dimension::Overworld),
+            Some(0)
+        );
+        assert_eq!(
+            subchunk_index_to_key_checked(-5, 25, Dimension::Overworld),
+            None
+        );
+        assert_eq!(
+            subchunk_index_to_key_checked(-5, 28, Dimension::Overworld),
+            None
+        );
+    }
+
+    #[test]
+    fn subchunk_index_to_key_checked_agrees_with_the_infallible_form_outside_the_window() {
+        // Outside the window (by version or by dimension), every index is representable,
+        // including ones below the window's own floor -- there is no window to be deep for.
+        assert_eq!(
+            subchunk_index_to_key_checked(-5, 24, Dimension::Overworld),
+            Some(-5)
+        );
+        assert_eq!(
+            subchunk_index_to_key_checked(-5, 29, Dimension::Overworld),
+            Some(-5)
+        );
+        assert_eq!(
+            subchunk_index_to_key_checked(-5, 25, Dimension::Nether),
+            Some(-5)
+        );
+        for chunk_version in [0u8, 24, 25, 26, 27, 28, 29, 42, 255] {
+            for dimension in [Dimension::Overworld, Dimension::Nether, Dimension::End] {
+                for absolute_index in [-4i8, 0, 4, 20] {
+                    assert_eq!(
+                        subchunk_index_to_key_checked(absolute_index, chunk_version, dimension),
+                        Some(subchunk_index_to_key(
+                            absolute_index,
+                            chunk_version,
+                            dimension
+                        ))
+                    );
+                }
+            }
+        }
     }
 
     #[test]

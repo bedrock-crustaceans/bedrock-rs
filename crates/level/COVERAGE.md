@@ -17,12 +17,81 @@ value (`0x2c` preferred, `0x76` as fallback, `DecodeVersion::select` in
 
 | Chunk version(s) | Terrain | Biomes | Read | Write | Upgrade (content) | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0-2 | `0x30` LegacyTerrain | `0x2d` 2D columns | Implemented | Implemented | N/A (no content upgrade chain exists yet) | Synthetic only -- no fixture predates chunk version 15 (`tests/fixtures/README.md`). `tests/legacy_terrain.rs` (`round_trips_byte_identical_with_a_synthetic_tail`, `order_convention_places_a_known_id_in_the_right_slice_and_local_position`, `nibble_packing_pins_even_low_odd_high`) pins the codec against hand-built columns, not a real record. |
-| 3-7 | `0x2f` subchunks, non-paletted (`SubChunkVersion::NonPaletted`) | `0x2d` 2D columns | Implemented | Implemented | N/A | Synthetic only -- same gap as above; no fixture carries a non-paletted subchunk (all real corpus subchunks are version 8 or 9, per `tests/fixtures/index.json`'s `subchunk_versions`). `SubChunk::from_disk`'s non-paletted branch is exercised only by hand-built inputs in `crates/level/src/subchunk.rs`'s own unit tests. |
-| 8-24 | `0x2f` subchunks, paletted (`Limited`, subchunk version 8) | `0x2d` 2D columns | Implemented | Implemented | N/A | Real fixtures: `v1_12` (15), `v1_16` (21), `v1_17_20`/`v1_17_40`/`v1_17_40_superflat` (22 -- see note below). `tests/version_matrix.rs`'s `every_chunk_round_trips_at_both_layers` round-trips every chunk of every one of these fixtures at both layers; `tests/data2d.rs` pins `0x2d` decode/encode against the same corpus; `tests/bit_layers.rs`'s `palette_entries_round_trip_byte_identical_across_all_fixtures` pins every real `0x2f` record's palette bytes. |
-| 25-38 | `0x2f` subchunks, paletted | `0x2b` 3D volumes | Implemented | Implemented | N/A | Real fixtures: `v1_17_20_caves_and_cliffs` (25), `v1_17_40_caves_and_cliffs` (31). Versions 26-28 inherit the 25 boundary by nearest-below with no fixture carrying them directly -- see `chunk_version.rs`'s `FACT_BOUNDARIES` doc comment and the Phase 2 "Chunk-version -> format dispatch" TODO entry for the reasoning and the disagreement with one reference table (which places the 2D->3D boundary at 29, not 25). `tests/version_matrix.rs` covers every real chunk at 25 and 31; `tests/biome3d.rs`'s `decodes_and_round_trips_every_record` covers `0x2b` specifically. |
-| 39-42 | `0x2f` subchunks, paletted, negative-Y | `0x2b` 3D volumes | Implemented | Implemented | N/A | Real fixtures: `v1_18`/`v1_18_superflat` (39), `v1_18_30`/`v1_19_30`/`v1_20_81` (40). No fixture carries 41 or 42; both inherit the same 25-boundary facts by nearest-below and are otherwise untested. `tests/version_matrix.rs` covers every real chunk at 39 and 40, including `v1_20_81`'s out-of-nominal-range subchunks (see `tests/height_range.rs`). |
-| 43+ | Extrapolated from 42's facts | Extrapolated from 42's facts | Best-effort (nearest-below) | Best-effort | N/A | No fixture; `FormatProfile::extrapolated` flags the fact, `chunk_version.rs`'s `version_past_the_ceiling_extrapolates_the_newest_known_facts` pins the extrapolation logic itself, not real data. |
+| 0-2 | `0x30` LegacyTerrain | `0x2d` 2D columns | Implemented | Implemented; retarget within family 0-2 only (see "Write target" below) | Structural: N/A (this family has no `Terrain::Legacy` mutable-write path for the content pass -- see `level_chunk.rs`'s `upgrade_content` doc comment). Content: as for any chunk, per-entry, gated on a provider | Synthetic only -- no fixture predates chunk version 15 (`tests/fixtures/README.md`). `tests/legacy_terrain.rs` (`round_trips_byte_identical_with_a_synthetic_tail`, `order_convention_places_a_known_id_in_the_right_slice_and_local_position`, `nibble_packing_pins_even_low_odd_high`) pins the codec against hand-built columns, not a real record. |
+| 3-7 | `0x2f` subchunks, non-paletted (`SubChunkVersion::NonPaletted`) | `0x2d` 2D columns | Implemented | Implemented; retarget within family 3-7 only | Content: per-entry, gated on a provider | Synthetic only -- same gap as above; no fixture carries a non-paletted subchunk (all real corpus subchunks are version 8 or 9, per `tests/fixtures/index.json`'s `subchunk_versions`). `SubChunk::from_disk`'s non-paletted branch is exercised only by hand-built inputs in `crates/level/src/subchunk.rs`'s own unit tests. |
+| 8-24 | `0x2f` subchunks, paletted (`Limited`, subchunk version 8) | `0x2d` 2D columns | Implemented | Implemented; retarget within family 8-24 only | Content: per-entry, gated on a provider | Real fixtures: `v1_12` (15), `v1_16` (21), `v1_17_20`/`v1_17_40`/`v1_17_40_superflat` (22 -- see note below). `tests/version_matrix.rs`'s `every_chunk_round_trips_at_both_layers` round-trips every chunk of every one of these fixtures at both layers; `tests/data2d.rs` pins `0x2d` decode/encode against the same corpus; `tests/bit_layers.rs`'s `palette_entries_round_trip_byte_identical_across_all_fixtures` pins every real `0x2f` record's palette bytes. `tests/write_target.rs` retargets a real chunk from this family up to its family ceiling (24) and confirms the shortfall reported when a target outside 8-24 is requested. |
+| 25-38 | `0x2f` subchunks, paletted | `0x2b` 3D volumes | Implemented | Implemented; retarget within family 25-255 (see note below on why 39-42 joins this family) | Content: per-entry, gated on a provider | Real fixtures: `v1_17_20_caves_and_cliffs` (25), `v1_17_40_caves_and_cliffs` (31). Versions 26-28 inherit the 25 boundary by nearest-below with no fixture carrying them directly -- see `chunk_version.rs`'s `FACT_BOUNDARIES` doc comment and the Phase 2 "Chunk-version -> format dispatch" TODO entry for the reasoning and the disagreement with one reference table (which places the 2D->3D boundary at 29, not 25). `tests/version_matrix.rs` covers every real chunk at 25 and 31; `tests/biome3d.rs`'s `decodes_and_round_trips_every_record` covers `0x2b` specifically. |
+| 39-42 | `0x2f` subchunks, paletted, negative-Y | `0x2b` 3D volumes | Implemented | Implemented; retarget within family 25-255 | Content: per-entry, gated on a provider | Real fixtures: `v1_18`/`v1_18_superflat` (39), `v1_18_30`/`v1_19_30`/`v1_20_81` (40). No fixture carries 41 or 42; both inherit the same 25-boundary facts by nearest-below and are otherwise untested. `tests/version_matrix.rs` covers every real chunk at 39 and 40, including `v1_20_81`'s out-of-nominal-range subchunks (see `tests/height_range.rs`). `tests/write_target.rs`'s `retargeting_a_negative_y_chunk_through_the_offset_window_round_trips_semantically` retargets a real 39/40 chunk down to 27 (inside the 25-28 subchunk key-index offset window) and back, pinning the key-form change each way against a real negative-Y subchunk index. |
+| 43+ | Extrapolated from 42's facts | Extrapolated from 42's facts | Best-effort (nearest-below) | Best-effort; same family as 25-255 (nearest-below facts apply) | Content: per-entry, gated on a provider | No fixture; `FormatProfile::extrapolated` flags the fact, `chunk_version.rs`'s `version_past_the_ceiling_extrapolates_the_newest_known_facts` pins the extrapolation logic itself, not real data. |
+
+## Write target: retargeting within a format family, and what is refused
+
+[`Chunk::encode_as`](src/level_chunk.rs) (which `Chunk::encode`/`Chunk::encode_at` and
+`Level::put_chunk`/`Level::put_chunk_at` all route through) accepts a target chunk version
+and honors it exactly when the target falls inside the chunk's own **format family** --
+[`FormatProfile::version_family`](src/chunk_version.rs), the widest span of chunk versions
+that share a terrain container and a biome layout. That is precisely the four
+`FACT_BOUNDARIES` groups the table above is organized around: `0..=2`, `3..=7`, `8..=24`,
+and `25..=255`. The last one deliberately spans both the "25-38" and "39-42" rows above --
+negative-Y support (39+) is a height-range fact, not a container-format change, so no fact
+boundary exists at 39 and the two rows share one retargeting family. Inside a family,
+retargeting is exactly a re-stamp: the `0x2c` byte moves to the target, and every
+version-dependent key choice the profile table encodes (currently just the subchunk
+key-index offset window at chunk versions 25-28, `crate::key::subchunk_index_to_key`) is
+recomputed against the *target*, not the chunk's original decode version -- so a chunk
+retargeted into or out of that window gets the correct key form on either side, pinned by
+`tests/write_target.rs` against a real fixture.
+
+**Crossing families is refused, not attempted.** A target in a different family from the
+chunk's own -- 2D biomes to/from 3D, legacy `0x30` terrain to/from `0x2f` subchunks, or
+non-paletted to/from paletted subchunks -- needs constructing a different terrain container
+or biome layout, which `encode_as` does not do. What happens instead is **not symmetric**
+between the two directions, by design (`fn resolve_retarget` in `src/level_chunk.rs`):
+- **Target above the family**: clamps down to the highest version reachable inside the
+  chunk's *own* family (its ceiling) -- the useful "modernize an old chunk toward a newer
+  target" case.
+- **Target below the family**: does **not** clamp up to the family's floor. An earlier
+  version of this logic did, but clamping up manufactures a version the caller never asked
+  for, and for the `25..=255` family specifically it could silently walk the chunk into the
+  25-28 subchunk key-index offset window as an unrequested side effect. The write instead
+  stays at the chunk's own current version, unretargeted.
+
+Either way the returned `StructuralWriteReport` names this a
+`StructuralShortfall::DifferentFamily`, and **the `0x2c` stamp written is always the
+achieved version, never the requested one** -- architecture decision 6's rule that a version
+stamp must never claim more than what was actually converted. `tests/write_target.rs`'s
+`every_fixture_reports_a_shortfall_and_stamps_the_achieved_version_across_families` pins this
+for every fixture that contributes a chunk with terrain, in both directions.
+
+**A second, independent shortfall: offset-window depth.** Even a same-family, in-window
+retarget can fail. The 25-28 offset window's `+4` key-byte shift can only represent an
+absolute subchunk index down to `-4` (`crate::key::SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR`)
+-- the Caves-and-Cliffs preview's own extended floor (`-64`). A world with a deeper floor
+has subchunks the window cannot represent as a non-negative key byte at all. Real fixture
+evidence: `v1_20_81`'s recorded Overworld `subchunk_height_range` starts at `-80` (absolute
+index `-5`), while every other `negative_y` fixture (`v1_17_40_caves_and_cliffs`, `v1_18`,
+`v1_18_superflat`) bottoms out at exactly `-64` (index `-4`, representable). Retargeting one
+of `v1_20_81`'s deep chunks into the window (or a same-family target that happens to land in
+it) is refused entirely -- `achieved` stays at the chunk's own current version and
+`StructuralShortfall::DepthUnrepresentableInOffsetWindow` is reported, rather than writing a
+wrong, sign-flipped key byte while claiming the target was reached. Pinned by
+`tests/write_target.rs`'s
+`retargeting_into_the_offset_window_is_refused_for_a_chunk_too_deep_to_represent`, which
+selects its fixture by scanning `index.json`'s recorded height ranges for the actual deepest
+one rather than by name.
+
+The write-target **default** is [`DEFAULT_WRITE_VERSION`](src/chunk_version.rs) -- the newest
+chunk version the profile table confirms (tied to `KNOWN_CHUNK_VERSION_CEILING` by a
+`const _: () = assert!(...)` beside `INTRODUCED_IN`, so growing the table is what moves the
+default forward, not an independent edit), not a value declared standalone.
+`tests/write_target.rs`'s `default_write_version_is_the_derived_newest_confirmed_version`
+pins that a freshly opened `Level` actually uses it.
+
+Note: the **content** axis (a palette entry's own packed block-state version) is a separate
+value stamped in a separate place (a per-entry `int`, not the chunk's `0x2c` byte), reported
+by `Chunk::achieved_block_state_version` and carried alongside a `StructuralWriteReport` in
+its own field rather than recomputed. See the Phase 3 "upgrade chain" entry in `TODO.md` for
+that pass's own status; this section is about the structural axis only.
 
 Note on 22: `v1_17_20` and `v1_17_40`/`v1_17_40_superflat` all report chunk
 version 22 despite being different game releases, because 22 is what those

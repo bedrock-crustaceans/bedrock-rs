@@ -272,7 +272,7 @@ fn put_chunk_after_upgrade_persists_the_upgraded_palette() {
             .expect("chunk present");
         assert!(chunk.content_upgrade().is_some());
 
-        level
+        let _report = level
             .put_chunk(dimension, position, &chunk)
             .expect("put_chunk");
     }

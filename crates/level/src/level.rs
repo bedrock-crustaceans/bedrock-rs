@@ -14,12 +14,12 @@ use bedrock_shared::world::dimension::Dimension;
 
 use crate::actor::{ActorStorageKey, actorprefix_key_bytes, decode_actor_digest};
 use crate::chunk::ChunkRecords;
-use crate::chunk_version::{FormatProfile, KNOWN_CHUNK_VERSION_CEILING};
+use crate::chunk_version::{DEFAULT_WRITE_VERSION, FormatProfile};
 use crate::db::Database;
 use crate::error::{ChunkError, Error, Result};
 use crate::height_range::{self, HeightRange};
 use crate::key::{Key, KeyVariant};
-use crate::level_chunk::Chunk;
+use crate::level_chunk::{Chunk, StructuralWriteReport};
 use crate::metadata_dictionary::{self, MetadataDictionary};
 use crate::provider::ContentProvider;
 use crate::settings::{LevelSettings, VersionInfo};
@@ -66,16 +66,13 @@ pub struct Level {
     /// referenced it -- see `crate::metadata_dictionary`'s module docs --
     /// so a dimension can be worth reporting even with zero live chunks).
     dimensions: Vec<Dimension>,
-    /// The chunk version [`Level::put_chunk`] targets by default. Defaults
-    /// to [`KNOWN_CHUNK_VERSION_CEILING`], the newest version this crate's
-    /// format tables fully describe -- not a separate hardcoded constant,
-    /// per architecture decision 6. Honesty caveat, stated once here rather
-    /// than at every call site: this wave has no content-upgrade machinery
-    /// (see `crate::level_chunk`'s module docs), so nothing currently moves
-    /// a chunk's data toward this value on write -- [`Chunk::encode`]
-    /// always re-encodes at the chunk's own source version. This field
-    /// exists so the API surface and the caller-visible preference are in
-    /// place for when that machinery lands.
+    /// The chunk version [`Level::put_chunk`] targets by default. Defaults to
+    /// [`DEFAULT_WRITE_VERSION`], per architecture decision 6: the newest chunk version this
+    /// crate has a confirmed writer for, derived from the chunk-version profile table
+    /// rather than declared as a separate constant (see that constant's doc comment for the
+    /// derivation). [`Level::put_chunk`] retargets through [`Chunk::encode_as`], which is a
+    /// best-effort structural retarget -- see its doc comment for what "within a format
+    /// family" means and what crossing families falls back to.
     write_version: u8,
     /// `true` for a [`Level::open`] handle, `false` for [`Level::open_rw`].
     /// The two constructors otherwise do identical work (see
@@ -173,7 +170,7 @@ impl Level {
             dictionary,
             positions,
             dimensions,
-            write_version: KNOWN_CHUNK_VERSION_CEILING,
+            write_version: DEFAULT_WRITE_VERSION,
             read_only,
             provider: None,
         })
@@ -215,14 +212,15 @@ impl Level {
         self.settings.level_name = name.into();
     }
 
-    /// The chunk version [`Level::put_chunk`] targets by default. See the
-    /// struct docs' honesty caveat -- this is a preference this wave
-    /// records but does not yet act on.
+    /// The chunk version [`Level::put_chunk`] targets by default -- retargeting a chunk's
+    /// structural container to this version wherever [`Chunk::encode_as`] can honor it
+    /// within the chunk's own format family; see that method's doc comment.
     pub fn write_version(&self) -> u8 {
         self.write_version
     }
 
-    /// Overrides the chunk version [`Level::put_chunk`] targets by default.
+    /// Overrides the chunk version [`Level::put_chunk`] targets by default -- decision 6's
+    /// level-wide pin. Use [`Level::put_chunk_at`] to override it for one write instead.
     pub fn set_write_version(&mut self, version: u8) {
         self.write_version = version;
     }
@@ -377,9 +375,19 @@ impl Level {
         })
     }
 
-    /// Writes `chunk` to `position` in `dimension`, re-encoding its
-    /// terrain, biomes, and preserved records (see
-    /// [`Chunk::encode_at`]) and updating the position index -- and, since
+    /// Writes `chunk` to `position` in `dimension` at this level's [`Level::write_version`]
+    /// -- equivalent to `self.put_chunk_at(dimension, position, chunk, self.write_version())`.
+    ///
+    /// Two different ways to opt out of this default, for two different scopes: to pin the
+    /// target for *this one write* without touching the level's own default, call
+    /// [`Level::put_chunk_at`] directly with an explicit target -- most usefully
+    /// `chunk.chunk_version()`, which reproduces the chunk's own on-disk version
+    /// byte-identically (no retarget at all, the same as driving [`Chunk::encode_at`]
+    /// outside a `Level` entirely). To change what *every* future `put_chunk` call on this
+    /// level defaults to, call [`Level::set_write_version`] instead.
+    ///
+    /// Re-encodes `chunk`'s terrain, biomes, and preserved records (see
+    /// [`Chunk::encode_as`]) and updates the position index -- and, since
     /// `chunk`'s actor edits reach only as far as [`Chunk::encode_at`]
     /// itself can carry them (its regenerated `digp` value, chunk-scoped
     /// like everything else in [`ChunkRecords`]), also applies
@@ -447,7 +455,28 @@ impl Level {
         dimension: Dimension,
         position: ChunkPosition,
         chunk: &Chunk,
-    ) -> Result<()> {
+    ) -> Result<StructuralWriteReport> {
+        self.put_chunk_at(dimension, position, chunk, self.write_version)
+    }
+
+    /// [`Level::put_chunk`] with an explicit per-write target, overriding
+    /// [`Level::write_version`] for this call only -- architecture decision 6's per-write
+    /// override ("for the whole level or for an individual write"). Everything else about
+    /// this call -- the actor-write pairing, the read-only guard, the stale-record clearing
+    /// at a different position, the fast-path caveat -- is exactly [`Level::put_chunk`]'s
+    /// own behavior; see its doc comment.
+    ///
+    /// Returns the [`StructuralWriteReport`] [`Chunk::encode_as`] produced for `target`, so
+    /// a caller pinning a version this chunk cannot structurally reach (a different format
+    /// family -- see [`Chunk::encode_as`]'s doc comment) can tell it fell short without a
+    /// second call.
+    pub fn put_chunk_at(
+        &mut self,
+        dimension: Dimension,
+        position: ChunkPosition,
+        chunk: &Chunk,
+        target: u8,
+    ) -> Result<StructuralWriteReport> {
         if self.read_only {
             return Err(Error::Invalid(
                 "a read-only level (opened via Level::open; use Level::open_rw to write chunks)",
@@ -455,7 +484,7 @@ impl Level {
         }
 
         let same_spot = dimension == chunk.dimension() && position == chunk.position();
-        let encoded = chunk.encode_at(position, dimension)?;
+        let (encoded, report) = chunk.encode_as(position, dimension, target)?;
         let actor_writes = chunk.encode_actor_writes()?;
 
         if !same_spot && let Some(existing) = ChunkRecords::read(&self.db, position, dimension)? {
@@ -481,7 +510,7 @@ impl Level {
             self.dimensions.sort_by_key(|&d| i32::from(d));
         }
 
-        Ok(())
+        Ok(report)
     }
 
     /// Deletes every record of the chunk at `position` in `dimension`, if

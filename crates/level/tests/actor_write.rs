@@ -514,7 +514,7 @@ fn level_put_chunk_applies_an_actor_removal_end_to_end() {
 
         let mut chunk = level.chunk(dimension, position).unwrap().unwrap();
         chunk.actors_mut().remove(&removed_key);
-        level.put_chunk(dimension, position, &chunk).unwrap();
+        let _report = level.put_chunk(dimension, position, &chunk).unwrap();
 
         assert!(
             level

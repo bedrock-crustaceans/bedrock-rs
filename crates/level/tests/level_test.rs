@@ -520,7 +520,7 @@ fn put_chunk_can_introduce_a_brand_new_chunk() {
     assert!(!level.chunk_positions(dimension).any(|p| p == new_position));
 
     let chunk = Chunk::new(new_position, dimension, level.write_version());
-    level.put_chunk(dimension, new_position, &chunk).unwrap();
+    let _report = level.put_chunk(dimension, new_position, &chunk).unwrap();
 
     assert!(level.chunk_positions(dimension).any(|p| p == new_position));
     let read_back = level.chunk(dimension, new_position).unwrap();
@@ -591,8 +591,17 @@ fn put_chunk_moves_a_chunk_to_a_different_occupied_position() {
         target_before.iter().map(|(k, _)| k.data).collect();
     let expected_after_keys: HashSet<KeyVariant> = expected_after_map.keys().copied().collect();
 
-    level
-        .put_chunk(dimension, target_position, &source_chunk)
+    // Pinned at the chunk's own version via `put_chunk_at`: this test is about
+    // stale-record clearing on a cross-position move, not write-target retargeting, and
+    // `expected_after_map` above was built with `encode_at` (no retarget) -- `put_chunk`'s
+    // own default (the level's write-target version) would diverge from that on purpose.
+    let _report = level
+        .put_chunk_at(
+            dimension,
+            target_position,
+            &source_chunk,
+            source_chunk.chunk_version(),
+        )
         .unwrap();
 
     let actual_after = ChunkRecords::read(level.raw(), target_position, dimension)

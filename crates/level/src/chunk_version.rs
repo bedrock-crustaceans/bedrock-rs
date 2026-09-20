@@ -11,6 +11,8 @@
 //! preview offset. This module is pure data and lookup -- it decodes
 //! nothing itself.
 
+use std::ops::RangeInclusive;
+
 use bedrock_shared::world::dimension::Dimension;
 
 use crate::key::subchunk_key_index_is_offset;
@@ -45,6 +47,23 @@ pub enum BiomeForm {
 /// The newest chunk version this table has a confirmed entry for. A queried
 /// version above this is extrapolated: see [`FormatProfile::extrapolated`].
 pub const KNOWN_CHUNK_VERSION_CEILING: u8 = 42;
+
+/// The newest chunk version [`crate::level_chunk::Chunk::encode_as`] has a confirmed writer
+/// for, and therefore [`crate::level::Level`]'s write-target default (architecture decision
+/// 6 in `TODO.md`: "the newest version this crate implements a writer for," moving as
+/// writers land rather than a value declared independently of them).
+///
+/// This equals [`KNOWN_CHUNK_VERSION_CEILING`] deliberately, not a second number a reviewer
+/// has to notice must be kept in sync with it by hand: encoding itself is structurally
+/// generic over any `u8` (every version resolves to *some* [`FormatProfile`], including a
+/// version past the ceiling, via nearest-below inheritance), so "has a writer" cannot mean
+/// merely "does not panic" -- that would be true of every `u8` and give a vacuous default.
+/// The meaningful cut is "confirmed, not extrapolated" ([`FormatProfile::extrapolated`]),
+/// which is exactly what [`KNOWN_CHUNK_VERSION_CEILING`] already marks, and the
+/// `const _: () = assert!(...)` beside [`INTRODUCED_IN`] ties that constant's value to the
+/// table's own length, so growing [`INTRODUCED_IN`] with a matching version bump is what
+/// moves this default forward -- not an independent edit here.
+pub const DEFAULT_WRITE_VERSION: u8 = KNOWN_CHUNK_VERSION_CEILING;
 
 /// A fact-boundary: the format facts below hold from `from_version` up to
 /// (but not including) the next entry's `from_version`, or forever past the
@@ -105,6 +124,14 @@ const FACT_BOUNDARIES: &[FactBoundary] = &[
 /// corresponding public release to attach the bump to, so the shared value
 /// is the earliest point any of them could have first appeared, not a claim
 /// that all of them debuted simultaneously.
+/// Ties [`KNOWN_CHUNK_VERSION_CEILING`] to [`INTRODUCED_IN`]'s own length rather than
+/// letting the two drift: the array's type below is sized off the constant, so shrinking
+/// or growing the table without updating the constant to match fails to compile, and
+/// growing the table *with* a matching bump is exactly the "moves as writers land"
+/// mechanism [`crate::level::DEFAULT_WRITE_VERSION`] depends on for its own derivation --
+/// see that constant's doc comment.
+const _: () = assert!(INTRODUCED_IN.len() == KNOWN_CHUNK_VERSION_CEILING as usize + 1);
+
 const INTRODUCED_IN: [Option<(i32, i32, i32, i32)>; KNOWN_CHUNK_VERSION_CEILING as usize + 1] = [
     /* 0  */ Some((0, 9, 0, 0)),
     /* 1  */ Some((0, 9, 2, 0)),
@@ -220,6 +247,35 @@ impl FormatProfile {
             introduced_in,
             extrapolated,
         }
+    }
+
+    /// The closed range of chunk versions that share `chunk_version`'s terrain container
+    /// and biome layout -- the widest span a structural retarget
+    /// ([`crate::level_chunk::Chunk::encode_as`]) may move within without converting
+    /// between terrain or biome forms (legacy terrain to subchunks, non-paletted to
+    /// paletted, 2D biomes to 3D). Derived directly from [`FACT_BOUNDARIES`]: a family
+    /// starts at its fact-boundary entry's `from_version` and runs up to (but not
+    /// including) the next entry's, or to [`u8::MAX`] for the last, open-ended entry.
+    ///
+    /// This is exactly the four [`FACT_BOUNDARIES`] entries, so it has four distinct
+    /// families for the whole `u8` range: `0..=2`, `3..=7`, `8..=24`, and `25..=255`. The
+    /// last one covers both the "paletted 3D" and "paletted 3D, negative-Y" chunk-version
+    /// ranges the write-target task and `COVERAGE.md` describe separately (25-38 and
+    /// 39-42): negative-Y support is a height-range consequence, not a container-format
+    /// change -- no fact boundary exists at 39, and the subchunk key-index offset window
+    /// (25-28 only, [`subchunk_key_index_is_offset`]) is a target-dependent detail *within*
+    /// this one family, not a family split of its own.
+    pub fn version_family(chunk_version: u8) -> RangeInclusive<u8> {
+        let idx = FACT_BOUNDARIES
+            .iter()
+            .rposition(|boundary| boundary.from_version <= chunk_version)
+            .expect("FACT_BOUNDARIES has an entry starting at version 0");
+        let start = FACT_BOUNDARIES[idx].from_version;
+        let end = FACT_BOUNDARIES
+            .get(idx + 1)
+            .map(|boundary| boundary.from_version - 1)
+            .unwrap_or(u8::MAX);
+        start..=end
     }
 }
 
@@ -389,6 +445,43 @@ mod tests {
             DecodeVersion::select(None, None).format_profile().terrain,
             TerrainLocation::LegacyTerrain
         );
+    }
+
+    #[test]
+    fn default_write_version_is_tied_to_the_introduced_in_table_length() {
+        // Not a comparison of two literals: `INTRODUCED_IN`'s own array-size type
+        // annotation is written in terms of `KNOWN_CHUNK_VERSION_CEILING`, so this
+        // assertion (and the `const _` beside the table) is what makes growing the table
+        // without bumping the ceiling a compile error rather than a silent drift.
+        assert_eq!(DEFAULT_WRITE_VERSION as usize, INTRODUCED_IN.len() - 1);
+        assert_eq!(DEFAULT_WRITE_VERSION, KNOWN_CHUNK_VERSION_CEILING);
+    }
+
+    #[test]
+    fn version_family_groups_match_the_fact_boundaries() {
+        assert_eq!(FormatProfile::version_family(0), 0..=2);
+        assert_eq!(FormatProfile::version_family(2), 0..=2);
+        assert_eq!(FormatProfile::version_family(3), 3..=7);
+        assert_eq!(FormatProfile::version_family(7), 3..=7);
+        assert_eq!(FormatProfile::version_family(8), 8..=24);
+        assert_eq!(FormatProfile::version_family(24), 8..=24);
+        assert_eq!(FormatProfile::version_family(25), 25..=255);
+        assert_eq!(FormatProfile::version_family(38), 25..=255);
+        assert_eq!(FormatProfile::version_family(39), 25..=255);
+        assert_eq!(FormatProfile::version_family(42), 25..=255);
+        // Past the confirmed ceiling too -- the last family is open-ended.
+        assert_eq!(FormatProfile::version_family(255), 25..=255);
+    }
+
+    #[test]
+    fn version_family_25_38_and_39_42_are_one_family() {
+        // The write-target task and COVERAGE.md describe these as two chunk-version
+        // ranges, but both are paletted-3D at the container-format level (negative-Y is
+        // a height-range fact, not a format-family split) -- see `version_family`'s doc
+        // comment.
+        let a = FormatProfile::version_family(27);
+        let b = FormatProfile::version_family(40);
+        assert_eq!(a, b);
     }
 
     #[test]
