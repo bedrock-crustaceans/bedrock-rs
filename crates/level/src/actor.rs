@@ -11,8 +11,13 @@
 //!   (not chunk-scoped) key of its own, `b"actorprefix"` followed by that
 //!   same 8 bytes, holding one uncompressed little-endian NBT compound with
 //!   the actor's full state. The storage key is derived from the entity's
-//!   `UniqueID` rather than being that value verbatim, and this crate never
-//!   computes that derivation -- it only carries the key bytes through.
+//!   `UniqueID` rather than being that value verbatim. This crate computes
+//!   only the two corpus-proven formulas that derivation actually takes
+//!   ([`derive_storage_key`]) and, given a whole record, prefers the
+//!   record's own embedded copy of its key over recomputing one
+//!   ([`storage_key_for_record`]) -- see that function's doc comment for
+//!   exactly what is and is not established about the dispatch between the
+//!   two formulas.
 //! - **Legacy (`0x32`).** [`KeyVariant::Entity`] holds a bare concatenation
 //!   of little-endian NBT compounds with no count prefix, read until the
 //!   value is exhausted. Also an ordinary `ChunkRecords` member.
@@ -46,12 +51,12 @@
 //! dangling entry left over from before an edit quietly drops out, since a
 //! digest recomputed from the actual actor set never re-includes something
 //! it could not resolve to a record in the first place. [`ChunkActors::add`]
-//! requires the caller to supply the storage key rather than deriving one
-//! from the entity's `UniqueID`: as the module docs above state, this crate
-//! does not know that derivation, so guessing at it here would be exactly
-//! the kind of fabrication decision 11 rules out -- a caller that has (or
-//! can compute) the real derivation passes the key it produces; a caller
-//! that does not has no honest way to synthesize one.
+//! still requires the caller to supply the storage key directly, for a
+//! caller that already carries one through from somewhere else;
+//! [`ChunkActors::add_with_derived_key`] is the convenience layered on top
+//! for a caller that only has the NBT record, deriving the key via
+//! [`storage_key_for_record`] and erroring rather than fabricating one when
+//! that function cannot -- see its own doc comment for when that happens.
 //!
 //! `actorprefix` writes and deletions are a separate concern from `digp`
 //! itself, because `actorprefix` keys have no chunk coordinates and so can
@@ -78,6 +83,7 @@ use crate::chunk::ChunkRecords;
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::key::KeyVariant;
+use crate::map_data;
 
 /// The ASCII prefix on an `actorprefix` key.
 pub const ACTOR_PREFIX: &[u8] = b"actorprefix";
@@ -93,8 +99,8 @@ pub const ACTOR_PREFIX_KEY_LEN: usize = ACTOR_PREFIX.len() + ACTOR_STORAGE_KEY_L
 /// The 8-byte on-disk actor storage key: one entry of a `digp` digest, and
 /// the suffix of the `actorprefix` key it names. Derived from the entity's
 /// `UniqueID` long rather than being that long verbatim (see the module
-/// docs) -- this crate carries the bytes through without computing or
-/// interpreting them.
+/// docs); [`derive_storage_key`] and [`storage_key_for_record`] are the two
+/// ways this crate computes one instead of merely carrying bytes through.
 ///
 /// A fixed-size `[u8; 8]`, not [`bstr::BString`]: the settled NBT-string
 /// finding (`tests/nbt_actor_storage_key.rs`) is specifically that these
@@ -130,6 +136,97 @@ pub fn parse_actorprefix_key(bytes: &[u8]) -> Option<ActorStorageKey> {
     Some(storage_key)
 }
 
+/// Derives the storage key for an actor whose `UniqueID` is `unique_id`,
+/// dispatched on whether that actor's record carries an `internalComponents`
+/// compound.
+///
+/// Two formulas, both corpus-complete (7,712/7,712 real records across the
+/// four fixtures with `actorprefix` data): with `has_internal_components`
+/// true, `key = BE32(-(unique_id >> 32)) ++ BE32(unique_id as i32)`
+/// (7,631/7,631 real records that carry the compound); with it false,
+/// `key = LE64((unique_id as i32) as u32 as u64)` -- the low 32 bits alone,
+/// zero-extended, with no session component at all (81/81 real records that
+/// lack the compound, every one a `minecraft:painting`, across three of the
+/// four worlds; the fourth has no paintings). Both counts, and the fact that
+/// presence of `internalComponents` is the *only* thing that predicts which
+/// formula a real record uses (not the entity identifier -- paintings
+/// appear on both sides), are pinned in `tests/actor_storage_key.rs`.
+///
+/// The dispatch itself is observed, not explained: nothing in this crate's
+/// corpus says what `internalComponents` *is* or why some paintings lack
+/// it, and this function does not guess -- the 81 known formula-B records
+/// stay a narrow, painting-only slice of the corpus rather than a rule
+/// verified for any other identifier.
+///
+/// Never panics on any `i64` input, including `unique_id`s whose session
+/// half is `i32::MIN` -- negating it overflows `i32` but not the `i64`
+/// domain the negation runs in, so the result wraps via the final cast
+/// rather than panicking (decision 11: malformed *records* are an error,
+/// but a wide, in-range `i64` is not malformed).
+pub fn derive_storage_key(unique_id: i64, has_internal_components: bool) -> ActorStorageKey {
+    if has_internal_components {
+        let session = -(unique_id >> 32);
+        let mut out = [0u8; ACTOR_STORAGE_KEY_LEN];
+        out[..4].copy_from_slice(&(session as i32).to_be_bytes());
+        out[4..].copy_from_slice(&(unique_id as i32).to_be_bytes());
+        out
+    } else {
+        let low = ((unique_id as i32) as u32) as u64;
+        low.to_le_bytes()
+    }
+}
+
+/// The storage key `record` itself asserts or implies, preferring what the
+/// record says over recomputing anything.
+///
+/// Tries, in order:
+/// 1. The record's own embedded copy,
+///    `internalComponents.EntityStorageKeyComponent.StorageKey`, if present
+///    as an NBT string tag exactly 8 bytes long -- returned verbatim, not
+///    merely checked for plausibility. Corpus-verified: every one of the
+///    7,631 real records carrying `internalComponents` also carries this
+///    field, and its bytes equal the digest key that names the record byte
+///    for byte in all 7,631 cases (0 mismatches). This is the preferred
+///    branch because it costs nothing to get wrong that recomputing does
+///    not also cost -- the bytes are already sitting in the record this
+///    crate just decoded.
+/// 2. Failing that, [`derive_storage_key`] against the record's own
+///    `UniqueID` (a `Long` field) and whether it carries
+///    `internalComponents` at all -- covers a record with the compound but,
+///    hypothetically, no embedded key field inside it (unobserved in the
+///    corpus; every real `internalComponents` record has one) and every
+///    real formula-B record, none of which carry the compound or the
+///    embedded field to begin with.
+/// 3. `None` if the record has neither an embedded key nor a `UniqueID` to
+///    derive one from -- there is nothing here to build a key out of, and
+///    per decision 11 this function does not fabricate one.
+pub fn storage_key_for_record(record: &nbtx::Value) -> Option<ActorStorageKey> {
+    if let Some(key) = embedded_storage_key(record) {
+        return Some(key);
+    }
+    let unique_id = map_data::long(record, "UniqueID")?;
+    let has_internal_components = map_data::field(record, "internalComponents").is_some();
+    Some(derive_storage_key(unique_id, has_internal_components))
+}
+
+/// The `internalComponents.EntityStorageKeyComponent.StorageKey` NBT string
+/// tag of `record`, if present in that shape and exactly 8 bytes long --
+/// the record's own embedded copy of its storage key. See
+/// [`storage_key_for_record`] for why this is preferred over recomputing
+/// one, and `tests/nbt_actor_storage_key.rs` for the raw-byte (frequently
+/// non-UTF-8) nature of this field.
+fn embedded_storage_key(record: &nbtx::Value) -> Option<ActorStorageKey> {
+    let internal_components = map_data::field(record, "internalComponents")?;
+    let component = map_data::field(internal_components, "EntityStorageKeyComponent")?;
+    let nbtx::Value::Compound(component) = component else {
+        return None;
+    };
+    let nbtx::Value::String(key) = component.get("StorageKey".as_bytes())? else {
+        return None;
+    };
+    ActorStorageKey::try_from(key.as_slice()).ok()
+}
+
 /// Decodes a `digp` value: a flat array of [`ActorStorageKey`]s with no
 /// count or length prefix of its own, `len / 8` entries in on-disk order.
 ///
@@ -142,10 +239,7 @@ pub fn decode_actor_digest(bytes: &[u8]) -> Result<Vec<ActorStorageKey>> {
             "digp value length is not a multiple of 8 bytes",
         ));
     }
-    Ok(bytes
-        .chunks_exact(ACTOR_STORAGE_KEY_LEN)
-        .map(|chunk| chunk.try_into().expect("chunk is exactly 8 bytes"))
-        .collect())
+    Ok(bytes.as_chunks::<ACTOR_STORAGE_KEY_LEN>().0.to_vec())
 }
 
 /// Encodes a `digp` value: the inverse of [`decode_actor_digest`], and its
@@ -324,13 +418,13 @@ impl ChunkActors {
     /// already present under it -- an add-or-modify, not add-only, since
     /// this crate has no separate "edit an existing actor's NBT" entry
     /// point and remove-then-add through the same key is the only way to
-    /// change one. `storage_key` is never derived here: see the module
-    /// docs' write-side section for why a caller-supplied key is the only
-    /// honest contract this crate can offer, whether the entity is
-    /// genuinely new or being re-added under a key recovered some other
-    /// way. Also clears `storage_key` out of [`Self::dangling`] if it was
-    /// there -- a caller that supplies a record for a previously-dangling
-    /// reference has just resolved it.
+    /// change one. `storage_key` is never derived here: this is the
+    /// explicit-key entry point for a caller that already has one --
+    /// [`Self::add_with_derived_key`] is the convenience that derives one
+    /// instead, for a caller that only has the NBT record. Also clears
+    /// `storage_key` out
+    /// of [`Self::dangling`] if it was there -- a caller that supplies a
+    /// record for a previously-dangling reference has just resolved it.
     ///
     /// The record only actually reaches disk once this chunk is encoded and
     /// the resulting [`ActorWriteSet`] (see [`Self::write_plan`]) is applied
@@ -346,6 +440,25 @@ impl ChunkActors {
         }
         self.dangling.retain(|key| *key != storage_key);
         self.added.insert(storage_key);
+    }
+
+    /// [`Self::add`]'s convenience counterpart for a caller that has a whole
+    /// actor record but not (or does not want to compute) its storage key:
+    /// derives one via [`storage_key_for_record`] and adds `value` under it,
+    /// returning the key that was used.
+    ///
+    /// Errors rather than fabricating a key when `storage_key_for_record`
+    /// cannot produce one -- the record has neither an embedded
+    /// `internalComponents.EntityStorageKeyComponent.StorageKey` nor a
+    /// `UniqueID` `Long` field to derive one from. Per decision 11, that is
+    /// a genuinely unmodelled input this method reports rather than guesses
+    /// past.
+    pub fn add_with_derived_key(&mut self, value: nbtx::Value) -> Result<ActorStorageKey> {
+        let storage_key = storage_key_for_record(&value).ok_or(Error::Invalid(
+            "actor record has no embedded storage key and no UniqueID to derive one from",
+        ))?;
+        self.add(storage_key, value);
+        Ok(storage_key)
     }
 
     /// Removes and returns the resolved actor stored under `storage_key`,
@@ -702,5 +815,165 @@ mod tests {
             deletions: vec![],
         };
         assert!(!non_empty.is_empty());
+    }
+
+    /// Packs a session/low-word pair the same way a real actor's `UniqueID`
+    /// long does: the session (typically negative) in the high 32 bits, the
+    /// low word's raw bit pattern (zero-extended) in the low 32 bits.
+    fn pack_unique_id(session: i32, low: i32) -> i64 {
+        ((session as i64) << 32) | (low as u32 as i64)
+    }
+
+    #[test]
+    fn derive_storage_key_formula_a_negates_the_session_and_keeps_the_low_word() {
+        let unique_id = pack_unique_id(-5, 12);
+        assert_eq!(
+            derive_storage_key(unique_id, true),
+            [0, 0, 0, 5, 0, 0, 0, 12]
+        );
+    }
+
+    #[test]
+    fn derive_storage_key_formula_a_handles_a_negative_low_word() {
+        let unique_id = pack_unique_id(-1, -1);
+        assert_eq!(
+            derive_storage_key(unique_id, true),
+            [0, 0, 0, 1, 0xff, 0xff, 0xff, 0xff]
+        );
+    }
+
+    #[test]
+    fn derive_storage_key_formula_a_handles_the_zero_session_the_1_26_world_uses() {
+        // The 1.26 seed world's actors include a `0` session -- formula A
+        // must not special-case session zero (negating it is still zero).
+        let unique_id = pack_unique_id(0, 42);
+        assert_eq!(
+            derive_storage_key(unique_id, true),
+            [0, 0, 0, 0, 0, 0, 0, 42]
+        );
+    }
+
+    #[test]
+    fn derive_storage_key_formula_a_wraps_rather_than_panics_on_an_i32_min_session() {
+        // Session `i32::MIN` negates to `2^31`, which does not fit back into
+        // an `i32` -- the final cast wraps it back to `i32::MIN` rather than
+        // panicking. Per decision 11 this is a wide but well-formed `i64`
+        // input, not malformed data, so it must never panic.
+        let unique_id = (i32::MIN as i64) << 32;
+        assert_eq!(
+            derive_storage_key(unique_id, true),
+            [0x80, 0, 0, 0, 0, 0, 0, 0]
+        );
+    }
+
+    #[test]
+    fn derive_storage_key_formula_b_keeps_only_the_zero_extended_low_word() {
+        // The session half (here `7`) plays no part in formula B at all --
+        // only the low 32 bits, zero-extended into a little-endian u64.
+        let unique_id = pack_unique_id(7, -8);
+        assert_eq!(
+            derive_storage_key(unique_id, false),
+            [0xf8, 0xff, 0xff, 0xff, 0, 0, 0, 0]
+        );
+    }
+
+    #[test]
+    fn derive_storage_key_formula_b_handles_a_positive_low_word() {
+        let unique_id = pack_unique_id(-2, 100);
+        assert_eq!(
+            derive_storage_key(unique_id, false),
+            [100, 0, 0, 0, 0, 0, 0, 0]
+        );
+    }
+
+    /// Builds a minimal synthetic `internalComponents` compound carrying an
+    /// `EntityStorageKeyComponent.StorageKey` string tag, in the shape real
+    /// records use (see `tests/nbt_actor_storage_key.rs`).
+    fn internal_components_with_key(key: &[u8]) -> nbtx::Value {
+        let mut component = nbtx::Compound::default();
+        component.insert("StorageKey".into(), nbtx::Value::String(key.into()));
+        let mut internal = nbtx::Compound::default();
+        internal.insert(
+            "EntityStorageKeyComponent".into(),
+            nbtx::Value::Compound(component),
+        );
+        nbtx::Value::Compound(internal)
+    }
+
+    #[test]
+    fn storage_key_for_record_prefers_the_embedded_key_over_recomputing_one() {
+        let mut root = nbtx::Compound::default();
+        // A `UniqueID` that would derive to a completely different key under
+        // formula A -- proves the embedded field wins outright rather than
+        // merely being consulted.
+        root.insert("UniqueID".into(), nbtx::Value::Long(pack_unique_id(-5, 12)));
+        root.insert(
+            "internalComponents".into(),
+            internal_components_with_key(&[9, 9, 9, 9, 9, 9, 9, 9]),
+        );
+        let record = nbtx::Value::Compound(root);
+
+        assert_eq!(
+            storage_key_for_record(&record),
+            Some([9, 9, 9, 9, 9, 9, 9, 9])
+        );
+    }
+
+    #[test]
+    fn storage_key_for_record_derives_formula_a_when_internal_components_has_no_embedded_key() {
+        let mut root = nbtx::Compound::default();
+        root.insert("UniqueID".into(), nbtx::Value::Long(pack_unique_id(-5, 12)));
+        // `internalComponents` present, but empty -- no embedded
+        // `EntityStorageKeyComponent.StorageKey` for `storage_key_for_record`
+        // to find.
+        root.insert(
+            "internalComponents".into(),
+            nbtx::Value::Compound(nbtx::Compound::default()),
+        );
+        let record = nbtx::Value::Compound(root);
+
+        assert_eq!(
+            storage_key_for_record(&record),
+            Some([0, 0, 0, 5, 0, 0, 0, 12])
+        );
+    }
+
+    #[test]
+    fn storage_key_for_record_derives_formula_b_when_internal_components_is_absent() {
+        let mut root = nbtx::Compound::default();
+        root.insert("UniqueID".into(), nbtx::Value::Long(pack_unique_id(7, -8)));
+        let record = nbtx::Value::Compound(root);
+
+        assert_eq!(
+            storage_key_for_record(&record),
+            Some([0xf8, 0xff, 0xff, 0xff, 0, 0, 0, 0])
+        );
+    }
+
+    #[test]
+    fn storage_key_for_record_returns_none_without_a_unique_id_or_an_embedded_key() {
+        let record = nbtx::Value::Compound(nbtx::Compound::default());
+        assert_eq!(storage_key_for_record(&record), None);
+    }
+
+    #[test]
+    fn add_with_derived_key_derives_a_key_and_adds_under_it() {
+        let mut actors = ChunkActors::default();
+        let mut root = nbtx::Compound::default();
+        root.insert("UniqueID".into(), nbtx::Value::Long(pack_unique_id(7, -8)));
+        let record = nbtx::Value::Compound(root);
+
+        let key = actors.add_with_derived_key(record).unwrap();
+        assert_eq!(key, [0xf8, 0xff, 0xff, 0xff, 0, 0, 0, 0]);
+        assert_eq!(actors.digest_keys(), vec![key]);
+    }
+
+    #[test]
+    fn add_with_derived_key_errors_without_fabricating_a_key() {
+        let mut actors = ChunkActors::default();
+        let record = nbtx::Value::Compound(nbtx::Compound::default());
+
+        assert!(actors.add_with_derived_key(record).is_err());
+        assert!(actors.is_empty());
     }
 }
