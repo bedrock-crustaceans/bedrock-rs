@@ -478,6 +478,25 @@ fn sort_compound_keys(value: &mut Value) {
     }
 }
 
+/// `world_start_count`'s on-disk value is a 32-bit signed actor session
+/// counter, zero-extended -- not sign-extended -- into the wider `i64` NBT
+/// tag it is stored under: every real value across the corpus is a small
+/// negative `i32` whose bit pattern, reinterpreted as a `u32`, is exactly
+/// what the field holds (see [`LevelSettings::next_actor_session_id`]'s doc
+/// comment for the corpus and reference evidence this reinterpretation is
+/// built on). Both directions are needed -- reading the counter and writing
+/// a claimed one back -- so they are factored here once rather than
+/// repeated at each call site.
+fn session_id_from_stored(stored: i64) -> i32 {
+    (stored as u32) as i32
+}
+
+/// The inverse of [`session_id_from_stored`]: packs a session id back into
+/// `world_start_count`'s on-disk zero-extended form.
+fn session_id_to_stored(id: i32) -> i64 {
+    (id as u32) as i64
+}
+
 impl LevelSettings {
     /// Encodes `self` as a level.dat: the 8-byte header (`i32` header
     /// storage version, `i32` payload length, both little-endian) followed
@@ -585,5 +604,102 @@ impl LevelSettings {
             inventory_version: self.inventory_version.as_deref(),
             world_version: self.world_version,
         }
+    }
+
+    /// The next actor "session id" this world has not yet used -- the value
+    /// a writer must claim as the high 32 bits of a new actor's `UniqueID`
+    /// to stay collision-safe with every session the game itself has ever
+    /// allocated, including ones from before this world was last opened.
+    ///
+    /// `world_start_count` is an `i64` NBT field, but every real value across
+    /// the fourteen-world corpus fits a `u32` bit pattern that decodes as a
+    /// *negative* `i32` when reinterpreted -- the field holds a 32-bit signed
+    /// session counter, zero-extended (not sign-extended) into the wider NBT
+    /// tag. This reinterprets it that way: `(self.world_start_count as u32)
+    /// as i32`.
+    ///
+    /// # Evidence
+    ///
+    /// Corpus: of the fourteen real worlds, four carry `actorprefix` records
+    /// with a decodable `UniqueID` long (`v1_18_30`: 3,748; `v1_19_30`:
+    /// 3,754; `v1_20_81`: 121; the 1.26 seed world: 89 -- 7,712 actors
+    /// total). For every one of those four worlds, the most negative
+    /// session id actually used by any of that world's actors
+    /// (`min(UniqueID >> 32)`) is exactly one more than this method's
+    /// return value -- i.e. this is the next session down, never yet used.
+    /// The match is exact in all four worlds and the relationship does not
+    /// require sessions to be contiguous (`v1_19_30` uses 11 of 13 possible
+    /// session ids between its minimum and -1; the 1.26 world uses 5 of 10).
+    ///
+    /// Reference cross-check (read-only; not vendored, not linked): both
+    /// prior Bedrock converters key an actor's `UniqueID` off this same
+    /// field, under the same zero-extended-negative-`i32` reading. One
+    /// claims the *current* value of the field as this run's session,
+    /// decrements it by one, and writes the decremented value back to
+    /// level.dat immediately -- before creating a single actor -- so that no
+    /// other process opening the same world afterward can be handed the
+    /// session it just claimed. The comment on that implementation states
+    /// the same reinterpretation this method encodes: "this is a signed int
+    /// stored in a signed long. manually apply the sign correctly." The
+    /// other converter does not read the source world's value at all; it
+    /// unconditionally overwrites the field with a fixed constant on every
+    /// write and stamps every migrated actor with a single fixed session --
+    /// the constant itself is one more negative than the session actually
+    /// used (constant = session - 1), matching this method's own
+    /// post-reservation invariant exactly, even though that converter never
+    /// reads a prior value to derive it from. Consistent with, but a
+    /// degenerate case of, the same rule (a full-world rewrite has no
+    /// "current session count" to preserve).
+    ///
+    /// # What this method does not establish
+    ///
+    /// The low 32 bits of an actor's `UniqueID` are not level.dat state at
+    /// all in either reference or in this corpus -- both converters keep a
+    /// per-run, in-memory sequential counter for them and never persist it,
+    /// and this crate does not track or allocate them either. A caller that
+    /// wants to add actors under a reserved session still owns picking that
+    /// counter's starting point and every subsequent value; this method (and
+    /// [`Self::reserve_actor_session_id`]) hand out only the session id.
+    /// Deriving the `actorprefix` storage key from a `UniqueID` remains
+    /// entirely out of scope here too -- see `crate::actor`'s module docs.
+    pub fn next_actor_session_id(&self) -> i32 {
+        session_id_from_stored(self.world_start_count)
+    }
+
+    /// Claims [`Self::next_actor_session_id`]'s current value and advances
+    /// the counter past it (one further negative), so a second call -- on
+    /// this instance or, once persisted, on a fresh read of the same
+    /// level.dat -- never hands out the same session id twice. See
+    /// [`Self::next_actor_session_id`] for the evidence behind the
+    /// reinterpretation and what this crate does and does not track.
+    ///
+    /// Mutating `world_start_count` alone is not
+    /// collision-safe by itself: per the corpus and reference evidence
+    /// above, the value must actually reach level.dat before the reserved
+    /// session is used, which is why [`crate::level::Level`] exposes a
+    /// paired method that persists immediately rather than deferring to
+    /// [`Self::write`]/`Level::save` -- see its doc comment.
+    ///
+    /// # Exhaustion
+    ///
+    /// Returns [`Error::Invalid`], leaving `self` unmodified, if the
+    /// current session id is already `i32::MIN`: there is no further
+    /// session to hand out without wrapping around to `i32::MAX`, which
+    /// would violate the "always negative, never yet used" invariant this
+    /// method exists to uphold (a wrapped id could collide with a
+    /// previously-used *positive* high 32 bits -- the corpus shows the
+    /// 1.26 world already has a `0` session -- or with the game's own
+    /// future allocations, which this method has no way to rule out for
+    /// values it has never observed). No real corpus world is within
+    /// billions of this boundary; refusing is cheap and the alternative
+    /// (silently wrapping) is a correctness bug waiting for an
+    /// astronomically long-lived world.
+    pub fn reserve_actor_session_id(&mut self) -> Result<i32> {
+        let id = self.next_actor_session_id();
+        let next = id.checked_sub(1).ok_or(Error::Invalid(
+            "actor session counter exhausted (world_start_count is already i32::MIN)",
+        ))?;
+        self.world_start_count = session_id_to_stored(next);
+        Ok(id)
     }
 }

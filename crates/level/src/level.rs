@@ -618,15 +618,69 @@ impl Level {
             ));
         }
 
-        let mut level_dat = Vec::new();
-        self.settings.write(&mut level_dat)?;
-        write_atomic(&self.path.join("level.dat"), &level_dat)?;
+        self.write_level_dat()?;
         write_atomic(
             &self.path.join("levelname.txt"),
             self.settings.level_name.as_bytes(),
         )?;
 
         Ok(())
+    }
+
+    /// Encodes `self.settings` through [`LevelSettings::write`] and writes
+    /// the result to `level.dat` atomically. Shared by [`Self::save`] (which
+    /// also writes `levelname.txt`) and [`Self::reserve_actor_session_id`]
+    /// (which writes `level.dat` alone, immediately, for reasons its own doc
+    /// comment states) -- both want exactly this and nothing else. Carries
+    /// no read-only guard of its own; both callers check
+    /// `self.read_only` before reaching here.
+    fn write_level_dat(&self) -> Result<()> {
+        let mut level_dat = Vec::new();
+        self.settings.write(&mut level_dat)?;
+        write_atomic(&self.path.join("level.dat"), &level_dat)
+    }
+
+    /// Reserves a fresh actor "session id" -- the value a caller must use as
+    /// the high 32 bits of every new actor's `UniqueID` it mints while
+    /// adding actors to this world, to stay collision-safe with every
+    /// session the game itself has ever allocated (see
+    /// [`LevelSettings::next_actor_session_id`] for the corpus and
+    /// reference evidence behind that claim, and for what this crate
+    /// deliberately does *not* track -- the per-session low 32 bits, and the
+    /// `actorprefix` storage-key derivation, both of which stay the caller's
+    /// responsibility, per `crate::actor`'s module docs).
+    ///
+    /// Unlike every other `LevelSettings` mutation, this writes `level.dat`
+    /// immediately rather than waiting for [`Self::save`]: both reference
+    /// implementations persist a claimed session before creating a single
+    /// actor with it, specifically so a second process opening the same
+    /// world in between cannot be handed the same session. Deferring this
+    /// write to `save` (as every other in-memory settings edit does today)
+    /// would reopen exactly the race this method exists to close -- a crash
+    /// or an early return between reservation and `save` would leave the
+    /// claimed session unrecorded on disk, ready to be handed out again.
+    /// `levelname.txt` is untouched; this writes only `level.dat`, and a
+    /// later `save()` call still writes both from whatever `self.settings`
+    /// holds at that point, session id included.
+    ///
+    /// Returns [`Error::Invalid`] without reserving or writing anything on a
+    /// [`Level::open`] handle, matching [`Self::save`]'s and
+    /// [`Self::put_chunk`]'s own read-only guard. Also propagates
+    /// [`LevelSettings::reserve_actor_session_id`]'s own error -- the
+    /// counter reaching `i32::MIN` with nothing further to hand out -- in
+    /// which case nothing is written either.
+    pub fn reserve_actor_session_id(&mut self) -> Result<i32> {
+        if self.read_only {
+            return Err(Error::Invalid(
+                "a read-only level (opened via Level::open; use Level::open_rw to reserve an \
+                 actor session id)",
+            ));
+        }
+
+        let id = self.settings.reserve_actor_session_id()?;
+        self.write_level_dat()?;
+
+        Ok(id)
     }
 
     /// A borrowing, read-only convenience view over one dimension. Every
