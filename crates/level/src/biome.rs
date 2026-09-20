@@ -1,5 +1,6 @@
 use std::io::{Cursor, Read};
 use std::io::{ErrorKind, Write};
+use std::num::NonZeroUsize;
 
 use byteorder::LittleEndian;
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -9,10 +10,13 @@ use crate::UnpackingMethod;
 use crate::bits::{BitArray, IndicesType};
 use crate::error::Error;
 use crate::error::Result;
+use crate::greedy::GreedyArray;
+use crate::types::BlockPosition;
 
 /// Column count of a 16x16 chunk. Also the heightmap element count in both
-/// on-disk layouts, and the biome id count in the 2D layout only — the 3D
-/// layout's per-fragment biome grid is 4x4x4 (64), not this.
+/// on-disk layouts, and the biome id count in the 2D layout — the 3D
+/// layout's per-fragment biome storage is a full 4096-index array (see
+/// [`Biomes3d`]'s doc comment), not this either.
 pub const COLUMNS: usize = 256;
 
 /// Flat index of column `(x, z)` in a 16x16 chunk, or `None` if either
@@ -38,6 +42,13 @@ impl BiomeArray {
     pub fn palette(&self) -> &[u32] {
         &self.palette
     }
+
+    /// The raw packed index at `offset` (see [`crate::subchunk::to_offset`] for the
+    /// coordinate convention this shares with the block layer), or `None` if `offset` is
+    /// out of range for the underlying array.
+    pub fn index_at(&self, offset: usize) -> Option<u16> {
+        self.array.get(offset)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,12 +63,50 @@ pub enum BiomeEncoding {
 
 /// Palette-based per-subchunk biome data (LevelDB key tag `0x2b`).
 ///
-/// One [`BiomeEncoding`] fragment per subchunk, ordered bottom to top, each
-/// covering that subchunk's 16x16x16 volume as a 4x4x4 grid of biome ids.
+/// One [`BiomeEncoding`] fragment per subchunk, ordered bottom to top, each covering that
+/// subchunk's full 16x16x16 volume. A [`BiomeEncoding::Palette`] fragment's packed index
+/// array is the same 4096-index, `to_offset`-ordered shape the block layer uses (see
+/// [`crate::subchunk::to_offset`]), not a smaller 4x4x4 grid replicated across it — a
+/// corpus check (comparing neighbouring indices within what would be a 4-block cell)
+/// found values that genuinely vary at block granularity in real records, not just at
+/// 4-block boundaries, which a true 4x4x4 quantization would rule out.
+///
+/// **The fragment count is presence-driven, not derived from a dimension's height
+/// range.** A corpus survey (`tests/biomes3d_write.rs`) found that real records carry the
+/// same fragment count across every dimension of one world, keyed on the world/version,
+/// not on the writing record's own dimension: a v1.18-family world's Nether (8 sections)
+/// and End (16 sections) records both carry 25 fragments, the same count its Overworld
+/// records do (24 sections, plus one); a v1.20.81 world's Nether/End records carry 24,
+/// again matching its Overworld. Neither reference implementation consulted while
+/// building this derives the fragment count from the dimension's height range either —
+/// this is stated as an observed corpus fact, not sourced from either one. **Do not
+/// compute a `Biomes3d`'s fragment count from `crate::height_range` or a dimension's
+/// bounds** — on a real record that undercounts (for Nether/End) or is off by exactly one
+/// (the v1.18-family's 25-vs-24 quirk), [`Biomes3d::new`] would then reject data this
+/// format's own writer produced. This is also why [`Biomes3d`] carries no `storage_count`
+/// field or parameter anywhere on this type: there is no dimension-derived number that is
+/// safe to validate fragment lists against.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Biomes3d {
     heightmap: Box<[u16; COLUMNS]>,
     fragments: SmallVec<[BiomeEncoding; 1]>,
+}
+
+/// A [`Biomes3d::new`] fragment list that violates the write-semantics rule the corpus
+/// survey in `tests/biomes3d_write.rs` confirmed (see that test's module doc for the
+/// numbers): the fragment list may not be empty, and its first entry may never be
+/// [`BiomeEncoding::Inherit`] (there is nothing below the bottom subchunk to inherit
+/// from — zero of 44,245 real fragments across the corpus put one there). There is no
+/// upper-bound rule: see [`Biomes3d`]'s doc comment for why an upper bound is not
+/// something this type validates against.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum Biomes3dError {
+    /// The fragment list has no entries at all.
+    #[error("biome fragment list is empty")]
+    Empty,
+    /// The first fragment is `Inherit`, with no subchunk below it to inherit from.
+    #[error("first biome fragment is Inherit, but there is no subchunk below it")]
+    FirstFragmentInherits,
 }
 
 impl Biomes3d {
@@ -67,10 +116,154 @@ impl Biomes3d {
         &self.heightmap
     }
 
+    /// Write-back access to this chunk's heightmap -- see [`HeightMap::set_heights`] for
+    /// why a setter exists alongside the shared borrow rather than only a `_mut` accessor.
+    #[inline]
+    pub fn set_heights(&mut self, heights: [u16; COLUMNS]) {
+        *self.heightmap = heights;
+    }
+
+    /// Mutable access to this chunk's heightmap, for an in-place partial update (a caller
+    /// recomputing only some columns, say) that [`Self::set_heights`]' whole-array
+    /// replacement does not fit. Named to match [`HeightMap::heights_mut`].
+    #[inline]
+    pub fn heights_mut(&mut self) -> &mut [u16; COLUMNS] {
+        &mut self.heightmap
+    }
+
     /// The per-subchunk biome fragments, ordered bottom to top.
     #[inline]
     pub fn fragments(&self) -> &[BiomeEncoding] {
         &self.fragments
+    }
+
+    /// Builds a validated [`Biomes3d`] from a heightmap and an explicit fragment list.
+    ///
+    /// Validates only the two rules [`Biomes3dError`] documents: the list must not be
+    /// empty, and its first entry must not be [`BiomeEncoding::Inherit`]. There is
+    /// deliberately no upper bound on `fragments.len()` -- see [`Biomes3d`]'s doc comment
+    /// for why a dimension-derived bound would reject real data.
+    pub fn new(
+        heightmap: Box<[u16; COLUMNS]>,
+        fragments: SmallVec<[BiomeEncoding; 1]>,
+    ) -> std::result::Result<Biomes3d, Biomes3dError> {
+        if fragments.is_empty() {
+            return Err(Biomes3dError::Empty);
+        }
+        if matches!(fragments[0], BiomeEncoding::Inherit) {
+            return Err(Biomes3dError::FirstFragmentInherits);
+        }
+
+        Ok(Biomes3d {
+            heightmap,
+            fragments,
+        })
+    }
+
+    /// Promotes a pre-3D-biome column record ([`Biomes2d`], paired with its own
+    /// [`HeightMap`]-half heightmap) to the 3D layout, emitting `fragment_count`
+    /// fragments: a bottom fragment carrying the real data (a [`BiomeEncoding::Single`]
+    /// if every column shares one id, a [`BiomeEncoding::Palette`] otherwise, replicating
+    /// each column's id across all 16 of that subchunk's Y layers), and
+    /// [`BiomeEncoding::Inherit`] for every fragment above it.
+    ///
+    /// This whole-column shape -- one real fragment, everything above it `Inherit` --
+    /// is a valid encoding this format supports (it round-trips through
+    /// [`Self::to_disk`]/[`Self::from_disk`] like any other record) and is the natural
+    /// encoding for data with no vertical variation, which is exactly what a promoted 2D
+    /// column record is. It is not, however, a shape the corpus actually contains: of the
+    /// 44,245 real `0x2b` fragments surveyed, not one uniform-biome column (`Single`
+    /// bottom, `Inherit` above, all the way to the top) occurs, and only 6 of 7,795 real
+    /// records are `Palette`-bottom-then-all-`Inherit`. `Inherit` itself is pervasive in
+    /// the corpus (41,412 mid-list, 2,833 trailing) as a *technique* real writes use
+    /// constantly to avoid re-storing an unchanged value going up -- it is just essentially
+    /// never applied to a *whole* column this way, because real terrain's biome varies
+    /// somewhere above ground even when a naive promotion from 2D data would not.
+    ///
+    /// `fragment_count` cannot be zero (a biome record with no storage at all is not a
+    /// shape this format has) -- enforced by taking [`NonZeroUsize`] rather than returning
+    /// a [`Biomes3dError`], so this and [`Self::new`] agree on what "no fragments" means
+    /// without this infallible constructor needing a fallible signature.
+    pub fn from_columns(
+        heightmap: Box<[u16; COLUMNS]>,
+        biomes: &Biomes2d,
+        fragment_count: NonZeroUsize,
+    ) -> Biomes3d {
+        let ids = biomes.ids();
+        let first_id = ids[0] as u32;
+        let uniform = ids.iter().all(|&id| id as u32 == first_id);
+
+        let bottom = if uniform {
+            BiomeEncoding::Single(first_id)
+        } else {
+            BiomeEncoding::Palette(column_biome_array(ids))
+        };
+
+        let fragment_count = fragment_count.get();
+        let mut fragments = SmallVec::with_capacity(fragment_count);
+        fragments.push(bottom);
+        for _ in 1..fragment_count {
+            fragments.push(BiomeEncoding::Inherit);
+        }
+
+        Biomes3d {
+            heightmap,
+            fragments,
+        }
+    }
+
+    /// Resolves the biome id at `position` (each axis `0..16`, block-granular within the
+    /// subchunk) inside the subchunk at `subchunk_index` (`0`-based, counting up from this
+    /// record's bottom-most stored subchunk -- the same order [`Self::fragments`] iterates
+    /// in).
+    ///
+    /// `subchunk_index` is supplied by the caller rather than carried on `Biomes3d`
+    /// itself: this type is the on-disk format only, with no notion of a dimension or a
+    /// minimum Y (that lives in `bedrock_shared::world::dimension` and
+    /// `crate::height_range`, both outside this module's concern), and per [`Biomes3d`]'s
+    /// doc comment there is no dimension-derived count this method could validate against
+    /// even if it wanted to -- resolving which absolute subchunk maps to which
+    /// `subchunk_index` is a level-layer job for a later wave.
+    ///
+    /// There is no upper bound on `subchunk_index`: any index at or past
+    /// [`Self::fragments`]' length (a storage omitted from the tail, or simply a query
+    /// higher than this record happens to stock) resolves against the topmost *stored*
+    /// fragment, per this format's fill-up rule -- unexercised by real writes (the corpus
+    /// survey found `tail_omitted == 0`, pinned in `tests/biomes3d_write.rs`), but a
+    /// decode-time affordance this method still honors.
+    ///
+    /// Returns `None` when any coordinate in `position` is out of range, the fragment
+    /// list is empty, a walk down an `Inherit` chain reaches fragment 0 and finds it is
+    /// itself `Inherit` (malformed data [`Self::new`]/[`Self::from_columns`] cannot
+    /// produce, but a value decoded from disk is not re-validated this way -- decode never
+    /// rejects malformed data that only a builder can prevent), or (for a
+    /// [`BiomeEncoding::Palette`] fragment) the resolved palette index is out of range for
+    /// that fragment's own palette. The last two cases are malformed data, not a normal
+    /// miss, but this method has no error channel to report through and `None` is the
+    /// honest "could not resolve" answer either way.
+    pub fn biome_at(
+        &self,
+        subchunk_index: usize,
+        position: impl Into<BlockPosition>,
+    ) -> Option<u32> {
+        let BlockPosition(x, y, z) = position.into();
+        if x >= 16 || y >= 16 || z >= 16 {
+            return None;
+        }
+        let offset = 256 * x as usize + 16 * z as usize + y as usize;
+
+        let last_stored = self.fragments.len().checked_sub(1)?;
+        let mut index = subchunk_index.min(last_stored);
+        loop {
+            match self.fragments.get(index)? {
+                BiomeEncoding::Inherit => index = index.checked_sub(1)?,
+                BiomeEncoding::Single(id) => return Some(*id),
+                BiomeEncoding::Palette(array) => {
+                    let palette_index = array.index_at(offset)? as usize;
+                    return array.palette().get(palette_index).copied();
+                }
+            }
+        }
     }
 
     // This roughly estimates the size of the output buffer. Chunks with many paletted fragments
@@ -180,6 +373,38 @@ impl Biomes3d {
             heightmap,
             fragments,
         })
+    }
+}
+
+/// Builds a [`BiomeArray`] for [`Biomes3d::from_columns`]'s varied-column case: one
+/// packed index per block position (the same 4096-entry, `to_offset`-ordered shape a
+/// real `Palette` fragment uses, per [`Biomes3d`]'s own doc comment), replicating each
+/// column's id across all 16 Y layers of the subchunk -- the promoted data has no
+/// vertical variation, only the horizontal variation the source [`Biomes2d`] already had.
+fn column_biome_array(ids: &[u8; COLUMNS]) -> BiomeArray {
+    let mut palette: Vec<u32> = Vec::new();
+    let mut indices: Box<[u16; 4096]> = Box::new([0; 4096]);
+
+    for x in 0..16usize {
+        for z in 0..16usize {
+            let id = ids[z * 16 + x] as u32;
+            let palette_index = match palette.iter().position(|&v| v == id) {
+                Some(i) => i,
+                None => {
+                    palette.push(id);
+                    palette.len() - 1
+                }
+            } as u16;
+
+            for y in 0..16usize {
+                indices[256 * x + 16 * z + y] = palette_index;
+            }
+        }
+    }
+
+    BiomeArray {
+        array: BitArray::Greedy(GreedyArray::from(indices)),
+        palette,
     }
 }
 

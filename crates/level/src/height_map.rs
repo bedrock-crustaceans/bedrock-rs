@@ -38,6 +38,22 @@ impl HeightMap {
         column_index(x, z).map(|i| self.heights[i])
     }
 
+    /// Replaces the whole heightmap in one call -- the write-back counterpart to
+    /// [`Self::heights`]' shared borrow, for a caller (a heightmap recompute, architecture
+    /// decision 13) that has a fresh `[i16; COLUMNS]` to install rather than editing
+    /// columns one at a time.
+    #[inline]
+    pub fn set_heights(&mut self, heights: [i16; COLUMNS]) {
+        *self.heights = heights;
+    }
+
+    /// Mutable access to this record's heightmap, for an in-place partial update that
+    /// [`Self::set_heights`]' whole-array replacement does not fit.
+    #[inline]
+    pub fn heights_mut(&mut self) -> &mut [i16; COLUMNS] {
+        &mut self.heights
+    }
+
     /// The per-column biome ids, in the same layout as [`Self::heights`].
     #[inline]
     pub fn biomes(&self) -> &Biomes2d {

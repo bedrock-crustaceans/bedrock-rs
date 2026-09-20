@@ -18,6 +18,7 @@ use bedrock_level::provider::{ContentProvider, StateUpgrade, VersionedBlockDef};
 #[cfg(feature = "generated-palettes")]
 use bedrock_level::provider::{MalformedState, States};
 use bedrock_level::subchunk::BlockDef;
+use bedrock_level::subchunk::PaletteEntry;
 
 /// A `ContentProvider` backed by this crate's vanilla content tables.
 ///
@@ -192,7 +193,31 @@ impl ContentProvider for VanillaContent {
     fn biome_name(&self, id: i32) -> Option<&str> {
         biome_name_impl(id)
     }
+
+    /// Classifies a [`PaletteEntry::Modern`] entry by its name against
+    /// [`AIR_BLOCK_NAME`], so this is not a guess tied to one version: whichever schema
+    /// version the entry is actually stamped at, the name comparison alone settles it. A
+    /// `Legacy`/`Numeric` entry always answers `None`: the corpus has exactly one
+    /// pre-flattening fixture (`v1_12`), so any `(name, val)`/`(id, data)` pair this crate
+    /// could hardcode as "air" would be single-sourced against the same fixture that
+    /// source-less legacy table already has no second reference for (see this type's
+    /// crate-root doc comment) -- see `bedrock_vanilla_data`'s `tests/air_query.rs` for
+    /// the survey that finding is based on.
+    fn is_air(&self, entry: &PaletteEntry) -> Option<bool> {
+        match entry {
+            PaletteEntry::Modern(block) => Some(block.name == AIR_BLOCK_NAME),
+            PaletteEntry::Legacy { .. } | PaletteEntry::Numeric { .. } => None,
+        }
+    }
 }
+
+/// The vanilla air block's modern name, confirmed present in every one of the six pinned
+/// generated tags (`v1.20.10.1` through `v1.26.40.05` -- see `generated::PALETTES`).
+/// [`VanillaContent::is_air`] classifies a [`PaletteEntry::Modern`] entry by comparing
+/// its name against this constant, per architecture decisions 8/9: this crate parses
+/// content by consulting the generated tables, never by hardcoding what a block *means*
+/// beyond a name this constant makes explicit and reviewable in one place.
+const AIR_BLOCK_NAME: &str = "minecraft:air";
 
 /// Splits a packed `(major << 24) | (minor << 16) | (patch << 8) | revision` word into
 /// the `(major, minor, patch)` triple a [`palette::VersionPalette::game_version`] is

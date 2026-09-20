@@ -24,7 +24,7 @@
 
 use indexmap::IndexMap;
 
-use crate::subchunk::BlockDef;
+use crate::subchunk::{BlockDef, PaletteEntry};
 
 /// A block's position relative to another, in whole blocks — the unit
 /// [`ContentProvider::resolve_with_neighbours`]'s callback reads at.
@@ -327,6 +327,40 @@ pub trait ContentProvider {
     /// crate) is one source of ids no vanilla table has ever heard of, and a provider
     /// with only vanilla data reports those as unknown rather than guessing.
     fn biome_name(&self, id: i32) -> Option<&str>;
+
+    /// Whether `entry` is an air block — the one piece of content knowledge a heightmap
+    /// recompute needs (architecture decision 13's "recompute with a provider, else
+    /// preserve" policy for the heightmap cache) without this crate ever hardcoding a
+    /// block name itself (architecture decision 8: this crate parses the format, not the
+    /// content).
+    ///
+    /// Takes the whole [`PaletteEntry`], not just [`BlockDef`]: a [`PaletteEntry::Legacy`]
+    /// or [`PaletteEntry::Numeric`] entry (a world read before flattening, or before
+    /// palettes existed at all) has no `BlockDef` to hand this method — [`BlockDef`] is
+    /// only the modern, flattened shape — and a heightmap recompute over an old world's
+    /// terrain has to classify exactly those entries too, not only modern ones. A
+    /// `BlockDef`-only signature would silently make every pre-flattening subchunk
+    /// unclassifiable no matter how good the provider's legacy table is; taking
+    /// `PaletteEntry` lets an implementor that actually has a legacy air mapping use it.
+    ///
+    /// Returns `Some(true)`/`Some(false)` when the provider can tell, `None` when it
+    /// cannot classify this particular entry at all — an unrecognized name/id, or (the
+    /// default implementation) a provider that has not implemented this query yet. `None`
+    /// is not "probably not air": a heightmap recompute must treat it as "the column
+    /// cannot be resolved," per this trait's module docs and architecture decision 11 (no
+    /// substituting a guess, air included, for a block this crate cannot resolve) — a
+    /// caller runs a heightmap recompute only when *every* entry it visits classifies
+    /// (`Some` for all of them), and preserves the stored heightmap otherwise, exactly
+    /// the way a content-dependent upgrade step with no provider entry leaves the
+    /// affected data at its prior version rather than relabelling it.
+    ///
+    /// Defaults to `None` for every entry, matching this trait's other opt-out defaults:
+    /// a provider that has not implemented an air query yet declines every classification
+    /// rather than the crate guessing on its behalf.
+    fn is_air(&self, entry: &PaletteEntry) -> Option<bool> {
+        let _ = entry;
+        None
+    }
 }
 
 /// A `states` map in the shape [`BlockDef::states`] and [`ContentProvider`]'s
@@ -607,34 +641,32 @@ mod tests {
         assert_eq!(no_entry.malformed_reason(), None);
     }
 
-    #[test]
-    fn default_neighbour_hooks_opt_out() {
-        /// A provider that implements only the non-defaulted methods.
-        struct Minimal;
+    /// A provider that implements only the non-defaulted `ContentProvider` methods --
+    /// shared by [`default_neighbour_hooks_opt_out`] and [`default_is_air_opts_out`] so
+    /// both can exercise the trait's default-method opt-outs against the same minimal
+    /// implementation.
+    struct Minimal;
 
-        impl ContentProvider for Minimal {
-            fn legacy_block_state(&self, _name: &str, _val: i16) -> Option<VersionedBlockDef> {
-                None
-            }
-
-            fn numeric_block_state(&self, _id: u8, _data: u8) -> Option<VersionedBlockDef> {
-                None
-            }
-
-            fn upgrade_block_state(
-                &self,
-                state: BlockDef,
-                _source: i32,
-                _target: i32,
-            ) -> StateUpgrade {
-                StateUpgrade::NoEntry(state)
-            }
-
-            fn biome_name(&self, _id: i32) -> Option<&str> {
-                None
-            }
+    impl ContentProvider for Minimal {
+        fn legacy_block_state(&self, _name: &str, _val: i16) -> Option<VersionedBlockDef> {
+            None
         }
 
+        fn numeric_block_state(&self, _id: u8, _data: u8) -> Option<VersionedBlockDef> {
+            None
+        }
+
+        fn upgrade_block_state(&self, state: BlockDef, _source: i32, _target: i32) -> StateUpgrade {
+            StateUpgrade::NoEntry(state)
+        }
+
+        fn biome_name(&self, _id: i32) -> Option<&str> {
+            None
+        }
+    }
+
+    #[test]
+    fn default_neighbour_hooks_opt_out() {
         let provider = Minimal;
         let state = block("minecraft:oak_stairs", Some(1));
         assert!(!provider.needs_neighbours(&state));
@@ -642,6 +674,15 @@ mod tests {
             ContextResolution::NoEntry(returned) => assert_eq!(returned, state),
             other => panic!("expected NoEntry, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn default_is_air_opts_out() {
+        let provider = Minimal;
+        assert_eq!(
+            provider.is_air(&PaletteEntry::Modern(block("minecraft:air", None))),
+            None
+        );
     }
 
     #[test]
