@@ -1,28 +1,28 @@
 use crate::settings::Abilities;
 use bedrock_shared::vector::{Position, Rotation};
-use serde::{Deserialize, Serialize};
+use facet::Facet;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Facet, Debug)]
+#[facet(rename_all = "PascalCase")]
 pub struct InventoryItemWithSlot {
     pub damage: i16,
     pub slot: i8,
-    #[serde(rename = "id")]
+    #[facet(rename = "id")]
     pub id: i16,
     pub count: i8,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Facet, Debug)]
+#[facet(rename_all = "PascalCase")]
 pub struct InventoryItem {
     pub damage: i16,
-    #[serde(rename = "id")]
+    #[facet(rename = "id")]
     pub id: i16,
     pub count: i8,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Facet, Debug)]
+#[facet(rename_all = "PascalCase")]
 pub struct StatusEffect {
     pub id: i8,
     pub duration: i32,
@@ -34,8 +34,8 @@ pub struct StatusEffect {
     pub show_particles: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Facet, Debug)]
+#[facet(rename_all = "PascalCase")]
 pub struct Attribute {
     pub current: f32,
     pub max: f32,
@@ -45,17 +45,17 @@ pub struct Attribute {
     pub modifiers: Option<Vec<usize>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
+#[derive(Facet, Debug)]
+#[facet(rename_all = "PascalCase")]
 pub struct PlayerData {
     pub inventory_version: String,
     pub is_swimming: bool,
     pub enchantment_seed: i32,
     pub fall_distance: f32,
     pub mark_variant: i32,
-    #[serde(rename = "LeasherID")]
+    #[facet(rename = "LeasherID")]
     pub leasher_id: i64,
-    #[serde(rename = "DimensionID")]
+    #[facet(rename = "DimensionID")]
     pub dimension_id: i32,
     pub sheared: bool,
     pub sleep_timer: i16,
@@ -68,11 +68,11 @@ pub struct PlayerData {
     pub surface: bool,
     pub strength_max: i32,
     pub color2: i8,
-    #[serde(rename = "boundY")]
+    #[facet(rename = "boundY")]
     pub bound_y: i32,
-    #[serde(rename = "boundZ")]
+    #[facet(rename = "boundZ")]
     pub bound_z: i32,
-    #[serde(rename = "limitedLife")]
+    #[facet(rename = "limitedLife")]
     pub limited_life: i32,
     pub armor: [InventoryItem; 4],
     pub hurt_time: i16,
@@ -97,34 +97,34 @@ pub struct PlayerData {
     pub attributes: Vec<Attribute>,
     pub bed_position_z: i32,
     pub abilities: Abilities,
-    #[serde(rename = "UniqueID")]
+    #[facet(rename = "UniqueID")]
     pub unique_id: i64,
     pub definitions: Vec<String>,
     pub saddled: bool,
     pub show_bottom: bool,
-    #[serde(rename = "TargetID")]
+    #[facet(rename = "TargetID")]
     pub target_id: i64,
     pub bed_position_y: i32,
     pub bed_position_x: i32,
-    #[serde(rename = "hasBoundOrigin")]
+    #[facet(rename = "hasBoundOrigin")]
     pub has_bound_origin: bool,
     pub is_tamed: bool,
     pub pos: Position,
     pub map_index: i32,
-    #[serde(rename = "boundX")]
+    #[facet(rename = "boundX")]
     pub bound_x: i32,
     pub fire: i16,
     pub ender_chest_inventory: [InventoryItemWithSlot; 27],
     pub is_autonomous: bool,
     pub persistent: bool,
     pub offhand: Vec<InventoryItem>,
-    #[serde(rename = "SelectedContainerID")]
+    #[facet(rename = "SelectedContainerID")]
     pub selected_contain_id: i32,
     pub owner_new: i64,
     pub player_level: i32,
     /// Thank you Mojang.
     pub is_pregnant: bool,
-    #[serde(rename = "id")]
+    #[facet(rename = "id")]
     pub id: i32,
     pub air: i16,
     pub attack_time: i16,

@@ -19,7 +19,8 @@ rusty-leveldb = { git = "https://github.com/bedrock-crustaceans/rusty-leveldb", 
 miniz_oxide = { version = "0.9" }
 
 bedrock_shared = { path = "../shared" }
-nbtx = "3.0.1"
+nbtx = { workspace = true }
+facet = { workspace = true }
 
 thiserror = { workspace = true }
 serde = { workspace = true }

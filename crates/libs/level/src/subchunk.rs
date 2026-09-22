@@ -5,10 +5,10 @@ use std::iter::FusedIterator;
 use std::ops::Index;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use facet::Facet;
 use nbtx::LittleEndian;
 use nohash_hasher::BuildNoHashHasher;
 use rustc_hash::FxHasher;
-use serde::{Deserialize, Serialize};
 
 use crate::bits::{BitArray, BitArrayIter, IndicesType};
 use crate::error::{Error, Result};
@@ -41,44 +41,32 @@ impl TryFrom<u8> for SubChunkVersion {
     }
 }
 
-mod block_version {
-    use serde::{Deserialize, Deserializer, Serializer};
+#[derive(Facet)]
+pub struct BlockVersionProxy(Option<i32>);
 
-    /// Deserializes a block version.
-    pub fn deserialize<'de, D>(de: D) -> Result<Option<[u8; 4]>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let word = Option::<i32>::deserialize(de)?;
-        Ok(word.map(i32::to_be_bytes))
+impl From<BlockVersionProxy> for Option<[u8; 4]> {
+    fn from(value: BlockVersionProxy) -> Self {
+        value.0.map(i32::to_be_bytes)
     }
+}
 
-    /// Serializes a block version.
-    #[allow(clippy::trivially_copy_pass_by_ref)] // Serde requirement.
-    pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if let Some(b) = v {
-            ser.serialize_i32(i32::from_be_bytes(*b))
-        } else {
-            ser.serialize_none()
-        }
+impl From<&Option<[u8; 4]>> for BlockVersionProxy {
+    fn from(value: &Option<[u8; 4]>) -> Self {
+        BlockVersionProxy(value.map(i32::from_be_bytes))
     }
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(rename = "")]
+#[derive(Facet, Debug, Clone, PartialEq)]
 pub struct BlockDef {
     /// Name of the block.
     pub name: String,
     /// Version of the block.
-    #[serde(default)]
-    #[serde(with = "block_version")]
+    #[facet(default)]
+    #[facet(proxy = BlockVersionProxy)]
     pub version: Option<[u8; 4]>,
     /// Block-specific properties.
-    #[serde(default)]
+    #[facet(default)]
     pub states: HashMap<String, nbtx::Value>,
 }
 

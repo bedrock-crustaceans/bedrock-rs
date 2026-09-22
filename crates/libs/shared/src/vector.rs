@@ -1,4 +1,6 @@
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
+use facet::Facet;
+
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Facet)]
 pub struct Position(pub f32, pub f32, pub f32);
 
 impl From<(f32, f32, f32)> for Position {
@@ -14,7 +16,7 @@ impl From<[f32; 3]> for Position {
 }
 
 /// Rotation of an entity.
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Facet)]
 pub struct Rotation(pub f32, pub f32);
 
 impl From<(f32, f32)> for Rotation {
