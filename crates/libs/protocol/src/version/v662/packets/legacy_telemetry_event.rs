@@ -9,7 +9,7 @@ use varint_rs::{VarintReader, VarintWriter};
 #[derive(Clone, Debug)]
 pub struct LegacyTelemetryEventPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
-    pub event_type: Type<V>,
+    pub event_type: LegacyTelemetryEventType<V>,
     pub use_player_id: bool,
 }
 
@@ -28,7 +28,7 @@ pub enum AgentResult {
 #[enum_repr(i32)]
 #[enum_endianness(var)]
 #[repr(i32)]
-pub enum Type<V: ProtoVersion> {
+pub enum LegacyTelemetryEventType<V: ProtoVersion> {
     Achievement {
         #[endianness(var)]
         achievement_id: i32,
@@ -168,7 +168,7 @@ pub enum Type<V: ProtoVersion> {
 impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut event_type_stream: Vec<u8> = Vec::new();
-        <Type<V> as ProtoCodec>::serialize(&self.event_type, &mut event_type_stream)?;
+        <LegacyTelemetryEventType<V> as ProtoCodec>::serialize(&self.event_type, &mut event_type_stream)?;
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
 
         <V::ActorUniqueID as ProtoCodec>::serialize(&self.target_actor_id, stream)?;
@@ -188,7 +188,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         stream.read_to_end(&mut event_type_stream)?;
 
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
-        let event_type = <Type<V> as ProtoCodec>::deserialize(&mut event_type_cursor)?;
+        let event_type = <LegacyTelemetryEventType<V> as ProtoCodec>::deserialize(&mut event_type_cursor)?;
 
         Ok(Self {
             target_actor_id,

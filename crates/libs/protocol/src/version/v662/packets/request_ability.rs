@@ -5,13 +5,13 @@ use bedrock_macros::{packet, ProtoCodec};
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct RequestAbilityPacket<V: ProtoVersion> {
     pub ability: V::AbilitiesIndex,
-    pub value_type: Type,
+    pub value_type: RequestAbilityType,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
 #[repr(i8)]
-pub enum Type {
+pub enum RequestAbilityType {
     Unset = 0,
     Bool {
         variable_value: bool,

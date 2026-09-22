@@ -3,14 +3,14 @@ use bedrock_macros::{packet, ProtoCodec};
 #[packet(id = 164)]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDebugRendererPacket {
-    pub debug_marker_type: Type,
+    pub debug_marker_type: ClientBoundDebugRendererType,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(u32)]
 #[enum_endianness(le)]
 #[repr(u32)]
-pub enum Type {
+pub enum ClientBoundDebugRendererType {
     Invalid = 0,
     ClearDebugMarkers = 1,
     AddDebugMarkerCube {

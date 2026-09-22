@@ -8,14 +8,14 @@ use std::io::{Cursor, Read, Write, copy};
 #[packet(id = 33)]
 #[derive(Clone, Debug)]
 pub struct InteractPacket<V: ProtoVersion> {
-    pub action: Action,
+    pub action: InteractAction,
     pub target_runtime_id: V::ActorRuntimeID,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
 #[enum_repr(i8)]
 #[repr(i8)]
-pub enum Action {
+pub enum InteractAction {
     Invalid = 0,
     Interact = 1,
     Damage = 2,
@@ -42,7 +42,7 @@ pub enum Action {
 impl<V: ProtoVersion> ProtoCodec for InteractPacket<V> {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
-        <Action as ProtoCodec>::serialize(&self.action, &mut action_stream)?;
+        <InteractAction as ProtoCodec>::serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
         stream.write_i8(action_cursor.read_i8()?)?;
@@ -60,7 +60,7 @@ impl<V: ProtoVersion> ProtoCodec for InteractPacket<V> {
         stream.read_to_end(&mut action_stream)?;
 
         let mut action_cursor = Cursor::new(action_stream.as_slice());
-        let action = <Action as ProtoCodec>::deserialize(&mut action_cursor)?;
+        let action = <InteractAction as ProtoCodec>::deserialize(&mut action_cursor)?;
 
         Ok(Self {
             action,

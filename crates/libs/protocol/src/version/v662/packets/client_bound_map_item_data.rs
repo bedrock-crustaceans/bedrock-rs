@@ -9,7 +9,7 @@ use varint_rs::{VarintReader, VarintWriter};
 #[derive(Clone, Debug)]
 pub struct ClientBoundMapItemDataPacket<V: ProtoVersion> {
     pub map_id: V::ActorUniqueID,
-    pub type_flags: Type<V>,
+    pub type_flags: ClientBoundMapItemDataType<V>,
     pub dimension: i8,
     pub is_locked: bool,
     pub map_origin: V::BlockPos,
@@ -25,7 +25,7 @@ pub struct PixelsEntry {
 #[enum_repr(u32)]
 #[enum_endianness(var)]
 #[repr(u32)]
-pub enum Type<V: ProtoVersion> {
+pub enum ClientBoundMapItemDataType<V: ProtoVersion> {
     Invalid = 0x0,
     TextureUpdate {
         #[endianness(var)]
@@ -50,7 +50,7 @@ pub enum Type<V: ProtoVersion> {
 impl<V: ProtoVersion> ProtoCodec for ClientBoundMapItemDataPacket<V> {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut type_flags_stream: Vec<u8> = Vec::new();
-        <Type<V> as ProtoCodec>::serialize(&self.type_flags, &mut type_flags_stream)?;
+        <ClientBoundMapItemDataType<V> as ProtoCodec>::serialize(&self.type_flags, &mut type_flags_stream)?;
         let mut type_flags_cursor = Cursor::new(type_flags_stream.as_slice());
 
         <V::ActorUniqueID as ProtoCodec>::serialize(&self.map_id, stream)?;
@@ -74,7 +74,7 @@ impl<V: ProtoVersion> ProtoCodec for ClientBoundMapItemDataPacket<V> {
         stream.read_to_end(&mut type_flags_stream)?;
 
         let mut type_flags_cursor = Cursor::new(type_flags_stream.as_slice());
-        let type_flags = <Type<V> as ProtoCodec>::deserialize(&mut type_flags_cursor)?;
+        let type_flags = <ClientBoundMapItemDataType<V> as ProtoCodec>::deserialize(&mut type_flags_cursor)?;
 
         Ok(Self {
             map_id,
