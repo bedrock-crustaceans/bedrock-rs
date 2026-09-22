@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/bedrock", "crates/libs/*", "xtask"]
+resolver = "3"
 
 [workspace.package]
 version = "0.1.0"
@@ -36,7 +37,8 @@ syn = { version = "3.0.3", features = ["derive", "parsing", "printing", "proc-ma
 quote = { version = "1.0" }
 jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 base64 = "0.23.0"
-nbtx = "3.0.1"
+# TODO: switch this back to crates.io after 4.0.0 release
+nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = "0.10"
 strum = "0.28.0"
