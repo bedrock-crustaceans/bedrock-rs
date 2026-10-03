@@ -1,6 +1,6 @@
 use crate::error::EncryptionError;
 use aes::Aes256;
-use ctr::cipher::StreamCipher;
+use ctr::cipher::{StreamCipher, StreamCipherSeek};
 use ctr::{Ctr128BE, cipher::KeyIvInit};
 use p384::{PublicKey, SecretKey};
 use sha2::{Digest, Sha256};
@@ -14,6 +14,24 @@ pub struct Encryption {
     key: [u8; 32],
 }
 
+/// Serializable [`Encryption`] state, from which the ciphers are rebuilt using the key
+/// and each direction's keystream position.
+#[derive(Clone, Debug, facet::Facet)]
+pub struct EncryptionSnapshot {
+    key: [u8; 32],
+    encrypt_counter: u64,
+    encrypt_pos: u64,
+    decrypt_counter: u64,
+    decrypt_pos: u64,
+}
+
+fn iv_from_key(key: &[u8; 32]) -> [u8; 16] {
+    let mut iv = [0u8; 16];
+    iv[..12].copy_from_slice(&key[..12]);
+    iv[15] = 2;
+    iv
+}
+
 impl Encryption {
     pub fn new(secret: &SecretKey, public: &PublicKey, token: &[u8; 16]) -> Self {
         let shared = secret.diffie_hellman(public);
@@ -24,20 +42,47 @@ impl Encryption {
         hasher.update(token);
         hasher.update(shared_bytes);
         let key = hasher.finalize();
+        let key: [u8; 32] = key.into();
 
-        let mut iv = [0u8; 16];
-        iv[..12].copy_from_slice(&key[..12]);
-        iv[15] = 2;
+        let iv = iv_from_key(&key);
 
-        let encrypt_cipher = Ctr128BE::<Aes256>::new(&key, (&iv).into());
-        let decrypt_cipher = Ctr128BE::<Aes256>::new(&key, (&iv).into());
+        let encrypt_cipher = Ctr128BE::<Aes256>::new(&key.into(), (&iv).into());
+        let decrypt_cipher = Ctr128BE::<Aes256>::new(&key.into(), (&iv).into());
 
         Self {
             encrypt_counter: 0,
             encrypt_cipher,
             decrypt_counter: 0,
             decrypt_cipher,
-            key: key.into(),
+            key,
+        }
+    }
+
+    pub fn snapshot(&self) -> EncryptionSnapshot {
+        EncryptionSnapshot {
+            key: self.key,
+            encrypt_counter: self.encrypt_counter,
+            encrypt_pos: self.encrypt_cipher.current_pos(),
+            decrypt_counter: self.decrypt_counter,
+            decrypt_pos: self.decrypt_cipher.current_pos(),
+        }
+    }
+
+    pub fn restore(state: EncryptionSnapshot) -> Self {
+        let iv = iv_from_key(&state.key);
+
+        let mut encrypt_cipher = Ctr128BE::<Aes256>::new(&state.key.into(), (&iv).into());
+        encrypt_cipher.seek(state.encrypt_pos);
+
+        let mut decrypt_cipher = Ctr128BE::<Aes256>::new(&state.key.into(), (&iv).into());
+        decrypt_cipher.seek(state.decrypt_pos);
+
+        Self {
+            encrypt_counter: state.encrypt_counter,
+            encrypt_cipher,
+            decrypt_counter: state.decrypt_counter,
+            decrypt_cipher,
+            key: state.key,
         }
     }
 
@@ -85,5 +130,43 @@ impl Encryption {
         let mut trailer = [0u8; 8];
         trailer.copy_from_slice(&hash[..8]);
         trailer
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use p384::SecretKey;
+
+    fn matched_pair() -> (Encryption, Encryption) {
+        let token = [7u8; 16];
+        let a_secret = SecretKey::from_slice(&[0x11u8; 48]).unwrap();
+        let b_secret = SecretKey::from_slice(&[0x22u8; 48]).unwrap();
+
+        let a = Encryption::new(&a_secret, &b_secret.public_key(), &token);
+        let b = Encryption::new(&b_secret, &a_secret.public_key(), &token);
+        (a, b)
+    }
+
+    #[test]
+    fn restored_snapshot_continues_keystream() {
+        let (mut a, mut b) = matched_pair();
+
+        for i in 0..3 {
+            let msg = format!("packet {i}").into_bytes();
+            let ct = a.encrypt(msg.clone()).unwrap();
+            assert_eq!(b.decrypt(ct).unwrap(), msg);
+        }
+
+        let json = facet_json::to_string(&a.snapshot()).unwrap();
+        let mut a_resumed = Encryption::restore(facet_json::from_str(&json).unwrap());
+
+        let msg = b"after restore".to_vec();
+        let ct = a_resumed.encrypt(msg.clone()).unwrap();
+        assert_eq!(b.decrypt(ct).unwrap(), msg);
+
+        let msg = b"reply".to_vec();
+        let ct = b.encrypt(msg.clone()).unwrap();
+        assert_eq!(a_resumed.decrypt(ct).unwrap(), msg);
     }
 }

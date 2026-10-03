@@ -1,6 +1,9 @@
 pub mod shard;
 
-use crate::codec::{decode_packets, encode_packets};
+use crate::codec::{
+    compress_packets, decode_packets, decompress_packets, decrypt_packets, encode_packets,
+    encrypt_packets,
+};
 use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::error::ConnectionError;
@@ -81,6 +84,25 @@ impl<V: Packets> Connection<V> {
         let stream = self.transport_layer.recv().await?;
 
         Ok(stream)
+    }
+
+    /// Receives one decrypted and decompressed batch without decoding its packets.
+    pub async fn recv_batch(&mut self) -> Result<Vec<u8>, ConnectionError> {
+        let stream = self.transport_layer.recv().await?;
+        let stream = decrypt_packets(stream, self.encryption.as_mut())?;
+        let stream = decompress_packets(stream, self.compression.as_ref())?;
+
+        Ok(stream)
+    }
+
+    /// Compresses, encrypts and sends an already encoded batch.
+    pub async fn send_batch(&mut self, batch: Vec<u8>) -> Result<(), ConnectionError> {
+        let stream = compress_packets(batch, self.compression.as_ref())?;
+        let stream = encrypt_packets(stream, self.encryption.as_mut())?;
+
+        self.transport_layer.send(&stream).await?;
+
+        Ok(())
     }
 
     pub async fn close(&self) {
