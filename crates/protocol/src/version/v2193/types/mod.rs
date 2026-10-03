@@ -12,3 +12,5 @@ export!(item_stack_response_info);
 export!(item_stack_response_slot_info);
 export!(move_actor_delta_data);
 export!(packed_item_use_legacy_inventory_transaction);
+export!(inventory_source);
+export!(item_use_transaction_data);

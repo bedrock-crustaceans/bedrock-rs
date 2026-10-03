@@ -67,3 +67,7 @@ export!(sub_chunk_pos);
 export!(synced_player_movement_settings);
 export!(web_socket_packet_data);
 export!(sub_chunk_pos_offset);
+export!(inventory_transaction_data);
+export!(item_release_transaction_data);
+export!(item_use_on_entity_transaction_data);
+export!(item_use_transaction_data);

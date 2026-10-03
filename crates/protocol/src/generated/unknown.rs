@@ -421,11 +421,14 @@ mod inner {
         type InventoryTransaction = ();
         type ItemData = ();
         type ItemEnchants = ();
+        type ItemReleaseTransactionData = ();
         type ItemStackRequestNetworkItemInstanceDescriptor = ();
         type ItemStackRequestSlotInfo = ();
         type ItemStackResponseContainerInfo = ();
         type ItemStackResponseInfo = ();
         type ItemStackResponseSlotInfo = ();
+        type ItemUseOnEntityTransactionData = ();
+        type ItemUseTransactionData = ();
         type LevelSettings = ();
         type MapDecoration = ();
         type MapItemTrackedActorUniqueID = ();

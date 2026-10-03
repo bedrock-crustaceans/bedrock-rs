@@ -1791,6 +1791,12 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
+    type ItemReleaseTransactionData: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type ItemStackRequestNetworkItemInstanceDescriptor: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -1816,6 +1822,18 @@ pub trait ProtoVersionTypes {
         + Sync
         + 'static;
     type ItemStackResponseSlotInfo: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ItemUseOnEntityTransactionData: bedrock_protocol_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ItemUseTransactionData: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send

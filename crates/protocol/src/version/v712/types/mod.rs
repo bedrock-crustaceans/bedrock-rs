@@ -12,3 +12,4 @@ export!(full_container_name);
 export!(item_stack_request_slot_info);
 export!(item_stack_response_container_info);
 export!(packed_item_use_legacy_inventory_transaction);
+export!(item_use_transaction_data);

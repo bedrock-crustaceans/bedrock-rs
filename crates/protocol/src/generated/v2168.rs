@@ -9320,10 +9320,12 @@ mod inner {
         type GameRulesChangedPacketData = crate::version::v844::types::GameRulesChangedPacketData;
         type GatheringsConfig = crate::version::v2168::types::GatheringsConfig;
         type InventoryAction = crate::version::v1001::types::InventoryAction<Self>;
-        type InventorySource = crate::version::v662::types::InventorySource<Self>;
+        type InventorySource = crate::version::v1001::types::InventorySource;
         type InventoryTransaction = crate::version::v662::types::InventoryTransaction<Self>;
         type ItemData = crate::version::v662::types::ItemData;
         type ItemEnchants = crate::version::v662::types::ItemEnchants<Self>;
+        type ItemReleaseTransactionData =
+            crate::version::v1001::types::ItemReleaseTransactionData<Self>;
         type ItemStackRequestNetworkItemInstanceDescriptor =
             crate::version::v2168::types::ItemStackRequestNetworkItemInstanceDescriptor<Self>;
         type ItemStackRequestSlotInfo =
@@ -9333,6 +9335,9 @@ mod inner {
         type ItemStackResponseInfo = crate::version::v2168::types::ItemStackResponseInfo<Self>;
         type ItemStackResponseSlotInfo =
             crate::version::v2168::types::ItemStackResponseSlotInfo<Self>;
+        type ItemUseOnEntityTransactionData =
+            crate::version::v1001::types::ItemUseOnEntityTransactionData<Self>;
+        type ItemUseTransactionData = crate::version::v1001::types::ItemUseTransactionData<Self>;
         type LevelSettings = crate::version::v2168::types::LevelSettings<Self>;
         type MapDecoration = crate::version::v2168::types::MapDecoration;
         type MapItemTrackedActorUniqueID =
@@ -9351,7 +9356,7 @@ mod inner {
             crate::version::v2168::types::NetworkItemStackDescriptorV2;
         type NetworkPermissions = crate::version::v662::types::NetworkPermissions;
         type PackedItemUseLegacyInventoryTransaction =
-            crate::version::v944::types::PackedItemUseLegacyInventoryTransaction<Self>;
+            crate::version::v2168::types::PackedItemUseLegacyInventoryTransaction<Self>;
         type PlayerBlockActionData = crate::version::v2168::types::PlayerBlockActionData<Self>;
         type PositionTrackingId = crate::version::v662::types::PositionTrackingId;
         type PotionMixDataEntry = crate::version::v662::types::PotionMixDataEntry;
@@ -9439,7 +9444,7 @@ mod inner {
         type InventoryLeftTabIndex = crate::version::v662::enums::InventoryLeftTabIndex;
         type InventoryRightTabIndex = crate::version::v662::enums::InventoryRightTabIndex;
         type InventorySourceFlags = crate::version::v662::enums::InventorySourceFlags;
-        type InventorySourceType = crate::version::v662::enums::InventorySourceType<Self>;
+        type InventorySourceType = crate::version::v662::enums::InventorySourceType;
         type ItemDescriptorType = crate::version::v2168::enums::ItemDescriptorType;
         type ItemReleaseInventoryTransactionType =
             crate::version::v662::enums::ItemReleaseInventoryTransactionType;

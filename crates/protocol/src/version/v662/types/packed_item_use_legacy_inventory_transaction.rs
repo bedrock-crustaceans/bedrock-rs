@@ -1,114 +1,67 @@
 use crate::ProtoVersion;
-use bedrock_macros::ProtoCodec;
+use crate::version::v662::packets::{LegacySetItemSlotsEntry, has_legacy_set_item_slots};
+use crate::version::v662::types::ItemUseTransactionData;
 use bedrock_protocol_core::error::ProtoCodecError;
-use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
+use bedrock_protocol_core::{ProtoCodec, ProtoCodecVAR};
+use std::fmt::Debug;
 use std::io::{Read, Write};
 
+pub type PackedItemUseLegacyInventoryTransaction<V> = ItemUseTransactionWithActions<V, ItemUseTransactionData<V>, false, false>;
+
 #[derive(Clone, Debug)]
-pub struct PackedItemUseLegacyInventoryTransaction<V: ProtoVersion> {
-    pub id: i32,
-    pub container_slots: Option<Vec<ContainerSlotEntry>>,
-    pub action: V::InventoryTransaction,
-    pub action_type: V::ItemUseInventoryTransactionType,
-    pub position: V::NetworkBlockPosition,
-    pub face: i32,
-    pub slot: i32,
-    pub item: V::NetworkItemStackDescriptor,
-    pub from_position: (f32, f32, f32),
-    pub click_position: (f32, f32, f32),
-    pub target_block_id: u32,
+pub struct ItemUseTransactionWithActions<V: ProtoVersion, U, const SLOTS_FLAGGED: bool, const ACTIONS_FLAGGED: bool> {
+    pub legacy_request_id: i32,
+    pub legacy_set_item_slots: Option<Vec<LegacySetItemSlotsEntry>>,
+    pub actions: V::InventoryTransaction,
+    pub item_use: U,
 }
 
-#[derive(ProtoCodec, Clone, Debug)]
-pub struct ContainerSlotEntry {
-    pub container_enum_name: String,
-
-    pub slots: Vec<i8>,
+fn expect_present<R: Read>(stream: &mut R, field: &'static str) -> Result<(), ProtoCodecError> {
+    bool::deserialize(stream)?.then_some(()).ok_or(ProtoCodecError::ExpectedSome(field))
 }
 
-impl<V: ProtoVersion> ProtoCodec for PackedItemUseLegacyInventoryTransaction<V> {
+impl<V, U, const SLOTS_FLAGGED: bool, const ACTIONS_FLAGGED: bool> ProtoCodec for ItemUseTransactionWithActions<V, U, SLOTS_FLAGGED, ACTIONS_FLAGGED>
+where
+    V: ProtoVersion,
+    U: ProtoCodec + Clone + Debug,
+{
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
-        ProtoCodecVAR::serialize(&self.id, stream)?;
-
-        match &self.id {
-            0 => {}
-            _ => {
-                let vec = self.container_slots.as_ref().ok_or(ProtoCodecError::ExpectedSome("container_slots"))?;
-                let len: u32 = vec.len().try_into()?;
-                ProtoCodecVAR::serialize(&len, stream)?;
-                for i in vec {
-                    i.serialize(stream)?
-                }
-            }
+        ProtoCodecVAR::serialize(&self.legacy_request_id, stream)?;
+        if SLOTS_FLAGGED {
+            self.legacy_set_item_slots.serialize(stream)?;
+        } else if has_legacy_set_item_slots(self.legacy_request_id) {
+            let slots = self.legacy_set_item_slots.as_ref().ok_or(ProtoCodecError::ExpectedSome("legacy_set_item_slots"))?;
+            slots.serialize(stream)?;
         }
-
-        self.action.serialize(stream)?;
-        self.action_type.serialize(stream)?;
-        self.position.serialize(stream)?;
-        ProtoCodecVAR::serialize(&self.face, stream)?;
-        ProtoCodecVAR::serialize(&self.slot, stream)?;
-        self.item.serialize(stream)?;
-        ProtoCodecLE::serialize(&self.from_position, stream)?;
-        ProtoCodecLE::serialize(&self.click_position, stream)?;
-        ProtoCodecVAR::serialize(&self.target_block_id, stream)?;
-
-        Ok(())
+        if ACTIONS_FLAGGED {
+            true.serialize(stream)?;
+            true.serialize(stream)?;
+        }
+        self.actions.serialize(stream)?;
+        self.item_use.serialize(stream)
     }
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
-        let id = <i32 as ProtoCodecVAR>::deserialize(stream)?;
-        let container_slots = match id {
-            0 => None,
-            _ => {
-                let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-                let mut vec = Vec::with_capacity(len.try_into()?);
-                for _ in 0..len {
-                    vec.push(ContainerSlotEntry::deserialize(stream)?);
-                }
-                Some(vec)
-            }
+        let legacy_request_id = <i32 as ProtoCodecVAR>::deserialize(stream)?;
+        let legacy_set_item_slots = match SLOTS_FLAGGED {
+            true => ProtoCodec::deserialize(stream)?,
+            false if has_legacy_set_item_slots(legacy_request_id) => Some(ProtoCodec::deserialize(stream)?),
+            false => None,
         };
-        let action = V::InventoryTransaction::deserialize(stream)?;
-        let action_type = V::ItemUseInventoryTransactionType::deserialize(stream)?;
-        let position = V::NetworkBlockPosition::deserialize(stream)?;
-        let face = <i32 as ProtoCodecVAR>::deserialize(stream)?;
-        let slot = <i32 as ProtoCodecVAR>::deserialize(stream)?;
-        let item = V::NetworkItemStackDescriptor::deserialize(stream)?;
-        let from_position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
-        let click_position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
-        let target_block_id = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-
-        Ok(Self {
-            id,
-            container_slots,
-            action,
-            action_type,
-            position,
-            face,
-            slot,
-            item,
-            from_position,
-            click_position,
-            target_block_id,
-        })
+        if ACTIONS_FLAGGED {
+            expect_present(stream, "actions")?;
+            expect_present(stream, "actions")?;
+        }
+        let actions = ProtoCodec::deserialize(stream)?;
+        let item_use = U::deserialize(stream)?;
+        Ok(Self { legacy_request_id, legacy_set_item_slots, actions, item_use })
     }
 
     fn size_hint(&self) -> usize {
-        ProtoCodecVAR::size_hint(&self.id)
-            + match &self.id {
-                0 => 0,
-                _ => {
-                    self.container_slots.as_ref().map_or(0, |vec| vec.len() + vec.iter().map(|i| i.size_hint()).sum::<usize>())
-                }
-            }
-            + self.action.size_hint()
-            + self.action_type.size_hint()
-            + self.position.size_hint()
-            + ProtoCodecVAR::size_hint(&self.face)
-            + ProtoCodecVAR::size_hint(&self.slot)
-            + self.item.size_hint()
-            + ProtoCodecLE::size_hint(&self.from_position)
-            + ProtoCodecLE::size_hint(&self.click_position)
-            + ProtoCodecVAR::size_hint(&self.target_block_id)
+        ProtoCodecVAR::size_hint(&self.legacy_request_id)
+            + self.legacy_set_item_slots.size_hint()
+            + if ACTIONS_FLAGGED { 2 } else { 0 }
+            + self.actions.size_hint()
+            + self.item_use.size_hint()
     }
 }

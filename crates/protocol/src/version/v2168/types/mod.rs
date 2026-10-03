@@ -33,3 +33,4 @@ export!(smithing_trim_recipe);
 export!(sound_data);
 export!(structure_editor_data);
 export!(sub_chunk_pos);
+export!(packed_item_use_legacy_inventory_transaction);
