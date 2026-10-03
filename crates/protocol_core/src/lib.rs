@@ -9,6 +9,7 @@ mod endian;
 pub mod error;
 mod header;
 pub mod sub_client;
+pub mod trace;
 pub mod types;
 
 pub use endian::*;

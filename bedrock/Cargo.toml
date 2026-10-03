@@ -62,6 +62,7 @@ protocol-all = ["bedrock_protocol/all"]
 
 protocol-packet-dyn = ["bedrock_protocol/packet-dyn"]
 protocol-packet-meta = ["bedrock_protocol/packet-meta"]
+protocol-packet-trace = ["bedrock_protocol/packet-trace"]
 
 [[example]]
 name = "server"

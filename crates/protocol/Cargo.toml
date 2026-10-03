@@ -73,3 +73,8 @@ all = [
 
 packet-dyn = ["bedrock_protocol_core/packet-dyn"]
 packet-meta = ["bedrock_protocol_core/packet-meta"]
+packet-trace = ["bedrock_protocol_core/packet-trace"]
+
+[[test]]
+name = "trace"
+required-features = ["packet-trace"]

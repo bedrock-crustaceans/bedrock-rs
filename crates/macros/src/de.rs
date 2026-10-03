@@ -27,6 +27,10 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
         .map(|(i, f)| {
             let name = f.ident.clone().unwrap_or(Ident::new(&format!("e{i}"), Span::call_site()));
             let ty = f.ty.clone();
+            let label = match &f.ident {
+                Some(ident) => ident.to_string().trim_start_matches("r#").to_string(),
+                None => i.to_string(),
+            };
             let flags = get_attrs(f.attrs.as_slice()).expect("Error while getting attrs");
 
             if let Some(repr) = flags.vec_repr {
@@ -36,11 +40,13 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
 
                 return quote! {
                     let #name = {
+                        let _span = ::bedrock_protocol_core::trace::field(#label, None);
                         let len: #repr = #vec_des;
 
                         let mut vec = Vec::with_capacity(len.try_into()?);
 
                         for _ in 0..len {
+                            let _span = ::bedrock_protocol_core::trace::field(#label, Some(vec.len()));
                             vec.push(#des);
                         };
 
@@ -51,13 +57,17 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
 
             if flags.nbt {
                 return quote! {
-                    let #name: #ty = ::nbtx::from_varint_bytes(stream)?;
+                    let #name: #ty = {
+                        let _span = ::bedrock_protocol_core::trace::field(#label, None);
+                        ::nbtx::from_varint_bytes(stream)?
+                    };
                 };
             }
 
             if flags.str {
                 return quote! {
                     let #name: #ty = {
+                        let _span = ::bedrock_protocol_core::trace::field(#label, None);
                         let string = <String as ::bedrock_protocol_core::ProtoCodec>::deserialize(stream)?;
                         <#ty as std::str::FromStr>::from_str(string.as_str())?
                     };
@@ -67,7 +77,10 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
             let des = build_de_instance(flags.endianness, &ty);
 
             quote! {
-                let #name: #ty = #des;
+                let #name: #ty = {
+                    let _span = ::bedrock_protocol_core::trace::field(#label, None);
+                    #des
+                };
             }
         });
 
