@@ -20,6 +20,7 @@ macro_rules! impl_proto_vec {
                 let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
                 let mut vec = Vec::with_capacity(len as usize);
                 for _ in 0..len {
+                    let _span = crate::trace::field("item", Some(vec.len()));
                     vec.push(T::deserialize(stream)?);
                 }
                 Ok(vec)

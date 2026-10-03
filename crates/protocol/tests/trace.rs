@@ -61,6 +61,32 @@ fn derived_fields_record_their_byte_ranges() {
     );
 }
 
+#[derive(ProtoCodec, Debug, PartialEq)]
+struct Entries {
+    entries: Vec<Inner>,
+}
+
+#[test]
+fn plain_vec_items_nest_their_fields() {
+    let bytes = [2, 1, 0x02, 0x00, 3, 0x04, 0x00];
+
+    let (value, spans) = trace(bytes.as_slice(), Entries::deserialize);
+
+    assert_eq!(value.unwrap().entries.len(), 2);
+    assert_eq!(
+        spans,
+        vec![
+            span("entries", None, 0, 0, 7),
+            span("item", Some(0), 1, 1, 4),
+            span("a", None, 2, 1, 2),
+            span("b", None, 2, 2, 4),
+            span("item", Some(1), 1, 4, 7),
+            span("a", None, 2, 4, 5),
+            span("b", None, 2, 5, 7),
+        ]
+    );
+}
+
 #[test]
 fn failed_decode_keeps_spans_up_to_the_error() {
     let bytes = [2, b'h', b'i', 7];
