@@ -9,6 +9,8 @@ use rusty_leveldb::{
     compressor::NoneCompressor,
 };
 
+pub use rusty_leveldb::CompactionMode;
+
 use crate::{error::Result, iter::Keys};
 
 /// On-disk block compression identifiers used by the world format.
@@ -21,11 +23,12 @@ const COMPRESSOR_NONE: u8 = 0;
 const COMPRESSOR_ZLIB: u8 = 2;
 const COMPRESSOR_RAW_DEFLATE: u8 = 4;
 
-/// Tables are written with a 4 MiB block size.
-const BLOCK_SIZE: usize = 4 * 1024 * 1024;
+/// Tables are written with a 32 KiB block size. Every read decompresses a whole block, so
+/// larger blocks make point lookups of single chunk records much slower.
+const BLOCK_SIZE: usize = 32 * 1024;
 
-/// Default deflate compression level.
-const COMPRESSION_LEVEL: u8 = 6;
+/// Deflate compression level. Level 1 writes about three times faster than level 6 for roughly 7% more disk space.
+const COMPRESSION_LEVEL: u8 = 1;
 
 /// `zlib`-framed deflate, matching id 2.
 struct ZlibCompressor(u8);
@@ -59,7 +62,7 @@ impl Compressor for RawDeflateCompressor {
     }
 }
 
-fn options() -> Options {
+fn options(compaction_mode: CompactionMode) -> Options {
     let mut list = CompressorList::new();
     list.set_with_id(COMPRESSOR_NONE, NoneCompressor);
     list.set_with_id(COMPRESSOR_ZLIB, ZlibCompressor(COMPRESSION_LEVEL));
@@ -73,6 +76,7 @@ fn options() -> Options {
         compressor: COMPRESSOR_RAW_DEFLATE,
         block_size: BLOCK_SIZE,
         create_if_missing: true,
+        compaction_mode,
         ..Default::default()
     }
 }
@@ -107,6 +111,36 @@ impl From<Buffer<'_>> for Vec<u8> {
     }
 }
 
+/// A group of inserts and removals applied together by [`Database::write`]. Writing a chunk's
+/// records as one batch is much cheaper than inserting them one at a time.
+#[derive(Default)]
+pub struct WriteBatch(rusty_leveldb::WriteBatch);
+
+impl WriteBatch {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Queues an insertion of `value` at `key`.
+    pub fn insert<K: AsRef<[u8]>, V: AsRef<[u8]>>(&mut self, key: K, value: V) {
+        self.0.put(key.as_ref(), value.as_ref());
+    }
+
+    /// Queues the removal of `key`.
+    pub fn remove<K: AsRef<[u8]>>(&mut self, key: K) {
+        self.0.delete(key.as_ref());
+    }
+
+    /// The amount of queued operations.
+    pub fn len(&self) -> usize {
+        self.0.count() as usize
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
 /// A LevelDB database.
 pub struct Database {
     db: DB,
@@ -116,8 +150,30 @@ impl Database {
     /// Opens a LevelDB database at the specified `path`. This `path` should point to the `db` directory
     /// of a world, not the world itself.
     pub fn open<P: AsRef<str>>(path: P) -> Result<Self> {
-        let db = DB::open(path.as_ref(), options())?;
+        Self::open_with(path, CompactionMode::Background)
+    }
+
+    /// Opens a LevelDB database like [`open`](Self::open), choosing where compaction runs.
+    /// [`CompactionMode::Background`] starts a dedicated compaction thread, [`CompactionMode::Inline`]
+    /// compacts on whichever thread is writing and [`CompactionMode::Manual`] only compacts when
+    /// [`compact`](Self::compact) is called.
+    pub fn open_with<P: AsRef<str>>(path: P, compaction_mode: CompactionMode) -> Result<Self> {
+        let db = DB::open(path.as_ref(), options(compaction_mode))?;
         Ok(Self { db })
+    }
+
+    /// Runs any compaction the database needs, on the calling thread unless the database was opened
+    /// with [`CompactionMode::Background`]. Databases opened with [`CompactionMode::Manual`] should
+    /// call this periodically, since reads slow down as uncompacted tables pile up.
+    pub fn compact(&self) -> Result<()> {
+        self.db.maybe_compact()?;
+        Ok(())
+    }
+
+    /// Applies every write in `batch` atomically, as a single write to the log.
+    pub fn write(&self, batch: WriteBatch) -> Result<()> {
+        self.db.write(batch.0, false)?;
+        Ok(())
     }
 
     /// Creates a forward iterator over the underlying database handle.
