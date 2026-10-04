@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, ops::Deref, sync::Arc};
+use std::{marker::PhantomData, ops::Deref, sync::Arc, time::Duration};
 
 use miniz_oxide::{
     deflate::{compress_to_vec, compress_to_vec_zlib},
@@ -181,6 +181,14 @@ impl Database {
     pub fn compact(&self) -> Result<()> {
         self.db.maybe_compact()?;
         Ok(())
+    }
+
+    /// Compacts on the calling thread for roughly `budget` and returns whether more is pending, so
+    /// the backlog can be drained a little at a time instead of blocking until
+    /// [`compact`](Self::compact) finishes. A compaction that outlives the budget is paused and
+    /// resumed by the next call. With [`CompactionMode::Background`] it only wakes the compaction thread.
+    pub fn compact_step(&self, budget: Duration) -> Result<bool> {
+        Ok(self.db.compact_step(budget)?)
     }
 
     /// Applies every write in `batch` atomically, as a single write to the log.

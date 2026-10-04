@@ -15,7 +15,7 @@ name = "unpack"
 harness = false
 
 [dependencies]
-rusty-leveldb = { git = "https://github.com/bedrock-crustaceans/rusty-leveldb", rev = "3365b32b747ad50fefdd8b6a6f988dacf357a114" }
+rusty-leveldb = { git = "https://github.com/bedrock-crustaceans/rusty-leveldb", rev = "ece98587b32f278083b3da564ed3909db124943e" }
 miniz_oxide = { version = "0.9" }
 
 bedrock_shared = { path = "../shared" }
