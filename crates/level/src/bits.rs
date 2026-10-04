@@ -82,6 +82,27 @@ impl BitArray {
         matches!(self, BitArray::Lazy(_))
     }
 
+    /// Creates an array where every index is zero, which is what a layer without index data means.
+    pub fn zeroed<M: UnpackingMethod>() -> Self {
+        if M::IS_LAZY {
+            BitArray::Lazy(LazyArray::new(1, vec![0; 4096 / 32]))
+        } else {
+            BitArray::Greedy(GreedyArray::from(Box::new([0u16; 4096])))
+        }
+    }
+
+    /// The smallest bit size able to index a palette of `palette_size` entries, or 0 when
+    /// the palette has at most one entry and no indices need to be stored.
+    pub fn bits_for(palette_size: usize) -> u8 {
+        if palette_size <= 1 {
+            return 0;
+        }
+        VALID_BITS
+            .into_iter()
+            .find(|&bits| 1usize << bits >= palette_size)
+            .unwrap_or(16)
+    }
+
     /// Deserializes a data bit array.
     #[inline]
     fn from_data_helper<M: UnpackingMethod, R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
@@ -112,23 +133,22 @@ impl BitArray {
         })
     }
 
-    /// Serializes this array in disk format.
+    /// Serializes this array in disk format, packed with the smallest bit size that fits `palette_size`.
+    /// A palette of at most one entry writes no index data at all.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, palette_size: usize) -> Result<()>
     where
         Cursor<W>: Write,
     {
-        let mut bits = 0;
-        for b in VALID_BITS {
-            if 2usize.pow(b as u32) >= palette_size {
-                bits = b;
-            }
-        }
-
+        let bits = Self::bits_for(palette_size);
         writer.write_u8(bits << 1)?;
+        if bits == 0 {
+            return Ok(());
+        }
 
         match self {
             BitArray::Greedy(array) => array.to_disk(writer, bits as u32),
-            BitArray::Lazy(array) => array.to_disk(writer),
+            BitArray::Lazy(array) if array.bits() == bits => array.to_disk(writer),
+            BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, bits as u32),
         }
     }
 

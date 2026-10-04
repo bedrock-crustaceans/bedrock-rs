@@ -35,19 +35,9 @@ impl GreedyArray {
     /// Packs the array into a given array of words using the given amount of bits per block.
     pub(crate) fn pack_into(&self, words: &mut [u32], bits: u8) {
         // Amount of indices that fit in a single 32-bit integer.
-        let per_word = u32::BITS / bits as u32;
-        let word_count = 4096 / per_word as usize;
-
-        let mut offset = 0;
-        for out in words.iter_mut().take(word_count) {
-            let mut word = 0;
-            for w in 0..per_word {
-                let index = self.array[offset] as u32;
-                word |= index << (w * bits as u32);
-                offset += 1;
-            }
-
-            *out = word;
+        let per_word = (u32::BITS / bits as u32) as usize;
+        for (out, indices) in words.iter_mut().zip(self.array.chunks(per_word)) {
+            *out = Self::pack_word(indices, bits as u32);
         }
     }
 
@@ -56,23 +46,19 @@ impl GreedyArray {
     where
         Cursor<W>: Write,
     {
-        // Amount of indices that fit in a single 32-bit integer.
-        let per_word = u32::BITS / bits;
-
-        let mut offset = 0;
-        while offset < 4096 {
-            let mut word = 0;
-            for w in 0..per_word {
-                let index = self.array[offset] as u32;
-                word |= index << (w * bits);
-
-                offset += 1;
-            }
-
-            writer.write_u32::<LittleEndian>(word)?;
+        let per_word = (u32::BITS / bits) as usize;
+        for indices in self.array.chunks(per_word) {
+            writer.write_u32::<LittleEndian>(Self::pack_word(indices, bits))?;
         }
 
         Ok(())
+    }
+
+    fn pack_word(indices: &[u16], bits: u32) -> u32 {
+        let mask = !(!0u32 << bits);
+        indices.iter().enumerate().fold(0, |word, (slot, &index)| {
+            word | ((index as u32 & mask) << (slot as u32 * bits))
+        })
     }
 
     /// Deserializers the packed array from disk.
@@ -194,9 +180,10 @@ impl GreedyArray {
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm_loadu_epi32, _mm_set_epi32, _mm_set1_epi32, _mm_storeu_epi16,
-            _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64, _mm256_set_epi32,
-            _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32, _mm256_srlv_epi32,
+            __m256i, _mm_cvtsi32_si128, _mm_loadu_epi32, _mm_set_epi32, _mm_set1_epi32,
+            _mm_storeu_epi16, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+            _mm256_set_epi32, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32,
+            _mm256_srlv_epi32,
         };
 
         const SIMD_LANES: u32 = 8;
@@ -231,7 +218,7 @@ impl GreedyArray {
                 );
 
                 // Shifts all lanes to their next location in the word.
-                let vshiftall = _mm_set1_epi32(8 * bits);
+                let vshiftall = _mm_cvtsi32_si128(8 * bits);
 
                 let mut w = 0;
                 let mut offset = 0;
@@ -328,7 +315,7 @@ impl GreedyArray {
                     let vperm = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
 
                     debug_assert!(
-                        indices.len() - offset > 8,
+                        indices.len() - offset >= 8,
                         "unpack_oct<8> buffer overflow, this is a bug"
                     );
 
@@ -380,7 +367,7 @@ impl GreedyArray {
     #[inline]
     pub fn unpack_nonsimd(bits: u8, mut words: &[u32], indices: &mut [u16]) {
         let per_word = u32::BITS / bits as u32;
-        let max_len = 4096 / per_word;
+        let max_len = 4096u32.div_ceil(per_word);
         words = &words[..max_len as usize];
 
         let mask = !(!0u32 << bits);

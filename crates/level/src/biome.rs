@@ -68,6 +68,10 @@ impl Biomes {
                     writer.write_u8(EMPTY_FLAG << 1)?;
                     writer.write_u32::<LittleEndian>(*v)?;
                 }
+                BiomeEncoding::Palette(v) if v.palette.len() <= 1 => {
+                    writer.write_u8(EMPTY_FLAG << 1)?;
+                    writer.write_u32::<LittleEndian>(v.palette.first().copied().unwrap_or(0))?;
+                }
                 BiomeEncoding::Palette(v) => {
                     v.array.to_disk(writer, v.palette.len())?;
                     writer.write_u32::<LittleEndian>(v.palette.len() as u32)?;

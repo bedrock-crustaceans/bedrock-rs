@@ -206,11 +206,7 @@ impl Layer {
         Cursor<R>: Read,
     {
         let array = match BitArray::from_disk::<M, _>(reader)? {
-            IndicesType::Empty => {
-                return Err(Error::Invalid(
-                    "found empty bit array while deserializing chunk, expected data",
-                ));
-            }
+            IndicesType::Empty => BitArray::zeroed::<M>(),
             IndicesType::Inherit => {
                 return Err(Error::Invalid(
                     "chunks do not support inheriting bit arrays",
