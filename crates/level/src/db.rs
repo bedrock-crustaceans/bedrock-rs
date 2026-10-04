@@ -27,8 +27,26 @@ const COMPRESSOR_RAW_DEFLATE: u8 = 4;
 /// larger blocks make point lookups of single chunk records much slower.
 const BLOCK_SIZE: usize = 32 * 1024;
 
-/// Deflate compression level. Level 1 writes about three times faster than level 6 for roughly 7% more disk space.
-const COMPRESSION_LEVEL: u8 = 1;
+/// How a [`Database`] is opened.
+#[derive(Debug, Clone, Copy)]
+pub struct OpenOptions {
+    /// Where compaction runs. [`CompactionMode::Background`] starts a dedicated compaction thread,
+    /// [`CompactionMode::Inline`] compacts on whichever thread is writing and [`CompactionMode::Manual`]
+    /// only compacts when [`Database::compact`] is called.
+    pub compaction_mode: CompactionMode,
+    /// Deflate level from 0 (store) to 10 (slowest). Level 1 writes about three times faster than
+    /// level 6 for roughly 7% more disk space.
+    pub compression_level: u8,
+}
+
+impl Default for OpenOptions {
+    fn default() -> Self {
+        Self {
+            compaction_mode: CompactionMode::Background,
+            compression_level: 1,
+        }
+    }
+}
 
 /// `zlib`-framed deflate, matching id 2.
 struct ZlibCompressor(u8);
@@ -62,21 +80,19 @@ impl Compressor for RawDeflateCompressor {
     }
 }
 
-fn options(compaction_mode: CompactionMode) -> Options {
+fn options(open: OpenOptions) -> Options {
+    let level = open.compression_level.min(10);
     let mut list = CompressorList::new();
     list.set_with_id(COMPRESSOR_NONE, NoneCompressor);
-    list.set_with_id(COMPRESSOR_ZLIB, ZlibCompressor(COMPRESSION_LEVEL));
-    list.set_with_id(
-        COMPRESSOR_RAW_DEFLATE,
-        RawDeflateCompressor(COMPRESSION_LEVEL),
-    );
+    list.set_with_id(COMPRESSOR_ZLIB, ZlibCompressor(level));
+    list.set_with_id(COMPRESSOR_RAW_DEFLATE, RawDeflateCompressor(level));
 
     Options {
         compressor_list: Arc::new(list),
         compressor: COMPRESSOR_RAW_DEFLATE,
         block_size: BLOCK_SIZE,
         create_if_missing: true,
-        compaction_mode,
+        compaction_mode: open.compaction_mode,
         ..Default::default()
     }
 }
@@ -150,15 +166,12 @@ impl Database {
     /// Opens a LevelDB database at the specified `path`. This `path` should point to the `db` directory
     /// of a world, not the world itself.
     pub fn open<P: AsRef<str>>(path: P) -> Result<Self> {
-        Self::open_with(path, CompactionMode::Background)
+        Self::open_with(path, OpenOptions::default())
     }
 
-    /// Opens a LevelDB database like [`open`](Self::open), choosing where compaction runs.
-    /// [`CompactionMode::Background`] starts a dedicated compaction thread, [`CompactionMode::Inline`]
-    /// compacts on whichever thread is writing and [`CompactionMode::Manual`] only compacts when
-    /// [`compact`](Self::compact) is called.
-    pub fn open_with<P: AsRef<str>>(path: P, compaction_mode: CompactionMode) -> Result<Self> {
-        let db = DB::open(path.as_ref(), options(compaction_mode))?;
+    /// Opens a LevelDB database like [`open`](Self::open) with the given [`OpenOptions`].
+    pub fn open_with<P: AsRef<str>>(path: P, options: OpenOptions) -> Result<Self> {
+        let db = DB::open(path.as_ref(), self::options(options))?;
         Ok(Self { db })
     }
 
