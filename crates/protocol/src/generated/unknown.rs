@@ -164,6 +164,9 @@ mod inner {
         type ClientBoundDataStorePacket = ();
         type ClientBoundDebugRendererPacket = ();
         type ClientBoundMapItemDataPacket = ();
+        type ClientBoundMatchmakingStatePacket = ();
+        type ClientBoundPlayAudioContentPacket = ();
+        type ClientBoundStonecutterSetRecipePacket = ();
         type ClientBoundTextureShiftPacket = ();
         type ClientBoundUpdateSoundDataPacket = ();
         type ClientCacheBlobStatusPacket = ();
@@ -289,11 +292,15 @@ mod inner {
         type RespawnPacket = ();
         type ScriptMessagePacket = ();
         type SendPartyDestinationCookiePacket = ();
+        type ServerBoundCursorItemDragPacket = ();
         type ServerBoundDataDrivenClosedPacket = ();
         type ServerBoundDataStorePacket = ();
         type ServerBoundDiagnosticsPacket = ();
         type ServerBoundLoadingScreenPacket = ();
+        type ServerBoundMatchmakingCancelPacket = ();
         type ServerBoundPackSettingChangePacket = ();
+        type ServerBoundRegisterAudioContentPacket = ();
+        type ServerBoundStonecutterSetRecipePacket = ();
         type ServerPlayerPostMovePositionPacket = ();
         type ServerPresenceInfoPacket = ();
         type ServerSettingsRequestPacket = ();
@@ -313,6 +320,7 @@ mod inner {
         type SetLastHurtByPacket = ();
         type SetLocalPlayerAsInitializedPacket = ();
         type SetMovementAuthorityPacket = ();
+        type SetPassengerOfBlockPacket = ();
         type SetPlayerFurnaceOptionsPacket = ();
         type SetPlayerGameTypePacket = ();
         type SetPlayerInventoryOptionsPacket = ();
@@ -444,6 +452,7 @@ mod inner {
         type NetworkItemStackDescriptorV2 = ();
         type NetworkPermissions = ();
         type PackedItemUseLegacyInventoryTransaction = ();
+        type PassengerOfBlockArguments = ();
         type PlayerBlockActionData = ();
         type PositionTrackingId = ();
         type PotionMixDataEntry = ();
@@ -457,6 +466,7 @@ mod inner {
         type ShapedRecipe = ();
         type ShapelessRecipe = ();
         type ShulkerBoxRecipe = ();
+        type SignedAudioContent = ();
         type SmithingTransformRecipe = ();
         type SmithingTrimRecipe = ();
         type SoundData = ();

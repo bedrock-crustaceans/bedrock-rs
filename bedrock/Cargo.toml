@@ -58,6 +58,7 @@ protocol-v1001 = ["bedrock_protocol/v1001"]
 protocol-v2168 = ["bedrock_protocol/v2168"]
 protocol-v2169 = ["bedrock_protocol/v2169"]
 protocol-v2193 = ["bedrock_protocol/v2193"]
+protocol-v2225 = ["bedrock_protocol/v2225"]
 protocol-all = ["bedrock_protocol/all"]
 
 protocol-packet-dyn = ["bedrock_protocol/packet-dyn"]
@@ -67,4 +68,4 @@ protocol-packet-trace = ["bedrock_protocol/packet-trace"]
 [[example]]
 name = "server"
 path = "examples/server.rs"
-required-features = ["network", "protocol-v2193", "protocol-unknown"]
+required-features = ["network", "protocol-v2225", "protocol-unknown"]
