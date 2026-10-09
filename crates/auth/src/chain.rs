@@ -115,7 +115,7 @@ pub(crate) fn verifying_key(public_key_base64: &str) -> Result<VerifyingKey, Aut
     ))
 }
 
-fn parse_public_key(public_key_base64: &str) -> Result<PublicKey, AuthError> {
+pub(crate) fn parse_public_key(public_key_base64: &str) -> Result<PublicKey, AuthError> {
     let der = STANDARD
         .decode(public_key_base64)
         .map_err(|_| AuthError::InvalidPublicKey)?;

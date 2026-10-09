@@ -1,4 +1,4 @@
-use crate::chain::verifying_key;
+use crate::chain::{parse_public_key, verifying_key};
 use crate::error::AuthError;
 use crate::jwt::{Expiry, Rules, Token};
 use serde::de::DeserializeOwned;
@@ -14,6 +14,10 @@ pub struct Identity {
 }
 
 impl Identity {
+    pub fn public_key(&self) -> Result<p384::PublicKey, AuthError> {
+        parse_public_key(&self.public_key)
+    }
+
     pub fn verify_client_data<T: DeserializeOwned>(&self, token: &str) -> Result<T, AuthError> {
         let rules = Rules {
             expiry: Expiry::Ignored,
@@ -54,6 +58,8 @@ mod tests {
     use super::*;
     use crate::jwt::JwtError;
     use crate::test_support::TestKey;
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD;
     use serde_json::{Value, json};
 
     fn identity_of(key: &TestKey) -> Identity {
@@ -93,5 +99,32 @@ mod tests {
             matches!(result, Err(AuthError::Jwt(JwtError::InvalidSignature))),
             "{result:?}"
         );
+    }
+
+    #[test]
+    fn public_key_parses_the_identity_key() {
+        let key = TestKey::from_seed(1);
+
+        let parsed = identity_of(&key).public_key().unwrap();
+
+        let der = p384::pkcs8::EncodePublicKey::to_public_key_der(&parsed).unwrap();
+        assert_eq!(STANDARD.encode(der.as_bytes()), key.public_base64());
+    }
+
+    #[test]
+    fn public_key_rejects_text_that_is_not_a_key() {
+        let mut identity = identity_of(&TestKey::from_seed(1));
+        identity.public_key = "not a key".into();
+
+        assert!(matches!(
+            identity.public_key(),
+            Err(AuthError::InvalidPublicKey)
+        ));
+
+        identity.public_key = STANDARD.encode(b"valid base64, not a SPKI key");
+        assert!(matches!(
+            identity.public_key(),
+            Err(AuthError::InvalidPublicKey)
+        ));
     }
 }
