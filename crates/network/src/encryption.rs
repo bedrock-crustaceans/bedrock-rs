@@ -4,14 +4,23 @@ use ctr::cipher::{StreamCipher, StreamCipherSeek};
 use ctr::{Ctr128BE, cipher::KeyIvInit};
 use p384::{PublicKey, SecretKey};
 use sha2::{Digest, Sha256};
+use std::fmt;
 
-#[derive(Debug)]
 pub struct Encryption {
     encrypt_counter: u64,
     encrypt_cipher: Ctr128BE<Aes256>,
     decrypt_counter: u64,
     decrypt_cipher: Ctr128BE<Aes256>,
     key: [u8; 32],
+}
+
+impl fmt::Debug for Encryption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Encryption")
+            .field("encrypt_counter", &self.encrypt_counter)
+            .field("decrypt_counter", &self.decrypt_counter)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Serializable [`Encryption`] state, from which the ciphers are rebuilt using the key
@@ -34,7 +43,7 @@ fn iv_from_key(key: &[u8; 32]) -> [u8; 16] {
 
 impl Encryption {
     pub fn new(secret: &SecretKey, public: &PublicKey, token: &[u8; 16]) -> Self {
-        let shared = secret.diffie_hellman(public);
+        let shared = p384::ecdh::diffie_hellman(secret.to_nonzero_scalar(), public.as_affine());
 
         let shared_bytes = shared.raw_secret_bytes();
 
