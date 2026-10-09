@@ -17,14 +17,16 @@ use bedrock::protocol::v944::packets::VoxelShapesPacket;
 use bedrock::protocol::v944::types::NetworkBlockPosition;
 use bedrock::protocol::v2168::enums::EducationEditionOffer;
 use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
-use bedrock::protocol::{ProtoVersion, Unknown, V2193};
+use bedrock::protocol::{ProtoVersion, Unknown, V2225};
 use bedrock_protocol::v2168::packets::StartGamePacket;
-use bedrock_protocol::v2168::types::{GameRuleLegacyData, LevelSettings};
+use bedrock_protocol::v2225::types::{
+    EditorLevelMigrationVersion, GameRuleLegacyData, LevelSettings,
+};
 use std::collections::HashMap;
 use tokio::time::Instant;
 use uuid::Uuid;
 
-type Protocol = V2193;
+type Protocol = V2225;
 
 #[tokio::main]
 async fn main() {
@@ -164,6 +166,7 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
             editor_world_type: EditorWorldType::NonEditor,
             is_created_in_editor: false,
             is_exported_from_editor: false,
+            editor_level_migration_version: EditorLevelMigrationVersion::Legacy,
             day_cycle_stop_time: 2000,
             education_edition_offer: EducationEditionOffer::None,
             education_features_enabled: false,

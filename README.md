@@ -30,7 +30,7 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 - [`bedrock::protocol`](crates/protocol)  
   - Complete implementation of the Minecraft Bedrock protocol.  
   - Support for both server-side and client-side operations.  
-  - Multi-protocol compatibility: one feature per protocol version (`protocol-v662` through `protocol-v2193`), each version described as a diff over the previous one and expanded by `cargo xtask`.  
+  - Multi-protocol compatibility: one feature per protocol version (`protocol-v662` through `protocol-v2225`), each version described as a diff over the previous one and expanded by `cargo xtask`.  
 
 - [`bedrock::network`](crates/network)  
   - RakNet-based transport layer for accepting, tracking, and communicating with client connections.  

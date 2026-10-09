@@ -7662,6 +7662,9 @@ mod inner {
             crate::version::v662::packets::ClientBoundDebugRendererPacket;
         type ClientBoundMapItemDataPacket =
             crate::version::v662::packets::ClientBoundMapItemDataPacket<Self>;
+        type ClientBoundMatchmakingStatePacket = ();
+        type ClientBoundPlayAudioContentPacket = ();
+        type ClientBoundStonecutterSetRecipePacket = ();
         type ClientBoundTextureShiftPacket = ();
         type ClientBoundUpdateSoundDataPacket = ();
         type ClientCacheBlobStatusPacket =
@@ -7813,11 +7816,15 @@ mod inner {
         type RespawnPacket = crate::version::v662::packets::RespawnPacket<Self>;
         type ScriptMessagePacket = crate::version::v662::packets::ScriptMessagePacket;
         type SendPartyDestinationCookiePacket = ();
+        type ServerBoundCursorItemDragPacket = ();
         type ServerBoundDataDrivenClosedPacket = ();
         type ServerBoundDataStorePacket = ();
         type ServerBoundDiagnosticsPacket = ();
         type ServerBoundLoadingScreenPacket = ();
+        type ServerBoundMatchmakingCancelPacket = ();
         type ServerBoundPackSettingChangePacket = ();
+        type ServerBoundRegisterAudioContentPacket = ();
+        type ServerBoundStonecutterSetRecipePacket = ();
         type ServerPlayerPostMovePositionPacket =
             crate::version::v662::packets::ServerPlayerPostMovePositionPacket;
         type ServerPresenceInfoPacket = ();
@@ -7844,6 +7851,7 @@ mod inner {
         type SetLocalPlayerAsInitializedPacket =
             crate::version::v662::packets::SetLocalPlayerAsInitializedPacket<Self>;
         type SetMovementAuthorityPacket = ();
+        type SetPassengerOfBlockPacket = ();
         type SetPlayerFurnaceOptionsPacket = ();
         type SetPlayerGameTypePacket = crate::version::v662::packets::SetPlayerGameTypePacket<Self>;
         type SetPlayerInventoryOptionsPacket =
@@ -7992,6 +8000,7 @@ mod inner {
         type NetworkPermissions = crate::version::v662::types::NetworkPermissions;
         type PackedItemUseLegacyInventoryTransaction =
             crate::version::v662::types::PackedItemUseLegacyInventoryTransaction<Self>;
+        type PassengerOfBlockArguments = ();
         type PlayerBlockActionData = crate::version::v662::types::PlayerBlockActionData<Self>;
         type PositionTrackingId = crate::version::v662::types::PositionTrackingId;
         type PotionMixDataEntry = crate::version::v662::types::PotionMixDataEntry;
@@ -8005,6 +8014,7 @@ mod inner {
         type ShapedRecipe = crate::version::v662::types::ShapedRecipe<Self>;
         type ShapelessRecipe = crate::version::v662::types::ShapelessRecipe<Self>;
         type ShulkerBoxRecipe = crate::version::v662::types::ShulkerBoxRecipe<Self>;
+        type SignedAudioContent = ();
         type SmithingTransformRecipe = crate::version::v662::types::SmithingTransformRecipe<Self>;
         type SmithingTrimRecipe = crate::version::v662::types::SmithingTrimRecipe<Self>;
         type SoundData = ();
