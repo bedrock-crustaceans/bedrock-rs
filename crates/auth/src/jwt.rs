@@ -2,7 +2,7 @@ use base64::Engine;
 use base64::alphabet::URL_SAFE;
 use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
 use p384::ecdsa::signature::Verifier;
-use rsa::{BigUint, RsaPublicKey};
+use rsa::{BoxedUint, RsaPublicKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
@@ -251,8 +251,8 @@ impl Jwk {
             return Err(JwtError::InvalidJwk);
         }
         let key = RsaPublicKey::new(
-            BigUint::from_bytes_be(&BASE64URL.decode(n)?),
-            BigUint::from_bytes_be(&BASE64URL.decode(e)?),
+            BoxedUint::from_be_slice_vartime(&BASE64URL.decode(n)?),
+            BoxedUint::from_be_slice_vartime(&BASE64URL.decode(e)?),
         )
         .map_err(|_| JwtError::InvalidJwk)?;
         Ok(VerifyingKey::Rs256(rsa::pkcs1v15::VerifyingKey::new(key)))

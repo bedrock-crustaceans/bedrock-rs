@@ -7,12 +7,12 @@ edition.workspace = true
 bedrock_protocol_core = { path = "../protocol_core" }
 bedrock_macros = { path = "../macros" }
 
-nbtx = { workspace = true }
-byteorder = { workspace = true }
-tracing = { workspace = true }
-uuid = { workspace = true }
-strum = { workspace = true }
-strum_macros = { workspace = true }
+nbtx.workspace = true
+byteorder.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
 
 [features]
 default = ["v2225"]

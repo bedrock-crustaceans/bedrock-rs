@@ -14,10 +14,10 @@ bedrock_network = { path = "../crates/network", optional = true }
 bedrock_level = { path = "../crates/level", optional = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
-uuid = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tokio.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 
 [features]
 auth = ["dep:bedrock_auth"]

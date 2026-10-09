@@ -4,21 +4,23 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
-serde_repr = { workspace = true }
-thiserror = { workspace = true }
-base64 = { workspace = true }
-p384 = { workspace = true }
-rsa = { version = "0.9", default-features = false, features = ["std", "sha2"] }
-sha2 = { workspace = true }
-md-5 = "0.10"
-uuid = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+serde_repr.workspace = true
+thiserror.workspace = true
+base64.workspace = true
+p384.workspace = true
+sha2.workspace = true
+md-5 = "0.11.0"
+uuid.workspace = true
 ureq = { version = "3", optional = true }
 reqwest = { workspace = true, optional = true }
 
+# TODO: update this once 0.10 is released
+rsa = { version = "0.10.0-rc.19", default-features = false, features = ["std", "sha2"] }
+
 [dev-dependencies]
-rand = "0.8"
+rand = "0.10.3"
 
 [features]
 ureq = ["dep:ureq"]

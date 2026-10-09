@@ -3,7 +3,7 @@ use base64::Engine;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use p384::SecretKey;
 use p384::ecdsa::signature::{SignatureEncoding, Signer};
-use p384::elliptic_curve::sec1::ToEncodedPoint;
+use p384::elliptic_curve::sec1::ToSec1Point;
 use p384::pkcs8::EncodePublicKey;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
@@ -30,7 +30,7 @@ impl TestKey {
     }
 
     pub fn jwks(&self, kid: &str) -> JwkSet {
-        let point = self.0.public_key().to_encoded_point(false);
+        let point = self.0.public_key().to_sec1_point(false);
         let (x, y) = point.as_bytes()[1..].split_at(48);
         serde_json::from_value(json!({ "keys": [{
             "kty": "EC",
@@ -92,8 +92,8 @@ impl TestRsaKey {
             "kid": kid,
             "use": "sig",
             "alg": "RS256",
-            "n": URL_SAFE_NO_PAD.encode(self.0.n().to_bytes_be()),
-            "e": URL_SAFE_NO_PAD.encode(self.0.e().to_bytes_be()),
+            "n": URL_SAFE_NO_PAD.encode(self.0.n().to_be_bytes()),
+            "e": URL_SAFE_NO_PAD.encode(self.0.e().to_be_bytes()),
         }] }))
         .expect("JWKS parses")
     }
@@ -245,7 +245,7 @@ impl crate::http::AsyncHttpClient for FakeHttp {
     }
 }
 
-pub fn block_on<F: std::future::Future>(future: F) -> F::Output {
+pub fn block_on<F: Future>(future: F) -> F::Output {
     let mut future = std::pin::pin!(future);
     let mut context = std::task::Context::from_waker(std::task::Waker::noop());
     match future.as_mut().poll(&mut context) {

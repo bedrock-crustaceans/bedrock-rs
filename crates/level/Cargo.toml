@@ -19,19 +19,19 @@ rusty-leveldb = { git = "https://github.com/bedrock-crustaceans/leveldb" }
 miniz_oxide = { version = "0.9" }
 
 bedrock_shared = { path = "../shared" }
-nbtx = { workspace = true }
-facet = { workspace = true }
+nbtx.workspace = true
+facet.workspace = true
 
-thiserror = { workspace = true }
-serde = { workspace = true }
-byteorder = { workspace = true }
-bytemuck = { workspace = true }
+thiserror.workspace = true
+serde.workspace = true
+byteorder.workspace = true
+bytemuck.workspace = true
 smallvec = "1.15.1"
 rustc-hash = "2.1.1"
 nohash-hasher = "0.2.0"
 
 [dev-dependencies]
-tar = { workspace = true }
-flate2 = { workspace = true }
-tempfile = { workspace = true }
-criterion = { workspace = true }
+tar.workspace = true
+flate2.workspace = true
+tempfile.workspace = true
+criterion.workspace = true
