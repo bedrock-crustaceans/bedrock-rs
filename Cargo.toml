@@ -30,7 +30,6 @@ seq-macro = "0.3"
 proc-macro2 = "1.0"
 syn = { version = "3.0.3", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
-jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 base64 = "0.23.0"
 # TODO: switch this back to crates.io after 4.0.0 release
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
