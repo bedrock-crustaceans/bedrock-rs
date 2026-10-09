@@ -143,7 +143,9 @@ impl Compression {
         max_len: usize,
     ) -> Result<Vec<u8>, CompressionError> {
         let mut dst = Vec::with_capacity(compressed_len.min(max_len));
-        decoder.take(max_len as u64 + 1).read_to_end(&mut dst)?;
+        decoder
+            .take((max_len as u64).saturating_add(1))
+            .read_to_end(&mut dst)?;
         if dst.len() > max_len {
             return Err(CompressionError::TooLarge(max_len));
         }
@@ -162,6 +164,23 @@ mod tests {
             threshold: 0,
             compression_level: 9,
         }
+    }
+
+    #[test]
+    fn zlib_batch_decompresses_with_no_limit() {
+        let batch = vec![7u8; 4096];
+        let compressed = zlib().compress(batch.clone()).unwrap();
+
+        assert_eq!(zlib().decompress(compressed, usize::MAX).unwrap(), batch);
+    }
+
+    #[test]
+    fn snappy_batch_decompresses_with_no_limit() {
+        let snappy = Compression::Snappy { threshold: 0 };
+        let batch = vec![7u8; 4096];
+        let compressed = snappy.compress(batch.clone()).unwrap();
+
+        assert_eq!(snappy.decompress(compressed, usize::MAX).unwrap(), batch);
     }
 
     #[test]
