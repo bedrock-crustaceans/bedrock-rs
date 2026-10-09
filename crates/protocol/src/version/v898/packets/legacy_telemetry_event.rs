@@ -3,7 +3,6 @@ use bedrock_macros::{ProtoCodec, packet};
 use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write, copy};
-use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 65)]
 #[derive(Clone, Debug)]
@@ -185,7 +184,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         )?;
         let mut event_type_cursor = Cursor::new(event_type_stream.as_slice());
 
-        let event_type_discriminant = event_type_cursor.read_i32_varint()?;
+        let event_type_discriminant = <i32 as ProtoCodecVAR>::deserialize(&mut event_type_cursor)?;
 
         let payload_type: u32 = match event_type_discriminant {
             0..=7 => event_type_discriminant as u32,
@@ -218,7 +217,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         let mut event_type_stream: Vec<u8> = Vec::new();
 
         let target_actor_id = <V::ActorUniqueID as ProtoCodec>::deserialize(stream)?;
-        event_type_stream.write_i32_varint(stream.read_i32_varint()?)?;
+        <i32 as ProtoCodecVAR>::serialize(&(<i32 as ProtoCodecVAR>::deserialize(stream)?), &mut event_type_stream)?;
         let use_player_id = <bool as ProtoCodec>::deserialize(stream)?;
         stream.read_to_end(&mut event_type_stream)?;
 

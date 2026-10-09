@@ -1,10 +1,10 @@
+use bedrock_protocol_core::ProtoCodecVAR;
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE};
 use std::io::{Read, Write};
 use std::mem::size_of;
-use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 108)]
 #[derive(ProtoCodec, Clone, Debug)]
@@ -45,7 +45,7 @@ impl<V: ProtoVersion> ProtoCodec for ScorePacketEntry<V> {
                 scoreboard_id,
                 objective_name,
             } => {
-                stream.write_u32_varint(0)?;
+                <u32 as ProtoCodecVAR>::serialize(&0, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("remove"), stream)?;
                 <V::ScoreboardId as ProtoCodec>::serialize(scoreboard_id, stream)?;
                 <Option<String> as ProtoCodec>::serialize(objective_name, stream)?;
@@ -56,12 +56,12 @@ impl<V: ProtoVersion> ProtoCodec for ScorePacketEntry<V> {
                 score_value,
                 player_unique_id,
             } => {
-                stream.write_u32_varint(1)?;
+                <u32 as ProtoCodecVAR>::serialize(&1, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("changeplayer"), stream)?;
                 <V::ScoreboardId as ProtoCodec>::serialize(scoreboard_id, stream)?;
                 <String as ProtoCodec>::serialize(objective_name, stream)?;
                 <i32 as ProtoCodecLE>::serialize(score_value, stream)?;
-                stream.write_i64_varint(*player_unique_id)?;
+                <i64 as ProtoCodecVAR>::serialize(player_unique_id, stream)?;
             }
             Self::ChangeEntity {
                 scoreboard_id,
@@ -69,12 +69,12 @@ impl<V: ProtoVersion> ProtoCodec for ScorePacketEntry<V> {
                 score_value,
                 actor_id,
             } => {
-                stream.write_u32_varint(2)?;
+                <u32 as ProtoCodecVAR>::serialize(&2, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("changeentity"), stream)?;
                 <V::ScoreboardId as ProtoCodec>::serialize(scoreboard_id, stream)?;
                 <String as ProtoCodec>::serialize(objective_name, stream)?;
                 <i32 as ProtoCodecLE>::serialize(score_value, stream)?;
-                stream.write_i64_varint(*actor_id)?;
+                <i64 as ProtoCodecVAR>::serialize(actor_id, stream)?;
             }
             Self::ChangeFakePlayer {
                 scoreboard_id,
@@ -82,7 +82,7 @@ impl<V: ProtoVersion> ProtoCodec for ScorePacketEntry<V> {
                 score_value,
                 fake_player_name,
             } => {
-                stream.write_u32_varint(3)?;
+                <u32 as ProtoCodecVAR>::serialize(&3, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("changefakeplayer"), stream)?;
                 <V::ScoreboardId as ProtoCodec>::serialize(scoreboard_id, stream)?;
                 <String as ProtoCodec>::serialize(objective_name, stream)?;
@@ -95,7 +95,7 @@ impl<V: ProtoVersion> ProtoCodec for ScorePacketEntry<V> {
     }
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
-        let action = stream.read_u32_varint()?;
+        let action = <u32 as ProtoCodecVAR>::deserialize(stream)?;
         let _action_id = <String as ProtoCodec>::deserialize(stream)?;
 
         Ok(match action {
@@ -107,13 +107,13 @@ impl<V: ProtoVersion> ProtoCodec for ScorePacketEntry<V> {
                 scoreboard_id: <V::ScoreboardId as ProtoCodec>::deserialize(stream)?,
                 objective_name: <String as ProtoCodec>::deserialize(stream)?,
                 score_value: <i32 as ProtoCodecLE>::deserialize(stream)?,
-                player_unique_id: stream.read_i64_varint()?,
+                player_unique_id: <i64 as ProtoCodecVAR>::deserialize(stream)?,
             },
             2 => Self::ChangeEntity {
                 scoreboard_id: <V::ScoreboardId as ProtoCodec>::deserialize(stream)?,
                 objective_name: <String as ProtoCodec>::deserialize(stream)?,
                 score_value: <i32 as ProtoCodecLE>::deserialize(stream)?,
-                actor_id: stream.read_i64_varint()?,
+                actor_id: <i64 as ProtoCodecVAR>::deserialize(stream)?,
             },
             3 => Self::ChangeFakePlayer {
                 scoreboard_id: <V::ScoreboardId as ProtoCodec>::deserialize(stream)?,

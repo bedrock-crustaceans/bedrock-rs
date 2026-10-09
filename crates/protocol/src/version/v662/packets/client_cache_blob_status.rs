@@ -28,8 +28,8 @@ impl ProtoCodec for ClientCacheBlobStatusPacket {
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let missing_blobs_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
         let obtained_blobs_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-        let mut missing_blobs = Vec::with_capacity(missing_blobs_len.try_into()?);
-        let mut obtained_blobs = Vec::with_capacity(obtained_blobs_len.try_into()?);
+        let mut missing_blobs = Vec::new();
+        let mut obtained_blobs = Vec::new();
         for _ in 0..missing_blobs_len {
             missing_blobs.push(<u64 as ProtoCodecLE>::deserialize(stream)?);
         }

@@ -3,9 +3,6 @@ use std::io::Error as IOError;
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
-use base64::DecodeError as Base64DecodeError;
-use jsonwebtoken::errors::Error as JwtError;
-use serde_json::error::Error as JsonError;
 use strum::ParseError;
 use thiserror::Error;
 use uuid::Error as UuidError;
@@ -22,14 +19,8 @@ pub enum ProtoCodecError {
     UTF8Error(#[from] FromUtf8Error),
     #[error("Error while converting integers: {0}")]
     FromIntError(#[from] TryFromIntError),
-    #[error("Json Error: {0}")]
-    JsonError(#[from] JsonError),
-    #[error("Jwt Error: {0}")]
-    JwtError(#[from] JwtError),
     #[error("Uuid Error: {0}")]
     UuidError(#[from] UuidError),
-    #[error("Base64 decoding Error: {0}")]
-    Base64DecodeError(#[from] Base64DecodeError),
     /// TODO: This likely hurts performance, but it is *kinda* good for debugging
     #[error("parse value `{0}` to enum variant for {1} enum")]
     InvalidEnumID(String, &'static str),
@@ -41,6 +32,8 @@ pub enum ProtoCodecError {
     StrumParseError(#[from] ParseError),
     #[error("Expected Some in: {0}")]
     ExpectedSome(&'static str),
+    #[error("varint did not terminate within {0} bytes")]
+    VarintTooLong(usize),
 }
 
 impl From<Infallible> for ProtoCodecError {

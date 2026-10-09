@@ -18,7 +18,7 @@ macro_rules! impl_proto_vec {
 
             fn deserialize<R: ::std::io::Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
                 let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-                let mut vec = Vec::with_capacity(len as usize);
+                let mut vec = Vec::new();
                 for _ in 0..len {
                     let _span = crate::trace::field("item", Some(vec.len()));
                     vec.push(T::deserialize(stream)?);
@@ -38,3 +38,19 @@ impl_proto_vec!(ProtoCodec);
 impl_proto_vec!(ProtoCodecLE);
 impl_proto_vec!(ProtoCodecBE);
 impl_proto_vec!(ProtoCodecVAR);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn vec_with_huge_length_prefix_and_no_items_is_an_eof_error() {
+        let mut stream = Cursor::new([0xff, 0xff, 0xff, 0xff, 0x0f]);
+        let result = <Vec<[u64; 64]> as ProtoCodecLE>::deserialize(&mut stream);
+        assert!(
+            matches!(result, Err(ProtoCodecError::IOError(ref e)) if e.kind() == std::io::ErrorKind::UnexpectedEof),
+            "expected EOF, got {result:?}"
+        );
+    }
+}

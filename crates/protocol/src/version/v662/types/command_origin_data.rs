@@ -1,9 +1,9 @@
+use bedrock_protocol_core::ProtoCodecVAR;
 use crate::ProtoVersion;
 use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Cursor, Read, Write, copy};
 use uuid::Uuid;
-use varint_rs::{VarintReader, VarintWriter};
 
 #[derive(Clone, Debug)]
 pub struct CommandOriginData<V: ProtoVersion> {
@@ -18,7 +18,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOriginData<V> {
         self.command_type.serialize(&mut type_stream)?;
         let mut type_cursor = Cursor::new(type_stream.as_slice());
 
-        stream.write_u32_varint(type_cursor.read_u32_varint()?)?;
+        <u32 as ProtoCodecVAR>::serialize(&(<u32 as ProtoCodecVAR>::deserialize(&mut type_cursor)?), stream)?;
         self.command_uuid.serialize(stream)?;
         self.request_id.serialize(stream)?;
         copy(&mut type_cursor, stream)?;
@@ -28,7 +28,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOriginData<V> {
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut type_stream: Vec<u8> = Vec::new();
-        type_stream.write_u32_varint(stream.read_u32_varint()?)?;
+        <u32 as ProtoCodecVAR>::serialize(&(<u32 as ProtoCodecVAR>::deserialize(stream)?), &mut type_stream)?;
 
         let command_uuid = Uuid::deserialize(stream)?;
         let request_id = String::deserialize(stream)?;

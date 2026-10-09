@@ -10,5 +10,4 @@ bedrock_macros = { path = "../macros" }
 tracing = { workspace = true }
 
 byteorder = { workspace = true }
-varint-rs = { workspace = true }
 facet.workspace = true

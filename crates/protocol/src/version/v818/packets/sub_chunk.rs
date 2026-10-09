@@ -96,7 +96,7 @@ impl<V: ProtoVersion> ProtoCodec for SubChunkPacket<V> {
         let center_pos = V::SubChunkPos::deserialize(stream)?;
         let sub_chunk_data = {
             let len = <u32 as ProtoCodecLE>::deserialize(stream)?;
-            let mut vec = Vec::with_capacity(len.try_into()?);
+            let mut vec = Vec::new();
             for _ in 0..len {
                 let sub_chunk_pos_offset = V::SubChunkPosOffset::deserialize(stream)?;
                 let sub_chunk_request_result = SubChunkRequestResult::deserialize(stream)?;

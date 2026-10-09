@@ -51,7 +51,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOutputPacket<V> {
         let success_count = <u32 as ProtoCodecVAR>::deserialize(stream)?;
         let output_messages = {
             let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-            let mut vec = Vec::with_capacity(len.try_into()?);
+            let mut vec = Vec::new();
             for _ in 0..len {
                 vec.push(<OutputMessagesEntry as ProtoCodec>::deserialize(stream)?);
             }
