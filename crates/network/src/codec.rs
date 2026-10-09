@@ -22,11 +22,12 @@ pub fn decode_packets<T: Packets>(
     mut packets_stream: Vec<u8>,
     compression: Option<&Compression>,
     encryption: Option<&mut Encryption>,
+    max_batch_len: usize,
 ) -> Result<Vec<T>, NetworkCodecError> {
     tracing::trace!("Decoding packets");
 
     packets_stream = decrypt_packets(packets_stream, encryption)?;
-    packets_stream = decompress_packets(packets_stream, compression)?;
+    packets_stream = decompress_packets(packets_stream, compression, max_batch_len)?;
     let packets = separate_packets::<T>(packets_stream)?;
 
     Ok(packets)
@@ -80,6 +81,16 @@ fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, Netwo
         }
 
         let buf_len = <u32 as ProtoCodecVAR>::deserialize(&mut packets_stream)?;
+        let remaining = packets_stream.get_ref().len() - packets_stream.position() as usize;
+        if buf_len == 0 {
+            return Err(NetworkCodecError::EmptyPacket);
+        }
+        if buf_len as usize > remaining {
+            return Err(NetworkCodecError::PacketLengthOutOfBounds {
+                declared: buf_len,
+                remaining,
+            });
+        }
         let mut buf = packets_stream.by_ref().take(buf_len as u64);
 
         let (packet, header) = T::deserialize(&mut buf)?;
@@ -113,9 +124,10 @@ pub fn compress_packets(
 pub fn decompress_packets(
     mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
+    max_len: usize,
 ) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(compression) = compression {
-        packet_stream = compression.decompress(packet_stream)?;
+        packet_stream = compression.decompress(packet_stream, max_len)?;
     }
 
     Ok(packet_stream)
@@ -141,4 +153,42 @@ pub fn decrypt_packets(
     }
 
     Ok(packet_stream)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_protocol::V2193;
+
+    const CLIENT_TO_SERVER_HANDSHAKE: [u8; 2] = [0x01, 0x04];
+
+    #[test]
+    fn batch_of_many_packets_is_separated() {
+        let packets = separate_packets::<V2193>(CLIENT_TO_SERVER_HANDSHAKE.repeat(1000)).unwrap();
+        assert_eq!(packets.len(), 1000);
+    }
+
+    #[test]
+    fn zero_length_packet_is_rejected() {
+        let result = separate_packets::<V2193>(vec![0x00]);
+        assert!(
+            matches!(result, Err(NetworkCodecError::EmptyPacket)),
+            "got {result:?}"
+        );
+    }
+
+    #[test]
+    fn packet_length_past_the_batch_is_rejected() {
+        let result = separate_packets::<V2193>(vec![0x05, 0x04]);
+        assert!(
+            matches!(
+                result,
+                Err(NetworkCodecError::PacketLengthOutOfBounds {
+                    declared: 5,
+                    remaining: 1
+                })
+            ),
+            "got {result:?}"
+        );
+    }
 }

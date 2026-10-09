@@ -169,4 +169,27 @@ mod tests {
         let ct = b.encrypt(msg.clone()).unwrap();
         assert_eq!(a_resumed.decrypt(ct).unwrap(), msg);
     }
+
+    #[test]
+    fn ciphertext_is_unchanged_for_a_fixed_key_pair() {
+        let (mut a, _) = matched_pair();
+
+        let first = a.encrypt(b"first packet".to_vec()).unwrap();
+        let second = a.encrypt(b"second packet".to_vec()).unwrap();
+
+        assert_eq!(
+            first,
+            [
+                0xd5, 0x01, 0xf1, 0x63, 0x22, 0x83, 0xc8, 0x3b, 0x24, 0xd3, 0x04, 0x48, 0xe2, 0x94,
+                0x91, 0xd8, 0x8c, 0xf4, 0xf3, 0x88,
+            ]
+        );
+        assert_eq!(
+            second,
+            [
+                0x54, 0xb9, 0x95, 0xad, 0xaa, 0x41, 0x92, 0x50, 0x9a, 0x24, 0x14, 0xaf, 0x2b, 0xb8,
+                0xed, 0x7d, 0x26, 0x99, 0xbc, 0x21, 0x21,
+            ]
+        );
+    }
 }
