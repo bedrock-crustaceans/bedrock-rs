@@ -55,11 +55,11 @@ impl<V: ProtoVersion> ProtoCodec for AvailableCommandsPacket<V> {
         let post_fixes = <Vec<_> as ProtoCodec>::deserialize(stream)?;
         let enum_data = {
             let len = <u32 as ProtoCodecVAR>::deserialize(stream)? as usize;
-            let mut vec = Vec::with_capacity(len);
+            let mut vec = Vec::new();
             for _ in 0..len {
                 let name = String::deserialize(stream)?;
                 let j_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-                let mut j_vec = Vec::with_capacity(j_len as usize);
+                let mut j_vec = Vec::new();
                 for _ in 0..j_len {
                     let i = match enum_values.len() {
                         len if len <= u8::MAX as usize => {

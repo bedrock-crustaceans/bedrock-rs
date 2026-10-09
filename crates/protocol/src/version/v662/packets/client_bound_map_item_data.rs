@@ -1,9 +1,9 @@
+use bedrock_protocol_core::ProtoCodecVAR;
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Cursor, Read, Write, copy};
-use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 67)]
 #[derive(Clone, Debug)]
@@ -54,7 +54,7 @@ impl<V: ProtoVersion> ProtoCodec for ClientBoundMapItemDataPacket<V> {
         let mut type_flags_cursor = Cursor::new(type_flags_stream.as_slice());
 
         <V::ActorUniqueID as ProtoCodec>::serialize(&self.map_id, stream)?;
-        stream.write_u32_varint(type_flags_cursor.read_u32_varint()?)?;
+        <u32 as ProtoCodecVAR>::serialize(&(<u32 as ProtoCodecVAR>::deserialize(&mut type_flags_cursor)?), stream)?;
         <i8 as ProtoCodec>::serialize(&self.dimension, stream)?;
         <bool as ProtoCodec>::serialize(&self.is_locked, stream)?;
         <V::BlockPos as ProtoCodec>::serialize(&self.map_origin, stream)?;
@@ -67,7 +67,7 @@ impl<V: ProtoVersion> ProtoCodec for ClientBoundMapItemDataPacket<V> {
         let mut type_flags_stream: Vec<u8> = Vec::new();
 
         let map_id = <V::ActorUniqueID as ProtoCodec>::deserialize(stream)?;
-        type_flags_stream.write_u32_varint(stream.read_u32_varint()?)?;
+        <u32 as ProtoCodecVAR>::serialize(&(<u32 as ProtoCodecVAR>::deserialize(stream)?), &mut type_flags_stream)?;
         let dimension = <i8 as ProtoCodec>::deserialize(stream)?;
         let is_locked = <bool as ProtoCodec>::deserialize(stream)?;
         let map_origin = <V::BlockPos as ProtoCodec>::deserialize(stream)?;

@@ -58,6 +58,12 @@ impl TransportLayerConnection {
         Ok(stream)
     }
 
+    pub fn max_message_len(&self) -> usize {
+        match self {
+            Self::RakNet(_) => RakSessionConfig::default().max_queued_bytes as usize,
+        }
+    }
+
     pub async fn close(&self) {
         match self {
             Self::RakNet(conn) => {

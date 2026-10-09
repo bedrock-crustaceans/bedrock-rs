@@ -1,8 +1,8 @@
 use bedrock_protocol_core::ProtoCodec;
+use bedrock_protocol_core::ProtoCodecVAR;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Read, Write};
 use std::mem::size_of;
-use varint_rs::{VarintReader, VarintWriter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ActorUniqueID(pub i64);
@@ -10,11 +10,11 @@ pub struct ActorUniqueID(pub i64);
 // ProtoCodec
 impl ProtoCodec for ActorUniqueID {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
-        Ok(stream.write_i64_varint(self.0)?)
+        <i64 as ProtoCodecVAR>::serialize(&self.0, stream)
     }
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
-        Ok(Self(stream.read_i64_varint()?))
+        Ok(Self(<i64 as ProtoCodecVAR>::deserialize(stream)?))
     }
 
     fn size_hint(&self) -> usize {

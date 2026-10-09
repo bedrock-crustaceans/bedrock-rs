@@ -51,9 +51,9 @@ impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
         let ingredient_grid = {
             let x_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
             let y_len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-            let mut x_vec = Vec::with_capacity(x_len.try_into()?);
+            let mut x_vec = Vec::new();
             for _ in 0..x_len {
-                let mut y_vec = Vec::with_capacity(y_len.try_into()?);
+                let mut y_vec = Vec::new();
                 for _ in 0..y_len {
                     y_vec.push(V::RecipeIngredient::deserialize(stream)?);
                 }
@@ -64,7 +64,7 @@ impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
 
         let production_list = {
             let len = <u32 as ProtoCodecVAR>::deserialize(stream)?;
-            let mut vec = Vec::with_capacity(len.try_into()?);
+            let mut vec = Vec::new();
             for _ in 0..len {
                 vec.push(V::NetworkItemInstanceDescriptor::deserialize(stream)?);
             }

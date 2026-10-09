@@ -1,9 +1,9 @@
+use bedrock_protocol_core::ProtoCodecVAR;
 use bedrock_macros::packet;
 use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Read, Write};
 use std::mem::size_of;
-use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 8)]
 #[derive(Clone, Debug)]
@@ -18,20 +18,20 @@ impl ProtoCodec for ResourcePackClientResponsePacket {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         match self {
             Self::Cancel => {
-                stream.write_u32_varint(0)?;
+                <u32 as ProtoCodecVAR>::serialize(&0, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("cancel"), stream)?;
             }
             Self::Downloading(downloading_packs) => {
-                stream.write_u32_varint(1)?;
+                <u32 as ProtoCodecVAR>::serialize(&1, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("downloading"), stream)?;
                 <Vec<String> as ProtoCodec>::serialize(downloading_packs, stream)?;
             }
             Self::DownloadingFinished => {
-                stream.write_u32_varint(2)?;
+                <u32 as ProtoCodecVAR>::serialize(&2, stream)?;
                 <String as ProtoCodec>::serialize(&String::from("downloadingfinished"), stream)?;
             }
             Self::ResourcePackStackFinished => {
-                stream.write_u32_varint(3)?;
+                <u32 as ProtoCodecVAR>::serialize(&3, stream)?;
                 <String as ProtoCodec>::serialize(
                     &String::from("resourcepackstackfinished"),
                     stream,
@@ -43,7 +43,7 @@ impl ProtoCodec for ResourcePackClientResponsePacket {
     }
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
-        let response = stream.read_u32_varint()?;
+        let response = <u32 as ProtoCodecVAR>::deserialize(stream)?;
         let _response_id = <String as ProtoCodec>::deserialize(stream)?;
 
         Ok(match response {

@@ -5,7 +5,6 @@ use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
-use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 120)]
 #[derive(Clone, Debug)]
@@ -24,7 +23,7 @@ impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV2Packet<V> {
         V::LevelSoundEventType::serialize(&self.event_id, &mut event_id_stream)?;
         let mut event_id_cursor = Cursor::new(event_id_stream.as_slice());
 
-        stream.write_i8(event_id_cursor.read_u32_varint()? as i8)?;
+        stream.write_i8(<u32 as ProtoCodecVAR>::deserialize(&mut event_id_cursor)? as i8)?;
         <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.position, stream)?;
         <i32 as ProtoCodecVAR>::serialize(&self.data, stream)?;
         <String as ProtoCodec>::serialize(&self.actor_identifier, stream)?;
@@ -36,7 +35,7 @@ impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV2Packet<V> {
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut event_id_stream: Vec<u8> = Vec::new();
-        event_id_stream.write_u32_varint(stream.read_i8()? as u32)?;
+        <u32 as ProtoCodecVAR>::serialize(&(stream.read_i8()? as u32), &mut event_id_stream)?;
         let mut event_id_cursor = Cursor::new(event_id_stream.as_slice());
 
         let event_id = V::LevelSoundEventType::deserialize(&mut event_id_cursor)?;

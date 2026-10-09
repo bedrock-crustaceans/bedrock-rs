@@ -13,5 +13,5 @@ pub struct ShapelessRecipe<V: ProtoVersion> {
     pub priority: i32,
     pub unlocking_requirement: Option<V::RecipeUnlockingRequirement>,
     #[endianness(var)]
-    pub network_id: i32,
+    pub network_id: u32,
 }

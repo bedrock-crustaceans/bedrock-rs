@@ -43,7 +43,8 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
                         let _span = ::bedrock_protocol_core::trace::field(#label, None);
                         let len: #repr = #vec_des;
 
-                        let mut vec = Vec::with_capacity(len.try_into()?);
+                        let len: usize = len.try_into()?;
+                        let mut vec = Vec::new();
 
                         for _ in 0..len {
                             let _span = ::bedrock_protocol_core::trace::field(#label, Some(vec.len()));

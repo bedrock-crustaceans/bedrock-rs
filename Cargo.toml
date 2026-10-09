@@ -12,7 +12,6 @@ vek = "0.17"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 byteorder = "1.5.0"
-varint-rs = "2.2"
 bytemuck = "1.25.0"
 tokio = { version = "1.52.3", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -31,11 +30,12 @@ seq-macro = "0.3"
 proc-macro2 = "1.0"
 syn = { version = "3.0.3", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
-jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 base64 = "0.23.0"
 # TODO: switch this back to crates.io after 4.0.0 release
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
+p384 = "0.13"
+sha2 = "0.10"
 rand = "0.10"
 strum = "0.28.0"
 strum_macros = "0.28.0"

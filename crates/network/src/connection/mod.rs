@@ -75,6 +75,7 @@ impl<V: Packets> Connection<V> {
             packet_stream,
             self.compression.as_ref(),
             self.encryption.as_mut(),
+            self.transport_layer.max_message_len(),
         )?;
 
         Ok(packets)
@@ -90,7 +91,11 @@ impl<V: Packets> Connection<V> {
     pub async fn recv_batch(&mut self) -> Result<Vec<u8>, ConnectionError> {
         let stream = self.transport_layer.recv().await?;
         let stream = decrypt_packets(stream, self.encryption.as_mut())?;
-        let stream = decompress_packets(stream, self.compression.as_ref())?;
+        let stream = decompress_packets(
+            stream,
+            self.compression.as_ref(),
+            self.transport_layer.max_message_len(),
+        )?;
 
         Ok(stream)
     }

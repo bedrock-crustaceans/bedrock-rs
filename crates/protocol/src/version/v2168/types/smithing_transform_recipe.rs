@@ -10,5 +10,5 @@ pub struct SmithingTransformRecipe<V: ProtoVersion> {
     pub result: V::NetworkItemInstanceDescriptor,
     pub tag: String,
     #[endianness(var)]
-    pub network_id: i32,
+    pub network_id: u32,
 }

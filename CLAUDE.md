@@ -96,11 +96,13 @@ compression and encryption as options, so a test can cover one layer at a time. 
 `raknet-tokio`, a git dependency; `examples/server.rs` is the end-to-end check for it, and for a
 login flow.
 
-**`auth`**: `AuthData::validate(oidc)` with `None` verifies nothing and only decodes claims;
-with `Some` it checks the JWT against Microsoft's JWKS. `AuthOIDC::fetch` is the only network
-call. Tests use a token signed by a key you generate in the test and an `AuthOIDC` built by hand
-around that key; fetching stays out of tests. The `async` feature duplicates `fetch`; a change
-to one is a change to both.
+**`auth`**: does no I/O of its own and must never pull in tokio. `ConnectionRequest::verify` and
+`AuthData::validate` check the chain, or the token against the cached JWKS, and never fetch.
+Fetching (`AuthOIDC::fetch`, `refresh`, the `*_refreshing` variants) is generic over the
+`http::HttpClient` and `http::AsyncHttpClient` traits; the `ureq` and `reqwest` features only add
+impls of them. Each fetching function has a sync and an `_async` twin; a change to one is a change
+to both. Tests use a key generated in the test, an `AuthOIDC` built by hand around it, and
+`test_support::FakeHttp` with `block_on` for anything that fetches.
 
 **`form`**: the JSON forms the client renders, via `facet_json`. Oracle: the JSON the client
 sends back or accepts. Tests in `forms/mod.rs` compare a parsed literal against a hand-built
@@ -129,8 +131,8 @@ socket; a unit test beside the type is enough.
   first, then diagnose. `level`'s `rusty-leveldb` is also a git dependency but pinned by `rev`
   in `crates/level/Cargo.toml`.
 - `crates/protocol/src/generated/` is output; regenerate, never edit.
-- Feature-gated code compiles only with the feature on: `auth-async`, `protocol`'s per-version
-  features, and every crate behind the `bedrock` facade. A change that builds under a crate's
+- Feature-gated code compiles only with the feature on: `auth-ureq`, `auth-reqwest`,
+  `protocol`'s per-version features, and every crate behind the `bedrock` facade. A change that builds under a crate's
   default features has not been built the way CI builds it (`--all-features`).
 - Errors are `thiserror` enums per crate; a new failure is a new variant, never a `String`.
   Library code propagates with `?`; `unwrap` and `expect` belong in tests, benches and `xtask`.

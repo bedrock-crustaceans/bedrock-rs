@@ -1,9 +1,9 @@
+use bedrock_protocol_core::ProtoCodecVAR;
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Cursor, Read, Write, copy};
-use varint_rs::{VarintReader, VarintWriter};
 
 #[packet(id = 44)]
 #[derive(Clone, Debug)]
@@ -39,7 +39,7 @@ impl<V: ProtoVersion> ProtoCodec for AnimatePacket<V> {
         <AnimateAction as ProtoCodec>::serialize(&self.action, &mut action_stream)?;
         let mut action_cursor = Cursor::new(action_stream.as_slice());
 
-        stream.write_i32_varint(action_cursor.read_i32_varint()?)?;
+        <i32 as ProtoCodecVAR>::serialize(&(<i32 as ProtoCodecVAR>::deserialize(&mut action_cursor)?), stream)?;
         <V::ActorRuntimeID as ProtoCodec>::serialize(&self.target_runtime_id, stream)?;
         copy(&mut action_cursor, stream)?;
 
@@ -49,7 +49,7 @@ impl<V: ProtoVersion> ProtoCodec for AnimatePacket<V> {
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut action_stream: Vec<u8> = Vec::new();
 
-        action_stream.write_i32_varint(stream.read_i32_varint()?)?;
+        <i32 as ProtoCodecVAR>::serialize(&(<i32 as ProtoCodecVAR>::deserialize(stream)?), &mut action_stream)?;
         let target_runtime_id = <V::ActorRuntimeID as ProtoCodec>::deserialize(stream)?;
         stream.read_to_end(&mut action_stream)?;
 

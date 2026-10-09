@@ -31,7 +31,8 @@ level = ["dep:bedrock_level"]
 full = ["level", "network", "protocol", "auth"]
 form = ["dep:bedrock_form"]
 
-auth-async = ["bedrock_auth/async"]
+auth-ureq = ["auth", "bedrock_auth/ureq"]
+auth-reqwest = ["auth", "bedrock_auth/reqwest"]
 
 protocol-unknown = ["bedrock_protocol/unknown"]
 protocol-v662 = ["bedrock_protocol/v662"]

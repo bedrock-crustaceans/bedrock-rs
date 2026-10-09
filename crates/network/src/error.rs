@@ -70,6 +70,10 @@ pub enum NetworkCodecError {
     EncryptionError(#[from] EncryptionError),
     #[error("IO Error: {0}")]
     IOError(#[from] IOError),
+    #[error("Batch holds a zero-length packet")]
+    EmptyPacket,
+    #[error("Packet length {declared} exceeds the {remaining} bytes left in the batch")]
+    PacketLengthOutOfBounds { declared: u32, remaining: usize },
 }
 
 #[derive(Error, Debug)]
@@ -80,6 +84,8 @@ pub enum CompressionError {
     SnappyError(IOError),
     #[error("Unknown Compression Method: {0}")]
     UnknownCompressionMethod(u8),
+    #[error("Decompressed batch exceeds {0} bytes")]
+    TooLarge(usize),
     #[error("IO Error: {0}")]
     IOError(#[from] IOError),
 }

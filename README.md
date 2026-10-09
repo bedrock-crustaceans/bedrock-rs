@@ -39,8 +39,8 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 
 - [`bedrock::auth`](crates/auth)  
   - Validation of Xbox Live login identity chains (JWTs) against Microsoft’s OIDC discovery service.  
-  - Support for online, offline, and guest authentication types.  
-  - Optional async API, enabled via the `auth-async` feature.  
+  - Online and offline (self-signed) logins; guest logins are rejected.  
+  - No I/O of its own: bring any HTTP client, or enable `auth-ureq` (blocking, no tokio) or `auth-reqwest` (async).  
 
 - [`bedrock::form`](crates/form)  
   - Implementation of the JSON form format used by Minecraft Bedrock Edition.  

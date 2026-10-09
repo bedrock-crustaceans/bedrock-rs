@@ -200,7 +200,7 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             match input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
                 true => Some({
                     let len = <i32 as ProtoCodecVAR>::deserialize(stream)?;
-                    let mut vec = Vec::with_capacity(len as usize);
+                    let mut vec = Vec::new();
                     for _ in 0..len {
                         vec.push(V::PlayerBlockActionData::deserialize(stream)?);
                     }
