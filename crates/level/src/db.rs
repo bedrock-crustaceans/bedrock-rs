@@ -1,13 +1,10 @@
-use std::{marker::PhantomData, ops::Deref, sync::Arc, time::Duration};
+use std::{marker::PhantomData, num::NonZeroU8, ops::Deref, sync::Arc, time::Duration};
 
 use miniz_oxide::{
     deflate::{compress_to_vec, compress_to_vec_zlib},
     inflate::{decompress_to_vec, decompress_to_vec_zlib},
 };
-use rusty_leveldb::{
-    Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode,
-    compressor::NoneCompressor,
-};
+use rusty_leveldb::{Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode};
 
 pub use rusty_leveldb::CompactionMode;
 
@@ -15,13 +12,12 @@ use crate::{error::Result, iter::Keys};
 
 /// On-disk block compression identifiers used by the world format.
 ///
-/// Uncompressed blocks are stored under id 0. `zlib` (with header) is id 2 and
-/// raw deflate (no zlib header or trailer) is id 4. Blocks are written with raw
-/// deflate; the game selects the smaller of the raw and compressed payloads and
-/// falls back to id 0 when the raw payload wins, so id 0 must always be present.
-const COMPRESSOR_NONE: u8 = 0;
-const COMPRESSOR_ZLIB: u8 = 2;
-const COMPRESSOR_RAW_DEFLATE: u8 = 4;
+/// Uncompressed blocks are stored under id 0, which the database always provides.
+/// `zlib` (with header) is id 2 and raw deflate (no zlib header or trailer) is id 4.
+/// Blocks are written with raw deflate; the game selects the smaller of the raw and
+/// compressed payloads and falls back to id 0 when the raw payload wins.
+const COMPRESSOR_ZLIB: NonZeroU8 = NonZeroU8::new(2).unwrap();
+const COMPRESSOR_RAW_DEFLATE: NonZeroU8 = NonZeroU8::new(4).unwrap();
 
 /// Tables are written with a 32 KiB block size. Every read decompresses a whole block, so
 /// larger blocks make point lookups of single chunk records much slower.
@@ -52,12 +48,12 @@ impl Default for OpenOptions {
 struct ZlibCompressor(u8);
 
 impl Compressor for ZlibCompressor {
-    fn encode(&self, block: Vec<u8>) -> rusty_leveldb::Result<Vec<u8>> {
-        Ok(compress_to_vec_zlib(&block, self.0))
+    fn encode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+        Ok(compress_to_vec_zlib(block, self.0))
     }
 
-    fn decode(&self, block: Vec<u8>) -> rusty_leveldb::Result<Vec<u8>> {
-        decompress_to_vec_zlib(&block).map_err(|err| Status {
+    fn decode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+        decompress_to_vec_zlib(block).map_err(|err| Status {
             code: StatusCode::CompressionError,
             err: err.to_string(),
         })
@@ -68,12 +64,12 @@ impl Compressor for ZlibCompressor {
 struct RawDeflateCompressor(u8);
 
 impl Compressor for RawDeflateCompressor {
-    fn encode(&self, block: Vec<u8>) -> rusty_leveldb::Result<Vec<u8>> {
-        Ok(compress_to_vec(&block, self.0))
+    fn encode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+        Ok(compress_to_vec(block, self.0))
     }
 
-    fn decode(&self, block: Vec<u8>) -> rusty_leveldb::Result<Vec<u8>> {
-        decompress_to_vec(&block).map_err(|err| Status {
+    fn decode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+        decompress_to_vec(block).map_err(|err| Status {
             code: StatusCode::CompressionError,
             err: err.to_string(),
         })
@@ -83,13 +79,12 @@ impl Compressor for RawDeflateCompressor {
 fn options(open: OpenOptions) -> Options {
     let level = open.compression_level.min(10);
     let mut list = CompressorList::new();
-    list.set_with_id(COMPRESSOR_NONE, NoneCompressor);
     list.set_with_id(COMPRESSOR_ZLIB, ZlibCompressor(level));
     list.set_with_id(COMPRESSOR_RAW_DEFLATE, RawDeflateCompressor(level));
 
     Options {
         compressor_list: Arc::new(list),
-        compressor: COMPRESSOR_RAW_DEFLATE,
+        compressor: Some(COMPRESSOR_RAW_DEFLATE),
         block_size: BLOCK_SIZE,
         create_if_missing: true,
         compaction_mode: open.compaction_mode,

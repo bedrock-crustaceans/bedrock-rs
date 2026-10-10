@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use rusty_leveldb::{DBIterator, LdbIterator};
+use rusty_leveldb::DBIterator;
 
 use crate::{
     db::{Buffer, Database},
@@ -47,7 +47,7 @@ impl<'k, 'db> Iterator for &'k mut Keys<'db> {
     type Item = KvRef<'k, 'db>;
 
     fn next(&mut self) -> Option<KvRef<'k, 'db>> {
-        if !self.iter.advance() {
+        if !self.iter.next() {
             return None;
         }
 
