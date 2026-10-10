@@ -1,5 +1,5 @@
 use quote::ToTokens;
-use syn::{Attribute, Error, GenericArgument, PathArguments, Type};
+use syn::{Attribute, DataEnum, Error, Fields, GenericArgument, PathArguments, Type, Variant};
 
 #[derive(Clone)]
 pub enum ProtoCodecEndianness {
@@ -110,6 +110,39 @@ pub fn get_attrs(attrs: &[Attribute]) -> Result<ProtoCodecFlags, Error> {
     }
 
     Ok(flags)
+}
+
+pub fn enum_fallback(data_enum: &DataEnum) -> syn::Result<Option<&Variant>> {
+    let mut fallbacks = data_enum
+        .variants
+        .iter()
+        .filter(|variant| is_enum_fallback(variant));
+
+    let Some(fallback) = fallbacks.next() else {
+        return Ok(None);
+    };
+
+    if let Some(extra) = fallbacks.next() {
+        return Err(Error::new_spanned(
+            extra,
+            "only one variant can be marked #[enum_fallback]",
+        ));
+    }
+
+    match &fallback.fields {
+        Fields::Unnamed(fields) if fields.unnamed.len() == 1 => Ok(Some(fallback)),
+        _ => Err(Error::new_spanned(
+            fallback,
+            "#[enum_fallback] requires a tuple variant with a single field",
+        )),
+    }
+}
+
+pub fn is_enum_fallback(variant: &Variant) -> bool {
+    variant
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("enum_fallback"))
 }
 
 pub fn extract_inner_type_from_vec(ty: &Type) -> Option<&Type> {

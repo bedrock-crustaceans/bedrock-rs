@@ -494,4 +494,6 @@ pub enum LevelSoundEventType {
     RecordPrecipice = 529,
     VaultRejectRewardedPlayer = 530,
     Undefined = 531,
+    #[enum_fallback]
+    Unknown(u32),
 }

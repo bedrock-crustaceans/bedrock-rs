@@ -492,4 +492,6 @@ pub enum LevelSoundEventType {
     RecordCreatorMusicBox = 528,
     RecordPrecipice = 529,
     Undefined = 530,
+    #[enum_fallback]
+    Unknown(u32),
 }

@@ -524,4 +524,6 @@ pub enum LevelSoundEventType {
     Unsaddle = 560,
     RecordLavaChicken = 561,
     Undefined = 562,
+    #[enum_fallback]
+    Unknown(u32),
 }

@@ -559,4 +559,6 @@ pub enum LevelSoundEventType {
     DiamondSpearUse = 595,
     NetheriteSpearUse = 596,
     Undefined = 597,
+    #[enum_fallback]
+    Unknown(u32),
 }

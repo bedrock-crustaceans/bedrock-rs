@@ -139,4 +139,6 @@ pub enum ActorDataIDs {
     VisibleMobEffects = 131,
     FilteredName = 132,
     BedEnterPosition = 133,
+    #[enum_fallback]
+    Unknown(u32),
 }

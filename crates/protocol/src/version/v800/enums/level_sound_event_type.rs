@@ -517,4 +517,6 @@ pub enum LevelSoundEventType {
     ImitateHappyGhast = 553,
     UnequipGeneric = 554,
     Undefined = 555,
+    #[enum_fallback]
+    Unknown(u32),
 }

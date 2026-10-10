@@ -23,5 +23,23 @@ pub enum BuildPlatform {
     #[deprecated]
     WindowsPhone = 14,
     Linux = 15,
-    Unknown = -1,
+    #[enum_fallback]
+    Unknown(i32),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_protocol_core::ProtoCodec;
+    use std::io::Cursor;
+
+    #[test]
+    fn unlisted_build_platform_survives_a_round_trip() {
+        let bytes = 42i32.to_le_bytes();
+        let platform = BuildPlatform::deserialize(&mut Cursor::new(&bytes[..])).unwrap();
+        assert!(matches!(platform, BuildPlatform::Unknown(42)));
+        let mut encoded = Vec::new();
+        platform.serialize(&mut encoded).unwrap();
+        assert_eq!(encoded, bytes);
+    }
 }

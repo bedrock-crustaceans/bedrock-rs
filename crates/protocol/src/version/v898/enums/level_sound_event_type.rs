@@ -540,4 +540,6 @@ pub enum LevelSoundEventType {
     SpearUse = 576,
     WoodenSpearUse = 577,
     Undefined = 578,
+    #[enum_fallback]
+    Unknown(u32),
 }

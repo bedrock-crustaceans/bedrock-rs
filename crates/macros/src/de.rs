@@ -1,7 +1,7 @@
-use crate::attr::{ProtoCodecEndianness, extract_inner_type_from_vec, get_attrs};
+use crate::attr::{ProtoCodecEndianness, extract_inner_type_from_vec, get_attrs, is_enum_fallback};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type};
+use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type, Variant};
 
 fn build_de_instance(endianness: Option<ProtoCodecEndianness>, f_type: &Type) -> TokenStream {
     match endianness {
@@ -144,48 +144,66 @@ pub fn build_de_struct(data_struct: &DataStruct) -> TokenStream {
     }
 }
 
-pub fn build_de_enum(data_enum: &DataEnum, attrs: &[Attribute], name: Ident) -> TokenStream {
+pub fn build_de_enum(
+    data_enum: &DataEnum,
+    attrs: &[Attribute],
+    name: Ident,
+    fallback: Option<&Variant>,
+) -> TokenStream {
     let flags = get_attrs(attrs).expect("Error while getting attrs");
 
     if let (Some(repr), endian) = (flags.enum_repr, flags.enum_endianness) {
         let enum_type_de = build_de_instance(endian, &repr);
 
-        let variants = data_enum.variants.iter().map(|var| {
-            let desc = var
-                .discriminant
-                .clone()
-                .unwrap_or_else(|| panic!("Missing discriminant for {:?}", var.ident))
-                .1;
+        let variants = data_enum
+            .variants
+            .iter()
+            .filter(|var| !is_enum_fallback(var))
+            .map(|var| {
+                let desc = var
+                    .discriminant
+                    .clone()
+                    .unwrap_or_else(|| panic!("Missing discriminant for {:?}", var.ident))
+                    .1;
 
-            let name = var.ident.clone();
-            let (de, ctor_fields) = build_de_fields(var.fields.clone());
+                let name = var.ident.clone();
+                let (de, ctor_fields) = build_de_fields(var.fields.clone());
 
-            if let Some(ctor) = ctor_fields {
-                quote! {
-                    #desc => {
-                        #de
+                if let Some(ctor) = ctor_fields {
+                    quote! {
+                        #desc => {
+                            #de
 
-                        Self::#name #ctor
+                            Self::#name #ctor
+                        }
+                    }
+                } else {
+                    quote! {
+                        #desc => {
+                            #de
+
+                            Self::#name
+                        }
                     }
                 }
-            } else {
-                quote! {
-                    #desc => {
-                        #de
+            });
 
-                        Self::#name
-                    }
-                }
+        let otherwise = match fallback {
+            Some(var) => {
+                let fallback_name = &var.ident;
+                quote! { _ => Self::#fallback_name(enum_type) }
             }
-        });
+            None => quote! {
+                _ => { return Err(bedrock_protocol_core::error::ProtoCodecError::InvalidEnumID(format!("{enum_type:?}"), stringify!(#name))) }
+            },
+        };
 
-        // We need to find a solution for what happens when an enum type is not found
         quote! {
             let enum_type = #enum_type_de;
 
             let val = match enum_type {
-                #(#variants),*
-                _ => { return Err(bedrock_protocol_core::error::ProtoCodecError::InvalidEnumID(format!("{enum_type:?}"), stringify!(#name))) },
+                #(#variants,)*
+                #otherwise,
             };
         }
     } else {

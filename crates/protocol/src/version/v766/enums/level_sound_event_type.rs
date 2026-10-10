@@ -508,4 +508,6 @@ pub enum LevelSoundEventType {
     Close = 544,
     CloseLong = 545,
     Undefined = 546,
+    #[enum_fallback]
+    Unknown(u32),
 }

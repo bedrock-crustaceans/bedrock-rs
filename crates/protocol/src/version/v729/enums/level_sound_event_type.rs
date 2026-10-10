@@ -496,4 +496,6 @@ pub enum LevelSoundEventType {
     ImitateDrowned = 531,
     BundleInsertFailed = 533,
     Undefined = 534,
+    #[enum_fallback]
+    Unknown(u32),
 }

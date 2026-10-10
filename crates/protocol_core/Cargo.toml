@@ -16,3 +16,7 @@ strum.workspace = true
 packet-meta = []
 packet-dyn = []
 packet-trace = []
+
+[dev-dependencies]
+bedrock_macros = { path = "../macros" }
+tracing.workspace = true

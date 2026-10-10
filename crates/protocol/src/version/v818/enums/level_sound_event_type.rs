@@ -523,4 +523,6 @@ pub enum LevelSoundEventType {
     LeadBreak = 559,
     Unsaddle = 560,
     Undefined = 561,
+    #[enum_fallback]
+    Unknown(u32),
 }

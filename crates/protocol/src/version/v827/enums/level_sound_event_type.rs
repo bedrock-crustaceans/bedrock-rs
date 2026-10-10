@@ -525,4 +525,6 @@ pub enum LevelSoundEventType {
     EquipCopper = 561,
     RecordLavaChicken = 562,
     Undefined = 563,
+    #[enum_fallback]
+    Unknown(u32),
 }

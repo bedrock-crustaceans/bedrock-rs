@@ -480,4 +480,6 @@ pub enum LevelSoundEventType {
     MaceSmashGround = 515,
     MaceSmashHeavyGround = 520,
     Undefined = 521,
+    #[enum_fallback]
+    Unknown(u32),
 }

@@ -577,4 +577,23 @@ pub enum LevelSoundEventType {
     StrawBedBreakLeave = 613,
     IceBallBreak = 614,
     Undefined = 615,
+    #[enum_fallback]
+    Unknown(u32),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_protocol_core::ProtoCodec;
+    use std::io::Cursor;
+
+    #[test]
+    fn unlisted_sound_id_survives_a_round_trip() {
+        let bytes = [0x91, 0x4e];
+        let sound = LevelSoundEventType::deserialize(&mut Cursor::new(&bytes[..])).unwrap();
+        assert!(matches!(sound, LevelSoundEventType::Unknown(10001)));
+        let mut encoded = Vec::new();
+        sound.serialize(&mut encoded).unwrap();
+        assert_eq!(encoded, bytes);
+    }
 }

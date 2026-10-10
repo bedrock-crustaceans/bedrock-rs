@@ -137,4 +137,6 @@ pub enum ActorDataIDs {
     PlayerHasDied = 129,
     CollisionBox = 130,
     VisibleMobEffects = 131,
+    #[enum_fallback]
+    Unknown(u32),
 }

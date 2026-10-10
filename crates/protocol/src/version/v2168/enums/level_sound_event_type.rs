@@ -576,4 +576,6 @@ pub enum LevelSoundEventType {
     Dismount = 612,
     StrawBedBreakLeave = 613,
     Undefined = 614,
+    #[enum_fallback]
+    Unknown(u32),
 }

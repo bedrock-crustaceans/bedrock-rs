@@ -141,4 +141,6 @@ pub enum ActorDataIDs {
     BedEnterPosition = 133,
     SeatThirdPersonCameraRadius = 134,
     SeatCameraRelaxDistanceSmoothing = 135,
+    #[enum_fallback]
+    Unknown(u32),
 }

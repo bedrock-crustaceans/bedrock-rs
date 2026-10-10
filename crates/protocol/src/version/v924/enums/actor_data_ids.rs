@@ -144,4 +144,6 @@ pub enum ActorDataIDs {
     AimAssistPriorityPresetID = 136,
     AimAssistPriorityCategoryID = 137,
     AimAssistPriorityActorID = 138,
+    #[enum_fallback]
+    Unknown(u32),
 }

@@ -573,4 +573,6 @@ pub enum LevelSoundEventType {
     GeyserContinuousEruptionStart = 609,
     GeyserContinuousEruptionActive = 610,
     Undefined = 611,
+    #[enum_fallback]
+    Unknown(u32),
 }

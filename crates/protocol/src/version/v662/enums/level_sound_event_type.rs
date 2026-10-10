@@ -474,4 +474,6 @@ pub enum LevelSoundEventType {
     HurtReduced = 508,
     WindChargeBurst = 509,
     Undefined = 511,
+    #[enum_fallback]
+    Unknown(u32),
 }

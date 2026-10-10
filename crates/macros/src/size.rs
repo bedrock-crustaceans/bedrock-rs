@@ -1,7 +1,7 @@
-use crate::attr::{ProtoCodecEndianness, extract_inner_type_from_vec, get_attrs};
+use crate::attr::{ProtoCodecEndianness, extract_inner_type_from_vec, get_attrs, is_enum_fallback};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type};
+use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type, Variant};
 
 fn build_size_instance(
     endianness: Option<ProtoCodecEndianness>,
@@ -143,34 +143,53 @@ pub fn build_size_struct(data_struct: &DataStruct) -> TokenStream {
     }
 }
 
-pub fn build_size_enum(data_enum: &DataEnum, attrs: &[Attribute]) -> TokenStream {
+pub fn build_size_enum(
+    data_enum: &DataEnum,
+    attrs: &[Attribute],
+    fallback: Option<&Variant>,
+) -> TokenStream {
     let flags = get_attrs(attrs).expect("Error while getting attrs");
 
     if let (Some(repr), endian) = (flags.enum_repr, flags.enum_endianness) {
-        let variants = data_enum.variants.iter().map(|var| {
-            let desc = var
-                .discriminant
-                .clone()
-                .unwrap_or_else(|| panic!("Missing discriminant for {:?}", var.ident))
-                .1;
+        let variants = data_enum
+            .variants
+            .iter()
+            .filter(|var| !is_enum_fallback(var))
+            .map(|var| {
+                let desc = var
+                    .discriminant
+                    .clone()
+                    .unwrap_or_else(|| panic!("Missing discriminant for {:?}", var.ident))
+                    .1;
 
-            let enum_type_size = build_size_instance(endian.clone(), &repr, quote! {#desc});
-            let name = var.ident.clone();
-            let (size, fields) = build_size_fields(var.fields.clone(), None, false);
+                let enum_type_size = build_size_instance(endian.clone(), &repr, quote! {#desc});
+                let name = var.ident.clone();
+                let (size, fields) = build_size_fields(var.fields.clone(), None, false);
 
-            if let Some(fields) = fields {
-                quote! {
-                    Self::#name #fields => {
-                        size += #enum_type_size;
-                        #size
+                if let Some(fields) = fields {
+                    quote! {
+                        Self::#name #fields => {
+                            size += #enum_type_size;
+                            #size
+                        }
+                    }
+                } else {
+                    quote! {
+                        Self::#name => {
+                            size += #enum_type_size;
+                            #size
+                        }
                     }
                 }
-            } else {
-                quote! {
-                    Self::#name => {
-                        size += #enum_type_size;
-                        #size
-                    }
+            });
+
+        let fallback_arm = fallback.map(|var| {
+            let name = &var.ident;
+            let enum_type_size = build_size_instance(endian.clone(), &repr, quote! {*value});
+
+            quote! {
+                Self::#name(value) => {
+                    size += #enum_type_size;
                 }
             }
         });
@@ -178,7 +197,8 @@ pub fn build_size_enum(data_enum: &DataEnum, attrs: &[Attribute]) -> TokenStream
         quote! {
             let mut size: usize = 0;
             match self {
-                #(#variants),*
+                #(#variants,)*
+                #fallback_arm
             }
             size
         }

@@ -561,4 +561,6 @@ pub enum LevelSoundEventType {
     PauseGrowth = 597,
     ResetGrowth = 598,
     Undefined = 599,
+    #[enum_fallback]
+    Unknown(u32),
 }

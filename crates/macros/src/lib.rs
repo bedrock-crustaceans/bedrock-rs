@@ -1,3 +1,4 @@
+use crate::attr::enum_fallback;
 use crate::de::{build_de_enum, build_de_struct};
 use crate::ser::{build_ser_enum, build_ser_struct};
 use crate::size::{build_size_enum, build_size_struct};
@@ -19,6 +20,7 @@ mod size;
         vec_repr,
         enum_endianness,
         enum_repr,
+        enum_fallback,
         nbt,
         str
     )
@@ -37,11 +39,19 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
             build_de_struct(&v),
             build_size_struct(&v),
         ),
-        Data::Enum(v) => (
-            build_ser_enum(&v, input.attrs.as_slice()),
-            build_de_enum(&v, input.attrs.as_slice(), name.clone()),
-            build_size_enum(&v, input.attrs.as_slice()),
-        ),
+        Data::Enum(v) => {
+            let fallback = match enum_fallback(&v) {
+                Ok(fallback) => fallback,
+                Err(error) => return error.to_compile_error().into(),
+            };
+            let attrs = input.attrs.as_slice();
+
+            (
+                build_ser_enum(&v, attrs, fallback),
+                build_de_enum(&v, attrs, name.clone(), fallback),
+                build_size_enum(&v, attrs, fallback),
+            )
+        }
         Data::Union(_) => {
             return TokenStream::from(quote! {
                 compile_error!("ProtoCodec derive macro only supports structs and enums")

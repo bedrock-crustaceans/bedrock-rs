@@ -528,4 +528,6 @@ pub enum LevelSoundEventType {
     SingleItemSwap = 564,
     MultiItemSwap = 565,
     Undefined = 566,
+    #[enum_fallback]
+    Unknown(u32),
 }

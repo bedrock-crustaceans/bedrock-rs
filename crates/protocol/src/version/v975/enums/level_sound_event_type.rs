@@ -563,4 +563,6 @@ pub enum LevelSoundEventType {
     PushedByPlayer = 599,
     Bounce = 600,
     Undefined = 601,
+    #[enum_fallback]
+    Unknown(u32),
 }
