@@ -1,7 +1,6 @@
 use crate::error::ClientDataError;
+use crate::jwt::LENIENT_STANDARD;
 use base64::Engine;
-use base64::alphabet;
-use base64::engine::{GeneralPurpose, GeneralPurposeConfig};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use uuid::Uuid;
@@ -107,6 +106,34 @@ pub struct PersonaPieceTintColour {
 }
 
 impl ClientData {
+    pub fn offline(game_version: &str, server_address: &str, display_name: &str) -> Self {
+        let skin_pixels = DEFAULT_SKIN_PIXEL.repeat(DEFAULT_SKIN_SIDE * DEFAULT_SKIN_SIDE);
+        let resource_patch = br#"{"geometry":{"default":"geometry.humanoid.custom"}}"#;
+        let random = Uuid::new_v4();
+        Self {
+            client_random_id: random.as_u64_pair().0 as i64,
+            current_input_mode: 1,
+            default_input_mode: 1,
+            device_model: "bedrock-rs".into(),
+            device_os: UWP_DEVICE_OS,
+            device_id: Uuid::new_v4().to_string(),
+            game_version: game_version.into(),
+            language_code: "en_US".into(),
+            self_signed_id: Uuid::new_v4().to_string(),
+            server_address: server_address.into(),
+            skin_data: LENIENT_STANDARD.encode(skin_pixels),
+            skin_geometry_version: LENIENT_STANDARD.encode("1.14.60"),
+            skin_id: format!("{}_Steve", Uuid::new_v4()),
+            skin_image_height: DEFAULT_SKIN_SIDE as i32,
+            skin_image_width: DEFAULT_SKIN_SIDE as i32,
+            skin_resource_patch: LENIENT_STANDARD.encode(resource_patch),
+            skin_colour: "#0".into(),
+            arm_size: "wide".into(),
+            third_party_name: display_name.into(),
+            ..Self::default()
+        }
+    }
+
     pub fn validate(&self) -> Result<(), ClientDataError> {
         if !(1..=15).contains(&self.device_os) {
             return Err(ClientDataError::DeviceOs(self.device_os));
@@ -179,10 +206,9 @@ impl ClientData {
     }
 }
 
-const LENIENT_STANDARD: GeneralPurpose = GeneralPurpose::new(
-    &alphabet::STANDARD,
-    GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true),
-);
+const DEFAULT_SKIN_SIDE: usize = 64;
+const DEFAULT_SKIN_PIXEL: [u8; 4] = [0x8d, 0x6e, 0x4c, 0xff];
+const UWP_DEVICE_OS: i32 = 7;
 
 fn decode_base64(field: &'static str, data: &str) -> Result<Vec<u8>, ClientDataError> {
     LENIENT_STANDARD
@@ -301,6 +327,17 @@ mod tests {
         assert_eq!(data.animated_image_data[0].animation_type, 1);
         assert!(data.persona_pieces[0].default);
         assert_eq!(data.piece_tint_colours[0].colours[3], "#0");
+    }
+
+    #[test]
+    fn offline_client_data_validates() {
+        let data = ClientData::offline("1.21.120", "play.example.com:19132", "Steve");
+
+        assert!(data.validate().is_ok(), "{:?}", data.validate());
+        assert_eq!(data.game_version, "1.21.120");
+        assert_eq!(data.server_address, "play.example.com:19132");
+        let json = serde_json::to_value(&data).unwrap();
+        assert_eq!(round_trip(&json), data);
     }
 
     #[test]

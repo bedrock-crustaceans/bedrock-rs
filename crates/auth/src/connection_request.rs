@@ -1,10 +1,18 @@
-use crate::auth_data::AuthData;
+use crate::auth_data::{AuthData, AuthPayload, AuthType};
 use crate::authentication::Authentication;
 use crate::chain::ChainRoot;
+use crate::chain::{encode_es384_with_x5u, encode_public_key};
 use crate::client_data::ClientData;
 use crate::error::AuthError;
 use crate::http::{AsyncHttpClient, HttpClient};
 use crate::oidc::AuthOIDC;
+use p384::SecretKey;
+use serde_json::json;
+use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
+
+const SELF_SIGNED_NOT_BEFORE_SKEW_SECS: u64 = 60;
+const SELF_SIGNED_LIFETIME_SECS: u64 = 24 * 60 * 60;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionRequest {
@@ -60,6 +68,43 @@ impl ConnectionRequest {
         })
     }
 
+    pub fn self_signed(
+        identity_key: &SecretKey,
+        display_name: &str,
+        client_data: &ClientData,
+    ) -> Result<Self, AuthError> {
+        let public_key = encode_public_key(&identity_key.public_key())?;
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |elapsed| elapsed.as_secs());
+        let claims = json!({
+            "identityPublicKey": public_key,
+            "nbf": now.saturating_sub(SELF_SIGNED_NOT_BEFORE_SKEW_SECS),
+            "exp": now + SELF_SIGNED_LIFETIME_SECS,
+            "extraData": {
+                "XUID": "",
+                "displayName": display_name,
+                "identity": Uuid::new_v4().to_string(),
+            },
+        });
+        let auth = AuthData {
+            auth_type: AuthType::Offline,
+            auth_payload: AuthPayload::Chain(vec![encode_es384_with_x5u(identity_key, &claims)?]),
+        };
+        Self::with_auth(auth, identity_key, client_data)
+    }
+
+    pub fn with_auth(
+        auth: AuthData,
+        identity_key: &SecretKey,
+        client_data: &ClientData,
+    ) -> Result<Self, AuthError> {
+        Ok(Self {
+            auth,
+            client_data: encode_es384_with_x5u(identity_key, client_data)?,
+        })
+    }
+
     pub fn parse(bytes: &[u8]) -> Result<Self, AuthError> {
         let mut rest = bytes;
         let auth = take_length_prefixed(&mut rest)?;
@@ -107,8 +152,6 @@ fn put_length_prefixed(bytes: &mut Vec<u8>, field: &[u8]) -> Result<(), AuthErro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::auth_data::AuthPayload;
-    use crate::auth_data::AuthType;
     use crate::error::ClientDataError;
     use crate::jwt::JwtError;
     use crate::test_support::{TestKey, realistic_client_data, valid_window, with_window};
@@ -138,6 +181,25 @@ mod tests {
         }
         .to_bytes()
         .unwrap()
+    }
+
+    #[test]
+    fn self_signed_request_verifies_as_unauthenticated() {
+        let key = p384::SecretKey::from_slice(&[9; 48]).unwrap();
+        let client_data: ClientData = serde_json::from_value(realistic_client_data()).unwrap();
+
+        let request = ConnectionRequest::self_signed(&key, "Alex", &client_data).unwrap();
+        let login =
+            verify_without_oidc(&ConnectionRequest::parse(&request.to_bytes().unwrap()).unwrap())
+                .unwrap();
+
+        assert!(!login.authentication.is_authenticated());
+        assert_eq!(login.authentication.identity().display_name, "Alex");
+        assert_eq!(
+            login.authentication.identity().public_key().unwrap(),
+            key.public_key()
+        );
+        assert_eq!(login.client_data, client_data);
     }
 
     fn verify_without_oidc(request: &ConnectionRequest) -> Result<Login, AuthError> {

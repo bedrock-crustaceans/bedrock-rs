@@ -65,11 +65,7 @@ impl TestKey {
     }
 
     fn sign_with_header(&self, header: Header, claims: &Value) -> String {
-        let key = p384::ecdsa::SigningKey::from(&self.0);
-        crate::jwt::encode(&header, claims, |message| {
-            let signature: p384::ecdsa::Signature = key.sign(message);
-            signature.to_bytes().to_vec()
-        })
+        crate::jwt::encode_es384(&header, claims, &self.0).expect("token encodes")
     }
 }
 
@@ -106,6 +102,7 @@ impl TestRsaKey {
         };
         let key = rsa::pkcs1v15::SigningKey::<sha2::Sha256>::new(self.0.clone());
         crate::jwt::encode(&header, claims, |message| key.sign(message).to_vec())
+            .expect("token encodes")
     }
 }
 

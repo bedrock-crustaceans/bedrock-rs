@@ -10,6 +10,8 @@ pub enum AuthError {
     Json(#[from] serde_json::Error),
     #[error("client data is not utf-8: {0}")]
     Utf8(#[from] std::str::Utf8Error),
+    #[error("handshake salt is not standard base64: {0}")]
+    InvalidSalt(base64::DecodeError),
     #[error("missing field: {0}")]
     Missing(&'static str),
     #[error("connection request ended before a length prefix")]

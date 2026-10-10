@@ -1,11 +1,12 @@
 use crate::authentication::{Authentication, Identity};
 use crate::error::AuthError;
-use crate::jwt::{Expiry, Rules, Token, VerifyingKey};
+use crate::jwt::{Algorithm, Expiry, Header, Rules, Token, VerifyingKey, encode_es384};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use p384::PublicKey;
-use p384::pkcs8::DecodePublicKey;
-use serde::Deserialize;
+use p384::SecretKey;
+use p384::pkcs8::{DecodePublicKey, EncodePublicKey};
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
@@ -115,7 +116,26 @@ pub(crate) fn verifying_key(public_key_base64: &str) -> Result<VerifyingKey, Aut
     ))
 }
 
-pub(crate) fn parse_public_key(public_key_base64: &str) -> Result<PublicKey, AuthError> {
+pub(crate) fn encode_es384_with_x5u(
+    key: &SecretKey,
+    claims: &impl Serialize,
+) -> Result<String, AuthError> {
+    let header = Header {
+        alg: Algorithm::ES384.name().into(),
+        kid: None,
+        x5u: Some(encode_public_key(&key.public_key())?),
+    };
+    Ok(encode_es384(&header, claims, key)?)
+}
+
+pub fn encode_public_key(key: &PublicKey) -> Result<String, AuthError> {
+    let der = key
+        .to_public_key_der()
+        .map_err(|_| AuthError::InvalidPublicKey)?;
+    Ok(STANDARD.encode(der.as_bytes()))
+}
+
+pub fn parse_public_key(public_key_base64: &str) -> Result<PublicKey, AuthError> {
     let der = STANDARD
         .decode(public_key_base64)
         .map_err(|_| AuthError::InvalidPublicKey)?;
@@ -186,6 +206,13 @@ mod tests {
             ),
             other => panic!("expected {expected:?}, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn mojang_public_key_round_trips() {
+        let key = parse_public_key(MOJANG_PUBLIC_KEY).unwrap();
+
+        assert_eq!(encode_public_key(&key).unwrap(), MOJANG_PUBLIC_KEY);
     }
 
     #[test]

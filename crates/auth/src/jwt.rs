@@ -1,7 +1,7 @@
 use base64::Engine;
-use base64::alphabet::URL_SAFE;
+use base64::alphabet::{STANDARD, URL_SAFE};
 use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
-use p384::ecdsa::signature::Verifier;
+use p384::ecdsa::signature::{Signer, Verifier};
 use rsa::{BoxedUint, RsaPublicKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,18 @@ const BASE64URL: GeneralPurpose = GeneralPurpose::new(
     GeneralPurposeConfig::new()
         .with_encode_padding(false)
         .with_decode_padding_mode(DecodePaddingMode::Indifferent),
+);
+
+pub(crate) const SALT_BASE64: GeneralPurpose = GeneralPurpose::new(
+    &STANDARD,
+    GeneralPurposeConfig::new()
+        .with_encode_padding(false)
+        .with_decode_padding_mode(DecodePaddingMode::Indifferent),
+);
+
+pub(crate) const LENIENT_STANDARD: GeneralPurpose = GeneralPurpose::new(
+    &STANDARD,
+    GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true),
 );
 
 pub const LEEWAY_SECS: f64 = 60.0;
@@ -259,19 +271,30 @@ impl Jwk {
     }
 }
 
-#[cfg(test)]
 pub(crate) fn encode(
     header: &Header,
     claims: &impl Serialize,
     sign: impl Fn(&[u8]) -> Vec<u8>,
-) -> String {
+) -> Result<String, JwtError> {
     let signed = format!(
         "{}.{}",
-        BASE64URL.encode(serde_json::to_vec(header).expect("header serializes")),
-        BASE64URL.encode(serde_json::to_vec(claims).expect("claims serialize")),
+        BASE64URL.encode(serde_json::to_vec(header)?),
+        BASE64URL.encode(serde_json::to_vec(claims)?),
     );
     let signature = BASE64URL.encode(sign(signed.as_bytes()));
-    format!("{signed}.{signature}")
+    Ok(format!("{signed}.{signature}"))
+}
+
+pub fn encode_es384(
+    header: &Header,
+    claims: &impl Serialize,
+    key: &p384::SecretKey,
+) -> Result<String, JwtError> {
+    let signing_key = p384::ecdsa::SigningKey::from(key);
+    encode(header, claims, |message| {
+        let signature: p384::ecdsa::Signature = signing_key.sign(message);
+        signature.to_bytes().to_vec()
+    })
 }
 
 #[cfg(test)]
@@ -314,6 +337,25 @@ mod tests {
 
     fn verify(token: &str, key: &VerifyingKey) -> Result<Value, JwtError> {
         Token::parse(token)?.verify(key, &RULES)
+    }
+
+    #[test]
+    fn encode_es384_token_verifies_with_its_key() {
+        let key = p384::SecretKey::from_slice(&[3; 48]).unwrap();
+        let verifying = VerifyingKey::Es384(p384::ecdsa::VerifyingKey::from(key.public_key()));
+        let header = Header {
+            alg: "ES384".into(),
+            kid: None,
+            x5u: None,
+        };
+
+        let token = encode_es384(&header, &valid_claims(), &key).unwrap();
+
+        assert_eq!(verify(&token, &verifying).unwrap()["name"], "Steve");
+        assert!(matches!(
+            verify(&tampered(&token), &verifying),
+            Err(JwtError::InvalidSignature)
+        ));
     }
 
     #[test]
