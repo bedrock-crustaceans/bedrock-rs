@@ -42,13 +42,13 @@ fn iv_from_key(key: &[u8; 32]) -> [u8; 16] {
 }
 
 impl Encryption {
-    pub fn new(secret: &SecretKey, public: &PublicKey, token: &[u8; 16]) -> Self {
+    pub fn new(secret: &SecretKey, public: &PublicKey, salt: &[u8]) -> Self {
         let shared = p384::ecdh::diffie_hellman(secret.to_nonzero_scalar(), public.as_affine());
 
         let shared_bytes = shared.raw_secret_bytes();
 
         let mut hasher = Sha256::new();
-        hasher.update(token);
+        hasher.update(salt);
         hasher.update(shared_bytes);
         let key = hasher.finalize();
         let key: [u8; 32] = key.into();

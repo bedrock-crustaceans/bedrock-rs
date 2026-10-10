@@ -3,11 +3,18 @@ name = "bedrock_network"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = ["tokio"]
+tokio = ["dep:tokio", "dep:raknet-tokio"]
+test-util = ["tokio"]
+v2193 = ["bedrock_protocol/v2193"]
+
 [dependencies]
 bedrock_protocol = { path = "../protocol" }
 bedrock_protocol_core = { path = "../protocol_core" }
+bedrock_auth = { path = "../auth" }
 
-tokio.workspace = true
+tokio = { workspace = true, optional = true }
 byteorder.workspace = true
 thiserror.workspace = true
 rand.workspace = true
@@ -21,7 +28,8 @@ aes = "0.9.3"
 ctr = "0.10.1"
 facet = "0.46"
 
-raknet-tokio = { git = "https://github.com/bedrock-crustaceans/raknet.git" }
+raknet-tokio = { git = "https://github.com/bedrock-crustaceans/raknet.git", optional = true }
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
 facet-json = "0.46"

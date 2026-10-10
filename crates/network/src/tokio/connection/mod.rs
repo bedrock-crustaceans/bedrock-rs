@@ -1,13 +1,13 @@
 pub mod shard;
 
+use super::error::ConnectionError;
+use super::transport::TransportLayerConnection;
 use crate::codec::{
     compress_packets, decode_packets, decompress_packets, decrypt_packets, encode_packets,
     encrypt_packets,
 };
 use crate::compression::Compression;
 use crate::encryption::Encryption;
-use crate::error::ConnectionError;
-use crate::transport::TransportLayerConnection;
 use bedrock_protocol_core::Packets;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
@@ -43,14 +43,20 @@ impl<V: Packets> Connection<V> {
         }
     }
 
+    pub fn enable_compression(&mut self, compression: Compression) {
+        self.compression = Some(compression);
+    }
+
+    pub fn enable_encryption(&mut self, encryption: Encryption) {
+        self.encryption = Some(encryption);
+    }
+
     pub fn get_transport_conn(&self) -> &TransportLayerConnection {
         &self.transport_layer
     }
 
     pub fn get_socket_addr(&self) -> SocketAddr {
-        match &self.transport_layer {
-            TransportLayerConnection::RakNet(rak) => rak.get_addr(),
-        }
+        self.transport_layer.remote_addr()
     }
 
     pub async fn send(&mut self, packets: &[V]) -> Result<(), ConnectionError> {
@@ -116,5 +122,31 @@ impl<V: Packets> Connection<V> {
 
     pub async fn is_closed(&self) -> bool {
         self.transport_layer.is_closed().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::login::{LoginPackets, LoginStatus};
+    use crate::test_helpers::memory_connections;
+    use bedrock_protocol::V2225;
+
+    #[::tokio::test]
+    async fn zlib_enabled_on_both_ends_carries_a_large_batch() {
+        let (mut a, mut b) = memory_connections();
+        let zlib = Compression::Zlib {
+            threshold: 1,
+            compression_level: 6,
+        };
+        a.enable_compression(zlib.clone());
+        b.enable_compression(zlib);
+        assert!(a.compression.is_some());
+        assert!(a.encryption.is_none());
+
+        let batch = vec![V2225::play_status(LoginStatus::LoginSuccess); 4000];
+        a.send(&batch).await.unwrap();
+
+        assert_eq!(b.recv().await.unwrap().len(), 4000);
     }
 }

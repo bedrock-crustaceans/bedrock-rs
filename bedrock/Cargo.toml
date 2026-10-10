@@ -10,7 +10,7 @@ bedrock_macros = { path = "../crates/macros", optional = true }
 bedrock_form = { path = "../crates/form", optional = true }
 bedrock_protocol = { path = "../crates/protocol", optional = true }
 bedrock_protocol_core = { path = "../crates/protocol_core", optional = true }
-bedrock_network = { path = "../crates/network", optional = true }
+bedrock_network = { path = "../crates/network", optional = true, default-features = false }
 bedrock_level = { path = "../crates/level", optional = true }
 
 [dev-dependencies]
@@ -26,9 +26,10 @@ protocol = [
     "dep:bedrock_protocol_core",
     "dep:bedrock_macros",
 ]
-network = ["dep:bedrock_network", "protocol"]
+network = ["dep:bedrock_network", "protocol", "auth"]
+network-tokio = ["network", "bedrock_network/tokio"]
 level = ["dep:bedrock_level"]
-full = ["level", "network", "protocol", "auth"]
+full = ["level", "network-tokio", "protocol", "auth"]
 form = ["dep:bedrock_form"]
 
 auth-ureq = ["auth", "bedrock_auth/ureq"]
@@ -58,7 +59,7 @@ protocol-v975 = ["bedrock_protocol/v975"]
 protocol-v1001 = ["bedrock_protocol/v1001"]
 protocol-v2168 = ["bedrock_protocol/v2168"]
 protocol-v2169 = ["bedrock_protocol/v2169"]
-protocol-v2193 = ["bedrock_protocol/v2193"]
+protocol-v2193 = ["bedrock_protocol/v2193", "bedrock_network?/v2193"]
 protocol-v2225 = ["bedrock_protocol/v2225"]
 protocol-all = ["bedrock_protocol/all"]
 
@@ -69,4 +70,9 @@ protocol-packet-trace = ["bedrock_protocol/packet-trace"]
 [[example]]
 name = "server"
 path = "examples/server.rs"
-required-features = ["network", "protocol-v2225", "protocol-unknown"]
+required-features = ["network-tokio", "protocol-v2225", "protocol-unknown"]
+
+[[example]]
+name = "client"
+path = "examples/client.rs"
+required-features = ["network-tokio", "protocol-v2225", "protocol-unknown"]

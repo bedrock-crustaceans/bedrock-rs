@@ -1,62 +1,7 @@
 use bedrock_protocol_core::error::{PacketCodecError, ProtoCodecError};
 use io::Error as IOError;
-use raknet_tokio::prelude::{RakServerError, RakSessionError};
 use std::io;
 use thiserror::Error;
-
-use crate::info::RAKNET_GAMEPACKET_ID;
-
-#[derive(Error, Debug)]
-pub enum ListenerError {
-    #[error("Address bind error")]
-    AddrBindError,
-    #[error("Already Online")]
-    AlreadyOnline,
-    #[error("Not Listening")]
-    NotListening,
-    #[error("Transport Error: {0}")]
-    TransportListenerError(#[from] TransportLayerError),
-}
-
-#[derive(Error, Debug)]
-pub enum ConnectionError {
-    #[error("NetworkCodec Error: {0}")]
-    NetworkCodecError(#[from] NetworkCodecError),
-    #[error("Connection Closed")]
-    ConnectionClosed,
-    #[error("Transport Error: {0}")]
-    TransportError(#[from] TransportLayerError),
-    #[error("IO Error: {0}")]
-    IOError(#[from] IOError),
-}
-
-#[derive(Error, Debug)]
-pub enum TransportLayerError {
-    #[error("IO Error: {0}")]
-    IOError(#[from] IOError),
-    #[error("RakNet Error: {0}")]
-    RakNetError(#[from] RakNetError),
-    // #[error("Quic Error: {0}")]
-    // QuicError(#[from] QuicError),
-}
-
-#[derive(Error, Debug)]
-pub enum RakNetError {
-    #[error("Session Error: {0}")]
-    SessionError(#[from] RakSessionError),
-    #[error("Server Error: {0}")]
-    ServerError(#[from] RakServerError),
-    #[error("Invalid RakNet Header (expected: {RAKNET_GAMEPACKET_ID}, got: {0})")]
-    InvalidRakNetHeader(u8),
-    #[error("Format Error: {0}")]
-    FormatError(&'static str),
-}
-
-// #[derive(Error, Debug, Clone)]
-// pub enum QuicError {
-//     // #[error("Stream Error: {0}")]
-//     // StreamError(s2n_quic::stream::Error),
-// }
 
 #[derive(Error, Debug)]
 pub enum NetworkCodecError {
@@ -84,6 +29,10 @@ pub enum CompressionError {
     SnappyError(IOError),
     #[error("Unknown Compression Method: {0}")]
     UnknownCompressionMethod(u8),
+    #[error("Unknown Network Compression Algorithm: {0}")]
+    UnknownNetworkAlgorithm(u16),
+    #[error("Batch method {found} does not match negotiated method {negotiated}")]
+    UnexpectedMethod { negotiated: u8, found: u8 },
     #[error("Decompressed batch exceeds {0} bytes")]
     TooLarge(usize),
     #[error("IO Error: {0}")]
@@ -98,4 +47,22 @@ pub enum EncryptionError {
     InvalidTrailer,
     #[error("IO Error: {0}")]
     IOError(#[from] IOError),
+}
+
+#[derive(Error, Debug)]
+pub enum LoginError {
+    #[error("Auth Error: {0}")]
+    Auth(#[from] bedrock_auth::AuthError),
+    #[error("Unexpected packet while {state}")]
+    UnexpectedPacket { state: &'static str },
+    #[error("Client protocol {client} does not match server protocol {server}")]
+    ProtocolMismatch { client: i32, server: i32 },
+    #[error("Login is not authenticated")]
+    NotAuthenticated,
+    #[error("Login protocol {login} differs from the requested protocol {requested}")]
+    ProtocolChanged { requested: i32, login: i32 },
+    #[error("Server rejected the login: {0}")]
+    LoginRejected(crate::login::LoginStatus),
+    #[error("Server disconnected during login: {0}")]
+    Disconnected(crate::login::DisconnectInfo),
 }

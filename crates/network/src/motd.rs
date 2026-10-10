@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq)]
 pub struct BedrockMOTD {
     pub edition: String,
     pub name: String,
@@ -15,32 +16,35 @@ pub struct BedrockMOTD {
 
 impl From<BedrockMOTD> for Box<[u8]> {
     fn from(motd: BedrockMOTD) -> Self {
-        let mut parts = vec![
-            motd.edition.clone(),
-            motd.name.clone(),
-            motd.protocol.to_string(),
-            motd.version.clone(),
-            motd.player_count.to_string(),
-            motd.player_max.to_string(),
-            motd.guid.to_string(),
-            motd.sub_name.clone(),
-            motd.game_mode.clone(),
+        Self::from(&motd)
+    }
+}
+
+impl From<&BedrockMOTD> for Box<[u8]> {
+    fn from(motd: &BedrockMOTD) -> Self {
+        let mut text = format!(
+            "{};{};{};{};{};{};{};{};{};{};",
+            motd.edition,
+            motd.name,
+            motd.protocol,
+            motd.version,
+            motd.player_count,
+            motd.player_max,
+            motd.guid,
+            motd.sub_name,
+            motd.game_mode,
             if motd.nintendo_limited.unwrap_or(false) {
-                "0".into()
+                "0"
             } else {
-                "1".into()
+                "1"
             },
-        ];
+        );
 
-        if let Some(port_v4) = motd.port_v4 {
-            parts.push(port_v4.to_string());
+        for port in [motd.port_v4, motd.port_v6].into_iter().flatten() {
+            text.push_str(&port.to_string());
+            text.push(';');
         }
 
-        if let Some(port_v6) = motd.port_v6 {
-            parts.push(port_v6.to_string());
-        }
-
-        let str = parts.join(";") + ";";
-        str.into_bytes().into_boxed_slice()
+        text.into_bytes().into_boxed_slice()
     }
 }

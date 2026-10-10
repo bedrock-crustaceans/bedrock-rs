@@ -1,12 +1,13 @@
 use bedrock::core::world::dimension::Dimension;
 use bedrock::network::compression::Compression;
-use bedrock::network::connection::Connection;
-use bedrock::network::listener::Listener;
+use bedrock::network::login::server::ServerLoginOptions;
+use bedrock::network::tokio::Connection;
+use bedrock::network::tokio::Listener;
 use bedrock::protocol::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, GamePublishSetting, GameType, GeneratorType,
-    PacketCompressionAlgorithm, PlayStatus, SpawnBiomeType,
+    PlayStatus, SpawnBiomeType,
 };
-use bedrock::protocol::v662::packets::{NetworkSettingsPacket, PlayStatusPacket};
+use bedrock::protocol::v662::packets::PlayStatusPacket;
 use bedrock::protocol::v662::types::{
     ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments,
     NetworkPermissions, SpawnSettings,
@@ -30,21 +31,15 @@ type Protocol = V2225;
 
 #[tokio::main]
 async fn main() {
-    let mut listener = Listener::new_raknet(
-        "127.0.0.1:19132".parse().unwrap(),
-        "Bedrock in Rust".to_string(),
-        "bedrock-rs".to_string(),
-        Protocol::GAME_VERSION.to_string(),
-        Protocol::PROTOCOL_VERSION,
-        Protocol::RAKNET_VERSION,
-        100,
-        10,
-        false,
-    )
-    .await
-    .unwrap();
-
-    listener.start().await.unwrap();
+    let mut listener = Listener::builder("127.0.0.1:19132".parse().unwrap())
+        .name("Bedrock in Rust")
+        .sub_name("bedrock-rs")
+        .protocol::<Protocol>()
+        .max_players(100)
+        .player_count(10)
+        .bind()
+        .await
+        .unwrap();
 
     loop {
         let conn = listener.accept().await.unwrap();
@@ -55,51 +50,27 @@ async fn main() {
     }
 }
 
-async fn handle_login(mut unknown_conn: Connection<Unknown>) {
+async fn handle_login(unknown_conn: Connection<Unknown>) {
     let time_start = Instant::now();
 
-    // RequestNetworkSettings
-    let packets = unknown_conn.recv().await.unwrap();
-    let mut conn = match packets.first() {
-        Some(Unknown::RequestNetworkSettingsPacket(request))
-            if request.client_network_version == Protocol::PROTOCOL_VERSION as i32 =>
-        {
-            unknown_conn.into_ver::<Protocol>()
-        }
-        _ => {
-            unknown_conn.close().await;
+    let options = ServerLoginOptions::default()
+        .compression(Compression::None)
+        .encryption(false)
+        .require_authentication(false);
+    let session = match unknown_conn.into_ver::<Protocol>().accept(&options).await {
+        Ok(session) => session,
+        Err(error) => {
+            println!("Login failed: {error}");
             return;
         }
     };
-
-    println!("RequestNetworkSettings");
-
-    let compression = Compression::None;
-
-    // NetworkSettings
-    conn.send(&[Protocol::NetworkSettingsPacket(Box::new(
-        NetworkSettingsPacket {
-            compression_threshold: 1,
-            compression_algorithm: PacketCompressionAlgorithm::None,
-            client_throttle_enabled: false,
-            client_throttle_threshold: 0,
-            client_throttle_scalar: 0.0,
-        },
-    ))])
-    .await
-    .unwrap();
-    println!("NetworkSettings");
-
-    conn.compression = Some(compression);
-
-    // Login
-    conn.recv().await.unwrap();
-    println!("Login");
+    println!(
+        "Login: {}",
+        session.identity().authentication.identity().display_name
+    );
+    let (mut conn, _, _) = session.into_parts();
 
     conn.send(&[
-        Protocol::PlayStatusPacket(Box::new(PlayStatusPacket {
-            status: PlayStatus::LoginSuccess,
-        })),
         Protocol::ResourcePacksInfoPacket(Box::new(ResourcePacksInfoPacket {
             resource_pack_required: false,
             has_addon_packs: false,
@@ -122,7 +93,6 @@ async fn handle_login(mut unknown_conn: Connection<Unknown>) {
     ])
     .await
     .unwrap();
-    println!("PlayStatus (LoginSuccess)");
     println!("ResourcePacksInfo");
     println!("ResourcePackStack");
 

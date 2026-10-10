@@ -5,7 +5,7 @@ use flate2::{read::DeflateDecoder, write::DeflateEncoder};
 use std::io::{Cursor, Read, Write};
 use std::mem::size_of;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Compression {
     Zlib {
         threshold: u16,
@@ -28,15 +28,38 @@ impl Compression {
     const ID_ZLIB: u8 = 0;
     const ID_SNAPPY: u8 = 1;
     const ID_NONE: u8 = u8::MAX;
+    const ALGORITHM_ZLIB: u16 = 0;
+    const ALGORITHM_SNAPPY: u16 = 1;
+    const ALGORITHM_NONE: u16 = u16::MAX;
 
     /// Used in the [NetworkSettingsPacket](crate::version::v729::packets::network_settings::NetworkSettingsPacket)
     /// to identify which Compression should be used for the Connection.
     #[inline]
     pub const fn id_u16(&self) -> u16 {
         match self {
-            Compression::Zlib { .. } => 0,
-            Compression::Snappy { .. } => 1,
-            Compression::None => u16::MAX,
+            Compression::Zlib { .. } => Self::ALGORITHM_ZLIB,
+            Compression::Snappy { .. } => Self::ALGORITHM_SNAPPY,
+            Compression::None => Self::ALGORITHM_NONE,
+        }
+    }
+
+    pub fn from_network_settings(algorithm: u16, threshold: u16) -> Result<Self, CompressionError> {
+        match algorithm {
+            Self::ALGORITHM_ZLIB => Ok(Compression::Zlib {
+                threshold,
+                compression_level: 6,
+            }),
+            Self::ALGORITHM_SNAPPY => Ok(Compression::Snappy { threshold }),
+            Self::ALGORITHM_NONE => Ok(Compression::None),
+            other => Err(CompressionError::UnknownNetworkAlgorithm(other)),
+        }
+    }
+
+    pub fn id(&self) -> u8 {
+        match self {
+            Compression::Zlib { .. } => Self::ID_ZLIB,
+            Compression::Snappy { .. } => Self::ID_SNAPPY,
+            Compression::None => Self::ID_NONE,
         }
     }
 
@@ -113,6 +136,13 @@ impl Compression {
         let compression_method = stream.read_u8()?;
 
         src.drain(..1);
+
+        if compression_method != Self::ID_NONE && compression_method != self.id() {
+            return Err(CompressionError::UnexpectedMethod {
+                negotiated: self.id(),
+                found: compression_method,
+            });
+        }
 
         let dst = match compression_method {
             Self::ID_ZLIB => {
@@ -239,5 +269,89 @@ mod tests {
             "got {:?}",
             result.map(|v| v.len())
         );
+    }
+
+    #[test]
+    fn network_settings_ids_map_to_compression() {
+        assert!(matches!(
+            Compression::from_network_settings(0, 256),
+            Ok(Compression::Zlib {
+                threshold: 256,
+                compression_level: 6
+            })
+        ));
+        assert!(matches!(
+            Compression::from_network_settings(1, 7),
+            Ok(Compression::Snappy { threshold: 7 })
+        ));
+        assert!(matches!(
+            Compression::from_network_settings(0xffff, 9),
+            Ok(Compression::None)
+        ));
+        assert!(matches!(
+            Compression::from_network_settings(2, 0),
+            Err(CompressionError::UnknownNetworkAlgorithm(2))
+        ));
+        assert_eq!(zlib().id_u16(), 0);
+        assert_eq!(Compression::Snappy { threshold: 0 }.id_u16(), 1);
+        assert_eq!(Compression::None.id_u16(), 0xffff);
+        assert_eq!(zlib().id(), 0);
+        assert_eq!(Compression::Snappy { threshold: 0 }.id(), 1);
+        assert_eq!(Compression::None.id(), 0xff);
+    }
+
+    #[test]
+    fn unknown_network_algorithm_keeps_its_full_id() {
+        assert!(matches!(
+            Compression::from_network_settings(256, 0),
+            Err(CompressionError::UnknownNetworkAlgorithm(256))
+        ));
+    }
+
+    #[test]
+    fn snappy_batch_on_zlib_connection_is_rejected() {
+        let snappy_batch = Compression::Snappy { threshold: 0 }
+            .compress(vec![7u8; 64])
+            .unwrap();
+        let result = zlib().decompress(snappy_batch, MAX_LEN);
+        assert!(
+            matches!(
+                result,
+                Err(CompressionError::UnexpectedMethod {
+                    negotiated: 0,
+                    found: 1
+                })
+            ),
+            "got {:?}",
+            result.map(|v| v.len())
+        );
+    }
+
+    #[test]
+    fn uncompressed_marker_is_accepted_on_any_connection() {
+        let mut wire = vec![0xffu8];
+        wire.extend_from_slice(b"plain");
+        for compression in [
+            zlib(),
+            Compression::Snappy { threshold: 0 },
+            Compression::None,
+        ] {
+            assert_eq!(
+                compression.decompress(wire.clone(), MAX_LEN).unwrap(),
+                b"plain"
+            );
+        }
+    }
+
+    #[test]
+    fn batch_at_threshold_is_not_compressed() {
+        let compression = Compression::Zlib {
+            threshold: 8,
+            compression_level: 6,
+        };
+        let at = compression.compress(vec![1u8; 8]).unwrap();
+        assert_eq!(at[0], 0xff);
+        let above = compression.compress(vec![1u8; 9]).unwrap();
+        assert_eq!(above[0], 0);
     }
 }

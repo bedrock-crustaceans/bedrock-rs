@@ -1,9 +1,9 @@
-use crate::connection::Connection;
-use crate::error::ConnectionError;
+use crate::tokio::connection::Connection;
+use crate::tokio::error::ConnectionError;
+use ::tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use bedrock_protocol_core::Packets;
 use std::collections::VecDeque;
 use std::sync::Arc;
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub fn shard<T: Packets>(connection: Connection<T>) -> ConnectionShared<T> {
     ConnectionShared::<T> {

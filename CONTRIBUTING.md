@@ -57,7 +57,7 @@ Narrow the loop while you work:
 ```sh
 cargo test -p bedrock_protocol <test_name>       # one test, default feature = newest version only
 cargo test -p bedrock_protocol --all-features    # every version; about five times the compile time
-cargo run --example server --features network,protocol-v2225,protocol-unknown
+cargo run --example server --features network-tokio,protocol-v2225,protocol-unknown
 ```
 
 ## Protocol changes
