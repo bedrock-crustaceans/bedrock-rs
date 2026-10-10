@@ -31,7 +31,8 @@ type Protocol = V2225;
 
 #[tokio::main]
 async fn main() {
-    let mut listener = Listener::builder("127.0.0.1:19132".parse().unwrap())
+    let mut listener = Listener::builder()
+        .raknet("127.0.0.1:19132".parse().unwrap())
         .name("Bedrock in Rust")
         .sub_name("bedrock-rs")
         .protocol::<Protocol>()

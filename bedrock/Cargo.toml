@@ -28,8 +28,10 @@ protocol = [
 ]
 network = ["dep:bedrock_network", "protocol", "auth"]
 network-tokio = ["network", "bedrock_network/tokio"]
+network-nethernet = ["network", "bedrock_network/nethernet"]
+network-nethernet-tokio = ["network-nethernet", "network-tokio", "bedrock_network/nethernet-tokio"]
 level = ["dep:bedrock_level"]
-full = ["level", "network-tokio", "protocol", "auth"]
+full = ["level", "network-nethernet-tokio", "protocol", "auth"]
 form = ["dep:bedrock_form"]
 
 auth-ureq = ["auth", "bedrock_auth/ureq"]

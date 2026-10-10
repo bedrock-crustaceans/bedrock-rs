@@ -13,7 +13,7 @@ use crate::motd::BedrockMOTD;
 use raknet_tokio::prelude::*;
 
 pub struct Listener {
-    listener: TransportLayerListener,
+    listeners: Vec<TransportLayerListener>,
     motd: BedrockMOTD,
     max_connections: usize,
 }
@@ -21,7 +21,7 @@ pub struct Listener {
 const DEFAULT_RAKNET_VERSION: u8 = 11;
 
 pub struct ListenerBuilder {
-    addr: SocketAddr,
+    bindings: Vec<Binding>,
     name: String,
     sub_name: String,
     display_version: String,
@@ -32,7 +32,39 @@ pub struct ListenerBuilder {
     nintendo_limited: bool,
 }
 
+enum Binding {
+    RakNet(SocketAddr),
+    #[cfg(feature = "nethernet-tokio")]
+    NetherNetLan(SocketAddr),
+    #[cfg(feature = "nethernet-tokio")]
+    NetherNetHttp(SocketAddr, std::sync::Arc<nethernet_tokio::ServerIdentity>),
+}
+
 impl ListenerBuilder {
+    pub fn raknet(mut self, bind_addr: SocketAddr) -> Self {
+        self.bindings.push(Binding::RakNet(bind_addr));
+        self
+    }
+
+    #[cfg(feature = "nethernet-tokio")]
+    pub fn nethernet_lan(mut self, bind_addr: SocketAddr) -> Self {
+        self.bindings.push(Binding::NetherNetLan(bind_addr));
+        self
+    }
+
+    #[cfg(feature = "nethernet-tokio")]
+    pub fn nethernet_http(
+        mut self,
+        bind_addr: SocketAddr,
+        identity: nethernet_tokio::ServerIdentity,
+    ) -> Self {
+        self.bindings.push(Binding::NetherNetHttp(
+            bind_addr,
+            std::sync::Arc::new(identity),
+        ));
+        self
+    }
+
     pub fn name(mut self, name: impl Into<String>) -> Self {
         self.name = name.into();
         self
@@ -65,7 +97,16 @@ impl ListenerBuilder {
         self
     }
 
+    fn raknet_port(&self) -> Option<u16> {
+        self.bindings.iter().find_map(|binding| match binding {
+            Binding::RakNet(addr) => Some(addr.port()),
+            #[cfg(feature = "nethernet-tokio")]
+            _ => None,
+        })
+    }
+
     fn build_motd(&self, guid: u64) -> BedrockMOTD {
+        let port = self.raknet_port();
         BedrockMOTD {
             edition: MINECRAFT_EDITION_MOTD.to_owned(),
             version: self.display_version.clone(),
@@ -76,43 +117,101 @@ impl ListenerBuilder {
             protocol: self.protocol,
             guid,
             game_mode: "Survival".to_string(),
-            port_v4: Some(self.addr.port()),
-            port_v6: Some(self.addr.port()),
+            port_v4: port,
+            port_v6: port,
             nintendo_limited: Some(self.nintendo_limited),
         }
     }
 
-    fn into_listener(self) -> Listener {
+    pub async fn bind(self) -> Result<Listener, ListenerError> {
+        if self.bindings.is_empty() {
+            return Err(ListenerError::NoTransport);
+        }
+
         let guid = random::<u64>();
         let motd = self.build_motd(guid);
         let max_connections = usize::try_from(self.max_players).unwrap_or(0);
-        let rak_version = self.rak_version;
 
-        let rak_server = RakServer::new(self.addr, |conf| {
+        let mut listeners = Vec::with_capacity(self.bindings.len());
+        for binding in &self.bindings {
+            let transport = match binding {
+                Binding::RakNet(addr) => {
+                    let mut transport = self.raknet_listener(*addr, guid, &motd, max_connections);
+                    transport.start().await?;
+                    transport
+                }
+                #[cfg(feature = "nethernet-tokio")]
+                nethernet => bind_nethernet(nethernet, &motd).await?,
+            };
+            listeners.push(transport);
+        }
+
+        Ok(Listener {
+            listeners,
+            motd,
+            max_connections,
+        })
+    }
+
+    fn raknet_listener(
+        &self,
+        addr: SocketAddr,
+        guid: u64,
+        motd: &BedrockMOTD,
+        max_connections: usize,
+    ) -> TransportLayerListener {
+        let rak_version = self.rak_version;
+        TransportLayerListener::RakNet(RakServer::new(addr, |conf| {
             conf.guid = guid;
             conf.max_connections = max_connections;
             conf.protocols = Box::new([rak_version]);
-            conf.message = (&motd).into()
-        });
-
-        Listener {
-            listener: TransportLayerListener::RakNet(rak_server),
-            motd,
-            max_connections,
-        }
-    }
-
-    pub async fn bind(self) -> Result<Listener, ListenerError> {
-        let mut listener = self.into_listener();
-        listener.listener.start().await?;
-        Ok(listener)
+            conf.message = motd.into()
+        }))
     }
 }
 
+#[cfg(feature = "nethernet-tokio")]
+async fn bind_nethernet(
+    binding: &Binding,
+    motd: &BedrockMOTD,
+) -> Result<TransportLayerListener, super::error::TransportLayerError> {
+    use nethernet_tokio::{
+        ConnectionConfig, HttpServerConfig, HttpSignalingServer, LanSignaling, ServerSignaling,
+    };
+
+    let network_id = random::<u64>();
+    let (signaling, config): (ServerSignaling, ConnectionConfig) = match binding {
+        Binding::NetherNetLan(addr) => (
+            LanSignaling::new(network_id, *addr).await?.into(),
+            ConnectionConfig::default(),
+        ),
+        Binding::NetherNetHttp(addr, identity) => (
+            HttpSignalingServer::bind(
+                *addr,
+                HttpServerConfig {
+                    network_id: network_id.to_string(),
+                    ..Default::default()
+                },
+            )
+            .await?
+            .into(),
+            ConnectionConfig {
+                identity: Some(identity.clone()),
+                ..Default::default()
+            },
+        ),
+        Binding::RakNet(_) => unreachable!("RakNet bindings are bound by the caller"),
+    };
+
+    let listener = super::transport::NetherNetListener::bind(signaling, config).await?;
+    listener.advertise(motd);
+    Ok(TransportLayerListener::NetherNet(listener))
+}
+
 impl Listener {
-    pub fn builder(addr: SocketAddr) -> ListenerBuilder {
+    pub fn builder() -> ListenerBuilder {
         ListenerBuilder {
-            addr,
+            bindings: Vec::new(),
             name: String::new(),
             sub_name: String::new(),
             display_version: String::new(),
@@ -134,23 +233,33 @@ impl Listener {
 
     pub fn set_max_connections(&mut self, n: usize) {
         self.max_connections = n;
-        self.listener.set_max_connections(n);
+        for transport in &mut self.listeners {
+            transport.set_max_connections(n);
+        }
     }
 
     pub fn update_motd(&mut self, f: impl FnOnce(&mut BedrockMOTD)) {
         f(&mut self.motd);
-        self.listener.set_message((&self.motd).into());
+        for transport in &mut self.listeners {
+            transport.advertise(&self.motd);
+        }
     }
 
     pub async fn shutdown(mut self) -> Result<(), ListenerError> {
-        self.listener.stop().await?;
+        for transport in &mut self.listeners {
+            transport.stop().await?;
+        }
         Ok(())
     }
 
     pub async fn accept<V: Packets>(&mut self) -> Result<Connection<V>, ListenerError> {
-        let rak_conn = self.listener.accept().await?;
+        let accepts = self
+            .listeners
+            .iter_mut()
+            .map(|transport| Box::pin(transport.accept()));
+        let (accepted, ..) = futures_util::future::select_all(accepts).await;
 
-        Ok(Connection::from_transport_conn(rak_conn))
+        Ok(Connection::from_transport_conn(accepted?))
     }
 }
 
@@ -160,7 +269,8 @@ mod tests {
     use bedrock_protocol::V2225;
 
     fn unbound_builder() -> ListenerBuilder {
-        Listener::builder("127.0.0.1:19132".parse().unwrap())
+        Listener::builder()
+            .raknet("127.0.0.1:19132".parse().unwrap())
             .name("Before")
             .sub_name("Sub")
             .protocol::<V2225>()
@@ -170,7 +280,11 @@ mod tests {
     }
 
     fn unbound_listener() -> Listener {
-        unbound_builder().into_listener()
+        Listener {
+            listeners: Vec::new(),
+            motd: unbound_builder().build_motd(7),
+            max_connections: 20,
+        }
     }
 
     #[test]
@@ -185,6 +299,21 @@ mod tests {
         assert_eq!(motd.nintendo_limited, Some(true));
         assert_eq!(motd.port_v4, Some(19132));
         assert_eq!(motd.guid, 7);
+    }
+
+    #[test]
+    fn motd_has_no_ports_without_a_raknet_binding() {
+        let motd = Listener::builder().build_motd(7);
+
+        assert_eq!((motd.port_v4, motd.port_v6), (None, None));
+    }
+
+    #[::tokio::test]
+    async fn builder_without_a_transport_cannot_bind() {
+        assert!(matches!(
+            Listener::builder().bind().await,
+            Err(ListenerError::NoTransport)
+        ));
     }
 
     #[::tokio::test]

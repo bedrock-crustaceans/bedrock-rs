@@ -17,8 +17,20 @@ pub enum NetworkCodecError {
     IOError(#[from] IOError),
     #[error("Batch holds a zero-length packet")]
     EmptyPacket,
+    #[error("Datagram starts with {0:#04x} instead of the game packet header")]
+    InvalidGamePacketHeader(u8),
     #[error("Packet length {declared} exceeds the {remaining} bytes left in the batch")]
     PacketLengthOutOfBounds { declared: u32, remaining: usize },
+}
+
+#[derive(Error, Debug)]
+pub enum MotdError {
+    #[error("Pong is not valid UTF-8: {0}")]
+    InvalidUtf8(#[from] std::str::Utf8Error),
+    #[error("Pong has no {0} field")]
+    MissingField(&'static str),
+    #[error("Pong field {0} is not a number")]
+    InvalidNumber(&'static str),
 }
 
 #[derive(Error, Debug)]

@@ -2,7 +2,7 @@ use crate::compression::Compression;
 use crate::encryption::Encryption;
 use crate::error::NetworkCodecError;
 use bedrock_protocol_core::{PacketHeader, Packets, ProtoCodecVAR};
-use std::io::{Cursor, Read, Write};
+use std::io::Cursor;
 
 pub fn encode_packets<T: Packets>(
     packets: &[T],
@@ -34,80 +34,79 @@ pub fn decode_packets<T: Packets>(
 }
 
 fn batch_packets<T: Packets>(packets: &[T]) -> Result<Vec<u8>, NetworkCodecError> {
-    let packets_stream_size = packets
+    let frames = packets
         .iter()
-        .map(|p| {
-            let packet_size = p.size_hint(&PacketHeader {
-                packet_id: p.id(),
-                sender_sub_client_id: 0,
-                target_sub_client_id: 0,
-            });
-
-            <i32 as ProtoCodecVAR>::size_hint(&(packet_size as i32)) + packet_size
-        })
-        .sum::<usize>();
-
-    let mut packets_stream = Vec::with_capacity(packets_stream_size);
-
-    packets
-        .iter()
-        .try_for_each(|packet| -> Result<(), NetworkCodecError> {
+        .map(|packet| {
             let header = PacketHeader {
                 packet_id: packet.id(),
                 sender_sub_client_id: 0,
                 target_sub_client_id: 0,
             };
 
-            let mut buf = Vec::with_capacity(packet.size_hint(&header));
+            let mut frame = Vec::with_capacity(packet.size_hint(&header));
+            packet.serialize(&header, &mut frame)?;
+            Ok(frame)
+        })
+        .collect::<Result<Vec<_>, NetworkCodecError>>()?;
 
-            packet.serialize(&header, &mut buf)?;
-
-            <u32 as ProtoCodecVAR>::serialize(&(buf.len() as u32), &mut packets_stream)?;
-            packets_stream.write_all(&buf)?;
-
-            Ok(())
-        })?;
-
-    Ok(packets_stream)
+    Ok(join_batch(&frames))
 }
 
 fn separate_packets<T: Packets>(packets_stream: Vec<u8>) -> Result<Vec<T>, NetworkCodecError> {
-    let mut packets_stream = Cursor::new(packets_stream.as_slice());
-    let mut packets = vec![];
+    split_batch(&packets_stream)?
+        .into_iter()
+        .map(|frame| {
+            let mut frame = Cursor::new(frame);
+            let (packet, header) = T::deserialize(&mut frame)?;
 
-    loop {
-        if packets_stream.position() == packets_stream.get_ref().len() as u64 {
-            break;
-        }
+            let unread = frame.get_ref().len() - frame.position() as usize;
+            if unread > 0 {
+                tracing::warn!(
+                    "packet {} deserializer left {unread} unread bytes, skipping to next packet",
+                    header.packet_id,
+                );
+            }
 
-        let buf_len = <u32 as ProtoCodecVAR>::deserialize(&mut packets_stream)?;
-        let remaining = packets_stream.get_ref().len() - packets_stream.position() as usize;
-        if buf_len == 0 {
+            Ok(packet)
+        })
+        .collect()
+}
+
+pub fn split_batch(batch: &[u8]) -> Result<Vec<&[u8]>, NetworkCodecError> {
+    let mut stream = Cursor::new(batch);
+    let mut frames = vec![];
+
+    while (stream.position() as usize) < batch.len() {
+        let declared = <u32 as ProtoCodecVAR>::deserialize(&mut stream)?;
+        let rest = &batch[stream.position() as usize..];
+        if declared == 0 {
             return Err(NetworkCodecError::EmptyPacket);
         }
-        if buf_len as usize > remaining {
+        let Some(frame) = rest.get(..declared as usize) else {
             return Err(NetworkCodecError::PacketLengthOutOfBounds {
-                declared: buf_len,
-                remaining,
+                declared,
+                remaining: rest.len(),
             });
-        }
-        let mut buf = packets_stream.by_ref().take(buf_len as u64);
+        };
 
-        let (packet, header) = T::deserialize(&mut buf)?;
-        packets.push(packet);
-
-        // drain bytes the deserializer left behind so the next packet's length prefix stays aligned
-        if buf.limit() > 0 {
-            tracing::warn!(
-                "packet {} deserializer left {} unread bytes, skipping to next packet",
-                header.packet_id,
-                buf.limit()
-            );
-            std::io::copy(&mut buf, &mut std::io::sink())?;
-        }
+        frames.push(frame);
+        stream.set_position(stream.position() + declared as u64);
     }
 
-    Ok(packets)
+    Ok(frames)
+}
+
+pub fn join_batch<F: AsRef<[u8]>>(frames: &[F]) -> Vec<u8> {
+    let mut batch = Vec::with_capacity(frames.iter().map(|frame| frame.as_ref().len() + 5).sum());
+
+    for frame in frames {
+        let frame = frame.as_ref();
+        <u32 as ProtoCodecVAR>::serialize(&(frame.len() as u32), &mut batch)
+            .expect("writing to a Vec cannot fail");
+        batch.extend_from_slice(frame);
+    }
+
+    batch
 }
 
 pub fn compress_packets(
@@ -153,4 +152,45 @@ pub fn decrypt_packets(
     }
 
     Ok(packet_stream)
+}
+
+#[cfg(test)]
+mod frame_tests {
+    use super::*;
+
+    #[test]
+    fn joined_frames_split_back_into_the_same_frames() {
+        let frames = [vec![1u8, 2, 3], vec![9u8; 200], vec![7u8]];
+
+        let batch = join_batch(&frames);
+
+        assert_eq!(
+            split_batch(&batch).unwrap(),
+            frames.iter().map(Vec::as_slice).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn batch_with_a_zero_length_frame_is_an_error() {
+        assert!(matches!(
+            split_batch(&[0]),
+            Err(NetworkCodecError::EmptyPacket)
+        ));
+    }
+
+    #[test]
+    fn batch_whose_frame_overruns_it_is_an_error() {
+        assert!(matches!(
+            split_batch(&[5, 1, 2]),
+            Err(NetworkCodecError::PacketLengthOutOfBounds {
+                declared: 5,
+                remaining: 2
+            })
+        ));
+    }
+
+    #[test]
+    fn empty_batch_has_no_frames() {
+        assert!(split_batch(&[]).unwrap().is_empty());
+    }
 }

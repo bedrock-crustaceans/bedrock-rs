@@ -37,6 +37,7 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
   - Packet batching/codec support, including Zlib/Snappy compression and AES encryption.  
   - Server MOTD (server list ping) construction and connection listener utilities.  
   - The `network` feature is sans-io (codec, compression, encryption, login state machines) and pulls neither tokio nor RakNet; enable `network-tokio` for the `network::tokio` module: `Connection`, `Listener::builder`, `Client`, `Session`, and the async login methods `Connection::accept` and `Connection::connect`.  
+  - `network-nethernet` adds the sans-io NetherNet helpers (`IdentityStore`, `server_data`); `network-nethernet-tokio` adds NetherNet to `Listener::builder`, which takes any mix of `raknet`, `nethernet_http` and `nethernet_lan`.  
 
 - [`bedrock::auth`](crates/auth)  
   - Validation of Xbox Live login identity chains (JWTs) against Microsoft’s OIDC discovery service.  

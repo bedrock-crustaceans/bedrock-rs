@@ -5,7 +5,9 @@ edition.workspace = true
 
 [features]
 default = ["tokio"]
-tokio = ["dep:tokio", "dep:raknet-tokio"]
+tokio = ["dep:tokio", "dep:raknet-tokio", "dep:futures-util"]
+nethernet = ["dep:nethernet"]
+nethernet-tokio = ["tokio", "nethernet", "dep:nethernet-tokio", "dep:bytes"]
 test-util = ["tokio"]
 v2193 = ["bedrock_protocol/v2193"]
 
@@ -28,8 +30,13 @@ aes = "0.9.3"
 ctr = "0.10.1"
 facet = "0.46"
 
+nethernet = { git = "https://github.com/bedrock-crustaceans/nethernet", branch = "main", optional = true }
+nethernet-tokio = { git = "https://github.com/bedrock-crustaceans/nethernet", branch = "main", optional = true }
+futures-util = { version = "0.3", default-features = false, features = ["alloc"], optional = true }
+bytes = { version = "1.12.1", optional = true }
 raknet-tokio = { git = "https://github.com/bedrock-crustaceans/raknet.git", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
 facet-json = "0.46"
+tempfile.workspace = true

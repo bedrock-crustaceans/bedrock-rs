@@ -1,5 +1,5 @@
 use crate::error::{LoginError, NetworkCodecError};
-use crate::info::RAKNET_GAMEPACKET_ID;
+use crate::raknet::RakNetGamePacket;
 use raknet_tokio::prelude::{RakClientError, RakServerError, RakSessionError};
 use std::io::Error as IOError;
 use thiserror::Error;
@@ -8,6 +8,8 @@ use thiserror::Error;
 pub enum ListenerError {
     #[error("Address bind error")]
     AddrBindError,
+    #[error("No transport configured")]
+    NoTransport,
     #[error("Already Online")]
     AlreadyOnline,
     #[error("Not Listening")]
@@ -34,6 +36,9 @@ pub enum TransportLayerError {
     IOError(#[from] IOError),
     #[error("RakNet Error: {0}")]
     RakNetError(#[from] RakNetError),
+    #[cfg(feature = "nethernet-tokio")]
+    #[error("NetherNet Error: {0}")]
+    NetherNet(#[from] nethernet_tokio::NetherError),
     // #[error("Quic Error: {0}")]
     // QuicError(#[from] QuicError),
 }
@@ -46,7 +51,7 @@ pub enum RakNetError {
     ServerError(#[from] RakServerError),
     #[error("Client Error: {0}")]
     ClientError(#[from] RakClientError),
-    #[error("Invalid RakNet Header (expected: {RAKNET_GAMEPACKET_ID}, got: {0})")]
+    #[error("Invalid RakNet Header (expected: {expected}, got: {0})", expected = RakNetGamePacket::ID)]
     InvalidRakNetHeader(u8),
     #[error("Format Error: {0}")]
     FormatError(&'static str),
