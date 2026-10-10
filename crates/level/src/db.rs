@@ -4,9 +4,9 @@ use miniz_oxide::{
     deflate::{compress_to_vec, compress_to_vec_zlib},
     inflate::{decompress_to_vec, decompress_to_vec_zlib},
 };
-use rusty_leveldb::{Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode};
+use leveldb::{Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode};
 
-pub use rusty_leveldb::CompactionMode;
+pub use leveldb::CompactionMode;
 
 use crate::{error::Result, iter::Keys};
 
@@ -48,11 +48,11 @@ impl Default for OpenOptions {
 struct ZlibCompressor(u8);
 
 impl Compressor for ZlibCompressor {
-    fn encode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+    fn encode(&self, block: &[u8]) -> leveldb::Result<Vec<u8>> {
         Ok(compress_to_vec_zlib(block, self.0))
     }
 
-    fn decode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+    fn decode(&self, block: &[u8]) -> leveldb::Result<Vec<u8>> {
         decompress_to_vec_zlib(block).map_err(|err| Status {
             code: StatusCode::CompressionError,
             err: err.to_string(),
@@ -64,11 +64,11 @@ impl Compressor for ZlibCompressor {
 struct RawDeflateCompressor(u8);
 
 impl Compressor for RawDeflateCompressor {
-    fn encode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+    fn encode(&self, block: &[u8]) -> leveldb::Result<Vec<u8>> {
         Ok(compress_to_vec(block, self.0))
     }
 
-    fn decode(&self, block: &[u8]) -> rusty_leveldb::Result<Vec<u8>> {
+    fn decode(&self, block: &[u8]) -> leveldb::Result<Vec<u8>> {
         decompress_to_vec(block).map_err(|err| Status {
             code: StatusCode::CompressionError,
             err: err.to_string(),
@@ -125,7 +125,7 @@ impl From<Buffer<'_>> for Vec<u8> {
 /// A group of inserts and removals applied together by [`Database::write`]. Writing a chunk's
 /// records as one batch is much cheaper than inserting them one at a time.
 #[derive(Default)]
-pub struct WriteBatch(rusty_leveldb::WriteBatch);
+pub struct WriteBatch(leveldb::WriteBatch);
 
 impl WriteBatch {
     pub fn new() -> Self {

@@ -28,8 +28,8 @@ impl<T> From<PoisonError<T>> for Error {
     }
 }
 
-impl From<rusty_leveldb::Status> for Error {
-    fn from(err: rusty_leveldb::Status) -> Error {
+impl From<leveldb::Status> for Error {
+    fn from(err: leveldb::Status) -> Error {
         Error::LevelDbError(err.err)
     }
 }

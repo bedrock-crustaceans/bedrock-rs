@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use rusty_leveldb::DBIterator;
+use leveldb::DBIterator;
 
 use crate::{
     db::{Buffer, Database},
