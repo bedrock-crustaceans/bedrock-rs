@@ -1,10 +1,10 @@
 use std::{marker::PhantomData, num::NonZeroU8, ops::Deref, sync::Arc, time::Duration};
 
+use leveldb::{Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode};
 use miniz_oxide::{
     deflate::{compress_to_vec, compress_to_vec_zlib},
     inflate::{decompress_to_vec, decompress_to_vec_zlib},
 };
-use leveldb::{Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode};
 
 pub use leveldb::CompactionMode;
 
