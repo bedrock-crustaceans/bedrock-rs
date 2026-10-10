@@ -1,7 +1,7 @@
 pub mod shard;
 
 use super::error::ConnectionError;
-use super::transport::TransportLayerConnection;
+use super::transport::{Transport, TransportLayerConnection};
 use crate::codec::{
     compress_packets, decode_packets, decompress_packets, decrypt_packets, encode_packets,
     encrypt_packets,
@@ -12,9 +12,9 @@ use bedrock_protocol_core::Packets;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
 
-pub struct Connection<V: Packets> {
+pub struct Connection<V: Packets, T = TransportLayerConnection> {
     /// Represents the Connection's internal transport layer, which may vary
-    transport_layer: TransportLayerConnection,
+    transport_layer: T,
     /// Represents the Connection's Compression, the compression gets initialized in the
     /// login process
     pub compression: Option<Compression>,
@@ -24,9 +24,9 @@ pub struct Connection<V: Packets> {
     _version_marker: PhantomData<V>,
 }
 
-impl<V: Packets> Connection<V> {
-    pub fn into_ver<T: Packets>(self) -> Connection<T> {
-        Connection::<T> {
+impl<V: Packets, T: Transport> Connection<V, T> {
+    pub fn into_ver<W: Packets>(self) -> Connection<W, T> {
+        Connection::<W, T> {
             transport_layer: self.transport_layer,
             compression: self.compression,
             encryption: self.encryption,
@@ -34,7 +34,7 @@ impl<V: Packets> Connection<V> {
         }
     }
 
-    pub fn from_transport_conn(transport_layer: TransportLayerConnection) -> Self {
+    pub fn from_transport_conn(transport_layer: T) -> Self {
         Self {
             transport_layer,
             compression: None,
@@ -51,7 +51,7 @@ impl<V: Packets> Connection<V> {
         self.encryption = Some(encryption);
     }
 
-    pub fn get_transport_conn(&self) -> &TransportLayerConnection {
+    pub fn get_transport_conn(&self) -> &T {
         &self.transport_layer
     }
 
@@ -129,7 +129,7 @@ impl<V: Packets> Connection<V> {
 mod tests {
     use super::*;
     use crate::login::{LoginPackets, LoginStatus};
-    use crate::test_helpers::memory_connections;
+    use crate::tokio::memory::memory_connections;
     use bedrock_protocol::V2225;
 
     #[::tokio::test]

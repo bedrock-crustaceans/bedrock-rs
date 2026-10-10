@@ -8,7 +8,6 @@ default = ["tokio"]
 tokio = ["dep:tokio", "dep:raknet-tokio", "dep:futures-util"]
 nethernet = ["dep:nethernet"]
 nethernet-tokio = ["tokio", "nethernet", "dep:nethernet-tokio", "dep:bytes"]
-test-util = ["tokio"]
 v2193 = ["bedrock_protocol/v2193"]
 
 [dependencies]

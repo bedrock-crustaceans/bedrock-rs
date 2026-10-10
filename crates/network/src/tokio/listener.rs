@@ -100,7 +100,7 @@ impl ListenerBuilder {
     fn raknet_port(&self) -> Option<u16> {
         self.bindings.iter().find_map(|binding| match binding {
             Binding::RakNet(addr) => Some(addr.port()),
-            #[cfg(feature = "nethernet-tokio")]
+            #[allow(unreachable_patterns)]
             _ => None,
         })
     }

@@ -1,24 +1,28 @@
 use super::connection::Connection;
 use super::error::SessionError;
 use super::session::Session;
+use super::transport::Transport;
 use crate::login::LoginAction;
 use crate::login::client::{ClientIdentity, ClientLogin};
 use crate::login::packets::LoginPackets;
 use crate::login::server::{LoginFailure, ServerLogin, ServerLoginOptions};
 use bedrock_auth::Login;
 
-impl<V: LoginPackets> Connection<V> {
+impl<V: LoginPackets, T: Transport> Connection<V, T> {
     pub async fn accept(
         self,
         options: &ServerLoginOptions,
-    ) -> Result<Session<V, Box<Login>>, SessionError> {
+    ) -> Result<Session<V, Box<Login>, T>, SessionError> {
         let mut machine = ServerLogin::new(options.clone());
         let (connection, login, pending) =
             drive(self, Vec::new(), |packet| machine.handle(packet)).await?;
         Ok(Session::new(connection, login, pending))
     }
 
-    pub async fn connect(self, identity: ClientIdentity) -> Result<Session<V>, SessionError> {
+    pub async fn connect(
+        self,
+        identity: ClientIdentity,
+    ) -> Result<Session<V, (), T>, SessionError> {
         let mut machine = ClientLogin::new(identity);
         let start = machine.start();
         let (connection, (), pending) =
@@ -27,13 +31,14 @@ impl<V: LoginPackets> Connection<V> {
     }
 }
 
-async fn drive<V, Done>(
-    mut connection: Connection<V>,
+async fn drive<V, T, Done>(
+    mut connection: Connection<V, T>,
     start: Vec<LoginAction<V, Done>>,
     handle: impl FnMut(V) -> Result<Vec<LoginAction<V, Done>>, LoginFailure<V>>,
-) -> Result<(Connection<V>, Done, Vec<V>), SessionError>
+) -> Result<(Connection<V, T>, Done, Vec<V>), SessionError>
 where
     V: LoginPackets,
+    T: Transport,
 {
     match run(&mut connection, start, handle).await {
         Ok((done, pending)) => Ok((connection, done, pending)),
@@ -44,13 +49,14 @@ where
     }
 }
 
-async fn run<V, Done>(
-    connection: &mut Connection<V>,
+async fn run<V, T, Done>(
+    connection: &mut Connection<V, T>,
     start: Vec<LoginAction<V, Done>>,
     mut handle: impl FnMut(V) -> Result<Vec<LoginAction<V, Done>>, LoginFailure<V>>,
 ) -> Result<(Done, Vec<V>), SessionError>
 where
     V: LoginPackets,
+    T: Transport,
 {
     let mut done = None;
     let mut pending = Vec::new();
@@ -80,8 +86,8 @@ where
     }
 }
 
-async fn apply_all<V: LoginPackets, Done>(
-    connection: &mut Connection<V>,
+async fn apply_all<V: LoginPackets, T: Transport, Done>(
+    connection: &mut Connection<V, T>,
     actions: Vec<LoginAction<V, Done>>,
     done: &mut Option<Done>,
 ) -> Result<(), SessionError> {
@@ -107,8 +113,9 @@ mod tests {
     use crate::login::handshake::client_finish_encryption;
     use crate::login::packets::{LoginEvent, LoginStatus};
     use crate::test_helpers::{
-        client_key, identity_key, memory_connections, self_signed_login, self_signed_request_bytes,
+        client_key, identity_key, self_signed_login, self_signed_request_bytes,
     };
+    use crate::tokio::memory::{MemoryConnection, memory_connections};
     use bedrock_protocol::V2225;
     use std::time::Duration;
 
@@ -180,7 +187,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    async fn play_client(client: &mut Connection<V2225>, encrypted: bool, trailing: Vec<V2225>) {
+    async fn play_client(client: &mut MemoryConnection, encrypted: bool, trailing: Vec<V2225>) {
         client
             .send(&[V2225::request_network_settings(V2225::PROTOCOL_VERSION)])
             .await

@@ -1,5 +1,7 @@
 use crate::motd::BedrockMOTD;
 use crate::tokio::error::{RakNetError, TransportLayerError};
+#[cfg(feature = "nethernet-tokio")]
+use crate::tokio::transport::NetherNetConnection;
 use crate::tokio::transport::TransportLayerConnection;
 use raknet_tokio::prelude::*;
 
@@ -77,12 +79,12 @@ impl TransportLayerListener {
     pub async fn accept(&mut self) -> Result<TransportLayerConnection, TransportLayerError> {
         let conn = match self {
             Self::RakNet(listener) => TransportLayerConnection::RakNet(
-                listener.accept().await.map_err(RakNetError::from)?,
+                listener.accept().await.map_err(RakNetError::from)?.into(),
             ),
             #[cfg(feature = "nethernet-tokio")]
-            Self::NetherNet(listener) => {
-                TransportLayerConnection::nethernet(listener.server.accept().await?).await
-            }
+            Self::NetherNet(listener) => TransportLayerConnection::NetherNet(
+                NetherNetConnection::accepted(listener.server.accept().await?).await,
+            ),
         };
 
         Ok(conn)

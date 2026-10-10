@@ -1,10 +1,9 @@
 use super::connection::Connection;
 use super::error::{ClientError, RakNetError};
 use super::session::Session;
-use super::transport::TransportLayerConnection;
+use super::transport::{RakNetConnection, TransportLayerConnection};
 use crate::login::LoginPackets;
 use crate::login::client::ClientIdentity;
-use ::tokio::sync::Mutex;
 use bedrock_auth::{AuthData, ClientData, ConnectionRequest};
 use bedrock_protocol::ProtoVersion;
 use p384::SecretKey;
@@ -108,11 +107,9 @@ impl Client {
             }
         };
 
-        let connection =
-            Connection::<V>::from_transport_conn(TransportLayerConnection::RakNetClient {
-                session,
-                client: Mutex::new(client),
-            });
+        let connection = Connection::<V>::from_transport_conn(TransportLayerConnection::RakNet(
+            RakNetConnection::dialled(session, client),
+        ));
         Ok(connection
             .connect(ClientIdentity::new(identity_key, request))
             .await?)

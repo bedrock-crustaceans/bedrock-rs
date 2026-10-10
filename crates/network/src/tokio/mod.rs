@@ -10,3 +10,6 @@ pub use client::Client;
 pub use connection::Connection;
 pub use listener::{Listener, ListenerBuilder};
 pub use session::Session;
+
+#[cfg(test)]
+mod memory;

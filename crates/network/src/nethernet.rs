@@ -1,3 +1,4 @@
+use crate::info::MINECRAFT_EDITION_MOTD;
 use crate::motd::BedrockMOTD;
 use nethernet::prelude::{IdentityError, ServerData, ServerIdentity};
 use std::path::Path;
@@ -80,6 +81,31 @@ impl From<&BedrockMOTD> for ServerData {
     }
 }
 
+impl From<&ServerData> for BedrockMOTD {
+    fn from(data: &ServerData) -> Self {
+        Self {
+            edition: MINECRAFT_EDITION_MOTD.to_owned(),
+            name: data.server_name.clone(),
+            protocol: data.protocol_version,
+            version: data.game_version.clone(),
+            player_count: data.player_count,
+            player_max: data.max_player_count,
+            guid: 0,
+            sub_name: data.level_name.clone(),
+            game_mode: match data.game_type {
+                1 => "Creative",
+                2 => "Adventure",
+                3 => "Spectator",
+                _ => "Survival",
+            }
+            .to_owned(),
+            nintendo_limited: None,
+            port_v4: None,
+            port_v6: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,6 +152,26 @@ mod tests {
 
         assert!(store.renew(Duration::from_secs(3600)).is_none());
         assert!(store.renew(Duration::ZERO).unwrap().is_ok());
+    }
+
+    #[test]
+    fn motd_mirrors_the_server_data() {
+        let mut data = ServerData::new("Name".into(), "World".into());
+        data.protocol_version = 975;
+        data.game_version = "1.26.0".into();
+        data.player_count = 3;
+        data.max_player_count = 20;
+        data.game_type = 1;
+
+        let motd = BedrockMOTD::from(&data);
+
+        assert_eq!(
+            (motd.name.as_str(), motd.sub_name.as_str()),
+            ("Name", "World")
+        );
+        assert_eq!((motd.protocol, motd.version.as_str()), (975, "1.26.0"));
+        assert_eq!((motd.player_count, motd.player_max), (3, 20));
+        assert_eq!(motd.game_mode, "Creative");
     }
 
     #[test]

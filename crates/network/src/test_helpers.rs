@@ -26,16 +26,3 @@ pub(crate) fn self_signed_login(display_name: &str) -> V2225 {
         ConnectionRequest::self_signed(&client_key(), display_name, &client_data).unwrap();
     V2225::login(V2225::PROTOCOL_VERSION, request.to_bytes().unwrap())
 }
-
-#[cfg(feature = "tokio")]
-pub(crate) fn memory_connections() -> (
-    crate::tokio::Connection<V2225>,
-    crate::tokio::Connection<V2225>,
-) {
-    use crate::tokio::transport::TransportLayerConnection;
-    let (a, b) = TransportLayerConnection::memory_pair(1 << 20);
-    (
-        crate::tokio::Connection::from_transport_conn(a),
-        crate::tokio::Connection::from_transport_conn(b),
-    )
-}
