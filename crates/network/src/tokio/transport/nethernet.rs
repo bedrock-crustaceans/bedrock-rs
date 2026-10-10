@@ -2,10 +2,13 @@ use crate::motd::BedrockMOTD;
 use crate::tokio::error::TransportLayerError;
 use bytes::Bytes;
 use nethernet_tokio::{
-    AcceptedSession, Addr, HttpSignaling, NetherClient, Session, SessionReceiver,
+    AcceptedSession, Addr, ConnectionConfig, HttpSignaling, NetherClient, NetherError,
+    ServerIdentity, Session, SessionReceiver,
 };
 use raknet_tokio::prelude::RakSessionConfig;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::SystemTime;
 
 pub struct NetherNetConnection {
     session: Session,
@@ -27,7 +30,14 @@ impl NetherNetConnection {
 
     pub async fn connect_http(server: SocketAddr) -> Result<Self, TransportLayerError> {
         let signaling = HttpSignaling::new(rand::random::<u64>().to_string())?;
-        let client = NetherClient::connect(signaling, format!("http://{server}")).await?;
+        let identity =
+            ServerIdentity::generate("", SystemTime::now()).map_err(NetherError::from)?;
+        let config = ConnectionConfig {
+            identity: Some(Arc::new(identity)),
+            ..Default::default()
+        };
+        let client =
+            NetherClient::connect_with(signaling, format!("http://{server}"), config).await?;
         let mut connection = Self::accepted(client.into_accepted()).await;
         connection.remote.socket_addr.get_or_insert(server);
         Ok(connection)
