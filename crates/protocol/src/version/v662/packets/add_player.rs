@@ -2,7 +2,7 @@ use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 use uuid::Uuid;
 
-#[packet(id = 12)]
+#[packet(id = 12, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AddPlayerPacket<V: ProtoVersion> {
     pub uuid: Uuid,

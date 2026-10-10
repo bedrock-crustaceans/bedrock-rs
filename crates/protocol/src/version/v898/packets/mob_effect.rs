@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 28)]
+#[packet(id = 28, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MobEffectPacket<V: ProtoVersion> {
     pub target_runtime_id: V::ActorRuntimeID,

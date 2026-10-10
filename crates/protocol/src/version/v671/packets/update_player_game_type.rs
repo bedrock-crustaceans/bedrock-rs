@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 151)]
+#[packet(id = 151, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdatePlayerGameTypePacket<V: ProtoVersion> {
     pub player_game_type: V::GameType,

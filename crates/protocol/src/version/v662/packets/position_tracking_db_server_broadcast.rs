@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 153)]
+#[packet(id = 153, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PositionTrackingDBServerBroadcastPacket<V: ProtoVersion> {
     pub action: PositionTrackingDBServerBroadcastAction,

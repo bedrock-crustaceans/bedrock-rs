@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 184)]
+#[packet(id = 184, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct RequestAbilityPacket<V: ProtoVersion> {
     pub ability: V::AbilitiesIndex,

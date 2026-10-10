@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 154)]
+#[packet(id = 154, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PositionTrackingDBClientRequestPacket<V: ProtoVersion> {
     pub action: PositionTrackingDBClientRequestAction,

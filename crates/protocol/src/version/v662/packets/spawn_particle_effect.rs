@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 118)]
+#[packet(id = 118, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SpawnParticleEffectPacket<V: ProtoVersion> {
     pub dimension_id: i8,

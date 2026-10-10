@@ -6,7 +6,7 @@ use std::cmp::PartialEq;
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[packet(id = 174)]
+#[packet(id = 174, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct SubChunkPacket<V: ProtoVersion> {
     pub cache_enabled: bool,

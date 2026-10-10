@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 169)]
+#[packet(id = 169, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NpcDialoguePacket {
     #[endianness(le)]

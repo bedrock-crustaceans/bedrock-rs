@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 77)]
+#[packet(id = 77, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CommandRequestPacket<V: ProtoVersion> {
     pub command: String,

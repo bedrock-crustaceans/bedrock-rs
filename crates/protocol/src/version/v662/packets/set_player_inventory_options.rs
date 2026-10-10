@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 307)]
+#[packet(id = 307, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetPlayerInventoryOptionsPacket<V: ProtoVersion> {
     pub left_inventory_tab: V::InventoryLeftTabIndex,

@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 83)]
+#[packet(id = 83, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePackChunkDataPacket {
     pub resource_name: String,

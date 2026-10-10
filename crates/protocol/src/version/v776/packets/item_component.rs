@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 162)]
+#[packet(id = 162, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ItemComponentPacket<V: ProtoVersion> {
     pub items: Vec<ItemsEntry<V>>,

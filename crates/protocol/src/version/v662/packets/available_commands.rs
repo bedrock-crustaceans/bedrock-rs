@@ -4,7 +4,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Read, Write};
 
-#[packet(id = 76)]
+#[packet(id = 76, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct AvailableCommandsPacket<V: ProtoVersion> {
     pub enum_values: Vec<String>,

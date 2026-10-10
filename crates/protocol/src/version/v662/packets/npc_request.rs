@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 98)]
+#[packet(id = 98, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NpcRequestPacket<V: ProtoVersion> {
     pub npc_runtime_id: V::ActorRuntimeID,

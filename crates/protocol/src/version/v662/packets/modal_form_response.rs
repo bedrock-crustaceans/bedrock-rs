@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 101)]
+#[packet(id = 101, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ModalFormResponsePacket<V: ProtoVersion> {
     #[endianness(var)]

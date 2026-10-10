@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 332)]
+#[packet(id = 332, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundDataStorePacket {
     pub data_store_name: String,

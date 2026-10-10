@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 355)]
+#[packet(id = 355, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundStonecutterSetRecipePacket<V: ProtoVersion> {
     pub actor_id: V::ActorUniqueID,

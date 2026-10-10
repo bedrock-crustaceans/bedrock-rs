@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 85)]
+#[packet(id = 85, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TransferPlayerPacket<V: ProtoVersion> {
     pub server_address: String,

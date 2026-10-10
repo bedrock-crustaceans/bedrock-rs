@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 80)]
+#[packet(id = 80, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateTradePacket<V: ProtoVersion> {
     pub container_id: V::ContainerID,

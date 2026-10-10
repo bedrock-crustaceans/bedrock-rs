@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 324)]
+#[packet(id = 324, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerVideoCapturePacket {
     pub action: PlayerVideoCapturePacketAction,

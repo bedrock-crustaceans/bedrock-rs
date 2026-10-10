@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 61)]
+#[packet(id = 61, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChangeDimensionPacket {
     #[endianness(var)]

@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 185)]
+#[packet(id = 185, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct RequestPermissionsPacket<V: ProtoVersion> {
     #[endianness(le)]

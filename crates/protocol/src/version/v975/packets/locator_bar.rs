@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 341)]
+#[packet(id = 341, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LocatorBarPacket {
     pub waypoints: Vec<LocatorBarPayload>

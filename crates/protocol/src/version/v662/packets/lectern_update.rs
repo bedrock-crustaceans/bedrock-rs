@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 125)]
+#[packet(id = 125, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LecternUpdatePacket<V: ProtoVersion> {
     pub new_page_to_show: i8,

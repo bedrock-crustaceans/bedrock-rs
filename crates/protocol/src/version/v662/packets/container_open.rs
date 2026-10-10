@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 46)]
+#[packet(id = 46, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ContainerOpenPacket<V: ProtoVersion> {
     pub container_id: V::ContainerID,

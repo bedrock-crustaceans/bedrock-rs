@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 121)]
+#[packet(id = 121, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NetworkChunkPublisherUpdatePacket<V: ProtoVersion> {
     pub new_view_position: V::BlockPos,

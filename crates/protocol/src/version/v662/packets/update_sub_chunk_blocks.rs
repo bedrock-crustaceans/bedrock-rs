@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 172)]
+#[packet(id = 172, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateSubChunkBlocksPacket<V: ProtoVersion> {
     pub sub_chunk_block_position: V::NetworkBlockPosition,

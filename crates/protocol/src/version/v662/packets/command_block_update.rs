@@ -5,7 +5,7 @@ use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE};
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[packet(id = 78)]
+#[packet(id = 78, direction = "client_to_server")]
 #[derive(Clone, Debug)]
 pub struct CommandBlockUpdatePacket<V: ProtoVersion> {
     pub is_block: bool,

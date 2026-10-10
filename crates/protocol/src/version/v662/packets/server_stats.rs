@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 192)]
+#[packet(id = 192, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerStatsPacket {
     #[endianness(le)]

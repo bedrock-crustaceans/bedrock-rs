@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 7)]
+#[packet(id = 7, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePackStackPacket<V: ProtoVersion> {
     pub texture_pack_required: bool,

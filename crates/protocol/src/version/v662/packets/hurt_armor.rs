@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 38)]
+#[packet(id = 38, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct HurtArmorPacket {
     #[endianness(var)]

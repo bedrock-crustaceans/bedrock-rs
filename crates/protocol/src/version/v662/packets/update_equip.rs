@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 81)]
+#[packet(id = 81, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateEquipPacket<V: ProtoVersion> {
     pub container_id: V::ContainerID,

@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 68)]
+#[packet(id = 68, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MapInfoRequestPacket<V: ProtoVersion> {
     pub map_unique_id: V::ActorUniqueID,

@@ -2,7 +2,7 @@ use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 use strum_macros::{Display, EnumString};
 
-#[packet(id = 359)]
+#[packet(id = 359, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundPlayAudioContentPacket<V: ProtoVersion> {
     pub shared_metadata: V::SignedAudioContent,

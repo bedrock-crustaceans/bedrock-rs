@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 43)]
+#[packet(id = 43, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetSpawnPositionPacket<V: ProtoVersion> {
     pub spawn_position_type: V::SpawnPositionType,

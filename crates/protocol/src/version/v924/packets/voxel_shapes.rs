@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 337)]
+#[packet(id = 337, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct VoxelShapesPacket {
     pub shapes: Vec<VoxelShape>,

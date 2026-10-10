@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 99)]
+#[packet(id = 99, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PhotoTransferPacket<V: ProtoVersion> {
     pub photo_name: String,

@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 147)]
+#[packet(id = 147, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ItemStackRequestPacket<V: ProtoVersion> {
     pub requests: Vec<RequestsEntry<V>>,

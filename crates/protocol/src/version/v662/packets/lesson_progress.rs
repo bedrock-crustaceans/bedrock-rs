@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 183)]
+#[packet(id = 183, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LessonProgressPacket<V: ProtoVersion> {
     pub lesson_action: V::LessonAction,

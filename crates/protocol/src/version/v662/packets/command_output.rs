@@ -6,7 +6,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write, copy};
 use std::mem::size_of;
 
-#[packet(id = 79)]
+#[packet(id = 79, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct CommandOutputPacket<V: ProtoVersion> {
     pub origin_data: V::CommandOriginData,

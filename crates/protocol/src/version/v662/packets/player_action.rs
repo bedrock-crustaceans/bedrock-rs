@@ -2,7 +2,7 @@ use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 use crate::v662::enums::PlayerActionType;
 
-#[packet(id = 36)]
+#[packet(id = 36, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerActionPacket<V: ProtoVersion> {
     pub player_runtime_id: V::ActorRuntimeID,

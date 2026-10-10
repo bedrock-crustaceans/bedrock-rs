@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 312)]
+#[packet(id = 312, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundLoadingScreenPacket {
     pub packet_type: ServerBoundLoadingScreenPacketType,

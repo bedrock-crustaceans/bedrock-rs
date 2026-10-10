@@ -1,7 +1,7 @@
 use bedrock_macros::{packet, ProtoCodec};
 use uuid::Uuid;
 
-#[packet(id = 6)]
+#[packet(id = 6, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ResourcePacksInfoPacket {
     pub resource_pack_required: bool,

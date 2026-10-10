@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 86)]
+#[packet(id = 86, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlaySoundPacket<V: ProtoVersion> {
     pub name: String,

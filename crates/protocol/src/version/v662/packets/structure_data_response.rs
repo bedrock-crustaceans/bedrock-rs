@@ -5,7 +5,7 @@ use bedrock_macros::{packet};
 use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::ProtoCodec;
 
-#[packet(id = 133)]
+#[packet(id = 133, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct StructureDataResponsePacket<V: ProtoVersion> {
     pub structure_name: String,

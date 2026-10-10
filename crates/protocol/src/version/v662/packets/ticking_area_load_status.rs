@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 179)]
+#[packet(id = 179, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TickingAreaLoadStatusPacket {
     pub waiting_for_preload: bool,

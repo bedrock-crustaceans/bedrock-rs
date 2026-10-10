@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 339)]
+#[packet(id = 339, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistActorPriorityPacket {
     pub priority_data: Vec<CameraAimAssistActorPriorityData>,

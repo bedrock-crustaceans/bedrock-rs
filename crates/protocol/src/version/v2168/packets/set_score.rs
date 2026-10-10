@@ -6,7 +6,7 @@ use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE};
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[packet(id = 108)]
+#[packet(id = 108, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetScorePacket<V: ProtoVersion> {
     pub score_info: Vec<ScorePacketEntry<V>>,

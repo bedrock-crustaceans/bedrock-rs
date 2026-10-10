@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 156)]
+#[packet(id = 156, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PacketViolationWarningPacket<V: ProtoVersion> {
     pub violation_type: V::PacketViolationType,

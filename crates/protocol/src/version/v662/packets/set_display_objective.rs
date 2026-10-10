@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 107)]
+#[packet(id = 107, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SetDisplayObjectivePacket<V: ProtoVersion> {
     pub display_slot_name: String,

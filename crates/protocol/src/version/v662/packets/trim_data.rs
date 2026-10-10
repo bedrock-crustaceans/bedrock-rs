@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 302)]
+#[packet(id = 302, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct TrimDataPacket {
     pub trim_pattern_list: Vec<TrimPattern>,

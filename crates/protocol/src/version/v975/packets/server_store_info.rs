@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 346)]
+#[packet(id = 346, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerStoreInfoPacket {
     pub client_store_entry_point_configuration: Option<ClientStoreEntryPointConfiguration>,

@@ -5,7 +5,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write, copy};
 
-#[packet(id = 33)]
+#[packet(id = 33, direction = "client_to_server")]
 #[derive(Clone, Debug)]
 pub struct InteractPacket<V: ProtoVersion> {
     pub action: InteractAction,

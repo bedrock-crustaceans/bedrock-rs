@@ -3,7 +3,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Read, Write};
 
-#[packet(id = 149)]
+#[packet(id = 149, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct PlayerArmorDamagePacket {
     pub slot_bitset: i8,

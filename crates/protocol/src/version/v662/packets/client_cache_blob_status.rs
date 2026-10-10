@@ -4,7 +4,7 @@ use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Read, Write};
 use std::mem::size_of;
 
-#[packet(id = 135)]
+#[packet(id = 135, direction = "client_to_server")]
 #[derive(Clone, Debug)]
 pub struct ClientCacheBlobStatusPacket {
     pub missing_blobs: Vec<u64>,

@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 182)]
+#[packet(id = 182, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChangeMobPropertyPacket<V: ProtoVersion> {
     pub actor_id: V::ActorUniqueID,

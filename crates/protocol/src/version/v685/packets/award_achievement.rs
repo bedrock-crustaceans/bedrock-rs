@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 309)]
+#[packet(id = 309, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AwardAchievementPacket {
     #[endianness(le)]

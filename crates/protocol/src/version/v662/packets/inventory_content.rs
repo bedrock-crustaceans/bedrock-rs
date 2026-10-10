@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 49)]
+#[packet(id = 49, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct InventoryContentPacket<V: ProtoVersion> {
     #[endianness(var)]

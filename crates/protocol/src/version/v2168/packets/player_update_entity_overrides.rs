@@ -4,7 +4,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Read, Write};
 
-#[packet(id = 325)]
+#[packet(id = 325, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerUpdateEntityOverridesPacket<V: ProtoVersion> {
     pub entity_unique_id: V::ActorUniqueID,

@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 360)]
+#[packet(id = 360, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundRegisterAudioContentPacket<V: ProtoVersion> {
     pub registrations: Vec<AudioContentRegistrationEntry<V>>,

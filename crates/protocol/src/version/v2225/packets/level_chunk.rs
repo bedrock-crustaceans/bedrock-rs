@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 58)]
+#[packet(id = 58, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelChunkPacket<V: ProtoVersion> {
     pub chunk_position: V::ChunkPos,

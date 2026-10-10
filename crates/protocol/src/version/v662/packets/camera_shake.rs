@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 159)]
+#[packet(id = 159, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraShakePacket<V: ProtoVersion> {
     #[endianness(le)]

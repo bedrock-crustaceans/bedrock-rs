@@ -1,7 +1,7 @@
 use bedrock_macros::{ProtoCodec, packet};
 use strum_macros::{Display, EnumString};
 
-#[packet(id = 349)]
+#[packet(id = 349, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SendPartyDestinationCookiePacket {
     pub cookie: String,

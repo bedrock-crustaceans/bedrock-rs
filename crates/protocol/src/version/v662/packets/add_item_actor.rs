@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 15)]
+#[packet(id = 15, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AddItemActorPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,

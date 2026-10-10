@@ -6,7 +6,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write, copy};
 use std::mem::size_of;
 
-#[packet(id = 97)]
+#[packet(id = 97, direction = "client_to_server")]
 #[derive(Clone, Debug)]
 pub struct BookEditPacket<V: ProtoVersion> {
     pub action: V::BookEditAction,

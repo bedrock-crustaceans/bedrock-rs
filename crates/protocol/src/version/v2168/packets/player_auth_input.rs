@@ -5,7 +5,7 @@ use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use player_auth_input_packet::PerformItemStackRequestData;
 use std::io::{Read, Write};
 
-#[packet(id = 144)]
+#[packet(id = 144, direction = "client_to_server")]
 #[derive(Clone, Debug)]
 pub struct PlayerAuthInputPacket<V: ProtoVersion> {
     pub player_rotation: (f32, f32),

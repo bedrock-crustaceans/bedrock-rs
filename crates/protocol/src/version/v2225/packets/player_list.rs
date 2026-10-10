@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::mem::size_of;
 use uuid::Uuid;
 
-#[packet(id = 63)]
+#[packet(id = 63, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerListPacket<V: ProtoVersion> {
     pub entries: Vec<PlayerListEntry<V>>,

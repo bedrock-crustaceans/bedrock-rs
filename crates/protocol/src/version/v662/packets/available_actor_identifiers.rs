@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 119)]
+#[packet(id = 119, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AvailableActorIdentifiersPacket {
     #[nbt]

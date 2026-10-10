@@ -3,7 +3,7 @@ use crate::version::v1001::packets::{
 };
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 345)]
+#[packet(id = 345, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundAttributeLayerSyncPacket {
     pub data: ClientBoundAttributeLayerSyncData,

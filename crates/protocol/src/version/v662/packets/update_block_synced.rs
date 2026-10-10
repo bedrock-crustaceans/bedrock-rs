@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 110)]
+#[packet(id = 110, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateBlockSyncedPacket<V: ProtoVersion> {
     pub block_position: V::NetworkBlockPosition,

@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 32)]
+#[packet(id = 32, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct MobArmorEquipmentPacket<V: ProtoVersion> {
     pub target_runtime_id: V::ActorRuntimeID,

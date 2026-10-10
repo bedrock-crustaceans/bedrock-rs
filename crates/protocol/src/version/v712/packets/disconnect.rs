@@ -4,7 +4,7 @@ use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Read, Write};
 
-#[packet(id = 5)]
+#[packet(id = 5, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct DisconnectPacket<V: ProtoVersion> {
     pub reason: V::ConnectionFailReason,

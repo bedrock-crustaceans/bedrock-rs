@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 143)]
+#[packet(id = 143, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct NetworkSettingsPacket<V: ProtoVersion> {
     #[endianness(le)]

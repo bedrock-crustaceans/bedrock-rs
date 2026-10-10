@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 122)]
+#[packet(id = 122, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BiomeDefinitionListPacket<V: ProtoVersion> {
     pub biomes: Vec<BiomeEntry<V>>,

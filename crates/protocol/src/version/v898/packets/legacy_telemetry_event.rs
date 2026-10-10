@@ -4,7 +4,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write, copy};
 
-#[packet(id = 65)]
+#[packet(id = 65, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct LegacyTelemetryEventPacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,

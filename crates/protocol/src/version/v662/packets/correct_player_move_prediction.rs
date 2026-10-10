@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 161)]
+#[packet(id = 161, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CorrectPlayerMovePredictionPacket<V: ProtoVersion> {
     #[endianness(le)]

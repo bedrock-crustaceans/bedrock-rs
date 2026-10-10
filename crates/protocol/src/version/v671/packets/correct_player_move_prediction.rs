@@ -4,7 +4,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Cursor, Read, Write, copy};
 
-#[packet(id = 161)]
+#[packet(id = 161, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct CorrectPlayerMovePredictionPacket<V: ProtoVersion> {
     pub prediction_type: V::PredictionType,

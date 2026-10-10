@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 331)]
+#[packet(id = 331, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct GraphicsParameterOverridePacket {
     pub values: Vec<GraphicsParameterOverrideKeyFrame>,

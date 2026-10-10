@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 316)]
+#[packet(id = 316, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraAimAssistPacket<V: ProtoVersion> {
     #[endianness(le)]

@@ -5,7 +5,7 @@ use bedrock_protocol_core::ProtoCodec;
 use bedrock_protocol_core::error::ProtoCodecError;
 use std::io::{Cursor, Read, Write, copy};
 
-#[packet(id = 67)]
+#[packet(id = 67, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct ClientBoundMapItemDataPacket<V: ProtoVersion> {
     pub map_id: V::ActorUniqueID,

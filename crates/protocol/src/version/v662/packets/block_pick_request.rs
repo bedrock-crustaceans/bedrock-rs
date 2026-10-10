@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 34)]
+#[packet(id = 34, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct BlockPickRequestPacket<V: ProtoVersion> {
     pub position: V::BlockPos,

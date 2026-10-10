@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 136)]
+#[packet(id = 136, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientCacheMissResponsePacket {
     pub missing_blobs: Vec<MissingBlobEntry>,

@@ -4,7 +4,7 @@ use bedrock_protocol_core::error::ProtoCodecError;
 use bedrock_protocol_core::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
 use std::io::{Read, Write};
 
-#[packet(id = 58)]
+#[packet(id = 58, direction = "server_to_client")]
 #[derive(Clone, Debug)]
 pub struct LevelChunkPacket<V: ProtoVersion> {
     pub chunk_position: V::ChunkPos,

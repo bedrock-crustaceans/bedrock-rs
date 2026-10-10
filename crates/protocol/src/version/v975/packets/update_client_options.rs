@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 323)]
+#[packet(id = 323, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct UpdateClientOptionsPacket {
     pub graphics_mode: Option<GraphicsMode>,

@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 64)]
+#[packet(id = 64, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SimpleEventPacket {
     pub simple_event_type: Subtype,

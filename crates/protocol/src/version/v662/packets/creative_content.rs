@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 145)]
+#[packet(id = 145, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CreativeContentPacket<V: ProtoVersion> {
     pub write_entries: Vec<WriteEntry<V>>,

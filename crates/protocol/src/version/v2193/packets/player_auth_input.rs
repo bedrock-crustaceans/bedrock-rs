@@ -2,7 +2,7 @@ use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 use player_auth_input_packet::PerformItemStackRequestData;
 
-#[packet(id = 144)]
+#[packet(id = 144, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct PlayerAuthInputPacket<V: ProtoVersion> {
     #[endianness(le)]

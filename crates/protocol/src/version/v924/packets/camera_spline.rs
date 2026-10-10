@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 338)]
+#[packet(id = 338, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct CameraSplinePacket<V: ProtoVersion> {
     pub splines: Vec<CameraSplineDefinition<V>>,

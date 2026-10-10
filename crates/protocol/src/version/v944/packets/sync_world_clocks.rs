@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 344)]
+#[packet(id = 344, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SyncWorldClocksPacket {
     pub data: SyncWorldClocks 

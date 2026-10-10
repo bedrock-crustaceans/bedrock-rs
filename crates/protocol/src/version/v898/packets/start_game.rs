@@ -3,7 +3,7 @@ use crate::ProtoVersion;
 use bedrock_macros::{ProtoCodec, packet};
 use uuid::Uuid;
 
-#[packet(id = 11)]
+#[packet(id = 11, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StartGamePacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,

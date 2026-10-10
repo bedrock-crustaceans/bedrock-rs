@@ -1,6 +1,6 @@
 use bedrock_macros::{ProtoCodec, packet};
 
-#[packet(id = 330)]
+#[packet(id = 330, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ClientBoundDataStorePacket {
     pub updates: Vec<ClientBoundDataStoreUpdate>,

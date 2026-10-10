@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 66)]
+#[packet(id = 66, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SpawnExperienceOrbPacket {
     #[endianness(le)]

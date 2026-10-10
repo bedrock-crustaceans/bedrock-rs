@@ -1,7 +1,7 @@
 use bedrock_macros::{ProtoCodec, packet};
 use uuid::Uuid;
 
-#[packet(id = 329)]
+#[packet(id = 329, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ServerBoundPackSettingChangePacket {
     pub pack_id: Uuid,

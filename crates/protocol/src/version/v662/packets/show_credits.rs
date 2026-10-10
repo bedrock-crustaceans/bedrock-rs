@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 75)]
+#[packet(id = 75, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ShowCreditsPacket<V: ProtoVersion> {
     pub player_runtime_id: V::ActorRuntimeID,

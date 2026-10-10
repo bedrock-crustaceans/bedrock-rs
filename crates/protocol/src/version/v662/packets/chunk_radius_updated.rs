@@ -1,6 +1,6 @@
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 70)]
+#[packet(id = 70, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct ChunkRadiusUpdatedPacket {
     #[endianness(var)]

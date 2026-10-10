@@ -1,7 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 175)]
+#[packet(id = 175, direction = "client_to_server")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct SubChunkRequestPacket<V: ProtoVersion> {
     #[endianness(var)]

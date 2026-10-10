@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::ProtoVersion;
 use bedrock_macros::{packet, ProtoCodec};
 
-#[packet(id = 166)]
+#[packet(id = 166, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct AddVolumeEntityPacket<V: ProtoVersion> {
     pub entity_network_id: V::EntityNetID,
