@@ -100,6 +100,25 @@ pub(crate) fn verify_chain(
     }
 }
 
+pub(crate) fn unverified_identity(chain: &[String]) -> Result<Identity, AuthError> {
+    for token in chain.iter().rev() {
+        let claims: LinkClaims = Token::parse(token)?.unverified_claims()?;
+        if let Some(extra) = claims.extra_data {
+            return Ok(Identity {
+                xuid: extra.xuid,
+                display_name: extra.display_name,
+                identity: extra.identity,
+                title_id: extra.title_id,
+                playfab_id: None,
+                public_key: claims
+                    .identity_public_key
+                    .ok_or(AuthError::Missing("identityPublicKey"))?,
+            });
+        }
+    }
+    Err(AuthError::Missing("extraData"))
+}
+
 fn verify_link(token: &str, key: &str, check_issuer: bool) -> Result<LinkClaims, AuthError> {
     let rules = Rules {
         expiry: Expiry::Required,

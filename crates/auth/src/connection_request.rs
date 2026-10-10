@@ -5,6 +5,7 @@ use crate::chain::{encode_es384_with_x5u, encode_public_key};
 use crate::client_data::ClientData;
 use crate::error::AuthError;
 use crate::http::{AsyncHttpClient, HttpClient};
+use crate::jwt::Token;
 use crate::oidc::AuthOIDC;
 use p384::SecretKey;
 use serde_json::json;
@@ -73,25 +74,25 @@ impl ConnectionRequest {
         display_name: &str,
         client_data: &ClientData,
     ) -> Result<Self, AuthError> {
-        let public_key = encode_public_key(&identity_key.public_key())?;
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |elapsed| elapsed.as_secs());
-        let claims = json!({
-            "identityPublicKey": public_key,
-            "nbf": now.saturating_sub(SELF_SIGNED_NOT_BEFORE_SKEW_SECS),
-            "exp": now + SELF_SIGNED_LIFETIME_SECS,
-            "extraData": {
-                "XUID": "",
-                "displayName": display_name,
-                "identity": Uuid::new_v4().to_string(),
-            },
-        });
-        let auth = AuthData {
-            auth_type: AuthType::Offline,
-            auth_payload: AuthPayload::Chain(vec![encode_es384_with_x5u(identity_key, &claims)?]),
-        };
+        let auth = offline_auth(identity_key, "", display_name, None, None)?;
         Self::with_auth(auth, identity_key, client_data)
+    }
+
+    pub fn resigned(&self, identity_key: &SecretKey) -> Result<Self, AuthError> {
+        let identity = self.auth.unverified_identity()?;
+        let client_data: serde_json::Value =
+            Token::parse(&self.client_data)?.unverified_claims()?;
+        let auth = offline_auth(
+            identity_key,
+            &identity.xuid,
+            &identity.display_name,
+            identity.identity,
+            identity.title_id,
+        )?;
+        Ok(Self {
+            auth,
+            client_data: encode_es384_with_x5u(identity_key, &client_data)?,
+        })
     }
 
     pub fn with_auth(
@@ -126,6 +127,38 @@ impl ConnectionRequest {
         put_length_prefixed(&mut bytes, self.client_data.as_bytes())?;
         Ok(bytes)
     }
+}
+
+fn offline_auth(
+    identity_key: &SecretKey,
+    xuid: &str,
+    display_name: &str,
+    identity: Option<String>,
+    title_id: Option<String>,
+) -> Result<AuthData, AuthError> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| elapsed.as_secs());
+    let mut extra_data = json!({
+        "XUID": xuid,
+        "displayName": display_name,
+        "identity": identity.unwrap_or_else(|| Uuid::new_v4().to_string()),
+    });
+    if let Some(title_id) = title_id {
+        extra_data["titleId"] = json!(title_id);
+    }
+    let claims = json!({
+        "certificateAuthority": true,
+        "identityPublicKey": encode_public_key(&identity_key.public_key())?,
+        "iat": now,
+        "nbf": now.saturating_sub(SELF_SIGNED_NOT_BEFORE_SKEW_SECS),
+        "exp": now + SELF_SIGNED_LIFETIME_SECS,
+        "extraData": extra_data,
+    });
+    Ok(AuthData {
+        auth_type: AuthType::Offline,
+        auth_payload: AuthPayload::Chain(vec![encode_es384_with_x5u(identity_key, &claims)?]),
+    })
 }
 
 fn take_length_prefixed<'a>(input: &mut &'a [u8]) -> Result<&'a [u8], AuthError> {
@@ -200,6 +233,76 @@ mod tests {
             key.public_key()
         );
         assert_eq!(login.client_data, client_data);
+    }
+
+    #[test]
+    fn resigned_chain_request_keeps_the_identity_under_the_new_key() {
+        let original = TestKey::from_seed(1);
+        let proxy = p384::SecretKey::from_slice(&[7; 48]).unwrap();
+        let request = ConnectionRequest::parse(&self_signed_request(&original, &original)).unwrap();
+
+        let resigned = request.resigned(&proxy).unwrap();
+        let login = verify_without_oidc(&resigned).unwrap();
+
+        assert!(!login.authentication.is_authenticated());
+        assert_eq!(login.authentication.identity().display_name, "Steve");
+        assert_eq!(
+            login.authentication.identity().public_key().unwrap(),
+            proxy.public_key()
+        );
+        assert_eq!(
+            login.client_data.skin_id,
+            "c18e65aa-7b21-4637-9b63-8ad63622ef01_Alex"
+        );
+    }
+
+    #[test]
+    fn resigned_token_request_keeps_xuid_and_name() {
+        let original = TestKey::from_seed(1);
+        let proxy = p384::SecretKey::from_slice(&[7; 48]).unwrap();
+        let token = original.sign(&json!({
+            "xid": "2535400000000000",
+            "xname": "Alex",
+            "mid": "playfab",
+            "cpk": original.public_base64(),
+        }));
+        let request = ConnectionRequest {
+            auth: AuthData {
+                auth_type: AuthType::Online,
+                auth_payload: AuthPayload::Token(token),
+            },
+            client_data: original.sign(&realistic_client_data()),
+        };
+
+        let login = verify_without_oidc(&request.resigned(&proxy).unwrap()).unwrap();
+
+        let identity = login.authentication.identity();
+        assert_eq!(
+            (identity.xuid.as_str(), identity.display_name.as_str()),
+            ("2535400000000000", "Alex")
+        );
+        assert_eq!(identity.public_key().unwrap(), proxy.public_key());
+    }
+
+    #[test]
+    fn resigned_request_without_extra_data_is_rejected() {
+        let key = TestKey::from_seed(1);
+        let proxy = p384::SecretKey::from_slice(&[7; 48]).unwrap();
+        let request = ConnectionRequest {
+            auth: AuthData {
+                auth_type: AuthType::Offline,
+                auth_payload: AuthPayload::Chain(vec![key.sign(&with_window(
+                    json!({ "identityPublicKey": key.public_base64() }),
+                    valid_window(),
+                ))]),
+            },
+            client_data: key.sign(&realistic_client_data()),
+        };
+
+        assert!(matches!(
+            request.resigned(&proxy),
+            Err(AuthError::Missing("extraData"))
+        ));
     }
 
     fn verify_without_oidc(request: &ConnectionRequest) -> Result<Login, AuthError> {

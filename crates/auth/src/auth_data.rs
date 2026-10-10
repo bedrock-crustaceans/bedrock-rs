@@ -1,5 +1,5 @@
 use crate::authentication::{Authentication, Identity};
-use crate::chain::{ChainRoot, verify_chain};
+use crate::chain::{ChainRoot, unverified_identity, verify_chain};
 use crate::error::AuthError;
 use crate::http::{AsyncHttpClient, HttpClient};
 use crate::jwt::{Algorithm, Expiry, Rules, Token};
@@ -49,6 +49,17 @@ fn legacy_auth_type() -> AuthType {
 pub struct AuthData {
     pub auth_type: AuthType,
     pub auth_payload: AuthPayload,
+}
+
+impl AuthData {
+    pub fn unverified_identity(&self) -> Result<Identity, AuthError> {
+        match &self.auth_payload {
+            AuthPayload::Chain(chain) => unverified_identity(chain),
+            AuthPayload::Token(token) => Ok(Token::parse(token)?
+                .unverified_claims::<AuthDataClaims>()?
+                .into()),
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for AuthData {
