@@ -58,7 +58,7 @@ pub struct HeightMapData {
 
 impl HeightMapData {
     pub const RUN_LENGTH: usize = 16;
-    pub const RUN_COUNT: usize = 17;
+    pub const RUN_COUNT: usize = 16;
 }
 
 impl ProtoCodec for HeightMapData {
