@@ -35,7 +35,7 @@ pub struct StartGamePacket<V: ProtoVersion> {
     pub server_enabled_client_side_generation: bool,
     pub block_network_ids_are_hashes: bool,
     pub network_permissions: V::NetworkPermissions,
-    pub server_join_information: Option<ServerJoinInformation>,
+    pub server_join_information: Option<ServerJoinInformation<V>>,
     pub server_id: String,
     pub world_id: String,
     pub scenario_id: String,
@@ -50,22 +50,10 @@ pub struct BlockProperty {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct ServerJoinInformation {
-    pub gathering_join_info: Option<GatheringJoinInfo>,
+pub struct ServerJoinInformation<V: ProtoVersion> {
+    pub gathering_join_info: Option<V::GatheringsConfig>,
     pub store_entry_point_info: Option<StoreEntryPointInfo>,
     pub presence_info: Option<PresenceInfo>,
-}
-
-#[derive(ProtoCodec, Clone, Debug)]
-pub struct GatheringJoinInfo {
-    pub experience_id: String,
-    pub experience_name: Option<String>,
-    pub experience_world_id: String,
-    pub experience_world_name: Option<String>,
-    pub creator_id: String,
-    pub unknown1: Uuid, // TODO: find out what this is
-    pub unknown2: Uuid, // TODO: find out what this is
-    pub server_id: String,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]

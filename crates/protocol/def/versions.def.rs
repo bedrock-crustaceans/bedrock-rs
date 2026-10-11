@@ -721,6 +721,7 @@ versions![
         ] in crate::version::v924::packets,
         types: [
             + CameraSplineInstruction: CameraSplineInstruction^,
+            + GatheringsConfig: GatheringsConfig,
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % CameraAimAssistCategory: CameraAimAssistCategory^,
             % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
@@ -856,13 +857,13 @@ versions![
         ] in crate::version::v2168::packets,
         types: [
             + CraftingRecipeIngredient: CraftingRecipeIngredient,
-            + GatheringsConfig: GatheringsConfig,
             + ItemStackRequestNetworkItemInstanceDescriptor: ItemStackRequestNetworkItemInstanceDescriptor^,
             + MovePlayerTeleportData: MovePlayerTeleportData,
             + MultiRecipe: MultiRecipe,
             + RedactableString: RedactableString,
             + SoundData: SoundData,
             % DimensionDefinitionGroup: DimensionDefinitionGroup,
+            % GatheringsConfig: GatheringsConfig,
             % ItemStackRequestSlotInfo: ItemStackRequestSlotInfo^,
             % ItemStackResponseInfo: ItemStackResponseInfo^,
             % ItemStackResponseSlotInfo: ItemStackResponseSlotInfo^,

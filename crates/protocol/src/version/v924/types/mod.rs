@@ -11,4 +11,5 @@ export!(camera_aim_assist_preset_definition);
 export!(camera_instruction);
 export!(camera_spline_instruction);
 export!(debug_shape);
+export!(gatherings_config);
 export!(level_settings);

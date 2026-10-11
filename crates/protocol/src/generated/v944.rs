@@ -9115,7 +9115,7 @@ mod inner {
         type Experiments = crate::version::v662::types::Experiments;
         type FullContainerName = crate::version::v729::types::FullContainerName<Self>;
         type GameRulesChangedPacketData = crate::version::v844::types::GameRulesChangedPacketData;
-        type GatheringsConfig = ();
+        type GatheringsConfig = crate::version::v924::types::GatheringsConfig;
         type InventoryAction = crate::version::v662::types::InventoryAction<Self>;
         type InventorySource = crate::version::v662::types::InventorySource<Self>;
         type InventoryTransaction = crate::version::v662::types::InventoryTransaction<Self>;
