@@ -24,8 +24,11 @@ const CONTACT = /^\s*(.*?)\s*<([^>]+)>\s*$/;
 const MIN_RADIUS = 18;
 const MAX_RADIUS = 78;
 const GAP = 4;
-// How many times wider than tall the cluster grows; a README is a wide page.
-const ASPECT = 3.2;
+// How many times wider than tall the cluster grows; the README shows it across the full column.
+const ASPECT = 5;
+// The exponent of the superellipse the cluster fills: 2 is an ellipse, higher is closer to the
+// rectangle the README gives it, with fewer empty corners.
+const SQUARENESS = 4;
 const PADDING = 6;
 
 /** A GitHub account; `login` is null when the account was deleted. */
@@ -234,12 +237,13 @@ function touching(a: Circle, b: Circle, r: number): [number, number][] {
   ];
 }
 
-/** Place circles largest first, each at the free spot nearest a wide ellipse's centre. */
+/** Place circles largest first, each at the free spot nearest the centre of a wide superellipse. */
 function pack(radii: number[]): Circle[] {
   const placed: Circle[] = [];
   const free = (x: number, y: number, r: number) =>
     placed.every((p) => Math.hypot(x - p.x, y - p.y) >= r + p.r + GAP - 1e-6);
-  const cost = ([x, y]: [number, number]) => Math.hypot(x / ASPECT, y);
+  const cost = ([x, y]: [number, number]) =>
+    Math.abs(x / ASPECT) ** SQUARENESS + Math.abs(y) ** SQUARENESS;
 
   for (const r of radii) {
     if (!placed.length) {
