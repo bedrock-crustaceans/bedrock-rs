@@ -82,8 +82,8 @@ impl Parse for DefineVersionsEntry {
         Ok(Self {
             version,
             branch,
-            raknet_version,
             game_version,
+            raknet_version,
             packets,
             types,
             enums,

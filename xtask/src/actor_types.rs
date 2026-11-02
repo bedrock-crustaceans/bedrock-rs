@@ -60,11 +60,8 @@ pub fn generate(entities_json: &str, join_toml: &str) -> io::Result<String> {
     let mut ids: Vec<u32> = rows.iter().map(|(_, _, id)| *id).collect();
     ids.push(*default_id);
     ids.sort_unstable();
-    if let Some(pair) = ids.windows(2).find(|pair| pair[0] == pair[1]) {
-        return Err(error(format!(
-            "two actor types share the id {:#x}",
-            pair[0]
-        )));
+    if let Some([shared, _]) = ids.windows(2).find(|pair| pair[0] == pair[1]) {
+        return Err(error(format!("two actor types share the id {shared:#x}")));
     }
     rows.sort_by(|a, b| a.0.cmp(b.0));
     Ok(render(&rows, default_name, *default_id))

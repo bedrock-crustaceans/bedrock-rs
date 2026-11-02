@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![allow(unused, clippy::too_many_lines)]
 #[cfg(feature = "v712")]
 mod inner {
     use crate::ProtoVersion;
@@ -3306,9 +3306,9 @@ mod inner {
                             packet_name: "Unknown",
                             packet_id: header.packet_id,
                             error: e.into(),
-                        })?
+                        })?;
                 }
-            };
+            }
             Ok(())
         }
         #[inline]

@@ -124,7 +124,7 @@ fn owner(header: &str, lines: &[(usize, &str)]) -> io::Result<Owner> {
             .split_once('=')
             .ok_or_else(|| error(format!("{name}: bad field {part:?}")))?;
         match key {
-            "kind" => kind = value.to_owned(),
+            "kind" => value.clone_into(&mut kind),
             "typed_since" if value != "-" => {
                 let v: Vec<u16> = value
                     .split('.')
@@ -364,7 +364,7 @@ fn hashed_string(text: &str) -> u64 {
 
 /// libc++'s bucket of `hash` among `count` buckets (`__constrain_hash`).
 fn constrain(hash: u64, count: u64) -> u64 {
-    if count & (count - 1) == 0 {
+    if count.is_power_of_two() {
         hash & (count - 1)
     } else if hash < count {
         hash
@@ -375,7 +375,7 @@ fn constrain(hash: u64, count: u64) -> u64 {
 
 /// libc++'s `__next_prime` for the small counts an enum map reaches.
 fn next_prime(n: u64) -> u64 {
-    (n.max(2)..)
+    (n.max(2)..=u64::MAX)
         .find(|&p| (2..p).take_while(|d| d * d <= p).all(|d| p % d != 0))
         .unwrap_or(n)
 }
@@ -396,7 +396,7 @@ pub fn iteration_order(keys: &[String]) -> Vec<String> {
         }
         let size = list.len() as u64;
         if count == 0 || size + 1 > count {
-            let power2 = count > 2 && count & (count - 1) == 0;
+            let power2 = count > 2 && count.is_power_of_two();
             let mut n = (2 * count + u64::from(!power2)).max(size + 1);
             n = if n == 1 {
                 2
@@ -430,9 +430,9 @@ fn rehash<'a>(list: &[(u64, &'a String)], count: u64) -> Vec<(u64, &'a String)> 
     let mut out: Vec<(u64, &String)> = Vec::new();
     for &(hash, key) in list {
         let bucket = constrain(hash, count);
-        let last = out.last().map(|(h, _)| constrain(*h, count));
+        let previous_bucket = out.last().map(|(h, _)| constrain(*h, count));
         match out.iter().position(|(h, _)| constrain(*h, count) == bucket) {
-            Some(first) if last != Some(bucket) => out.insert(first, (hash, key)),
+            Some(first) if previous_bucket != Some(bucket) => out.insert(first, (hash, key)),
             _ => out.push((hash, key)),
         }
     }
