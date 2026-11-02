@@ -88,6 +88,7 @@ fn a_shape_built_by_hand_equals_the_parsed_one_and_writes_the_same() {
     assert_eq!(literal, built);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_object_corner_is_written_back_as_the_array() {
     let text = shape(

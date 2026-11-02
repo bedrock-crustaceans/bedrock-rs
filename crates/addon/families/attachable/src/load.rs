@@ -135,6 +135,11 @@ impl Placed for Attachable {
 impl Attachable {
     /// Parses one attachable file without upgrading it: the struct its `format_version`
     /// selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -807,6 +812,7 @@ fn merge_documents(earlier: &mut Attachable, mut later: Attachable) {
 /// The loader of `rp.attachables()`: the app's `definitions/attachables`, then the
 /// `minecraft:attachable` documents of `entity/**/*.json` and `attachables/**/*.json` of every
 /// resource pack; one definition per identifier by `description.min_engine_version`.
+#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Attachable>, FileOutcome> {
     CollectionLoader {
         walk: WALK,

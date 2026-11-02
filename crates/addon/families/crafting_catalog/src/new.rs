@@ -9,6 +9,7 @@ use bedrock_addon_core::id::ItemId;
 
 impl CraftingCatalog {
     /// A catalogue without categories.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -24,6 +25,7 @@ impl CraftingCatalog {
 
     /// The first group named `name` this catalogue adds to `category`; names compare byte for
     /// byte, as the merge compares them.
+    #[must_use]
     pub fn group(&self, category: CategoryName, name: &str) -> Option<&Group> {
         self.groups(category)
             .find(|group| group.name() == Some(name))
@@ -32,6 +34,7 @@ impl CraftingCatalog {
 
 impl Category {
     /// An entry adding no group yet to `category_name`.
+    #[must_use]
     pub fn new(category_name: CategoryName) -> Self {
         Self {
             category_name,
@@ -51,11 +54,13 @@ impl Group {
     }
 
     /// A group of loose items, without items yet (also [`Group::default`]).
+    #[must_use]
     pub fn loose() -> Self {
         Self::default()
     }
 
     /// The group's name; `None` for loose items.
+    #[must_use]
     pub fn name(&self) -> Option<&str> {
         self.group_identifier
             .as_ref()
@@ -76,6 +81,7 @@ impl GroupIdentifier {
 
 impl CatalogItem {
     /// The item `name` (`namespace:name`, or `namespace:name:aux`).
+    #[must_use]
     pub fn new(name: ItemId) -> Self {
         Self {
             name,

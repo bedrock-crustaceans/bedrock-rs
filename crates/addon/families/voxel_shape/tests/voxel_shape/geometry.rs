@@ -499,6 +499,7 @@ fn corner(coordinates: [f32; 3]) -> String {
 /// V6 compares the extent with 30 itself: the first `f32` above 30 is over the limit, on every
 /// axis. The extent is exact in `f32` (16 and 30 have the same spacing), and printed with six
 /// significant digits it is "30".
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v6_the_first_float_above_30_is_over_the_limit_on_every_axis() {
     let over = next_up(30.0);
@@ -523,6 +524,7 @@ fn v6_the_first_float_above_30_is_over_the_limit_on_every_axis() {
 /// V5 compares with the block's faces themselves: a box that enters the block by the smallest
 /// positive `f32` on the low side, or starts one `f32` below 16 on the high side, overlaps it,
 /// on every axis.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v5_the_smallest_overlap_a_float_can_hold_counts_on_both_sides_of_every_axis() {
     let smallest = f32::from_bits(1);

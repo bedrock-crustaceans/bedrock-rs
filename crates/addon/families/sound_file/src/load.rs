@@ -25,6 +25,7 @@ fn combine(_: Vec<()>, cx: &StackCx<'_>) -> SoundFiles {
 
 /// The loader of `rp.sound_files()`: the audio under `sounds/` of every resource pack, from
 /// the packs' listings.
+#[must_use]
 pub const fn load_files() -> CollectionLoader<SoundFiles, ()> {
     CollectionLoader {
         walk: Walk {

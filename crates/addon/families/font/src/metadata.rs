@@ -129,6 +129,7 @@ fn as_bool(value: &Value) -> bool {
 
 impl FontEntry {
     /// The format `font_format` names; `None` for a text the game knows no format by.
+    #[must_use]
     pub fn format(&self) -> Option<FontFormat> {
         FontFormat::from_name(&self.font_format)
     }
@@ -136,6 +137,7 @@ impl FontEntry {
     /// Whether the font is used on a low-performance device (JSON `lowPerformanceCompatible`,
     /// true when absent). A value that is no boolean is converted as the game converts it: a
     /// number is true unless 0, a string unless empty, so `"false"` is true.
+    #[must_use]
     pub fn is_low_performance_compatible(&self) -> bool {
         self.low_performance_compatible.unwrap_or_else(|| {
             self.extra
@@ -145,6 +147,7 @@ impl FontEntry {
     }
 
     /// The TrueType format version the game uses: `version`, or 1.
+    #[must_use]
     pub fn ttf_version(&self) -> i32 {
         self.version.unwrap_or(1)
     }
@@ -156,12 +159,14 @@ impl FontEntry {
         clippy::cast_sign_loss,
         reason = "the game's own narrowing"
     )]
+    #[must_use]
     pub fn render_size(&self) -> u8 {
         self.target_font_render_size.unwrap_or(64) as u8
     }
 
     /// The pages drawn at start, as ranges: one per page number and per range whose first
     /// page is not above its last.
+    #[must_use]
     pub fn start_pages(&self) -> Vec<RangeInclusive<i32>> {
         self.generate_pages_on_start
             .iter()
@@ -642,6 +647,7 @@ impl Authored for FontMetadata {
 
 impl FontMetadata {
     /// The font the name `name` ends up with among `fonts`: the last entry of that name.
+    #[must_use]
     pub fn font(&self, name: &str) -> Option<&FontEntry> {
         self.fonts
             .iter()
@@ -650,6 +656,7 @@ impl FontMetadata {
     }
 
     /// The alias the name `name` ends up with: the last entry of that name.
+    #[must_use]
     pub fn alias(&self, name: &str) -> Option<&FontAlias> {
         self.font_aliases
             .iter()

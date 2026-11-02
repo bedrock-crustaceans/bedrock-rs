@@ -121,6 +121,7 @@ impl FoliageColorMap {
     ];
 
     /// The JSON name.
+    #[must_use]
     pub fn name(self) -> &'static str {
         Self::NAMES
             .iter()
@@ -150,6 +151,7 @@ pub enum GrassColorMap {
 
 impl GrassColorMap {
     /// The JSON name.
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Grass => "grass",
@@ -196,6 +198,7 @@ pub struct GrassAppearance {
 impl GrassAppearance {
     /// Whether grass is darkened as under a dense canopy; `false` when the member is absent
     /// (the game fills an absent member with zero).
+    #[must_use]
     pub fn grass_is_shaded(&self) -> bool {
         self.grass_is_shaded.is_some_and(|shaded| shaded.0)
     }

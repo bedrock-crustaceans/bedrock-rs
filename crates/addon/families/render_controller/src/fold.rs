@@ -101,6 +101,7 @@ pub(crate) fn protect(text: &[u8]) -> Vec<u8> {
 /// assert_eq!(fold_case(r#"{"Geometry": "Geometry.Default"}"#), r#"{"geometry": "geometry.default"}"#);
 /// assert_eq!(fold_case("Q.Get_Name == 'Toast'"), "q.get_name == 'Toast'");
 /// ```
+#[must_use]
 pub fn fold_case(text: &str) -> String {
     fold(text).text
 }

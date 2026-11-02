@@ -22,6 +22,8 @@ impl LangFile {
     /// (in a value, or at the start of a key), and before a first line that starts with
     /// U+FEFF in a file without a byte order mark.
     ///
+    /// # Errors
+    ///
     /// Fails for a line the format cannot hold: a key that is empty, starts with a blank, or
     /// holds `=` after its first byte; an empty value; a tab, a carriage return or a NUL in a
     /// value; text after a value that starts with neither a tab nor `##`; a line feed outside
@@ -60,6 +62,10 @@ impl LangFile {
     }
 
     /// [`write_text`](Self::write_text) into a string.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error [`write_text`](Self::write_text) returns for a line the format cannot hold.
     pub fn to_text(&self) -> Result<String, EncodeError> {
         let mut out = Vec::new();
         self.write_text(&mut out)?;

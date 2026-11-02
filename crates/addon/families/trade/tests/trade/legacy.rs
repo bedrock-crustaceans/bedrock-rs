@@ -115,7 +115,7 @@ fn t09_four_flat_tiers_take_0_1_2_3_as_vanillas_restamp_of_farmer_trades_wrote()
                 .trades
                 .iter()
                 .flat_map(|t| t.wants.iter().chain(&t.gives))
-                .flat_map(|list| list.items())
+                .flat_map(bedrock_addon_family_trade::ItemList::items)
                 .map(|i| (i.item.as_str().to_owned(), i.quantity_range()))
                 .collect()
         };

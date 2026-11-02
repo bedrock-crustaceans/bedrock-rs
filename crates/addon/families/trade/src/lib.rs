@@ -163,6 +163,7 @@ pub enum Quantity {
 
 impl Group {
     /// How many trades the group offers: `num_to_select`, 0 when absent; -1 = every trade.
+    #[must_use]
     pub fn num_to_select(&self) -> i32 {
         self.num_to_select.unwrap_or(0)
     }
@@ -170,21 +171,25 @@ impl Group {
 
 impl Trade {
     /// `trader_exp`, 1 when absent.
+    #[must_use]
     pub fn trader_exp(&self) -> u32 {
         self.trader_exp.unwrap_or(1)
     }
 
     /// `max_uses`, 7 when absent.
+    #[must_use]
     pub fn max_uses(&self) -> i32 {
         self.max_uses.unwrap_or(7)
     }
 
     /// `reward_exp`, `true` when absent.
+    #[must_use]
     pub fn reward_exp(&self) -> bool {
         self.reward_exp.unwrap_or(true)
     }
 
     /// `weight`, 1 when absent.
+    #[must_use]
     pub fn weight(&self) -> i32 {
         self.weight.unwrap_or(1)
     }
@@ -192,6 +197,7 @@ impl Trade {
 
 impl ItemList {
     /// The items of the entry: the `choice` list, or the one bare item.
+    #[must_use]
     pub fn items(&self) -> &[TradeItem] {
         match self {
             Self::Choice { choice } => choice,
@@ -208,6 +214,7 @@ impl TradeItem {
     }
 
     /// `price_multiplier`, 0.0 when absent.
+    #[must_use]
     pub fn price_multiplier(&self) -> f32 {
         self.price_multiplier.unwrap_or(0.0)
     }
@@ -215,6 +222,7 @@ impl TradeItem {
 
 impl Quantity {
     /// `(min, max)`: `n..n` for a whole number, each absent bound 1.
+    #[must_use]
     pub fn bounds(self) -> (u32, u32) {
         match self {
             Self::Exact(n) => (n, n),

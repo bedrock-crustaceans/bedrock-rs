@@ -38,9 +38,8 @@ fn arity(text: &str) -> usize {
                 depth += 1;
                 token = true;
             }
-            ')' => depth -= 1,
             ']' if depth == 0 => return count + usize::from(token),
-            ']' => depth -= 1,
+            ')' | ']' => depth -= 1,
             ',' if depth == 0 => {
                 count += usize::from(token);
                 token = false;

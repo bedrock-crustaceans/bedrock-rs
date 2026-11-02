@@ -62,6 +62,7 @@ impl SpawnGroup {
     /// What the runtime keeps of the group: one
     /// [`MobSpawnRules`] per condition, in document order, with the spawn-distance cap 1024. A
     /// condition's weight and biome filter are not part of it.
+    #[must_use]
     pub fn spawn_rules(&self) -> Vec<MobSpawnRules> {
         self.conditions
             .iter()

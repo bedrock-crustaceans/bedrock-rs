@@ -303,6 +303,7 @@ pub struct Variables {
 impl Variables {
     /// The platform variables: every one of [`ENGINE_VARIABLES`] false, except the ones in
     /// `enabled`, which are true.
+    #[must_use]
     pub fn platform(enabled: &[&str]) -> Self {
         let values = ENGINE_VARIABLES
             .iter()
@@ -312,6 +313,7 @@ impl Variables {
     }
 
     /// The value of `name` (with its `$`).
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&Value> {
         self.values.get(name)
     }
@@ -335,6 +337,7 @@ impl Variables {
 
     /// Whether `value` holds as a `requires` condition: a number other than 0, a non-empty
     /// string, or any other non-empty value.
+    #[must_use]
     pub fn is_truthy(&self, value: &Value) -> bool {
         expr::Operand::from_value(&self.resolve(value)).truthy()
     }
@@ -385,6 +388,7 @@ impl Control {
     /// definition writes itself hides the inherited member.
     ///
     /// The lookup walks the base chain up to the definition that writes `key`.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&Value> {
         match self.raw.as_object().and_then(|own| own.get(key)) {
             Some(own) => Some(own).filter(|own| !own.is_null()),
@@ -402,6 +406,7 @@ impl Control {
     /// member without building it.
     // The game inherits shallowly, per key, into a jsoncpp object, which iterates its keys in
     // sorted order.
+    #[must_use]
     pub fn body(&self) -> Value {
         if !self.raw.is_object() {
             return self.raw.clone();
@@ -438,16 +443,19 @@ impl Control {
     }
 
     /// The control type, when the definition has (or inherits) a `type` the game knows.
+    #[must_use]
     pub fn control_type(&self) -> Option<ControlType> {
         ControlType::from_name(string_or_empty(self.get("type")))
     }
 
     /// The animation type, when the definition has an `anim_type` the game knows.
+    #[must_use]
     pub fn animation_type(&self) -> Option<AnimationType> {
         AnimationType::from_name(string_or_empty(self.get("anim_type")))
     }
 
     /// Whether the definition is a control, an animation or neither.
+    #[must_use]
     pub fn kind(&self) -> ControlKind {
         match (self.control_type(), self.animation_type()) {
             (Some(control), _) => ControlKind::Control(control),
@@ -484,6 +492,7 @@ impl Control {
 
     /// `font_size` of a label: `normal` when absent or not one of the four sizes (the game
     /// ignores an unknown size, vanilla's own `medium` included, without a message).
+    #[must_use]
     pub fn font_size(&self) -> FontSize {
         FontSize::from_name(string_or_empty(self.get("font_size"))).unwrap_or(FontSize::Normal)
     }
@@ -494,6 +503,7 @@ impl Control {
     }
 
     /// `text_alignment` of a label; `left` when absent or unknown.
+    #[must_use]
     pub fn text_alignment(&self) -> TextAlignment {
         TextAlignment::from_name(string_or_empty(self.get("text_alignment")))
             .unwrap_or(TextAlignment::Left)
@@ -503,6 +513,7 @@ impl Control {
     /// (horizontal when absent).
     // The defaults differ by the caller: a stack panel passes 1 (vertical), a flip-book 0
     // (horizontal).
+    #[must_use]
     pub fn orientation(&self) -> Orientation {
         let default = if self.get("anim_type").is_some() {
             Orientation::Horizontal
@@ -513,16 +524,19 @@ impl Control {
     }
 
     /// `grid_rescaling_type` of a grid; none when absent.
+    #[must_use]
     pub fn grid_rescaling_type(&self) -> Orientation {
         self.orientation_of("grid_rescaling_type", Orientation::None)
     }
 
     /// `grid_fill_direction` of a grid; none when absent.
+    #[must_use]
     pub fn grid_fill_direction(&self) -> Orientation {
         self.orientation_of("grid_fill_direction", Orientation::None)
     }
 
     /// `slider_direction` of a slider; horizontal when absent.
+    #[must_use]
     pub fn slider_direction(&self) -> Orientation {
         self.orientation_of("slider_direction", Orientation::Horizontal)
     }
@@ -533,6 +547,7 @@ impl Control {
 
     /// `tiled` of a sprite: `true`, `"xy"` and `"yx"` tile both axes, `"x"` and `"y"` one;
     /// anything else, of any type, is none.
+    #[must_use]
     pub fn tiled(&self) -> TileDirection {
         let Some(tiled) = self.get("tiled") else {
             return TileDirection::None;
@@ -549,6 +564,7 @@ impl Control {
     /// one of `definitions`, or an inline object with `anim_type`) the animation's `from`;
     /// 1 when absent.
     // The default is 1.0; an animation's initial value is its initial-value key, `from`.
+    #[must_use]
     pub fn initial_alpha(&self, definitions: &UiDefinitions) -> f64 {
         let from = |animation: &Value| member(animation, "from").and_then(number).unwrap_or(1.0);
         match self.get("alpha") {
@@ -571,6 +587,7 @@ impl Control {
 
     /// The data bindings the game registers: every object of `bindings` that is not `ignored`
     /// and whose type is not `none`.
+    #[must_use]
     pub fn bindings(&self) -> Vec<Binding> {
         let text = |entry: &Value, key: &str| {
             member(entry, key)
@@ -606,6 +623,7 @@ impl Control {
     }
 
     /// The button mappings the game registers, one per object of `button_mappings`.
+    #[must_use]
     pub fn button_mappings(&self) -> Vec<ButtonMapping> {
         self.array("button_mappings")
             .iter()
@@ -642,6 +660,7 @@ impl Control {
     /// `$name|default` ones `enclosing` does not define, and every member of each `variables`
     /// entry whose `requires` holds. A string value starting with `$` is resolved against the
     /// enclosing variables first.
+    #[must_use]
     pub fn variables(&self, enclosing: &Variables) -> Variables {
         let mut frame = Variables::default();
         for (key, value) in self.sorted_members() {
@@ -692,6 +711,7 @@ impl Control {
     /// member of that name in the control's variables frame (which is why vanilla writes
     /// plain properties such as `offset` inside `variables` entries).
     // The definition is asked first, then the frame.
+    #[must_use]
     pub fn value(&self, key: &str, enclosing: &Variables) -> Option<Value> {
         let frame = self.variables(enclosing);
         let mut seen = enclosing.clone();

@@ -162,6 +162,7 @@ impl Dimension {
 
     /// The default biome of the runtime definition: `minecraft:default_biome.biome`, or
     /// [`Self::DEFAULT_BIOME`] (`minecraft:ocean`).
+    #[must_use]
     pub fn runtime_default_biome(&self) -> &BiomeId {
         static OCEAN: BiomeId = Dimension::DEFAULT_BIOME;
         self.components
@@ -172,6 +173,7 @@ impl Dimension {
 
     /// The cloud height of the runtime definition: `minecraft:clouds.height`, or
     /// [`Self::DEFAULT_CLOUD_HEIGHT`] (128).
+    #[must_use]
     pub fn runtime_cloud_height(&self) -> i16 {
         self.components
             .clouds
@@ -184,6 +186,7 @@ impl Generation {
     /// The generator `generator_type` names: `void` is [`GeneratorType::Void`]; any other text
     /// (case-sensitive) names none.
     // The game's table of generator names holds the single entry `void`.
+    #[must_use]
     pub fn generator(&self) -> Option<GeneratorType> {
         (self.generator_type.0 == "void").then_some(GeneratorType::Void)
     }
@@ -203,6 +206,7 @@ pub struct DimensionBounds {
 
 impl DimensionBounds {
     /// Bounds `[min, max]`.
+    #[must_use]
     pub fn new(min: i32, max: i32) -> Self {
         Self {
             min: StrictInt(min),
@@ -240,6 +244,7 @@ impl From<GeneratorType> for u8 {
 
 impl GeneratorType {
     /// Vanilla's numeric value.
+    #[must_use]
     pub fn id(self) -> u8 {
         match self {
             Self::Legacy => 0,

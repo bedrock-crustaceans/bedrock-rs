@@ -309,6 +309,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
 
 /// The loader of `bp.behavior_trees()`: the trees of every behaviour pack and the built-in
 /// ones, by name.
+#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<BehaviorTree>, FileOutcome> {
     CollectionLoader {
         walk: WALK,

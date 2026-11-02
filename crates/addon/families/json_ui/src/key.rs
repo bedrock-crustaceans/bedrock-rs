@@ -35,6 +35,7 @@ impl DefKey {
     }
 
     /// Splits a key as written at its first `@`.
+    #[must_use]
     pub fn parse(key: &str) -> Self {
         match key.split_once('@') {
             None => Self::new(key),
@@ -48,6 +49,7 @@ impl DefKey {
 
 impl DefRef {
     /// Splits a reference as written at its first `.`.
+    #[must_use]
     pub fn parse(reference: &str) -> Self {
         match reference.split_once('.') {
             None => Self {

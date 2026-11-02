@@ -26,6 +26,7 @@ fn combine(_: Vec<()>, cx: &StackCx<'_>) -> TextureFiles {
 
 /// The loader of `rp.texture_files()`: every texture file of every resource pack, from the
 /// packs' listings.
+#[must_use]
 pub const fn load_files() -> CollectionLoader<TextureFiles, ()> {
     CollectionLoader {
         walk: Walk {

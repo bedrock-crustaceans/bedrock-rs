@@ -345,6 +345,7 @@ impl bedrock_addon_core::load::Reported for FeatureRules {
 }
 
 /// The loader of `bp.feature_rules()`.
+#[must_use]
 pub const fn load_feature_rules() -> CollectionLoader<FeatureRules, Contribution<FeatureRule>> {
     CollectionLoader {
         walk: WALK,

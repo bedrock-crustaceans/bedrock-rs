@@ -343,6 +343,11 @@ impl Placed for FogSettings {
 impl FogSettings {
     /// Parses one fog file without upgrading it: the struct its `format_version` selects;
     /// [`history::upgrade`](crate::history::upgrade) finishes it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -380,6 +385,11 @@ impl FogSettings {
 
 /// `history::upgrade`: the remaining steps and the rules on a document
 /// [`FogSettings::parse_as_written`] gave.
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
@@ -492,6 +502,7 @@ fn combine(parsed: Vec<Contribution<FogSettings>>, stack: &StackCx<'_>) -> Regis
 
 /// The loader of `rp.fogs()`: `fogs/*.json` of every resource pack, the highest pack's
 /// definition winning per identifier.
+#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<FogSettings>, Contribution<FogSettings>> {
     CollectionLoader {
         walk: WALK,

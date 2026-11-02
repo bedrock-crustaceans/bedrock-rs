@@ -59,6 +59,7 @@ impl LoadingMessage {
     /// The text the game can show for this element: a plain text, or a conditional one
     /// without a condition or with the one condition the game knows. `None` for an element
     /// the game skips or never shows.
+    #[must_use]
     pub fn shown(&self) -> Option<&str> {
         match self {
             Self::Text(text) => Some(text),
@@ -281,6 +282,7 @@ impl LoadingMessages {
     }
 
     /// The elements of `list` as written; `None` when the file has no such member.
+    #[must_use]
     pub fn list(&self, list: MessageList) -> Option<&[LoadingMessage]> {
         match list {
             MessageList::Legacy => &self.loading_messages,
@@ -297,6 +299,7 @@ impl LoadingMessages {
 
     /// Whether the older single list stands for the three stage lists: when
     /// `loading_messages` has an element.
+    #[must_use]
     pub fn uses_legacy_list(&self) -> bool {
         self.loading_messages
             .as_ref()

@@ -122,7 +122,7 @@ fn the_upgrade_always_makes_a_height_min_and_max_minus_min() {
     // (at most 1024 apart) always fit an i16; only a hand-built value shows the wrap.
     assert_eq!(
         upgraded_height(overworld, Some((-512, 40_000))),
-        Some((-512, (40_512_i32 - 65_536) as i16))
+        Some((-512, i16::try_from(40_512_i32 - 65_536).unwrap()))
     );
 }
 
@@ -591,7 +591,7 @@ fn no_text_gone_from_1_26_60_is_reported() {
             Ok(document) => document.diagnostics().clone(),
             Err(rejected) => rejected.diagnostics,
         };
-        for finding in found.iter() {
+        for finding in &found {
             let said = finding.code.to_string();
             assert!(
                 GONE.iter().all(|gone| !said.contains(gone)),

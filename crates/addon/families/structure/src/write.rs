@@ -21,6 +21,11 @@ impl Structure {
     ///
     /// Fails (`NotRepresentable`) only for what NBT cannot hold: a string or tag name longer
     /// than 32 767 bytes, or containers nested deeper than 512.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`EncodeError`] when a string or tag name is longer than 32 767 bytes or containers
+    /// nest deeper than 512.
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
         let tree = tree(self);
         let (root, trailing): (Named<Value>, &[u8]) = match &self.layout.source {

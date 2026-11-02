@@ -12,6 +12,7 @@ impl UiRoot {
 
     /// A root named `identifier`, attached at `minecraft:screen`, with `markup` as its
     /// top-level controls.
+    #[must_use]
     pub fn new(identifier: UiRootId, markup: Vec<Control>) -> Self {
         Self {
             description: RootDescription { identifier },
@@ -26,6 +27,7 @@ impl UiRoot {
 impl UiComposition {
     /// A composition named `identifier` with `markup` as its controls and no extension
     /// point.
+    #[must_use]
     pub fn new(identifier: UiCompositionId, markup: Vec<Control>) -> Self {
         Self {
             description: CompositionDescription { identifier },
@@ -37,6 +39,7 @@ impl UiComposition {
 
 impl Control {
     /// A control of type `component` that writes neither `attribs` nor `children`.
+    #[must_use]
     pub fn new(component: Component) -> Self {
         Self {
             component,
@@ -46,6 +49,7 @@ impl Control {
     }
 
     /// A control of type `component` with `children` below it and no `attribs`.
+    #[must_use]
     pub fn with_children(component: Component, children: Vec<Control>) -> Self {
         Self {
             component,

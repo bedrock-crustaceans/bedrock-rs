@@ -62,8 +62,8 @@ fn an_entry_without_a_condition_holds_none_and_is_written_without_one() {
     let Feature::ConditionalList(list) = document.value() else {
         panic!("not a conditional list");
     };
-    let last = list.conditional_features.last().expect("an entry");
-    assert_eq!(last.condition, None);
+    let final_entry = list.conditional_features.last().expect("an entry");
+    assert_eq!(final_entry.condition, None);
     let written = document.value().to_json().expect("written");
     assert_eq!(written.matches("\"condition\"").count(), 2, "{written}");
 }

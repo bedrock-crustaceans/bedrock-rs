@@ -7,6 +7,7 @@ use indexmap::IndexMap;
 
 impl AnimationFile {
     /// An empty file at format 1.8.0, the version vanilla's own files use.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             format_version: FormatVersion::new(1, 8, 0),
@@ -15,6 +16,7 @@ impl AnimationFile {
     }
 
     /// The animation whose key is `identifier`, ignoring case (vanilla lower-cases the key).
+    #[must_use]
     pub fn get(&self, identifier: &str) -> Option<&Animation> {
         self.animations
             .iter()
@@ -31,16 +33,19 @@ impl Default for AnimationFile {
 
 impl Animation {
     /// An animation with every member absent.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// `loop`, with its default (stop when finished).
+    #[must_use]
     pub fn loop_mode(&self) -> LoopMode {
         self.r#loop.unwrap_or_default()
     }
 
     /// The bone named `name`, ignoring case (vanilla lower-cases bone names).
+    #[must_use]
     pub fn bone(&self, name: &str) -> Option<&Bone> {
         self.bones
             .as_ref()?
@@ -79,6 +84,7 @@ impl Animation {
 impl Bone {
     /// Whether the rotation is relative to the entity (`relative_to.rotation` is `"entity"` in
     /// any case) rather than to the parent bone.
+    #[must_use]
     pub fn rotation_relative_to_entity(&self) -> bool {
         self.relative_to
             .as_ref()
@@ -91,6 +97,7 @@ impl Channel {
     /// The keyframes of a keyframe channel in vanilla's order: by time, keys with equal times
     /// in member order (a stable sort). Other shapes have one keyframe at time 0 and give
     /// an empty list.
+    #[must_use]
     pub fn keyframes_by_time(&self) -> Vec<(f32, &super::Keyframe)> {
         let Self::Keyframes(frames) = self else {
             return Vec::new();

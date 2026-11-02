@@ -115,12 +115,14 @@ impl Component {
     };
 
     /// The JSON name (`"Form.Button"`).
+    #[must_use]
     pub fn name(self) -> &'static str {
         NAMES[self as usize].1
     }
 
     /// The control type a JSON name selects; `None` for any other string (`"panel"`
     /// included).
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         NAMES
             .iter()

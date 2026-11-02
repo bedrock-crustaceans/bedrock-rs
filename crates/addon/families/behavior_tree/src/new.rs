@@ -6,6 +6,7 @@ use bedrock_addon_core::id::BehaviorTreeId;
 
 impl BehaviorTree {
     /// A tree named `name` with the root node `root`, no raw text and no other members.
+    #[must_use]
     pub fn new(name: BehaviorTreeId, root: Node) -> Self {
         Self {
             name,

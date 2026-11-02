@@ -31,6 +31,7 @@ pub enum ItemBinding {
 impl ItemBinding {
     /// The item bound and the condition, as vanilla's loader reads them; `None` for an empty
     /// object, which binds nothing (and which no loaded document holds).
+    #[must_use]
     pub fn bound(&self) -> Option<(ItemId, Condition)> {
         self.bound_at(None)
     }
@@ -99,11 +100,13 @@ pub enum Condition {
 
 impl Condition {
     /// Whether the binding is drawn whatever the item's owner is: the string form.
+    #[must_use]
     pub fn is_always(&self) -> bool {
         matches!(self, Self::Always)
     }
 
     /// Whether the condition can never hold: the empty text vanilla reads from a number.
+    #[must_use]
     pub fn is_never(&self) -> bool {
         matches!(self, Self::Molang(source) if source.is_empty())
     }
@@ -151,6 +154,7 @@ pub struct ItemBindings<'a> {
 
 impl<'a> ItemBindings<'a> {
     /// The bindings of every effective definition of `attachables`.
+    #[must_use]
     pub fn from_registry(attachables: &'a Registry<Attachable>) -> Self {
         let mut entries: Vec<&ItemBindingEntry> = attachables
             .iter()
@@ -180,11 +184,13 @@ impl<'a> ItemBindings<'a> {
     }
 
     /// The number of items with a binding.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.by_item.len()
     }
 
     /// No item has a binding.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.by_item.is_empty()
     }

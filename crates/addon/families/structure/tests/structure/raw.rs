@@ -235,7 +235,7 @@ fn the_formats_own_integers_keep_a_file_tag_that_reads_as_their_value() {
 #[test]
 fn a_tag_removed_early_in_a_kept_layout_leaves_the_later_tags_in_file_order() {
     let mut structure = loads(&bytes(
-        r#"{zz: 1b, structure_world_origin: [0, 0, 0], size: [0, 0, 0], format_version: 1, structure: {block_indices: [[], []], entities: [], palette: {}}}"#,
+        r"{zz: 1b, structure_world_origin: [0, 0, 0], size: [0, 0, 0], format_version: 1, structure: {block_indices: [[], []], entities: [], palette: {}}}",
     ))
     .into_value();
     structure.extra.clear();
@@ -243,7 +243,7 @@ fn a_tag_removed_early_in_a_kept_layout_leaves_the_later_tags_in_file_order() {
     assert_eq!(
         written,
         bytes(
-            r#"{structure_world_origin: [0, 0, 0], size: [0, 0, 0], format_version: 1, structure: {block_indices: [[], []], entities: [], palette: {}}}"#
+            r"{structure_world_origin: [0, 0, 0], size: [0, 0, 0], format_version: 1, structure: {block_indices: [[], []], entities: [], palette: {}}}"
         )
     );
 }

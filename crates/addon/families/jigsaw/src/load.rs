@@ -163,6 +163,12 @@ macro_rules! json_family {
             /// Parses one file without upgrading it: the struct its `format_version` selects.
             /// The family has one struct, so this is [`Content::parse`]'s value before the
             /// registration checks.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes
+            /// that are not JSON or a document the family refuses; it carries every finding about
+            /// the file.
             pub fn parse_as_written(
                 path: &PackPath,
                 bytes: &[u8],
@@ -177,6 +183,11 @@ macro_rules! json_family {
             /// result `Content::parse` gives for its file.
             ///
             /// [`parse_as_written`]: $root::parse_as_written
+            ///
+            /// # Errors
+            ///
+            /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it
+            /// carries every finding about the file.
             pub fn upgrade(
                 document: Document<Self>,
                 cx: &LoadContext,
@@ -595,6 +606,7 @@ fn no_json() -> EncodeError {
 
 impl JigsawMetadata {
     /// The file's bytes: the version string, length-prefixed, then the body as read.
+    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(5 + self.format_version.len() + self.body.len());
         let mut length = self.format_version.len();
@@ -949,6 +961,7 @@ fn combine(parsed: Vec<JigsawFile>, stack: &StackCx<'_>) -> Jigsaw {
 
 /// The loader of `bp.jigsaw()`: the five directories of every behaviour pack, combined into
 /// the group.
+#[must_use]
 pub const fn load_group() -> CollectionLoader<Jigsaw, JigsawFile> {
     CollectionLoader {
         walk: WALK,

@@ -34,6 +34,7 @@ impl MaterialFile {
     /// Which key rules the material at `key` is read with: its own
     /// [`key_rules`](MaterialDef::key_rules) when the stack merge set them, else the form's.
     /// `None` when the file has no such key.
+    #[must_use]
     pub fn key_rules(&self, key: &MaterialKey) -> Option<KeyRules> {
         let def = self.materials.get(key)?;
         Some(def.key_rules.unwrap_or(self.form.key_rules()))
@@ -67,6 +68,7 @@ pub enum MaterialFileForm {
 
 impl MaterialFileForm {
     /// The key rules of the form's materials: versioned in a wrapped file, legacy otherwise.
+    #[must_use]
     pub fn key_rules(&self) -> KeyRules {
         match self {
             Self::Wrapped { .. } => KeyRules::Versioned,
@@ -117,6 +119,7 @@ impl MaterialKey {
     }
 
     /// The key written `text`.
+    #[must_use]
     pub fn parse(text: &str) -> Self {
         let (extend, rest) = match text.strip_prefix('+') {
             Some(rest) => (true, rest),
@@ -135,6 +138,7 @@ impl MaterialKey {
 
     /// The text before the first `:` of the key as written (a leading `+` included): what the
     /// merge of two copies matches keys on.
+    #[must_use]
     pub fn base_name(&self) -> String {
         let text = self.to_string();
         base_name(&text).to_owned()
@@ -185,6 +189,7 @@ impl<T> Default for Listed<T> {
 
 impl<T> Listed<T> {
     /// Whether none of the three keys is written.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.replace.is_none() && self.add.is_none() && self.sub.is_none()
     }
@@ -240,6 +245,7 @@ pub enum StencilRefOverride {
 
 impl StencilRefOverride {
     /// Whether the override is on.
+    #[must_use]
     pub fn is_on(self) -> bool {
         match self {
             Self::Flag(on) => on,

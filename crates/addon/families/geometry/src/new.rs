@@ -13,6 +13,7 @@ const FIT_TO_FRAME_CHANGE: FormatVersion = FormatVersion::new(1, 21, 130);
 
 impl GeometryFile {
     /// A file of the newest format holding `geometries`.
+    #[must_use]
     pub fn new(geometries: Vec<Geometry>) -> Self {
         Self {
             format_version: LATEST,
@@ -23,6 +24,7 @@ impl GeometryFile {
 
     /// The geometry with `identifier`, compared without case; the last one when the file
     /// defines it twice, as the later definition replaces the earlier one.
+    #[must_use]
     pub fn geometry(&self, identifier: &str) -> Option<&Geometry> {
         self.geometries
             .iter()
@@ -44,6 +46,7 @@ impl Geometry {
     }
 
     /// The geometry's own bones.
+    #[must_use]
     pub fn bones(&self) -> &[Bone] {
         self.bones.as_deref().unwrap_or_default()
     }
@@ -65,6 +68,7 @@ impl Geometry {
     }
 
     /// The identifier of the geometry this one inherits from (a file older than 1.12.0 only).
+    #[must_use]
     pub fn parent(&self) -> Option<&str> {
         self.legacy.parent.as_deref()
     }
@@ -72,26 +76,31 @@ impl Geometry {
 
 impl Description {
     /// `visible_bounds_width`, 1 when absent.
+    #[must_use]
     pub fn visible_bounds_width(&self) -> f32 {
         self.visible_bounds_width.unwrap_or(1.0)
     }
 
     /// `visible_bounds_height`, 1 when absent.
+    #[must_use]
     pub fn visible_bounds_height(&self) -> f32 {
         self.visible_bounds_height.unwrap_or(1.0)
     }
 
     /// `visible_bounds_offset`, (0, 0, 0) when absent.
+    #[must_use]
     pub fn visible_bounds_offset(&self) -> [f32; 3] {
         self.visible_bounds_offset.unwrap_or_default()
     }
 
     /// `texture_width`, 64 when absent.
+    #[must_use]
     pub fn texture_width(&self) -> i32 {
         self.texture_width.unwrap_or(64)
     }
 
     /// `texture_height`, 64 when absent.
+    #[must_use]
     pub fn texture_height(&self) -> i32 {
         self.texture_height.unwrap_or(64)
     }
@@ -108,16 +117,19 @@ impl Bone {
     }
 
     /// `mirror`, `false` when absent.
+    #[must_use]
     pub fn mirror(&self) -> bool {
         self.mirror.unwrap_or(false)
     }
 
     /// `inflate`, 0 when absent.
+    #[must_use]
     pub fn inflate(&self) -> f32 {
         self.inflate.unwrap_or(0.0)
     }
 
     /// The bone's cubes.
+    #[must_use]
     pub fn cubes(&self) -> &[Cube] {
         self.cubes.as_deref().unwrap_or_default()
     }
@@ -125,6 +137,7 @@ impl Bone {
 
 impl Cube {
     /// A cube of `size` whose lowest corner is `origin`.
+    #[must_use]
     pub fn new(origin: [f32; 3], size: [f32; 3]) -> Self {
         Self {
             origin: Some(origin),
@@ -135,6 +148,7 @@ impl Cube {
 
     /// The point the cube rotates around: `pivot`, or the cube's centre `origin + size / 2`
     /// when absent (a missing `origin` or `size` counts as 0), in every format version.
+    #[must_use]
     pub fn pivot(&self) -> [f32; 3] {
         self.pivot.unwrap_or_else(|| self.centre())
     }
@@ -147,11 +161,13 @@ impl Cube {
     }
 
     /// `inflate`, or the bone's.
+    #[must_use]
     pub fn inflate(&self, bone: &Bone) -> f32 {
         self.inflate.unwrap_or_else(|| bone.inflate())
     }
 
     /// `mirror`, or the bone's.
+    #[must_use]
     pub fn mirror(&self, bone: &Bone) -> bool {
         self.mirror.unwrap_or_else(|| bone.mirror())
     }
@@ -167,26 +183,31 @@ impl TextureMesh {
     }
 
     /// `position`, (0, 0, 0) when absent.
+    #[must_use]
     pub fn position(&self) -> [f32; 3] {
         self.position.unwrap_or_default()
     }
 
     /// `local_pivot`, (0, 0, 0) when absent.
+    #[must_use]
     pub fn local_pivot(&self) -> [f32; 3] {
         self.local_pivot.unwrap_or_default()
     }
 
     /// `rotation`, (0, 0, 0) when absent.
+    #[must_use]
     pub fn rotation(&self) -> [f32; 3] {
         self.rotation.unwrap_or_default()
     }
 
     /// `scale`, (1, 1, 1) when absent.
+    #[must_use]
     pub fn scale(&self) -> [f32; 3] {
         self.scale.unwrap_or([1.0; 3])
     }
 
     /// `use_pixel_depth`, `true` when absent.
+    #[must_use]
     pub fn use_pixel_depth(&self) -> bool {
         self.use_pixel_depth.unwrap_or(true)
     }
@@ -195,6 +216,7 @@ impl TextureMesh {
 impl ItemDisplayTransform {
     /// How a `gui` transform fits the item, in a file written at `format_version`
     /// ([`GeometryFile::format_version`]).
+    #[must_use]
     pub fn fit_to_frame(&self, format_version: FormatVersion) -> FitToFrame {
         match self.fit_to_frame {
             None | Some(true) => FitToFrame::Fit,
@@ -248,6 +270,7 @@ impl ItemDisplayTransforms {
     ];
 
     /// The transforms present, with their member names, in vanilla's order.
+    #[must_use]
     pub fn iter(&self) -> ItemDisplayTransformsIter<'_> {
         ItemDisplayTransformsIter {
             slots: Self::NAMES.into_iter().zip(self.slots()),

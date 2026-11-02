@@ -107,6 +107,11 @@ impl Content for TradeTable {
 impl TradeTable {
     /// Parses one trade-table file without upgrading it: the struct its `format_version`
     /// selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -361,6 +366,7 @@ fn combine(parsed: Vec<FileCopy>, stack: &StackCx<'_>) -> Files<TradeTable> {
 
 /// The loader of `bp.trade_tables()`: `trading/**/*.json` of every behaviour pack, keyed by
 /// path, the top pack's copy winning.
+#[must_use]
 pub const fn load_files() -> CollectionLoader<Files<TradeTable>, FileCopy> {
     CollectionLoader {
         walk: WALK,

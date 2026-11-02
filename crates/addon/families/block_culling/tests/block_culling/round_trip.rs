@@ -2,7 +2,7 @@
 //! documents. Whatever loads writes text that loads back to the same rules; whatever the
 //! loader would refuse is not written.
 
-use bedrock_addon_core::document::Content;
+use bedrock_addon_core::document::{Content, Rejected};
 use bedrock_addon_core::id::CullingRulesId;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::version::FormatVersion;
@@ -286,6 +286,86 @@ fn object(g: &mut Generator, members: &[String], one_in: usize, reordered: &mut 
     format!("{{{}}}", members.join(", "))
 }
 
+/// One rule as written and as the writer spells it.
+fn generate_rule(
+    g: &mut Generator,
+    index: usize,
+    float_cube: &mut bool,
+    reordered: &mut bool,
+) -> (String, String) {
+    let mut members = Vec::new();
+    match g.next(6) {
+        0 => members.push(r#""condition": "same_culling_layer""#.to_owned()),
+        1 => members.push(r#""condition": "same_block""#.to_owned()),
+        2 => members.push(r#""condition": "sideways""#.to_owned()),
+        _ => {}
+    }
+    match g.next(6) {
+        0 => members.push(r#""cull_against_full_and_opaque": true"#.to_owned()),
+        1 => members.push(r#""cull_against_full_and_opaque": false"#.to_owned()),
+        2 => members.push(r#""cull_against_full_and_opaque": "x""#.to_owned()),
+        _ => {}
+    }
+    let mut canonical_members = members.clone();
+    let bone = g.pick(&["b", "b", "bone with space", "ü"]);
+    // A cube index as written and as the writer spells it.
+    let (cube, whole) = [
+        ("", ""),
+        ("", ""),
+        ("0", "0"),
+        ("3", "3"),
+        ("-1", "-1"),
+        ("1.5", "1.5"),
+        ("1e39", "1e39"),
+        ("1e999", "1e999"),
+        ("2.0", "2"),
+        ("1e1", "10"),
+        ("0.0", "0"),
+        ("3.00", "3"),
+        ("18446744073709551616", "18446744073709551616"),
+    ][g.next(13)];
+    *float_cube |= cube != whole;
+    let face = g.pick(&["", "", "up", "east", "East"]);
+    let mut part = vec![format!(r#""bone": "{bone}{index}""#)];
+    let mut canonical_part = part.clone();
+    if !cube.is_empty() {
+        part.push(format!(r#""cube": {cube}"#));
+        canonical_part.push(format!(r#""cube": {whole}"#));
+    }
+    if !face.is_empty() {
+        part.push(format!(r#""face": "{face}""#));
+        canonical_part.push(part.last().cloned().unwrap());
+    }
+    if g.next(12) == 0 {
+        part.push(r#""extra": 1"#.to_owned());
+        canonical_part.push(part.last().cloned().unwrap());
+    }
+    if g.next(15) != 0 {
+        members.push(format!(
+            r#""geometry_part": {}"#,
+            object(g, &part, 6, reordered)
+        ));
+        canonical_members.push(format!(
+            r#""geometry_part": {{{}}}"#,
+            canonical_part.join(", ")
+        ));
+    }
+    match g.next(10) {
+        0 => {}
+        1 => members.push(r#""direction": "inwards""#.to_owned()),
+        _ => members.push(format!(
+            r#""direction": "{}""#,
+            g.pick(&["down", "up", "north", "south", "west", "east"])
+        )),
+    }
+    if members.len() > canonical_members.len() {
+        canonical_members.push(members.last().cloned().unwrap());
+    }
+    let rule = object(g, &members, 6, reordered);
+    let canonical_rule = format!("{{{}}}", canonical_members.join(", "));
+    (rule, canonical_rule)
+}
+
 /// One generated document: every member in each of its forms, sound and unsound.
 fn generate(g: &mut Generator) -> Generated {
     let version = g.pick(&[
@@ -308,76 +388,9 @@ fn generate(g: &mut Generator) -> Generated {
     // Each rule as written and as the writer spells it.
     let (mut rules, mut canonical_rules) = (Vec::new(), Vec::new());
     for index in 0..count {
-        let mut members = Vec::new();
-        match g.next(6) {
-            0 => members.push(r#""condition": "same_culling_layer""#.to_owned()),
-            1 => members.push(r#""condition": "same_block""#.to_owned()),
-            2 => members.push(r#""condition": "sideways""#.to_owned()),
-            _ => {}
-        }
-        match g.next(6) {
-            0 => members.push(r#""cull_against_full_and_opaque": true"#.to_owned()),
-            1 => members.push(r#""cull_against_full_and_opaque": false"#.to_owned()),
-            2 => members.push(r#""cull_against_full_and_opaque": "x""#.to_owned()),
-            _ => {}
-        }
-        let mut canonical_members = members.clone();
-        let bone = g.pick(&["b", "b", "bone with space", "ü"]);
-        // A cube index as written and as the writer spells it.
-        let (cube, whole) = [
-            ("", ""),
-            ("", ""),
-            ("0", "0"),
-            ("3", "3"),
-            ("-1", "-1"),
-            ("1.5", "1.5"),
-            ("1e39", "1e39"),
-            ("1e999", "1e999"),
-            ("2.0", "2"),
-            ("1e1", "10"),
-            ("0.0", "0"),
-            ("3.00", "3"),
-            ("18446744073709551616", "18446744073709551616"),
-        ][g.next(13)];
-        float_cube |= cube != whole;
-        let face = g.pick(&["", "", "up", "east", "East"]);
-        let mut part = vec![format!(r#""bone": "{bone}{index}""#)];
-        let mut canonical_part = part.clone();
-        if !cube.is_empty() {
-            part.push(format!(r#""cube": {cube}"#));
-            canonical_part.push(format!(r#""cube": {whole}"#));
-        }
-        if !face.is_empty() {
-            part.push(format!(r#""face": "{face}""#));
-            canonical_part.push(part.last().cloned().unwrap());
-        }
-        if g.next(12) == 0 {
-            part.push(r#""extra": 1"#.to_owned());
-            canonical_part.push(part.last().cloned().unwrap());
-        }
-        if g.next(15) != 0 {
-            members.push(format!(
-                r#""geometry_part": {}"#,
-                object(g, &part, 6, &mut reordered)
-            ));
-            canonical_members.push(format!(
-                r#""geometry_part": {{{}}}"#,
-                canonical_part.join(", ")
-            ));
-        }
-        match g.next(10) {
-            0 => {}
-            1 => members.push(r#""direction": "inwards""#.to_owned()),
-            _ => members.push(format!(
-                r#""direction": "{}""#,
-                g.pick(&["down", "up", "north", "south", "west", "east"])
-            )),
-        }
-        if members.len() > canonical_members.len() {
-            canonical_members.push(members.last().cloned().unwrap());
-        }
-        rules.push(object(g, &members, 6, &mut reordered));
-        canonical_rules.push(format!("{{{}}}", canonical_members.join(", ")));
+        let (rule, canonical_rule) = generate_rule(g, index, &mut float_cube, &mut reordered);
+        rules.push(rule);
+        canonical_rules.push(canonical_rule);
     }
     let description = format!(r#""description": {{"identifier": "{identifier}"}}"#);
     let payload = |rules: &[String]| {
@@ -452,6 +465,38 @@ fn at_latest(document: &Value) -> Value {
     root.into()
 }
 
+/// Asserts the reasons a generated document is refused are sound: every one is about a value,
+/// none about a type, and each carries the file's path. Returns whether the document holds a
+/// cube beyond 64 bits.
+fn assert_refusal_is_sound(refusal: &Rejected, json: &str) -> bool {
+    assert!(refusal.diagnostics.has_errors(), "{json}");
+    // Every cube the generator writes is a number: none is refused for its
+    // type, and an integer beyond 64 bits is refused for its value, as every
+    // index beyond `int` is.
+    let at_cube = |code: &str| {
+        refusal
+            .diagnostics
+            .iter()
+            .filter(|f| {
+                f.code.name() == code && f.location.json_path.to_string().ends_with("/cube")
+            })
+            .count()
+    };
+    assert_eq!(at_cube("InvalidType"), 0, "{json}");
+    if json.contains("18446744073709551616") {
+        assert!(at_cube("InvalidValue") > 0, "{json}");
+    }
+    // Every reason has the file's path, and a closing line of vanilla's.
+    assert!(
+        refusal
+            .diagnostics
+            .iter()
+            .all(|f| f.location.path.is_some()),
+        "{json}"
+    );
+    json.contains("18446744073709551616")
+}
+
 #[test]
 fn four_thousand_generated_documents_round_trip_or_are_refused() {
     let mut g = Generator(0x00C0_FFEE);
@@ -517,33 +562,7 @@ fn four_thousand_generated_documents_round_trip_or_are_refused() {
             }
             Err(refusal) => {
                 rejected += 1;
-                assert!(refusal.diagnostics.has_errors(), "{json}");
-                // Every cube the generator writes is a number: none is refused for its
-                // type, and an integer beyond 64 bits is refused for its value, as every
-                // index beyond `int` is.
-                let at_cube = |code: &str| {
-                    refusal
-                        .diagnostics
-                        .iter()
-                        .filter(|f| {
-                            f.code.name() == code
-                                && f.location.json_path.to_string().ends_with("/cube")
-                        })
-                        .count()
-                };
-                assert_eq!(at_cube("InvalidType"), 0, "{json}");
-                if json.contains("18446744073709551616") {
-                    wide_cubes += 1;
-                    assert!(at_cube("InvalidValue") > 0, "{json}");
-                }
-                // Every reason has the file's path, and a closing line of vanilla's.
-                assert!(
-                    refusal
-                        .diagnostics
-                        .iter()
-                        .all(|f| f.location.path.is_some()),
-                    "{json}"
-                );
+                wide_cubes += usize::from(assert_refusal_is_sound(&refusal, &json));
             }
         }
     }

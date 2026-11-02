@@ -28,8 +28,8 @@ pub fn base_game() -> LoadContext {
     cx
 }
 
-/// A fixture file under `tests/fixtures/worldgen/feature/` of bedrock_addon. This file is built
-/// into the family crate's tests and into bedrock_addon's, so it looks in both places.
+/// A fixture file under `tests/fixtures/worldgen/feature/` of `bedrock_addon`. This file is built
+/// into the family crate's tests and into `bedrock_addon`'s, so it looks in both places.
 pub fn fixture(name: &str) -> String {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let path = [".", "../../addon"]

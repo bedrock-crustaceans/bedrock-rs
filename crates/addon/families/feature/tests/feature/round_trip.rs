@@ -19,9 +19,9 @@ fn round_trip(json: &str, cx: &bedrock_addon_core::load::LoadContext) -> String 
     written
 }
 
-#[test]
-fn every_type_round_trips() {
-    let docs = [
+/// The documents of the public feature types, each at a version that accepts it.
+fn public_type_documents() -> Vec<String> {
+    vec![
         doc(
             "1.13.0",
             "aggregate_feature",
@@ -118,19 +118,12 @@ fn every_type_round_trips() {
             "conditional_list",
             r#""conditional_features": [{"places_feature": "demo:a", "condition": "q.noise(1, 2) > 0"}], "early_out_scheme": "placement_success""#,
         ),
-    ];
-    for json in &docs {
-        round_trip(json, &cx());
-    }
-    for json in [
-        fixture("f01_scatter_1_13_0_to_distribution.json"),
-        fixture("f13_tree_variants.json"),
-        fixture("f21_orange_poplar_tree_feature.json"),
-        fixture("f18_shelf_mushroom_feature.json"),
-    ] {
-        round_trip(&json, &engine(1, 26, 50));
-    }
-    let internal = [
+    ]
+}
+
+/// The documents of the engine-internal feature types, written by the base game only.
+fn internal_type_documents() -> Vec<String> {
+    vec![
         doc(
             "1.13.0",
             "rect_layout",
@@ -151,8 +144,23 @@ fn every_type_round_trips() {
             "sculk_patch_feature",
             r#""can_place_sculk_patch_on": ["minecraft:stone"], "central_block": "minecraft:sculk_catalyst", "central_block_placement_chance": 0.5, "cursor_count": 10, "charge_amount": 32, "spread_attempts": 64, "growth_rounds": 0, "spread_rounds": 1, "extra_growth_chance": {"range_min": 1, "range_max": 3}"#,
         ),
-    ];
-    for json in &internal {
+    ]
+}
+
+#[test]
+fn every_type_round_trips() {
+    for json in &public_type_documents() {
+        round_trip(json, &cx());
+    }
+    for json in [
+        fixture("f01_scatter_1_13_0_to_distribution.json"),
+        fixture("f13_tree_variants.json"),
+        fixture("f21_orange_poplar_tree_feature.json"),
+        fixture("f18_shelf_mushroom_feature.json"),
+    ] {
+        round_trip(&json, &engine(1, 26, 50));
+    }
+    for json in &internal_type_documents() {
         round_trip(json, &base_game());
     }
 }

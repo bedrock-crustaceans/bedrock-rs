@@ -273,6 +273,7 @@ pub(super) fn combine_blocks(
 
 /// The loader of `rp.client_blocks()`: `blocks.json` of every resource pack, merged field by
 /// field from the lowest pack up.
+#[must_use]
 pub const fn load_client_blocks() -> CollectionLoader<Registry<ClientBlock>, ParsedBlocks> {
     CollectionLoader {
         walk: BLOCKS_WALK,

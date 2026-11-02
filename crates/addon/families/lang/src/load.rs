@@ -136,6 +136,7 @@ fn combine_translations(parsed: Vec<LangLayer>, _: &StackCx<'_>) -> Merged<Trans
 
 /// The loader of `translations(&language)` on the stack of `side`: `texts/*.lang`, which the
 /// accessor splits by language ([`language_of`]).
+#[must_use]
 pub fn load_translations(side: PackSide) -> CollectionLoader<Merged<Translations>, LangLayer> {
     let _ = side;
     CollectionLoader {

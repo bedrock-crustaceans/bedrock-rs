@@ -313,6 +313,7 @@ impl Feature {
     /// Whether the feature is of an internal type: one only the game's own packs may define
     /// and only their rules may place.
     #[doc(hidden)]
+    #[must_use]
     pub fn is_internal(&self) -> bool {
         self.dispatch(Internal)
     }
@@ -913,6 +914,11 @@ impl Placed for Feature {
 
 impl Feature {
     /// Parses one feature file without upgrading it: the struct its `format_version` selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -1060,6 +1066,7 @@ fn combine(parsed: Vec<Contribution<Feature>>, stack: &StackCx<'_>) -> Registry<
 /// The loader of `bp.features()`: `features/**/*.json` of every behaviour pack and the app's
 /// `definitions/features`, the first definition of an identifier winning.
 #[doc(hidden)]
+#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Feature>, Contribution<Feature>> {
     CollectionLoader {
         walk: WALK,

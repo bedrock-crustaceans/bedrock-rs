@@ -91,6 +91,7 @@ impl Structure {
     /// exactly). A file directly under `structures/` is `mystructure:<name>`; deeper, the first
     /// folder is the namespace and the rest of the path the name:
     /// `structures/stuff/towers/diamond.mcstructure` is `stuff:towers/diamond`.
+    #[must_use]
     pub fn id_of(path: &PackPath) -> Option<StructureId> {
         // Two parts give `mystructure:<stem>`; more give the first folder, then the remaining
         // folders and the stem joined with `/`.
@@ -109,6 +110,7 @@ impl Structure {
     /// The file `/structure load`, structure blocks and scripts read first for `id`:
     /// `structures/<namespace>/<name>.mcstructure`; `None` without a namespace (or for a name
     /// no pack path can hold).
+    #[must_use]
     pub fn path_of(id: &StructureId) -> Option<PackPath> {
         let namespace = namespace(id)?;
         PackPath::new(&format!("{FOLDER}/{namespace}/{}{EXTENSION}", id.path())).ok()
@@ -125,6 +127,10 @@ impl Structure {
     /// An identifier without a namespace is vanilla's error `Structure '<id>' must be prefixed
     /// by a namespace`. `Ok(None)` when no pack has a copy that loads (vanilla then reads the
     /// world's own saved structures, which are not pack content).
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`Diagnostic`] when the identifier has no namespace.
     #[allow(
         clippy::result_large_err,
         reason = "the crate's finding type; one per failed lookup"
@@ -178,6 +184,7 @@ impl Structure {
     /// `structures/<location without its namespace>.mcstructure`, the top copy that loads.
     /// No `mystructure` rule applies. (When no pack has it, vanilla tries the Java `.nbt`
     /// templates of the base-game packs, which are not pack content here.)
+    #[must_use]
     pub fn find_template<'a>(
         structures: &'a Files<Structure>,
         location: &StructureId,
@@ -364,6 +371,7 @@ fn root_of(primary: &PackPath) -> Option<PackPath> {
 }
 
 /// The loader of `bp.structures()`.
+#[must_use]
 pub const fn load_files() -> CollectionLoader<Files<Structure>, Parsed> {
     CollectionLoader {
         walk: WALK,

@@ -145,6 +145,7 @@ impl Structure {
 
     /// [`neighbor_aware_block_upgrade_version`](Self::neighbor_aware_block_upgrade_version),
     /// 0 when absent.
+    #[must_use]
     pub fn neighbor_aware_block_upgrade_version(&self) -> i32 {
         self.neighbor_aware_block_upgrade_version.unwrap_or(0)
     }
@@ -152,6 +153,7 @@ impl Structure {
 
 impl TickQueueEntry {
     /// [`tick_delay`](Self::tick_delay), 0 when absent.
+    #[must_use]
     pub fn tick_delay(&self) -> i32 {
         self.tick_delay.unwrap_or(0)
     }

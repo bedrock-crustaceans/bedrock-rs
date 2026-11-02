@@ -320,6 +320,7 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
 
 /// The loader of `rp.render_controllers()`: every `.json` file below `render_controllers/` of
 /// every resource pack, the highest pack's controller winning per name.
+#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<RenderController>, FileContribution> {
     CollectionLoader {
         walk: WALK,

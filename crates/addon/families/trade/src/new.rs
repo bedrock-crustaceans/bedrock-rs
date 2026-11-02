@@ -5,6 +5,7 @@ use bedrock_addon_core::id::ItemId;
 
 impl TradeItem {
     /// One of `item`, every other member absent.
+    #[must_use]
     pub fn new(item: ItemId) -> Self {
         Self {
             quantity: None,

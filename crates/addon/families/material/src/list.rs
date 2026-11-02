@@ -23,6 +23,7 @@ impl MaterialListKind {
     pub const ALL: [Self; 4] = [Self::Common, Self::Fancy, Self::Sad, Self::Gameface];
 
     /// The list's path in a pack.
+    #[must_use]
     pub fn path(self) -> &'static str {
         match self {
             Self::Common => "materials/common.json",
@@ -33,6 +34,7 @@ impl MaterialListKind {
     }
 
     /// The list at `path`, when it is one of the four.
+    #[must_use]
     pub fn from_path(path: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|kind| kind.path() == path)
     }

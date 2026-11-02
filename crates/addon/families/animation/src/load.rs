@@ -97,6 +97,7 @@ fn combine_animations(
 
 /// The loader of `animations()` on the stack of `side`: `animations/**/*.json`, combined per
 /// identifier, the higher pack winning.
+#[must_use]
 pub fn load_animations(
     side: PackSide,
 ) -> CollectionLoader<Registry<Animation>, FileContribution<Animation>> {

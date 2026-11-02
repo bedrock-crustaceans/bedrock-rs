@@ -34,6 +34,11 @@ bedrock_addon_core::version_chain! {
 /// Runs the remaining upgrade step of a document [`Dimension::parse_as_written`] gave: the same
 /// result [`Dimension::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
 /// It works over the document because the document holds the origin.
+///
+/// # Errors
+///
+/// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+/// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Dimension>, Rejected> {
     super::load::upgrade_document(document, cx)
 }

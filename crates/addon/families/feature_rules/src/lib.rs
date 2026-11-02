@@ -85,6 +85,7 @@ pub struct FeatureRuleConditions {
 impl FeatureRuleConditions {
     /// The placement pass `placement_pass` names, or `None` when it names no pass vanilla
     /// defines.
+    #[must_use]
     pub fn pass(&self) -> Option<PlacementPass> {
         PlacementPass::from_name(&self.placement_pass.0)
     }
@@ -142,6 +143,7 @@ impl PlacementPass {
     ];
 
     /// The JSON name (`surface_pass`).
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Pregeneration => "pregeneration_pass",
@@ -160,6 +162,7 @@ impl PlacementPass {
     }
 
     /// The pass named `name`, compared exactly (case-sensitive), or `None`.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<PlacementPass> {
         Self::ALL.into_iter().find(|pass| pass.name() == name)
     }
@@ -234,6 +237,7 @@ impl<'a> IntoIterator for &'a FeatureRules {
 
 impl FeatureRules {
     /// The registry of `pass`.
+    #[must_use]
     pub fn pass(&self, pass: PlacementPass) -> &Registry<FeatureRule> {
         match pass {
             PlacementPass::Pregeneration => &self.pregeneration_pass,
@@ -252,6 +256,7 @@ impl FeatureRules {
     }
 
     /// The effective rule `id` of `pass`, or `None` if no pack defines it there.
+    #[must_use]
     pub fn get(&self, pass: PlacementPass, id: &FeatureRuleId) -> Option<&Document<FeatureRule>> {
         self.pass(pass).get(id)
     }
@@ -262,6 +267,7 @@ impl FeatureRules {
     }
 
     /// Whether no rule loaded.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -273,6 +279,7 @@ impl FeatureRules {
     }
 
     /// Files that failed to load, with their findings.
+    #[must_use]
     pub fn rejected(&self) -> &[Rejected] {
         &self.rejected
     }

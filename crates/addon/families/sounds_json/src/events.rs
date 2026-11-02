@@ -602,6 +602,7 @@ pub(crate) const LEGACY_AMBIENT_EVENTS: &[&str] = &[
 ];
 
 /// Whether `name`, already lower-cased, is a level sound event.
+#[must_use]
 pub fn is_level_sound_event(name: &str) -> bool {
     LEVEL_SOUND_EVENTS.binary_search(&name).is_ok()
 }

@@ -241,6 +241,7 @@ walk!(BlockIntersection {
 
 impl BlockIntersection {
     /// The blocks the structure may intersect, under either name (`block_allowlist` first).
+    #[must_use]
     pub fn blocks(&self) -> &[BlockDescriptor] {
         self.block_allowlist
             .as_deref()

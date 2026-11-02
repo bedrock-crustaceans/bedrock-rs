@@ -9,6 +9,7 @@ use bedrock_addon_core::json::StrictFloat;
 
 impl Description {
     /// The description of `identifier`.
+    #[must_use]
     pub fn new(identifier: BiomeId) -> Self {
         Self {
             identifier,
@@ -19,6 +20,7 @@ impl Description {
 
 impl ClientBiome {
     /// A client biome named `identifier` without components.
+    #[must_use]
     pub fn new(identifier: BiomeId) -> Self {
         Self {
             description: Description::new(identifier),
@@ -46,6 +48,7 @@ impl ClientBiome {
 
 impl Beta {
     /// A beta client biome named `identifier` without components or environment attributes.
+    #[must_use]
     pub fn new(identifier: BiomeId) -> Self {
         Self {
             description: Description::new(identifier),
@@ -58,6 +61,7 @@ impl Beta {
 
 impl SkyColor {
     /// `minecraft:sky_color` with `sky_color`.
+    #[must_use]
     pub fn new(sky_color: Color255Rgb) -> Self {
         Self {
             sky_color,
@@ -68,6 +72,7 @@ impl SkyColor {
 
 impl DryFoliageColor {
     /// `minecraft:dry_foliage_color` with `color`.
+    #[must_use]
     pub fn new(color: Color255Rgb) -> Self {
         Self {
             color,
@@ -78,6 +83,7 @@ impl DryFoliageColor {
 
 impl SoundAddition {
     /// The sound `asset` at `chance` (from 0 to 1).
+    #[must_use]
     pub fn new(asset: SoundEventName, chance: f32) -> Self {
         Self {
             asset,

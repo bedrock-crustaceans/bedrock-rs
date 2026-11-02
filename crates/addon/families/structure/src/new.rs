@@ -19,6 +19,7 @@ impl Structure {
     /// position (a component below 1) or more than [`Structure::NEW_FILL_LIMIT`] of them
     /// (a file itself has no size limit: fill `block_indices` yourself for a larger box).
     /// Never panics, whatever the size.
+    #[must_use]
     pub fn new(size: [i32; 3]) -> Structure {
         let volume = size
             .iter()
@@ -44,6 +45,7 @@ impl Structure {
     /// Runs the format's load rules as if the structure were read from a pack with `cx`: the
     /// findings loading its file would give (none for a valid structure, apart from the crate's own
     /// infos).
+    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         match self.to_bytes() {
             Ok(bytes) => parse::read(&bytes, cx).1,

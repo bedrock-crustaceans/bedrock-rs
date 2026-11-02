@@ -18,11 +18,13 @@ impl Languages {
     /// The base language: the first code. Every other language starts from a copy of its
     /// table, and it is the last fallback of a locale lookup. `None` for an empty list.
     // `mLanguageCodes[0]` is loaded first, with no parent.
+    #[must_use]
     pub fn base(&self) -> Option<&Language> {
         self.codes.first()
     }
 
     /// Whether `language` is listed.
+    #[must_use]
     pub fn contains(&self, language: &Language) -> bool {
         self.codes.contains(language)
     }
@@ -33,6 +35,7 @@ impl Languages {
     /// language. `None` for an empty list.
     // `I18nImpl::_getLocaleCodeFor`: `std::string::find`, not a prefix
     // match.
+    #[must_use]
     pub fn locale_for(&self, requested: &str) -> Option<&Language> {
         if let Some(exact) = self.codes.iter().find(|code| code.as_str() == requested) {
             return Some(exact);
@@ -45,6 +48,7 @@ impl Languages {
     }
 
     /// The display name of `language` ([`LanguageNames::get`]).
+    #[must_use]
     pub fn name(&self, language: &Language) -> Option<&str> {
         self.names.get(language)
     }
@@ -72,6 +76,7 @@ impl LanguageNames {
 
     /// The display name of `language`: the last non-empty name among its entries; `""` when
     /// its entries all have an empty name; `None` when it has no entry.
+    #[must_use]
     pub fn get(&self, language: &Language) -> Option<&str> {
         let mut names = self
             .entries

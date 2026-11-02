@@ -4,14 +4,14 @@
 //! rejection is a warning; an empty coordinate expression is "must be provided".
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::molang::{Molang, RawVersion, SourceForm};
+use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion, SourceForm};
 use bedrock_addon_family_feature_rules::{CoordinateRange, ScatterChance};
 
 use super::common::*;
 
 /// The raw version of `value`'s source.
 fn version(value: &Molang) -> Option<RawVersion> {
-    value.source().and_then(|source| source.raw_version())
+    value.source().and_then(MolangSource::raw_version)
 }
 
 /// The "%s must be provided" kept errors of `d`, with their paths.
@@ -100,7 +100,7 @@ fn r22_iterations_forms_without_the_compile_check() {
         ("true", |m| *m == Molang::Bool(true)),
         (r#""Math.Random(1, 2)""#, |m| {
             matches!(
-                m.source().map(|s| s.form()),
+                m.source().map(MolangSource::form),
                 Some(SourceForm::String {
                     context_version: Some(RawVersion(12))
                 })
@@ -108,7 +108,7 @@ fn r22_iterations_forms_without_the_compile_check() {
         }),
         (r#"{"expression": "2", "version": 0}"#, |m| {
             matches!(
-                m.source().map(|s| s.form()),
+                m.source().map(MolangSource::form),
                 Some(SourceForm::Object {
                     version: RawVersion(0)
                 })

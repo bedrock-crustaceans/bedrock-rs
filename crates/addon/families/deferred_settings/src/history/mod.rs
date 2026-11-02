@@ -39,6 +39,11 @@ macro_rules! chain {
         /// Runs the remaining upgrade steps of a document `parse_as_written` gave: the same
         /// result `parse` gives for its file. The document holds the origin, so the upgrade
         /// needs nothing else.
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+        /// checks that follow it, find an error that stops the document from loading.
         pub fn upgrade(
             document: ::bedrock_addon_core::document::Document<Any>,
             cx: &::bedrock_addon_core::load::LoadContext,

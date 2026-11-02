@@ -55,6 +55,7 @@ impl StyleComponents {
     ];
 
     /// How many components are written.
+    #[must_use]
     pub fn len(&self) -> usize {
         usize::from(self.form_panel.is_some())
             + usize::from(self.form_label.is_some())
@@ -62,6 +63,7 @@ impl StyleComponents {
     }
 
     /// Whether no component is written (the client refuses such a style).
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -104,11 +106,13 @@ impl FormLabelStyle {
     pub const DEFAULT_SHADOW: bool = true;
 
     /// The text colour the client uses: the written one, else [`Self::DEFAULT_COLOR`].
+    #[must_use]
     pub fn color(&self) -> StyleColor {
         self.color.clone().unwrap_or(Self::DEFAULT_COLOR)
     }
 
     /// Whether the text has a shadow: the written value, else [`Self::DEFAULT_SHADOW`].
+    #[must_use]
     pub fn shadow(&self) -> bool {
         self.shadow.unwrap_or(Self::DEFAULT_SHADOW)
     }
@@ -142,6 +146,7 @@ pub struct FormTextFieldStyle {
 
 impl FormTextFieldStyle {
     /// A text field style with the four colours and no image.
+    #[must_use]
     pub fn new(
         text_color: StyleColor,
         caret_color: StyleColor,
@@ -177,6 +182,7 @@ pub enum BoxSize {
 
 impl BoxSize {
     /// The four sides, `[top, right, bottom, left]`: a two-value size repeats its pair.
+    #[must_use]
     pub fn sides(self) -> [i32; 4] {
         match self {
             Self::Two([vertical, horizontal]) => [vertical, horizontal, vertical, horizontal],
@@ -197,6 +203,7 @@ pub enum BorderImageRepeat {
 
 impl BorderImageRepeat {
     /// The JSON name.
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Stretch => "stretch",
@@ -205,6 +212,7 @@ impl BorderImageRepeat {
     }
 
     /// The value a JSON name selects, compared with case.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "stretch" => Some(Self::Stretch),
@@ -234,6 +242,7 @@ pub enum StyleColor {
 impl StyleColor {
     /// The colour as `[r, g, b, a]` (an RGB colour is opaque); `None` for a hex text that is
     /// not `#` and eight (or six) hex digits.
+    #[must_use]
     pub fn rgba(&self) -> Option<[u8; 4]> {
         match self {
             Self::Rgba(rgba) => Some(*rgba),
@@ -265,6 +274,7 @@ pub(crate) fn hex_bytes<const N: usize>(text: &str) -> Option<[u8; N]> {
 
 impl UiStyle {
     /// A style named `identifier` with `components`.
+    #[must_use]
     pub fn new(identifier: UiStyleId, components: StyleComponents) -> Self {
         Self {
             description: StyleDescription { identifier },

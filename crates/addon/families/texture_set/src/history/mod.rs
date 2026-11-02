@@ -33,6 +33,11 @@ bedrock_addon_core::version_chain! {
 /// Runs the upgrade step of a document [`TextureSet::parse_as_written`] gave: the same result
 /// [`TextureSet::parse`](bedrock_addon_core::document::Content::parse) gives for its file (the step
 /// runs over the document, which holds the origin).
+///
+/// # Errors
+///
+/// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+/// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

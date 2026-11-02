@@ -88,6 +88,7 @@ fn parse_splashes(file: &WalkFile, _: &LoadContext) -> FileCopy<Splashes> {
 
 /// The pool a client picks its splash from, given every pack's copy top first (the layers of
 /// `rp.splashes()`): each copy's [step](Splashes::apply), lowest pack first.
+#[must_use]
 pub fn splash_pool(layers: &[Document<Splashes>], client: &SplashClient) -> Vec<String> {
     let mut pool = Vec::new();
     for layer in layers.iter().rev() {

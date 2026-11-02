@@ -43,6 +43,11 @@ bedrock_addon_core::version_chain! {
 /// [`FogSettings::parse_as_written`] gave: the same result
 /// [`FogSettings::parse`](bedrock_addon_core::document::Content::parse) gives for its file (that is
 /// `history::Any::upgrade`, over the document, which holds the origin).
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

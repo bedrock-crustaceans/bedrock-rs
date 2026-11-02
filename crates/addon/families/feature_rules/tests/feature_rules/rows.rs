@@ -10,6 +10,7 @@ use bedrock_addon_family_feature_rules::{
 use super::common::*;
 
 #[test]
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn r01_a_1_13_0_rule_with_distribution_and_biome_filter_loads_unchanged() {
     let text = fixture("r01_1_13_0_loads/feature_rules/overworld_surface_flowers.json");
     let document = load_at(

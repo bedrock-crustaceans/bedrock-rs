@@ -124,6 +124,12 @@ impl Placed for ClientEntity {
 impl ClientEntity {
     /// Parses one client entity file without upgrading it: the struct its `format_version`
     /// selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+    /// log would print when the bytes cannot be read as this file at all: not JSON, a
+    /// `format_version` with no struct here, or a document that does not fit the struct it selects.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -529,6 +535,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
 /// The loader of `rp.client_entities()`: `entity/**/*.json` of every resource pack and the
 /// client entities of `attachables/**/*.json` and of the app's `definitions/attachables`, one
 /// definition per identifier by `description.min_engine_version`.
+#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<ClientEntity>, FileOutcome> {
     CollectionLoader {
         walk: WALK,

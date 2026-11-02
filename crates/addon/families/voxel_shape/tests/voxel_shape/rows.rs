@@ -49,6 +49,7 @@ fn vs07_a_bare_name_loads_from_a_user_pack() {
     assert_eq!(half.description.identifier.as_str(), "half_block");
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn vs12_a_box_at_the_exact_bounds_loads() {
     // min.x = -14 is the lowest coordinate; the shape then spans exactly 30 pixels on x.
@@ -59,6 +60,7 @@ fn vs12_a_box_at_the_exact_bounds_loads() {
     assert_eq!(at_bounds.shape.boxes[0].min, [-14.0, 0.0, 0.0]);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn vs16_an_overlap_of_less_than_a_pixel_is_enough() {
     let minimal = loads(&shape(
@@ -68,6 +70,7 @@ fn vs16_an_overlap_of_less_than_a_pixel_is_enough() {
     assert_eq!(minimal.shape.boxes[0].min, [15.5, 0.0, 0.0]);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn vs18_an_extent_of_exactly_30_loads() {
     let widest = loads(&shape(

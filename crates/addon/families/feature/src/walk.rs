@@ -254,6 +254,7 @@ impl<T: Refer> Refer for Vec<T> {
 
 /// Every reference of `feature` to another feature or to a block, each with the JSON path of
 /// its member in the file (`minecraft:<type>/<member>/…`).
+#[must_use]
 pub fn references(feature: &super::Feature) -> Vec<(JsonPath, Reference<'_>)> {
     let mut at = JsonPath::new();
     at.push(feature.type_key());

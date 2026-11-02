@@ -79,6 +79,12 @@ impl Content for TextureSet {
 impl TextureSet {
     /// Parses one texture-set file without upgrading it: the struct its `format_version`
     /// selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+    /// log would print when the bytes cannot be read as this file at all: not JSON, a
+    /// `format_version` with no struct here, or a document that does not fit the struct it selects.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -115,6 +121,7 @@ fn version_info(schema: Schema) -> VersionInfo {
 }
 
 /// The path of the payload in the document.
+#[must_use]
 pub fn payload_at() -> JsonPath {
     let mut at = JsonPath::new();
     at.push(PAYLOAD);
@@ -204,6 +211,7 @@ pub(super) fn texture_path(key: &str) -> Option<&str> {
 /// The path a layer named `name` of the texture set beside `texture` is loaded from, before
 /// the extensions: the set's folder, a `/`, and the name as written.
 // The value is joined to the set's folder as written and is not normalised.
+#[must_use]
 pub fn layer_path(texture: &str, name: &str) -> String {
     match texture.rsplit_once('/') {
         Some((folder, _)) => format!("{folder}/{name}"),

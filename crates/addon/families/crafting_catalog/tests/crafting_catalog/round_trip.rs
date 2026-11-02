@@ -66,8 +66,8 @@ fn the_written_format_version_is_the_newest_struct_s_whatever_the_file_said() {
     assert_eq!(root.len(), 2);
     assert_eq!(
         root.get("format_version")
-            .and_then(|v| v.as_string())
-            .map(|s| s.as_str()),
+            .and_then(Value::as_string)
+            .map(std::ops::Deref::deref),
         Some("1.26.50")
     );
     assert!(root.get("minecraft:crafting_items_catalog").is_some());

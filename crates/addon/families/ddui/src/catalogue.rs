@@ -165,6 +165,7 @@ impl Catalogue {
     /// The catalogue an engine of version `engine` reads documents with: 1.26.60's from
     /// 1.26.60, 1.26.45's from 1.26.45, 1.26.20's below it (the versions between at which the
     /// catalogue changed are not known).
+    #[must_use]
     pub fn for_engine(engine: FormatVersion) -> Self {
         if engine >= V1_26_60 {
             Self::V1_26_60
@@ -176,6 +177,7 @@ impl Catalogue {
     }
 
     /// The engine version the catalogue is of.
+    #[must_use]
     pub fn engine(self) -> FormatVersion {
         match self {
             Self::V1_26_20 => FormatVersion::new(1, 26, 20),
@@ -185,6 +187,7 @@ impl Catalogue {
     }
 
     /// What the catalogue says about `component`; `None` when it has no such control type.
+    #[must_use]
     pub fn rule(self, component: Component) -> Option<ControlRule> {
         use Binding::{Optional, Required, Unbound};
         use ChildSet::{GridContent, ListContent, PanelContent, RootControl};
@@ -240,6 +243,7 @@ impl Catalogue {
     }
 
     /// Whether the catalogue has the control type.
+    #[must_use]
     pub fn has(self, component: Component) -> bool {
         self.rule(component).is_some()
     }
@@ -261,6 +265,7 @@ impl Catalogue {
     }
 
     /// Whether `component` may stand where `set` is expected.
+    #[must_use]
     pub fn allows(self, set: ChildSet, component: Component) -> bool {
         self.set(set) & component.bit() != 0
     }

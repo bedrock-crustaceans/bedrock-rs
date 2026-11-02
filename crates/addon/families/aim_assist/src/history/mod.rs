@@ -49,6 +49,11 @@ bedrock_addon_core::version_chain! {
 /// Runs the remaining upgrade step of a preset [`AimAssistPreset::parse_as_written`] gave: the same
 /// result [`AimAssistPreset::parse`](bedrock_addon_core::document::Content::parse) gives for its
 /// file. The step runs over the document, which holds the origin the step needs.
+///
+/// # Errors
+///
+/// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+/// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

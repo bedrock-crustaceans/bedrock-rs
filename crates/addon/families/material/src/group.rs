@@ -30,6 +30,7 @@ impl MaterialGroupKind {
     pub const ALL: [Self; 3] = [Self::Common, Self::Fancy, Self::Sad];
 
     /// The list file that fills the group.
+    #[must_use]
     pub fn list(self) -> MaterialListKind {
         match self {
             Self::Common => MaterialListKind::Common,
@@ -110,6 +111,7 @@ impl PartialEq for Material {
 impl Material {
     /// Whether the material has the variant `variant`, so that `<name>.<variant>` is a name of
     /// the group. A child has its parent's variants unless its own `variants` replaces them.
+    #[must_use]
     pub fn has_variant(&self, variant: &str) -> bool {
         self.variants.contains(variant)
     }
@@ -120,6 +122,7 @@ impl Material {
     }
 
     /// How many variants the material has.
+    #[must_use]
     pub fn variant_count(&self) -> usize {
         self.variants.len()
     }
@@ -280,6 +283,7 @@ impl MaterialGroup {
     }
 
     /// The material `name`.
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&Material> {
         match self.slots.get(name)? {
             Slot::Created(material) => Some(material),
@@ -294,6 +298,7 @@ impl MaterialGroup {
     /// fingerprint, carried along the name byte by byte, and its length are those of a
     /// material. The lookup that follows is what decides: a part that has the fingerprint and
     /// the length of a material without being one costs its own length once more.
+    #[must_use]
     pub fn contains(&self, name: &str) -> bool {
         if self.get(name).is_some() {
             return true;
@@ -322,11 +327,13 @@ impl MaterialGroup {
     }
 
     /// How many materials the group has, variants not counted.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.iter().count()
     }
 
     /// Whether the group has no material.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.iter().next().is_none()
     }

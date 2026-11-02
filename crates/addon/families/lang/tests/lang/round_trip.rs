@@ -78,7 +78,11 @@ fn every_lang_fixture_round_trips() {
     let mut names: Vec<String> = std::fs::read_dir(fixtures().join("lang"))
         .unwrap()
         .filter_map(|entry| entry.unwrap().file_name().into_string().ok())
-        .filter(|name| name.ends_with(".lang"))
+        .filter(|name| {
+            std::path::Path::new(name)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("lang"))
+        })
         .collect();
     names.sort();
     assert!(names.len() >= 35, "{} fixtures", names.len());

@@ -22,6 +22,7 @@ pub enum VectorEvents {
 
 impl VectorEvents {
     /// The event names, in order.
+    #[must_use]
     pub fn names(&self) -> &[String] {
         match self {
             Self::One(name) => std::slice::from_ref(name),
@@ -280,6 +281,7 @@ impl Gradient {
     /// The stops in the order the game uses them: `(position, colour)`. A list's colours are
     /// spaced evenly from 0 to 1; a keyed gradient's are sorted by their key read as a float
     /// (C `atof`: a key that is no number is 0).
+    #[must_use]
     pub fn stops(&self) -> Vec<(f32, &ColorExpr)> {
         match self {
             Self::List(colors) => {

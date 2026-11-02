@@ -148,6 +148,7 @@ pub struct GlobalVariables {
 
 impl GlobalVariables {
     /// The value of `name` (with its `$`).
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&Value> {
         self.variables.get(name)
     }

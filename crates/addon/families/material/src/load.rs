@@ -675,6 +675,7 @@ fn combine(parsed: Vec<MaterialParsed>, stack: &StackCx<'_>) -> Materials {
 
 /// The loader of `rp.materials()`: the list files and every material file of every resource
 /// pack, combined into the group.
+#[must_use]
 pub const fn load_group() -> CollectionLoader<Materials, MaterialParsed> {
     CollectionLoader {
         walk: WALK,

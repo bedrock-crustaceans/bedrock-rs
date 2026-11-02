@@ -20,6 +20,7 @@ impl DialogueText {
     /// jsoncpp's sorted member map would give them, and numbers are spelled as this crate
     /// writes them (integers as integers, reals in the shortest form). An object holding a
     /// number JSON cannot spell gives the empty text.
+    #[must_use]
     pub fn stored(&self) -> String {
         match self {
             Self::Plain(text) => text.clone(),
@@ -56,6 +57,7 @@ impl DialogueScene {
 impl Button {
     /// The button's action: a URL action when it has a non-empty URL, else a command action
     /// (also without commands).
+    #[must_use]
     pub fn action(&self) -> NpcAction {
         match &self.url {
             Some(url) if !url.is_empty() => NpcAction::Url {
@@ -80,6 +82,7 @@ impl Button {
     ///
     /// The raw name is kept as written in [`name`](Self::name); only the shown label is cut, by
     /// characters rather than bytes.
+    #[must_use]
     pub fn label(&self) -> String {
         evaluated(&self.name.stored())
             .chars()
@@ -96,6 +99,7 @@ impl Button {
 impl NpcAction {
     /// The action's text as the game sends it to clients: each command followed by a newline
     /// (the last one included); the URL of a URL button.
+    #[must_use]
     pub fn text(&self) -> String {
         match self {
             Self::Command { commands, .. } => commands
@@ -140,6 +144,7 @@ fn evaluated(raw: &str) -> String {
 impl DialogueFile {
     /// A file of these scenes at format version 1.14.0, the lowest one vanilla loads (every
     /// version from there on reads the same shape).
+    #[must_use]
     pub fn new(scenes: Vec<DialogueScene>) -> DialogueFile {
         DialogueFile {
             format_version: SemVersion::from(FLOOR),
@@ -152,6 +157,7 @@ impl DialogueFile {
 
 impl DialogueScene {
     /// A scene with this tag and text: no name, no buttons, no commands.
+    #[must_use]
     pub fn new(scene_tag: DialogueSceneTag, text: DialogueText) -> DialogueScene {
         DialogueScene {
             scene_tag,
@@ -167,6 +173,7 @@ impl DialogueScene {
 
 impl Button {
     /// A button with this name: no commands, no URL.
+    #[must_use]
     pub fn new(name: DialogueText) -> Button {
         Button {
             name,

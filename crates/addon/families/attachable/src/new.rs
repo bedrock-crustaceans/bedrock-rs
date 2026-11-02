@@ -8,6 +8,7 @@ use super::{Attachable, Description};
 
 impl Attachable {
     /// An attachable for `identifier` with nothing to draw yet, at format version 1.26.0.
+    #[must_use]
     pub fn new(identifier: AttachableId) -> Self {
         Self {
             format_version: Self::VERSION,
@@ -19,6 +20,7 @@ impl Attachable {
 
 impl Description {
     /// A description of `identifier` with every other member absent.
+    #[must_use]
     pub fn new(identifier: AttachableId) -> Self {
         Self {
             identifier,

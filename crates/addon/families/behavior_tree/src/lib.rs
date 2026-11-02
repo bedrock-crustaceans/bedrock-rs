@@ -341,6 +341,7 @@ pub enum Node {
 
 impl Node {
     /// The node type as the JSON member names it: `minecraft:sequence`, `minecraft:wait`, ….
+    #[must_use]
     pub fn type_name(&self) -> &'static str {
         match self {
             Self::Sequence { .. } => "minecraft:sequence",
@@ -387,6 +388,7 @@ impl Node {
     }
 
     /// The body members the node does not read.
+    #[must_use]
     pub fn extra(&self) -> &Extra {
         match self {
             Self::Sequence { extra, .. }

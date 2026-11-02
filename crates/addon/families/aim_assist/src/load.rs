@@ -176,6 +176,12 @@ macro_rules! content {
 
         impl $root {
             /// Parses one file without upgrading it: the struct its `format_version` selects
+            ///
+            /// # Errors
+            ///
+            /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+            /// log would print when the bytes cannot be read as this file at all: not JSON, a
+            /// `format_version` with no struct here, or a document that does not fit the struct it selects.
             pub fn parse_as_written(
                 path: &PackPath,
                 bytes: &[u8],
@@ -341,6 +347,7 @@ fn combine(parsed: Vec<AimAssistFile>, stack: &StackCx<'_>) -> AimAssist {
 
 /// The loader of `bp.aim_assist()`: the two directories of every behaviour pack, combined into
 /// the group.
+#[must_use]
 pub const fn load_group() -> CollectionLoader<AimAssist, AimAssistFile> {
     CollectionLoader {
         walk: WALK,

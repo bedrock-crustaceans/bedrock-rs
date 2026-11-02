@@ -75,6 +75,7 @@ pub struct LegacyClientBiomes {
 impl LegacyClientBiomes {
     /// The entry of `biome`: under its full name, else, for a `minecraft` biome, under its
     /// name without the namespace.
+    #[must_use]
     pub fn get(&self, biome: &BiomeId) -> Option<&LegacyClientBiome> {
         self.biomes.get(biome).or_else(|| {
             let (namespace, name) = biome.as_str().split_once(':')?;
@@ -781,6 +782,7 @@ fn combine(copies: Vec<BiomesCopy>, _: &StackCx<'_>) -> Merged<LegacyClientBiome
 
 /// The loader of `rp.legacy_client_biomes()`.
 #[doc(hidden)]
+#[must_use]
 pub const fn load_legacy() -> CollectionLoader<Merged<LegacyClientBiomes, RawLayer>, BiomesCopy> {
     CollectionLoader {
         walk: WALK,

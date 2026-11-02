@@ -148,12 +148,14 @@ pub struct Description {
 
 impl Attachable {
     /// The identifier as vanilla keys it: in ASCII lower case.
+    #[must_use]
     pub fn identifier(&self) -> AttachableId {
         AttachableId::parse(self.description.identifier.as_str().to_ascii_lowercase())
     }
 
     /// The version this definition competes with across packs: `description.min_engine_version`
     /// read as a version, or 0.0.0 when it is absent or does not read.
+    #[must_use]
     pub fn min_engine_version(&self) -> SemVersion {
         description_min_engine_version(
             self.format_version,
@@ -172,16 +174,19 @@ impl Attachable {
     /// The item bindings the stack holds for this definition
     /// ([`stack_bindings`](Self::stack_bindings)), in the order vanilla gathered them; a
     /// client tries them from the last to the first. Empty outside a stack.
+    #[must_use]
     pub fn bound_items(&self) -> &[ItemBindingEntry] {
         &self.stack_bindings
     }
 
     /// `enable_attachables`, `false` when absent.
+    #[must_use]
     pub fn enable_attachables(&self) -> bool {
         self.description.enable_attachables.is_some_and(|b| b.0)
     }
 
     /// `held_item_ignores_lighting`, `false` when absent.
+    #[must_use]
     pub fn held_item_ignores_lighting(&self) -> bool {
         self.description
             .held_item_ignores_lighting
@@ -189,12 +194,14 @@ impl Attachable {
     }
 
     /// `hide_armor`, `false` when absent.
+    #[must_use]
     pub fn hide_armor(&self) -> bool {
         self.description.hide_armor.is_some_and(|b| b.0)
     }
 
     /// The constant scale of held items: the written number when it is above 0, else 1.0
     /// (also for a Molang scale, which only a client evaluates).
+    #[must_use]
     pub fn held_item_scale(&self) -> f32 {
         // The game stores the value only when it is above 0.
         match self.description.held_item_scale {
@@ -205,6 +212,7 @@ impl Attachable {
 
     /// What the `animations` entry `name` is, by its value's prefix in lower case; `None` for
     /// an unknown name and for a value vanilla ignores.
+    #[must_use]
     pub fn animation_kind(&self, name: &str) -> Option<AnimationKind> {
         // The game checks for `controller.animation.` first, then `animation.`; anything
         // else is ignored silently.
@@ -221,6 +229,7 @@ impl Attachable {
 
     /// The text vanilla parses for `initialize`: the strings joined with no separator; `None`
     /// when the member is absent or the text is empty.
+    #[must_use]
     pub fn initialize(&self) -> Option<String> {
         let scripts = self.description.scripts.as_ref()?;
         validate::joined(scripts.initialize.as_deref())
@@ -228,6 +237,7 @@ impl Attachable {
 
     /// The text vanilla parses for `pre_animation`: the strings joined with no separator;
     /// `None` when the member is absent or the text is empty.
+    #[must_use]
     pub fn pre_animation(&self) -> Option<String> {
         let scripts = self.description.scripts.as_ref()?;
         validate::joined(scripts.pre_animation.as_deref())

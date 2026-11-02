@@ -80,7 +80,7 @@ fn rule_8_a_structure_that_is_not_a_compound_is_required() {
 
 #[test]
 fn rule_9_block_indices_missing_or_not_a_list_is_required() {
-    let rest = r#"entities: [], palette: {}"#;
+    let rest = r"entities: [], palette: {}";
     for indices in ["", "block_indices: 0,", "block_indices: [I; 0, -1],"] {
         let finding = fails_with(
             &doc(
@@ -223,7 +223,7 @@ fn rule_1_a_file_that_is_not_nbt_reads_as_an_empty_compound() {
 #[test]
 fn bytes_after_the_root_compound_are_ignored() {
     let mut input = bytes(
-        r#"{format_version: 1, size: [1, 1, 1], structure_world_origin: [0, 0, 0], structure: {block_indices: [[0], [-1]], entities: [], palette: {}}}"#,
+        r"{format_version: 1, size: [1, 1, 1], structure_world_origin: [0, 0, 0], structure: {block_indices: [[0], [-1]], entities: [], palette: {}}}",
     );
     input.extend_from_slice(b"trailing");
     assert_eq!(loads(&input).size, [1, 1, 1]);

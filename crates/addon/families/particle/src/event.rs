@@ -46,6 +46,7 @@ impl ParticleEffectType {
     }
 
     /// The JSON spelling.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Particle => "particle",
@@ -155,11 +156,13 @@ pub struct RandomEventNode {
 
 impl EventNode {
     /// `expression`, or its default 0.
+    #[must_use]
     pub fn expression(&self) -> Molang {
         self.expression.clone().unwrap_or(Molang::Const(0.0))
     }
 
     /// `log`, or its default `""`.
+    #[must_use]
     pub fn log(&self) -> &str {
         self.log.as_deref().unwrap_or_default()
     }

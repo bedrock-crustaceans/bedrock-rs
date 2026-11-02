@@ -184,6 +184,7 @@ pub(super) const FACE_KEYS: [&str; 4] = [
 ];
 
 /// The bit of the render state `name`, when the client knows it.
+#[must_use]
 pub fn render_state_bit(name: &str) -> Option<u16> {
     RENDER_STATES
         .iter()

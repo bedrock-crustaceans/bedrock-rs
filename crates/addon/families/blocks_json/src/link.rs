@@ -24,6 +24,7 @@ pub struct EntrySettings {
 /// `blockshape`, `ambient_occlusion_exponent` and `isotropic`, once per block each applies to,
 /// in the order the client applies them. `base_game` says whether the file is a base-game
 /// pack's. A file the client skips gives none.
+#[must_use]
 pub fn entry_settings(bytes: &[u8], base_game: bool) -> Vec<EntrySettings> {
     let read = resolve::read(bytes, base_game);
     let Some(file) = read.file else {
@@ -67,6 +68,7 @@ pub struct EntryMembers {
 /// The entries of the `blocks.json` text `bytes` that have at least one of `members`, once
 /// per block each applies to, in the order the client applies them. `base_game` says whether
 /// the file is a base-game pack's. A file the client skips gives none.
+#[must_use]
 pub fn entry_members(bytes: &[u8], base_game: bool, members: &[&'static str]) -> Vec<EntryMembers> {
     let read = resolve::read(bytes, base_game);
     let Some(file) = read.file else {

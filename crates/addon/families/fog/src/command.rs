@@ -9,6 +9,7 @@ pub const FOG_STACK_LIMIT: usize = 16;
 
 /// Whether `/fog … push` takes `identifier`: lower-cased, it must be `namespace:name` over
 /// `a`–`z`, digits, `.` and `_`.
+#[must_use]
 pub fn is_valid_fog_identifier(identifier: &str) -> bool {
     is_namespaced(&identifier.to_ascii_lowercase())
 }
@@ -34,6 +35,7 @@ pub enum FogCommandError {
 impl FogCommandError {
     /// The lang key of the command's message (`commands.fog.invalidFogId`, …); `None` for a
     /// failure of loading a saved stack, which the game only logs.
+    #[must_use]
     pub fn lang_key(self) -> Option<&'static str> {
         match self {
             Self::InvalidFogId => Some("commands.fog.invalidFogId"),
@@ -68,21 +70,29 @@ impl FogStack {
     }
 
     /// How many entries the stack holds, at most [`FOG_STACK_LIMIT`].
+    #[must_use]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// Whether the stack holds no entry.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 
     /// An empty stack.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// `/fog <player> push <fogId> <userProvidedId>`: puts the pair on top.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FogCommandError::InvalidFogId`] when `fog_id` is not `namespace:name`, and
+    /// [`FogCommandError::LimitReached`] when the stack already holds [`FOG_STACK_LIMIT`] entries.
     pub fn push(&mut self, fog_id: &str, user_id: &str) -> Result<(), FogCommandError> {
         if !is_valid_fog_identifier(fog_id) {
             return Err(FogCommandError::InvalidFogId);
@@ -95,6 +105,10 @@ impl FogStack {
     }
 
     /// `/fog <player> pop <userProvidedId>`: removes the top-most entry with that id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FogCommandError::InvalidUserId`] when no entry has `user_id`.
     pub fn pop(&mut self, user_id: &str) -> Result<(), FogCommandError> {
         let index = self
             .entries
@@ -106,6 +120,10 @@ impl FogStack {
     }
 
     /// `/fog <player> remove <userProvidedId>`: removes every entry with that id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FogCommandError::InvalidUserId`] when no entry has `user_id`.
     pub fn remove(&mut self, user_id: &str) -> Result<(), FogCommandError> {
         let before = self.entries.len();
         self.entries.retain(|(_, user)| user != user_id);
@@ -117,12 +135,14 @@ impl FogStack {
 
     /// The fog identifiers, bottom to top: the `fog_stack` of `PlayerFogPacket`, which the
     /// server sends after every change.
+    #[must_use]
     pub fn fog_ids(&self) -> Vec<&str> {
         self.entries.iter().map(|(fog, _)| fog.as_str()).collect()
     }
 
     /// The strings of the player's saved `fogCommandStack` list: identifier and user id of
     /// each entry, in turn.
+    #[must_use]
     pub fn to_saved(&self) -> Vec<String> {
         self.entries
             .iter()
@@ -133,6 +153,10 @@ impl FogStack {
     /// The stack a saved `fogCommandStack` list holds. A pair whose fog identifier is not valid
     /// is left out; an odd number of strings is an error (the game logs it and the player
     /// starts with an empty stack).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FogCommandError::OddSavedStack`] when `saved` holds an odd number of strings.
     pub fn from_saved<S: AsRef<str>>(saved: &[S]) -> Result<Self, FogCommandError> {
         let (pairs, rest) = saved.as_chunks::<2>();
         if !rest.is_empty() {

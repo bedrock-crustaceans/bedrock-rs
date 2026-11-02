@@ -95,8 +95,8 @@ fn legacy(quantity: &str) -> (Option<Quantity>, (u32, u32), Vec<&'static str>) {
 }
 
 /// `{"min", "max"}` as written.
-fn range(min: Option<u32>, max: Option<u32>) -> Option<Quantity> {
-    Some(Quantity::Range { min, max })
+fn range(min: Option<u32>, max: Option<u32>) -> Quantity {
+    Quantity::Range { min, max }
 }
 
 #[test]
@@ -109,32 +109,32 @@ fn a_legacy_bound_below_one_becomes_one_with_an_information_deviation() {
     );
     assert_eq!(
         legacy(r#"{"min": 0, "max": 3}"#),
-        (range(Some(1), Some(3)), (1, 3), vec!["InvalidValue"])
+        (Some(range(Some(1), Some(3))), (1, 3), vec!["InvalidValue"])
     );
     assert_eq!(
         legacy(r#"{"min": 1, "max": 3}"#),
-        (range(Some(1), Some(3)), (1, 3), vec![])
+        (Some(range(Some(1), Some(3))), (1, 3), vec![])
     );
     assert_eq!(
         legacy(r#""-2-3""#),
-        (range(Some(1), Some(3)), (1, 3), vec!["InvalidValue"])
+        (Some(range(Some(1), Some(3))), (1, 3), vec!["InvalidValue"])
     );
     assert_eq!(
         legacy("[]"),
-        (range(Some(1), Some(1)), (1, 1), vec!["InvalidValue"])
+        (Some(range(Some(1), Some(1))), (1, 1), vec!["InvalidValue"])
     );
     // `max` alone below 1: it is below `min` too, so it is raised as well.
     assert_eq!(
         legacy(r#"{"min": 2, "max": 0}"#),
         (
-            range(Some(2), Some(2)),
+            Some(range(Some(2), Some(2))),
             (2, 2),
             vec!["InvalidValue", "ClampedValue"]
         )
     );
     assert_eq!(
         legacy(r#"{"max": 0}"#),
-        (range(None, Some(1)), (1, 1), vec!["InvalidValue"])
+        (Some(range(None, Some(1))), (1, 1), vec!["InvalidValue"])
     );
 }
 
@@ -143,25 +143,31 @@ fn a_legacy_min_above_max_is_swapped_or_raised_with_an_information_deviation() {
     // Vanilla is silent (). The array swaps, the others raise `max`.
     assert_eq!(
         legacy("[5, 2]"),
-        (range(Some(2), Some(5)), (2, 5), vec!["ClampedValue"])
+        (Some(range(Some(2), Some(5))), (2, 5), vec!["ClampedValue"])
     );
-    assert_eq!(legacy("[2, 5]"), (range(Some(2), Some(5)), (2, 5), vec![]));
-    assert_eq!(legacy("[3, 3]"), (range(Some(3), Some(3)), (3, 3), vec![]));
+    assert_eq!(
+        legacy("[2, 5]"),
+        (Some(range(Some(2), Some(5))), (2, 5), vec![])
+    );
+    assert_eq!(
+        legacy("[3, 3]"),
+        (Some(range(Some(3), Some(3))), (3, 3), vec![])
+    );
     assert_eq!(
         legacy(r#"{"min": 5, "max": 2}"#),
-        (range(Some(5), Some(5)), (5, 5), vec!["ClampedValue"])
+        (Some(range(Some(5), Some(5))), (5, 5), vec!["ClampedValue"])
     );
     assert_eq!(
         legacy(r#"{"min": 5, "max": 5}"#),
-        (range(Some(5), Some(5)), (5, 5), vec![])
+        (Some(range(Some(5), Some(5))), (5, 5), vec![])
     );
     assert_eq!(
         legacy(r#""4-2""#),
-        (range(Some(4), Some(4)), (4, 4), vec!["ClampedValue"])
+        (Some(range(Some(4), Some(4))), (4, 4), vec!["ClampedValue"])
     );
     assert_eq!(
         legacy(r#""2-4""#),
-        (range(Some(2), Some(4)), (2, 4), vec![])
+        (Some(range(Some(2), Some(4))), (2, 4), vec![])
     );
 }
 
@@ -171,13 +177,13 @@ fn a_legacy_object_quantity_without_a_bound_reads_one_for_it_deviation() {
     // the newest default, and the bound stays absent.
     assert_eq!(
         legacy(r#"{"max": 3}"#),
-        (range(None, Some(3)), (1, 3), vec![])
+        (Some(range(None, Some(3))), (1, 3), vec![])
     );
-    assert_eq!(legacy("{}"), (range(None, None), (1, 1), vec![]));
+    assert_eq!(legacy("{}"), (Some(range(None, None)), (1, 1), vec![]));
     // `max` follows a larger `min`; nothing the author wrote was changed, so no warning.
     assert_eq!(
         legacy(r#"{"min": 4}"#),
-        (range(Some(4), Some(4)), (4, 4), vec![])
+        (Some(range(Some(4), Some(4))), (4, 4), vec![])
     );
 }
 
@@ -185,7 +191,10 @@ fn a_legacy_object_quantity_without_a_bound_reads_one_for_it_deviation() {
 fn the_other_legacy_forms() {
     // A lone number in a string, a real, a one-element array
     // (`[1]` reads 0).
-    assert_eq!(legacy(r#""5""#), (range(Some(5), Some(5)), (5, 5), vec![]));
+    assert_eq!(
+        legacy(r#""5""#),
+        (Some(range(Some(5), Some(5))), (5, 5), vec![])
+    );
     assert_eq!(
         legacy("2.7"),
         (Some(Quantity::Exact(2)), (2, 2), vec!["InvalidValue"])
@@ -203,7 +212,7 @@ fn the_other_legacy_forms() {
     assert_eq!(
         legacy(r#"{"min": 1, "max": 1e39}"#),
         (
-            range(Some(1), Some(2_147_483_647)),
+            Some(range(Some(1), Some(2_147_483_647))),
             (1, 2_147_483_647),
             vec!["InvalidValue"]
         )
@@ -211,7 +220,7 @@ fn the_other_legacy_forms() {
     assert_eq!(
         legacy("[5]"),
         (
-            range(Some(1), Some(5)),
+            Some(range(Some(1), Some(5))),
             (1, 5),
             vec!["InvalidValue", "ClampedValue"]
         )
@@ -220,7 +229,7 @@ fn the_other_legacy_forms() {
     // silence; ours says it).
     assert_eq!(
         legacy(r#""many""#),
-        (range(Some(1), Some(1)), (1, 1), vec!["InvalidValue"])
+        (Some(range(Some(1), Some(1))), (1, 1), vec!["InvalidValue"])
     );
     assert_eq!(legacy("true"), (None, (1, 1), vec!["InvalidType"]));
 }
@@ -238,7 +247,7 @@ fn a_stamped_quantity_of_one_or_more_loads_in_both_forms() {
             },
         ),
         (
-            r#"{}"#,
+            r"{}",
             Quantity::Range {
                 min: None,
                 max: None,

@@ -50,6 +50,7 @@ pub struct SoundBindings {
 
 impl SoundBindings {
     /// The document as JSON: what the typed members were read from and what the value writes.
+    #[must_use]
     pub fn json(&self) -> &Value {
         &self.json
     }
@@ -62,12 +63,14 @@ impl SoundBindings {
     /// type of [`block_sounds`](Self::block_sounds), calls
     /// [`resolve_block_bases`](Self::resolve_block_bases) before it asks again: until then
     /// the answer follows the chains as they were read.
+    #[must_use]
     pub fn block_sound(&self, block: &str, event: &str) -> Option<&SoundRef> {
         inherited(&self.block_sounds, block, event)
     }
 
     /// [`block_sound`](Self::block_sound) in `interactive_sounds.block_sounds`, with the same
     /// rule for a table edited after the load.
+    #[must_use]
     pub fn interactive_block_sound(&self, block: &str, event: &str) -> Option<&SoundRef> {
         inherited(&self.interactive_sounds.block_sounds, block, event)
     }
@@ -97,6 +100,7 @@ impl SoundBindings {
         clippy::needless_pass_by_value,
         reason = "the signature of the other two documents' `from_json`"
     )]
+    #[must_use]
     pub fn from_json(json: Value) -> Self {
         read_root(&json, true, &mut Diagnostics::default())
     }
@@ -122,6 +126,7 @@ impl SoundRange {
     pub const ONE: Self = Self { min: 1.0, max: 1.0 };
 
     /// Whether this is [`UNSET`](Self::UNSET).
+    #[must_use]
     pub fn is_unset(self) -> bool {
         self == Self::UNSET
     }

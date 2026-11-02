@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use bedrock_addon_core::json::Value;
 
-/// SplitMix64: a fixed seed gives the same documents on every run and machine.
+/// `SplitMix64`: a fixed seed gives the same documents on every run and machine.
 pub struct Rng(u64);
 
 impl Rng {
