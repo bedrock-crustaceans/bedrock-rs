@@ -26,7 +26,7 @@ fn linked(text: &str, users: &[(&'static str, &str)], lints: bool) -> Vec<Told> 
         &[],
         &resource,
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints,
             ..Default::default()
         },
@@ -277,7 +277,7 @@ mod with_client_entities {
             &[],
             &resource,
             LoadOptions::default(),
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },
@@ -356,7 +356,7 @@ fn r5_a_controller_registered_under_a_folded_name_whose_key_kept_capitals_resolv
         &[],
         &[(FILE, text), ("entity/pig.entity.json", &pig)],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let about_controllers: Vec<Told> = told(&found, "rp 2", "entity/pig.entity.json")
         .into_iter()

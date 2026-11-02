@@ -18,26 +18,30 @@ pub struct AvailableCommandsPacket<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for AvailableCommandsPacket<V> {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "indices are below enum_values.len(), whose width picks the integer size"
+    )]
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         <Vec<_> as ProtoCodec>::serialize(&self.enum_values, stream)?;
         <Vec<_> as ProtoCodec>::serialize(&self.sub_command_values, stream)?;
         <Vec<_> as ProtoCodec>::serialize(&self.post_fixes, stream)?;
         {
-            let len: u32 = self.enum_data.len() as u32;
+            let len = u32::try_from(self.enum_data.len())?;
             <u32 as ProtoCodecVAR>::serialize(&len, stream)?;
             for i in &self.enum_data {
                 i.name.serialize(stream)?;
-                <u32 as ProtoCodecVAR>::serialize(&(i.values.len() as u32), stream)?;
+                <u32 as ProtoCodecVAR>::serialize(&u32::try_from(i.values.len())?, stream)?;
                 for &j in &i.values {
                     match self.enum_values.len() {
-                        len if len <= u8::MAX as usize => {
-                            <u8 as ProtoCodec>::serialize(&(j as u8), stream)?
+                        len if u8::try_from(len).is_ok() => {
+                            <u8 as ProtoCodec>::serialize(&(j as u8), stream)?;
                         }
-                        len if len <= u16::MAX as usize => {
-                            <u16 as ProtoCodecLE>::serialize(&(j as u16), stream)?
+                        len if u16::try_from(len).is_ok() => {
+                            <u16 as ProtoCodecLE>::serialize(&(j as u16), stream)?;
                         }
                         _ => <u32 as ProtoCodecLE>::serialize(&j, stream)?,
-                    };
+                    }
                 }
             }
         }
@@ -62,11 +66,11 @@ impl<V: ProtoVersion> ProtoCodec for AvailableCommandsPacket<V> {
                 let mut j_vec = Vec::new();
                 for _ in 0..j_len {
                     let i = match enum_values.len() {
-                        len if len <= u8::MAX as usize => {
-                            <u8 as ProtoCodec>::deserialize(stream)? as u32
+                        len if u8::try_from(len).is_ok() => {
+                            u32::from(<u8 as ProtoCodec>::deserialize(stream)?)
                         }
-                        len if len <= u16::MAX as usize => {
-                            <u16 as ProtoCodecLE>::deserialize(stream)? as u32
+                        len if u16::try_from(len).is_ok() => {
+                            u32::from(<u16 as ProtoCodecLE>::deserialize(stream)?)
                         }
                         _ => <u32 as ProtoCodecLE>::deserialize(stream)?,
                     };
@@ -75,7 +79,7 @@ impl<V: ProtoVersion> ProtoCodec for AvailableCommandsPacket<V> {
                 vec.push(EnumDataEntry {
                     name,
                     values: j_vec,
-                })
+                });
             }
             vec
         };
@@ -96,6 +100,10 @@ impl<V: ProtoVersion> ProtoCodec for AvailableCommandsPacket<V> {
         })
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "indices are below enum_values.len(), whose width picks the integer size"
+    )]
     fn size_hint(&self) -> usize {
         self.enum_values.size_hint()
             + self.sub_command_values.size_hint()
@@ -108,10 +116,10 @@ impl<V: ProtoVersion> ProtoCodec for AvailableCommandsPacket<V> {
                         + i.values
                             .iter()
                             .map(|&j| match self.enum_values.len() {
-                                len if len <= u8::MAX as usize => {
+                                len if u8::try_from(len).is_ok() => {
                                     <u8 as ProtoCodec>::size_hint(&(j as u8))
                                 }
-                                len if len <= u16::MAX as usize => {
+                                len if u16::try_from(len).is_ok() => {
                                     <u16 as ProtoCodecLE>::size_hint(&(j as u16))
                                 }
                                 _ => <u32 as ProtoCodecLE>::size_hint(&j),

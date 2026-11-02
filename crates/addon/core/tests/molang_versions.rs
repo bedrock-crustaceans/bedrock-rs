@@ -28,7 +28,10 @@ fn reference_pairs() -> Option<Value> {
 }
 
 fn text<'a>(object: &'a facet_value::VObject, key: &str) -> Option<&'a str> {
-    object.get(key)?.as_string().map(|s| s.as_str())
+    object
+        .get(key)?
+        .as_string()
+        .map(facet_value::VString::as_str)
 }
 
 #[test]
@@ -40,7 +43,7 @@ fn every_molang_string_gets_vanillas_version() {
     let mut counts = BTreeMap::<String, u64>::new();
     let mut failures = Vec::new();
     let mut without_format_version = 0_u32;
-    for pair in reference.get("pairs").unwrap().as_array().unwrap().iter() {
+    for pair in reference.get("pairs").unwrap().as_array().unwrap() {
         for occurrence in pair
             .as_object()
             .unwrap()
@@ -48,7 +51,6 @@ fn every_molang_string_gets_vanillas_version() {
             .unwrap()
             .as_array()
             .unwrap()
-            .iter()
         {
             let occurrence = occurrence.as_object().unwrap();
             let rule = text(occurrence, "version_rule").unwrap();
@@ -65,21 +67,20 @@ fn every_molang_string_gets_vanillas_version() {
                 "biome_height_range_constant_1" => MolangVersionSource::Constant(MolangVersion::V1),
                 other => panic!("an unknown rule: {other}"),
             };
-            let document = match text(occurrence, "file_format_version") {
-                Some(version) => FormatVersionInput::parse(version).expect("a format version"),
-                None => {
-                    // A document without `format_version` has no document version; only a rule
-                    // that does not read one may meet it.
-                    without_format_version += 1;
-                    assert!(
-                        matches!(
-                            source,
-                            MolangVersionSource::Pack | MolangVersionSource::Constant(_)
-                        ),
-                        "{rule} needs the file's format_version"
-                    );
-                    FormatVersionInput::parse("0.0.0").unwrap()
-                }
+            let document = if let Some(version) = text(occurrence, "file_format_version") {
+                FormatVersionInput::parse(version).expect("a format version")
+            } else {
+                // A document without `format_version` has no document version; only a rule
+                // that does not read one may meet it.
+                without_format_version += 1;
+                assert!(
+                    matches!(
+                        source,
+                        MolangVersionSource::Pack | MolangVersionSource::Constant(_)
+                    ),
+                    "{rule} needs the file's format_version"
+                );
+                FormatVersionInput::parse("0.0.0").unwrap()
             };
             let cx = MolangContext::new(pack.as_ref(), ExperimentMask::empty(), &document, None);
             *counts.entry(rule.to_owned()).or_default() += 1;

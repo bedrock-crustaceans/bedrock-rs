@@ -178,7 +178,7 @@ pub fn game_link(
         behavior,
         resource,
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     )
 }
 
@@ -187,9 +187,9 @@ pub fn game_link_with(
     behavior: &[(&'static str, &str)],
     resource: &[(&'static str, &str)],
     load: LoadOptions,
-    link: &LinkOptions,
+    link: LinkOptions,
 ) -> Diagnostics {
-    game_stacks(behavior, resource, load).link_with(link)
+    game_stacks(behavior, resource, load).link_with(&link)
 }
 
 /// The link findings of a world with one behaviour pack (`behavior` files) and one resource
@@ -199,7 +199,7 @@ pub fn link(behavior: &[(&'static str, &str)], resource: &[(&'static str, &str)]
         behavior,
         resource,
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     )
 }
 
@@ -208,9 +208,9 @@ pub fn link_with(
     behavior: &[(&'static str, &str)],
     resource: &[(&'static str, &str)],
     load: LoadOptions,
-    link: &LinkOptions,
+    link: LinkOptions,
 ) -> Diagnostics {
-    stacks(behavior, resource, load).link_with(link)
+    stacks(behavior, resource, load).link_with(&link)
 }
 
 /// A host whose game has exactly the listed `(kind, id)` pairs: `kind` is the identifier
@@ -298,7 +298,7 @@ pub fn is_second_validator_line(finding: &Diagnostic, all: &Diagnostics) -> bool
 /// of a family's own finding.
 pub fn family_findings(found: &Diagnostics) -> Diagnostics {
     let mut kept = Diagnostics::default();
-    for finding in found.iter() {
+    for finding in found {
         if !is_second_validator_line(finding, found) {
             kept.push(finding.clone());
         }
@@ -309,7 +309,7 @@ pub fn family_findings(found: &Diagnostics) -> Diagnostics {
 /// `found` without any finding that carries a validator line.
 pub fn without_validator_lines(found: &Diagnostics) -> Diagnostics {
     let mut kept = Diagnostics::default();
-    for finding in found.iter() {
+    for finding in found {
         let text = finding.code.to_string();
         if !(text.contains(":  Missing referenced asset ")
             || text.contains(":  Invalid asset path "))

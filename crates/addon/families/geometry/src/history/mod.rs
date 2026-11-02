@@ -223,6 +223,10 @@ impl Any {
     }
 
     /// Writes the file in its own struct's shape (a round trip without upgrading).
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`EncodeError`] when a value cannot be written as JSON.
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let value = match self {
             Self::V0_0_0(file) => file.write(),
@@ -258,6 +262,11 @@ impl MolangFields for Any {
 /// [`GeometryFile::parse_as_written`] gave: the same result [`load_file`](super::load_file)
 /// gives for its file. It works on the document, which holds the origin, so the split lets a
 /// caller inspect the file as written before it is upgraded.
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

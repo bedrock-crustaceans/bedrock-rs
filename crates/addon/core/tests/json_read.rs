@@ -8,6 +8,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use std::fmt::Write as _;
 use std::process::{Command, Stdio};
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Span, code_for_deserialize_error_kind};
@@ -711,21 +712,25 @@ fn a_comment_far_after_an_untagged_enum_is_still_a_comment() {
         let small = u8::try_from(index % 200).unwrap();
         match index % 3 {
             0 => {
-                text.push_str(&format!(
-                    "  {{\"a\": {small}, /* in */ \"b\": 2}}, // after {index}\n"
-                ));
+                writeln!(
+                    text,
+                    "  {{\"a\": {small}, /* in */ \"b\": 2}}, // after {index}"
+                )
+                .unwrap();
                 expected.push(Untagged::Pair { a: small, b: 2 });
             }
             1 => {
-                text.push_str(&format!(
-                    "  /* before */ {{\"name\": \"n{index}\"}} /* after */,\n"
-                ));
+                writeln!(
+                    text,
+                    "  /* before */ {{\"name\": \"n{index}\"}} /* after */,"
+                )
+                .unwrap();
                 expected.push(Untagged::Named {
                     name: format!("n{index}"),
                 });
             }
             _ => {
-                text.push_str(&format!("  [{small}, // in a list\n 7],\n"));
+                write!(text, "  [{small}, // in a list\n 7],\n").unwrap();
                 expected.push(Untagged::List(vec![small, 7]));
             }
         }

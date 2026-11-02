@@ -93,7 +93,12 @@ fn a_base_game_pack_s_nbt_templates_are_never_asked_for() {
             .diagnostics()
             .filter(|f| matches!(f.code, DiagnosticCode::IgnoredFile { .. }))
             .inspect(|f| assert_eq!(f.severity, Severity::Info))
-            .filter_map(|f| f.location.path.as_ref().map(|path| path.as_str()))
+            .filter_map(|f| {
+                f.location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str)
+            })
             .collect();
         assert_eq!(ignored, ["structures/ruins/tower.nbt"], "{order:?}");
         // Nothing of the stack is reported as not loaded: the template is no file of the walk.

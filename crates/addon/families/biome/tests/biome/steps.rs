@@ -109,17 +109,17 @@ fn village_type_default() {
             "minecraft:meadow",
         ],
         VillageKind::Default,
-    )
+    );
 }
 
 #[test]
 fn village_type_desert() {
-    village(&["minecraft:desert"], VillageKind::Desert)
+    village(&["minecraft:desert"], VillageKind::Desert);
 }
 
 #[test]
 fn village_type_ice() {
-    village(&["minecraft:ice_plains"], VillageKind::Ice)
+    village(&["minecraft:ice_plains"], VillageKind::Ice);
 }
 
 #[test]
@@ -132,12 +132,12 @@ fn village_type_taiga() {
             "minecraft:cold_taiga_hills",
         ],
         VillageKind::Taiga,
-    )
+    );
 }
 
 #[test]
 fn village_type_savanna() {
-    village(&["minecraft:savanna"], VillageKind::Savanna)
+    village(&["minecraft:savanna"], VillageKind::Savanna);
 }
 
 #[test]
@@ -157,7 +157,7 @@ fn tags_oceans() {
             "minecraft:deep_frozen_ocean",
         ],
         &["fast_fishing", "high_seas"],
-    )
+    );
 }
 
 #[test]
@@ -169,7 +169,7 @@ fn tags_swamps_slime() {
             "minecraft:mangrove_swamp",
         ],
         &["slime"],
-    )
+    );
 }
 
 #[test]
@@ -177,7 +177,7 @@ fn tags_swamps_mushroom() {
     tags(
         &["minecraft:swampland", "minecraft:swampland_mutated"],
         &["swamp_water_huge_mushroom"],
-    )
+    );
 }
 
 #[test]
@@ -192,5 +192,5 @@ fn tags_mesas() {
             "minecraft:mesa_plateau_mutated",
         ],
         &["surface_mineshaft"],
-    )
+    );
 }

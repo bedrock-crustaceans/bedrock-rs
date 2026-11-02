@@ -74,7 +74,7 @@ fn e12_without_the_lints_no_loot_table_is_told() {
         &[(FILE, &pet(COMPONENTS))],
         &[],
         bedrock_addon::load::LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -122,7 +122,7 @@ fn e12_a_host_answers_for_the_games_tables() {
         &files,
         &[],
         hosted(&[("loot table", "loot_tables/entities/zombie.json")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(found.is_empty(), "{found:?}");
 }

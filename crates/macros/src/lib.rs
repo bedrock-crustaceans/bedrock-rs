@@ -48,7 +48,7 @@ pub fn proto_codec_derive(item: TokenStream) -> TokenStream {
 
             (
                 build_ser_enum(&v, attrs, fallback),
-                build_de_enum(&v, attrs, name.clone(), fallback),
+                build_de_enum(&v, attrs, &name, fallback),
                 build_size_enum(&v, attrs, fallback),
             )
         }

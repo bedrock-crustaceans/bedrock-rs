@@ -253,7 +253,7 @@ fn l05_keyframed_ambient_needs_1_26_0() {
 }
 
 #[test]
-fn l06_l3_each_lighting_range_is_checked_at_both_ends() {
+fn l06_l3_one_file_with_five_lighting_violations_reports_each() {
     // One file, five violations: each is reported.
     let d = rejects::<LightingSettings>(&lighting(
         "1.26.0",
@@ -284,6 +284,10 @@ fn l06_l3_each_lighting_range_is_checked_at_both_ends() {
             ("InvalidValue", "minecraft:lighting_settings/sky/intensity"),
         ]
     );
+}
+
+#[test]
+fn l06_l3_each_lighting_range_is_checked_at_both_ends_of_its_bounds() {
     let orbital = |members: &str| {
         lighting(
             "1.26.0",
@@ -338,7 +342,7 @@ fn l06_l3_each_lighting_range_is_checked_at_both_ends() {
         };
         for value in bad {
             out_of_range(
-                one_error::<LightingSettings>(&text(value)),
+                &one_error::<LightingSettings>(&text(value)),
                 &format!("{LIGHTING}/{path}"),
             );
         }
@@ -347,20 +351,24 @@ fn l06_l3_each_lighting_range_is_checked_at_both_ends() {
             assert!(document.diagnostics().is_empty(), "{path} {value}");
         }
     }
+}
+
+#[test]
+fn l06_l3_the_older_lighting_structs_hold_the_same_bounds() {
     // The older structs hold the same bounds.
     out_of_range(
-        one_error::<LightingSettings>(&lighting(
+        &one_error::<LightingSettings>(&lighting(
             "1.21.40",
             r#""ambient": {"color": [1, 2, 3], "illuminance": 5.5}"#,
         )),
         "minecraft:lighting_settings/ambient/illuminance",
     );
     out_of_range(
-        one_error::<LightingSettings>(&lighting("1.21.70", r#""sky": {"intensity": 0.05}"#)),
+        &one_error::<LightingSettings>(&lighting("1.21.70", r#""sky": {"intensity": 0.05}"#)),
         "minecraft:lighting_settings/sky/intensity",
     );
     out_of_range(
-        one_error::<LightingSettings>(&lighting(
+        &one_error::<LightingSettings>(&lighting(
             "1.21.60",
             r#""directional_lights": {"sun": {"illuminance": 110001}}"#,
         )),
@@ -938,7 +946,7 @@ fn w04_w1_w2_description_is_required_from_1_26_20_deviation() {
 }
 
 #[test]
-fn w05_w3_each_water_range_is_checked_at_both_ends() {
+fn w05_w3_one_file_with_five_water_violations_reports_each() {
     let d = rejects::<WaterSettings>(&water(
         "1.26.20",
         r#""waves": {"octaves": 31, "pull": -1.5}, "caustics": {"frame_length": 0, "power": 7},
@@ -967,6 +975,10 @@ fn w05_w3_each_water_range_is_checked_at_both_ends() {
             "{text}"
         );
     }
+}
+
+#[test]
+fn w05_w3_each_water_range_is_checked_at_both_ends_of_its_bounds() {
     let cases: [(&str, &str, [&str; 2], [&str; 2]); 20] = [
         (
             "particle_concentrations",
@@ -1035,10 +1047,14 @@ fn w05_w3_each_water_range_is_checked_at_both_ends() {
             assert!(document.diagnostics().is_empty(), "{member} {value}");
         }
     }
+}
+
+#[test]
+fn w05_w3_sample_width_has_its_own_range_and_a_number_is_the_one_type() {
     // `sampleWidth` has its own range while it exists.
     for value in ["0.009", "1.1"] {
         out_of_range(
-            one_error::<WaterSettings>(&water(
+            &one_error::<WaterSettings>(&water(
                 "1.21.40",
                 &format!(r#""waves": {{"sampleWidth": {value}}}"#),
             )),
@@ -1296,7 +1312,7 @@ fn a04_a3_each_atmosphere_range_is_checked_at_both_ends() {
         for value in bad {
             // The finding's context is the key.
             out_of_range(
-                one_error::<AtmosphereSettings>(&text(value)),
+                &one_error::<AtmosphereSettings>(&text(value)),
                 &format!("{ATMOSPHERE}/{member}/0.5"),
             );
         }
@@ -1307,7 +1323,7 @@ fn a04_a3_each_atmosphere_range_is_checked_at_both_ends() {
     }
     // The same at 1.21.40.
     out_of_range(
-        one_error::<AtmosphereSettings>(&atmosphere("1.21.40", r#""sun_mie_strength": 61"#)),
+        &one_error::<AtmosphereSettings>(&atmosphere("1.21.40", r#""sun_mie_strength": 61"#)),
         "minecraft:atmosphere_settings/sun_mie_strength",
     );
 }
@@ -1468,7 +1484,7 @@ fn g03_g1_g2_each_grading_range_is_checked_at_both_ends() {
                     let mut components = ["1", "1", "1"];
                     components[index] = value;
                     out_of_range(
-                        one_error::<ColorGradingSettings>(&tones(
+                        &one_error::<ColorGradingSettings>(&tones(
                             range,
                             &format!(r#""{member}": [{}]"#, components.join(", ")),
                         )),
@@ -1500,7 +1516,7 @@ fn g03_g1_g2_each_grading_range_is_checked_at_both_ends() {
     ] {
         for value in bad {
             out_of_range(
-                one_error::<ColorGradingSettings>(&tones(
+                &one_error::<ColorGradingSettings>(&tones(
                     range,
                     &format!(r#""{member}": {value}"#),
                 )),
@@ -1515,7 +1531,7 @@ fn g03_g1_g2_each_grading_range_is_checked_at_both_ends() {
     }
     // The 1.21.40 struct holds the same bounds.
     out_of_range(
-        one_error::<ColorGradingSettings>(&grading(
+        &one_error::<ColorGradingSettings>(&grading(
             "1.21.40",
             r#""color_grading": {"highlights": {"highlightsMin": 21}}"#,
         )),

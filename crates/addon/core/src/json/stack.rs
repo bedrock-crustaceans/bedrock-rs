@@ -27,6 +27,11 @@
 //! - a host that cannot map the stack (an address-space limit, strict overcommit, a 32-bit
 //!   address space that is full): `stacker` panics there. The stack made for a text at the
 //!   limit is 65 MiB of address space; pages are taken as they are touched.
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "this module is the JSON door: the one caller of facet-json"
+)]
 
 /// Whether the crate is built without optimisation, as far as it can tell: with debug
 /// assertions (the `dev` and `test` profiles), or at `opt-level` 0 (`build.rs`). facet is

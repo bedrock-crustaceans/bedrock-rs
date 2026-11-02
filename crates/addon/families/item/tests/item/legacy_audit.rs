@@ -539,6 +539,65 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
     }
 }
 
+/// What the load of a `minecraft:rarity` of `value` at `version` says of that member, sorted.
+fn rarity_told(version: &str, value: &str) -> Vec<String> {
+    let cx = third_party();
+    let text = format!(
+        r#"{{"format_version": "{version}", "minecraft:item": {{"description": {{"identifier": "demo:x", "menu_category": {{"category": "items"}}}}, "components": {{"minecraft:rarity": {value}, "minecraft:max_stack_size": 16}}}}}}"#
+    );
+    let mut told: Vec<String> = findings(&text, &cx)
+        .iter()
+        .filter(|f| {
+            f.location.json_path.segments().any(|segment| {
+                matches!(
+                    segment,
+                    bedrock_addon_core::diagnostic::JsonPathSegment::Key("minecraft:rarity")
+                )
+            })
+        })
+        .map(|f| {
+            format!(
+                "{} {:?} at {}",
+                f.code.name(),
+                f.severity,
+                f.location.json_path
+            )
+        })
+        .collect();
+    told.sort();
+    told
+}
+
+/// The `minecraft:rarity` member as the item of `version` holding `value` is written, or
+/// `refused` or `absent`.
+fn rarity_written(version: &str, value: &str) -> String {
+    let cx = third_party();
+    let text = format!(
+        r#"{{"format_version": "{version}", "minecraft:item": {{"description": {{"identifier": "demo:x", "menu_category": {{"category": "items"}}}}, "components": {{"minecraft:rarity": {value}, "minecraft:max_stack_size": 16}}}}}}"#
+    );
+    // The member as it is written (the step puts it after the components the file's
+    // format binds; the order of the members is nothing to the game).
+    // A value the typed read fails refuses the item: nothing is written.
+    let Ok(document) = load(&text, &cx) else {
+        return "refused".to_owned();
+    };
+    let written = document.value().to_json().expect("written");
+    let value: bedrock_addon_core::json::Value =
+        bedrock_addon_core::json::from_str(&written).unwrap();
+    let rarity = value.as_object().and_then(|root| {
+        root.get("minecraft:item")?
+            .as_object()?
+            .get("components")?
+            .as_object()?
+            .get("minecraft:rarity")
+            .cloned()
+    });
+    rarity.map_or_else(
+        || "absent".to_owned(),
+        |rarity| bedrock_addon_core::json::to_json(&rarity).unwrap(),
+    )
+}
+
 /// The `minecraft:rarity` of a file from 1.20.30 to 1.21.29 is read into the component by
 /// the 1.21.30 step, and what that reading says of the value is said: the upgraded load has
 /// the findings a file of 1.21.30 with the same value has, at the same key, and a value the
@@ -546,32 +605,6 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
 #[test]
 fn the_rarity_an_older_file_holds_is_read_with_what_the_1_21_30_reader_says_of_it() {
     let cx = third_party();
-    let told = |version: &str, value: &str| -> Vec<String> {
-        let text = format!(
-            r#"{{"format_version": "{version}", "minecraft:item": {{"description": {{"identifier": "demo:x", "menu_category": {{"category": "items"}}}}, "components": {{"minecraft:rarity": {value}, "minecraft:max_stack_size": 16}}}}}}"#
-        );
-        let mut told: Vec<String> = findings(&text, &cx)
-            .iter()
-            .filter(|f| {
-                f.location.json_path.segments().any(|segment| {
-                    matches!(
-                        segment,
-                        bedrock_addon_core::diagnostic::JsonPathSegment::Key("minecraft:rarity")
-                    )
-                })
-            })
-            .map(|f| {
-                format!(
-                    "{} {:?} at {}",
-                    f.code.name(),
-                    f.severity,
-                    f.location.json_path
-                )
-            })
-            .collect();
-        told.sort();
-        told
-    };
     for value in [
         r#""epic""#,
         "5",
@@ -581,63 +614,37 @@ fn the_rarity_an_older_file_holds_is_read_with_what_the_1_21_30_reader_says_of_i
         // The 1.21.30 slice's typed read fails a value of another type (`0x8`) and refuses
         // the item; below it the game's legacy reader takes the key in silence
         // and the same word is the crate's own information.
-        let newer: Vec<String> = told("1.21.30", value)
+        let newer: Vec<String> = rarity_told("1.21.30", value)
             .iter()
             .map(|f| f.replace(" Error ", " Info "))
             .collect();
         // The refused item stops reading at the failed member; the legacy chain goes on and
         // tells what follows it too, so the older findings hold the newer ones.
         for version in ["1.20.30", "1.20.50", "1.21.10"] {
-            let older = told(version, value);
+            let older = rarity_told(version, value);
             assert!(
                 newer.iter().all(|f| older.contains(f)),
                 "{version} {value}: {older:?} lacks {newer:?}"
             );
         }
     }
-    assert_eq!(told("1.21.10", r#""epic""#), [] as [&str; 0]);
-    assert!(!told("1.21.10", "5").is_empty(), "a number is told");
+    assert_eq!(rarity_told("1.21.10", r#""epic""#), [] as [&str; 0]);
+    assert!(!rarity_told("1.21.10", "5").is_empty(), "a number is told");
     // Whatever the value: the findings and the written text of the 1.21.30 file, exactly.
-    let written = |version: &str, value: &str| -> String {
-        let text = format!(
-            r#"{{"format_version": "{version}", "minecraft:item": {{"description": {{"identifier": "demo:x", "menu_category": {{"category": "items"}}}}, "components": {{"minecraft:rarity": {value}, "minecraft:max_stack_size": 16}}}}}}"#
-        );
-        // The member as it is written (the step puts it after the components the file's
-        // format binds; the order of the members is nothing to the game).
-        // A value the typed read fails refuses the item: nothing is written.
-        let Ok(document) = load(&text, &cx) else {
-            return "refused".to_owned();
-        };
-        let written = document.value().to_json().expect("written");
-        let value: bedrock_addon_core::json::Value =
-            bedrock_addon_core::json::from_str(&written).unwrap();
-        let rarity = value.as_object().and_then(|root| {
-            root.get("minecraft:item")?
-                .as_object()?
-                .get("components")?
-                .as_object()?
-                .get("minecraft:rarity")
-                .cloned()
-        });
-        rarity.map_or_else(
-            || "absent".to_owned(),
-            |rarity| bedrock_addon_core::json::to_json(&rarity).unwrap(),
-        )
-    };
     for value in ["-0.0", "1.0", "null"] {
         // The 1.21.30 slice refuses the item for them: nothing is written. Below
         // it the legacy chain tells the same word as an information and writes the member.
-        let newer: Vec<String> = told("1.21.30", value)
+        let newer: Vec<String> = rarity_told("1.21.30", value)
             .iter()
             .map(|f| f.replace(" Error ", " Info "))
             .collect();
-        let kept = written("1.20.30", value);
+        let kept = rarity_written("1.20.30", value);
         if value != "null" {
-            assert_eq!(written("1.21.30", value), "refused", "{value}");
+            assert_eq!(rarity_written("1.21.30", value), "refused", "{value}");
         }
         for version in ["1.20.30", "1.21.10"] {
             assert_eq!(
-                (told(version, value), written(version, value)),
+                (rarity_told(version, value), rarity_written(version, value)),
                 (newer.clone(), kept.clone()),
                 "{version} {value}"
             );
@@ -662,9 +669,9 @@ fn the_rarity_an_older_file_holds_is_read_with_what_the_1_21_30_reader_says_of_i
     }
     // What a value that is no rarity is told and written as, at 1.21.30 and below it alike.
     for (value, findings, member) in EXPECTED_UNREAD {
-        assert_eq!(told("1.21.10", value), *findings, "{value}");
+        assert_eq!(rarity_told("1.21.10", value), *findings, "{value}");
         assert_eq!(
-            written("1.21.10", value)
+            rarity_written("1.21.10", value)
                 .split_whitespace()
                 .collect::<String>(),
             *member,

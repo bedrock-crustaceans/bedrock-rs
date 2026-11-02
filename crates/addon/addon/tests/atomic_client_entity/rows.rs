@@ -231,8 +231,16 @@ fn s01_full() {
         visuals.animation("idle").unwrap().as_str(),
         "animation.wisp.idle"
     );
-    assert_eq!(d.particle_effects.as_ref().map(|m| m.len()), Some(0));
-    assert_eq!(d.sound_effects.as_ref().map(|m| m.len()), Some(0));
+    assert_eq!(
+        d.particle_effects
+            .as_ref()
+            .map(indexmap::map::IndexMap::len),
+        Some(0)
+    );
+    assert_eq!(
+        d.sound_effects.as_ref().map(indexmap::map::IndexMap::len),
+        Some(0)
+    );
     let scripts = d.scripts.as_ref().unwrap();
     assert_eq!(scripts.initialize.as_deref(), Some(&[][..]));
     assert_eq!(scripts.animate.as_ref().unwrap()[0].0, "idle");

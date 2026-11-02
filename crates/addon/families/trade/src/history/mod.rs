@@ -37,6 +37,11 @@ bedrock_addon_core::version_chain! {
 /// Runs the remaining upgrade step of a document [`TradeTable::parse_as_written`] gave: the same
 /// result [`TradeTable::parse`](bedrock_addon_core::document::Content::parse) gives for its file
 /// It works over the document because the document holds the origin.
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

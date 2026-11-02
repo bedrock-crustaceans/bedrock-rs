@@ -5,6 +5,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::testing::{Checks, Run, StepOutput, step_output};
 use bedrock_addon_core::versioning::{Upgrade, VersionStruct};
 use bedrock_addon_family_item::history;
+use facet_value::VObject;
 
 use super::common::allowlisted;
 
@@ -45,7 +46,7 @@ fn the_legacy_format_is_carried_to_the_next_struct_without_components() {
     let out = run::<history::v1_10_0::Item>(&input);
     let components = at(&out.payload, "components").expect("no components");
     assert!(
-        components.as_object().is_some_and(|o| o.is_empty()),
+        components.as_object().is_some_and(VObject::is_empty),
         "the components are not empty: {components:?}"
     );
     assert!(

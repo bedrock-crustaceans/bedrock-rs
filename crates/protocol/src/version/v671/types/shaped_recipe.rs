@@ -96,13 +96,13 @@ impl<V: ProtoVersion> ProtoCodec for ShapedRecipe<V> {
             + self
                 .ingredient_grid
                 .iter()
-                .map(|y| y.iter().map(|i| i.size_hint()).sum::<usize>())
+                .map(|y| y.iter().map(ProtoCodec::size_hint).sum::<usize>())
                 .sum::<usize>()
             + size_of::<u32>()
             + self
                 .production_list
                 .iter()
-                .map(|y| y.size_hint())
+                .map(ProtoCodec::size_hint)
                 .sum::<usize>()
             + self.recipe_id.size_hint()
             + self.recipe_tag.size_hint()

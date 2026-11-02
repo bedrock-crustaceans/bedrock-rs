@@ -549,7 +549,12 @@ fn sc28_duplicate_names_keep_the_last() {
 fn v2_of_two_nested_objects_of_one_name_the_last_stands_whole() {
     let config = variables(r#"{"a": {"x": 1, "y": 2}, "a": {"z": 3}}"#);
     let a = config.default.variables["a"].as_object().unwrap();
-    assert_eq!(a.keys().map(|k| k.as_str()).collect::<Vec<_>>(), ["z"]);
+    assert_eq!(
+        a.keys()
+            .map(facet_value::VString::as_str)
+            .collect::<Vec<_>>(),
+        ["z"]
+    );
 }
 
 #[test]

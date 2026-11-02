@@ -73,7 +73,7 @@ fn sr1_a_host_answers_for_the_games_blocks() {
         &files,
         &[],
         hosted(&[("block", "minecraft:stone"), ("entity", "minecraft:pig")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said_of(&found, "block"),
@@ -145,7 +145,7 @@ fn sr2_one_permutation_and_a_host() {
         &files,
         &[],
         hosted(&[("entity", "minecraft:pig")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said_of(&found, "entity"),
@@ -170,7 +170,7 @@ fn sr2_the_permute_types_of_simplified_spawn_rules() {
         experiments,
         ..LoadOptions::default()
     };
-    let found = link_with(&[(RULES, text)], &[], options, &LinkOptions::default());
+    let found = link_with(&[(RULES, text)], &[], options, LinkOptions::default());
     assert_eq!(
         said_of(&found, "entity"),
         [at(
@@ -351,7 +351,7 @@ fn e23_spawn_rules_for_an_entity_nothing_defines_are_an_information() {
         &files,
         &[],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -362,7 +362,7 @@ fn e23_spawn_rules_for_an_entity_nothing_defines_are_an_information() {
         &files,
         &[],
         hosted(&[("entity", "demo:ghost")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said_of(&hosted, "entity"),

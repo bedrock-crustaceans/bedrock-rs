@@ -128,7 +128,7 @@ fn load_poi(driver: &Driver, repository: &PackRepository, roots: &[PathBuf], poi
                 .location
                 .path
                 .as_ref()
-                .map(|p| p.to_string())
+                .map(std::string::ToString::to_string)
                 .unwrap_or_default(),
             finding.location.json_path
         );

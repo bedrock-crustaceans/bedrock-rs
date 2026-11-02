@@ -232,7 +232,7 @@ fn a_short_or_array_format_version_is_written_in_full_deviation() {
         let json: bedrock_addon::json::Value = bedrock_addon::json::from_str(&text).unwrap();
         let version = &json.as_object().unwrap()["format_version"];
         assert_eq!(
-            version.as_string().map(|version| version.as_str()),
+            version.as_string().map(facet_value::VString::as_str),
             Some(written),
             "{spelled}: {text}"
         );

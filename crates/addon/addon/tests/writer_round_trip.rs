@@ -777,7 +777,7 @@ fn tokens(text: &[u8]) -> Result<Vec<String>, String> {
     fn walk(value: &Value, out: &mut Vec<String>) {
         if let Some(object) = value.as_object() {
             out.push("{".to_owned());
-            for (key, member) in object.iter() {
+            for (key, member) in object {
                 out.push(format!("k:{}", key.as_str()));
                 walk(member, out);
             }
@@ -911,15 +911,11 @@ fn without_member(debug: &str, member: &str) -> String {
             match c {
                 '"' => in_text = true,
                 '{' | '[' | '(' => depth += 1,
-                '}' | ']' | ')' if depth == 0 => {
+                '}' | ']' | ')' | ',' if depth == 0 => {
                     end = index;
                     break;
                 }
                 '}' | ']' | ')' => depth -= 1,
-                ',' if depth == 0 => {
-                    end = index;
-                    break;
-                }
                 _ => {}
             }
         }
@@ -1275,6 +1271,94 @@ fn judge(
     }
 }
 
+/// The document types of the packs written first that the second load holds as the documents
+/// of the first, not as collections: one upgraded, of the Lines level, rewritten or recorded.
+fn changed_kinds<'a>(
+    rows: &'a [Row],
+    behavior_and_resource: [&'a Written; 2],
+    app_written: Option<&'a Written>,
+) -> BTreeSet<&'a str> {
+    [behavior_and_resource[0], behavior_and_resource[1]]
+        .into_iter()
+        .chain(app_written)
+        .flat_map(|written| {
+            written
+                .carried
+                .iter()
+                .map(move |(at, carried)| (at, carried, written))
+        })
+        .filter_map(|(at, (kind, outcome), written)| match outcome {
+            Outcome::Loaded {
+                upgraded,
+                of_the_upgrade,
+                ..
+            } => {
+                let lines = rows
+                    .iter()
+                    .flat_map(|row| &row.kinds)
+                    .any(|other| other.name == *kind && other.level == Level::Lines);
+                // A text with other members than the read one (a member told and not kept,
+                // an order the writer gives): the collection holds the file as it was read.
+                let rewritten = match (written.copied.get(at), written.files.get(at)) {
+                    (Some(read), Some(wrote)) => tokens(read).ok() != tokens(wrote).ok(),
+                    _ => false,
+                };
+                let records = RECORDS_OF_THE_FILE.iter().any(|(of, _, _)| of == kind);
+                (*upgraded || *of_the_upgrade > 0 || lines || rewritten || records).then_some(*kind)
+            }
+            Outcome::Rejected(_) => None,
+        })
+        .collect()
+}
+
+/// Compares the collections of the two loads: equal as loaded, or counted by document, or a
+/// fault.
+fn compare_collections(
+    rows: &[Row],
+    loaded: &Loaded,
+    again: &Loaded,
+    changed: &BTreeSet<&str>,
+    tally: &mut Tally,
+    faults: &mut Vec<String>,
+) {
+    for ((side, collection), debug) in &loaded.collections {
+        let Some(debug_again) = again.collections.get(&(side.clone(), collection.clone())) else {
+            faults.push(format!(
+                "{side} {collection}: not loaded from the written packs"
+            ));
+            continue;
+        };
+        let by_document = rows
+            .iter()
+            .filter(|row| row.collection == collection)
+            .flat_map(|row| &row.kinds)
+            .any(|kind| changed.contains(kind.name));
+        if by_document {
+            tally
+                .collections_by_document
+                .insert(format!("{side} {collection}"));
+        } else if debug == debug_again {
+            tally.collections_equal += 1;
+        } else {
+            let at = debug
+                .bytes()
+                .zip(debug_again.bytes())
+                .position(|(a, b)| a != b)
+                .unwrap_or(0);
+            let from = at.saturating_sub(200);
+            let cut = |text: &str| {
+                text.get(from..(at + 200).min(text.len()))
+                    .map(str::to_owned)
+            };
+            faults.push(format!(
+                "{side} {collection}: the written packs load as another collection\n read    …{:?}\n written …{:?}",
+                cut(debug),
+                cut(debug_again)
+            ));
+        }
+    }
+}
+
 /// One pass: the stack loaded, written, loaded again, written again; the faults by level.
 fn round_trip(options: &LoadOptions, with_app_data: bool) -> (Tally, Vec<String>) {
     let rows = rows::rows();
@@ -1350,73 +1434,8 @@ fn round_trip(options: &LoadOptions, with_app_data: bool) -> (Tally, Vec<String>
     // The collections of the two loads. A collection none of whose documents was upgraded
     // or is of the Lines level is equal as loaded; the others hold the versions and the
     // findings of the files that were read, and are compared document by document above.
-    let changed: BTreeSet<&str> = [&behavior, &resource]
-        .into_iter()
-        .chain(app_written.as_ref())
-        .flat_map(|written| {
-            written
-                .carried
-                .iter()
-                .map(move |(at, carried)| (at, carried, written))
-        })
-        .filter_map(|(at, (kind, outcome), written)| match outcome {
-            Outcome::Loaded {
-                upgraded,
-                of_the_upgrade,
-                ..
-            } => {
-                let lines = rows
-                    .iter()
-                    .flat_map(|row| &row.kinds)
-                    .any(|other| other.name == *kind && other.level == Level::Lines);
-                // A text with other members than the read one (a member told and not kept,
-                // an order the writer gives): the collection holds the file as it was read.
-                let rewritten = match (written.copied.get(at), written.files.get(at)) {
-                    (Some(read), Some(wrote)) => tokens(read).ok() != tokens(wrote).ok(),
-                    _ => false,
-                };
-                let records = RECORDS_OF_THE_FILE.iter().any(|(of, _, _)| of == kind);
-                (*upgraded || *of_the_upgrade > 0 || lines || rewritten || records).then_some(*kind)
-            }
-            Outcome::Rejected(_) => None,
-        })
-        .collect();
-    for ((side, collection), debug) in &loaded.collections {
-        let Some(debug_again) = again.collections.get(&(side.clone(), collection.clone())) else {
-            faults.push(format!(
-                "{side} {collection}: not loaded from the written packs"
-            ));
-            continue;
-        };
-        let by_document = rows
-            .iter()
-            .filter(|row| row.collection == collection)
-            .flat_map(|row| &row.kinds)
-            .any(|kind| changed.contains(kind.name));
-        if by_document {
-            tally
-                .collections_by_document
-                .insert(format!("{side} {collection}"));
-        } else if debug == debug_again {
-            tally.collections_equal += 1;
-        } else {
-            let at = debug
-                .bytes()
-                .zip(debug_again.bytes())
-                .position(|(a, b)| a != b)
-                .unwrap_or(0);
-            let from = at.saturating_sub(200);
-            let cut = |text: &str| {
-                text.get(from..(at + 200).min(text.len()))
-                    .map(str::to_owned)
-            };
-            faults.push(format!(
-                "{side} {collection}: the written packs load as another collection\n read    …{:?}\n written …{:?}",
-                cut(debug),
-                cut(debug_again)
-            ));
-        }
-    }
+    let changed = changed_kinds(&rows, [&behavior, &resource], app_written.as_ref());
+    compare_collections(&rows, &loaded, &again, &changed, &mut tally, &mut faults);
     // The written packs say nothing the read ones did not, but what the newest format says
     // of the form an upgrade writes (counted per file above).
     let new: Vec<_> = again

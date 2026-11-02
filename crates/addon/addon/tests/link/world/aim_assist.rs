@@ -61,7 +61,7 @@ fn c3_an_aim_assist_preset_a_pack_defines_or_the_game_has_resolves() {
             ("aim assist preset", "minecraft:other_default"),
             ("camera preset", "minecraft:free"),
         ]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &[PRESET_KIND]), []);
 }
@@ -102,7 +102,7 @@ fn c4_a_category_a_pack_defines_or_the_game_has_resolves() {
         &[(PRESET, aim.as_str())],
         &[],
         hosted(&[("aim assist category", "minecraft:fist")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &[CATEGORY_KIND]), []);
 }
@@ -139,7 +139,7 @@ fn c4_a_category_nothing_defines_is_an_error_at_each_member() {
         &[(PRESET, aim.as_str())],
         &[],
         hosted(&[]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &[CATEGORY_KIND]).len(), 1);
 }
@@ -268,7 +268,7 @@ fn c5_names_nothing_defines_are_told_at_each_member() {
             ("entity", "demo:pet"),
             ("item", "demo:wand"),
         ]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["block", "entity", "item"]), []);
 }

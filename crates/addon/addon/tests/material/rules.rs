@@ -3,7 +3,7 @@
 use bedrock_addon::diagnostic::Severity::{self, Error, Info};
 use bedrock_addon::families::material::{
     BLEND_TARGETS, COMPARISON_FUNCS, MSAA_SUPPORTS, MaterialDef, MaterialKey, PRIMITIVE_MODES,
-    RENDER_STATES, SHADER_STAGES, STENCIL_OPS, StencilRefOverride, TEXTURE_FILTERS,
+    RENDER_STATES, SHADER_STAGES, STENCIL_OPS, StencilFace, StencilRefOverride, TEXTURE_FILTERS,
     TEXTURE_FORMATS, TEXTURE_WRAPS, VERTEX_FIELDS,
 };
 
@@ -935,7 +935,7 @@ fn every_typed_member_is_read_into_its_field() {
     assert_eq!(front.stencil_fail_op.as_deref(), Some("Replace"));
     assert_eq!(front.stencil_depth_fail_op.as_deref(), Some("Keep"));
     assert_eq!(front.stencil_pass_op.as_deref(), Some("Replace"));
-    assert_eq!(read.back_face, Some(Default::default()));
+    assert_eq!(read.back_face, Some(StencilFace::default()));
     assert_eq!(read.stencil_ref_override, Some(false.into()));
     assert_eq!(read.stencil_ref, Some(300));
     assert_eq!(read.stencil_read_mask, Some(u32::MAX));
@@ -1088,7 +1088,7 @@ fn an_unsigned_member_past_the_doubles_has_one_finding() {
                 let read = x(&text);
                 let kept = read.extra.get(key).and_then(|value| value.as_number());
                 assert_eq!(
-                    kept.map(|number| number.to_f64_lossy()),
+                    kept.map(facet_value::VNumber::to_f64_lossy),
                     Some(held),
                     "{key} {number}"
                 );

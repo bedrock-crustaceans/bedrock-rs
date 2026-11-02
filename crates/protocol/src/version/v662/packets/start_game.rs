@@ -1,8 +1,9 @@
-use std::collections::HashMap;
 use crate::ProtoVersion;
-use bedrock_macros::{packet, ProtoCodec};
+use bedrock_macros::{ProtoCodec, packet};
+use std::collections::HashMap;
 use uuid::Uuid;
 
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 #[packet(id = 11, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct StartGamePacket<V: ProtoVersion> {

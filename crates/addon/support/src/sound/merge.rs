@@ -159,6 +159,11 @@ pub fn not_json(origin: Origin, error: &ReadError) -> Rejected {
 }
 
 /// Writes a document's JSON.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `json` holds a non-finite number, or nests deeper than the
+/// readers of the crate follow.
 pub fn write_document(
     json: &Value,
     out: &mut Vec<u8>,
@@ -168,6 +173,11 @@ pub fn write_document(
 }
 
 /// The text of a document's JSON.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `json` holds a non-finite number, or nests deeper than the
+/// readers of the crate follow.
 pub fn document_text(json: &Value) -> Result<String, EncodeError> {
     let mut out = Vec::new();
     write_document(json, &mut out, WriteStyle::default())?;

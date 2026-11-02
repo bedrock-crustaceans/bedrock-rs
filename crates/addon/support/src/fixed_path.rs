@@ -232,11 +232,21 @@ impl Object {
 }
 
 /// Writes a value as a file's JSON.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `value` holds a non-finite number, or nests deeper than the
+/// readers of the crate follow.
 pub fn json_text(value: &Value, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
     write_json(value, out, style)
 }
 
 /// A value as a file's JSON text.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `value` holds a non-finite number, or nests deeper than the
+/// readers of the crate follow.
 pub fn json_string(value: &Value) -> Result<String, EncodeError> {
     bedrock_addon_core::json::to_json(value)
 }

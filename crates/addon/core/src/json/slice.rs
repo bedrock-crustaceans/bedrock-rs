@@ -73,6 +73,10 @@ pub struct SliceError {
 /// whatever `T` is (one with an untyped member, or one that holds itself, included).
 /// `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target without a stack
 /// switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `SliceError` when `slice` does not read as `T`, with the file span and JSON path of the fault.
 pub fn parse_at<'a, T: Facet<'a>>(slice: JsonSlice<'a>) -> Result<T, SliceError> {
     parse_in(slice).map_err(|failure| {
         let (span, members, error) = *failure;

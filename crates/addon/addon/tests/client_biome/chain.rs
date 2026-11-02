@@ -29,6 +29,8 @@ fn selects(version: &str) -> Selection {
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_21_130_with_a_beta_struct() {
+    const HAS_BETA: bool = <Any as VersionChain<ClientBiomeFamily>>::HAS_BETA;
+
     check_chain::<ClientBiomeFamily>().expect("the chain is well formed");
     let versions: Vec<_> = VERSIONS
         .iter()
@@ -38,7 +40,6 @@ fn the_chain_is_contiguous_and_ends_at_1_21_130_with_a_beta_struct() {
         <Any as VersionChain<ClientBiomeFamily>>::VERSIONS,
         versions.as_slice()
     );
-    const HAS_BETA: bool = <Any as VersionChain<ClientBiomeFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(has_beta);
     assert_eq!(

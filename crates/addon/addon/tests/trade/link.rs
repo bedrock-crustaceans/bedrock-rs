@@ -50,7 +50,10 @@ fn t1_an_item_nothing_defines_is_an_unresolved_reference() {
             // The game's validator line: a content-log error.
             assert_eq!(f.severity, Severity::Error);
             assert_eq!(
-                f.location.path.as_ref().map(|p| p.as_str()),
+                f.location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str),
                 Some("trading/demo_trades.json")
             );
             f.location.json_path.to_string()

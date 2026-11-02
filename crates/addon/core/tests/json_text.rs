@@ -44,7 +44,7 @@ fn a_bom_and_comments_read_through_the_pre_parse_helpers() {
         object
             .get("a")
             .and_then(|a| a.as_number())
-            .and_then(|n| n.to_i64()),
+            .and_then(facet_value::VNumber::to_i64),
         Some(1)
     );
 }

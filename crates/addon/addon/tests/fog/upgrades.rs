@@ -463,7 +463,7 @@ fn u08_negative_fog_end_both_eras() {
 
     let seconds = |mid: &str| {
         format!(
-            r##""distance": {{"water": {{{AIR}, "transition_fog": {{"init_fog": {{{AIR}}}, "min_percent": 0.2, "mid_seconds": {mid}, "mid_percent": 0.5, "max_seconds": 4}}}}}}"##
+            r#""distance": {{"water": {{{AIR}, "transition_fog": {{"init_fog": {{{AIR}}}, "min_percent": 0.2, "mid_seconds": {mid}, "mid_percent": 0.5, "max_seconds": 4}}}}}}"#
         )
     };
     for version in ["1.21.90", "1.26.20"] {

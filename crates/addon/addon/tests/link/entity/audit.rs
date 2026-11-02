@@ -478,7 +478,7 @@ fn e9_a_legacy_filter_member_in_a_sensors_trigger_is_not_told() {
 }
 
 /// K123: a member of the older filter form that is none of the game's (a misspelt one) is
-/// the game's "Invalid EntityFilterGroup member found", a warning at the member, in a list
+/// the game's "Invalid `EntityFilterGroup` member found", a warning at the member, in a list
 /// and in a group too; the members the game maps to tests and the keys of a group are not
 /// told, and the members of a test object are another rule's.
 #[test]

@@ -49,7 +49,7 @@ fn a_list_takes_strings_only_whatever_the_size_of_a_number_in_it() {
     for list in [
         r#"["apple", 5]"#,
         r#"["apple", 123456789012345678901234567890]"#,
-        r#"[123456789012345678901234567890]"#,
+        r"[123456789012345678901234567890]",
         r#"["apple", ["cherry"]]"#,
     ] {
         let text = document(

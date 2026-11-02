@@ -270,7 +270,7 @@ impl Responder {
                 self.rng ^= self.rng << 13;
                 self.rng ^= self.rng >> 7;
                 self.rng ^= self.rng << 17;
-                (self.rng % len as u64) as usize
+                usize::try_from(self.rng % len as u64).expect("a remainder below `len`, a `usize`")
             }
         }
     }

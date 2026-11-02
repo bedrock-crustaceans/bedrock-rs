@@ -56,9 +56,10 @@ impl ProtoCodec for DefaultDescriptor {
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let item_id = <i16 as ProtoCodecLE>::deserialize(stream)?;
-        let aux_value = match item_id != 0 {
-            true => <i16 as ProtoCodecLE>::deserialize(stream)?,
-            false => 0,
+        let aux_value = if item_id != 0 {
+            <i16 as ProtoCodecLE>::deserialize(stream)?
+        } else {
+            0
         };
 
         Ok(Self { item_id, aux_value })
@@ -66,9 +67,10 @@ impl ProtoCodec for DefaultDescriptor {
 
     fn size_hint(&self) -> usize {
         size_of::<i16>()
-            + match self.aux_value != 0 {
-                true => size_of::<i16>(),
-                false => 0,
+            + if self.aux_value != 0 {
+                size_of::<i16>()
+            } else {
+                0
             }
     }
 }

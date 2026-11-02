@@ -4,6 +4,7 @@
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 
+use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
@@ -151,6 +152,82 @@ fn text_of(value: &Value, key: &str) -> Option<String> {
         .map(|text| text.as_str().to_owned())
 }
 
+/// Every `uiPackError` of the stack, in order, as the expectation file spells it.
+fn pack_errors_of(ui: &Merged<UiDefinitions, RawLayer>, count: usize) -> facet_value::VArray {
+    let mut actual_errors = facet_value::VArray::new();
+    let mut reports: Vec<_> = ui.reports.iter().collect();
+    reports.sort_by_key(|report| count - 1 - report.pack.index().unwrap());
+    for report in reports {
+        for error in &report.errors {
+            let mut entry = facet_value::VObject::new();
+            entry.insert(
+                "pack",
+                i64::try_from(count - 1 - report.pack.index().unwrap()).unwrap(),
+            );
+            entry.insert(
+                "type",
+                error.kind.key().strip_prefix("uiPackError.").unwrap(),
+            );
+            let mut args = facet_value::VArray::new();
+            for arg in &error.args {
+                args.push(arg.as_str());
+            }
+            entry.insert("args", args);
+            entry.insert("severity", severity_name(error.severity));
+            actual_errors.push(entry);
+        }
+    }
+    actual_errors
+}
+
+/// Holds every finding of the stack to the `wanted` entries, in any order, and none left over.
+fn check_diagnostics(
+    case: &str,
+    ui: &Merged<UiDefinitions, RawLayer>,
+    wanted: &Value,
+    count: usize,
+) {
+    let mut actual: Vec<&Diagnostic> = ui.diagnostics().collect();
+    for want in wanted.as_array().expect("an array").as_slice() {
+        let code = text_of(want, "code").expect("a code");
+        let severity = text_of(want, "severity").expect("a severity");
+        let text = text_of(want, "text");
+        let at = text_of(want, "at");
+        let pack = want
+            .as_object()
+            .and_then(|object| object.get("pack"))
+            .and_then(|pack| pack.as_number()?.to_u64());
+        let found = actual.iter().position(|diagnostic| {
+            diagnostic.code.name() == code
+                && severity_name(diagnostic.severity) == severity
+                && text
+                    .as_ref()
+                    .is_none_or(|text| diagnostic.code.to_string() == *text)
+                && at
+                    .as_ref()
+                    .is_none_or(|at| diagnostic.location.json_path.to_string() == *at)
+                && pack.is_none_or(|pack| {
+                    usize::try_from(pack)
+                        .is_ok_and(|pack| pack_number(diagnostic, count) == Some(pack))
+                })
+        });
+        match found {
+            Some(index) => {
+                actual.remove(index);
+            }
+            None => panic!(
+                "{case}: no finding {code} ({severity}) {text:?} at {at:?}; left:\n{}",
+                show(&actual)
+            ),
+        }
+    }
+    assert!(
+        actual.is_empty(),
+        "{case}: unexpected findings:\n{}",
+        show(&actual)
+    );
+}
+
 /// Loads case `case` and holds it to its `expected.json`:
 /// - `files`: the merged JSON of every listed file, exactly;
 /// - `defs`: the flattened body of every definition, by `namespace.name`, exactly;
@@ -196,26 +273,7 @@ pub fn check(case: &str) -> PackStack<Resource> {
         assert_eq!(&actual.into_value(), globals, "{case}: global variables");
     }
 
-    let mut actual_errors = facet_value::VArray::new();
-    let mut reports: Vec<_> = ui.reports.iter().collect();
-    reports.sort_by_key(|report| count - 1 - report.pack.index().unwrap());
-    for report in reports {
-        for error in &report.errors {
-            let mut entry = facet_value::VObject::new();
-            entry.insert("pack", (count - 1 - report.pack.index().unwrap()) as i64);
-            entry.insert(
-                "type",
-                error.kind.key().strip_prefix("uiPackError.").unwrap(),
-            );
-            let mut args = facet_value::VArray::new();
-            for arg in &error.args {
-                args.push(arg.as_str());
-            }
-            entry.insert("args", args);
-            entry.insert("severity", severity_name(error.severity));
-            actual_errors.push(entry);
-        }
-    }
+    let actual_errors = pack_errors_of(ui, count);
     let empty = facet_value::VArray::new().into_value();
     // An argument written `"*"` stands for any text (the reader's message of a parse error).
     let mut actual_errors = actual_errors.into_value();
@@ -242,60 +300,29 @@ pub fn check(case: &str) -> PackStack<Resource> {
     }
     assert_eq!(&actual_errors, wanted_errors, "{case}: uiPackErrors");
 
-    let mut actual: Vec<&Diagnostic> = ui.diagnostics().collect();
-    let wanted = expected.get("diagnostics").unwrap_or(&empty);
-    for want in wanted.as_array().expect("an array").as_slice() {
-        let code = text_of(want, "code").expect("a code");
-        let severity = text_of(want, "severity").expect("a severity");
-        let text = text_of(want, "text");
-        let at = text_of(want, "at");
-        let pack = want
-            .as_object()
-            .and_then(|object| object.get("pack"))
-            .and_then(|pack| pack.as_number()?.to_u64());
-        let found = actual.iter().position(|diagnostic| {
-            diagnostic.code.name() == code
-                && severity_name(diagnostic.severity) == severity
-                && text
-                    .as_ref()
-                    .is_none_or(|text| diagnostic.code.to_string() == *text)
-                && at
-                    .as_ref()
-                    .is_none_or(|at| diagnostic.location.json_path.to_string() == *at)
-                && pack.is_none_or(|pack| pack_number(diagnostic, count) == Some(pack as usize))
-        });
-        match found {
-            Some(index) => {
-                actual.remove(index);
-            }
-            None => panic!(
-                "{case}: no finding {code} ({severity}) {text:?} at {at:?}; left:\n{}",
-                show(&actual)
-            ),
-        }
-    }
-    assert!(
-        actual.is_empty(),
-        "{case}: unexpected findings:\n{}",
-        show(&actual)
+    check_diagnostics(
+        case,
+        ui,
+        expected.get("diagnostics").unwrap_or(&empty),
+        count,
     );
     stack
 }
 
 /// The findings one per line, for a failure message.
 pub fn show(diagnostics: &[&Diagnostic]) -> String {
-    diagnostics
-        .iter()
-        .map(|d| {
-            format!(
-                "  {} ({}) at `{}`: {:?}\n",
-                d.code.name(),
-                severity_name(d.severity),
-                d.location.json_path,
-                d.code.to_string()
-            )
-        })
-        .collect()
+    diagnostics.iter().fold(String::new(), |mut out, d| {
+        writeln!(
+            out,
+            "  {} ({}) at `{}`: {:?}",
+            d.code.name(),
+            severity_name(d.severity),
+            d.location.json_path,
+            d.code.to_string()
+        )
+        .unwrap();
+        out
+    })
 }
 
 /// The findings of a stack as `(code name, severity, text)`.

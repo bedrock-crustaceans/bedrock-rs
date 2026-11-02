@@ -2,6 +2,11 @@
 //! where it happened (`ShapeError.path`), and each type's `check` reports every member kept in
 //! an `extra`, at any depth, as an `UnrecognizedField` warning at its full path.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::JsonType;

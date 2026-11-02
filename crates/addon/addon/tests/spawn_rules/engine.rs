@@ -12,7 +12,7 @@
 
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
-use bedrock_addon::families::spawn_rules::SpawnRules;
+use bedrock_addon::families::spawn_rules::{Condition, SpawnRules};
 use bedrock_addon::json::Value;
 
 use super::common::{
@@ -218,7 +218,7 @@ fn the_drop_4_spawn_rules_load_and_round_trip() {
         .as_ref()
         .expect("conditions")
         .iter()
-        .map(|c| c.spawn_weight())
+        .map(Condition::spawn_weight)
         .collect();
     assert_eq!(weights, [50, 45, 25]);
 }

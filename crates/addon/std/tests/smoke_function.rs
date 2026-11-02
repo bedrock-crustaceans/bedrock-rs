@@ -218,7 +218,7 @@ fn check_test_assets(install_a: &Path, folder: &str) {
     let lines: Vec<&str> = function
         .commands
         .iter()
-        .map(|line| line.command())
+        .map(bedrock_addon::families::function::FunctionLine::command)
         .collect();
     assert_eq!(lines, ["scriptevent demo:tickjson message from tick.json"]);
     assert!(function.diagnostics().is_empty());

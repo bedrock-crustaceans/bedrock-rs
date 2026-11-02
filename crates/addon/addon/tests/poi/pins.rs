@@ -38,6 +38,44 @@ fn parse_struct<T: VersionStruct>(key: &str, payload: &str) -> (Option<T>, Diagn
     (value, d)
 }
 
+/// The length of the long cycle of tags.
+const CYCLE_LENGTH: usize = 600;
+
+/// The files of a long cycle: t0 ⊂ t1 ⊂ … ⊂ t599 ⊂ t0, a type on every tag, and a tail below t0.
+fn long_cycle_files() -> Vec<(String, String)> {
+    let mut files: Vec<(String, String)> = Vec::new();
+    for i in 0..CYCLE_LENGTH {
+        files.push((
+            format!("poi/tags/t{i:04}.json"),
+            tag_of(
+                &format!("test:t{i}"),
+                &format!(r#", "parents": ["test:t{}"]"#, (i + 1) % CYCLE_LENGTH),
+            ),
+        ));
+        files.push((
+            format!("poi/blocks/i{i:04}.json"),
+            block_of(
+                &format!("test:i{i}"),
+                &format!(r#""tags": ["test:t{i}"],"#),
+                &format!(r#"["test:block{i}"]"#),
+            ),
+        ));
+    }
+    files.push((
+        "poi/tags/tail.json".to_owned(),
+        tag_of("test:tail", r#", "parents": ["test:t0"]"#),
+    ));
+    files.push((
+        "poi/blocks/tail.json".to_owned(),
+        block_of(
+            "test:tailed",
+            r#""tags": ["test:tail"],"#,
+            r#"["test:tail_block"]"#,
+        ),
+    ));
+    files
+}
+
 /// The termination conditions of the tag expansion and of the cycle search have their direct
 /// test here. A tag naming
 /// itself, a two-tag cycle and a 600-tag cycle (with a type on every tag and a tail hanging
@@ -97,38 +135,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
         ]
     );
 
-    // A long cycle: t0 ⊂ t1 ⊂ … ⊂ t599 ⊂ t0, a type on every tag, and a tail below t0.
-    const LENGTH: usize = 600;
-    let mut files: Vec<(String, String)> = Vec::new();
-    for i in 0..LENGTH {
-        files.push((
-            format!("poi/tags/t{i:04}.json"),
-            tag_of(
-                &format!("test:t{i}"),
-                &format!(r#", "parents": ["test:t{}"]"#, (i + 1) % LENGTH),
-            ),
-        ));
-        files.push((
-            format!("poi/blocks/i{i:04}.json"),
-            block_of(
-                &format!("test:i{i}"),
-                &format!(r#""tags": ["test:t{i}"],"#),
-                &format!(r#"["test:block{i}"]"#),
-            ),
-        ));
-    }
-    files.push((
-        "poi/tags/tail.json".to_owned(),
-        tag_of("test:tail", r#", "parents": ["test:t0"]"#),
-    ));
-    files.push((
-        "poi/blocks/tail.json".to_owned(),
-        block_of(
-            "test:tailed",
-            r#""tags": ["test:tail"],"#,
-            r#"["test:tail_block"]"#,
-        ),
-    ));
+    let files = long_cycle_files();
     let borrowed: Vec<(&str, &str)> = files
         .iter()
         .map(|(path, text)| (path.as_str(), text.as_str()))
@@ -137,7 +144,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
     let poi = stack.poi();
     assert_eq!(
         names(poi.diagnostics(), Severity::Info).len(),
-        LENGTH,
+        CYCLE_LENGTH,
         "one information per tag of the cycle, none for the tail"
     );
     assert!(
@@ -371,8 +378,14 @@ fn a_documents_findings_carry_its_pack_and_file() {
         .map(|d| {
             (
                 d.code.name(),
-                d.location.pack.as_ref().and_then(|p| p.index()),
-                d.location.path.as_ref().map(|p| p.as_str()),
+                d.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
+                d.location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str),
             )
         })
         .collect();

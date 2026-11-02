@@ -121,6 +121,11 @@ impl BitArray {
     }
 
     /// Deserializes an array from disk format.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidBitSize`] if the header names a bit size that is not valid, or an
+    /// I/O error if reading from `reader` fails.
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<IndicesType>
     where
         Cursor<R>: Read,
@@ -135,6 +140,10 @@ impl BitArray {
 
     /// Serializes this array in disk format, packed with the smallest bit size that fits `palette_size`.
     /// A palette of at most one entry writes no index data at all.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, palette_size: usize) -> Result<()>
     where
         Cursor<W>: Write,
@@ -146,9 +155,9 @@ impl BitArray {
         }
 
         match self {
-            BitArray::Greedy(array) => array.to_disk(writer, bits as u32),
+            BitArray::Greedy(array) => array.to_disk(writer, u32::from(bits)),
             BitArray::Lazy(array) if array.bits() == bits => array.to_disk(writer),
-            BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, bits as u32),
+            BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, u32::from(bits)),
         }
     }
 

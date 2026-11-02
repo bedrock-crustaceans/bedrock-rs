@@ -1,4 +1,4 @@
-//! The game's beta-load test of 1.26.60 (fixture `puv_load-1.json`): the move_indoors actor
+//! The game's beta-load test of 1.26.60 (fixture `puv_load-1.json`): the `move_indoors` actor
 //! of its test helper at `beta`.
 
 use bedrock_addon_core::diagnostic::Severity;

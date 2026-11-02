@@ -893,7 +893,7 @@ fn rule_19_texture_data_that_is_no_object_gives_no_tile_deviation() {
     // An empty object is kept as written, without a finding.
     let stack = inline(r#"{ "texture_name": "atlas.terrain", "texture_data": {} }"#);
     let data = terrain(&stack).texture_data.as_ref();
-    assert!(data.is_some_and(|data| data.is_empty()));
+    assert!(data.is_some_and(indexmap::map::IndexMap::is_empty));
     assert_eq!(findings(&stack), []);
 }
 

@@ -19,6 +19,10 @@ pub fn refused(what: Unrepresentable) -> EncodeError {
 }
 
 /// An `f32` in the shortest decimal form that reads back as the same `f32`.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `x` is NaN or infinite.
 pub fn float(x: f32) -> Result<Value, EncodeError> {
     if x.is_nan() {
         return Err(refused(Unrepresentable::NaN));
@@ -35,6 +39,10 @@ pub fn float(x: f32) -> Result<Value, EncodeError> {
 }
 
 /// A Molang value as a JSON value (a constant is a number, anything else is its source).
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when the value is a constant that is not finite.
 pub fn molang(value: &Molang) -> Result<Value, EncodeError> {
     match value {
         Molang::Const(x) => float(*x),
@@ -69,6 +77,10 @@ impl Object {
     }
 
     /// Set `key` to what `write` makes of `value` when there is one.
+    ///
+    /// # Errors
+    ///
+    /// The error of `write` for the value, when there is one.
     pub fn opt<T>(
         &mut self,
         key: &str,
@@ -88,6 +100,10 @@ impl Object {
 }
 
 /// A map as a JSON object, each value written by `write`.
+///
+/// # Errors
+///
+/// The first error of `write` for a value.
 pub fn map<T>(
     map: &IndexMap<String, T>,
     mut write: impl FnMut(&T) -> Result<Value, EncodeError>,
@@ -100,6 +116,10 @@ pub fn map<T>(
 }
 
 /// A slice as a JSON array, each element written by `write`.
+///
+/// # Errors
+///
+/// The first error of `write` for an element.
 pub fn list<T>(
     list: &[T],
     write: impl FnMut(&T) -> Result<Value, EncodeError>,
@@ -111,11 +131,19 @@ pub fn list<T>(
 }
 
 /// A map of floats as a JSON object.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when a value is NaN or infinite.
 pub fn floats(curve: &IndexMap<String, f32>) -> Result<Value, EncodeError> {
     map(curve, |x| float(*x))
 }
 
 /// An event string as its JSON string.
+///
+/// # Errors
+///
+/// Never: the signature is the one every member writer has.
 #[allow(
     clippy::unnecessary_wraps,
     reason = "the shape every member writer has"
@@ -125,6 +153,10 @@ pub fn event(e: &EventString) -> Result<Value, EncodeError> {
 }
 
 /// A particle effect as its JSON object.
+///
+/// # Errors
+///
+/// The error of [`molang`] for `pre_effect_script`.
 pub fn particle(p: &ParticleEffect) -> Result<Value, EncodeError> {
     let mut o = Object::new();
     o.put("effect", string(&p.effect));
@@ -137,6 +169,11 @@ pub fn particle(p: &ParticleEffect) -> Result<Value, EncodeError> {
 }
 
 /// A sound effect as its JSON object.
+///
+/// # Errors
+///
+/// Never in practice: the members are strings, though the signature is the one every member
+/// writer has.
 pub fn sound(s: &SoundEffect) -> Result<Value, EncodeError> {
     let mut o = Object::new();
     o.put("effect", string(&s.effect));

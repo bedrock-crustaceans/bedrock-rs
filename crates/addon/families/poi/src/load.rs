@@ -140,6 +140,12 @@ macro_rules! document {
             /// Parses one file without upgrading it: the struct its `format_version` selects.
             /// The family has one struct, so this is [`Content::parse`]'s value before the
             /// document's own checks.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes
+            /// that are not JSON or a document the family refuses; it carries every finding about
+            /// the file.
             pub fn parse_as_written(
                 path: &PackPath,
                 bytes: &[u8],
@@ -161,6 +167,11 @@ macro_rules! document {
             /// result `Content::parse` gives for its file.
             ///
             /// [`parse_as_written`]: $root::parse_as_written
+            ///
+            /// # Errors
+            ///
+            /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it
+            /// carries every finding about the file.
             pub fn upgrade(
                 document: Document<Self>,
                 cx: &LoadContext,

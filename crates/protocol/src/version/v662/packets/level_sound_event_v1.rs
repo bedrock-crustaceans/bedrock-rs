@@ -18,6 +18,10 @@ pub struct LevelSoundEventV1Packet<V: ProtoVersion> {
 }
 
 impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV1Packet<V> {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the wire carries the event id as one byte"
+    )]
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let mut event_id_stream: Vec<u8> = Vec::new();
         V::LevelSoundEventType::serialize(&self.event_id, &mut event_id_stream)?;
@@ -33,6 +37,10 @@ impl<V: ProtoVersion> ProtoCodec for LevelSoundEventV1Packet<V> {
         Ok(())
     }
 
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "the byte is sign-extended to match the encoder's wire behaviour"
+    )]
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut event_id_stream: Vec<u8> = Vec::new();
         <u32 as ProtoCodecVAR>::serialize(&(stream.read_i8()? as u32), &mut event_id_stream)?;

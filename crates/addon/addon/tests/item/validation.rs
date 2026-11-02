@@ -1412,6 +1412,10 @@ fn a_legacy_member_a_step_drops_or_reads_as_another_value_is_told() {
             );
         }
     }
+}
+
+#[test]
+fn a_root_use_beta_features_that_is_no_bool_is_a_member_nothing_reads() {
     // A root `use_beta_features` that is no bool is a root member nothing reads.
     let text = item("1.21.60", "demo:x", r#""minecraft:icon": "stick""#).replacen(
         '{',
@@ -1427,6 +1431,10 @@ fn a_legacy_member_a_step_drops_or_reads_as_another_value_is_told() {
         "{:#?}",
         document.diagnostics()
     );
+}
+
+#[test]
+fn the_value_of_a_legacy_tag_key_with_members_is_told_as_a_note() {
     // The value of a legacy tag key is not read: an object with members is told as a note.
     let document = loads(
         &item(

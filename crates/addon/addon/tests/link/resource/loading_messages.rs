@@ -21,8 +21,8 @@ fn pack(n: u128, files: &[(&'static str, &[u8])]) -> Pack {
 }
 
 /// The link findings of a world of the resource packs `packs`, top first.
-fn linked(packs: Vec<Pack>, load: LoadOptions, options: &LinkOptions) -> Diagnostics {
-    stacks_of(Vec::new(), packs, load).link_with(options)
+fn linked(packs: Vec<Pack>, load: LoadOptions, options: LinkOptions) -> Diagnostics {
+    stacks_of(Vec::new(), packs, load).link_with(&options)
 }
 
 /// The link findings of one resource pack (`rp 2`) with `files`.
@@ -40,7 +40,11 @@ type Said = (&'static str, Severity, String, String, String);
 
 fn said(finding: &Diagnostic) -> Said {
     assert_eq!(finding.phase, Phase::Link, "{finding}");
-    let pack = finding.location.pack.as_ref().map(|pack| pack.name());
+    let pack = finding
+        .location
+        .pack
+        .as_ref()
+        .map(bedrock_addon::pack::PackRef::name);
     let path = finding.location.path.as_ref().map(ToString::to_string);
     (
         finding.code.name(),
@@ -73,13 +77,13 @@ mod tips {
     const GERMAN: (&str, &[u8]) = ("texts/de_DE.lang", b"tips.nur=Ein Tipp\n");
 
     /// The findings of a world whose pack has the two languages and the tips file `text`.
-    fn tips_with(text: &str, load: LoadOptions, options: &LinkOptions) -> Diagnostics {
+    fn tips_with(text: &str, load: LoadOptions, options: LinkOptions) -> Diagnostics {
         let files = [(MESSAGES, text.as_bytes()), LANGUAGES, ENGLISH, GERMAN];
         linked(vec![pack(2, &files)], load, options)
     }
 
     fn tips(text: &str) -> Diagnostics {
-        tips_with(text, LoadOptions::default(), &LinkOptions::default())
+        tips_with(text, LoadOptions::default(), LinkOptions::default())
     }
 
     /// `(JSON path, key)` of each finding, each held to the rule's code, severity and place.
@@ -246,11 +250,11 @@ mod tips {
         );
         let options = LinkOptions::default();
         let host = hosted(&[("lang key", "tips.game.1")]);
-        assert_eq!(unresolved(&tips_with(text, host, &options)), []);
+        assert_eq!(unresolved(&tips_with(text, host, options)), []);
         // A host that lacks the key: the stack's own key still resolves.
         let other = hosted(&[("lang key", "tips.game.2")]);
         assert_eq!(
-            unresolved(&tips_with(text, other, &options)),
+            unresolved(&tips_with(text, other, options)),
             [at("beginner_loading_messages/0", "tips.game.1")]
         );
     }
@@ -262,7 +266,7 @@ mod tips {
             ..Default::default()
         };
         let text = r#"{"beginner_loading_messages": ["tips.unknown"]}"#;
-        let found = tips_with(text, LoadOptions::default(), &quiet);
+        let found = tips_with(text, LoadOptions::default(), quiet);
         assert_eq!(all_said(&found), []);
     }
 
@@ -292,7 +296,7 @@ mod tips {
         let found = linked(
             vec![top, bottom],
             LoadOptions::default(),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(
             unresolved(&found),

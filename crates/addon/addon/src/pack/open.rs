@@ -296,6 +296,11 @@ impl Pack {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`OpenError`] when the files do not make a pack: no manifest, several manifests at the same
+    /// depth, or a path that breaks the pack-path rules.
     pub fn from_files<B: Into<Bytes>>(
         files: impl IntoIterator<Item = (PackPath, B)>,
         options: &OpenOptions,
@@ -336,6 +341,11 @@ impl Pack {
 
     /// One archive already in memory (`.mcpack`, `.zip`, `.mctemplate`), detected by magic
     /// bytes, not by extension.
+    ///
+    /// # Errors
+    ///
+    /// [`OpenError`] when the bytes are not a readable archive, or the archive holds no usable
+    /// pack (no manifest, several manifests, or a path the pack-path rules reject).
     #[cfg(feature = "zip")]
     #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
     pub fn from_archive(bytes: impl Into<Bytes>, options: &OpenOptions) -> Result<Pack, OpenError> {
@@ -348,6 +358,11 @@ impl Pack {
     /// Reads one file; paths use `/`, are case-sensitive and must not contain `.` / `..`.
     /// Inflates or decrypts on the calling thread; `StorageError::NotResident` when the file
     /// is indexed but not loaded.
+    ///
+    /// # Errors
+    ///
+    /// [`StorageError`] when the file is not in the pack, is indexed but not loaded
+    /// (`NotResident`), or cannot be inflated or decrypted.
     pub fn read(&self, path: &PackPath) -> Result<Bytes, StorageError> {
         self.inner.files.read(path)
     }
@@ -376,6 +391,11 @@ impl Pack {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`WriteError`](super::WriteError) when the pack has files that are not loaded, or the archive
+    /// writer refuses them (`Zip`).
     #[cfg(feature = "zip")]
     #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
     pub fn to_archive(&self) -> Result<Bytes, super::WriteError> {

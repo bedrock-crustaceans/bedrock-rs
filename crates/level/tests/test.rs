@@ -156,7 +156,7 @@ fn read_subchunk() {
                         name: "test".to_string(),
                         states: HashMap::from([(
                             String::from("test2"),
-                            nbtx::Value::Byte(i as i8),
+                            nbtx::Value::Byte(i.cast_signed()),
                         )]),
                         version: Some(0x0102_0304),
                     },

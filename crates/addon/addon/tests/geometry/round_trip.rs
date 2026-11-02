@@ -4,7 +4,7 @@
 
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::geometry::{Bone, Cube, Geometry, GeometryFile, TextureMesh};
-use bedrock_addon::json::Value;
+use bedrock_addon::json::{EncodeError, Unrepresentable, Value};
 use bedrock_addon::version::FormatVersion;
 
 use crate::common::{base_game, clean, load, load_at, loaded, round_trip};
@@ -113,7 +113,10 @@ fn every_member_of_the_newest_schema_round_trips_as_written() {
     // Empty members keep their presence.
     let empty = full.bone("empty").unwrap();
     assert_eq!(empty.cubes.as_ref().map(Vec::len), Some(0));
-    assert_eq!(empty.locators.as_ref().map(|l| l.len()), Some(0));
+    assert_eq!(
+        empty.locators.as_ref().map(indexmap::map::IndexMap::len),
+        Some(0)
+    );
 }
 
 #[test]
@@ -172,42 +175,42 @@ fn a_file_with_legacy_members_is_written_in_the_shape_it_was_read_in() {
     assert_eq!(loaded(load(&written)).value(), document.value());
 }
 
-/// `to_json` never gives text neither this loader nor vanilla reads. A legacy file the
-/// caller gave members its shape cannot hold is refused, at the member.
-#[test]
-fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
-    use bedrock_addon::families::geometry::{CubeUv, ItemDisplayTransforms, Locator};
-    use bedrock_addon::json::{EncodeError, Unrepresentable};
+type Change = Box<dyn Fn(&mut GeometryFile)>;
+
+const OLD_SHAPE: &str = r#"{"format_version": "1.1.0", "geometry.b:geometry.a": {"preserve_model_pose": true, "bones": [{"name": "x", "cubes": [{"size": [2, 2, 2]}]}]}, "geometry.a": {}}"#;
+
+const V18_SHAPE: &str = r#"{"format_version": "1.8.0", "geometry.b:geometry.a": {"bones": [{"name": "x", "neverRender": true, "cubes": [{"size": [2, 2, 2]}]}]}, "geometry.a": {}}"#;
+
+/// The path `to_json` refuses at once `change` is applied to the file `text` loads as.
+fn refusal(text: &str, change: &dyn Fn(&mut GeometryFile)) -> String {
+    let mut file = loaded(load(text)).into_value();
+    file.to_json().expect("unchanged, it is written");
+    change(&mut file);
+    match file.to_json() {
+        Err(EncodeError::NotRepresentable { at, what }) => {
+            assert_eq!(what, Unrepresentable::Unsupported);
+            at.to_string()
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+/// What neither shape holds: each change, with the member the refusal names.
+fn changes_both_shapes() -> Vec<(&'static str, Change)> {
+    use bedrock_addon::families::geometry::{CubeUv, ItemDisplayTransforms};
     use bedrock_addon::molang::Molang;
 
-    let old = r#"{"format_version": "1.1.0", "geometry.b:geometry.a": {"preserve_model_pose": true, "bones": [{"name": "x", "cubes": [{"size": [2, 2, 2]}]}]}, "geometry.a": {}}"#;
-    let v18 = r#"{"format_version": "1.8.0", "geometry.b:geometry.a": {"bones": [{"name": "x", "neverRender": true, "cubes": [{"size": [2, 2, 2]}]}]}, "geometry.a": {}}"#;
-    let refusal = |text: &str, change: &dyn Fn(&mut GeometryFile)| {
-        let mut file = loaded(load(text)).into_value();
-        file.to_json().expect("unchanged, it is written");
-        change(&mut file);
-        match file.to_json() {
-            Err(EncodeError::NotRepresentable { at, what }) => {
-                assert_eq!(what, Unrepresentable::Unsupported);
-                at.to_string()
-            }
-            other => panic!("{other:?}"),
-        }
-    };
-    // The geometries are in key order: `geometry.a` is 0, `geometry.b` is 1.
-    let g = "minecraft:geometry/1";
-    type Change = Box<dyn Fn(&mut GeometryFile)>;
-    let both: Vec<(&str, Change)> = vec![
+    vec![
         (
             "bones/0/binding",
             Box::new(|f| {
-                f.geometries[1].bones.as_mut().unwrap()[0].binding = Some(Molang::Const(1.0))
+                f.geometries[1].bones.as_mut().unwrap()[0].binding = Some(Molang::Const(1.0));
             }),
         ),
         (
             "item_display_transforms",
             Box::new(|f| {
-                f.geometries[1].item_display_transforms = Some(ItemDisplayTransforms::default())
+                f.geometries[1].item_display_transforms = Some(ItemDisplayTransforms::default());
             }),
         ),
         (
@@ -221,7 +224,7 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
                     .cubes
                     .as_mut()
                     .unwrap()[0]
-                    .rotation = Some([0.0, 0.0, 45.0])
+                    .rotation = Some([0.0, 0.0, 45.0]);
             }),
         ),
         (
@@ -231,7 +234,7 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
                     .cubes
                     .as_mut()
                     .unwrap()[0]
-                    .pivot = Some([9.0, 9.0, 9.0])
+                    .pivot = Some([9.0, 9.0, 9.0]);
             }),
         ),
         (
@@ -241,16 +244,16 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
                     .cubes
                     .as_mut()
                     .unwrap()[0]
-                    .uv = Some(CubeUv::Faces(Box::default()))
+                    .uv = Some(CubeUv::Faces(Box::default()));
             }),
         ),
         (
             "description/identifier",
-            Box::new(|f| f.geometries[1].description.identifier = "geometry.0".to_owned()),
+            Box::new(|f| f.geometries[1].description.identifier = String::from("geometry.0")),
         ),
         (
             "description/identifier",
-            Box::new(|f| f.geometries[1].description.identifier = "demo:geometry.b".to_owned()),
+            Box::new(|f| f.geometries[1].description.identifier = String::from("demo:geometry.b")),
         ),
         (
             "__legacy/parent",
@@ -260,7 +263,7 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
         (
             "description/identifier",
             Box::new(|f| {
-                f.geometries[1].description.identifier = "geometry.a".to_owned();
+                f.geometries[1].description.identifier = String::from("geometry.a");
                 f.geometries[1].legacy.parent = None;
             }),
         ),
@@ -272,14 +275,12 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
             "__legacy",
             Box::new(|f| f.format_version = FormatVersion::new(1, 26, 40)),
         ),
-    ];
-    for text in [old, v18] {
-        for (at, change) in &both {
-            assert_eq!(refusal(text, change), format!("{g}/{at}"), "{text}");
-        }
-    }
-    // What only the shape older than 1.8 lacks.
-    let only_old: Vec<(&str, Change)> = vec![
+    ]
+}
+
+/// What only the shape older than 1.8 lacks.
+fn changes_only_old_shape() -> Vec<(&'static str, Change)> {
+    vec![
         (
             "bones/0/parent",
             Box::new(|f| f.geometries[1].bones.as_mut().unwrap()[0].parent = Some("y".to_owned())),
@@ -293,7 +294,7 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
             Box::new(|f| {
                 f.geometries[1].bones.as_mut().unwrap()[0]
                     .legacy
-                    .bind_pose_rotation = Some([0.0; 3])
+                    .bind_pose_rotation = Some([0.0; 3]);
             }),
         ),
         (
@@ -308,13 +309,13 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
                         polys: bedrock_addon::families::geometry::Polys::List(
                             "tri_list".to_owned(),
                         ),
-                    })
+                    });
             }),
         ),
         (
             "bones/0/texture_meshes",
             Box::new(|f| {
-                f.geometries[1].bones.as_mut().unwrap()[0].texture_meshes = Some(Vec::new())
+                f.geometries[1].bones.as_mut().unwrap()[0].texture_meshes = Some(Vec::new());
             }),
         ),
         (
@@ -323,25 +324,21 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
                 f.geometries[1].bones.as_mut().unwrap()[0]
                     .cubes
                     .as_mut()
-                    .unwrap()[0] = Cube::default()
+                    .unwrap()[0] = Cube::default();
             }),
         ),
         (
             "__legacy/debug",
             Box::new(|f| f.geometries[1].legacy.debug = Some(true)),
         ),
-    ];
-    for (at, change) in &only_old {
-        assert_eq!(refusal(old, change), format!("{g}/{at}"));
-        // The 1.8 shape holds each of them.
-        let mut file = loaded(load(v18)).into_value();
-        change(&mut file);
-        let written = file.to_json().unwrap();
-        let again = loaded(load(&written));
-        assert_eq!(again.to_json().unwrap(), written, "{at}");
-    }
-    // What only the 1.8 shape lacks.
-    let only_v18: Vec<(&str, Change)> = vec![
+    ]
+}
+
+/// What only the 1.8 shape lacks.
+fn changes_only_v18_shape() -> Vec<(&'static str, Change)> {
+    use bedrock_addon::families::geometry::Locator;
+
+    vec![
         (
             "__legacy/preserve_model_pose",
             Box::new(|f| f.geometries[1].legacy.preserve_model_pose = Some(true)),
@@ -360,13 +357,39 @@ fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
                     )]
                     .into_iter()
                     .collect(),
-                )
+                );
             }),
         ),
-    ];
-    for (at, change) in &only_v18 {
-        assert_eq!(refusal(v18, change), format!("{g}/{at}"));
+    ]
+}
+
+/// `to_json` never gives text neither this loader nor vanilla reads. A legacy file the
+/// caller gave members its shape cannot hold is refused, at the member.
+#[test]
+fn a_legacy_file_changed_beyond_its_shape_is_refused_at_the_member() {
+    // The geometries are in key order: `geometry.a` is 0, `geometry.b` is 1.
+    let g = "minecraft:geometry/1";
+    for text in [OLD_SHAPE, V18_SHAPE] {
+        for (at, change) in &changes_both_shapes() {
+            assert_eq!(refusal(text, change), format!("{g}/{at}"), "{text}");
+        }
     }
+    for (at, change) in &changes_only_old_shape() {
+        assert_eq!(refusal(OLD_SHAPE, change), format!("{g}/{at}"));
+        // The 1.8 shape holds each of them.
+        let mut file = loaded(load(V18_SHAPE)).into_value();
+        change(&mut file);
+        let written = file.to_json().unwrap();
+        let again = loaded(load(&written));
+        assert_eq!(again.to_json().unwrap(), written, "{at}");
+    }
+    for (at, change) in &changes_only_v18_shape() {
+        assert_eq!(refusal(V18_SHAPE, change), format!("{g}/{at}"));
+    }
+}
+
+#[test]
+fn a_file_of_1_12_or_later_given_a_side_car_has_no_shape_that_holds_it() {
     // A file of 1.12 or later given a side-car has no shape that holds it.
     let mut file = loaded(load(r#"{"format_version": "1.16.0", "minecraft:geometry": [{"description": {"identifier": "geometry.x"}, "bones": [{"name": "a"}]}]}"#)).into_value();
     file.geometries[0].bones.as_mut().unwrap()[0]
@@ -415,7 +438,6 @@ fn a_built_file_writes_the_newest_format_and_loads_again() {
 /// The refusal names the JSON path of the value.
 #[test]
 fn a_number_that_is_not_finite_is_refused_by_the_writer_at_its_path() {
-    use bedrock_addon::json::{EncodeError, Unrepresentable};
     let refusal = |file: &GeometryFile| match file.to_json() {
         Err(EncodeError::NotRepresentable { at, what }) => (at.to_string(), what),
         other => panic!("{other:?}"),
@@ -620,7 +642,6 @@ fn a_locator_object_without_rotation_is_written_in_the_shape_that_holds_it() {
 /// `description` it is in.
 #[test]
 fn a_refusal_in_a_legacy_shape_description_names_the_description() {
-    use bedrock_addon::json::{EncodeError, Unrepresentable};
     let mut file = loaded(load(
         r#"{"format_version": "1.8.0", "geometry.a": {}, "geometry.b:geometry.a": {"visible_bounds_width": 2}}"#,
     ))

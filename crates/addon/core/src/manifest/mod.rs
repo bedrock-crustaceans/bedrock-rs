@@ -251,6 +251,10 @@ impl Manifest {
     /// Capabilities are checked against `capabilities`. Fails when any finding is an error, as
     /// vanilla refuses a pack whose report has errors; the warnings of a manifest that loads
     /// are in its document's diagnostics.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Rejected` when the manifest cannot be read or any finding is an error.
     pub fn parse(
         path: &PackPath,
         bytes: &[u8],
@@ -321,11 +325,19 @@ impl Manifest {
     /// format cannot hold the data (a setting other than a label, a dependency's `optional`, a
     /// pre-release `min_engine_version`) or a slider number is not finite. On failure nothing
     /// is appended.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::NotRepresentable` when the data has no form in the manifest's format version.
     pub fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write::write(self, out, style)
     }
 
     /// [`Manifest::write_json`] into a string, pretty-printed with two spaces.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` under the same conditions as [`Manifest::write_json`].
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let mut out = Vec::new();
         self.write_json(&mut out, WriteStyle::default())?;

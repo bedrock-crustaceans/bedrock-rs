@@ -1,3 +1,8 @@
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "outside the add-on toolkit: facet-json is called directly"
+)]
 use crate::forms::custom::CustomForm;
 use crate::forms::modal::ModalForm;
 use crate::forms::simple::SimpleForm;

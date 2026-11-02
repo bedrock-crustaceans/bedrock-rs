@@ -232,7 +232,7 @@ fn read_paths(responder: &Responder) -> Vec<String> {
         .iter()
         .filter_map(|request| match request {
             Request::ReadFile { location, .. } => Some(location.path.as_str().to_owned()),
-            _ => None,
+            Request::ListDir { .. } => None,
         })
         .collect()
 }
@@ -277,9 +277,9 @@ fn a_load_requests_the_bytes_of_the_files_it_parses_only() {
             behavior: Residency::Transient,
             ..StackOptions::default()
         };
-        let mut loader =
+        let mut stack_loader =
             StackLoader::new(repository.stacks(&world, LoadOptions::default()), options);
-        let loaded = responder.drive(&mut loader);
+        let loaded = responder.drive(&mut stack_loader);
         assert!(
             responder.log.requests.len() > before,
             "the documents were read"
@@ -343,9 +343,9 @@ fn v2_a_file_that_cannot_be_read_is_skipped_with_a_read_error() {
             behavior: Residency::Transient,
             ..StackOptions::default()
         };
-        let mut loader =
+        let mut stack_loader =
             StackLoader::new(repository.stacks(&world, LoadOptions::default()), options);
-        let loaded = responder.drive(&mut loader);
+        let loaded = responder.drive(&mut stack_loader);
         let ui = loaded.resource.data_driven_ui();
         let roots: Vec<&str> = ui.roots.iter().map(|(id, _)| id.as_str()).collect();
         assert_eq!(roots, ["demo:b"], "{order:?}");

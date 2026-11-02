@@ -109,11 +109,11 @@ fn tests_of(document: &Value, into: &mut BTreeMap<String, usize>) {
         if let Some(name) = object.get("test").and_then(Value::as_string) {
             *into.entry(name.as_str().to_owned()).or_insert(0) += 1;
         }
-        for (_, member) in object.iter() {
+        for (_, member) in object {
             tests_of(member, into);
         }
     } else if let Some(array) = document.as_array() {
-        for element in array.iter() {
+        for element in array {
             tests_of(element, into);
         }
     }
@@ -150,16 +150,16 @@ fn count_filters(set: &StackSet, found: &mut Filters) {
     found.spawn_rules += stack.spawn_rules().len();
     found.feature_rules += stack.feature_rules().len();
     found.items += stack.items().len();
-    for (_, document) in stack.entities().iter() {
+    for (_, document) in stack.entities() {
         count_written(document.value(), found);
     }
-    for (_, document) in stack.spawn_rules().iter() {
+    for (_, document) in stack.spawn_rules() {
         count_written(document.value(), found);
     }
-    for (_, document) in stack.feature_rules().iter() {
+    for (_, document) in stack.feature_rules() {
         count_written(document.value(), found);
     }
-    for (_, document) in stack.items().iter() {
+    for (_, document) in stack.items() {
         count_written(document.value(), found);
     }
     let findings = stack
@@ -753,7 +753,7 @@ fn strings_of(
         into.entry(pointer.clone())
             .or_insert_with(|| (text.as_str().to_owned(), Some(version)));
     } else if let Some(object) = value.as_object() {
-        for (key, member) in object.iter() {
+        for (key, member) in object {
             pointer.push('/');
             pointer.push_str(key.as_str());
             strings_of(member, pointer, version, into);
@@ -820,12 +820,12 @@ fn every_behavior_entity_molang_occurrence_loads_with_its_text_and_version() {
             *written.entry(member_kind(pointer)).or_insert(0) += 1;
         }
     }
-    let from_fields = found.checked - written.values().sum::<usize>();
+    let from_fields = found.compared - written.values().sum::<usize>();
     eprintln!(
         "molang pairs, entities: {} occurrences in {} files; {from_fields} are Molang fields of the loaded document, the others are read from the written document: {written:?}",
-        found.checked, found.files
+        found.compared, found.files
     );
-    assert_eq!((found.checked, found.keys, found.files), (1587, 0, 955));
+    assert_eq!((found.compared, found.keys, found.files), (1587, 0, 955));
     // The typed fields of the 1.26.60 keys account for 1542 of the occurrences.
     assert_eq!(from_fields, 1542);
     let expected: BTreeMap<String, usize> = READ_FROM_THE_WRITTEN_DOCUMENT

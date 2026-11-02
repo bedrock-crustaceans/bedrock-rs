@@ -267,7 +267,7 @@ fn sections(entity: &Value) -> Vec<(String, &Value)> {
         out.push(("components".to_owned(), components));
     }
     if let Some(groups) = entity.get("component_groups").and_then(Value::as_object) {
-        for (name, group) in groups.iter() {
+        for (name, group) in groups {
             out.push((format!("component_groups/{}", name.as_str()), group));
         }
     }
@@ -315,7 +315,7 @@ fn vanilla_entity_files_read_this_modules_components_without_an_error() {
             let Some(components) = components.as_object() else {
                 continue;
             };
-            for (key, value) in components.iter() {
+            for (key, value) in components {
                 let Some(name) = key.as_str().strip_prefix("minecraft:") else {
                     continue;
                 };

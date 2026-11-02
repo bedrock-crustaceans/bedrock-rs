@@ -41,7 +41,7 @@ fn m7_a_block_of_a_poi_type_that_a_pack_defines_or_the_game_has_resolves() {
         &files,
         &[],
         with_poi(LoadOptions::default()),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["block"]), []);
     // A host answers for it too.
@@ -49,7 +49,7 @@ fn m7_a_block_of_a_poi_type_that_a_pack_defines_or_the_game_has_resolves() {
         &files,
         &[],
         with_poi(hosted(&[("block", "minecraft:anvil")])),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["block"]), []);
 }
@@ -63,7 +63,7 @@ fn m7_a_block_of_a_poi_type_that_nothing_defines_is_an_error_at_its_entry() {
         &files,
         &[],
         with_poi(LoadOptions::default()),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said(&found, &["block"]),
@@ -82,7 +82,7 @@ fn m7_a_block_of_a_poi_type_that_nothing_defines_is_an_error_at_its_entry() {
         &files,
         &[],
         with_poi(LoadOptions::default()),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -93,7 +93,7 @@ fn m7_a_block_of_a_poi_type_that_nothing_defines_is_an_error_at_its_entry() {
         &files,
         &[],
         with_poi(hosted(&[("block", "minecraft:anvil")])),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said(&found, &["block"])
@@ -113,7 +113,7 @@ fn m7_without_the_poi_experiment_nothing_is_linked() {
         &[("poi/blocks/forge.json", forge.as_str())],
         &[],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["block"]), []);
 }

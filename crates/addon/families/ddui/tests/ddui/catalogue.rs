@@ -395,9 +395,9 @@ fn the_child_sets_of_1_26_45() {
     );
 }
 
-/// Child sets: RootControl gains `Form.Panel`; PanelContent the four
-/// `Form.CloseButton`, `Form.Spacing`, `Form.Text`, `Form.HorizontalStack`; ListContent those
-/// four and `ExtensionPoint`; GridContent is unchanged.
+/// Child sets: `RootControl` gains `Form.Panel`; `PanelContent` the four
+/// `Form.CloseButton`, `Form.Spacing`, `Form.Text`, `Form.HorizontalStack`; `ListContent` those
+/// four and `ExtensionPoint`; `GridContent` is unchanged.
 #[test]
 fn the_child_sets_of_1_26_60() {
     let (c, before) = (Catalogue::V1_26_60, Catalogue::V1_26_45);

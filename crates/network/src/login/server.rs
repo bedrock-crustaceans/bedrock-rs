@@ -26,17 +26,20 @@ impl Default for LoginOptions {
 }
 
 impl LoginOptions {
+    #[must_use]
     pub fn chain_root(mut self, chain_root: ChainRoot) -> Self {
         self.chain_root = chain_root;
         self
     }
 
+    #[must_use]
     pub fn oidc(mut self, oidc: impl Into<Arc<AuthOIDC>>) -> Self {
         self.oidc = Some(oidc.into());
         self
     }
 
     /// Refuses logins that are not signed in to an online account. On by default.
+    #[must_use]
     pub fn require_authentication(mut self, required: bool) -> Self {
         self.require_authentication = required;
         self
@@ -44,12 +47,19 @@ impl LoginOptions {
 
     /// Accepts guest (split-screen) logins whose token verifies against the OIDC keys. Off by
     /// default.
+    #[must_use]
     pub fn allow_guests(mut self, allowed: bool) -> Self {
         self.allow_guests = allowed;
         self
     }
 
     /// Verifies the connection request bytes of a login packet against the cached OIDC keys.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LoginError::Auth`] when the request fails to parse or its chain, token or client
+    /// data does not verify, and [`LoginError::NotAuthenticated`] when authentication is required
+    /// and the login is not signed in to an online account.
     pub fn verify(&self, request: &[u8]) -> Result<Login, LoginError> {
         let request = ConnectionRequest::parse(request)?;
         let oidc = self.oidc.as_deref();
@@ -65,6 +75,10 @@ impl LoginOptions {
 
     /// Like [`Self::verify`], but refetches the OIDC keys once when the login names a key id
     /// the cache lacks. The refetch is rate limited by the keys themselves.
+    ///
+    /// # Errors
+    ///
+    /// The errors of [`Self::verify`], and [`LoginError::Auth`] when the refetch fails.
     pub fn verify_refreshing(
         &self,
         request: &[u8],
@@ -85,6 +99,10 @@ impl LoginOptions {
     }
 
     /// Async twin of [`Self::verify_refreshing`].
+    ///
+    /// # Errors
+    ///
+    /// The errors of [`Self::verify_refreshing`].
     pub async fn verify_refreshing_async(
         &self,
         request: &[u8],
@@ -148,7 +166,7 @@ mod tests {
         LoginOptions::default().oidc(oidc_before_rotation())
     }
 
-    fn is_unknown_key_id(result: Result<Login, LoginError>) -> bool {
+    fn is_unknown_key_id(result: &Result<Login, LoginError>) -> bool {
         matches!(result, Err(LoginError::Auth(AuthError::UnknownKeyId(_))))
     }
 
@@ -223,7 +241,7 @@ mod tests {
     #[test]
     fn a_login_signed_by_a_rotated_key_is_refused_without_a_refresh() {
         assert!(is_unknown_key_id(
-            rotated().verify(&verified_online_login())
+            &rotated().verify(&verified_online_login())
         ));
     }
 
@@ -258,7 +276,7 @@ mod tests {
 
         let result = rotated().verify_refreshing(&verified_online_login(), &http);
 
-        assert!(is_unknown_key_id(result));
+        assert!(is_unknown_key_id(&result));
         assert_eq!(http.requests(), ["https://jwks.invalid"]);
     }
 
@@ -270,7 +288,7 @@ mod tests {
             .verify_refreshing_async(&verified_online_login(), &http)
             .await;
 
-        assert!(is_unknown_key_id(result));
+        assert!(is_unknown_key_id(&result));
         assert_eq!(http.requests(), ["https://jwks.invalid"]);
     }
 
@@ -281,9 +299,9 @@ mod tests {
         let (token, mut server) = begin_encryption(&login).unwrap();
         let mut client = client_finish_encryption(&token, &client_key()).unwrap();
 
-        let down = server.encrypt(b"server to client".to_vec()).unwrap();
+        let down = server.encrypt(b"server to client").unwrap();
         assert_eq!(client.decrypt(down).unwrap(), b"server to client");
-        let up = client.encrypt(b"client to server".to_vec()).unwrap();
+        let up = client.encrypt(b"client to server").unwrap();
         assert_eq!(server.decrypt(up).unwrap(), b"client to server");
     }
 
@@ -294,7 +312,7 @@ mod tests {
         let (_, mut server) = begin_encryption(&login).unwrap();
         let mut client = client_finish_encryption(&token, &client_key()).unwrap();
 
-        let up = client.encrypt(b"client to server".to_vec()).unwrap();
+        let up = client.encrypt(b"client to server").unwrap();
 
         assert_ne!(
             server.decrypt(up).ok().as_deref(),

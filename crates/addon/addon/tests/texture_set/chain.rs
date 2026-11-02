@@ -40,12 +40,12 @@ fn parse(text: &str) -> TextureSet {
 
 #[test]
 fn the_chain_is_v1_16_100_then_v1_21_30_with_no_beta() {
+    const HAS_BETA: bool = <Any as VersionChain<TextureSetFamily>>::HAS_BETA;
     check_chain::<TextureSetFamily>().expect("the chain is well formed");
     assert_eq!(
         <Any as VersionChain<TextureSetFamily>>::VERSIONS,
         [V16, V21]
     );
-    const HAS_BETA: bool = <Any as VersionChain<TextureSetFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
     assert_eq!(<v1_16_100::TextureSet as Versioned>::VERSION, V16);
@@ -54,6 +54,7 @@ fn the_chain_is_v1_16_100_then_v1_21_30_with_no_beta() {
 
 #[test]
 fn the_family_parameters_are_the_plan_s() {
+    const WARN: bool = TextureSetFamily::ENVELOPE_WARN_MISSING_VERSION;
     assert_eq!(TextureSetFamily::NAME, "texture_set");
     assert_eq!(TextureSetFamily::PAYLOAD_KEY, "minecraft:texture_set");
     assert_eq!(TextureSetFamily::DIRECTORIES, ["textures"]);
@@ -62,7 +63,6 @@ fn the_family_parameters_are_the_plan_s() {
     // The ceiling is the newest struct's version, derived from the range model.
     assert_eq!(TextureSetFamily::CEILING, None);
     assert_eq!(TextureSetFamily::MISSING_VERSION, MissingVersion::Reject);
-    const WARN: bool = TextureSetFamily::ENVELOPE_WARN_MISSING_VERSION;
     let warn = WARN;
     assert!(!warn, "a missing version is an error, not a warning");
 }
@@ -159,7 +159,7 @@ fn the_step_keeps_the_color_and_invents_no_mers() {
         payload
             .get("color")
             .and_then(Value::as_string)
-            .map(|s| s.as_str()),
+            .map(facet_value::VString::as_str),
         Some("stone")
     );
     assert!(out.diagnostics.is_empty());

@@ -51,6 +51,10 @@ impl Text {
 
 impl<K: Kind> Id<K> {
     /// Validates `text` against `K`'s syntax.
+    ///
+    /// # Errors
+    ///
+    /// Returns `IdError` when `text` does not match the identifier syntax of `K`.
     pub fn new(text: impl Into<Arc<str>>) -> Result<Self, IdError> {
         let text = text.into();
         syntax::validate(&text, K::SYNTAX, K::SUFFIX)?;
@@ -72,6 +76,10 @@ impl<K: Kind> Id<K> {
     /// use bedrock_addon_core::id::{BlockId, Id};
     /// const BAD: BlockId = Id::from_static("demo:bad block");
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics when `text` is malformed (at compile time in a `const`).
     pub const fn from_static(text: &'static str) -> Self {
         assert!(
             syntax::validate(text, K::SYNTAX, K::SUFFIX).is_ok(),

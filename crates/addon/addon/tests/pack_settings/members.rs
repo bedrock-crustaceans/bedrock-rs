@@ -191,7 +191,7 @@ fn ps15_findings_under_a_foreign_payload_key_keep_their_file_offsets() {
 #[test]
 fn d6_a_missing_required_member_is_an_error() {
     for (payload, path) in [
-        (r#"{}"#.to_owned(), "minecraft:pack_settings/settings"),
+        (r"{}".to_owned(), "minecraft:pack_settings/settings"),
         (
             r#"{"settings": [{"values": {}}]}"#.to_owned(),
             "minecraft:pack_settings/settings/0/pack_id",

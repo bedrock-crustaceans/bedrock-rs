@@ -1,6 +1,6 @@
 //! The parser of the `script-syntax` feature recurses; no file may make it overflow the
 //! stack. Every source here is scanned on a thread with the megabyte of stack a world load is
-//! given (crates/addon/std/tests/small_stack.rs), through `ScriptBundle::scan`: an overflow
+//! given (`crates/addon/std/tests/small_stack.rs`), through `ScriptBundle::scan`: an overflow
 //! aborts the test binary. Run once with full debug info before a release (the frames are
 //! largest then): `CARGO_PROFILE_TEST_DEBUG=2 CARGO_PROFILE_DEV_DEBUG=2`.
 
@@ -13,7 +13,7 @@ use bedrock_addon::storage::PackPath;
 struct Host;
 
 impl ScriptHost for Host {
-    fn plugin(&self) -> &str {
+    fn plugin(&self) -> &'static str {
         "probe - 1.0.0"
     }
     fn entry(&self) -> Option<&str> {
@@ -480,21 +480,15 @@ fn long_flat_scripts_are_parsed() {
     }
 }
 
-#[test]
-fn no_script_with_a_syntax_error_overflows_the_stack() {
-    let deep = |open: &str| open.repeat(DEEP);
+/// `open` repeated a thousand levels deep.
+fn deep(open: &str) -> String {
+    open.repeat(DEEP)
+}
+
+/// Sources that nest or never close one construct inside another, a thousand levels deep.
+fn nesting_sources() -> Vec<(&'static str, String)> {
     let parens = nest("(", "1", ")", DEEP);
-    // A block of fifty levels that an error or a second reading may leave open, a thousand
-    // times over: `@` is what stands between the openers and the closers.
-    let block = |between: &str, tail: &str| {
-        format!(
-            "{}{}{tail}",
-            "(".repeat(50),
-            between.replace('@', &")".repeat(50))
-        )
-        .repeat(2_000)
-    };
-    let sources: Vec<(&str, String)> = vec![
+    vec![
         ("unclosed parentheses", deep("(")),
         ("unclosed braces", deep("{")),
         ("unclosed brackets", format!("x={}", deep("["))),
@@ -528,6 +522,13 @@ fn no_script_with_a_syntax_error_overflows_the_stack() {
         ("ternaries", format!("x={}", deep("a?b:"))),
         ("questions", format!("x={}", deep("a?"))),
         ("colons", format!("x={}", deep("a:"))),
+    ]
+}
+
+/// Sources of statements and expressions that nest, or never end, a thousand levels deep.
+fn statement_sources() -> Vec<(&'static str, String)> {
+    let parens = nest("(", "1", ")", DEEP);
+    vec![
         ("if", deep("if(a)")),
         ("if without a head", deep("if ")),
         ("else", deep("else ")),
@@ -600,6 +601,22 @@ fn no_script_with_a_syntax_error_overflows_the_stack() {
         ("a stray backslash", format!("x = \\ {parens};")),
         ("a number with a name", format!("x = 1a + {parens};")),
         ("a keyword escaped", format!("x = \\u0074ypeof {parens};")),
+    ]
+}
+
+/// Sources that hide the closers of fifty open parentheses in what one reading takes for text.
+fn closer_sources() -> Vec<(&'static str, String)> {
+    // A block of fifty levels that an error or a second reading may leave open, a thousand
+    // times over: `@` is what stands between the openers and the closers.
+    let block = |between: &str, tail: &str| {
+        format!(
+            "{}{}{tail}",
+            "(".repeat(50),
+            between.replace('@', &")".repeat(50))
+        )
+        .repeat(2_000)
+    };
+    vec![
         // The closers stand in what one reading takes for text.
         ("a name before a regex-like run", block(" x /@/ ", "")),
         ("a name, a line, a regex-like run", block(" x\n/@/ ", "")),
@@ -645,7 +662,14 @@ fn no_script_with_a_syntax_error_overflows_the_stack() {
             "closers after an escaped backslash",
             block(" \"\\\\\"@\"\\\\\" ", ""),
         ),
-    ];
+    ]
+}
+
+#[test]
+fn no_script_with_a_syntax_error_overflows_the_stack() {
+    let mut sources = nesting_sources();
+    sources.extend(statement_sources());
+    sources.extend(closer_sources());
     let named: Vec<(String, String)> = sources
         .into_iter()
         .map(|(name, source)| (name.to_owned(), source))

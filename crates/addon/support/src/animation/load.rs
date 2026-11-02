@@ -41,6 +41,11 @@ pub fn version_info(written: &SemVersion, parsed_as: FormatVersion, upgraded: bo
 }
 
 /// One file's result as a document of the whole file.
+///
+/// # Errors
+///
+/// `Rejected` (with the file's located diagnostics) when the parse produced no value or the file's
+/// `format_version` was not read.
 pub fn whole<T>(
     parsed: Parsed<T>,
     origin: Origin,

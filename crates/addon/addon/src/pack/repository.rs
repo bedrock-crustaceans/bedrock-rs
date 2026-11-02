@@ -268,6 +268,10 @@ impl WorldPacks {
     /// array of three numbers or a version string; `pack_id` a UUID of 32 hex digits or 36
     /// hyphenated characters, any case; other members are ignored. A file that is not such an
     /// array, or an entry with a member missing, of the wrong type or invalid, rejects the parse.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when a file is not a JSON array of valid pack entries; see above.
     pub fn parse(behavior: Option<&[u8]>, resource: Option<&[u8]>) -> Result<Self, Rejected> {
         Ok(Self {
             behavior: parse_list(behavior, Self::BEHAVIOR_FILE, PackSide::Behavior)?,

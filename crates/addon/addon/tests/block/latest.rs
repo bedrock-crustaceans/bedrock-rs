@@ -262,7 +262,7 @@ fn the_gtest_box_is_upgraded_to_a_min_max_array() {
     assert!(block.version().upgraded);
 }
 
-/// Every vanilla_1.26.50 block runs the step: `shelf_mushroom_block` in the base
+/// Every `vanilla_1.26.50` block runs the step: `shelf_mushroom_block` in the base
 /// and in its permutations; `red_shrub`'s `false` passes through.
 #[test]
 fn the_vanilla_1_26_50_blocks_are_upgraded() {
@@ -1468,6 +1468,10 @@ fn the_rules_at_their_paths_codes_and_edges() {
             .to_string()
             .ends_with("direction")
     );
+}
+
+#[test]
+fn neighbor_change_directions_are_checked() {
     // neighbor_change.
     for directions in [r#"["all", "up"]"#, "[]"] {
         let d = rejected(
@@ -1491,6 +1495,10 @@ fn the_rules_at_their_paths_codes_and_edges() {
         &newest(r#""minecraft:neighbor_change": {"neighbor_directions": ["all"]}"#),
         &ucf(),
     );
+}
+
+#[test]
+fn block_entity_members_are_gated_and_ranged() {
     // block_entity.
     for (member, value) in [
         ("container", r#"{"slot_count": 9}"#),
@@ -1566,6 +1574,10 @@ fn the_rules_at_their_paths_codes_and_edges() {
         1,
         "{d:#?}"
     );
+}
+
+#[test]
+fn multi_block_rejects_random_offset_and_precipitation() {
     // Multi-block.
     let multi = |direction: &str, components: &str, permutations: &str| {
         document(
@@ -1606,6 +1618,10 @@ fn the_rules_at_their_paths_codes_and_edges() {
         1,
         "{d:#?}"
     );
+}
+
+#[test]
+fn internal_vanilla_data_is_one_archetype_and_a_unit_translucency() {
     // internal_vanilla_data.
     let d = rejected(&gtest("loader-14"), &base_game());
     let archetype = errors_at(
@@ -1645,8 +1661,19 @@ fn the_rules_at_their_paths_codes_and_edges() {
     for good in ["1.0", "0.0"] {
         let _ = loads(&translucent(good), &base_game());
     }
-    // Every rejected key: the base's eleven, the permutation's
-    // seventeen.
+}
+
+#[test]
+fn the_base_and_permutation_reject_their_keys() {
+    const PERMUTATION: [&str; 6] = [
+        "minecraft:block_entity",
+        "minecraft:embedded_visual",
+        "minecraft:flower_pottable",
+        "minecraft:item_visual",
+        "minecraft:redstone_consumer",
+        "minecraft:support",
+    ];
+
     const BASE: [&str; 11] = [
         "minecraft:breathability",
         "minecraft:unit_cube",
@@ -1660,14 +1687,9 @@ fn the_rules_at_their_paths_codes_and_edges() {
         "minecraft:queued_ticking",
         "minecraft:random_ticking",
     ];
-    const PERMUTATION: [&str; 6] = [
-        "minecraft:block_entity",
-        "minecraft:embedded_visual",
-        "minecraft:flower_pottable",
-        "minecraft:item_visual",
-        "minecraft:redstone_consumer",
-        "minecraft:support",
-    ];
+
+    // Every rejected key: the base's eleven, the permutation's
+    // seventeen.
     let key_text = |key: &str| format!("key {key} is not allowed");
     for key in BASE {
         let d = rejected(&newest(&format!(r#""{key}": {{}}"#)), &ucf());

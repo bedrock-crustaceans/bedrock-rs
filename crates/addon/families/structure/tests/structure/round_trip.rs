@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_family_structure::Structure;
+use bedrock_addon_family_structure::{Layout, Structure};
 use nbtx::Value;
 
 use super::common::{bytes, fixture, loads};
@@ -91,7 +91,7 @@ fn a_structure_built_in_code_is_written_in_vanillas_layout() {
     // s01 is in the layout `/structure save` writes: tags by name, empty lists of End.
     let loaded = loads(&fixture("s01_vanilla_1x1x1")).into_value();
     let built = Structure {
-        layout: Default::default(),
+        layout: Layout::default(),
         ..loaded.clone()
     };
     assert_eq!(built.to_bytes().unwrap(), fixture("s01_vanilla_1x1x1"));
@@ -135,7 +135,7 @@ fn a_root_name_and_trailing_bytes_are_kept() {
     let mut input = nbtx::to_le_bytes(&nbtx::Named::new(
         "named",
         super::common::tree(
-            r#"{format_version: 1, size: [1, 1, 1], structure_world_origin: [0, 0, 0], structure: {block_indices: [[], []], entities: [], palette: {}}}"#,
+            r"{format_version: 1, size: [1, 1, 1], structure_world_origin: [0, 0, 0], structure: {block_indices: [[], []], entities: [], palette: {}}}",
         ),
     ))
     .unwrap();

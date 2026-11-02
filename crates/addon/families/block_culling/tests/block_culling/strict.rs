@@ -441,7 +441,7 @@ fn findings_carry_the_span_of_the_value_their_path_names() {
     );
     let found = rejects(&text);
     let mut seen = Vec::new();
-    for finding in found.iter() {
+    for finding in &found {
         let at = finding.location.json_path.to_string();
         let Some(span) = finding.location.span else {
             // The line that says the file failed is about the file, not about a value.

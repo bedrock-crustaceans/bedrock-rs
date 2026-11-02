@@ -237,6 +237,10 @@ impl fmt::Debug for Driver {
 impl Driver {
     /// A driver; builds the rayon pool if `options.strategy` asks for one, with
     /// `RECOMMENDED_JOB_STACK` per thread.
+    ///
+    /// # Errors
+    ///
+    /// `LoadError::Pool` when the rayon pool cannot be built.
     pub fn new(options: Options) -> Result<Driver, LoadError> {
         #[cfg(feature = "rayon")]
         let pool = match &options.strategy {
@@ -277,6 +281,11 @@ impl Driver {
     /// finishes. Under a rayon strategy the calling thread waits for answers; calling this
     /// from a thread of the same pool can therefore wait forever when the pool has no other
     /// thread free.
+    ///
+    /// # Errors
+    ///
+    /// `LoadError::Loader` when the loader reports a protocol violation, and
+    /// `LoadError::Stalled` when it waits with no request or job outstanding.
     pub fn drive<T, L: Loader<T>>(&self, mut loader: L) -> Result<T, LoadError> {
         let (answers, received) = mpsc::channel();
         #[cfg(feature = "rayon")]
@@ -363,6 +372,11 @@ impl Driver {
     }
 
     /// Opens a pack folder (manifest at the root or in its single subdirectory holding one).
+    ///
+    /// # Errors
+    ///
+    /// `LoadError::Open` when the pack cannot be opened (no manifest, several, an unreadable or
+    /// invalid one), and the errors of [`Driver::drive`].
     pub fn pack_dir(&mut self, path: impl AsRef<Path>) -> Result<Pack, LoadError> {
         let path = path.as_ref();
         let root = self.roots.add(path);
@@ -371,6 +385,11 @@ impl Driver {
     }
 
     /// Opens a pack archive (`.mcpack`, `.zip`, `.mctemplate`), detected by magic bytes.
+    ///
+    /// # Errors
+    ///
+    /// `LoadError::Open` when the archive cannot be read or holds no valid pack, and the errors
+    /// of [`Driver::drive`].
     #[cfg(feature = "zip")]
     #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
     pub fn pack_archive(&mut self, path: impl AsRef<Path>) -> Result<Pack, LoadError> {
@@ -386,6 +405,10 @@ impl Driver {
     /// Sources in priority order (the first registration of a pack identity and origin wins).
     /// Reads manifests and archive indexes only; an unreadable source or an invalid pack is
     /// recorded in the repository's `source_reports` and `invalid`, not returned as an error.
+    ///
+    /// # Errors
+    ///
+    /// The errors of [`Driver::drive`].
     pub fn repository(
         &mut self,
         sources: impl IntoIterator<Item = DirSource>,
@@ -402,6 +425,10 @@ impl Driver {
 
     /// Drives a `StackLoader` over stacks composed by `PackRepository::stacks`, whose packs
     /// this driver opened (their locations are roots of this table).
+    ///
+    /// # Errors
+    ///
+    /// The errors of [`Driver::drive`].
     pub fn load_stacks(
         &self,
         stacks: StackSet,
@@ -464,11 +491,21 @@ impl Work {
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Errors
+///
+/// `LoadError::Pool` when the rayon pool cannot be built, and the errors of
+/// [`Driver::pack_dir`].
 pub fn load_dir(path: impl AsRef<Path>, options: &Options) -> Result<Pack, LoadError> {
     Driver::new(options.clone())?.pack_dir(path)
 }
 
 /// Opens a pack archive with a fresh [`Driver`].
+///
+/// # Errors
+///
+/// `LoadError::Pool` when the rayon pool cannot be built, and the errors of
+/// [`Driver::pack_archive`].
 #[cfg(feature = "zip")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
 pub fn load_archive(path: impl AsRef<Path>, options: &Options) -> Result<Pack, LoadError> {

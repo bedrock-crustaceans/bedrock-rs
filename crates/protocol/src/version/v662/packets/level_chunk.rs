@@ -16,21 +16,25 @@ pub struct LevelChunkPacket<V: ProtoVersion> {
     pub serialized_chunk_data: Vec<u8>,
 }
 
-impl <V: ProtoVersion> LevelChunkPacket<V> {
+impl<V: ProtoVersion> LevelChunkPacket<V> {
     pub const LIMITLESS: u32 = u32::MAX;
     pub const LIMITED: u32 = u32::MAX - 1;
 }
 
-impl <V: ProtoVersion> ProtoCodec for LevelChunkPacket<V> {
+impl<V: ProtoVersion> ProtoCodec for LevelChunkPacket<V> {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         self.chunk_position.serialize(stream)?;
         <i32 as ProtoCodecVAR>::serialize(&self.dimension_id, stream)?;
         <u32 as ProtoCodecVAR>::serialize(&self.sub_chunk_count, stream)?;
-        if self.sub_chunk_count == Self::LIMITED { <u16 as ProtoCodecLE>::serialize(&self.sub_chunk_limit, stream)? };
+        if self.sub_chunk_count == Self::LIMITED {
+            <u16 as ProtoCodecLE>::serialize(&self.sub_chunk_limit, stream)?;
+        }
         self.cache_enabled.serialize(stream)?;
-        if self.cache_enabled { <Vec<u64> as ProtoCodecLE>::serialize(&self.cache_blobs, stream)? };
+        if self.cache_enabled {
+            <Vec<u64> as ProtoCodecLE>::serialize(&self.cache_blobs, stream)?;
+        }
         self.serialized_chunk_data.serialize(stream)?;
-        
+
         Ok(())
     }
 
@@ -40,15 +44,16 @@ impl <V: ProtoVersion> ProtoCodec for LevelChunkPacket<V> {
         let sub_chunk_count = <u32 as ProtoCodecVAR>::deserialize(stream)?;
         let sub_chunk_limit = match sub_chunk_count {
             Self::LIMITED => <u16 as ProtoCodecLE>::deserialize(stream)?,
-            _ => 0
+            _ => 0,
         };
         let cache_enabled = bool::deserialize(stream)?;
-        let cache_blobs = match cache_enabled {
-            true => <Vec<u64> as ProtoCodecVAR>::deserialize(stream)?,
-            _ => vec![],
+        let cache_blobs = if cache_enabled {
+            <Vec<u64> as ProtoCodecVAR>::deserialize(stream)?
+        } else {
+            vec![]
         };
         let serialized_chunk_data = Vec::<u8>::deserialize(stream)?;
-        
+
         Ok(Self {
             chunk_position,
             dimension_id,
@@ -56,23 +61,24 @@ impl <V: ProtoVersion> ProtoCodec for LevelChunkPacket<V> {
             sub_chunk_limit,
             cache_enabled,
             cache_blobs,
-            serialized_chunk_data
+            serialized_chunk_data,
         })
     }
 
     fn size_hint(&self) -> usize {
         self.chunk_position.size_hint()
-        + <i32 as ProtoCodecVAR>::size_hint(&self.dimension_id)
-        + <u32 as ProtoCodecVAR>::size_hint(&self.sub_chunk_count)
-        + match self.sub_chunk_count {
-            Self::LIMITED => <u16 as ProtoCodecLE>::size_hint(&self.sub_chunk_limit),
-            _ => 0,
-        }
-        + self.cache_enabled.size_hint()
-        + match self.cache_enabled {
-            true => <Vec<u64> as ProtoCodecLE>::size_hint(&self.cache_blobs),
-            _ => 0,
-        }
-        + self.serialized_chunk_data.size_hint()
+            + <i32 as ProtoCodecVAR>::size_hint(&self.dimension_id)
+            + <u32 as ProtoCodecVAR>::size_hint(&self.sub_chunk_count)
+            + match self.sub_chunk_count {
+                Self::LIMITED => <u16 as ProtoCodecLE>::size_hint(&self.sub_chunk_limit),
+                _ => 0,
+            }
+            + self.cache_enabled.size_hint()
+            + if self.cache_enabled {
+                <Vec<u64> as ProtoCodecLE>::size_hint(&self.cache_blobs)
+            } else {
+                0
+            }
+            + self.serialized_chunk_data.size_hint()
     }
 }

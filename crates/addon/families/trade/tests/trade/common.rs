@@ -76,16 +76,18 @@ pub fn found_at(d: &Diagnostics, name: &str, severity: Severity, path: &str) -> 
 
 /// One line per finding: severity, code and path.
 pub fn summary(d: &Diagnostics) -> String {
-    d.iter()
-        .map(|f| {
-            format!(
-                "\n  {:?} {} at {}",
-                f.severity,
-                f.code.name(),
-                f.location.json_path
-            )
-        })
-        .collect()
+    use std::fmt::Write;
+    d.iter().fold(String::new(), |mut out, f| {
+        write!(
+            out,
+            "\n  {:?} {} at {}",
+            f.severity,
+            f.code.name(),
+            f.location.json_path
+        )
+        .expect("writing to a String cannot fail");
+        out
+    })
 }
 
 /// The findings at info (the ones of ours).

@@ -378,7 +378,7 @@ fn the_identifier_is_read_before_the_version() {
         r#"{"minecraft:fog_settings": {"description": {}}}"#.to_owned(),
         r#"{"format_version": "1.26.20", "minecraft:fog_settings": {}}"#.to_owned(),
         r#"{"format_version": "1.26.20", "other": {}}"#.to_owned(),
-        r#"[1]"#.to_owned(),
+        r"[1]".to_owned(),
         doc("1.26.20", "").replace("\"demo:fog\"", "\"\""),
         doc("1.26.20", "").replace("\"demo:fog\"", "null"),
         doc("1.26.20", "").replace("\"demo:fog\"", "7"),

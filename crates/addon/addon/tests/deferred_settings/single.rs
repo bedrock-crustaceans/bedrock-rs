@@ -33,7 +33,7 @@ fn local(members: &str) -> String {
 
 /// The one error must be an `InvalidValue` at `path` with cereal's range text.
 #[track_caller]
-pub fn out_of_range(found: (&'static str, String, String), path: &str) {
+pub fn out_of_range(found: &(&'static str, String, String), path: &str) {
     assert_eq!((found.0, found.1.as_str()), ("InvalidValue", path));
     assert!(found.2.starts_with(RANGE), "{}", found.2);
 }
@@ -67,19 +67,19 @@ fn h02_an_empty_payload_uses_the_games_values_and_writes_none_back() {
 #[test]
 fn h03_texel_size_is_an_integer_from_1_to_1024() {
     out_of_range(
-        one_error::<ShadowSettings>(&shadows(r#""texel_size": 0"#)),
+        &one_error::<ShadowSettings>(&shadows(r#""texel_size": 0"#)),
         "minecraft:shadow_settings/texel_size",
     );
     out_of_range(
-        one_error::<ShadowSettings>(&shadows(r#""texel_size": 2048"#)),
+        &one_error::<ShadowSettings>(&shadows(r#""texel_size": 2048"#)),
         "minecraft:shadow_settings/texel_size",
     );
     out_of_range(
-        one_error::<ShadowSettings>(&shadows(r#""texel_size": 1025"#)),
+        &one_error::<ShadowSettings>(&shadows(r#""texel_size": 1025"#)),
         "minecraft:shadow_settings/texel_size",
     );
     out_of_range(
-        one_error::<ShadowSettings>(&shadows(r#""texel_size": -1"#)),
+        &one_error::<ShadowSettings>(&shadows(r#""texel_size": -1"#)),
         "minecraft:shadow_settings/texel_size",
     );
     assert_eq!(
@@ -472,7 +472,7 @@ fn k02_k1_the_cubemap_ranges_include_both_ends() {
     ] {
         for value in bad {
             out_of_range(
-                one_error::<CubemapSettings>(&lighting(&format!(r#""{member}": {value}"#))),
+                &one_error::<CubemapSettings>(&lighting(&format!(r#""{member}": {value}"#))),
                 &format!("{CUBEMAP}/lighting/{member}"),
             );
         }
@@ -483,7 +483,7 @@ fn k02_k1_the_cubemap_ranges_include_both_ends() {
     }
     // The range applies to each keyframe value; the finding names the key.
     out_of_range(
-        one_error::<CubemapSettings>(&lighting(
+        &one_error::<CubemapSettings>(&lighting(
             r#""ambient_light_illuminance": {"0.0": 5, "0.5": 100001}"#,
         )),
         &format!("{CUBEMAP}/lighting/ambient_light_illuminance/0.5"),
@@ -678,8 +678,8 @@ fn the_technical_preview_local_light_file_loads() {
 #[test]
 fn t06_t1_an_unknown_light_type_fails_the_whole_file() {
     let d = rejects::<LocalLightSettings>(&local(
-        r##""minecraft:torch": {"light_type": "point_light"},
-            "minecraft:lantern": {"light_type": "spot_light"}"##,
+        r#""minecraft:torch": {"light_type": "point_light"},
+            "minecraft:lantern": {"light_type": "spot_light"}"#,
     ));
     assert_eq!(
         at(&errors(&d)),
@@ -701,7 +701,7 @@ fn t2_a_malformed_light_colour_fails_the_whole_file() {
     ] {
         assert_eq!(
             one_error::<LocalLightSettings>(&local(&format!(
-                r##""minecraft:torch": {{"light_color": {value}}}"##
+                r#""minecraft:torch": {{"light_color": {value}}}"#
             ))),
             finding(
                 "InvalidType",

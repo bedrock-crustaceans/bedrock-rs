@@ -82,6 +82,10 @@ impl Tag {
 
 /// `common` 1.0.0; `server-bindings` 1.0.0 and 2.0.0-beta; the `server` stubs over them;
 /// `server-ui-bindings` 1.0.0 and its `server-ui` stub, whose own peer carries a `wrapperName`.
+#[expect(
+    clippy::too_many_lines,
+    reason = "a fixture table with one entry per module file"
+)]
 fn tiny_tag() -> Tag {
     let bindings_peers = format!("{PEER_COMMON}, {PEER_VANILLA_DATA}");
     let script_modules = [

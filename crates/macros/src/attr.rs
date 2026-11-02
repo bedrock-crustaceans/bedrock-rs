@@ -1,7 +1,7 @@
 use quote::ToTokens;
 use syn::{Attribute, DataEnum, Error, Fields, GenericArgument, PathArguments, Type, Variant};
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum ProtoCodecEndianness {
     Le,
     Be,
@@ -105,7 +105,6 @@ pub fn get_attrs(attrs: &[Attribute]) -> Result<ProtoCodecFlags, Error> {
 
         if attr.path().is_ident("str") {
             flags.str = true;
-            continue;
         }
     }
 

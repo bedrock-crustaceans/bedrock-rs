@@ -162,13 +162,23 @@ fn the_mcb_originals_load_on_a_game_stack_without_a_finding() {
     for (id, document) in &poi.types {
         assert_eq!(
             Some(document.value()),
-            decoded.poi().types.get(id).map(|d| d.value()),
+            decoded
+                .poi()
+                .types
+                .get(id)
+                .map(bedrock_addon::document::Document::value),
             "{id:?}"
         );
     }
     let village = PoiTagId::from_static("minecraft:village");
     assert_eq!(
-        poi.tags.get(&village).map(|d| d.value()),
-        decoded.poi().tags.get(&village).map(|d| d.value())
+        poi.tags
+            .get(&village)
+            .map(bedrock_addon::document::Document::value),
+        decoded
+            .poi()
+            .tags
+            .get(&village)
+            .map(bedrock_addon::document::Document::value)
     );
 }

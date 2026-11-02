@@ -22,8 +22,8 @@ fn convert<
     (value.unwrap_or_else(|| panic!("{key} is kept: {d:?}")), d)
 }
 
-fn event(trigger: &Option<EventTrigger>) -> Option<&str> {
-    trigger.as_ref().and_then(|t| t.event.as_deref())
+fn event(trigger: Option<&EventTrigger>) -> Option<&str> {
+    trigger.and_then(|t| t.event.as_deref())
 }
 
 /// `e33_1_26_30_on_kill_overlap`, the lenient conversion: on each of the five melee
@@ -41,7 +41,7 @@ fn e33_on_kill_folds_into_on_attack_on_the_five_melee_goals() {
         let k = "minecraft:behavior.melee_attack";
         let (g, d) = convert::<goal::MeleeAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
@@ -49,28 +49,28 @@ fn e33_on_kill_folds_into_on_attack_on_the_five_melee_goals() {
         let k = "minecraft:behavior.melee_box_attack";
         let (g, _) = convert::<goal::MeleeBoxAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
         let k = "minecraft:behavior.delayed_attack";
         let (g, _) = convert::<goal::DelayedAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
         let k = "minecraft:behavior.stomp_attack";
         let (g, _) = convert::<goal::StompAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
         let k = "minecraft:behavior.use_kinetic_weapon";
         let (g, _) = convert::<goal::UseKineticWeapon>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
@@ -85,7 +85,7 @@ fn e33_on_kill_folds_into_on_attack_on_the_five_melee_goals() {
     let g = g.expect("kept");
     assert!(d.is_empty());
     assert_eq!(
-        (event(&g.on_attack), event(&g.on_kill)),
+        (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
         (Some("x:hit"), Some("x:killed"))
     );
 }

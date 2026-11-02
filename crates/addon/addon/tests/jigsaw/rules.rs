@@ -479,7 +479,12 @@ fn packs_of(stack: &PackStack<Behavior>, code: &str, severity: Severity) -> Vec<
         .jigsaw()
         .diagnostics()
         .filter(|d| d.code.name() == code && d.severity == severity)
-        .map(|d| d.location.pack.as_ref().and_then(|pack| pack.index()))
+        .map(|d| {
+            d.location
+                .pack
+                .as_ref()
+                .and_then(bedrock_addon::pack::PackRef::index)
+        })
         .collect()
 }
 

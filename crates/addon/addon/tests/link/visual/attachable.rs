@@ -45,7 +45,7 @@ fn wand_with(
         &[("items/wand.json", &known)],
         &resource,
         load,
-        &LinkOptions {
+        LinkOptions {
             lints,
             ..Default::default()
         },
@@ -70,7 +70,7 @@ fn item_hints(members: &str, load: LoadOptions) -> Vec<(String, String, Option<R
         &[("items/wand.json", &known)],
         &[(WAND, &text)],
         load,
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     in_file(&found, WAND)
         .into_iter()
@@ -187,7 +187,7 @@ fn r11_the_item_of_a_block_of_the_stack_resolves() {
         &[("blocks/lamp.json", lamp)],
         &[(WAND, &text)],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -236,7 +236,7 @@ fn r12_a_material_resolves_in_lower_case_and_one_nothing_defines_is_a_kept_error
         &[("items/wand.json", &known)],
         &[(WAND, &text), FANCY, ("materials/entity.material", &file)],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -276,7 +276,7 @@ fn r12_a_material_whose_shader_is_no_actor_shader_is_an_invalid_reference() {
         &[("items/wand.json", &known)],
         &[(WAND, &text), FANCY, ("materials/entity.material", &file)],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         told(&found, "rp 2", WAND),
@@ -460,7 +460,7 @@ mod rule_28 {
             &[("entity/thing.entity.json", &entity), (WAND, &text)],
             LoadOptions::default(),
             // Ours: the shared map merges in silence: a lint.
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         told(&found, "rp 2", WAND)
             .into_iter()

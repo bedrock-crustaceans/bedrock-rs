@@ -55,7 +55,7 @@ fn w12_a_biome_a_pack_defines_or_the_game_has_resolves() {
         &[(MOOR, moor.as_str())],
         &[],
         hosted(&[("biome", "demo:far"), ("biome", "minecraft:plains")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["biome"]), []);
 }
@@ -154,7 +154,7 @@ fn w13_a_target_names_a_biome_of_the_game_with_or_without_its_namespace_open_o4(
         &[(MOOR, moor.as_str())],
         &[],
         hosted(&[("biome", "minecraft:far_lands")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["biome"]), []);
 }
@@ -300,7 +300,7 @@ fn w14_a_block_a_pack_defines_or_the_game_has_resolves() {
             ("block", "minecraft:netherrack"),
             ("block", "minecraft:lava"),
         ]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["block"]), []);
 }

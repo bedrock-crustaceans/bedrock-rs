@@ -2,6 +2,11 @@
 //! one test per row (and per kind where a row lists several). Kinds facet-json raises from text
 //! are produced by parsing; the rest are built by hand.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};

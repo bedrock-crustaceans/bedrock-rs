@@ -336,6 +336,7 @@ fn comments_a_bom_and_a_member_written_twice_are_read_as_the_client_reads_them()
 
 #[test]
 fn a_wrapped_file_whose_map_has_a_string_vertex_shader_is_a_single_material_too() {
+    use bedrock_addon::document::Content;
     // The client looks for the `vertexShader` after it unwrapped the copy. The single material
     // gets no version stamped on it, so its key rules are the legacy ones.
     let text = r#"{"materials": {"version": "1.0.0", "vertexShader": "s", "+states": []}}"#;
@@ -361,7 +362,6 @@ fn a_wrapped_file_whose_map_has_a_string_vertex_shader_is_a_single_material_too(
         )]
     );
     // Written back in its wrapper.
-    use bedrock_addon::document::Content;
     let written = document.to_json().expect("writes");
     assert!(written.contains("\"version\": \"1.0.0\""), "{written}");
     let again = parse_at("materials/foo.material", &written).expect("reads back");

@@ -12,7 +12,7 @@ fn round_trip<P: ProtoCodec>(bytes: &[u8]) {
     let mut cursor = Cursor::new(bytes);
     let packet = P::deserialize(&mut cursor).expect("packet decodes");
     assert_eq!(
-        cursor.position() as usize,
+        usize::try_from(cursor.position()).unwrap(),
         bytes.len(),
         "packet left bytes unread"
     );

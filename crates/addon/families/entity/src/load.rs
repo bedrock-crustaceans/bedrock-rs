@@ -314,6 +314,11 @@ fn load_document(
 impl Entity {
     /// Parses without upgrading: the struct the file's `format_version` selects, with the
     /// findings of the parse.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the bytes are not UTF-8, the JSON nests deeper than the limit, or the
+    /// parse leaves no entity to keep; it carries every finding.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -335,6 +340,11 @@ impl Entity {
     /// Runs the remaining upgrade steps and the checks on a document
     /// [`parse_as_written`](Self::parse_as_written) gave: the same result
     /// [`Content::parse`] gives for the file.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the upgrade steps and the checks leave no entity to keep, or the
+    /// document is a beta one (which has no stable struct); it carries every finding.
     // This is `history::Any::upgrade`, placed on `Entity` because only the document has the
     // origin.
     pub fn upgrade(

@@ -279,10 +279,11 @@ fn s04_1_19_20_display_name_key() {
 
 #[test]
 fn s05_1_19_30_menu_category_rules() {
+    type Row<'a> = (Option<&'a str>, Option<&'a str>, bool, Option<&'a str>);
+
     let d = compare::<v1_19_30::Block>("s05_1_19_30_menu_category_rules", &context());
     assert!(d.is_empty(), "{d:#?}");
     // The seven rows: (written, category out, is_hidden_in_commands, logged).
-    type Row<'a> = (Option<&'a str>, Option<&'a str>, bool, Option<&'a str>);
     let rows: [Row<'_>; 7] = [
         (None, None, false, None),
         (

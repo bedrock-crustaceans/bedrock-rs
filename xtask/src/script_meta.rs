@@ -215,7 +215,7 @@ pub fn read_samples(dir: &Path) -> io::Result<Samples> {
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let name = entry.file_name().to_string_lossy().into_owned();
-            if name.ends_with(".json") && entry.file_type()?.is_file() {
+            if name.strip_suffix(".json").is_some() && entry.file_type()?.is_file() {
                 files.push((name, fs::read(entry.path())?));
             }
         }
@@ -246,7 +246,7 @@ fn walk_schemas(dir: &Path, prefix: &str, out: &mut Vec<(String, Vec<u8>)>) -> i
         let path = format!("{prefix}{name}");
         if entry.file_type()?.is_dir() {
             walk_schemas(&entry.path(), &format!("{path}/"), out)?;
-        } else if name.ends_with(".json") {
+        } else if name.strip_suffix(".json").is_some() {
             out.push((path, fs::read(entry.path())?));
         }
     }
@@ -695,6 +695,8 @@ impl<'a> Declarations<'a> {
     /// Lowers every descriptor (check 8 and the lowering rules), reads every privilege list,
     /// and checks argument bounds (check 9).
     fn lower(&self, file: &str, findings: &mut Findings) {
+        // 2^53: above it an integer token may not survive the `f64` reading.
+        const EXACT: f64 = 9_007_199_254_740_992.0;
         for descriptor in self.descriptors.iter().chain(&self.base_types) {
             if let Err(error) = TypeDescriptor::lower(descriptor) {
                 let check = match error {
@@ -709,8 +711,6 @@ impl<'a> Declarations<'a> {
                 findings.error(Check::Model, format!("{file}: `{member}`: {error}"));
             }
         }
-        // 2^53: above it an integer token may not survive the `f64` reading.
-        const EXACT: f64 = 9_007_199_254_740_992.0;
         for (argument, min, max) in &self.details {
             if let (Some(min), Some(max)) = (min, max)
                 && min > max
@@ -778,13 +778,13 @@ fn declared_names(native: &NativeModule) -> Vec<&str> {
         .collect()
 }
 
-/// Checks 4, 5, 6, 8, 9, 12 and 13 over one native module, and its model checks.
-fn check_native(
+/// The declarations of one native module, with the lowering findings and the informational
+/// notes about its constants and `dependencies` already recorded.
+fn native_declarations<'a>(
     file: &ModuleFile,
-    native: &NativeModule,
-    files: &[ModuleFile],
+    native: &'a NativeModule,
     findings: &mut Findings,
-) {
+) -> Declarations<'a> {
     let mut declarations = Declarations::default();
     declarations.classes(&native.classes);
     declarations.interfaces(&native.interfaces);
@@ -828,8 +828,11 @@ fn check_native(
             ),
         );
     }
+    declarations
+}
 
-    // Check 6: duplicate declarations and members.
+/// Check 6: duplicate declarations and members.
+fn check_duplicates(file: &ModuleFile, native: &NativeModule, findings: &mut Findings) {
     let names = declared_names(native);
     let mut seen = BTreeSet::new();
     for name in &names {
@@ -904,6 +907,19 @@ fn check_native(
             .chain(native.constants.iter().map(|c| c.name.as_str()))
             .collect(),
     );
+}
+
+/// Checks 4, 5, 6, 8, 9, 12 and 13 over one native module, and its model checks.
+fn check_native(
+    file: &ModuleFile,
+    native: &NativeModule,
+    files: &[ModuleFile],
+    findings: &mut Findings,
+) {
+    let declarations = native_declarations(file, native, findings);
+
+    check_duplicates(file, native, findings);
+    let names = declared_names(native);
 
     // Checks 4, 5, 12 and 13 over every descriptor, nested ones included.
     let mut not_peer = 0_usize;
@@ -1167,16 +1183,17 @@ fn read_vanilla_data(samples: &Samples, findings: &mut Findings) -> Option<Vanil
     let mut lists = VanillaLists::default();
     let mut complete = true;
     let mut names_of = |file: &str, findings: &mut Findings| -> Vec<String> {
-        match vanilla_file(samples, file, VanillaDataFile::<NameEntry>::parse, findings) {
-            Some(parsed) => parsed
+        if let Some(parsed) =
+            vanilla_file(samples, file, VanillaDataFile::<NameEntry>::parse, findings)
+        {
+            parsed
                 .data_items
                 .into_iter()
                 .map(|item| item.name)
-                .collect(),
-            None => {
-                complete = false;
-                Vec::new()
-            }
+                .collect()
+        } else {
+            complete = false;
+            Vec::new()
         }
     };
     lists.entities = names_of("mojang-entities.json", findings);
@@ -1480,7 +1497,7 @@ struct Entry<'a> {
 struct Version<'a> {
     sem: &'a SemVersion,
     wrapper: Option<&'a str>,
-    parent_version: Option<usize>,
+    parent: Option<usize>,
     peers: Vec<Peer>,
 }
 
@@ -1544,7 +1561,7 @@ fn catalog<'a>(files: &'a [ModuleFile], findings: &mut Findings) -> Option<Vec<E
         entry.versions.push(Version {
             sem: &file.sem,
             wrapper,
-            parent_version: None,
+            parent: None,
             peers: file
                 .meta
                 .peer_dependencies()
@@ -1584,7 +1601,7 @@ fn catalog<'a>(files: &'a [ModuleFile], findings: &mut Findings) -> Option<Vec<E
     }
     for (index, version_index, at, peers) in resolved {
         let version = &mut entries[index].versions[version_index];
-        version.parent_version = Some(at);
+        version.parent = Some(at);
         version.peers = peers;
     }
     complete.then_some(entries)
@@ -1625,19 +1642,10 @@ fn peer_const_name(peer: &Peer) -> String {
         .collect()
 }
 
-/// `versions.rs`.
-fn render_versions(
-    header: &str,
-    tag: &str,
-    entries: &[Entry<'_>],
-    engine_only: &[(String, String)],
-) -> String {
-    let mut peers: BTreeSet<&Peer> = BTreeSet::new();
-    for version in entries.iter().flat_map(|e| &e.versions) {
-        peers.extend(&version.peers);
-    }
+/// A distinct constant name for every peer requirement.
+fn peer_const_names<'a>(peers: &BTreeSet<&'a Peer>) -> BTreeMap<&'a Peer, String> {
     let mut names: BTreeMap<&Peer, String> = BTreeMap::new();
-    for peer in &peers {
+    for peer in peers {
         let mut name = peer_const_name(peer);
         let clash = |name: &str, names: &BTreeMap<&Peer, String>| names.values().any(|n| n == name);
         let base_clash = peers
@@ -1656,6 +1664,21 @@ fn render_versions(
         }
         names.insert(peer, name);
     }
+    names
+}
+
+/// `versions.rs`.
+fn render_versions(
+    header: &str,
+    tag: &str,
+    entries: &[Entry<'_>],
+    engine_only: &[(String, String)],
+) -> String {
+    let mut peers: BTreeSet<&Peer> = BTreeSet::new();
+    for version in entries.iter().flat_map(|e| &e.versions) {
+        peers.extend(&version.peers);
+    }
+    let names = peer_const_names(&peers);
     let mut out = String::new();
     out.push_str(header);
     out.push_str(
@@ -1716,7 +1739,7 @@ fn render_versions(
                 opt_lit(pre),
                 opt_lit(version.wrapper),
                 version
-                    .parent_version
+                    .parent
                     .map_or_else(|| "None".to_owned(), |i| format!("Some({i})")),
                 peers.join(", ")
             );

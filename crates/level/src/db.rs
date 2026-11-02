@@ -152,19 +152,28 @@ impl WriteBatch {
     }
 }
 
-/// A LevelDB database.
+/// A `LevelDB` database.
 pub struct Database {
     db: DB,
 }
 
 impl Database {
-    /// Opens a LevelDB database at the specified `path`. This `path` should point to the `db` directory
+    /// Opens a `LevelDB` database at the specified `path`. This `path` should point to the `db` directory
     /// of a world, not the world itself.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot be opened, for example when the path does not
+    /// exist or another process holds its lock.
     pub fn open<P: AsRef<str>>(path: P) -> Result<Self> {
         Self::open_with(path, OpenOptions::default())
     }
 
-    /// Opens a LevelDB database like [`open`](Self::open) with the given [`OpenOptions`].
+    /// Opens a `LevelDB` database like [`open`](Self::open) with the given [`OpenOptions`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`open`](Self::open).
     pub fn open_with<P: AsRef<str>>(path: P, options: OpenOptions) -> Result<Self> {
         let db = DB::open(path.as_ref(), self::options(options))?;
         Ok(Self { db })
@@ -173,6 +182,10 @@ impl Database {
     /// Runs any compaction the database needs, on the calling thread unless the database was opened
     /// with [`CompactionMode::Background`]. Databases opened with [`CompactionMode::Manual`] should
     /// call this periodically, since reads slow down as uncompacted tables pile up.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the compaction fails.
     pub fn compact(&self) -> Result<()> {
         self.db.maybe_compact()?;
         Ok(())
@@ -182,27 +195,47 @@ impl Database {
     /// the backlog can be drained a little at a time instead of blocking until
     /// [`compact`](Self::compact) finishes. A compaction that outlives the budget is paused and
     /// resumed by the next call. With [`CompactionMode::Background`] it only wakes the compaction thread.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the compaction fails.
     pub fn compact_step(&self, budget: Duration) -> Result<bool> {
         Ok(self.db.compact_step(budget)?)
     }
 
     /// Applies every write in `batch` atomically, as a single write to the log.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the write to the log fails.
     pub fn write(&self, batch: WriteBatch) -> Result<()> {
         self.db.write(batch.0, false)?;
         Ok(())
     }
 
     /// Creates a forward iterator over the underlying database handle.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create an iterator.
     pub(crate) fn new_iter(&self) -> Result<DBIterator> {
         Ok(self.db.new_iter()?)
     }
 
     /// Creates an iterator over all the keys in this database.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create an iterator.
     pub fn keys(&self) -> Result<Keys<'_>> {
         Keys::new(self)
     }
 
     /// Attempts to retrieve the given key from the database.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading from the database fails. A missing key is `Ok(None)`.
     pub fn get<K>(&self, key: K) -> Result<Option<Buffer<'_>>>
     where
         K: AsRef<[u8]>,
@@ -216,6 +249,10 @@ impl Database {
     }
 
     /// Inserts a key-value pair into the database.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the write fails.
     pub fn insert<K, V>(&self, key: K, value: V) -> Result<()>
     where
         K: AsRef<[u8]>,
@@ -226,6 +263,10 @@ impl Database {
     }
 
     /// Removes a key from the database.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the write fails.
     pub fn remove<K>(&self, key: K) -> Result<()>
     where
         K: AsRef<[u8]>,

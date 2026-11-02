@@ -125,6 +125,11 @@ impl PackWriter {
     /// `Encrypted` for a pack with encrypted files, with or without its key, and for one out
     /// of a whole-file encrypted archive: a copy would be the pack in plain text.
     /// `Storage(NotResident)` when a file is indexed and its bytes are not loaded.
+    ///
+    /// # Errors
+    ///
+    /// [`WriteError`] as described above: `Encrypted` for an encrypted pack, `Storage` when a file is
+    /// not loaded.
     pub fn from_pack(pack: &Pack) -> Result<Self, WriteError> {
         let store = pack.files().store();
         if is_encrypted(store) {
@@ -166,6 +171,11 @@ impl PackWriter {
     /// A taken path is never overwritten, whatever holds it: two identifiers can ask for one
     /// path, and the second document goes where [`PackWriter::put`] is told to put it. A value
     /// with no JSON spelling is `Encode`. Either way the writer stays as it was.
+    ///
+    /// # Errors
+    ///
+    /// [`WriteError`]: `DuplicatePath` when the default path is taken, `Encode` for a value with no JSON
+    /// spelling, `ReservedPath` for a path that is no file's.
     pub fn add<T: Content + Placed>(&mut self, value: &T) -> Result<PackPath, WriteError> {
         let path = file_path(value.default_path())?;
         if self.files.contains_key(&path) {
@@ -179,6 +189,11 @@ impl PackWriter {
     /// [`Content::write_json`] in the default style. A value with no JSON spelling is
     /// `Encode` and a path that is no file's (`manifest.json`, the root) `ReservedPath`;
     /// either leaves the writer as it was.
+    ///
+    /// # Errors
+    ///
+    /// [`WriteError`]: `Encode` for a value with no JSON spelling, `ReservedPath` for a path that is no
+    /// file's.
     pub fn put<T: Content>(&mut self, path: PackPath, value: &T) -> Result<(), WriteError> {
         let path = file_path(path)?;
         let mut out = Vec::new();
@@ -193,6 +208,10 @@ impl PackWriter {
     ///
     /// Accepts anything `Into<Bytes>` (`Bytes`, `Vec<u8>`, `&'static [u8]`); a fixed-size array
     /// needs `.to_vec()`.
+    ///
+    /// # Errors
+    ///
+    /// [`WriteError::ReservedPath`] for `manifest.json` and for the pack root.
     pub fn put_bytes(&mut self, path: PackPath, bytes: impl Into<Bytes>) -> Result<(), WriteError> {
         let path = file_path(path)?;
         self.files.insert(path, bytes.into());
@@ -230,6 +249,11 @@ impl PackWriter {
     /// archive may have entries, a file or the files together beyond their sizes. The limits
     /// are the archive's: [`PackWriter::files`] and [`PackWriter::into_pack`] take such a
     /// writer.
+    ///
+    /// # Errors
+    ///
+    /// [`WriteError`]: `Encode` for a manifest its format cannot hold, `Zip` when the archive
+    /// writer refuses the files (see above).
     #[cfg(feature = "zip")]
     #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
     pub fn to_archive(&self) -> Result<Vec<u8>, WriteError> {
@@ -261,6 +285,11 @@ impl PackWriter {
     /// location is `RootId::MEMORY`. A manifest its format cannot hold is `InvalidManifest`,
     /// the report naming the member ([`Manifest::write_json`] gives the same answer before
     /// any file is built).
+    ///
+    /// # Errors
+    ///
+    /// [`OpenError`] when the files do not load as a pack, e.g. `InvalidManifest` for a manifest its
+    /// format cannot hold.
     pub fn into_pack(self, origin: PackOrigin) -> Result<Pack, OpenError> {
         let Self {
             manifest,

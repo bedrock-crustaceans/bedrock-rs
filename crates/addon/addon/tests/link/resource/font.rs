@@ -21,8 +21,8 @@ fn pack(n: u128, files: &[(&'static str, &[u8])]) -> Pack {
 }
 
 /// The link findings of a world of the resource packs `packs`, top first.
-fn linked(packs: Vec<Pack>, load: LoadOptions, options: &LinkOptions) -> Diagnostics {
-    stacks_of(Vec::new(), packs, load).link_with(options)
+fn linked(packs: Vec<Pack>, load: LoadOptions, options: LinkOptions) -> Diagnostics {
+    stacks_of(Vec::new(), packs, load).link_with(&options)
 }
 
 /// The link findings of one resource pack (`rp 2`) with `files`.
@@ -30,7 +30,7 @@ fn link(files: &[(&'static str, &[u8])]) -> Diagnostics {
     linked(
         vec![pack(2, files)],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     )
 }
 
@@ -39,7 +39,11 @@ type Said = (&'static str, Severity, String, String, String);
 
 fn said(finding: &Diagnostic) -> Said {
     assert_eq!(finding.phase, Phase::Link, "{finding}");
-    let pack = finding.location.pack.as_ref().map(|pack| pack.name());
+    let pack = finding
+        .location
+        .pack
+        .as_ref()
+        .map(bedrock_addon::pack::PackRef::name);
     let path = finding.location.path.as_ref().map(ToString::to_string);
     (
         finding.code.name(),
@@ -150,10 +154,10 @@ fn f16_the_sheet_checked_is_the_highest_pack_s() {
     let found = linked(
         vec![good.clone(), bad.clone()],
         LoadOptions::default(),
-        &options,
+        options,
     );
     assert_eq!(all_said(&found), []);
-    let found = linked(vec![bad, good], LoadOptions::default(), &options);
+    let found = linked(vec![bad, good], LoadOptions::default(), options);
     assert_eq!(
         all_said(&found),
         [info("GlyphSheetShape", "rp 3", "font/glyph_E2.png", "")]
@@ -195,7 +199,7 @@ fn f16_and_the_other_font_rules_are_lints() {
         lints: false,
         ..Default::default()
     };
-    let found = linked(vec![pack(2, &files)], LoadOptions::default(), &quiet);
+    let found = linked(vec![pack(2, &files)], LoadOptions::default(), quiet);
     assert_eq!(all_said(&found), []);
 }
 
@@ -276,7 +280,7 @@ fn f25_an_advance_that_is_not_positive_is_the_readers_information() {
         lints: false,
         ..Default::default()
     };
-    let found = linked(vec![pack(2, &files)], LoadOptions::default(), &quiet);
+    let found = linked(vec![pack(2, &files)], LoadOptions::default(), quiet);
     assert_eq!(all_said(&found), []);
 }
 
@@ -300,7 +304,7 @@ fn f24_the_pages_of_an_msdf_font_of_the_font_list_are_checked_from_the_highest_p
     let found = linked(
         vec![top, bottom],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let errors: Vec<Said> = all_said(&found)
         .into_iter()
@@ -375,7 +379,11 @@ fn f26_a_record_onto_a_page_without_a_file_names_each_missing_file_once() {
     let table: Vec<&Diagnostic> = found
         .iter()
         .filter(|finding| {
-            let path = finding.location.path.as_ref().map(|path| path.as_str());
+            let path = finding
+                .location
+                .path
+                .as_ref()
+                .map(bedrock_addon::storage::PackPath::as_str);
             path == Some("font/smooth/remapping.dat")
         })
         .collect();
@@ -424,10 +432,10 @@ fn f26_a_page_a_lower_pack_supplies_is_a_page_of_the_font() {
         ],
     );
     let options = LinkOptions::default();
-    let found = linked(vec![top.clone(), bottom], LoadOptions::default(), &options);
+    let found = linked(vec![top.clone(), bottom], LoadOptions::default(), options);
     assert_eq!(all_said(&found), []);
     // Without that pack both files are missing.
-    let found = linked(vec![top], LoadOptions::default(), &options);
+    let found = linked(vec![top], LoadOptions::default(), options);
     let names: Vec<String> = found.iter().map(|finding| named(finding).1).collect();
     assert_eq!(
         names,
@@ -454,7 +462,7 @@ fn the_font_files_of_a_pack_that_is_not_loaded_are_named_and_not_judged() {
     let found = linked(
         vec![unloaded],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let mut told: Vec<(&'static str, String)> = found
         .iter()

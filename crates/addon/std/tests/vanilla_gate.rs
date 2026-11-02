@@ -187,7 +187,7 @@ impl Found {
             Severity::Error => 'E',
             Severity::Warning => 'W',
             Severity::Info => 'I',
-            _ => 'D',
+            Severity::Debug => 'D',
         }
     }
 
@@ -197,7 +197,7 @@ impl Found {
             Severity::Error => Some(0),
             Severity::Warning => Some(1),
             Severity::Info => Some(2),
-            _ => None,
+            Severity::Debug => None,
         }
     }
 
@@ -270,7 +270,7 @@ fn open_each(dirs: &[PathBuf]) -> Opened {
                     || name_of(dir),
                     |parent| format!("{}/{}", name_of(parent), name_of(dir)),
                 );
-                for finding in pack.report().diagnostics.iter() {
+                for finding in &pack.report().diagnostics {
                     open_findings.push((folder.clone(), finding.clone()));
                 }
                 rows.push((
@@ -783,7 +783,7 @@ fn the_install_s_test_packs_are_read_and_reported() {
                 }
             };
             let folders = HashMap::from([(pack.id().clone(), folder.clone())]);
-            for finding in pack.report().diagnostics.iter() {
+            for finding in &pack.report().diagnostics {
                 found.push(Found::of(Pass::Open, finding, &folders));
                 found.last_mut().expect("pushed").folder.clone_from(&folder);
             }

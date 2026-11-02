@@ -27,6 +27,12 @@ pub enum DefineVersionsDiffEntry {
 }
 
 impl DefineVersionsDiffList {
+    /// Applies this version's `+`, `%` and `-` entries to `map`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an entry removes or modifies an item that was never added, or adds an
+    /// item that already exists.
     pub fn collapse(&self, map: &mut BTreeMap<Ident, TokenStream>) -> syn::Result<()> {
         for entry in &self.entries {
             let base_path = &self.path;
@@ -47,7 +53,7 @@ impl DefineVersionsDiffList {
                     if !map.contains_key(ident) {
                         return Err(syn::Error::new(
                             ident.span(),
-                            format!("cannot remove {} because it was never added", ident),
+                            format!("cannot remove {ident} because it was never added"),
                         ));
                     }
 
@@ -61,7 +67,7 @@ impl DefineVersionsDiffList {
                     if !map.contains_key(ident) {
                         let mut err = syn::Error::new(
                             ident.span(),
-                            format!("cannot modify `{}` because it was never added", ident),
+                            format!("cannot modify `{ident}` because it was never added"),
                         );
 
                         err.combine(syn::Error::new(ident.span(), "did you mean to use `+`?"));

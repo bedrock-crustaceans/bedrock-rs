@@ -216,6 +216,12 @@ impl PackSettings {
     /// boolean for a toggle, an option's name for a dropdown, a list of option names for a
     /// multiselect. A slider value that is NaN or infinite is refused. Otherwise nothing
     /// changes and the error says why.
+    ///
+    /// # Errors
+    ///
+    /// [`SetError`] when the pack defines no setting `name` (`UnknownName`), the value is not of the
+    /// setting's kind (`TypeMismatch`), names no option (`UnknownOption`), or is a slider value that
+    /// is NaN or infinite (`NotFinite`).
     // The game replaces the value whatever its type and ignores an unknown name; this crate
     // refuses both, a deliberate difference.
     pub fn set(&mut self, name: &str, value: SettingValue) -> Result<bool, SetError> {

@@ -172,7 +172,7 @@ fn an_invalid_candidate_is_an_invalid_pack_of_its_source() {
     assert_eq!(
         invalid,
         [
-            ("".to_owned(), PackOrigin::World),
+            (String::new(), PackOrigin::World),
             ("empty".to_owned(), PackOrigin::World),
             ("notes.txt".to_owned(), PackOrigin::World),
         ]

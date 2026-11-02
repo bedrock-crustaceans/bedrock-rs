@@ -94,7 +94,7 @@ fn load_features(
                 .location
                 .path
                 .as_ref()
-                .map(|p| p.to_string())
+                .map(std::string::ToString::to_string)
                 .unwrap_or_default(),
             finding.location.json_path,
             finding.code,
@@ -297,7 +297,7 @@ fn molang_pairs_feature_molang_loads_with_its_text_and_version() {
     });
     eprintln!(
         "Molang pairs: {} feature occurrences checked in {} files",
-        found.checked, found.files
+        found.compared, found.files
     );
     assert!(
         found.failures.is_empty(),
@@ -306,7 +306,7 @@ fn molang_pairs_feature_molang_loads_with_its_text_and_version() {
         &found.failures[..found.failures.len().min(20)]
     );
     assert_eq!(
-        found.checked, 155,
+        found.compared, 155,
         "the feature occurrences of the Molang pairs file"
     );
     assert_eq!(

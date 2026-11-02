@@ -47,6 +47,10 @@ pub struct Attribute {
 
 #[derive(Facet, Debug)]
 #[facet(rename_all = "PascalCase")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the player NBT compound"
+)]
 pub struct PlayerData {
     pub inventory_version: String,
     pub is_swimming: bool,

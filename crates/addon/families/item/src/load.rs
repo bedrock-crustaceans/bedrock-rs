@@ -1035,6 +1035,11 @@ impl Placed for Item {
 impl Item {
     /// Parses an item file without upgrading it: the struct its `format_version` selects (the
     /// legacy item format for a document that is not component based).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file is malformed, is not JSON, or its findings include an
+    /// error.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
@@ -1075,6 +1080,11 @@ impl Any {
     /// Runs the remaining upgrade steps on a document [`Item::parse_as_written`] gave: the
     /// same result `Item::parse` gives (a beta document is rejected here; it has no stable
     /// form).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an
+    /// error finding.
     pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Item>, Rejected> {
         let origin = document.origin().clone();
         let version = document.version().clone();

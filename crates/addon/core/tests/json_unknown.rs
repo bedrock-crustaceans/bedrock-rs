@@ -5,6 +5,11 @@
 //!
 //! Each unknown member carries its JSON path (`description/color`, `events/1/target`).
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, StrictInt, Value, keep_unknown_members, to_json, too_deep_to_walk,
@@ -243,10 +248,10 @@ fn o6_keep_unknown_members_fills_the_extra_of_the_arm() {
         panic!("{filter:?}");
     };
     assert_eq!(group.extra.get("w"), Some(&Value::from(3i64)));
-    let Filter::Test(test) = &group.any_of.as_ref().unwrap()[0] else {
+    let Filter::Test(leaf) = &group.any_of.as_ref().unwrap()[0] else {
         panic!("{group:?}");
     };
-    assert_eq!(test.extra.get("u"), Some(&Value::from(1i64)));
+    assert_eq!(leaf.extra.get("u"), Some(&Value::from(1i64)));
 }
 
 // facet picks an untagged object arm by the first key, in document order, that leaves exactly one

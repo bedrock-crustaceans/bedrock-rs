@@ -424,7 +424,7 @@ fn every_attachable_molang_occurrence_loads_with_its_text_and_version() {
     });
     eprintln!(
         "Molang pairs: {} attachable occurrences checked in {} files, {newest} of them 1.26.0 files",
-        checked.checked, checked.files
+        checked.compared, checked.files
     );
     assert!(
         checked.failures.is_empty(),
@@ -433,6 +433,6 @@ fn every_attachable_molang_occurrence_loads_with_its_text_and_version() {
         &checked.failures[..checked.failures.len().min(20)]
     );
     // The counts of the Molang pairs file for the family `attachables`.
-    assert_eq!((checked.checked, checked.files), (152, 71));
+    assert_eq!((checked.compared, checked.files), (152, 71));
     assert_eq!(newest, 0);
 }

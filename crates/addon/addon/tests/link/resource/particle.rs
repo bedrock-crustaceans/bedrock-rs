@@ -66,7 +66,7 @@ fn linked_with(
     text: &str,
     behavior: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> Vec<Diagnostic> {
     let files = resources(text);
     let files: Vec<(&'static str, &str)> = files
@@ -79,7 +79,7 @@ fn linked_with(
 
 /// [`linked_with`] without a behaviour file, a host or an option.
 fn linked(text: &str) -> Vec<Diagnostic> {
-    linked_with(text, &[], LoadOptions::default(), &LinkOptions::default())
+    linked_with(text, &[], LoadOptions::default(), LinkOptions::default())
 }
 
 /// The findings at the effect's file.
@@ -125,9 +125,17 @@ fn info(code: &'static str, path: &str, kind: &'static str, id: &str) -> Said {
 fn placed(found: &[Diagnostic]) {
     for finding in found {
         assert_eq!(finding.phase, Phase::Link, "{finding}");
-        let pack = finding.location.pack.as_ref().map(|pack| pack.name());
+        let pack = finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name);
         assert_eq!(pack, Some("rp 2"), "{finding}");
-        let path = finding.location.path.as_ref().map(|path| path.as_str());
+        let path = finding
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str);
         assert_eq!(path, Some(FILE), "{finding}");
     }
 }
@@ -146,7 +154,7 @@ mod material {
             "textures/particle/mine",
             &components(""),
         );
-        linked_with(&text, &[], load, &LinkOptions::default())
+        linked_with(&text, &[], load, LinkOptions::default())
     }
 
     #[test]
@@ -235,7 +243,7 @@ mod material {
         )];
         let without = [(FILE, text.as_str()), TEXTURE];
         let linked = |files: &[(&'static str, &str)], load: LoadOptions| {
-            at_effect(&link_with(&[], files, load, &LinkOptions::default()))
+            at_effect(&link_with(&[], files, load, LinkOptions::default()))
         };
         // No source, no host: nothing is said of the kind.
         assert_eq!(all_said(&linked(&without, LoadOptions::default())), []);
@@ -301,7 +309,7 @@ mod texture {
     /// The texture findings of an effect drawn with `texture`.
     fn drawn_with(texture: &str, load: LoadOptions) -> Vec<Said> {
         let text = effect_at("1.26.10", "mine", texture, &components(""));
-        let found = linked_with(&text, &[], load, &LinkOptions::default());
+        let found = linked_with(&text, &[], load, LinkOptions::default());
         placed(&found);
         let mut said = all_said(&found);
         said.retain(|said| said.0 == "TextureNotFound");
@@ -599,9 +607,9 @@ fn r39_an_effect_of_the_game_resolves_with_a_host_that_has_it_and_not_without_on
     assert_eq!(all_said(&linked(&text)), missing);
     let options = LinkOptions::default();
     let host = hosted(&[("particle", "minecraft:basic_smoke_particle")]);
-    assert_eq!(all_said(&linked_with(&text, &[], host, &options)), []);
+    assert_eq!(all_said(&linked_with(&text, &[], host, options)), []);
     let other = hosted(&[("particle", "minecraft:basic_flame_particle")]);
-    assert_eq!(all_said(&linked_with(&text, &[], other, &options)), missing);
+    assert_eq!(all_said(&linked_with(&text, &[], other, options)), missing);
 }
 
 // ---- R39 behind an element the reader of an effect below 1.20.80 leaves out ----------------
@@ -733,10 +741,10 @@ mod sound {
     fn r39_a_host_answers_for_the_level_sound_events_yes_or_no() {
         let options = LinkOptions::default();
         let host = hosted(&[("level sound event", "demo.boom")]);
-        let found = linked_with(&plays("demo.boom"), &[], host.clone(), &options);
+        let found = linked_with(&plays("demo.boom"), &[], host.clone(), options);
         assert_eq!(all_said(&found), []);
         // The host is believed when it says no, also for a name the crate knows.
-        let found = linked_with(&plays("explode"), &[], host, &options);
+        let found = linked_with(&plays("explode"), &[], host, options);
         assert_eq!(all_said(&found), [unknown("explode")]);
     }
 }
@@ -771,7 +779,7 @@ mod block {
 
     fn with_lamp(text: &str, load: LoadOptions) -> Vec<Diagnostic> {
         let behavior = [("blocks/lamp.json", LAMP)];
-        linked_with(text, &behavior, load, &LinkOptions::default())
+        linked_with(text, &behavior, load, LinkOptions::default())
     }
 
     #[test]
@@ -872,7 +880,7 @@ fn r38_and_r39_are_informations_left_out_without_the_lints() {
         lints: false,
         ..Default::default()
     };
-    let found = linked_with(&text, &[], LoadOptions::default(), &quiet);
+    let found = linked_with(&text, &[], LoadOptions::default(), quiet);
     assert_eq!(all_said(&found), []);
     // with the lints both are told, and the R39 event information too
     let found = linked(&text);

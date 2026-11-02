@@ -191,7 +191,7 @@ fn members_the_author_did_not_write_are_not_written() {
 fn the_version_is_written_as_read_and_beta_as_the_literal() {
     for (written, expected) in [
         (r#""1.14""#, r#""1.14.0""#),
-        (r#"[1, 20, 30]"#, r#""1.20.30""#),
+        (r"[1, 20, 30]", r#""1.20.30""#),
         (r#""1.21.0-rc.1+build.5""#, r#""1.21.0-rc.1+build.5""#),
         (r#""beta""#, r#""beta""#),
     ] {

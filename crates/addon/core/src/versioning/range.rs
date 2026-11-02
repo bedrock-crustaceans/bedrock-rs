@@ -139,6 +139,10 @@ pub enum ChainError {
 /// Checks family `F`'s chain: ascending versions ending at `Latest`, a floor at or below the
 /// first struct, contiguous non-overlapping ranges (except under `ExactOnly`), a sorted
 /// component table, and no `FieldMeta.since_engine` above `ENGINE_VERSION`.
+///
+/// # Errors
+///
+/// Returns the first `ChainError` found in the chain.
 pub fn check_chain<F: Family>() -> Result<(), ChainError> {
     let versions = <F::Any as VersionChain<F>>::VERSIONS;
     if let Some(pair) = versions.windows(2).find(|pair| pair[0] >= pair[1]) {

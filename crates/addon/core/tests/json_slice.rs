@@ -12,6 +12,7 @@ use bedrock_addon_core::json::{JsonSlice, parse_at};
 use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
+use std::fmt::Write as _;
 
 /// A document shell holding its components as raw slices of the text.
 #[derive(Debug, Facet)]
@@ -313,11 +314,13 @@ fn an_object_or_an_array_where_one_belongs_is_fine() {
 fn raw_members(element: &str) -> String {
     let mut text = String::from("{");
     for index in 0..4000 {
-        text.push_str(&format!(
+        write!(
+            text,
             r#""minecraft:member_{index}": {{"value": [1, 2.5, "three"], "nested": {{"flag": true, "name": "text", "list": [{{"a": 1}}, {{"b": 2}}]}}}}, "#
-        ));
+        )
+        .unwrap();
     }
-    text.push_str(&format!(r#""last": {{"list": {element}}}}}"#));
+    write!(text, r#""last": {{"list": {element}}}}}"#).unwrap();
     text
 }
 

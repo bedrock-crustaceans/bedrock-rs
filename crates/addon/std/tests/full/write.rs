@@ -165,6 +165,10 @@ pub struct Copied {
 /// the pack does not have. A baked binary document is copied as the JSON text it stands for,
 /// where the crate decodes it ([`same_reading`] holds that text against the game's own), or
 /// as its bytes.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass over each pack whose counters and failure lists are shared by every step"
+)]
 pub fn copy(tree: &Tree, packs: Vec<Pack>, folders: &[PathBuf], options: &LoadOptions) -> Copied {
     assert_eq!(packs.len(), folders.len(), "a folder for each pack");
     let mut unlike_seen = BTreeSet::new();
@@ -814,6 +818,10 @@ pub struct Rewritten {
 
 /// Writes every typed document of every pack of `packs` back through `PackWriter::put` into a
 /// writer started with `from_pack`, each read with its pack's context under `options`.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass over each pack whose counters and failure lists are shared by every step"
+)]
 pub fn rewrite(packs: Vec<Pack>, options: &LoadOptions) -> Rewritten {
     let rows = rows::rows();
     let mut counts = Counts::new();

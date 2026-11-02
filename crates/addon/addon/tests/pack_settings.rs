@@ -1,5 +1,5 @@
 //! The pack-settings family (`bedrock_addon::pack::settings`): every row of
-//! families/pack_settings fixtures.md except the manifest rows (`P1-MANIFEST`'s, in
+//! `families/pack_settings` fixtures.md except the manifest rows (`P1-MANIFEST`'s, in
 //! `tests/manifest/settings.rs`), the upgrade step, the chain, round trips, the runtime values and
 //! the save algorithm.
 

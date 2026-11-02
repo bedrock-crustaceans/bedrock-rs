@@ -39,6 +39,10 @@ impl PackPath {
     };
 
     /// A path known valid at compile time; panics on a rule violation (as `BlockId::from_static`).
+    ///
+    /// # Panics
+    ///
+    /// Panics when `path` breaks a path rule.
     pub fn from_static(path: &'static str) -> PackPath {
         match check_path(path) {
             // Already normalised: keep the literal.
@@ -55,6 +59,10 @@ impl PackPath {
 
     /// Validates a path under the storage rules (`/` or `\`, no `.` / `..`, segment and length
     /// limits).
+    ///
+    /// # Errors
+    ///
+    /// Returns `PathRejected` when `path` breaks a storage rule.
     pub fn new(path: &str) -> Result<PackPath, PathRejected> {
         check_path(path)?;
         Ok(Self::normalise(path))

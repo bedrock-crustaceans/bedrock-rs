@@ -38,7 +38,7 @@ fn add_writes_a_document_at_its_default_path_and_returns_the_path() {
     );
 }
 
-/// `minecraft:a/b` and `minecraft:a_b` of block_culling ask for one path. The second `add` is
+/// `minecraft:a/b` and `minecraft:a_b` of `block_culling` ask for one path. The second `add` is
 /// refused; the first document stays as it was written (never last wins).
 #[test]
 fn add_refuses_a_default_path_that_is_taken_and_keeps_the_first_document() {

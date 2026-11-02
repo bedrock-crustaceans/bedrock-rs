@@ -97,6 +97,11 @@ impl Key {
         4 + 4 + dim_size + 1 + data_size
     }
 
+    /// Writes this key in disk format.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn serialize<W: Write>(&self, mut writer: W) -> Result<()> {
         writer.write_i32::<LittleEndian>(self.chunk.0)?;
         writer.write_i32::<LittleEndian>(self.chunk.1)?;
@@ -113,6 +118,12 @@ impl Key {
         Ok(())
     }
 
+    /// Reads a key in disk format.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading from `reader` fails, or [`Error::Invalid`] if the key type
+    /// byte is unknown and the key is not the local player key.
     pub fn deserialize<R>(reader: &mut Cursor<R>) -> Result<Key>
     where
         Cursor<R>: Seek + Read,
@@ -125,7 +136,7 @@ impl Key {
 
         let chunk = ChunkPosition(x, z);
         let dimension = if len > 10 {
-            Dimension::from(reader.read_u32::<LittleEndian>()? as i32)
+            Dimension::from(reader.read_u32::<LittleEndian>()?.cast_signed())
         } else {
             Dimension::Overworld
         };
@@ -159,7 +170,12 @@ impl Key {
                 // Check whether this was one of the strings
                 reader.set_position(start_position);
 
-                let mut string = String::with_capacity(len as usize);
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "only a capacity hint, keys are far smaller than the address space"
+                )]
+                let capacity = len as usize;
+                let mut string = String::with_capacity(capacity);
                 reader.read_to_string(&mut string)?;
 
                 if string == LOCAL_PLAYER {

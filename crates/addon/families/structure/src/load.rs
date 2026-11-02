@@ -125,6 +125,10 @@ impl Structure {
     /// An identifier without a namespace is vanilla's error `Structure '<id>' must be prefixed
     /// by a namespace`. `Ok(None)` when no pack has a copy that loads (vanilla then reads the
     /// world's own saved structures, which are not pack content).
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`Diagnostic`] when the identifier has no namespace.
     #[allow(
         clippy::result_large_err,
         reason = "the crate's finding type; one per failed lookup"

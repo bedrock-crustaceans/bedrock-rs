@@ -317,10 +317,10 @@ fn equality_is_the_two_maps_and_the_material_list() {
 
     // The findings are not compared.
     let twice = TrimData::from_packet(&[one.clone(), one.clone()], &[]);
-    let once = TrimData::from_packet(std::slice::from_ref(&one), &[]);
+    let single = TrimData::from_packet(std::slice::from_ref(&one), &[]);
     assert_eq!(twice.diagnostics().len(), 1);
-    assert!(once.diagnostics().is_empty());
-    assert_eq!(twice, once);
+    assert!(single.diagnostics().is_empty());
+    assert_eq!(twice, single);
 
     // The patterns are compared as maps, the materials as a list.
     let base = TrimData::from_packet(&[one.clone(), two.clone()], &[quartz.clone(), iron.clone()]);

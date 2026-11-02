@@ -213,6 +213,11 @@ pub(crate) fn components(map: &ComponentMap<EntityComponent>) -> Result<Value, E
 }
 
 /// One typed component as JSON.
+///
+/// # Errors
+///
+/// [`EncodeError::NotRepresentable`] when the component holds a value JSON cannot spell, such as
+/// a non-finite number.
 #[allow(clippy::too_many_lines, reason = "one arm per component")]
 pub fn component(value: &EntityComponent) -> Result<Value, EncodeError> {
     use EntityComponent as C;

@@ -37,6 +37,11 @@ bedrock_addon_core::version_chain! {
 impl CatalogAny {
     /// Runs the rest of the load on a document [`CraftingCatalog::parse_as_written`] gave: the
     /// same result [`Content::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+    /// checks that follow it, find an error that stops the document from loading.
     pub fn upgrade(
         document: Document<Self>,
         cx: &LoadContext,

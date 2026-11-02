@@ -69,7 +69,10 @@ fn duplicate_identifier(directory: &str, key: &str, payload: &str) {
         .map(|d| {
             assert_eq!(d.severity, Severity::Info);
             (
-                d.location.pack.as_ref().and_then(|p| p.index()),
+                d.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
                 d.location.path.as_ref().unwrap().as_str().to_owned(),
             )
         })

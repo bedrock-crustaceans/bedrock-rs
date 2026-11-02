@@ -90,10 +90,10 @@ fn build_de_field(fields: &[&Field]) -> TokenStream {
     }
 }
 
-fn build_de_fields(fields: Fields) -> (TokenStream, Option<TokenStream>) {
+fn build_de_fields(fields: &Fields) -> (TokenStream, Option<TokenStream>) {
     let i_fields = match fields {
-        Fields::Named(ref v) => Some(v.named.iter().clone()),
-        Fields::Unnamed(ref v) => Some(v.unnamed.iter().clone()),
+        Fields::Named(v) => Some(v.named.iter().clone()),
+        Fields::Unnamed(v) => Some(v.unnamed.iter().clone()),
         Fields::Unit => None,
     };
 
@@ -104,7 +104,7 @@ fn build_de_fields(fields: Fields) -> (TokenStream, Option<TokenStream>) {
     };
 
     let ctor_fields = match fields {
-        Fields::Named(ref v) => {
+        Fields::Named(v) => {
             let ctor = v.named.iter().enumerate().map(|(i, f)| {
                 f.ident
                     .clone()
@@ -113,7 +113,7 @@ fn build_de_fields(fields: Fields) -> (TokenStream, Option<TokenStream>) {
 
             Some(quote! { {#(#ctor),*} })
         }
-        Fields::Unnamed(ref v) => {
+        Fields::Unnamed(v) => {
             let ctor = v.unnamed.iter().enumerate().map(|(i, f)| {
                 f.ident
                     .clone()
@@ -129,7 +129,7 @@ fn build_de_fields(fields: Fields) -> (TokenStream, Option<TokenStream>) {
 }
 
 pub fn build_de_struct(data_struct: &DataStruct) -> TokenStream {
-    let (de, ctor_fields) = build_de_fields(data_struct.fields.clone());
+    let (de, ctor_fields) = build_de_fields(&data_struct.fields);
 
     if let Some(ctor) = ctor_fields {
         quote! {
@@ -147,7 +147,7 @@ pub fn build_de_struct(data_struct: &DataStruct) -> TokenStream {
 pub fn build_de_enum(
     data_enum: &DataEnum,
     attrs: &[Attribute],
-    name: Ident,
+    name: &Ident,
     fallback: Option<&Variant>,
 ) -> TokenStream {
     let flags = get_attrs(attrs).expect("Error while getting attrs");
@@ -167,7 +167,7 @@ pub fn build_de_enum(
                     .1;
 
                 let name = var.ident.clone();
-                let (de, ctor_fields) = build_de_fields(var.fields.clone());
+                let (de, ctor_fields) = build_de_fields(&var.fields);
 
                 if let Some(ctor) = ctor_fields {
                     quote! {
@@ -188,14 +188,13 @@ pub fn build_de_enum(
                 }
             });
 
-        let otherwise = match fallback {
-            Some(var) => {
-                let fallback_name = &var.ident;
-                quote! { _ => Self::#fallback_name(enum_type) }
-            }
-            None => quote! {
+        let otherwise = if let Some(var) = fallback {
+            let fallback_name = &var.ident;
+            quote! { _ => Self::#fallback_name(enum_type) }
+        } else {
+            quote! {
                 _ => { return Err(bedrock_protocol_core::error::ProtoCodecError::InvalidEnumID(format!("{enum_type:?}"), stringify!(#name))) }
-            },
+            }
         };
 
         quote! {

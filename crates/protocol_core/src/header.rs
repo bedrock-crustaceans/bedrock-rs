@@ -11,9 +11,9 @@ pub struct PacketHeader {
 
 impl ProtoCodec for PacketHeader {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
-        let header = (self.packet_id & 0x3FF) as u32
-            | ((self.sender_sub_client_id & 0x3) as u32) << 10
-            | ((self.target_sub_client_id & 0x3) as u32) << 12;
+        let header = u32::from(self.packet_id & 0x3FF)
+            | u32::from(self.sender_sub_client_id & 0x3) << 10
+            | u32::from(self.target_sub_client_id & 0x3) << 12;
         <u32 as ProtoCodecVAR>::serialize(&header, stream)?;
 
         Ok(())
@@ -23,16 +23,16 @@ impl ProtoCodec for PacketHeader {
         let header = <u32 as ProtoCodecVAR>::deserialize(stream)?;
 
         Ok(Self {
-            packet_id: (header & 0x3FF) as u16,
-            sender_sub_client_id: ((header >> 10) & 0x3) as u8,
-            target_sub_client_id: ((header >> 12) & 0x3) as u8,
+            packet_id: u16::try_from(header & 0x3FF)?,
+            sender_sub_client_id: u8::try_from((header >> 10) & 0x3)?,
+            target_sub_client_id: u8::try_from((header >> 12) & 0x3)?,
         })
     }
 
     fn size_hint(&self) -> usize {
-        let header = (self.packet_id & 0x3FF) as u32
-            | ((self.sender_sub_client_id & 0x3) as u32) << 10
-            | ((self.target_sub_client_id & 0x3) as u32) << 12;
+        let header = u32::from(self.packet_id & 0x3FF)
+            | u32::from(self.sender_sub_client_id & 0x3) << 10
+            | u32::from(self.target_sub_client_id & 0x3) << 12;
         <u32 as ProtoCodecVAR>::size_hint(&header)
     }
 }

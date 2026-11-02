@@ -53,7 +53,7 @@ fn the_origin_is_the_last_segment_of_the_name_and_the_global_file_is_on_the_reso
     let name = "/data/worlds/a/world_behavior_pack_settings.json";
     let found = refused_text(name, "{}");
     closes(&found, name);
-    for finding in found.iter() {
+    for finding in &found {
         assert_eq!(finding.location.path.as_ref().unwrap().as_str(), WORLD_FILE);
         assert!(finding.location.pack.as_ref().unwrap().is_app_data());
     }
@@ -273,7 +273,7 @@ fn an_entry_or_values_that_is_no_object_is_an_error() {
     for payload in [
         r#"{"settings": [5]}"#,
         r#"{"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "values": []}]}"#,
-        r#"[]"#,
+        r"[]",
     ] {
         let found = refused_text(WORLD, &document("\"1.21.100\"", payload));
         assert!(found.has_errors(), "{payload}");

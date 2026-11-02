@@ -131,6 +131,7 @@ impl<V: ProtoVersion> ItemStackRequestActionType<V> {
 
 #[allow(deprecated)]
 impl<V: ProtoVersion> ProtoCodec for ItemStackRequestActionType<V> {
+    #[expect(clippy::too_many_lines, reason = "one match arm per action variant")]
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         <u32 as ProtoCodecVAR>::serialize(&self.type_id(), stream)?;
         <u8 as ProtoCodec>::serialize(&self.legacy_type_id(), stream)?;
@@ -173,7 +174,7 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackRequestActionType<V> {
             Self::Create { slot } => {
                 <i8 as ProtoCodec>::serialize(slot, stream)?;
             }
-            Self::ScreenLabTableCombine => {}
+            Self::ScreenLabTableCombine | Self::CraftNonImplemented => {}
             Self::ScreenBeaconPayment {
                 primary_effect,
                 secondary_effect,
@@ -236,7 +237,6 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackRequestActionType<V> {
                 <String as ProtoCodec>::serialize(pattern_id, stream)?;
                 <i8 as ProtoCodec>::serialize(number_of_requested_crafts, stream)?;
             }
-            Self::CraftNonImplemented => {}
             Self::CraftResults {
                 result_items,
                 times_crafted,
@@ -340,6 +340,7 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackRequestActionType<V> {
         })
     }
 
+    #[expect(clippy::too_many_lines, reason = "one match arm per action variant")]
     fn size_hint(&self) -> usize {
         <u32 as ProtoCodecVAR>::size_hint(&self.type_id())
             + size_of::<u8>()
@@ -375,7 +376,7 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackRequestActionType<V> {
                     <i8 as ProtoCodec>::size_hint(amount) + source.size_hint()
                 }
                 Self::Create { slot } => <i8 as ProtoCodec>::size_hint(slot),
-                Self::ScreenLabTableCombine => 0,
+                Self::ScreenLabTableCombine | Self::CraftNonImplemented => 0,
                 Self::ScreenBeaconPayment {
                     primary_effect,
                     secondary_effect,
@@ -438,7 +439,6 @@ impl<V: ProtoVersion> ProtoCodec for ItemStackRequestActionType<V> {
                     <String as ProtoCodec>::size_hint(pattern_id)
                         + <i8 as ProtoCodec>::size_hint(number_of_requested_crafts)
                 }
-                Self::CraftNonImplemented => 0,
                 Self::CraftResults {
                     result_items,
                     times_crafted,

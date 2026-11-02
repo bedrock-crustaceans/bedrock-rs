@@ -21,8 +21,8 @@ fn found(text: &str) -> Vec<crate::common::Rendered> {
     }
 }
 
-fn owned(names: &[&str]) -> Option<Vec<String>> {
-    Some(names.iter().map(|name| (*name).to_owned()).collect())
+fn owned(names: &[&str]) -> Vec<String> {
+    names.iter().map(|name| (*name).to_owned()).collect()
 }
 
 // The vanilla file is gdk-retail 1.26.45 `resource_packs/vanilla/materials/fancy.json`, copied
@@ -46,7 +46,7 @@ fn the_vanilla_fancy_list_is_read() {
             "materials/wireframe.material",
         ]
     );
-    assert_eq!(document.entries[1].add_defines, owned(&["FANCY"]));
+    assert_eq!(document.entries[1].add_defines, Some(owned(&["FANCY"])));
     assert_eq!(document.entries[1].defines, None);
     assert_eq!(document.entries[1].base_defines(), ["FANCY"]);
     assert_eq!(document.entries[3].add_defines, None);
@@ -107,9 +107,9 @@ fn the_three_define_keys_are_read_and_combine_in_the_clients_order() {
                     "-defines": ["B", "X"], "+defines": ["C", "A"], "defines": ["A", "B"]}]"#;
     assert_eq!(found(text), []);
     let entry = &list(text).entries[0];
-    assert_eq!(entry.defines, owned(&["A", "B"]));
-    assert_eq!(entry.add_defines, owned(&["C", "A"]));
-    assert_eq!(entry.sub_defines, owned(&["B", "X"]));
+    assert_eq!(entry.defines, Some(owned(&["A", "B"])));
+    assert_eq!(entry.add_defines, Some(owned(&["C", "A"])));
+    assert_eq!(entry.sub_defines, Some(owned(&["B", "X"])));
     // `defines` first, then `+defines`, then `-defines` removes; each name once.
     assert_eq!(entry.base_defines(), ["A", "C"]);
 }
@@ -118,9 +118,9 @@ fn the_three_define_keys_are_read_and_combine_in_the_clients_order() {
 fn base_defines_of_each_key_alone() {
     let entry = |defines: &[&str], add: &[&str], sub: &[&str]| ListEntry {
         path: "x".to_owned(),
-        defines: (!defines.is_empty()).then(|| owned(defines).unwrap()),
-        add_defines: (!add.is_empty()).then(|| owned(add).unwrap()),
-        sub_defines: (!sub.is_empty()).then(|| owned(sub).unwrap()),
+        defines: (!defines.is_empty()).then(|| owned(defines)),
+        add_defines: (!add.is_empty()).then(|| owned(add)),
+        sub_defines: (!sub.is_empty()).then(|| owned(sub)),
         ..ListEntry::default()
     };
     assert_eq!(entry(&["A", "B", "A"], &[], &[]).base_defines(), ["A", "B"]);
@@ -167,7 +167,7 @@ fn defines_of_the_wrong_type_are_kept_and_entries_that_are_no_string_dropped() {
     );
     let entry = &list(text).entries[0];
     assert_eq!(entry.defines, None);
-    assert_eq!(entry.add_defines, owned(&["A", "B"]));
+    assert_eq!(entry.add_defines, Some(owned(&["A", "B"])));
     assert_eq!(entry.sub_defines, None);
     assert!(entry.extra.get("defines").is_some());
     assert!(entry.extra.get("-defines").is_some());

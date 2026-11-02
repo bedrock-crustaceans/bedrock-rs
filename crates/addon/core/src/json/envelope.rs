@@ -58,6 +58,10 @@ impl<'a> Envelope<'a> {
 /// Reads a modern document's root from `document` (the file text after `strip_bom` and
 /// `check_depth`). A syntax error, or a root that is not an object, is an error at its file
 /// offset ("Failed to parse the Minecraft Document JSON: {}").
+///
+/// # Errors
+///
+/// Returns `SliceError` when `document` is not valid JSON or its root is not an object.
 pub fn probe_envelope(document: JsonSlice<'_>) -> Result<Envelope<'_>, SliceError> {
     let mut shell = parse_at::<EnvelopeShell<'_>>(document)?;
     let format_version = match shell.shift_remove(FORMAT_VERSION) {

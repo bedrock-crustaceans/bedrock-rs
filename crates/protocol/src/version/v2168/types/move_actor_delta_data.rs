@@ -2,6 +2,7 @@ use crate::ProtoVersion;
 use bedrock_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 pub struct MoveActorDeltaData<V: ProtoVersion> {
     pub actor_runtime_id: V::ActorRuntimeID,
     #[endianness(le)]

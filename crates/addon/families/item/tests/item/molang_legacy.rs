@@ -186,7 +186,7 @@ fn an_event_condition_that_is_no_expression_is_graded_by_the_game_line() {
             r#"["query.is_sneaking", [{"a": 1}]]"#,
             (Severity::Error, true),
         ),
-        (r#"[null]"#, (Severity::Info, false)),
+        (r"[null]", (Severity::Info, false)),
         // The object form is no exception, and it is not compiled
         (
             r#"{"expression": "query.is_sneaking", "version": 2}"#,
@@ -366,8 +366,8 @@ mod compiled {
         ));
         let written = written_as_read(&json, &checking());
         assert!(written.contains("'a' + 1"), "{written}");
-        let fine = with_events(r#""demo:e": {"condition": "query.is_sneaking"}"#, "");
-        assert!(invalid(loads(&fine, &checking()).diagnostics()).is_empty());
+        let valid = with_events(r#""demo:e": {"condition": "query.is_sneaking"}"#, "");
+        assert!(invalid(loads(&valid, &checking()).diagnostics()).is_empty());
     }
 
     #[test]
@@ -469,11 +469,11 @@ mod compiled {
         assert!(empty(&children[0]), "the leaf child is inert");
         assert!(children[1].as_object().unwrap().get("swing").is_some());
         // a valid shoot stays
-        let fine = with_events(
+        let valid = with_events(
             r#""demo:fire": {"shoot": {"projectile": "minecraft:arrow", "launch_power": 2.0, "angle_offset": "query.is_sneaking"}}"#,
             "",
         );
-        let document = loads(&fine, &checking());
+        let document = loads(&valid, &checking());
         let events = document.events.as_ref().unwrap().as_object().unwrap();
         assert!(
             events

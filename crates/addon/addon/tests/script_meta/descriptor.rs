@@ -3,7 +3,7 @@
 
 use bedrock_addon::families::script::meta::model::script::RawTypeDesc;
 use bedrock_addon::families::script::meta::{
-    Errorability, MetaError, Prim, Privilege, TypeDescriptor, TypeKind,
+    Errorability, MetaError, Prim, Privilege, TypeDescriptor, TypeKind, TypeOverlay,
 };
 
 fn raw(json: &str) -> RawTypeDesc {
@@ -238,7 +238,7 @@ fn check_8_error_types_need_is_errorable_and_are_never_empty() {
 #[test]
 fn overlay_flags_default_to_false() {
     let plain = lower(STRING).unwrap();
-    assert_eq!(plain.overlay, Default::default());
+    assert_eq!(plain.overlay, TypeOverlay::default());
     let flagged = lower(
         r#"{ "is_bind_type": false, "is_class": true, "is_errorable": false, "is_optional": true, "name": "T" }"#,
     )

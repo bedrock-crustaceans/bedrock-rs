@@ -65,6 +65,12 @@ bedrock_addon_core::version_chain! {
 /// Runs the remaining upgrade steps of a document [`ClientBiome::parse_as_written`] gave: the
 /// same result [`ClientBiome::parse`](bedrock_addon_core::document::Content::parse) gives for its file. A
 /// beta document is rejected here (it is a [`Beta`]).
+///
+/// # Errors
+///
+/// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+/// checks that follow it, find an error that stops the document from loading, including a beta
+/// document.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

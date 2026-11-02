@@ -14,6 +14,7 @@
 //! report. The classes and their counts are asserted per payload.
 
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Document};
@@ -30,7 +31,7 @@ use super::ranges::{exact, next_down, next_up};
 /// The documents generated for each payload.
 const DOCUMENTS: usize = 4_000;
 
-/// SplitMix64: the same documents on every run.
+/// `SplitMix64`: the same documents on every run.
 struct Rng(u64);
 
 impl Rng {
@@ -287,7 +288,7 @@ fn channels(rng: &mut Rng, count: usize) -> String {
         }
         .to_owned(),
         3 => rng
-            .pick(&[r#""red""#, r##""#abc""##, r##""FFFFFF""##, "7", "{}"])
+            .pick(&[r#""red""#, r##""#abc""##, r#""FFFFFF""#, "7", "{}"])
             .to_owned(),
         n if n % 2 == 0 => hex(rng, count),
         _ => array(rng, count),
@@ -444,10 +445,10 @@ fn lighting(rng: &mut Rng) -> String {
     let alpha = version == "1.21.40";
     let colour = |rng: &mut Rng| {
         // The struct's own colour form, and now and then the other one.
-        if alpha != rng.one_in(30) {
-            rgba(rng)
-        } else {
+        if alpha == rng.one_in(30) {
             rgb(rng)
+        } else {
+            rgba(rng)
         }
     };
     let light = |rng: &mut Rng| {
@@ -1036,9 +1037,12 @@ impl Compared<'_> {
                 }
             }
             LOCAL => {
-                let block = |name: &str| match name.contains(':') {
-                    true => name.to_owned(),
-                    false => format!("minecraft:{name}"),
+                let block = |name: &str| {
+                    if name.contains(':') {
+                        name.to_owned()
+                    } else {
+                        format!("minecraft:{name}")
+                    }
                 };
                 let mut standing: Vec<(String, Json)> = Vec::new();
                 for (name, light) in std::mem::take(payload.members_mut().unwrap()) {
@@ -1218,6 +1222,7 @@ impl Compared<'_> {
     }
 
     /// The class of one difference that is left after [`Self::expect`].
+    #[expect(clippy::float_cmp, reason = "the clamp to `f64::MAX` is exact")]
     fn classify(&mut self, difference: &Difference) {
         let at = shown(&difference.path);
         let below = at
@@ -1304,6 +1309,10 @@ impl Compared<'_> {
 }
 
 /// The class of a number member written as another number or another token.
+#[expect(
+    clippy::float_cmp,
+    reason = "an integer and a double are the same number when equal"
+)]
 fn number_class(before: &Number, after: &Number) -> Option<Class> {
     #[allow(
         clippy::cast_possible_truncation,
@@ -1494,7 +1503,7 @@ where
     if !unrecorded.is_empty() {
         let mut report = String::new();
         for (sketch, (count, first)) in unrecorded.iter().take(40) {
-            report.push_str(&format!("{count:5} {sketch}\n    {first}\n"));
+            writeln!(report, "{count:5} {sketch}\n    {first}").unwrap();
         }
         panic!(
             "{key}: {} kinds of difference between a written document and its input that no \

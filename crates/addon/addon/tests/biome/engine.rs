@@ -141,7 +141,7 @@ fn the_engine_s_biomes_below_the_floor_are_refused() {
 }
 
 /// A swamp surface builder on a biome that replaces a nether biome: "Biomes in Nether are only
-/// compatible with following Surface Builders: overworld, frozen_ocean, capped, the_end", and the document is refused.
+/// compatible with following Surface Builders: overworld, `frozen_ocean`, capped, `the_end`", and the document is refused.
 #[test]
 fn the_engine_s_swamp_builder_in_the_nether_is_refused() {
     let found = rejected(&engine("case-5.json"), &context());

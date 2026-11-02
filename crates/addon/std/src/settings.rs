@@ -18,6 +18,11 @@ use crate::read::read_optional;
 /// could not see: every pack then uses its defaults, and a save must not replace the file
 /// (`FileState::Failed`). The warnings and infos of a file that loads are not returned;
 /// [`read_saved_settings_document`] returns them.
+///
+/// # Errors
+///
+/// `ReadError::Io` when the file exists but cannot be read, and `ReadError::Rejected` when
+/// it is rejected.
 pub fn read_saved_settings(path: impl AsRef<Path>) -> Result<SavedSettings, ReadError> {
     Ok(read_saved_settings_document(path)?
         .map_or_else(SavedSettings::default, Document::into_value))
@@ -30,6 +35,11 @@ pub fn read_saved_settings(path: impl AsRef<Path>) -> Result<SavedSettings, Read
 /// `None` is a file that does not exist, which holds no values and has nothing to report;
 /// [`read_saved_settings`] gives the empty document for it. The errors are those of
 /// [`read_saved_settings`].
+///
+/// # Errors
+///
+/// `ReadError::Io` when the file exists but cannot be read, and `ReadError::Rejected` when
+/// it is rejected.
 pub fn read_saved_settings_document(
     path: impl AsRef<Path>,
 ) -> Result<Option<Document<SavedSettings>>, ReadError> {

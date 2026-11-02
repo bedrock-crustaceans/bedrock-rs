@@ -147,6 +147,11 @@ pub(crate) fn encode_es384_with_x5u(
     Ok(encode_es384(&header, claims, key)?)
 }
 
+/// Encodes a public key as base64 `SubjectPublicKeyInfo`.
+///
+/// # Errors
+///
+/// Returns [`AuthError::InvalidPublicKey`] when the key cannot be encoded as `SubjectPublicKeyInfo`.
 pub fn encode_public_key(key: &PublicKey) -> Result<String, AuthError> {
     let der = key
         .to_public_key_der()
@@ -154,6 +159,11 @@ pub fn encode_public_key(key: &PublicKey) -> Result<String, AuthError> {
     Ok(STANDARD.encode(der.as_bytes()))
 }
 
+/// Parses a base64 `SubjectPublicKeyInfo` P-384 public key.
+///
+/// # Errors
+///
+/// Returns [`AuthError::InvalidPublicKey`] when the text is not base64 or not a P-384 `SubjectPublicKeyInfo`.
 pub fn parse_public_key(public_key_base64: &str) -> Result<PublicKey, AuthError> {
     let der = STANDARD
         .decode(public_key_base64)
@@ -216,11 +226,11 @@ mod tests {
         ChainRoot::new(keys.root.public_base64())
     }
 
-    fn assert_jwt_error(result: Result<Authentication, AuthError>, expected: JwtError) {
+    fn assert_jwt_error(result: Result<Authentication, AuthError>, expected: &JwtError) {
         match result {
             Err(AuthError::Jwt(error)) => assert_eq!(
                 std::mem::discriminant(&error),
-                std::mem::discriminant(&expected),
+                std::mem::discriminant(expected),
                 "expected {expected:?}, got {error:?}"
             ),
             other => panic!("expected {expected:?}, got {other:?}"),
@@ -272,7 +282,7 @@ mod tests {
 
         let result = verify_chain(&chain, &root_of(&keys));
 
-        assert_jwt_error(result, JwtError::InvalidSignature);
+        assert_jwt_error(result, &JwtError::InvalidSignature);
     }
 
     #[test]
@@ -283,7 +293,7 @@ mod tests {
 
         let result = verify_chain(&chain, &root_of(&keys));
 
-        assert_jwt_error(result, JwtError::Expired);
+        assert_jwt_error(result, &JwtError::Expired);
     }
 
     #[test]
@@ -294,7 +304,7 @@ mod tests {
 
         let result = verify_chain(&chain, &root_of(&keys));
 
-        assert_jwt_error(result, JwtError::NotYetValid);
+        assert_jwt_error(result, &JwtError::NotYetValid);
     }
 
     #[test]
@@ -361,7 +371,7 @@ mod tests {
 
         let result = verify_chain(&chain, &root_of(&keys));
 
-        assert_jwt_error(result, JwtError::InvalidSignature);
+        assert_jwt_error(result, &JwtError::InvalidSignature);
     }
 
     #[test]

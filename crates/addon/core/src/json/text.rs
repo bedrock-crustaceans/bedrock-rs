@@ -62,6 +62,10 @@ pub fn blank_bom(bytes: &[u8]) -> std::borrow::Cow<'_, [u8]> {
 /// The count ends where the root value does: vanilla's reader stops there, so what follows a
 /// root value is not the document's nesting (the file loads). A root that is no array
 /// or object has none.
+///
+/// # Errors
+///
+/// Returns `TooDeep` with the offset of the first bracket nested past `max`.
 pub fn check_depth(bytes: &[u8], max: usize) -> Result<(), TooDeep> {
     let mut depth = 0usize;
     let mut i = 0;

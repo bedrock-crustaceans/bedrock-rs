@@ -137,7 +137,7 @@ fn s03_legacy_parent_cross_pack() {
         .as_ref()
         .unwrap()
         .chain()
-        .map(|node| node.identifier())
+        .map(bedrock_addon::families::geometry::Inherited::identifier)
         .collect();
     assert_eq!(chain, ["geometry.npc", "geometry.humanoid"]);
     assert!(guard.bone("hat").is_some() && guard.bone("body").is_some());
@@ -421,7 +421,7 @@ fn a_legacy_child_s_bone_parent_is_looked_up_in_the_bones_it_inherits() {
             .location
             .path
             .as_ref()
-            .map(|p| p.as_str()),
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("models/entity/witch.json")
     );
     // A geometry without a legacy parent is judged by its file.

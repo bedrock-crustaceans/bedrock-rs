@@ -78,7 +78,11 @@ fn b12_duplicate_identifier() {
         "Multiple biome documents with same identifier: test:biome"
     );
     assert_eq!(
-        duplicates[0].location.path.as_ref().map(|p| p.as_str()),
+        duplicates[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("biomes/b.json"),
         "reported at the dropped document"
     );

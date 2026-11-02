@@ -269,7 +269,7 @@ fn e00d_the_pufferfish_gets_the_puff_state_machine_and_no_mob_family() {
         .unwrap()
         .as_object()
         .unwrap();
-    let names: Vec<&str> = groups.keys().map(|k| k.as_str()).collect();
+    let names: Vec<&str> = groups.keys().map(facet_value::VString::as_str).collect();
     assert_eq!(
         names,
         [
@@ -291,7 +291,7 @@ fn e00d_the_pufferfish_gets_the_puff_state_machine_and_no_mob_family() {
     );
 }
 
-/// op 8 (vanilla: "nested minecraft:type_family"): a string `family` becomes
+/// op 8 (vanilla: "nested `minecraft:type_family`"): a string `family` becomes
 /// `[s, "mob"]` at the component root; vanilla writes a nested `minecraft:type_family` member and
 /// leaves `family` alone.
 #[test]
@@ -312,7 +312,7 @@ fn e00d_a_string_family_gets_mob_at_the_root_deviation() {
     assert_eq!(family, json(r#"{"family": ["monster", "mob"]}"#));
 }
 
-/// section B (vanilla: "an element without scheduled_event becomes null"): a
+/// section B (vanilla: "an element without `scheduled_event` becomes null"): a
 /// `scheduled_events` element without `scheduled_event` is dropped with `DroppedField`; vanilla
 /// leaves a `null` element.
 #[test]
@@ -379,7 +379,7 @@ fn e00e_1_13_0_melee_chance_spawn() {
             .map(|finding| finding.location.json_path.to_string())
             .collect();
         // And the removal of `radius_change_chance`, an information.
-        let noted: &[&str] = if name.ends_with("anchor") {
+        let expected_notes: &[&str] = if name.ends_with("anchor") {
             &[
                 "minecraft:entity/component_groups/g/minecraft:behavior.circle_around_anchor/radius_change_chance",
                 "minecraft:entity/components/minecraft:behavior.circle_around_anchor/radius_adjustment_chance",
@@ -387,7 +387,7 @@ fn e00e_1_13_0_melee_chance_spawn() {
         } else {
             &[]
         };
-        assert_eq!(notes, noted, "{name}");
+        assert_eq!(notes, expected_notes, "{name}");
         for finding in found
             .iter()
             .filter(|finding| finding.severity != Severity::Info)
@@ -671,7 +671,7 @@ fn e10b_1_19_0_slime_area_attack() {
         .and_then(|p| p.get("component_groups"))
         .and_then(Value::as_object)
         .unwrap();
-    let names: Vec<&str> = groups.keys().map(|k| k.as_str()).collect();
+    let names: Vec<&str> = groups.keys().map(facet_value::VString::as_str).collect();
     assert_eq!(names, ["minecraft:slime_small"]);
 }
 
@@ -1359,6 +1359,7 @@ fn said(version: &str, identifier: &str, components: &str) -> (Vec<String>, Stri
 /// another value, replaced or dropped is told at the member as the file has it, and the
 /// entity holds what it held before.
 #[test]
+#[expect(clippy::too_many_lines, reason = "one row per case of the table")]
 fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
     // (version, identifier, components, the finding, what the written entity holds)
     let rows: &[(&str, &str, &str, &str, &str)] = &[
@@ -1708,25 +1709,29 @@ fn the_1_26_50_step_inserts_what_the_vanilla_1_26_50_files_write() {
     }
 }
 
+/// The 1.26.40 document with the given identifier, `components` and `component_groups`, run
+/// through the steps to the newest version.
+fn run_inserting_step(identifier: &str, components: &str, groups: &str) -> Value {
+    let before = format!(
+        r#"{{"format_version": "1.26.40", "minecraft:entity": {{"description": {{"identifier": "{identifier}"}}, "components": {components}, "component_groups": {groups}}}}}"#
+    );
+    run_text::<v1_26_40::Entity>(&before, Run::default(), &cx()).0
+}
+
+/// The member `key` of the object at `section` below the written document's root.
+fn member_at(out: &Value, section: &[&str], key: &str) -> Option<Value> {
+    let mut node = out.clone();
+    for step in section {
+        node = node.as_object()?.get(step)?.clone();
+    }
+    node.as_object()?.get(key).cloned()
+}
+
 /// The identifier-bound ops one by one, on documents without the component: each of the
 /// seven freezing-immune mobs, the three freezing-vulnerable ones and the two spiders; a
-/// component the file has is left as written; a custom entity gets none of them; a group
-/// whose own `type_family` has `lightweight` gets `can_stand_on_powder_snow`.
+/// component the file has is left as written.
 #[test]
-fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
-    let run = |identifier: &str, components: &str, groups: &str| -> Value {
-        let before = format!(
-            r#"{{"format_version": "1.26.40", "minecraft:entity": {{"description": {{"identifier": "{identifier}"}}, "components": {components}, "component_groups": {groups}}}}}"#
-        );
-        run_text::<v1_26_40::Entity>(&before, Run::default(), &cx()).0
-    };
-    let member = |out: &Value, section: &[&str], key: &str| -> Option<Value> {
-        let mut node = out.clone();
-        for step in section {
-            node = node.as_object()?.get(step)?.clone();
-        }
-        node.as_object()?.get(key).cloned()
-    };
+fn the_1_26_50_step_inserts_by_identifier_only_when_absent() {
     for id in [
         "minecraft:creaking",
         "minecraft:skeleton",
@@ -1736,9 +1741,9 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
         "minecraft:snow_golem",
         "minecraft:stray",
     ] {
-        let out = run(id, "{}", "{}");
+        let out = run_inserting_step(id, "{}", "{}");
         assert_eq!(
-            member(&out, &["components"], "minecraft:freezing_immune"),
+            member_at(&out, &["components"], "minecraft:freezing_immune"),
             Some(json("{}")),
             "{id}"
         );
@@ -1748,17 +1753,17 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
         "minecraft:blaze",
         "minecraft:magma_cube",
     ] {
-        let out = run(id, "{}", "{}");
+        let out = run_inserting_step(id, "{}", "{}");
         assert_eq!(
-            member(&out, &["components"], "minecraft:freezing_vulnerable"),
+            member_at(&out, &["components"], "minecraft:freezing_vulnerable"),
             Some(json("{}")),
             "{id}"
         );
     }
     for id in ["minecraft:spider", "minecraft:cave_spider"] {
-        let out = run(id, "{}", "{}");
+        let out = run_inserting_step(id, "{}", "{}");
         assert_eq!(
-            member(
+            member_at(
                 &out,
                 &["components"],
                 "minecraft:block_movement_slowdown_immunity"
@@ -1766,13 +1771,13 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
             Some(json(r#"{"blocks": ["minecraft:web"]}"#)),
             "{id}"
         );
-        let kept = run(
+        let kept = run_inserting_step(
             id,
             r#"{"minecraft:block_movement_slowdown_immunity": {"blocks": ["minecraft:honey_block"]}}"#,
             "{}",
         );
         assert_eq!(
-            member(
+            member_at(
                 &kept,
                 &["components"],
                 "minecraft:block_movement_slowdown_immunity"
@@ -1781,8 +1786,14 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
             "{id}: present, left as written"
         );
     }
+}
+
+/// The sulfur cube's goes to its group, a group's own `type_family` with `lightweight` gets
+/// `can_stand_on_powder_snow`, and a custom entity gets none of them.
+#[test]
+fn the_1_26_50_step_inserts_into_groups_and_by_family() {
     // The sulfur cube's goes to its group, when the group exists, and not to `components`.
-    let out = run(
+    let out = run_inserting_step(
         "minecraft:sulfur_cube",
         "{}",
         r#"{"minecraft:sulfur_cube_medium_with_block": {}, "other": {}}"#,
@@ -1792,15 +1803,15 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
         "minecraft:sulfur_cube_medium_with_block",
     ];
     assert_eq!(
-        member(&out, &group, "minecraft:freezing_immune"),
+        member_at(&out, &group, "minecraft:freezing_immune"),
         Some(json("{}"))
     );
     assert_eq!(
-        member(&out, &["components"], "minecraft:freezing_immune"),
+        member_at(&out, &["components"], "minecraft:freezing_immune"),
         None
     );
     assert_eq!(
-        member(
+        member_at(
             &out,
             &["component_groups", "other"],
             "minecraft:freezing_immune"
@@ -1808,17 +1819,17 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
         None
     );
     // `lightweight`: in `components`, and in a group by the group's own family.
-    let out = run(
+    let out = run_inserting_step(
         "demo:x",
         r#"{"minecraft:type_family": {"family": ["mob", "lightweight"]}}"#,
         r#"{"light": {"minecraft:type_family": {"family": ["lightweight"]}}, "heavy": {"minecraft:type_family": {"family": ["mob"]}}}"#,
     );
     assert_eq!(
-        member(&out, &["components"], "minecraft:can_stand_on_powder_snow"),
+        member_at(&out, &["components"], "minecraft:can_stand_on_powder_snow"),
         Some(json("{}"))
     );
     assert_eq!(
-        member(
+        member_at(
             &out,
             &["component_groups", "light"],
             "minecraft:can_stand_on_powder_snow"
@@ -1826,7 +1837,7 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
         Some(json("{}"))
     );
     assert_eq!(
-        member(
+        member_at(
             &out,
             &["component_groups", "heavy"],
             "minecraft:can_stand_on_powder_snow"
@@ -1834,14 +1845,14 @@ fn the_1_26_50_step_inserts_by_identifier_and_family_only_when_absent() {
         None
     );
     // A custom entity without the family: only `uses_legacy_ambient_sounds`.
-    let out = run("demo:skeleton", "{}", "{}");
+    let out = run_inserting_step("demo:skeleton", "{}", "{}");
     let components = out.as_object().unwrap().get("components").unwrap();
     assert_eq!(
         components
             .as_object()
             .unwrap()
             .keys()
-            .map(|k| k.as_str())
+            .map(facet_value::VString::as_str)
             .collect::<Vec<_>>(),
         ["minecraft:uses_legacy_ambient_sounds"]
     );
@@ -1936,6 +1947,7 @@ fn the_enderman_teleport_gets_its_projectile_members_below_1_26_50() {
 /// every section, `do_not_upgrade` or not; a written value is kept.
 #[test]
 fn projectile_and_follow_mob_get_their_1_26_50_members_below_it() {
+    use bedrock_addon_family_entity::goal::FollowMob;
     let before = r#"{"format_version": "1.26.40", "minecraft:entity": {"description": {"identifier": "demo:x"}, "do_not_upgrade": true,
         "components": {"minecraft:projectile": {"power": 1}, "minecraft:behavior.follow_mob": {"priority": 2}},
         "component_groups": {"g": {"minecraft:projectile": {"multiple_targets": false}, "minecraft:behavior.follow_mob": {"abort_navigation_on_stop": true}}}}}"#;
@@ -1959,7 +1971,6 @@ fn projectile_and_follow_mob_get_their_1_26_50_members_below_it() {
     // The goal holds the value the conversion gives (the fixer's `false`, the file's
     // `true`), and the write-back leaves the member out: 1.26.60's follow_mob deprecates
     // the name, so no document of the newest version may hold it.
-    use bedrock_addon_family_entity::goal::FollowMob;
     let goal = |map: &bedrock_addon_core::document::ComponentMap<
         bedrock_addon_family_entity::component::EntityComponent,
     >| {
@@ -2032,7 +2043,7 @@ fn projectile_and_follow_mob_get_their_1_26_50_members_below_it() {
 
 /// The adjacent versions of every 1.26.50 gate of this step: a 1.26.49 document goes through
 /// the 1.26.40 → 1.26.50 step (the fixer's sections A and B, the five `collectUpgraders` ops)
-/// and may still write follow_mob's `abort_navigation_on_stop`; a 1.26.50 document is past
+/// and may still write `follow_mob`'s `abort_navigation_on_stop`; a 1.26.50 document is past
 /// the step, and the name is deprecated in it.
 #[test]
 fn the_1_26_50_gates_hold_at_1_26_49_and_not_at_1_26_50() {

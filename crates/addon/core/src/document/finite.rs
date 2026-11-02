@@ -123,6 +123,10 @@ impl<'a> FiniteText<'a> {
 
     /// A whole load of one file through `read`, which is given the bytes to read: its
     /// outcome, loaded or rejected, settled in its own file.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `Rejected` that `read` returns, with the finite-number findings settled into it.
     pub fn load<T>(
         bytes: &'a [u8],
         read: impl FnOnce(&[u8]) -> Result<Document<T>, Rejected>,

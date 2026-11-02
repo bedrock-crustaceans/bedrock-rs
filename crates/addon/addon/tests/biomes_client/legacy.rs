@@ -95,7 +95,7 @@ fn ids(entry: &LegacyClientBiome) -> Vec<&str> {
     entry
         .fog_ids_to_merge
         .iter()
-        .map(|id| id.as_str())
+        .map(bedrock_addon::id::Id::as_str)
         .collect()
 }
 
@@ -182,7 +182,10 @@ fn bc02_second_file_replaces_fog() {
         )
     );
     assert!(plains(&stack).old_fog.is_none());
-    assert!(found(&stack, |c| matches!(c, Code::LegacyFogIgnored)).len() == 1);
+    assert_eq!(
+        found(&stack, |c| matches!(c, Code::LegacyFogIgnored)).len(),
+        1
+    );
     assert_eq!(
         legacy(&stack)
             .origin(&BiomeId::from_static(PLAINS))
@@ -250,7 +253,7 @@ fn bc04_default_remove_all_prior() {
     let keys: Vec<&str> = legacy(&cleared)
         .biomes
         .keys()
-        .map(|id| id.as_str())
+        .map(bedrock_addon::id::Id::as_str)
         .collect();
     assert_eq!(keys, ["b:mine"]);
     assert_eq!(
@@ -321,7 +324,9 @@ fn bc06_back_compat_fog() {
     assert_eq!(old.water_fog_color, None);
     assert_eq!(old.water_fog_distance, Some(15.0));
     assert_eq!(
-        old.fog_identifier.as_ref().map(|id| id.as_str()),
+        old.fog_identifier
+            .as_ref()
+            .map(bedrock_addon::id::Id::as_str),
         Some("minecraft:fog_plains")
     );
     // Each old-style member alone does it, and a namespaced name is kept.
@@ -338,7 +343,9 @@ fn bc06_back_compat_fog() {
         assert!(entry.fog_ids_to_merge.is_empty(), "{member}");
         let old = entry.old_fog.as_ref().expect(member);
         assert_eq!(
-            old.fog_identifier.as_ref().map(|id| id.as_str()),
+            old.fog_identifier
+                .as_ref()
+                .map(bedrock_addon::id::Id::as_str),
             Some("a:fog")
         );
     }
@@ -488,7 +495,11 @@ fn bc11_invalid_json_skipped_deviation() {
         r#"{"biomes" {"a:broken": {}}}"#,
         r#"{"biomes": {"a:two": {},}}"#,
     ]);
-    let keys: Vec<&str> = legacy(&stack).biomes.keys().map(|id| id.as_str()).collect();
+    let keys: Vec<&str> = legacy(&stack)
+        .biomes
+        .keys()
+        .map(bedrock_addon::id::Id::as_str)
+        .collect();
     assert_eq!(keys, ["a:one", "a:two"]);
     let malformed = found(&stack, |c| matches!(c, Code::MalformedInput { .. }));
     assert_eq!(malformed.len(), 1);
@@ -784,7 +795,11 @@ fn k108_a_bare_biome_key_is_written_with_the_namespace_the_game_gives_it() {
         "demo:marsh": {"water_surface_transparency": 0.5}
     }}"##;
     let read = LegacyClientBiomes::parse(&path(), text.as_bytes(), &context()).unwrap();
-    let keys: Vec<&str> = read.biomes.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<&str> = read
+        .biomes
+        .keys()
+        .map(bedrock_addon::id::Id::as_str)
+        .collect();
     // (A renamed key follows the others: the game walks the keys of an object by name.)
     assert_eq!(keys, ["demo:marsh", "minecraft:plains"]);
     let written = read.to_json().unwrap();

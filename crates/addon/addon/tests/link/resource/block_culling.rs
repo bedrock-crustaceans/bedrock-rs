@@ -150,7 +150,7 @@ fn r30_a_name_no_rules_document_has_is_a_kept_error_at_the_member() {
         &[(BLOCK, &block(r#", "culling": "demo:nope""#))],
         &[],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -185,10 +185,10 @@ fn r30_culling_rules_of_the_game_are_a_host_s_to_know() {
         &[(BLOCK, &lamp)],
         &[],
         hosted(&[("culling rules", "minecraft:leaves_culling")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(of_kind(&found, "culling rules"), []);
-    let found = link_with(&[(BLOCK, &lamp)], &[], hosted(&[]), &LinkOptions::default());
+    let found = link_with(&[(BLOCK, &lamp)], &[], hosted(&[]), LinkOptions::default());
     assert_eq!(of_kind(&found, "culling rules").len(), 1, "{found:#?}");
 }
 
@@ -457,7 +457,7 @@ mod parts {
             &[(BLOCK, &lamp)],
             &[(RULES, &rules)],
             hosted(&[("geometry", "minecraft:geometry.full_block")]),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(of_kind(&found, "bone"), []);
     }

@@ -14,6 +14,7 @@ use rsa::RsaPrivateKey;
 use rsa::signature::{SignatureEncoding, Signer};
 use rsa::traits::PublicKeyParts;
 use serde_json::json;
+use std::future::Future;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -101,8 +102,8 @@ impl RotatedKeysHttp {
 }
 
 impl AsyncHttpClient for RotatedKeysHttp {
-    async fn get(&self, url: &str) -> Result<Vec<u8>, HttpError> {
-        self.respond(url)
+    fn get(&self, url: &str) -> impl Future<Output = Result<Vec<u8>, HttpError>> {
+        std::future::ready(self.respond(url))
     }
 }
 

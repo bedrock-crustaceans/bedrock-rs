@@ -47,6 +47,113 @@ fn location() -> Location {
     Location::new(None, None, path, None)
 }
 
+/// Checks one row of the language-message fixture: the outcome, and the findings against the
+/// row's messages. Mismatches are pushed to `failures`.
+fn check_row(check: &MolangCheck, row: &facet_value::VObject, failures: &mut Vec<String>) {
+    let number = row
+        .get("row")
+        .unwrap()
+        .as_number()
+        .unwrap()
+        .to_u64()
+        .unwrap();
+    let expr = text(row.get("expr").unwrap());
+    let version = row
+        .get("version")
+        .unwrap()
+        .as_number()
+        .unwrap()
+        .to_i64()
+        .unwrap();
+    let version = RawVersion(i16::try_from(version).unwrap());
+    let ops = match text(row.get("ops").unwrap()) {
+        "all" => OpsRule::All,
+        "no_assignments" => OpsRule::NoAssignments,
+        other => panic!("not an ops rule: {other}"),
+    };
+    let rejected = row.get("rejected").unwrap().as_bool().unwrap();
+    // Compiled as a string loader compiles it, so an empty text reaches the parser (#1).
+    let spec = MolangFieldSpec {
+        ops,
+        empty: EmptyRule::Compile,
+        ..MolangFieldSpec::DEFAULT
+    };
+    let cx = MolangContext {
+        pack: version,
+        document: version,
+        ..MolangContext::detached()
+    };
+    let mut diagnostics = Diagnostics::default();
+    let outcome = check.check_source(
+        &MolangSource::string(expr, version),
+        &spec,
+        Side::Client,
+        &cx,
+        &location(),
+        &mut diagnostics,
+    );
+    if matches!(outcome, MolangOutcome::Failed(_)) != rejected {
+        failures.push(format!("#{number} {expr:?}: outcome {outcome:?}"));
+    }
+    let want: Vec<(String, String, (Severity, bool))> = row
+        .get("messages")
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| {
+            let m = m.as_object().unwrap();
+            (
+                text(m.get("id").unwrap()).to_owned(),
+                text(m.get("text").unwrap()).to_owned(),
+                severity(text(m.get("severity").unwrap())),
+            )
+        })
+        .collect();
+    let mut got = Vec::new();
+    for finding in &diagnostics {
+        let Some(DiagnosticDetail::Molang(detail)) = finding.detail.as_deref() else {
+            failures.push(format!("#{number} {expr:?}: a finding without detail"));
+            continue;
+        };
+        let Some(message) = detail.language_message() else {
+            // A lint: not a parser message of the table.
+            continue;
+        };
+        if finding.code
+            != (DiagnosticCode::InvalidMolang {
+                expression: expr.to_owned(),
+            })
+        {
+            failures.push(format!("#{number} {expr:?}: code {:?}", finding.code));
+        }
+        let message_text = detail.to_string();
+        let line = format!(
+            "[{}] minecraft:toy/field | {expr} | {message_text}",
+            finding.severity
+        );
+        if finding.to_string() != line {
+            failures.push(format!("#{number} {expr:?}: line {finding}"));
+        }
+        got.push((
+            message.id().to_owned(),
+            message_text,
+            (finding.severity, finding.kept),
+        ));
+    }
+    if got != want {
+        failures.push(format!(
+            "#{number} {expr:?}:\n  got  {got:?}\n  want {want:?}"
+        ));
+    }
+    let id = format!("E{number:02}");
+    if !want.iter().any(|(w, _, _)| *w == id) {
+        failures.push(format!(
+            "#{number} {expr:?}: the row's message is not in the row"
+        ));
+    }
+}
+
 #[test]
 fn every_language_message_maps_to_invalid_molang() {
     let fixture = language_messages();
@@ -67,109 +174,7 @@ fn every_language_message_maps_to_invalid_molang() {
     let check = MolangCheck::new();
     let mut failures = Vec::new();
     for row in rows {
-        let row = row.as_object().unwrap();
-        let number = row
-            .get("row")
-            .unwrap()
-            .as_number()
-            .unwrap()
-            .to_u64()
-            .unwrap();
-        let expr = text(row.get("expr").unwrap());
-        let version = row
-            .get("version")
-            .unwrap()
-            .as_number()
-            .unwrap()
-            .to_i64()
-            .unwrap();
-        let version = RawVersion(i16::try_from(version).unwrap());
-        let ops = match text(row.get("ops").unwrap()) {
-            "all" => OpsRule::All,
-            "no_assignments" => OpsRule::NoAssignments,
-            other => panic!("not an ops rule: {other}"),
-        };
-        let rejected = row.get("rejected").unwrap().as_bool().unwrap();
-        // Compiled as a string loader compiles it, so an empty text reaches the parser (#1).
-        let spec = MolangFieldSpec {
-            ops,
-            empty: EmptyRule::Compile,
-            ..MolangFieldSpec::DEFAULT
-        };
-        let cx = MolangContext {
-            pack: version,
-            document: version,
-            ..MolangContext::detached()
-        };
-        let mut diagnostics = Diagnostics::default();
-        let outcome = check.check_source(
-            &MolangSource::string(expr, version),
-            &spec,
-            Side::Client,
-            &cx,
-            &location(),
-            &mut diagnostics,
-        );
-        if matches!(outcome, MolangOutcome::Failed(_)) != rejected {
-            failures.push(format!("#{number} {expr:?}: outcome {outcome:?}"));
-        }
-        let want: Vec<(String, String, (Severity, bool))> = row
-            .get("messages")
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|m| {
-                let m = m.as_object().unwrap();
-                (
-                    text(m.get("id").unwrap()).to_owned(),
-                    text(m.get("text").unwrap()).to_owned(),
-                    severity(text(m.get("severity").unwrap())),
-                )
-            })
-            .collect();
-        let mut got = Vec::new();
-        for finding in diagnostics.iter() {
-            let Some(DiagnosticDetail::Molang(detail)) = finding.detail.as_deref() else {
-                failures.push(format!("#{number} {expr:?}: a finding without detail"));
-                continue;
-            };
-            let Some(message) = detail.language_message() else {
-                // A lint: not a parser message of the table.
-                continue;
-            };
-            if finding.code
-                != (DiagnosticCode::InvalidMolang {
-                    expression: expr.to_owned(),
-                })
-            {
-                failures.push(format!("#{number} {expr:?}: code {:?}", finding.code));
-            }
-            let message_text = detail.to_string();
-            let line = format!(
-                "[{}] minecraft:toy/field | {expr} | {message_text}",
-                finding.severity
-            );
-            if finding.to_string() != line {
-                failures.push(format!("#{number} {expr:?}: line {finding}"));
-            }
-            got.push((
-                message.id().to_owned(),
-                message_text,
-                (finding.severity, finding.kept),
-            ));
-        }
-        if got != want {
-            failures.push(format!(
-                "#{number} {expr:?}:\n  got  {got:?}\n  want {want:?}"
-            ));
-        }
-        let id = format!("E{number:02}");
-        if !want.iter().any(|(w, _, _)| *w == id) {
-            failures.push(format!(
-                "#{number} {expr:?}: the row's message is not in the row"
-            ));
-        }
+        check_row(&check, row.as_object().unwrap(), &mut failures);
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

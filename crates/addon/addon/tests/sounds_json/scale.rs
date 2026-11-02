@@ -1,6 +1,7 @@
 //! The block `base` chains at scale: a table of 20 000 types that each name the next as their
 //! base, and one whose bases close a cycle, resolve in time linear in the table.
 
+use std::fmt::Write as _;
 use std::time::Duration;
 
 use bedrock_addon::diagnostic::Severity;
@@ -18,9 +19,11 @@ fn chain(count: usize, end: &str) -> String {
             end.to_owned()
         };
         let comma = if index == 0 { "" } else { "," };
-        text.push_str(&format!(
+        write!(
+            text,
             r#"{comma}"b{index}": {{"base": "{base}", "events": {{"hit": "hit.{index}"}}}}"#
-        ));
+        )
+        .unwrap();
     }
     text.push_str("}}");
     text

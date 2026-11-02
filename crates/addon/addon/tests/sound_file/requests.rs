@@ -18,7 +18,7 @@ fn read_paths(responder: &Responder) -> Vec<String> {
         .iter()
         .filter_map(|request| match request {
             Request::ReadFile { location, .. } => Some(location.path.as_str().to_owned()),
-            _ => None,
+            Request::ListDir { .. } => None,
         })
         .collect()
 }
@@ -67,7 +67,7 @@ fn a_stack_with_listed_sound_files_requests_the_bytes_of_none_of_them() {
         };
         let mut loader =
             StackLoader::new(repository.stacks(&world, LoadOptions::default()), options);
-        let loaded = responder.drive(&mut loader);
+        let stack = responder.drive(&mut loader);
         let read: Vec<String> = read_paths(&responder).split_off(0);
         let audio: Vec<&String> = read
             .iter()
@@ -93,7 +93,7 @@ fn a_stack_with_listed_sound_files_requests_the_bytes_of_none_of_them() {
             );
         }
         // The listing alone resolves the names, in probe order.
-        let sounds = loaded.resource.sound_files();
+        let sounds = stack.resource.sound_files();
         assert_eq!(sounds.get("sounds/x").unwrap().ext, AudioExt::Ogg);
         assert_eq!(sounds.get("sounds/deep/y").unwrap().ext, AudioExt::Fsb);
         assert_eq!(sounds.get("sounds/z").unwrap().ext, AudioExt::Wav);
@@ -104,7 +104,7 @@ fn a_stack_with_listed_sound_files_requests_the_bytes_of_none_of_them() {
         // A world pack is no base-game pack: its dangling name is not judged.
         assert_eq!(codes, ["IgnoredFile", "ShadowedDefinition"]);
         assert!(
-            loaded
+            stack
                 .link()
                 .iter()
                 .all(|d| d.code.name() != "UnresolvedReference"),
@@ -112,7 +112,7 @@ fn a_stack_with_listed_sound_files_requests_the_bytes_of_none_of_them() {
         );
         // Nothing was skipped for want of bytes.
         assert!(
-            loaded
+            stack
                 .resource
                 .report()
                 .iter()

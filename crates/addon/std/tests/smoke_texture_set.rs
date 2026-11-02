@@ -102,14 +102,12 @@ fn files_with(dir: &Path, suffix: &str) -> usize {
 
 /// The pack folders directly below `dir` that hold a texture set.
 fn packs_with_sets(dir: &Path) -> usize {
-    std::fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok().map(|entry| entry.path()))
-                .filter(|pack| files_with(&pack.join("textures"), SUFFIX) > 0)
-                .count()
-        })
-        .unwrap_or(0)
+    std::fs::read_dir(dir).map_or(0, |entries| {
+        entries
+            .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+            .filter(|pack| files_with(&pack.join("textures"), SUFFIX) > 0)
+            .count()
+    })
 }
 
 /// The stacks of every pack below `dir` with the texture group loaded, and what the load read.
@@ -142,15 +140,19 @@ fn load(dir: &Path, origin: PackOrigin) -> (StackSet, Asked) {
 /// Loads the resource packs below `dir` and checks the texture sets of the stack: none is
 /// rejected but the textures of `broken`, each of which is rejected for one layer image its
 /// pack lacks. Returns the stacks for the caller's own checks.
-fn smoke(source: &str, dir: PathBuf, origin: PackOrigin, broken: &[&str]) -> StackSet {
-    let on_disk = files_with(&dir, SUFFIX);
-    let packs = packs_with_sets(&dir);
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass over the loaded sets; its counters feed the checks at the end"
+)]
+fn smoke(source: &str, dir: &Path, origin: PackOrigin, broken: &[&str]) -> StackSet {
+    let on_disk = files_with(dir, SUFFIX);
+    let packs = packs_with_sets(dir);
     assert!(
         on_disk > 0,
         "{source}: no texture set below {}",
         dir.display()
     );
-    let (stacks, asked) = load(&dir, origin);
+    let (stacks, asked) = load(dir, origin);
     let textures = stacks.resource.texture_sets();
     let loaded = textures.sets().count();
     let mut known = Vec::new();
@@ -261,7 +263,7 @@ fn smoke(source: &str, dir: PathBuf, origin: PackOrigin, broken: &[&str]) -> Sta
         assert!(!file.is_missing(), "{source}: {texture}");
     }
     assert!(layer_images >= loaded, "{source}: each set names an image");
-    check_layer_images(source, &dir, &stacks);
+    check_layer_images(source, dir, &stacks);
     stacks
 }
 
@@ -276,16 +278,15 @@ fn header_identity(manifest: &str) -> Option<String> {
     let version = after("\"version\"")?;
     let version = &version[version.find(':')? + 1..];
     let version = version.trim_start();
-    let version = match version.strip_prefix('[') {
-        Some(list) => list[..list.find(']')?]
+    let version = if let Some(list) = version.strip_prefix('[') {
+        list[..list.find(']')?]
             .split(',')
             .map(str::trim)
             .collect::<Vec<_>>()
-            .join("."),
-        None => {
-            let text = version.strip_prefix('"')?;
-            text[..text.find('"')?].to_owned()
-        }
+            .join(".")
+    } else {
+        let text = version.strip_prefix('"')?;
+        text[..text.find('"')?].to_owned()
     };
     Some(format!("{uuid} {version}"))
 }
@@ -361,7 +362,7 @@ fn sample_packs_texture_sets_load_without_errors() {
     };
     let on_disk = files_with(&samples.join("resource_pack/textures"), SUFFIX);
     assert_eq!(on_disk, 3130, "the texture sets of the sample packs");
-    let stacks = smoke("sample packs", samples, PackOrigin::Package, &[]);
+    let stacks = smoke("sample packs", &samples, PackOrigin::Package, &[]);
     let textures = stacks.resource.texture_sets();
     // All 3130 load, and `flame_atlas` has the one uniform layer.
     assert_eq!(textures.sets().count(), 3130);
@@ -403,7 +404,7 @@ fn client_install_b_texture_sets_load_without_errors() {
     };
     let dir = client.join("resource_packs");
     assert_eq!(packs_with_sets(&dir), 8, "eight packs ship texture sets");
-    smoke("client install B", dir, PackOrigin::Package, &[]);
+    smoke("client install B", &dir, PackOrigin::Package, &[]);
 }
 
 #[test]
@@ -418,7 +419,7 @@ fn client_install_a_texture_sets_load_without_errors() {
     // the PBR layers; the crate rejects the set with one `TextureNotFound`.
     let stacks = smoke(
         "client install A",
-        client.join("resource_packs"),
+        &client.join("resource_packs"),
         PackOrigin::Package,
         &["textures/entity/wolf/wolf_collar_baby"],
     );

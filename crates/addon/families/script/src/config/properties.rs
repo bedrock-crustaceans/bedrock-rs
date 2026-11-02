@@ -345,6 +345,10 @@ impl ServerProperties {
     /// path: an empty value, a `=` or a line break in either, trailing white space in either,
     /// a key that starts with a space or `#`, a line longer than [`PROPERTIES_LINE_MAX`]
     /// bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError::NotRepresentable`] for the first entry the format cannot hold.
     pub fn to_text(&self) -> Result<String, EncodeError> {
         let mut out = String::new();
         for (index, entry) in self.entries.iter().enumerate() {

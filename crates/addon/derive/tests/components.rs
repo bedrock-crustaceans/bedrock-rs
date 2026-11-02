@@ -122,6 +122,10 @@ const fn version(major: u16, minor: u16, patch: u16) -> FormatVersion {
     }
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the signature is the function type of `ComponentMeta::parse`"
+)]
 fn parse_friction(
     _: JsonSlice<'_>,
     _: ConvertMode,
@@ -131,6 +135,10 @@ fn parse_friction(
     Some(Friction(0.4).into())
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the signature is the function type of `ComponentMeta::parse`"
+)]
 fn parse_light_emission(
     _: JsonSlice<'_>,
     _: ConvertMode,
@@ -140,6 +148,10 @@ fn parse_light_emission(
     Some(LightEmission(15).into())
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the signature is the function type of `ComponentMeta::parse`"
+)]
 fn parse_glint(
     _: JsonSlice<'_>,
     _: ConvertMode,
@@ -149,6 +161,10 @@ fn parse_glint(
     Some(Glint(true).into())
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the signature is the function type of `ComponentMeta::parse`"
+)]
 fn parse_display_name(
     _: JsonSlice<'_>,
     _: ConvertMode,
@@ -158,6 +174,10 @@ fn parse_display_name(
     Some(DisplayName(String::from("toy")).into())
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the signature is the function type of `ComponentMeta::parse`"
+)]
 fn keep_json(
     _: JsonSlice<'_>,
     _: ConvertMode,

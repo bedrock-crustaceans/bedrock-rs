@@ -219,6 +219,11 @@ impl Placed for Beta {
 impl Biome {
     /// Parses one biome file without upgrading it: the struct its `format_version` selects
     /// with the findings of the parse.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file is not text, is not JSON, or its findings include an
+    /// error (the findings are in the [`Rejected`]).
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],

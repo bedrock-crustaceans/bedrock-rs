@@ -822,6 +822,10 @@ fn a_binding_s_condition_takes_its_pack_s_molang_version() {
 
 /// How many client entities the stack loaded; `None` without the `entity` feature.
 #[cfg(feature = "entity")]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "the same signature as the build without the `entity` feature, which counts nothing"
+)]
 fn client_entities(set: &StackSet) -> Option<usize> {
     Some(set.resource.client_entities().len())
 }

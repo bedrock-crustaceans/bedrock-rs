@@ -225,7 +225,7 @@ fn member_version_reads_a_string_or_three_integers() {
         Some(FormatVersion::new(1, 2, 3))
     );
     assert_eq!(read(r#"{"format_version": true}"#), None);
-    assert_eq!(read(r#"{}"#), None);
+    assert_eq!(read(r"{}"), None);
 }
 
 /// `Family::identity` and `Family::actor_type` reach a step's `UpgradeCx`.

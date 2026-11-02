@@ -1,7 +1,7 @@
 //! The Value level: `parse(write(parse(x))) == parse(x)`, unknown members kept at
 //! their level, and nothing written that the document did not write.
 
-use bedrock_addon_core::document::Content;
+use bedrock_addon_core::document::{Content, Extra};
 use bedrock_addon_family_loot::{
     BannerPattern, BannerType, ConditionKind, Entry, EntryKind, FunctionKind, ItemColor, ItemData,
     LootCondition, LootFunction, LootTable, Pool, RandomValueBounds,
@@ -140,7 +140,7 @@ fn a_table_built_in_code_is_written_and_read_back() {
                 patterns: Some(vec![BannerPattern {
                     pattern: "bo".to_owned(),
                     color: Some(ItemColor::Black),
-                    extra: Default::default(),
+                    extra: Extra::default(),
                 }]),
             }),
         ]),

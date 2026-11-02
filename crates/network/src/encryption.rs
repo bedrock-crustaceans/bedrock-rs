@@ -1,3 +1,8 @@
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "outside the add-on toolkit: facet-json is called directly"
+)]
 use crate::error::EncryptionError;
 use aes::Aes256;
 use ctr::cipher::{StreamCipher, StreamCipherSeek};
@@ -42,6 +47,8 @@ fn iv_from_key(key: &[u8; 32]) -> [u8; 16] {
 }
 
 impl Encryption {
+    /// Derives the session key from the ECDH secret of `secret` and `public` hashed with `salt`,
+    /// and starts both keystreams at zero.
     pub fn new(secret: &SecretKey, public: &PublicKey, salt: &[u8]) -> Self {
         let shared = p384::ecdh::diffie_hellman(secret.to_nonzero_scalar(), public.as_affine());
 
@@ -77,7 +84,9 @@ impl Encryption {
         }
     }
 
-    pub fn restore(state: EncryptionSnapshot) -> Self {
+    /// Rebuilds the ciphers from a [`snapshot`](Self::snapshot), resuming each keystream where it
+    /// stopped.
+    pub fn restore(state: &EncryptionSnapshot) -> Self {
         let iv = iv_from_key(&state.key);
 
         let mut encrypt_cipher = Ctr128BE::<Aes256>::new(&state.key.into(), (&iv).into());
@@ -95,11 +104,16 @@ impl Encryption {
         }
     }
 
-    pub fn encrypt(&mut self, buf: Vec<u8>) -> Result<Vec<u8>, EncryptionError> {
-        let trailer = self.trailer(&buf, self.encrypt_counter);
+    /// Appends the integrity trailer to `buf` and encrypts the result.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`EncryptionError`]; encrypting itself does not currently fail.
+    pub fn encrypt(&mut self, buf: &[u8]) -> Result<Vec<u8>, EncryptionError> {
+        let trailer = self.trailer(buf, self.encrypt_counter);
 
         let mut out = Vec::<u8>::with_capacity(buf.len() + trailer.len());
-        out.extend_from_slice(&buf);
+        out.extend_from_slice(buf);
         out.extend_from_slice(&trailer);
 
         self.encrypt_cipher.apply_keystream(&mut out);
@@ -109,6 +123,12 @@ impl Encryption {
         Ok(out)
     }
 
+    /// Decrypts `buf` and strips and verifies its integrity trailer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncryptionError::InvalidLength`] when `buf` is too short to hold a trailer and
+    /// [`EncryptionError::InvalidTrailer`] when the trailer does not match the decrypted data.
     pub fn decrypt(&mut self, buf: Vec<u8>) -> Result<Vec<u8>, EncryptionError> {
         if buf.len() <= 8 {
             return Err(EncryptionError::InvalidLength(buf.len()));
@@ -163,19 +183,19 @@ mod tests {
 
         for i in 0..3 {
             let msg = format!("packet {i}").into_bytes();
-            let ct = a.encrypt(msg.clone()).unwrap();
+            let ct = a.encrypt(&msg).unwrap();
             assert_eq!(b.decrypt(ct).unwrap(), msg);
         }
 
         let json = facet_json::to_string(&a.snapshot()).unwrap();
-        let mut a_resumed = Encryption::restore(facet_json::from_str(&json).unwrap());
+        let mut a_resumed = Encryption::restore(&facet_json::from_str(&json).unwrap());
 
         let msg = b"after restore".to_vec();
-        let ct = a_resumed.encrypt(msg.clone()).unwrap();
+        let ct = a_resumed.encrypt(&msg).unwrap();
         assert_eq!(b.decrypt(ct).unwrap(), msg);
 
         let msg = b"reply".to_vec();
-        let ct = b.encrypt(msg.clone()).unwrap();
+        let ct = b.encrypt(&msg).unwrap();
         assert_eq!(a_resumed.decrypt(ct).unwrap(), msg);
     }
 
@@ -183,8 +203,8 @@ mod tests {
     fn ciphertext_is_unchanged_for_a_fixed_key_pair() {
         let (mut a, _) = matched_pair();
 
-        let first = a.encrypt(b"first packet".to_vec()).unwrap();
-        let second = a.encrypt(b"second packet".to_vec()).unwrap();
+        let first = a.encrypt(b"first packet").unwrap();
+        let second = a.encrypt(b"second packet").unwrap();
 
         assert_eq!(
             first,

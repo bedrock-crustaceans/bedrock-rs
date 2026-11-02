@@ -113,7 +113,7 @@ const ATMOSPHERE_ALL: &[&str] = &["1.21.40", "1.26.20"];
 const GRADING_ALL: &[&str] = &["1.21.40", "1.21.90"];
 const CUBEMAP_ALL: &[&str] = &["1.21.130"];
 
-/// The ranged members, with the bounds of families/render_configs schema.md.
+/// The ranged members, with the bounds of `families/render_configs` schema.md.
 #[allow(clippy::too_many_lines, reason = "one row per ranged member")]
 fn rows() -> Vec<Row> {
     use Form::{Integer, Keyframed, Number, Vec3};
@@ -122,7 +122,7 @@ fn rows() -> Vec<Row> {
     let w = "water.rs";
     let a = "atmosphere.rs";
     let g = "color_grading.rs";
-    let k = "cubemap.rs";
+    let cubemap = "cubemap.rs";
     let mut rows = vec![
         // lighting
         row(
@@ -488,7 +488,7 @@ fn rows() -> Vec<Row> {
         ),
         // cubemap
         row(
-            (k, "ILLUMINANCE"),
+            (cubemap, "ILLUMINANCE"),
             Cubemap,
             CUBEMAP_ALL,
             "lighting/ambient_light_illuminance",
@@ -497,7 +497,7 @@ fn rows() -> Vec<Row> {
             100_000.0,
         ),
         row(
-            (k, "CONTRIBUTION"),
+            (cubemap, "CONTRIBUTION"),
             Cubemap,
             CUBEMAP_ALL,
             "lighting/sky_light_contribution",
@@ -506,7 +506,7 @@ fn rows() -> Vec<Row> {
             1.0,
         ),
         row(
-            (k, "CONTRIBUTION"),
+            (cubemap, "CONTRIBUTION"),
             Cubemap,
             CUBEMAP_ALL,
             "lighting/directional_light_contribution",

@@ -200,7 +200,7 @@ fn check_files<T: Content + PartialEq + std::fmt::Debug>(
             files += 1;
             match T::parse(&path, &bytes, &cx) {
                 Ok(document) => {
-                    for finding in document.diagnostics().iter() {
+                    for finding in document.diagnostics() {
                         if finding.severity == Severity::Warning {
                             count(&mut warnings, finding.code.name());
                         }
@@ -217,7 +217,7 @@ fn check_files<T: Content + PartialEq + std::fmt::Debug>(
                     );
                 }
                 Err(rejected) => {
-                    for finding in rejected.diagnostics.iter() {
+                    for finding in &rejected.diagnostics {
                         errors.push(format!("{}: {finding}", file.display()));
                     }
                 }

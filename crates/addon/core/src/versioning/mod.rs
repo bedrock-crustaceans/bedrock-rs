@@ -74,6 +74,10 @@ pub trait VersionStruct: Versioned + MolangFields + Sized {
     /// Parses `payload`; `None` when the struct cannot be built (the reason is in `d`).
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self>;
     /// The struct as JSON, in its own version's shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` when the struct has no JSON form.
     fn write(&self) -> Result<Value, EncodeError>;
 }
 

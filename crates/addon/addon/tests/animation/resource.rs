@@ -812,7 +812,7 @@ fn c15_equal_times_keep_member_order() {
     };
     let sorted = channel.keyframes_by_time();
     assert_eq!(sorted.len(), 2);
-    assert!(std::ptr::eq(sorted[0].1, &frames["0"]));
+    assert!(std::ptr::eq(sorted[0].1, &raw const frames["0"]));
 }
 
 #[test]

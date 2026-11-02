@@ -77,7 +77,11 @@ fn j1_a_pack_s_trial_chambers_set_stays_and_the_game_s_record_is_refused_with_th
         "Structure set 'minecraft:trial_chambers' has already been registered"
     );
     assert_eq!(
-        found[0].location.path.as_ref().map(|p| p.as_str()),
+        found[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("worldgen/structure_sets/chambers.json")
     );
     assert_eq!(found[0].location.json_path.to_string(), "");

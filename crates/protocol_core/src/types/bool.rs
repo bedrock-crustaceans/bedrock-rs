@@ -10,10 +10,7 @@ impl ProtoCodec for bool {
     where
         Self: Sized,
     {
-        match self {
-            true => stream.write_u8(1)?,
-            false => stream.write_u8(0)?,
-        };
+        stream.write_u8(u8::from(*self))?;
 
         Ok(())
     }

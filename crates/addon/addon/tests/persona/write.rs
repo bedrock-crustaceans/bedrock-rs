@@ -243,7 +243,7 @@ fn round_trip_store(text: &str) -> String {
 // piece, an emote, a shirt), with made-up ids and shortened lists; the third is
 // `emote_wave/overhead_wave.meta.json` as shipped. The smoke test writes all 66 real files back.
 const VANILLA: [&str; 4] = [
-    r##"{
+    r#"{
   "piece_id": "da1c5bbd-8f07-4e34-89b2-5c2d0e1a3b2f",
   "piece_name": "medium",
   "piece_type": "persona_body",
@@ -256,7 +256,7 @@ const VANILLA: [&str; 4] = [
     { "geometry": "geometry.medium_left_arm_slim", "arm_size": "slim", "zone": [ "left_arm" ] },
     { "geometry": "geometry.medium_left_arm_wide", "arm_size": "wide", "zone": [ "left_arm" ] }
   ]
-}"##,
+}"#,
     r##"{
   "piece_id": "b3c0d6c1-56f9-4b9e-8f5d-6d0b8a8f1c11",
   "piece_name": "standard_eyes",
@@ -267,21 +267,21 @@ const VANILLA: [&str; 4] = [
   "tint_base_color": { "r_color": "#FFFFFF" },
   "tint_color": { "r_color": "#2b2b2B", "g_color": "#ffffff", "b_color": "#000000", "a_color": "#00000000" }
 }"##,
-    r##"{
+    r#"{
   "piece_id": "4c8ae710-df2e-47cd-814d-cc7bf21a3d67",
   "piece_name": "overhead_wave",
   "piece_type": "persona_emote",
   "animation_sources": [
     { "name": "animation.overhead_wave", "animationFile": "overhead_wave.animation.json" }
   ]
-}"##,
-    r##"{
+}"#,
+    r#"{
   "piece_id": "8f0b3b1e-5c3a-4d0e-9d55-1c2f7c1a9e10",
   "piece_name": "ari_shirt",
   "piece_type": "persona_top",
   "zone": [ "body_front_upper", "body_back_upper", "left_arm_upper", "right_arm_upper" ],
   "texture_sources": [ { "texture": "ari_shirt" } ]
-}"##,
+}"#,
 ];
 
 #[test]
@@ -334,11 +334,13 @@ fn pm09_pm18_unknown_members_are_written_back() {
         .and_then(|v| v.as_object())
         .unwrap();
     assert_eq!(
-        source.get("use_face_uv").and_then(|v| v.as_bool()),
+        source
+            .get("use_face_uv")
+            .and_then(bedrock_addon::json::Value::as_bool),
         Some(true)
     );
     // Known members first, in the game's order; the unknown ones after them.
-    let keys: Vec<&str> = root.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<&str> = root.keys().map(facet_value::VString::as_str).collect();
     assert_eq!(
         keys,
         [
@@ -433,7 +435,7 @@ fn the_envelope_is_written_back() {
         .as_object()
         .unwrap()
         .keys()
-        .map(|key| key.as_str())
+        .map(facet_value::VString::as_str)
         .collect();
     assert_eq!(keys, ["format_version", "minecraft:persona_piece_meta"]);
     // Whatever 1.26.40 was written as.
@@ -653,7 +655,7 @@ impl Rng {
     }
 
     fn pick<'a>(&mut self, forms: &[&'a str]) -> &'a str {
-        forms[(self.next() % forms.len() as u64) as usize]
+        forms[usize::try_from(self.next() % forms.len() as u64).unwrap()]
     }
 
     /// `key: form` with one of `forms`, or nothing one time in three.
@@ -700,8 +702,8 @@ const WRONG: &[&str] = &[
     r#"["a", 3]"#,
     r##"{ "r_color": "#ffffff" }"##,
     r#"{ "r_color": 5, "x": 1 }"#,
-    r#"[{}]"#,
-    r#"[3]"#,
+    r"[{}]",
+    r"[3]",
     "18446744073709551616",
 ];
 const FLAGS: &[&str] = &["true", "false"];
@@ -722,8 +724,8 @@ fn object(members: Vec<Option<String>>) -> String {
 }
 
 /// `key: form` with one of `forms`, always.
-fn always(rng: &mut Rng, key: &str, forms: &[&str]) -> Option<String> {
-    Some(format!(r#""{key}": {}"#, rng.pick(forms)))
+fn always(rng: &mut Rng, key: &str, forms: &[&str]) -> String {
+    format!(r#""{key}": {}"#, rng.pick(forms))
 }
 
 /// An entry with its `required` members and some of its `optional` ones, each in a form the
@@ -735,7 +737,7 @@ fn generated_entry(
 ) -> String {
     let mut members = Vec::new();
     for (key, forms) in required {
-        members.push(always(rng, key, forms));
+        members.push(Some(always(rng, key, forms)));
     }
     for (key, forms) in optional {
         members.push(rng.member(key, forms));
@@ -811,9 +813,9 @@ fn generated_meta(rng: &mut Rng) -> String {
         "{}",
     ];
     let members = vec![
-        always(rng, "piece_id", TEXTS),
-        always(rng, "piece_name", TEXTS),
-        always(rng, "piece_type", PIECE_TYPES),
+        Some(always(rng, "piece_id", TEXTS)),
+        Some(always(rng, "piece_name", TEXTS)),
+        Some(always(rng, "piece_type", PIECE_TYPES)),
         rng.member("piece_sub_type", PIECE_TYPES),
         rng.member("body_variant", BODY_SIZES),
         rng.member("clothing_map", TEXTS),

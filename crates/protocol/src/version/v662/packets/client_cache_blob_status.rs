@@ -13,8 +13,8 @@ pub struct ClientCacheBlobStatusPacket {
 
 impl ProtoCodec for ClientCacheBlobStatusPacket {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
-        <u32 as ProtoCodecVAR>::serialize(&(self.missing_blobs.len() as u32), stream)?;
-        <u32 as ProtoCodecVAR>::serialize(&(self.obtained_blobs.len() as u32), stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&u32::try_from(self.missing_blobs.len())?, stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&u32::try_from(self.obtained_blobs.len())?, stream)?;
         for i in &self.missing_blobs {
             <u64 as ProtoCodecLE>::serialize(i, stream)?;
         }

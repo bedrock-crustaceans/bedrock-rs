@@ -58,7 +58,7 @@ impl Transport for TransportLayerConnection {
     }
 
     async fn close(&self) {
-        delegate!(self, conn => conn.close().await)
+        delegate!(self, conn => conn.close().await);
     }
 
     async fn is_closed(&self) -> bool {

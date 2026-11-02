@@ -147,6 +147,11 @@ impl Placed for Block {
 
 impl Block {
     /// Parses one block file without upgrading it: the struct its `format_version` selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file is not text, is not JSON, or its `format_version`
+    /// selects a struct the file does not fit (the findings are in the [`Rejected`]).
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],

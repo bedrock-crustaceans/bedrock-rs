@@ -33,7 +33,7 @@ impl ProtoCodec for ItemDescriptorType {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let type_id = self.type_id();
         <u32 as ProtoCodecVAR>::serialize(&type_id, stream)?;
-        <u8 as ProtoCodec>::serialize(&(type_id as u8), stream)?;
+        <u8 as ProtoCodec>::serialize(&u8::try_from(type_id)?, stream)?;
 
         match self {
             ItemDescriptorType::Empty => {}

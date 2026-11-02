@@ -150,7 +150,7 @@ fn load_findings(pack: &Spec) -> (usize, usize, Vec<String>) {
         .diagnostics()
         .chain(shapes.diagnostics())
         .filter(|f| f.severity >= Severity::Warning)
-        .map(|f| f.to_string())
+        .map(std::string::ToString::to_string)
         .collect();
     (blocks.len(), shapes.len(), found)
 }

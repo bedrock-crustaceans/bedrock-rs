@@ -47,7 +47,7 @@ fn atlas(files: &[PathBuf]) -> BTreeMap<String, Value> {
 }
 
 /// What the client draws for the texture `name` of a `blocks.json` entry: element `N` of the
-/// atlas item for `item:N`, element 0 when the item has no element `N` (families/blocks_json
+/// atlas item for `item:N`, element 0 when the item has no element `N` (`families/blocks_json`
 /// `idx = (count > N && N > -1) ? N: 0`), the item's one value otherwise.
 fn drawn(atlas: &BTreeMap<String, Value>, name: &str) -> String {
     let (item, index) = match name.rsplit_once(':') {
@@ -123,20 +123,35 @@ fn cross_check(split: &Side, flattened: &Side) -> Outcome {
             .as_deref()
             .unwrap_or_default()
             .to_lowercase();
-        let Some(flat) = flattened.blocks.registry().get(id).map(|d| d.value()) else {
+        let Some(flat) = flattened
+            .blocks
+            .registry()
+            .get(id)
+            .map(bedrock_addon::document::Document::value)
+        else {
             outcome.not_comparable.insert(name);
             continue;
         };
         let members: [(&'static str, SixNames<'_>, SixNames<'_>); 2] = [
             (
                 "textures",
-                block.textures.as_ref().map(|t| t.faces()),
-                flat.textures.as_ref().map(|t| t.faces()),
+                block
+                    .textures
+                    .as_ref()
+                    .map(bedrock_addon::families::blocks_json::FaceTextures::faces),
+                flat.textures
+                    .as_ref()
+                    .map(bedrock_addon::families::blocks_json::FaceTextures::faces),
             ),
             (
                 "carried_textures",
-                block.carried_textures.as_ref().map(|t| t.faces()),
-                flat.carried_textures.as_ref().map(|t| t.faces()),
+                block
+                    .carried_textures
+                    .as_ref()
+                    .map(bedrock_addon::families::blocks_json::FaceTextures::faces),
+                flat.carried_textures
+                    .as_ref()
+                    .map(bedrock_addon::families::blocks_json::FaceTextures::faces),
             ),
         ];
         let mut compared = false;
@@ -179,7 +194,7 @@ fn assert_names_no_element(file: &str) {
                 (Some(name), _) => vec![name.as_str()],
                 (_, Some(faces)) => faces
                     .iter()
-                    .filter_map(|(_, name)| name.as_string().map(|s| s.as_str()))
+                    .filter_map(|(_, name)| name.as_string().map(facet_value::VString::as_str))
                     .collect(),
                 _ => Vec::new(),
             };

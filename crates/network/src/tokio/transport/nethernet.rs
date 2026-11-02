@@ -31,6 +31,12 @@ impl NetherNetConnection {
         }
     }
 
+    /// Connects to the `NetherNet` server behind the HTTP signaling endpoint at `server`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the identity cannot be generated or signaling or the
+    /// connection fails.
     pub async fn connect_http(server: SocketAddr) -> Result<Self, TransportLayerError> {
         let signaling = HttpSignaling::new(rand::random::<u64>().to_string())?;
         let identity =
@@ -46,17 +52,32 @@ impl NetherNetConnection {
         Ok(connection)
     }
 
+    /// Asks the HTTP signaling endpoint at `server` for its MOTD.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when signaling fails or the server does not answer.
     pub async fn query_http(server: SocketAddr) -> Result<BedrockMOTD, TransportLayerError> {
         let signaling = HttpSignaling::new(rand::random::<u64>().to_string())?;
         let data = signaling.server_data(&format!("http://{server}")).await?;
         Ok(BedrockMOTD::from(&data))
     }
 
+    /// Sends `batch` as one message.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the session fails to send it.
     pub async fn send(&mut self, batch: &[u8]) -> Result<(), TransportLayerError> {
         self.session.send(Bytes::copy_from_slice(batch)).await?;
         Ok(())
     }
 
+    /// Receives the next message.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the session fails or has ended.
     pub async fn recv(&mut self) -> Result<Vec<u8>, TransportLayerError> {
         match self.reliable.recv().await? {
             Some(batch) => Ok(batch.to_vec()),
@@ -71,7 +92,9 @@ impl NetherNetConnection {
     }
 
     pub fn max_message_len(&self) -> usize {
-        RakSessionConfig::default().max_queued_bytes as usize
+        #[expect(clippy::cast_sign_loss, reason = "the default queue size is positive")]
+        let max = RakSessionConfig::default().max_queued_bytes as usize;
+        max
     }
 
     pub async fn close(&self) {

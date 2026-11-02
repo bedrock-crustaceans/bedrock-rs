@@ -57,7 +57,7 @@ fn every_vanilla_manifest_loads_without_an_error() {
                 }
             }
             Err(rejected) => {
-                failures.push(format!("{relative}: {}", rejected.diagnostics.summary()))
+                failures.push(format!("{relative}: {}", rejected.diagnostics.summary()));
             }
         }
     }

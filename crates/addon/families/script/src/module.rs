@@ -175,6 +175,11 @@ impl ScriptModule {
     /// refused when `cx.engine_version` is below 1.26.30, and is a warning when the pack's
     /// own `min_engine_version` is; a legacy `optional` is reported as ignored. The value is
     /// `None` for a manifest without a script module. Paths are those of the file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the manifest is refused ([`Manifest::parse`]), or when the script
+    /// side of it carries an error, such as a relaxed dependency `version` below 1.26.30.
     pub fn parse(
         path: &PackPath,
         bytes: &[u8],
@@ -185,6 +190,11 @@ impl ScriptModule {
 
     /// [`parse`](Self::parse) with the capabilities the host grants: `registry` is what
     /// [`Manifest::parse`] checks the manifest's `capabilities` against.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the manifest is refused ([`Manifest::parse`]), or when the script
+    /// side of it carries an error, such as a relaxed dependency `version` below 1.26.30.
     pub fn parse_with(
         path: &PackPath,
         bytes: &[u8],

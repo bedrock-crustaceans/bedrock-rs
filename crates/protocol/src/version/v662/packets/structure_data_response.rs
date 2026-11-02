@@ -1,9 +1,9 @@
+use crate::ProtoVersion;
+use bedrock_macros::packet;
+use bedrock_protocol_core::ProtoCodec;
+use bedrock_protocol_core::error::ProtoCodecError;
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use crate::ProtoVersion;
-use bedrock_macros::{packet};
-use bedrock_protocol_core::error::ProtoCodecError;
-use bedrock_protocol_core::ProtoCodec;
 
 #[packet(id = 133, direction = "server_to_client")]
 #[derive(Clone, Debug)]
@@ -13,31 +13,32 @@ pub struct StructureDataResponsePacket<V: ProtoVersion> {
     pub response_type: V::StructureTemplateResponseType,
 }
 
-impl <V: ProtoVersion> ProtoCodec for StructureDataResponsePacket<V> {
+impl<V: ProtoVersion> ProtoCodec for StructureDataResponsePacket<V> {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         self.structure_name.serialize(stream)?;
         match &self.structure_nbt {
             Some(nbt) => {
                 bool::serialize(&true, stream)?;
                 nbtx::to_varint_bytes_in(stream, &nbt)?;
-            },
-            None => bool::serialize(&false, stream)?
+            }
+            None => bool::serialize(&false, stream)?,
         }
         self.response_type.serialize(stream)?;
-        
+
         Ok(())
     }
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let structure_name = String::deserialize(stream)?;
-        let structure_nbt = match bool::deserialize(stream)? {
-            true => {
-                Some(nbtx::from_varint_bytes::<HashMap<String, nbtx::Value>>(stream)?)
-            },
-            false => None
+        let structure_nbt = if bool::deserialize(stream)? {
+            Some(nbtx::from_varint_bytes::<HashMap<String, nbtx::Value>>(
+                stream,
+            )?)
+        } else {
+            None
         };
         let response_type = V::StructureTemplateResponseType::deserialize(stream)?;
-        
+
         Ok(Self {
             structure_name,
             structure_nbt,
@@ -47,10 +48,10 @@ impl <V: ProtoVersion> ProtoCodec for StructureDataResponsePacket<V> {
 
     fn size_hint(&self) -> usize {
         self.structure_name.size_hint()
-        + match self.structure_nbt {
-            Some(_) => bool::size_hint(&true) + 1,
-            None => bool::size_hint(&false)
-        }
-        + self.response_type.size_hint()
+            + match self.structure_nbt {
+                Some(_) => bool::size_hint(&true) + 1,
+                None => bool::size_hint(&false),
+            }
+            + self.response_type.size_hint()
     }
 }

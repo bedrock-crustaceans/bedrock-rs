@@ -157,7 +157,7 @@ fn check(source: &str, dir: &Path, expected: &[(&str, usize)]) -> usize {
     // built on a shadowed parent, and the count would move.
     assert_eq!(legacy, 24, "{source}: geometries with a legacy parent");
     // Every legacy child found its parent in the stack.
-    for (id, document) in geometries.iter() {
+    for (id, document) in geometries {
         let geometry = document.value();
         assert_eq!(
             geometry.parent().is_some(),
@@ -248,11 +248,11 @@ fn molang_pairs_binding_loads_with_its_text_and_version() {
     });
     eprintln!(
         "Molang pairs models: {} occurrences checked in {} files, {} failures",
-        found.checked,
+        found.compared,
         found.files,
         found.failures.len()
     );
     assert!(found.failures.is_empty(), "{:#?}", found.failures);
-    assert_eq!(found.checked, 10, "the pairs' `models` occurrences");
+    assert_eq!(found.compared, 10, "the pairs' `models` occurrences");
     assert_eq!(found.files, 5, "the five held-item geometries");
 }

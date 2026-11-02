@@ -213,6 +213,12 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
 impl CraftingCatalog {
     /// Parses the catalogue file without upgrading it: the struct its `format_version` selects
     ///; [`CatalogAny::upgrade`] runs the rest of the load.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+    /// log would print when the bytes cannot be read as this file at all: not JSON, a
+    /// `format_version` with no struct here, or a document that does not fit the struct it selects.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],

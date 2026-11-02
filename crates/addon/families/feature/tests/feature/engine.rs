@@ -127,7 +127,7 @@ fn the_engine_s_features_load_and_round_trip() {
 }
 
 /// `scatter_chance` `{1, 1}` loads with the scatter setter's warning "Bad value for
-/// scatter_chance - denominator should be greater than the numerator", in the
+/// `scatter_chance` - denominator should be greater than the numerator", in the
 /// 1.13.0 shape (case-47) as in the 1.21.40 `distribution` object (case-25).
 #[test]
 fn the_engine_s_even_scatter_chance_loads_with_the_setter_warning() {
@@ -166,8 +166,8 @@ fn the_engine_s_even_scatter_chance_loads_with_the_setter_warning() {
     }
 }
 
-/// The internal types `minecraft:beards_and_shavers` (BeardAndShaverFeatureTests, "…ValidJson…
-/// ValidationSucceeds") and `minecraft:scan_surface` load from a base-game pack and round-trip;
+/// The internal types `minecraft:beards_and_shavers` (`BeardAndShaverFeatureTests`, "…`ValidJson`…
+/// `ValidationSucceeds`") and `minecraft:scan_surface` load from a base-game pack and round-trip;
 /// from any other pack they are refused with "The feature uses the feature type '%s', which
 /// is considered internal and thus not compatible with this engine version of the game.".
 #[test]
@@ -187,11 +187,10 @@ fn the_engine_s_internal_features_load_only_from_a_base_game_pack() {
     }
 }
 
-/// The refused bodies: each one's only finding, as `(code, path below the type key)`.
-#[test]
-fn the_engine_s_refused_bodies_name_their_finding() {
+/// The refused `minecraft:search_feature` bodies: file, text, code and the path below the type key.
+fn refused_search_bodies() -> Vec<(&'static str, String, &'static str, &'static str)> {
     let search = |n: &str| body(n, SEARCH, "1.21.40");
-    let cases: Vec<(&str, String, &str, &str)> = vec![
+    vec![
         (
             "case-1.json",
             search("case-1.json"),
@@ -276,6 +275,12 @@ fn the_engine_s_refused_bodies_name_their_finding() {
             "MissingRequiredField",
             "search_volume",
         ),
+    ]
+}
+
+/// The other refused bodies, in the same shape as [`refused_search_bodies`].
+fn refused_other_bodies() -> Vec<(&'static str, String, &'static str, &'static str)> {
+    vec![
         (
             "case-21.json",
             body("case-21.json", SCATTER, "1.13.0"),
@@ -304,7 +309,14 @@ fn the_engine_s_refused_bodies_name_their_finding() {
             "MissingRequiredField",
             "search_radius",
         ),
-    ];
+    ]
+}
+
+/// The refused bodies: each one's only finding, as `(code, path below the type key)`.
+#[test]
+fn the_engine_s_refused_bodies_name_their_finding() {
+    let mut cases = refused_search_bodies();
+    cases.extend(refused_other_bodies());
     for (name, text, code, at) in cases {
         let key = if text.contains(SEARCH) {
             SEARCH

@@ -553,6 +553,10 @@ fn dependency() -> PackIdVersion {
 
 /// One row per `DiagnosticCode` variant, in declaration order: a sample value without vanilla
 /// text and the line the crate's own wording renders. A code added to the enum gets its row here.
+#[expect(
+    clippy::too_many_lines,
+    reason = "a table with one row per code; there is no seam to split at"
+)]
 fn crate_text_of_every_code() -> Vec<(DiagnosticCode, &'static str)> {
     use DiagnosticCode as C;
     vec![

@@ -489,7 +489,7 @@ fn an_element_of_a_legacy_colour_behind_the_third_is_noted_as_dropped() {
         &format!(
             r#"{}, "volumetric": {{"media_coefficients": {{"air": {{"scattering": [0.5, 0.25, 0.125, 9], "absorption": [0, 0, 0]}}}}}}"#,
             air(
-                r##""fog_color": [1, 2, 3, 4], "fog_start": 0.5, "fog_end": 1.5, "render_distance_type": "render""##
+                r#""fog_color": [1, 2, 3, 4], "fog_start": 0.5, "fog_end": 1.5, "render_distance_type": "render""#
             )
         ),
     );

@@ -65,14 +65,12 @@ fn pack_roots(dir: &Path) -> Vec<PathBuf> {
 
 /// The `.json` files directly below `dir`.
 fn json_files(dir: &Path) -> usize {
-    std::fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(Result::ok)
-                .filter(|entry| entry.path().extension().is_some_and(|e| e == "json"))
-                .count()
-        })
-        .unwrap_or(0)
+    std::fs::read_dir(dir).map_or(0, |entries| {
+        entries
+            .filter_map(Result::ok)
+            .filter(|entry| entry.path().extension().is_some_and(|e| e == "json"))
+            .count()
+    })
 }
 
 /// A world of base-game version 1.21.30: base-game packs' `biomes_client.json` still load.
@@ -155,7 +153,9 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
         outcome.files += json_files(&root.join("biomes"));
         let biomes = stacks.resource.client_biomes();
         outcome.client_biomes += biomes.len();
-        outcome.beta += biomes.beta().map_or(0, |beta| beta.len());
+        outcome.beta += biomes
+            .beta()
+            .map_or(0, bedrock_addon::document::Registry::len);
         outcome.rejected.extend(
             biomes
                 .rejected()

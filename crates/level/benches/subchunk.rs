@@ -64,7 +64,7 @@ fn benchmark(c: &mut Criterion) {
             let data = Vec::from(kv.value());
 
             if let KeyVariant::SubChunk { index } = key.data {
-                Some(([key.chunk.0, index as i32, key.chunk.1], data))
+                Some(([key.chunk.0, i32::from(index), key.chunk.1], data))
             } else {
                 None
             }

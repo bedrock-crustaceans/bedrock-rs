@@ -9,7 +9,7 @@ macro_rules! impl_proto_vec {
                 &self,
                 stream: &mut W,
             ) -> Result<(), ProtoCodecError> {
-                <u32 as ProtoCodecVAR>::serialize(&(self.len() as u32), stream)?;
+                <u32 as ProtoCodecVAR>::serialize(&u32::try_from(self.len())?, stream)?;
                 for i in self {
                     T::serialize(i, stream)?;
                 }
@@ -27,7 +27,7 @@ macro_rules! impl_proto_vec {
             }
 
             fn size_hint(&self) -> usize {
-                <u32 as ProtoCodecVAR>::size_hint(&(self.len() as u32))
+                <u32 as ProtoCodecVAR>::size_hint(&u32::try_from(self.len()).unwrap_or(u32::MAX))
                     + self.iter().map(|i| T::size_hint(i)).sum::<usize>()
             }
         }

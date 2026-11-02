@@ -71,6 +71,10 @@ impl Any {
     }
 
     /// Writes the document in its struct's own version (a round trip without the upgrade).
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`EncodeError`] when a value cannot be written as JSON.
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let payload = match self {
             Self::ScatterV1_13_0(value) => value.write()?,
@@ -99,6 +103,11 @@ impl super::load::FeatureFn<FormatVersion> for LatestVersion {
 
 /// Runs the remaining upgrade steps of a document [`Feature::parse_as_written`] gave: the same
 /// result [`Feature::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Feature>, Rejected> {
     upgrade_document(document, cx)
 }

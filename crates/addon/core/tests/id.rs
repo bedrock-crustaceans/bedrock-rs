@@ -2,6 +2,11 @@
 //! and the `as_str` round trip per `Syntax`, strict `new` against lenient `parse`, `from_static`,
 //! `cast` inside one identifier space, the namespace helpers and the entity / item suffixes.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};

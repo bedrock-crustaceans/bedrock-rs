@@ -41,9 +41,12 @@ fn warnings(set: &StackSet) -> Vec<DiagnosticCode> {
     set.selection()
         .iter()
         .filter(|diagnostic| {
-            !matches!(diagnostic.code, DiagnosticCode::MissingDependency { .. })
-                && !(matches!(diagnostic.code, DiagnosticCode::PackNotFound { .. })
-                    && diagnostic.location.path.is_none())
+            let missing_dependency =
+                matches!(diagnostic.code, DiagnosticCode::MissingDependency { .. });
+            let pack_not_found_at_no_path =
+                matches!(diagnostic.code, DiagnosticCode::PackNotFound { .. })
+                    && diagnostic.location.path.is_none();
+            !missing_dependency && !pack_not_found_at_no_path
         })
         .inspect(|diagnostic| assert_eq!(diagnostic.severity, Severity::Info, "{diagnostic:?}"))
         .map(|diagnostic| diagnostic.code.clone())

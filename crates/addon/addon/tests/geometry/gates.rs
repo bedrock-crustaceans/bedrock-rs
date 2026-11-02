@@ -659,6 +659,8 @@ fn g15_uv_rotation() {
 
 #[test]
 fn g16_poly_mesh_counts() {
+    const AT: &str = "Error InvalidValue minecraft:geometry/0/bones/0/poly_mesh";
+
     let mesh = |positions: usize, normals: usize, uvs: usize, polys: &str| {
         let list = |n: usize, item: &str| vec![item; n].join(", ");
         with_bone(
@@ -688,7 +690,6 @@ fn g16_poly_mesh_counts() {
             .collect::<Vec<_>>()
     };
     // Rules 18 and 19 are the game's content-log errors at the mesh, kept.
-    const AT: &str = "Error InvalidValue minecraft:geometry/0/bones/0/poly_mesh";
     assert_eq!(
         warnings(&mesh(4, 4, 4, "tri_list")),
         [format!(

@@ -38,6 +38,11 @@ bedrock_addon_core::version_chain! {
 /// same result [`Attachable::parse`](bedrock_addon_core::document::Content::parse) gives for its file
 /// (`history::Any::upgrade`, realised over the document, which holds the
 /// origin).
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

@@ -350,10 +350,11 @@ impl Pair {
             if reference <= start {
                 break;
             }
-            if reference < start + real {
-                // Inside a replaced token: no finding points there.
-                panic!("offset {reference} of the reference is inside a replaced token");
-            }
+            // Inside a replaced token: no finding points there.
+            assert!(
+                reference >= start + real,
+                "offset {reference} of the reference is inside a replaced token"
+            );
             shift += written.cast_signed() - real.cast_signed();
         }
         usize::try_from(reference.cast_signed() + shift).unwrap()

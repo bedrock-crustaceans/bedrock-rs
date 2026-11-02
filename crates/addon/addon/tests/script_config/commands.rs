@@ -268,10 +268,10 @@ fn c6_the_first_stands_also_when_content_follows_the_root() {
         );
         assert_eq!(commands.permission_levels.len(), 1, "tail {tail:?}");
         // A whole comment is no content; an unclosed one is.
-        let expected = if tail != "\n// c" {
-            one("MalformedInput", "info", "")
-        } else {
+        let expected = if tail == "\n// c" {
             Vec::new()
+        } else {
+            one("MalformedInput", "info", "")
         };
         assert_eq!(findings(&config), expected, "tail {tail:?}");
     }
@@ -309,7 +309,11 @@ fn c5_a_permission_level_for_a_command_the_game_does_not_have_is_a_note() {
             // not by a link pass.
             assert_eq!(finding.phase, Phase::Validate);
             assert_eq!(
-                finding.location.path.as_ref().map(|path| path.as_str()),
+                finding
+                    .location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str),
                 Some("config/commands.json")
             );
             finding.detail.as_deref().cloned()

@@ -2,6 +2,7 @@ use bedrock_macros::ProtoCodec;
 use crate::ProtoVersion;
 
 #[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 pub struct BiomeSurfaceBuilderData<V: ProtoVersion> {
     pub surface_material: Option<V::BiomeSurfaceMaterialData>,
     pub has_default_overworld_surface: bool,

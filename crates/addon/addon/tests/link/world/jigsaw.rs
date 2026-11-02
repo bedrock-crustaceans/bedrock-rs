@@ -74,7 +74,7 @@ fn w16_a_pool_a_pack_defines_or_the_game_has_resolves() {
         &[(STRUCTURE, ruin.as_str())],
         &[],
         hosted(&[("template pool", "minecraft:village/plains/town_centers")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["template pool"]), []);
 }
@@ -284,7 +284,7 @@ fn w18_a_processor_list_resolves_and_the_empty_name_is_none() {
         &files,
         &[],
         hosted(&[("processor list", "minecraft:mossify")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["processor list"]).len(), 1);
 }
@@ -318,7 +318,7 @@ fn w19_a_feature_of_a_pool_resolves_or_is_a_warning_with_the_rows_text() {
         &files,
         &[],
         hosted(&[("feature", "demo:gone")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["feature"]), []);
 }
@@ -358,7 +358,7 @@ fn w20_a_structure_of_a_set_resolves_or_is_an_error() {
         &files,
         &[],
         hosted(&[("jigsaw structure", "demo:gone")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["jigsaw structure"]), []);
 }
@@ -432,7 +432,7 @@ fn w21_a_block_nothing_defines_is_one_warning_per_member() {
         &files,
         &[],
         hosted(&[("block", "demo:lamp"), ("block", "minecraft:stone")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["block"]), []);
 }
@@ -492,7 +492,7 @@ fn w22_a_loot_table_resolves_with_or_without_its_extension_or_is_an_error() {
         &files,
         &[],
         hosted(&[("loot table", "loot_tables/chests/gone.json")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["loot table"]), []);
 }

@@ -464,6 +464,11 @@ impl MolangFields for ScatterParams {
 
 impl ScatterParams {
     /// `distribution` as JSON: the members as written, unknown ones last.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError::NotRepresentable` when a member holds a Molang value that cannot be written as
+    /// JSON.
     pub fn write(&self) -> Result<Value, bedrock_addon_core::json::EncodeError> {
         let mut object = VObject::new();
         object.insert("iterations", scatter_molang(&self.iterations)?);

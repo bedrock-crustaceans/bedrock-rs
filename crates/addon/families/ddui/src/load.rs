@@ -671,6 +671,12 @@ macro_rules! content {
         impl $root {
             /// Parses one file without upgrading it: the struct its `format_version` selects.
             /// There is one struct, so the value is the newest already.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes
+            /// that are not JSON or a document the family refuses; it carries every finding about
+            /// the file.
             pub fn parse_as_written(
                 path: &PackPath,
                 bytes: &[u8],

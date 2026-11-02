@@ -36,7 +36,7 @@ fn ghost_with(
         &[("entities/ghost.json", &behavior)],
         &resource,
         load,
-        &LinkOptions {
+        LinkOptions {
             lints,
             ..Default::default()
         },
@@ -81,7 +81,7 @@ mod r1 {
             &[(GHOST, &text), FANCY, ("materials/entity.material", &file)],
             LoadOptions::default(),
             // An error is no lint.
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },
@@ -183,7 +183,7 @@ mod r1 {
             &[("entities/ghost.json", &behavior)],
             &[(GHOST, &text), FANCY, ("materials/entity.material", &file)],
             LoadOptions::default(),
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },
@@ -274,7 +274,7 @@ mod r2 {
             &[("entities/ghost.json", &behavior)],
             &[(GHOST, &text), ("particles/smoke.particle.json", &smoke)],
             LoadOptions::default(),
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },
@@ -478,7 +478,7 @@ mod r4 {
             &[("entities/ghost.json", &behavior)],
             &[(GHOST, text), (FILES[1], &moves)],
             LoadOptions::default(),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(
             told(&found, "rp 2", GHOST),
@@ -612,7 +612,7 @@ mod r7 {
             &[(GHOST, &text), IMAGE],
             LoadOptions::default(),
             // the game's content-log warning, told without the lints too
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },
@@ -643,7 +643,7 @@ mod r7 {
                 &[("entities/ghost.json", &behavior)],
                 &[(GHOST, &text)],
                 LoadOptions::default(),
-                &LinkOptions {
+                LinkOptions {
                     client,
                     ..Default::default()
                 },
@@ -671,7 +671,7 @@ mod r7 {
                 IMAGE,
             ],
             LoadOptions::default(),
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },
@@ -837,7 +837,7 @@ fn identified(id: &str, load: LoadOptions, lints: bool) -> Vec<Told> {
         &[("entities/ghost.json", &behavior)],
         &[(GHOST, &text)],
         load,
-        &LinkOptions {
+        LinkOptions {
             lints,
             ..Default::default()
         },

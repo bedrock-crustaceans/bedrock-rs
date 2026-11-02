@@ -465,7 +465,11 @@ fn l4_a_scene_tag_in_two_packs_keeps_the_lower_priority_pack_s_scene() {
         DiagnosticCode::DuplicateIdentifier { text: Some(_) }
     ));
     assert_eq!(
-        error.location.pack.as_ref().and_then(|p| p.index()),
+        error
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     // The dropped scene is the shadowed layer.
@@ -492,11 +496,19 @@ fn l4_the_dropped_higher_scene_is_a_shadowed_definition_info_deviation() {
     assert_eq!(shadowed.len(), 1);
     assert_eq!(shadowed[0].severity, Severity::Info);
     assert_eq!(
-        shadowed[0].location.pack.as_ref().and_then(|p| p.index()),
+        shadowed[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     assert_eq!(
-        shadowed[0].location.path.as_ref().map(|p| p.as_str()),
+        shadowed[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("dialogue/shared.json")
     );
 }

@@ -80,10 +80,10 @@ macro_rules! impl_proto_codec_var {
             fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
                 let mut value = *self;
                 while value >= 0x80 {
-                    stream.write_u8(value as u8 | 0x80)?;
+                    stream.write_u8(value.to_le_bytes()[0] | 0x80)?;
                     value >>= 7;
                 }
-                Ok(stream.write_u8(value as u8)?)
+                Ok(stream.write_u8(value.to_le_bytes()[0])?)
             }
 
             fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
@@ -91,7 +91,7 @@ macro_rules! impl_proto_codec_var {
                 let mut decoded: $unsigned = 0;
                 for i in 0..MAX_BYTES {
                     let byte = stream.read_u8()?;
-                    decoded |= ((byte & 0x7f) as $unsigned) << (7 * i);
+                    decoded |= $unsigned::from(byte & 0x7f) << (7 * i);
                     if byte & 0x80 == 0 {
                         return Ok(decoded);
                     }
@@ -106,13 +106,13 @@ macro_rules! impl_proto_codec_var {
 
         impl ProtoCodecVAR for $signed {
             fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
-                let zigzag = ((*self << 1) ^ (*self >> ($signed::BITS - 1))) as $unsigned;
+                let zigzag = ((*self << 1) ^ (*self >> ($signed::BITS - 1))).cast_unsigned();
                 <$unsigned as ProtoCodecVAR>::serialize(&zigzag, stream)
             }
 
             fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
                 let zigzag = <$unsigned as ProtoCodecVAR>::deserialize(stream)?;
-                Ok((zigzag >> 1) as $signed ^ -((zigzag & 1) as $signed))
+                Ok((zigzag >> 1).cast_signed() ^ -((zigzag & 1).cast_signed()))
             }
 
             fn size_hint(&self) -> usize {

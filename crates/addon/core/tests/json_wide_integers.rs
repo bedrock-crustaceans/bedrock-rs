@@ -226,7 +226,10 @@ fn a_wide_integer_is_never_a_string() {
             StringOrNumber::Text(token.clone())
         );
         let value: Value = element(&quoted).unwrap();
-        assert_eq!(value.as_string().map(|s| s.as_str()), Some(token.as_str()));
+        assert_eq!(
+            value.as_string().map(facet_value::VString::as_str),
+            Some(token.as_str())
+        );
     }
 }
 
@@ -625,6 +628,11 @@ fn a_finding_after_wide_integers_keeps_its_span() {
 /// reads to an equal value and writes to the same text.
 #[test]
 fn a_wide_integer_is_written_as_the_shortest_decimal_of_its_double() {
+    #[derive(Debug, PartialEq, Facet)]
+    struct Volume {
+        volume: f32,
+        gain: f64,
+    }
     let text = "{\"sound\": 18446744073709551616, \"list\": [123456789012345678901234567890, \
                 -9223372036854775809, 18446744073709551615, 7], \"text\": \
                 \"18446744073709551616\"}";
@@ -645,11 +653,6 @@ fn a_wide_integer_is_written_as_the_shortest_decimal_of_its_double() {
     assert_eq!(to_json(&again).unwrap(), written);
 
     // A typed `f32` member writes the shortest decimal of the `f32`.
-    #[derive(Debug, PartialEq, Facet)]
-    struct Volume {
-        volume: f32,
-        gain: f64,
-    }
     let text = format!(
         "{{\"volume\": 18446744073709551616, \"gain\": {}}}",
         decimal(40)

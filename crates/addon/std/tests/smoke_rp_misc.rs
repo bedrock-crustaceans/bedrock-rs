@@ -185,6 +185,10 @@ fn exactly(counts: &BTreeMap<String, usize>, want: &[(&str, usize)], what: &str)
 }
 
 /// One client install: the stack families, then the files outside the packs.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass over a client install, a pinned count per family"
+)]
 fn check_client(source: &str, root: &Path, want: &Expected) {
     let dirs = pack_dirs(root);
     let credits_file = root.join("credits/credits.json");
@@ -397,7 +401,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
             zero += findings.len();
             assert_eq!(page.to_bytes(), bytes, "{source}: {name} round trip");
             metrics += 1;
-        } else if name.ends_with(".png") && !name.contains('/') {
+        } else if has_extension(&name, "png") && !name.contains('/') {
             assert_eq!(
                 check_glyph_sheet(&bytes).len(),
                 0,
@@ -438,7 +442,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
         .map(|dir| {
             files_below(&dir.join("textures/ui"))
                 .iter()
-                .filter(|name| name.ends_with(".json"))
+                .filter(|name| has_extension(name, "json"))
                 .count()
         })
         .sum();
@@ -553,7 +557,7 @@ fn sample_packs_ui_side_files_load_without_errors() {
     let counts = tally("ui side files", infos.diagnostics());
     let on_disk = files_below(&dir.join("textures/ui"))
         .iter()
-        .filter(|name| name.ends_with(".json"))
+        .filter(|name| has_extension(name, "json"))
         .count();
     assert_eq!(
         infos.iter().count(),
@@ -574,4 +578,9 @@ fn sample_packs_ui_side_files_load_without_errors() {
     println!(
         "smoke_rp_misc[sample packs]: font files (the language sheets under texts/): {fonts:?}"
     );
+}
+
+/// Whether `name` ends in `.{ext}`, the extension compared as written.
+fn has_extension(name: &str, ext: &str) -> bool {
+    name.rsplit_once('.').is_some_and(|(_, found)| found == ext)
 }

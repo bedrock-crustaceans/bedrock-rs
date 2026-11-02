@@ -13,7 +13,7 @@ use bedrock_protocol::v662::packets::{
 };
 use bedrock_protocol::{ProtoVersion, V2225};
 
-const PROTOCOL: i32 = V2225::PROTOCOL_VERSION as i32;
+const PROTOCOL: i32 = V2225::PROTOCOL_VERSION.cast_signed();
 
 fn play_status(status: PlayStatus) -> V2225 {
     V2225::PlayStatusPacket(Box::new(PlayStatusPacket { status }))

@@ -44,6 +44,10 @@ impl MolangCheck {
 
     /// The caller's catalogues and cache. Fails when a catalogue does not declare a query the
     /// load's allow-lists name (`query.block_state`, `query.had_component_group`).
+    ///
+    /// # Errors
+    ///
+    /// Returns `AllowListError` when a catalogue does not declare a query the load's allow-lists name.
     pub fn with_catalogs(
         server: QueryCatalog,
         client: QueryCatalog,

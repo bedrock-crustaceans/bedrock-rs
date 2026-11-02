@@ -24,6 +24,11 @@ pub struct Parsed<T> {
 
 /// The text of a file after the BOM, the depth check and the JSON syntax check; the finding
 /// when it is not readable (vanilla "parse error:\n%s").
+///
+/// # Errors
+///
+/// The `MalformedInput` finding (boxed) when the text is nested deeper than `MAX_JSON_DEPTH`, is
+/// not UTF-8, or is not valid JSON.
 pub fn text_of(bytes: &[u8]) -> Result<&str, Box<Diagnostic>> {
     let malformed = |message: String| {
         Box::new(Diagnostic::new(

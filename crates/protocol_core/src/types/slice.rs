@@ -42,7 +42,7 @@ impl<T, const N: usize> ArrayInitGuard<T, N> {
 
         // Safety: `[MaybeUninit<T>; N]` and `[T; N]` have the same layout and we know all
         // items have been initialized.
-        Ok(unsafe { (self.array.as_ptr() as *const [T; N]).read() })
+        Ok(unsafe { self.array.as_ptr().cast::<[T; N]>().read() })
     }
 }
 
@@ -54,7 +54,7 @@ impl<T, const N: usize> Drop for ArrayInitGuard<T, N> {
         // If the array has fully been initialized, `init` will be set to zero and this code does not run.
         self.array[..init]
             .iter_mut()
-            .for_each(|x| unsafe { x.assume_init_drop() })
+            .for_each(|x| unsafe { x.assume_init_drop() });
     }
 }
 

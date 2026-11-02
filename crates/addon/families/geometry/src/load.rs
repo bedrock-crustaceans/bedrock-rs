@@ -449,6 +449,11 @@ fn detached_origin(path: &PackPath) -> Origin {
 /// is the whole file or nothing: an empty file, and a file in which one geometry breaks an
 /// identifier rule, are rejected here (a pack stack keeps the geometries before the offending
 /// one, as vanilla does).
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when the file is empty, is not valid JSON, or breaks an identifier rule or
+/// a parse-time check; it carries every finding about the file.
 pub fn load_file(
     path: &PackPath,
     bytes: &[u8],
@@ -544,6 +549,11 @@ impl Placed for GeometryFile {
 impl GeometryFile {
     /// Parses one geometry file without upgrading it: the struct its `format_version` selects
     ///; [`history::upgrade`](super::history::upgrade) finishes it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],

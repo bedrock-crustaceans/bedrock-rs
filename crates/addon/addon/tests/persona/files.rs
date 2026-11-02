@@ -27,8 +27,7 @@ fn text_of(pieces: &PersonaPieces, wanted: &str) -> String {
     pieces
         .report()
         .find(|found| crate::common::line(found).contains(wanted))
-        .map(message)
-        .unwrap_or_else(|| panic!("no {wanted} in {:?}", lines(pieces)))
+        .map_or_else(|| panic!("no {wanted} in {:?}", lines(pieces)), message)
 }
 
 /// A hair piece whose one geometry source names `geometry.hat`, with `files` beside it.
@@ -59,7 +58,7 @@ fn pg01_a_keyed_model_is_found_by_its_name() {
         members
             .get("format_version")
             .and_then(|v| v.as_string())
-            .map(|v| v.as_str()),
+            .map(facet_value::VString::as_str),
         Some("1.12.0")
     );
     assert!(members.get("geometry.hat").is_some());
@@ -650,7 +649,10 @@ fn pe01_an_emote_s_animation_is_stored_under_the_piece_s_id() {
         .get("animations")
         .and_then(|v| v.as_object())
         .unwrap();
-    let keys: Vec<&str> = animations.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<&str> = animations
+        .keys()
+        .map(facet_value::VString::as_str)
+        .collect();
     assert_eq!(
         keys,
         [
@@ -1152,7 +1154,9 @@ fn pe07_an_emote_s_molang_is_of_version_0() {
     let v1_21 = MinEngineVersion::new(1, 21, 0);
     of_pack.molang_version = RawVersion::from(v1_21.molang_version());
     of_pack.min_engine_version = Some(v1_21);
-    of_pack.molang = Some(std::sync::Arc::new(Default::default()));
+    of_pack.molang = Some(std::sync::Arc::new(
+        bedrock_addon::molang::MolangCheck::default(),
+    ));
 
     // As an emote: version 0, where adding to a string is not yet refused.
     let cx = emote.context(&of_pack);

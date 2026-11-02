@@ -20,6 +20,10 @@ use crate::read::read_optional;
 /// module with a dependency is then refused. Nothing a file holds fails the read: what the
 /// files said is in `ScriptConfig::diagnostics`, a file that exists but cannot be opened
 /// included. `ReadError::Io` only when `config_dir` itself exists and cannot be listed.
+///
+/// # Errors
+///
+/// `ReadError::Io` when `config_dir` exists and cannot be listed.
 pub fn read_script_config(config_dir: impl AsRef<Path>) -> Result<ScriptConfig, ReadError> {
     Ok(ScriptConfig::parse(&read_script_config_files(config_dir)?))
 }
@@ -30,6 +34,10 @@ pub fn read_script_config(config_dir: impl AsRef<Path>) -> Result<ScriptConfig, 
 /// Symbolic links are followed. Other files directly under `config_dir` are not read. A file
 /// that exists but cannot be read is listed in `unreadable`, not an error. The errors are
 /// those of [`read_script_config`].
+///
+/// # Errors
+///
+/// `ReadError::Io` when `config_dir` exists and cannot be listed.
 pub fn read_script_config_files(
     config_dir: impl AsRef<Path>,
 ) -> Result<ScriptConfigFiles, ReadError> {
@@ -87,6 +95,10 @@ pub fn read_script_config_files(
 /// A file that does not exist holds no line: every key has its default. A file that exists
 /// but cannot be read is `ReadError::Io`. What the lines said is in
 /// `ServerProperties::diagnostics`; the typed script keys are `ServerProperties::script`.
+///
+/// # Errors
+///
+/// `ReadError::Io` when the file exists but cannot be read.
 pub fn read_server_properties(path: impl AsRef<Path>) -> Result<ServerProperties, ReadError> {
     Ok(
         read_optional(path.as_ref())?.map_or_else(ServerProperties::default, |bytes| {

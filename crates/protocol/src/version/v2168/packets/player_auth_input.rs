@@ -91,36 +91,18 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         let player_position = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let move_vector = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let player_head_rotation = <f32 as ProtoCodecLE>::deserialize(stream)?;
-        let input_data = match <bool as ProtoCodec>::deserialize(stream)? {
-            true => <Vec<V::PlayerAuthInputData> as ProtoCodec>::deserialize(stream)?,
-            false => Vec::new(),
-        };
+        let input_data = if <bool as ProtoCodec>::deserialize(stream)? { <Vec<V::PlayerAuthInputData> as ProtoCodec>::deserialize(stream)? } else { Vec::new() };
         let input_mode = <V::InputMode as ProtoCodec>::deserialize(stream)?;
         let play_mode = <ClientPlayMode as ProtoCodec>::deserialize(stream)?;
         let new_interaction_model = <V::NewInteractionModel as ProtoCodec>::deserialize(stream)?;
         let interact_rotation = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let client_tick = <u64 as ProtoCodecVAR>::deserialize(stream)?;
         let pos_delta = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
-        let item_use_transaction = match <bool as ProtoCodec>::deserialize(stream)? {
-            true => <Option<V::PackedItemUseLegacyInventoryTransaction> as ProtoCodec>::deserialize(stream)?,
-            false => None,
-        };
-        let item_stack_request = match <bool as ProtoCodec>::deserialize(stream)? {
-            true => <Option<PerformItemStackRequestData<V>> as ProtoCodec>::deserialize(stream)?,
-            false => None,
-        };
-        let player_block_actions = match <bool as ProtoCodec>::deserialize(stream)? {
-            true => <Option<Vec<V::PlayerBlockActionData>> as ProtoCodec>::deserialize(stream)?,
-            false => None,
-        };
-        let vehicle_rotation = match <bool as ProtoCodec>::deserialize(stream)? {
-            true => <Option<(f32, f32)> as ProtoCodecLE>::deserialize(stream)?,
-            false => None,
-        };
-        let client_predicted_vehicle = match <bool as ProtoCodec>::deserialize(stream)? {
-            true => <Option<V::ActorUniqueID> as ProtoCodec>::deserialize(stream)?,
-            false => None,
-        };
+        let item_use_transaction = if <bool as ProtoCodec>::deserialize(stream)? { <Option<V::PackedItemUseLegacyInventoryTransaction> as ProtoCodec>::deserialize(stream)? } else { None };
+        let item_stack_request = if <bool as ProtoCodec>::deserialize(stream)? { <Option<PerformItemStackRequestData<V>> as ProtoCodec>::deserialize(stream)? } else { None };
+        let player_block_actions = if <bool as ProtoCodec>::deserialize(stream)? { <Option<Vec<V::PlayerBlockActionData>> as ProtoCodec>::deserialize(stream)? } else { None };
+        let vehicle_rotation = if <bool as ProtoCodec>::deserialize(stream)? { <Option<(f32, f32)> as ProtoCodecLE>::deserialize(stream)? } else { None };
+        let client_predicted_vehicle = if <bool as ProtoCodec>::deserialize(stream)? { <Option<V::ActorUniqueID> as ProtoCodec>::deserialize(stream)? } else { None };
         let analog_move_vector = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let camera_orientation = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
         let raw_move_vector = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;

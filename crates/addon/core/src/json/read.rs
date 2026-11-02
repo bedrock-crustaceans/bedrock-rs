@@ -30,6 +30,11 @@
 //! length that spells the same double (`respell`), so every offset, and with it every
 //! span and raw slice, is the one of the author's text; a text without such a token is read
 //! as it is, with no copy.
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "this module is the JSON door: the one caller of facet-json"
+)]
 
 use std::borrow::Cow;
 use std::collections::VecDeque;
@@ -176,6 +181,10 @@ impl From<UnsafeText> for DeserializeError {
 /// does without decoding anything.
 ///
 /// Linear in the text, one pass, no allocation beyond the open brackets.
+///
+/// # Errors
+///
+/// Returns `UnsafeText` for a string escape outside RFC 8259, nesting past the limit, or a `/*` comment that does not end before the root value.
 pub fn scan(bytes: &[u8], comments: bool) -> Result<Scanned, UnsafeText> {
     scan_tokens(bytes, comments, &mut Marks::default()).map_err(|refused| refused.found)
 }
@@ -708,6 +717,10 @@ fn checked(text: &str, comments: bool) -> Result<Checked<'_>, DeserializeError> 
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
     let checked = checked(text, false)?;
     read_owned(checked.root, checked.copy.as_deref(), false, checked.levels)
@@ -720,6 +733,10 @@ pub fn from_str<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str_jsonc<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
     let checked = checked(text, true)?;
     read_owned(checked.root, checked.copy.as_deref(), true, checked.levels)
@@ -733,6 +750,10 @@ pub fn from_str_jsonc<T: Facet<'static>>(text: &str) -> Result<T, DeserializeErr
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str_borrowed_jsonc<'input, 'facet, T>(text: &'input str) -> Result<T, DeserializeError>
 where
     T: Facet<'facet>,
@@ -1251,6 +1272,10 @@ impl<'input> FormatParser<'input> for Rehomed<'_, 'input> {
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for bytes the scan refuses, a syntax error, or bytes that are not UTF-8 outside comments.
 pub fn from_slice_jsonc<T: Facet<'static>>(bytes: &[u8]) -> Result<T, DeserializeError> {
     if let Ok(text) = std::str::from_utf8(bytes) {
         return from_str_jsonc(text);

@@ -1,6 +1,6 @@
 //! One `deviation` test per deliberate deviation from vanilla (the others:
-//! upgrade.rs::deviation_i18_custom_components_from_the_list_are_also_keyed,
-//! upgrade.rs::deviation_i18b_the_legacy_use_duration_keeps_tick_precision).
+//! `upgrade.rs::deviation_i18_custom_components_from_the_list_are_also_keyed`,
+//! `upgrade.rs::deviation_i18b_the_legacy_use_duration_keeps_tick_precision`).
 
 use bedrock_addon_core::document::{ComponentRef, Content};
 use bedrock_addon_core::json::Value;

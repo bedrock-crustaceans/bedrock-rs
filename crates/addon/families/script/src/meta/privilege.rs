@@ -114,6 +114,12 @@ impl PrivilegeList {
     /// `restricted_execution` and `early_execution`, each at most once and in that order; any
     /// other name goes to `overlay`. An empty list, `default` beside another name, or a repeated
     /// or reordered flag is an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MetaError::EmptyPrivilegeList`] for an empty list, [`MetaError::DefaultNotAlone`]
+    /// for `default` beside another name, and [`MetaError::PrivilegeOrder`] for a repeated or
+    /// reordered flag.
     pub fn from_names(names: &[PrivilegeName]) -> Result<Self, MetaError> {
         // The game writes a privilege value as a list: value 0 is `default`; bit 0 is
         // `restricted_execution`, then bit 1 `early_execution`; any other value adds nothing.

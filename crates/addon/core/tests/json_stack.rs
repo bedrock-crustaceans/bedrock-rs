@@ -64,7 +64,7 @@ fn read_of(result: Result<Value, DeserializeError>) -> Read {
     match result {
         Ok(value) => {
             let (depth, bottom) = depth_of(&value);
-            if bottom.as_number().and_then(|n| n.to_u64()) == Some(7) {
+            if bottom.as_number().and_then(facet_value::VNumber::to_u64) == Some(7) {
                 Read::Value(depth)
             } else {
                 Read::Other(format!("the innermost value is {bottom:?}"))

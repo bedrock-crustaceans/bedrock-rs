@@ -11,7 +11,7 @@
 mod common;
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::load::{Collection, CollectionSet, LoadOptions, StackOptions};
@@ -26,14 +26,12 @@ const FILE: &str = "textures/item_texture.json";
 
 /// The pack folders below `dir` that hold `FILE`.
 fn packs_with_file(dir: &Path) -> usize {
-    std::fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok().map(|entry| entry.path()))
-                .filter(|pack| pack.join(FILE).is_file())
-                .count()
-        })
-        .unwrap_or(0)
+    std::fs::read_dir(dir).map_or(0, |entries| {
+        entries
+            .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+            .filter(|pack| pack.join(FILE).is_file())
+            .count()
+    })
 }
 
 /// The stacks of every pack below `dir`, with the texture group loaded.
@@ -92,14 +90,14 @@ fn stacked(stacks: &StackSet) -> usize {
 }
 
 /// Loads the resource packs below `dir` and checks the item atlas of the stack.
-fn smoke(source: &str, dir: PathBuf, origin: PackOrigin, warnings: &[(&str, usize)]) {
-    let on_disk = packs_with_file(&dir);
+fn smoke(source: &str, dir: &Path, origin: PackOrigin, warnings: &[(&str, usize)]) {
+    let on_disk = packs_with_file(dir);
     assert!(
         on_disk > 0,
         "{source}: no pack below {} has {FILE}",
         dir.display()
     );
-    let stacks = load(&dir, origin);
+    let stacks = load(dir, origin);
     let in_stack = stacked(&stacks);
     let textures = stacks.resource.texture_atlases();
     let atlas = textures.item().expect("the stack builds an item atlas");
@@ -131,7 +129,7 @@ fn sample_packs_item_atlas_loads_without_errors() {
     };
     smoke(
         "sample packs",
-        samples,
+        &samples,
         PackOrigin::Package,
         // An atlas layer image that no pack has is an information of the crate's own: the game
         // accepts the entry without a word.
@@ -147,7 +145,7 @@ fn client_install_b_item_atlas_loads_without_errors() {
     };
     smoke(
         "client install B",
-        client.join("resource_packs"),
+        &client.join("resource_packs"),
         PackOrigin::Package,
         // An atlas layer image that no pack has is an information of the crate's own: the game
         // accepts the entry without a word.
@@ -163,7 +161,7 @@ fn client_install_a_item_atlas_loads_without_errors() {
     };
     smoke(
         "client install A",
-        client.join("resource_packs"),
+        &client.join("resource_packs"),
         PackOrigin::Package,
         // An atlas layer image that no pack has is an information of the crate's own: the game
         // accepts the entry without a word.

@@ -62,8 +62,7 @@ fn spanned(packs: &[Files<'_>]) -> Vec<Spanned> {
             let text = packs[number - 1]
                 .iter()
                 .find(|(path, _)| *path == file)
-                .map(|(_, text)| *text)
-                .unwrap_or_else(|| panic!("{pack} has no {file}"));
+                .map_or_else(|| panic!("{pack} has no {file}"), |(_, text)| *text);
             let covered = text_of(finding, text);
             let path = finding.location.json_path.to_string();
             match named(finding, text).filter(|_| !path.is_empty()) {

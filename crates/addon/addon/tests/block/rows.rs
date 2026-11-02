@@ -284,10 +284,9 @@ fn full_chain_1_16_0() {
     assert!(
         matches!(c.get::<Flammable>(), Some(Flammable::Params(f)) if f.catch_chance_modifier() == 50 && f.destroy_chance_modifier() == 0)
     );
-    assert!(
-        c.get::<RedstoneConductivity>()
-            .is_some_and(|r| r.redstone_conductor())
-    );
+    assert!(c.get::<RedstoneConductivity>().is_some_and(
+        bedrock_addon::families::block::component::RedstoneConductivity::redstone_conductor
+    ));
     assert!(c.get::<ChestObstruction>().is_some());
     let synthesized = c
         .iter()
@@ -374,6 +373,35 @@ fn release_gates() {
     );
 }
 
+/// `(version, instance, text)`: a material instance with `alpha_masked_tint` the game refuses.
+const ALPHA_MASKED_TINT_REFUSALS: [(&str, &str, &str); 5] = [
+    (
+        "1.21.110",
+        r#"{"texture": "x", "tint_method": "grass", "alpha_masked_tint": true}"#,
+        "'alpha_masked_tint' is only supported at format_version 1.21.120 or higher",
+    ),
+    (
+        "1.21.120",
+        r#"{"texture": "x", "alpha_masked_tint": true}"#,
+        "'alpha_masked_tint' requires a non-default 'tint_method'",
+    ),
+    (
+        "1.21.120",
+        r#"{"texture": "x", "tint_method": "grass", "render_method": "blend", "alpha_masked_tint": true}"#,
+        "'alpha_masked_tint' requires 'render_method' to be 'opaque'",
+    ),
+    (
+        "1.26.20",
+        r#"{"texture": "x", "alpha_masked_tint": true}"#,
+        "\"alpha_masked_tint\" requires a non-default \"tint_method\".",
+    ),
+    (
+        "1.26.20",
+        r#"{"texture": "x", "tint_method": "grass", "render_method": "blend", "alpha_masked_tint": true}"#,
+        "\"alpha_masked_tint\" requires \"render_method\" to be \"opaque\".",
+    ),
+];
+
 #[test]
 fn field_gates() {
     let text_of = |version: &str, components: &str| {
@@ -416,33 +444,7 @@ fn field_gates() {
         Severity::Error,
         "'minecraft:material_instances' cannot use 'isotropic' member with 'format_version' < 1.21.70",
     );
-    for (version, instance_json, text) in [
-        (
-            "1.21.110",
-            r#"{"texture": "x", "tint_method": "grass", "alpha_masked_tint": true}"#,
-            "'alpha_masked_tint' is only supported at format_version 1.21.120 or higher",
-        ),
-        (
-            "1.21.120",
-            r#"{"texture": "x", "alpha_masked_tint": true}"#,
-            "'alpha_masked_tint' requires a non-default 'tint_method'",
-        ),
-        (
-            "1.21.120",
-            r#"{"texture": "x", "tint_method": "grass", "render_method": "blend", "alpha_masked_tint": true}"#,
-            "'alpha_masked_tint' requires 'render_method' to be 'opaque'",
-        ),
-        (
-            "1.26.20",
-            r#"{"texture": "x", "alpha_masked_tint": true}"#,
-            "\"alpha_masked_tint\" requires a non-default \"tint_method\".",
-        ),
-        (
-            "1.26.20",
-            r#"{"texture": "x", "tint_method": "grass", "render_method": "blend", "alpha_masked_tint": true}"#,
-            "\"alpha_masked_tint\" requires \"render_method\" to be \"opaque\".",
-        ),
-    ] {
+    for (version, instance_json, text) in ALPHA_MASKED_TINT_REFUSALS {
         let text_of = |version: &str| {
             document(
                 version,
@@ -675,10 +677,9 @@ fn engine_gated_1_26_30() {
     let entity = modern_components(r#"{"minecraft:block_entity": {"dynamic_properties": true}}"#);
     let block = loads(&entity, &context());
     assert!(
-        block
-            .components
-            .get::<BlockEntity>()
-            .is_some_and(|b| b.dynamic_properties())
+        block.components.get::<BlockEntity>().is_some_and(
+            bedrock_addon::families::block::component::BlockEntity::dynamic_properties
+        )
     );
     let in_permutation = modern(
         r#"{"description": {"identifier": "demo:x"}, "components": {},
@@ -846,6 +847,10 @@ fn retail_multi_block_rules() {
         Severity::Error,
         "'n_way_visual_rotation' must define at least one axis (x, y, or z)",
     );
+}
+
+#[test]
+fn retail_multi_block_horizontal_direction_needs_the_experiment() {
     // Without Upcoming Creator Features: a horizontal direction.
     let text = modern(
         r#"{"description": {"identifier": "demo:door", "traits": {"minecraft:multi_block": {"enabled_states": ["minecraft:multi_block_part"], "direction": "north"}}},
@@ -993,7 +998,7 @@ fn required_members() {
             .traits
             .multi_block
             .as_ref()
-            .map(|m| m.parts()),
+            .map(bedrock_addon::families::block::MultiBlock::parts),
         Some(2)
     );
     assert_eq!(
@@ -1135,7 +1140,7 @@ fn condition_version(block: &Block, index: usize) -> Option<RawVersion> {
     block.permutations[index]
         .condition
         .source()
-        .and_then(|s| s.raw_version())
+        .and_then(bedrock_addon::molang::MolangSource::raw_version)
 }
 
 /// The compiler's diagnostic kinds behind the `InvalidMolang` / `MolangLint` findings, with

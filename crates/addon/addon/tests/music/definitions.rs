@@ -99,7 +99,11 @@ fn md04_a_root_replace_drops_every_lower_definition() {
         ],
     );
     let sounds = stack.music();
-    let names: Vec<&str> = sounds.definitions.keys().map(|k| k.as_str()).collect();
+    let names: Vec<&str> = sounds
+        .definitions
+        .keys()
+        .map(bedrock_addon::id::Id::as_str)
+        .collect();
     assert_eq!(names, ["menu"]);
     // The `replace` member itself is no definition (rule 23).
     let skipped = found(sounds, "InvalidValue");

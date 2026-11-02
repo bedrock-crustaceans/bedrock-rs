@@ -6,6 +6,11 @@
 //! reads back to the same `f32` with a `.0` on integral values (jsoncpp's real tag survives), a
 //! `Value`'s numbers with their int/real tag, no `null` for an absent `Option`, and
 //! `EncodeError::NotRepresentable` instead of `null` for a non-finite number.
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "this module is the JSON door: the one caller of facet-json"
+)]
 
 use std::borrow::Cow;
 
@@ -28,6 +33,10 @@ use super::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
 /// of its own, on this thread). `MAX_JSON_DEPTH` names what is outside that rule:
 /// WebAssembly, a target without a stack switch, a host that cannot map the stack (a
 /// panic).
+///
+/// # Errors
+///
+/// Returns `EncodeError::NotRepresentable` when the value has no JSON form: a non-finite number, an unsupported shape, or nesting past `MAX_JSON_DEPTH`.
 pub fn write_json<'f, T: Facet<'f>>(
     value: &T,
     out: &mut Vec<u8>,
@@ -112,6 +121,10 @@ fn write_once<'f, T: Facet<'f>>(
 
 /// [`write_json`] into a string in the default style (two spaces, a trailing newline); the
 /// same refusal of a value nested past the limit, and the same stack.
+///
+/// # Errors
+///
+/// Returns `EncodeError` under the same conditions as [`write_json`].
 pub fn to_json<'f, T: Facet<'f>>(value: &T) -> Result<String, EncodeError> {
     let mut out = Vec::new();
     write_json(value, &mut out, WriteStyle::default())?;
@@ -128,6 +141,10 @@ pub fn to_json<'f, T: Facet<'f>>(value: &T) -> Result<String, EncodeError> {
 /// value by a call of itself for each level, so the depth is counted first and the write
 /// run with the stack that depth can take, as a typed read is: one megabyte of stack on the
 /// calling thread is enough at any depth.
+///
+/// # Errors
+///
+/// Returns `EncodeError::NotRepresentable` when `value` is nested past `MAX_JSON_DEPTH` or facet-json cannot write it.
 pub fn to_facet_json(value: &Value) -> Result<String, EncodeError> {
     let levels = levels_of(value).map_err(|at| EncodeError::NotRepresentable {
         at: at.to_json_path(),
@@ -146,6 +163,10 @@ pub fn to_facet_json(value: &Value) -> Result<String, EncodeError> {
 /// conversion that types a `Value` into a member that holds a float; one that types it into
 /// an integer wants [`to_facet_json`]'s `0`. Without a negative zero in `value` the two
 /// texts are the same.
+///
+/// # Errors
+///
+/// Returns `EncodeError` under the same conditions as [`to_facet_json`].
 pub fn to_facet_json_signed(value: &Value) -> Result<String, EncodeError> {
     fn negative_zero(value: &Value) -> bool {
         value.as_number().is_some_and(|number| {

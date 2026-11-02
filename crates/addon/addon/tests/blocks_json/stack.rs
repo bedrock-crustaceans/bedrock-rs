@@ -214,7 +214,11 @@ fn a_higher_pack_overrides_field_by_field() {
     assert_eq!(origin.pack.name(), "rp 2");
     assert_eq!(origin.path.as_str(), "blocks.json");
     assert_eq!(origin.key.as_deref(), Some("obsidian"));
-    let mut contributors: Vec<&str> = origin.contributors.iter().map(|p| p.name()).collect();
+    let mut contributors: Vec<&str> = origin
+        .contributors
+        .iter()
+        .map(bedrock_addon::pack::PackRef::name)
+        .collect();
     contributors.sort_unstable();
     assert_eq!(contributors, ["rp 0", "rp 1"]);
     assert_eq!(loaded.registry().len(), 1);
@@ -223,13 +227,14 @@ fn a_higher_pack_overrides_field_by_field() {
 
 #[test]
 fn every_field_merges_on_its_own_over_three_packs() {
+    type Replaced = fn(&ClientBlock) -> bool;
+
     let bottom = file(
         r#""obsidian": {"textures": "t0", "carried_textures": "c0", "isotropic": true,
             "blockshape": "cross_texture", "ambient_occlusion_exponent": 0.25, "sound": "s0",
             "brightness_gamma": 1}"#,
     );
     // Each field alone in the top pack replaces only itself.
-    type Replaced = fn(&ClientBlock) -> bool;
     let cases: [(&str, Replaced); 6] = [
         (r#""textures": "t2""#, |b| b.face_textures() == ["t2"; 6]),
         (r#""carried_textures": "c2""#, |b| {

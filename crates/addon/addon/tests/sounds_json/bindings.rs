@@ -467,7 +467,11 @@ fn sj10b_a_client_biome_ambient_sound_that_is_no_named_sound_is_an_unknown_sound
     assert_eq!(unknown.len(), 1, "{unknown:#?}");
     assert_eq!(unknown[0].severity, Severity::Error);
     assert_eq!(
-        unknown[0].location.path.as_ref().map(|path| path.as_str()),
+        unknown[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("biomes/cave.client_biome.json")
     );
     assert_eq!(
@@ -1014,6 +1018,9 @@ fn without_the_compile_check_the_keys_are_counted_once() {
 // resolved again by the caller.
 #[test]
 fn editing_a_base_and_resolving_the_bases_again_changes_the_inherited_sound() {
+    fn name(sound: Option<&bedrock_addon::families::sounds_json::SoundRef>) -> Option<&str> {
+        sound.map(|sound| sound.sound.as_str())
+    }
     let text = r#"{
         "block_sounds": {
             "stone": {"events": {"break": "dig.stone"}},
@@ -1023,9 +1030,6 @@ fn editing_a_base_and_resolving_the_bases_again_changes_the_inherited_sound() {
             "stone": {"events": {"fall": "fall.stone"}},
             "plain": {"events": {"jump": "jump.plain"}}}}}"#;
     let mut bindings = SoundBindings::from_json(json(text));
-    fn name(sound: Option<&bedrock_addon::families::sounds_json::SoundRef>) -> Option<&str> {
-        sound.map(|sound| sound.sound.as_str())
-    }
     assert_eq!(
         name(bindings.block_sound("wood", "break")),
         Some("dig.stone")

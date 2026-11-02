@@ -108,7 +108,7 @@ fn events_without_a_command_version_are_reported_deviation() {
     );
 }
 
-/// client_animation.toml "our added rules", `vanilla = "no diagnostic"`: `DuplicateBone`,
+/// `client_animation.toml` "our added rules", `vanilla = "no diagnostic"`: `DuplicateBone`,
 /// `ShadowedDefinition`; the validation rules: `UnrecognizedEventString`.
 #[test]
 fn added_rules_report_what_vanilla_is_silent_on_deviation() {

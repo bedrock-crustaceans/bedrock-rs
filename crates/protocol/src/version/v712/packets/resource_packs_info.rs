@@ -2,6 +2,7 @@ use bedrock_macros::{packet, ProtoCodec};
 
 #[packet(id = 6, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 pub struct ResourcePacksInfoPacket {
     pub resource_pack_required: bool,
     pub has_addon_packs: bool,

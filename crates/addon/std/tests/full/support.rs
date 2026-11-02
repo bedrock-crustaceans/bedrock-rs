@@ -26,7 +26,7 @@
 )]
 
 use std::collections::{BTreeMap, HashMap};
-use std::fmt::Debug;
+use std::fmt::{Debug, Write as _};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -128,6 +128,10 @@ impl Tree {
 
 /// How a tree is loaded.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "independent switches of one load, each a column of the pin files"
+)]
 pub struct Run {
     /// `Strategy::Rayon` in place of `Strategy::Sequential`.
     pub rayon: bool,
@@ -154,7 +158,7 @@ impl Run {
     };
 
     /// A word for the pin file of this run's aspect.
-    pub fn word(&self) -> &'static str {
+    pub fn word(self) -> &'static str {
         if self.default_world {
             return "default_world";
         }
@@ -422,7 +426,7 @@ fn letter(severity: Severity) -> char {
         Severity::Error => 'E',
         Severity::Warning => 'W',
         Severity::Info => 'I',
-        _ => 'D',
+        Severity::Debug => 'D',
     }
 }
 
@@ -918,9 +922,9 @@ fn write_pins(name: &str, pins: &Pins, found: &Counts) {
     for (key, count) in found {
         let note = pins.counts.get(key).map_or("", |(_, note)| note.as_str());
         if note.is_empty() {
-            text.push_str(&format!("{count:>7}  {key}\n"));
+            writeln!(text, "{count:>7}  {key}").unwrap();
         } else {
-            text.push_str(&format!("{count:>7}  {key:<width$} # {note}\n"));
+            writeln!(text, "{count:>7}  {key:<width$} # {note}").unwrap();
         }
     }
     let path = pin_path(name);

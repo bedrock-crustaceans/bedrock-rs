@@ -21,6 +21,10 @@ impl ClientIdentity {
     }
 
     /// A self-signed identity carrying `display_name`, for servers that do not authenticate.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LoginError::Auth`] when the connection request cannot be signed or encoded.
     pub fn offline(
         key: SecretKey,
         display_name: &str,
@@ -31,6 +35,10 @@ impl ClientIdentity {
     }
 
     /// An identity whose connection request carries an existing `auth` payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LoginError::Auth`] when the connection request cannot be signed or encoded.
     pub fn online(
         key: SecretKey,
         auth: AuthData,
@@ -50,6 +58,10 @@ impl ClientIdentity {
     }
 
     /// Verifies the server handshake token and builds the cipher for the connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LoginError::Auth`] when `token` is not a valid server handshake.
     pub fn finish_encryption(&self, token: &str) -> Result<Encryption, LoginError> {
         client_finish_encryption(token, &self.key)
     }
@@ -100,7 +112,7 @@ mod tests {
         let (token, mut server) = super::super::begin_encryption(&login).unwrap();
         let mut client = identity.finish_encryption(&token).unwrap();
 
-        let up = client.encrypt(b"hello".to_vec()).unwrap();
+        let up = client.encrypt(b"hello").unwrap();
         assert_eq!(server.decrypt(up).unwrap(), b"hello");
     }
 }

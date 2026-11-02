@@ -27,8 +27,7 @@ fn the_chain_is_v0_then_v1_21_30_with_no_beta() {
         <Any as VersionChain<TradeFamily>>::VERSIONS,
         [FormatVersion::new(0, 0, 0), FormatVersion::new(1, 21, 30)]
     );
-    const HAS_BETA: bool = <Any as VersionChain<TradeFamily>>::HAS_BETA;
-    let has_beta = HAS_BETA;
+    let has_beta = <Any as VersionChain<TradeFamily>>::HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
 }
 
@@ -38,8 +37,7 @@ fn the_family_parameters_are_the_plans() {
     assert_eq!(TradeFamily::RANGE_MODEL, RangeModel::ClosedToEngine);
     assert_eq!(TradeFamily::PAYLOAD_KEY, "tiers");
     assert_eq!(TradeFamily::DIRECTORIES, ["trading"]);
-    const WARN: bool = TradeFamily::ENVELOPE_WARN_MISSING_VERSION;
-    let warn = WARN;
+    let warn = TradeFamily::ENVELOPE_WARN_MISSING_VERSION;
     assert!(!warn, "a missing version is 0.0.0 without a message");
     assert_eq!(TradeFamily::MISSING_VERSION, MissingVersion::Floor);
     assert_eq!(

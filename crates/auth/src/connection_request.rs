@@ -28,6 +28,12 @@ pub struct Login {
 }
 
 impl ConnectionRequest {
+    /// Verifies the credentials and the client data against `oidc` or `chain_root`.
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`AuthData::validate`], or [`AuthError::Jwt`] and [`AuthError::ClientData`]
+    /// when the client data token fails verification or validation.
     pub fn verify(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -36,6 +42,11 @@ impl ConnectionRequest {
         self.verify_client_data(self.auth.validate(oidc, chain_root)?)
     }
 
+    /// Like [`Self::verify`], refreshing the JWKS through `client` when the signing key is unknown.
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`AuthData::validate_refreshing`] or [`Self::verify_client_data`].
     pub fn verify_refreshing(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -45,6 +56,11 @@ impl ConnectionRequest {
         self.verify_client_data(self.auth.validate_refreshing(oidc, chain_root, client)?)
     }
 
+    /// Async twin of [`Self::verify_refreshing`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`AuthData::validate_refreshing_async`] or [`Self::verify_client_data`].
     pub async fn verify_refreshing_async(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -58,6 +74,12 @@ impl ConnectionRequest {
         self.verify_client_data(authentication)
     }
 
+    /// Verifies a client data token against the identity's key and decodes its claims.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Jwt`] when the client data token is malformed or not signed by the identity key,
+    /// or [`AuthError::ClientData`] when the decoded client data fails [`ClientData::validate`].
     pub fn verify_client_data(&self, authentication: Authentication) -> Result<Login, AuthError> {
         let client_data: ClientData = authentication
             .identity()
@@ -69,6 +91,11 @@ impl ConnectionRequest {
         })
     }
 
+    /// Builds a request for an offline client, signed with `identity_key` and carrying no XUID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError`] when the identity key or client data cannot be encoded into signed tokens.
     pub fn self_signed(
         identity_key: &SecretKey,
         display_name: &str,
@@ -78,6 +105,11 @@ impl ConnectionRequest {
         Self::with_auth(auth, identity_key, client_data)
     }
 
+    /// Re-signs this request's tokens with `identity_key`, keeping the identity and client data.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError`] when the existing tokens cannot be parsed, or the new ones cannot be signed.
     pub fn resigned(&self, identity_key: &SecretKey) -> Result<Self, AuthError> {
         let identity = self.auth.unverified_identity()?;
         let client_data: serde_json::Value =
@@ -95,6 +127,11 @@ impl ConnectionRequest {
         })
     }
 
+    /// Wraps existing `auth` data with client data signed by `identity_key`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError`] when the client data cannot be encoded into a signed token.
     pub fn with_auth(
         auth: AuthData,
         identity_key: &SecretKey,
@@ -106,6 +143,13 @@ impl ConnectionRequest {
         })
     }
 
+    /// Parses the length-prefixed wire form of a connection request.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Truncated`], [`AuthError::LengthOutOfBounds`] or [`AuthError::TrailingBytes`] for
+    /// a malformed length-prefixed layout, [`AuthError::Json`] for an unreadable auth field, and
+    /// [`AuthError::Utf8`] for client data that is not UTF-8.
     pub fn parse(bytes: &[u8]) -> Result<Self, AuthError> {
         let mut rest = bytes;
         let auth = take_length_prefixed(&mut rest)?;
@@ -120,6 +164,12 @@ impl ConnectionRequest {
         })
     }
 
+    /// Encodes the request into its length-prefixed wire form.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Json`] when the auth data cannot be serialized, or
+    /// [`AuthError::FieldLengthExceeded`] when a field is longer than the `u32` length prefix allows.
     pub fn to_bytes(&self) -> Result<Vec<u8>, AuthError> {
         let auth = serde_json::to_vec(&self.auth)?;
         let mut bytes = Vec::with_capacity(8 + auth.len() + self.client_data.len());
@@ -361,7 +411,7 @@ mod tests {
     fn length_prefixed(fields: &[&[u8]]) -> Vec<u8> {
         let mut bytes = Vec::new();
         for field in fields {
-            bytes.extend_from_slice(&(field.len() as u32).to_le_bytes());
+            bytes.extend_from_slice(&u32::try_from(field.len()).unwrap().to_le_bytes());
             bytes.extend_from_slice(field);
         }
         bytes

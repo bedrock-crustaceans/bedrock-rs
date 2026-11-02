@@ -265,7 +265,7 @@ fn no_generated_two_pack_forest_registers_a_child_without_what_it_inherits() {
             &[("models/mobs.json", packs[0].as_str())],
             &[("models/mobs.json", packs[1].as_str())],
         ]);
-        for (id, document) in set.resource.geometries().iter() {
+        for (id, document) in set.resource.geometries() {
             let geometry: &Geometry = document.value();
             registered += 1;
             children += usize::from(geometry.parent().is_some());

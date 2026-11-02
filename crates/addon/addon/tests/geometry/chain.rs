@@ -53,7 +53,7 @@ fn mirror_strings_become_bools() {
         r#"{"format_version": "0.0.0", "geometry.x": {"bones": [
             {"name": "a", "mirror": true, "cubes": [{"size": [1, 1, 1], "mirror": false}]},
             {"name": "b", "mirror": false, "cubes": [{"size": [1, 1, 1], "mirror": true}]}]}}"#,
-    )
+    );
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn reset_true_is_kept() {
         r#"{"format_version": "0.0.0", "geometry.x": {"bones": [
             {"name": "a", "reset": true}, {"name": "b", "reset": true},
             {"name": "c"}, {"name": "d"}]}}"#,
-    )
+    );
 }
 
 /// The removed element is replaced by the last one, which is examined next.
@@ -76,7 +76,7 @@ fn empty_cubes_are_swap_removed() {
             {}, {"size": [1, 1, 1]}, {"size": [2, 2, 2]}, {}, {"size": [3, 3, 3]}, {}]}]}}"#,
         r#"{"format_version": "0.0.0", "geometry.x": {"bones": [{"name": "a", "cubes": [
             {"size": [3, 3, 3]}, {"size": [1, 1, 1]}, {"size": [2, 2, 2]}]}]}}"#,
-    )
+    );
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn the_key_becomes_the_identifier() {
     gives::<v1_8_0::GeometryFile>(
         r#"{"format_version": "1.8.0", "geometry.pig": {}}"#,
         r#"{"format_version": "1.8.0", "minecraft:geometry": [{"description": {"identifier": "geometry.pig"}}]}"#,
-    )
+    );
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn the_key_is_split_at_its_last_colon() {
     gives::<v1_8_0::GeometryFile>(
         r#"{"format_version": "1.8.0", "geometry.a:geometry.b:geometry.c": {}}"#,
         r#"{"format_version": "1.8.0", "minecraft:geometry": [{"description": {"identifier": "geometry.a:geometry.b"}, "__legacy": {"parent": "geometry.c"}}]}"#,
-    )
+    );
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn geometries_are_in_key_order() {
             {"description": {"identifier": "geometry.a"}},
             {"description": {"identifier": "geometry.b"}},
             {"description": {"identifier": "geometry.c"}}]}"#,
-    )
+    );
 }
 
 const CUBE_HEAD: &str = r#"{"format_version": "1.12.0", "minecraft:geometry": [{"description": {"identifier": "geometry.x"}, "bones": [{"name": "body", "cubes": ["#;
@@ -112,7 +112,7 @@ const CUBE_HEAD: &str = r#"{"format_version": "1.12.0", "minecraft:geometry": [{
 fn an_explicit_pivot_is_kept() {
     let cube = r#"{"origin": [-4, 0, -2], "size": [8, 12, 4], "pivot": [1, 2, 3]}"#;
     let file = format!("{CUBE_HEAD}{cube}]}}]}}]}}");
-    gives::<v1_12_0::GeometryFile>(&file, &file)
+    gives::<v1_12_0::GeometryFile>(&file, &file);
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn a_missing_origin_counts_as_zero() {
         &format!(
             r#"{CUBE_HEAD}{{"size": [8, 12, 5], "pivot": [4, 6, 2.5]}}, {{"origin": [1, 2, 3], "pivot": [1, 2, 3]}}]}}]}}]}}"#
         ),
-    )
+    );
 }
 
 const SHELF: &str = r#"{"format_version": "1.21.0", "minecraft:geometry": [
@@ -584,7 +584,7 @@ fn u10_116_binding_kept() {
             binding
                 .as_ref()
                 .and_then(|m| m.source())
-                .map(|s| s.as_str()),
+                .map(bedrock_addon::molang::MolangSource::as_str),
             Some("q.item_slot_to_bone_name(c.item_slot)"),
             "{version}"
         );

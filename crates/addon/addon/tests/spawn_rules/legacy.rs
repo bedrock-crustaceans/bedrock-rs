@@ -421,7 +421,11 @@ fn s09b_unknown_condition_key_deviation() {
     let (c, _, d) = condition(r#""minecraft:spawns_on_moon": {}"#);
     assert_eq!(names(&d, Severity::Info), ["UnrecognizedField"]);
     let written = c.extra.get("minecraft:spawns_on_moon").unwrap();
-    assert!(written.as_object().is_some_and(|o| o.is_empty()));
+    assert!(
+        written
+            .as_object()
+            .is_some_and(facet_value::VObject::is_empty)
+    );
 }
 
 #[test]

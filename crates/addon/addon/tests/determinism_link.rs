@@ -198,7 +198,7 @@ fn linked(set: &StackSet) -> (Linked, Diagnostics) {
         .scripts()
         .iter()
         .chain(set.resource.scripts())
-        .flat_map(|bundle| bundle.findings())
+        .flat_map(bedrock_addon::families::script::ScriptBundle::findings)
         .map(|finding| format!("{finding:?}"))
         .collect();
     #[cfg(not(feature = "script"))]
@@ -315,7 +315,10 @@ fn the_fixture_stack_holds_a_resolved_and_an_unresolved_reference_of_every_rule_
         .iter()
         .filter(|finding| {
             finding.location.path.as_ref().is_some_and(|path| {
-                path.as_str() == "manifest.json" || path.as_str().ends_with(".js")
+                path.as_str() == "manifest.json"
+                    || std::path::Path::new(path.as_str())
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("js"))
             })
         })
         .collect();

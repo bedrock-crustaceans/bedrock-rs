@@ -1,7 +1,7 @@
 //! The fixtures, the file rows `s01`–`s33`: each file is loaded on its own;
 //! a failing rule rejects the file with vanilla's text.
 
-use bedrock_addon_family_structure::{Contents, Palette, Structure};
+use bedrock_addon_family_structure::{Contents, Layout, Palette, Structure};
 use indexmap::IndexMap;
 use nbtx::Value;
 
@@ -37,7 +37,7 @@ fn s01_a_vanilla_1x1x1_export_loads() {
             extra: nbtx::Compound::new(),
         },
         extra: nbtx::Compound::new(),
-        layout: Default::default(),
+        layout: Layout::default(),
     };
     assert_eq!(*document.value(), expected);
     assert!(

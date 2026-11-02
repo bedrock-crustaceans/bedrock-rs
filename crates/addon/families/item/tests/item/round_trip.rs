@@ -980,198 +980,205 @@ enum Kept {
     Derived(&'static str),
 }
 
+use Kept::{Derived, Told, Written};
+
+/// A row of [`LEGACY_ROWS`]: field, version, allow-listed, components (or a description member),
+/// what becomes of it.
+type Row = (&'static str, &'static str, bool, &'static str, Kept);
+
+/// What becomes of each member of the legacy reading, one row per field of `LegacyItemData`.
+const LEGACY_ROWS: &[Row] = &[
+    (
+        "format",
+        "",
+        false,
+        "",
+        Derived("which of the two formats the item is written in"),
+    ),
+    (
+        "format_item",
+        "",
+        false,
+        "",
+        Derived("the legacy document, written whole (`a_new_item_…`, the 1.10 round trips)"),
+    ),
+    (
+        "left_empty_by_the_load",
+        "",
+        false,
+        "",
+        Derived("a mark of the load; the writer refuses the item (the `k117_` tests)"),
+    ),
+    (
+        "expressions",
+        "",
+        false,
+        "",
+        Derived("the compiled Molang of members that are written where they are"),
+    ),
+    // (at 1.26.30 an unknown description member rejects the item)
+    (
+        "category",
+        "1.21.90",
+        false,
+        "description:\"category\": \"Nature\"",
+        Written(r#""category": "Nature""#),
+    ),
+    (
+        "category",
+        "1.20.0",
+        true,
+        "description:\"category\": \"Nature\"",
+        Told("InvalidValue", "minecraft:item/description/category"),
+    ),
+    (
+        "block",
+        "1.26.30",
+        false,
+        r#""minecraft:block": "minecraft:stone""#,
+        Written(r#""minecraft:block": "minecraft:stone""#),
+    ),
+    (
+        "block",
+        "1.20.0",
+        true,
+        r#""minecraft:block": "minecraft:stone""#,
+        Written(r#""minecraft:block": "minecraft:stone""#),
+    ),
+    (
+        "mining_speed",
+        "1.20.0",
+        true,
+        r#""minecraft:mining_speed": 2"#,
+        Told(
+            "DroppedField",
+            "minecraft:item/components/minecraft:mining_speed",
+        ),
+    ),
+    (
+        "mining_speed",
+        "1.26.30",
+        false,
+        r#""minecraft:mining_speed": 2"#,
+        Told(
+            "DeprecatedMember",
+            "minecraft:item/components/minecraft:mining_speed",
+        ),
+    ),
+    (
+        "frame_count",
+        "1.26.30",
+        false,
+        r#""minecraft:frame_count": 3"#,
+        Written(r#""minecraft:frame_count": 3"#),
+    ),
+    (
+        "frame_count",
+        "1.20.0",
+        true,
+        r#""minecraft:frame_count": 3"#,
+        Written(r#""minecraft:frame_count": 3"#),
+    ),
+    (
+        "creative_category",
+        "1.20.0",
+        true,
+        r#""minecraft:creative_category": {"parent": "x"}"#,
+        Told(
+            "DroppedField",
+            "minecraft:item/components/minecraft:creative_category",
+        ),
+    ),
+    (
+        "creative_category",
+        "1.26.30",
+        false,
+        r#""minecraft:creative_category": {"parent": "x"}"#,
+        Told(
+            "DeprecatedMember",
+            "minecraft:item/components/minecraft:creative_category",
+        ),
+    ),
+    (
+        "tags",
+        "1.20.0",
+        true,
+        r#""tag:a": {}"#,
+        Written(r#""minecraft:tags": { "tags": [ "a" ] }"#),
+    ),
+    (
+        "tags",
+        "1.26.30",
+        false,
+        r#""tag:a": {}"#,
+        Told("DeprecatedMember", "minecraft:item/components/tag:a"),
+    ),
+    (
+        "is_glint",
+        "1.20.0",
+        true,
+        r#""minecraft:foil": true"#,
+        Told("DroppedField", "minecraft:item/components/minecraft:foil"),
+    ),
+    (
+        "is_glint",
+        "1.26.30",
+        false,
+        r#""minecraft:foil": true"#,
+        Told(
+            "DeprecatedMember",
+            "minecraft:item/components/minecraft:foil",
+        ),
+    ),
+    (
+        "seed",
+        "1.16.100",
+        true,
+        r#""minecraft:seed": {"crop_result": "a"}"#,
+        Told("DroppedField", "minecraft:item/components/minecraft:seed"),
+    ),
+    (
+        "seed",
+        "1.26.30",
+        false,
+        r#""minecraft:seed": {"crop_result": "a"}"#,
+        Told(
+            "DeprecatedMember",
+            "minecraft:item/components/minecraft:seed",
+        ),
+    ),
+    (
+        "shared",
+        "1.26.30",
+        false,
+        r#""minecraft:use_duration": 1.6"#,
+        Written(r#""minecraft:use_duration": 1.6"#),
+    ),
+    (
+        "shared",
+        "1.20.0",
+        true,
+        r#""minecraft:use_modifiers": {"use_duration": 1.6, "movement_modifier": 0.5}"#,
+        Told(
+            "DroppedField",
+            "minecraft:item/components/minecraft:use_modifiers",
+        ),
+    ),
+    (
+        "held_in_shared_alone",
+        "",
+        false,
+        "",
+        Derived("a mark of the newest parse: which keys of `shared` the writer writes"),
+    ),
+];
+
 /// Every member of the legacy reading of a component-based item is written back, or the
 /// load says at the member of the file that it is not; the table has a row for every field
 /// of `LegacyItemData`, so a field added later fails here until it has one.
 #[test]
 fn every_member_of_the_legacy_reading_is_written_or_told() {
-    use Kept::{Derived, Told, Written};
-    // field, version, allow-listed, components (or a description member), what becomes of it
-    let rows: &[(&str, &str, bool, &str, Kept)] = &[
-        (
-            "format",
-            "",
-            false,
-            "",
-            Derived("which of the two formats the item is written in"),
-        ),
-        (
-            "format_item",
-            "",
-            false,
-            "",
-            Derived("the legacy document, written whole (`a_new_item_…`, the 1.10 round trips)"),
-        ),
-        (
-            "left_empty_by_the_load",
-            "",
-            false,
-            "",
-            Derived("a mark of the load; the writer refuses the item (the `k117_` tests)"),
-        ),
-        (
-            "expressions",
-            "",
-            false,
-            "",
-            Derived("the compiled Molang of members that are written where they are"),
-        ),
-        // (at 1.26.30 an unknown description member rejects the item)
-        (
-            "category",
-            "1.21.90",
-            false,
-            "description:\"category\": \"Nature\"",
-            Written(r#""category": "Nature""#),
-        ),
-        (
-            "category",
-            "1.20.0",
-            true,
-            "description:\"category\": \"Nature\"",
-            Told("InvalidValue", "minecraft:item/description/category"),
-        ),
-        (
-            "block",
-            "1.26.30",
-            false,
-            r#""minecraft:block": "minecraft:stone""#,
-            Written(r#""minecraft:block": "minecraft:stone""#),
-        ),
-        (
-            "block",
-            "1.20.0",
-            true,
-            r#""minecraft:block": "minecraft:stone""#,
-            Written(r#""minecraft:block": "minecraft:stone""#),
-        ),
-        (
-            "mining_speed",
-            "1.20.0",
-            true,
-            r#""minecraft:mining_speed": 2"#,
-            Told(
-                "DroppedField",
-                "minecraft:item/components/minecraft:mining_speed",
-            ),
-        ),
-        (
-            "mining_speed",
-            "1.26.30",
-            false,
-            r#""minecraft:mining_speed": 2"#,
-            Told(
-                "DeprecatedMember",
-                "minecraft:item/components/minecraft:mining_speed",
-            ),
-        ),
-        (
-            "frame_count",
-            "1.26.30",
-            false,
-            r#""minecraft:frame_count": 3"#,
-            Written(r#""minecraft:frame_count": 3"#),
-        ),
-        (
-            "frame_count",
-            "1.20.0",
-            true,
-            r#""minecraft:frame_count": 3"#,
-            Written(r#""minecraft:frame_count": 3"#),
-        ),
-        (
-            "creative_category",
-            "1.20.0",
-            true,
-            r#""minecraft:creative_category": {"parent": "x"}"#,
-            Told(
-                "DroppedField",
-                "minecraft:item/components/minecraft:creative_category",
-            ),
-        ),
-        (
-            "creative_category",
-            "1.26.30",
-            false,
-            r#""minecraft:creative_category": {"parent": "x"}"#,
-            Told(
-                "DeprecatedMember",
-                "minecraft:item/components/minecraft:creative_category",
-            ),
-        ),
-        (
-            "tags",
-            "1.20.0",
-            true,
-            r#""tag:a": {}"#,
-            Written(r#""minecraft:tags": { "tags": [ "a" ] }"#),
-        ),
-        (
-            "tags",
-            "1.26.30",
-            false,
-            r#""tag:a": {}"#,
-            Told("DeprecatedMember", "minecraft:item/components/tag:a"),
-        ),
-        (
-            "is_glint",
-            "1.20.0",
-            true,
-            r#""minecraft:foil": true"#,
-            Told("DroppedField", "minecraft:item/components/minecraft:foil"),
-        ),
-        (
-            "is_glint",
-            "1.26.30",
-            false,
-            r#""minecraft:foil": true"#,
-            Told(
-                "DeprecatedMember",
-                "minecraft:item/components/minecraft:foil",
-            ),
-        ),
-        (
-            "seed",
-            "1.16.100",
-            true,
-            r#""minecraft:seed": {"crop_result": "a"}"#,
-            Told("DroppedField", "minecraft:item/components/minecraft:seed"),
-        ),
-        (
-            "seed",
-            "1.26.30",
-            false,
-            r#""minecraft:seed": {"crop_result": "a"}"#,
-            Told(
-                "DeprecatedMember",
-                "minecraft:item/components/minecraft:seed",
-            ),
-        ),
-        (
-            "shared",
-            "1.26.30",
-            false,
-            r#""minecraft:use_duration": 1.6"#,
-            Written(r#""minecraft:use_duration": 1.6"#),
-        ),
-        (
-            "shared",
-            "1.20.0",
-            true,
-            r#""minecraft:use_modifiers": {"use_duration": 1.6, "movement_modifier": 0.5}"#,
-            Told(
-                "DroppedField",
-                "minecraft:item/components/minecraft:use_modifiers",
-            ),
-        ),
-        (
-            "held_in_shared_alone",
-            "",
-            false,
-            "",
-            Derived("a mark of the newest parse: which keys of `shared` the writer writes"),
-        ),
-    ];
+    let rows = LEGACY_ROWS;
     // Every field of the struct has a row, and every row names a field.
     let debug = format!("{:?}", bedrock_addon_family_item::LegacyItemData::default());
     let body = debug

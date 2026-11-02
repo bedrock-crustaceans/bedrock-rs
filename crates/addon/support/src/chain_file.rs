@@ -35,6 +35,11 @@ pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
     );
 
     /// The whole document of `value`, `format_version` included.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError::NotRepresentable` when `value` holds something JSON cannot spell, such as a
+    /// non-finite number.
     fn document(value: &Self::Latest) -> Result<Value, EncodeError>;
 }
 
@@ -165,6 +170,11 @@ fn finish_file<F: FileFamily>(
 
 /// `Root::parse_as_written` of family `F`: the struct the file's `format_version` selects, not
 /// upgraded.
+///
+/// # Errors
+///
+/// `Rejected` when the text is not readable JSON or the file does not parse into a value; it
+/// carries the located findings.
 pub fn as_written<F: FileFamily>(
     side: PackSide,
     path: &PackPath,
@@ -191,6 +201,11 @@ pub fn as_written<F: FileFamily>(
 
 /// `history::upgrade` of family `F`: rebuilds the parse stage from the document and finishes
 /// it. `at` is the payload's path (the root for a family read whole).
+///
+/// # Errors
+///
+/// `Rejected` when the upgrade or the family's checks leave no value; it carries the located
+/// findings.
 pub fn upgrade<F: FileFamily>(
     document: Document<F::Any>,
     at: JsonPath,

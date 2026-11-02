@@ -12,6 +12,12 @@ impl RakNetGamePacket {
         datagram
     }
 
+    /// Strips the game packet header off `datagram`, leaving the batch.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetworkCodecError::EmptyPacket`] for an empty datagram and
+    /// [`NetworkCodecError::InvalidGamePacketHeader`] when it starts with another byte.
     pub fn unwrap(datagram: &[u8]) -> Result<&[u8], NetworkCodecError> {
         match datagram.split_first() {
             Some((&Self::ID, batch)) => Ok(batch),

@@ -26,7 +26,7 @@ fn linked(
     behavior: &[(&'static str, &str)],
     resource: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> bedrock_addon::diagnostic::Diagnostics {
     let set = stacks(behavior, resource, load);
     let items = behavior
@@ -34,7 +34,9 @@ fn linked(
         .filter(|(path, _)| path.starts_with("items/"))
         .count();
     let loaded = set.behavior.items();
-    let beta = loaded.beta().map_or(0, |beta| beta.len());
+    let beta = loaded
+        .beta()
+        .map_or(0, bedrock_addon::document::Registry::len);
     assert_eq!(
         loaded.len() + beta,
         items,
@@ -44,7 +46,7 @@ fn linked(
             .map(ToString::to_string)
             .collect::<Vec<_>>()
     );
-    set.link_with(options)
+    set.link_with(&options)
 }
 
 fn link(
@@ -55,7 +57,7 @@ fn link(
         behavior,
         resource,
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     )
 }
 
@@ -89,7 +91,7 @@ fn i2_a_resource_pack_item_a_behaviour_pack_or_the_game_defines_is_no_finding() 
         &[],
         &[("items/host.json", &client_item("host:item"))],
         host,
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &ITEM_KINDS), []);
 }
@@ -105,7 +107,7 @@ fn i2_a_resource_pack_item_no_behaviour_pack_defines_is_vanillas_kept_error() {
             ("items/twin.json", &client_item("demo:twin")),
         ],
         LoadOptions::default(),
-        &NO_LINTS,
+        NO_LINTS,
     );
     assert_eq!(
         said(&found, &ITEM_KINDS),
@@ -124,7 +126,11 @@ fn i2_a_resource_pack_item_no_behaviour_pack_defines_is_vanillas_kept_error() {
         .unwrap();
     assert!(finding.kept, "{finding:?}");
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("rp 2")
     );
     assert_eq!(
@@ -221,7 +227,7 @@ mod entity {
             &[(FILE, &placing("host:mob", "host:mob<host:event>"))],
             &[],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), []);
     }
@@ -240,7 +246,7 @@ mod entity {
             )],
             &[],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         let named: Vec<_> = said(&found, &KINDS)
             .into_iter()
@@ -261,7 +267,7 @@ mod entity {
             &[(FILE, &placing("demo:nobody<demo:born>", "demo:no_arrow"))],
             &[],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(
             said(&found, &KINDS),
@@ -289,7 +295,11 @@ mod entity {
             .find(|finding| said_of(finding).4 == "entity")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         // without its event.
@@ -343,7 +353,7 @@ mod block {
             &[(FILE, &placing(r#""host:block""#))],
             &[],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), []);
     }
@@ -354,7 +364,7 @@ mod block {
             &[(FILE, &placing(r#""demo:none""#))],
             &[],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(
             said(&found, &KINDS),
@@ -372,7 +382,11 @@ mod block {
             .find(|finding| said_of(finding).4 == "block")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(
@@ -435,7 +449,7 @@ mod block {
                "minecraft:block_placer": {"block": "minecraft:stone", "use_on": ["minecraft:dirt", {"name": "demo:none_b"}]},
                "minecraft:entity_placer": {"entity": "minecraft:pig", "use_on": ["demo:none_c"], "dispense_on": ["minecraft:dirt", "demo:none_d"]}"#,
         );
-        let found = linked(&[(FILE, &file)], &[], LoadOptions::default(), &NO_LINTS);
+        let found = linked(&[(FILE, &file)], &[], LoadOptions::default(), NO_LINTS);
         assert_eq!(
             said(&found, &KINDS),
             [
@@ -505,7 +519,7 @@ fn i5_the_item_descriptors_of_an_item_are_resolved() {
         &[(FILE, &wand(DESCRIBED)), gem],
         &[],
         LoadOptions::default(),
-        &NO_LINTS,
+        NO_LINTS,
     );
     let expected: Vec<_> = [
         ("minecraft:repairable/repair_items/0/items/1", "demo:none_a"),
@@ -532,7 +546,11 @@ fn i5_the_item_descriptors_of_an_item_are_resolved() {
         .find(|finding| said_of(finding).4 == "item")
         .unwrap();
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("bp 1")
     );
     assert_eq!(
@@ -557,7 +575,7 @@ fn i5_an_item_name_of_an_older_version_is_no_finding() {
 fn i5_an_item_the_host_says_the_game_has_is_no_finding() {
     let file = wand(r#""minecraft:food": {"using_converts_to": "host:bowl"}"#);
     let host = hosted(&[("item", "host:bowl")]);
-    let found = linked(&[(FILE, &file)], &[], host, &LinkOptions::default());
+    let found = linked(&[(FILE, &file)], &[], host, LinkOptions::default());
     assert_eq!(said(&found, &ITEM_KINDS), []);
 }
 
@@ -610,7 +628,7 @@ mod sound {
                     &[(FILE, &sounding(version, sound))],
                     &[DEFINITIONS],
                     beta(),
-                    &LinkOptions::default(),
+                    LinkOptions::default(),
                 );
                 assert_eq!(said(&found, &KINDS), [], "{version} {sound}: {found:#?}");
             }
@@ -627,7 +645,7 @@ mod sound {
             &[(FILE, &sounding("beta", "host.sound"))],
             &[],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), [], "{found:#?}");
     }
@@ -641,7 +659,7 @@ mod sound {
                 &[(FILE, &sounding(version, "demo.pong"))],
                 &[DEFINITIONS],
                 beta(),
-                &LinkOptions::default(),
+                LinkOptions::default(),
             );
             let expected: Vec<_> = [
                 "minecraft:record/sound_event",
@@ -670,7 +688,11 @@ mod sound {
                 .find(|finding| said_of(finding).4 == "sound event")
                 .unwrap();
             assert_eq!(
-                finding.location.pack.as_ref().map(|pack| pack.name()),
+                finding
+                    .location
+                    .pack
+                    .as_ref()
+                    .map(bedrock_addon::pack::PackRef::name),
                 Some("bp 1")
             );
             assert_eq!(text(finding), None);
@@ -684,7 +706,7 @@ mod sound {
             &[(FILE, &sounding("1.26.50", "Demo.Ping"))],
             &[DEFINITIONS],
             LoadOptions::default(),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS).len(), 5);
     }
@@ -734,7 +756,7 @@ fn t4_a_pack_item_tagged_as_a_trim_template_has_no_effect() {
         &[("items/spiral.json", &tagged)],
         &[],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let told: Vec<_> = found
         .iter()
@@ -752,7 +774,11 @@ fn t4_a_pack_item_tagged_as_a_trim_template_has_no_effect() {
     );
     let finding = found.iter().next().unwrap();
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("bp 1")
     );
     assert_eq!(text(finding), None);
@@ -842,6 +868,10 @@ fn i10_a_custom_component_a_cooldown_category_a_name_and_a_tag_are_not_checked()
 #[cfg(feature = "block")]
 #[test]
 fn i5_a_repair_item_the_upgrade_cannot_read_refuses_the_item_at_the_index_of_the_file() {
+    const ALLOW_LISTED: u128 = 0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166;
+
+    const REPAIR: &str = "minecraft:item/components/minecraft:repairable/repair_items";
+
     let file = r#"{"format_version": "1.16.100", "minecraft:item": {"description": {"identifier": "demo:wand"},
         "components": {"minecraft:durability": {"max_durability": 10}, "minecraft:max_stack_size": 1,
         "minecraft:repairable": {"repair_items": [
@@ -850,8 +880,6 @@ fn i5_a_repair_item_the_upgrade_cannot_read_refuses_the_item_at_the_index_of_the
             {"repair_amount": 1},
             {"items": ["demo:none_b"], "repair_amount": 1}]}}}}"#;
     // A pack the game reads an item below 1.20.0 of.
-    const ALLOW_LISTED: u128 = 0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166;
-    const REPAIR: &str = "minecraft:item/components/minecraft:repairable/repair_items";
     let pack = super::super::common::behavior_pack(ALLOW_LISTED, &[(FILE, file)]);
     let set = stacks_of(vec![pack], Vec::new(), LoadOptions::default());
     let items = set.behavior.items();
@@ -874,13 +902,16 @@ fn i5_a_repair_item_the_upgrade_cannot_read_refuses_the_item_at_the_index_of_the
 #[cfg(feature = "block")]
 #[test]
 fn i5_a_repair_item_of_a_legacy_list_is_at_the_index_of_the_file() {
+    const ALLOW_LISTED: u128 = 0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166;
+
+    const REPAIR: &str = "minecraft:item/components/minecraft:repairable/repair_items";
+
     let file = r#"{"format_version": "1.16.100", "minecraft:item": {"description": {"identifier": "demo:wand"},
         "components": {"minecraft:durability": {"max_durability": 10}, "minecraft:max_stack_size": 1,
         "minecraft:repairable": {"repair_items": [
             {"items": ["minecraft:stick"], "repair_amount": 1},
             {"items": ["minecraft:stick", "demo:none_a"], "repair_amount": 1},
             {"items": ["demo:none_b"], "repair_amount": 1}]}}}}"#;
-    const ALLOW_LISTED: u128 = 0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166;
     let pack = super::super::common::behavior_pack(ALLOW_LISTED, &[(FILE, file)]);
     let set = stacks_of(vec![pack], Vec::new(), LoadOptions::default());
     let items = set.behavior.items();
@@ -900,7 +931,6 @@ fn i5_a_repair_item_of_a_legacy_list_is_at_the_index_of_the_file() {
         .into_iter()
         .map(|said| (said.3, said.5))
         .collect();
-    const REPAIR: &str = "minecraft:item/components/minecraft:repairable/repair_items";
     assert_eq!(
         told,
         [

@@ -282,12 +282,24 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
     /// Sides it is loaded from.
     const SIDES: &'static [PackSide];
     /// Parses one file: version selection, upgrade to the newest struct, validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Rejected` when the file cannot be loaded: a syntax error, an unreadable version, or an error-level finding.
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected>;
     /// Writes the newest format version (`format_version` and envelope included).
     /// `EncodeError` (core) rather than `pack::WriteError`, which core cannot name.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` when the value has no JSON form, such as a non-finite number or a value nested past the depth limit.
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError>;
     /// [`write_json`](Self::write_json) into a string, pretty-printed with two spaces. Fallible:
     /// a non-finite number is `EncodeError::NotRepresentable`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` under the same conditions as [`write_json`](Self::write_json).
     fn to_json(&self) -> Result<String, EncodeError>;
 }
 

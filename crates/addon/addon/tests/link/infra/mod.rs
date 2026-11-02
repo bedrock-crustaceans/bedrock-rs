@@ -106,7 +106,7 @@ fn without_the_lints_the_pass_tells_exactly_the_findings_above_an_information() 
         &files,
         &[],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -196,7 +196,7 @@ fn a_world_with_a_host_links() {
         &[("blocks/lamp.json", BLOCK)],
         &[],
         hosted(&[("block", "minecraft:stone")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(unresolved(&found), []);
 }

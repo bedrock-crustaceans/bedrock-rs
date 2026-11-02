@@ -154,9 +154,8 @@ fn rule_3_state_definitions() {
     ));
 }
 
-/// Rules 7–10 and 10a: each drops its component with a warning.
-#[test]
-fn rules_7_to_10_drop_the_component_with_a_warning() {
+/// The components each rule of 7 to 10a drops, and the path of the finding.
+fn over_limit_cases() -> Vec<(String, &'static str)> {
     let tags: Vec<String> = (0..65).map(|i| format!("\"t{i}\"")).collect();
     let long_tag = "x".repeat(65);
     let instances: Vec<String> = (0..65)
@@ -167,7 +166,7 @@ fn rules_7_to_10_drop_the_component_with_a_warning() {
     let conditions = vec![r#"{"allowed_faces": ["up"]}"#; 65].join(", ");
     let uv: Vec<String> = (0..65).map(|i| format!("\"b{i}\"")).collect();
     let mi = r#""minecraft:material_instances": {"*": {"texture": "x"}}"#;
-    let cases: Vec<(String, &str)> = vec![
+    vec![
         (
             format!(
                 r#"{{"minecraft:crafting_table": {{"crafting_tags": [{}]}}}}"#,
@@ -228,7 +227,13 @@ fn rules_7_to_10_drop_the_component_with_a_warning() {
             r#"{"demo:deep": {"a": {"b": {"c": 1}}}}"#.to_owned(),
             "demo:deep",
         ),
-    ];
+    ]
+}
+
+/// Rules 7–10 and 10a: each drops its component with a warning.
+#[test]
+fn rules_7_to_10_drop_the_component_with_a_warning() {
+    let cases = over_limit_cases();
     for (components, path) in cases {
         // A Cereal constraint of a 1.26.20 document fails the block; the depth of
         // custom parameters is ours (the game binds no such constraint in production), an
@@ -832,7 +837,7 @@ fn the_constructors_build_a_valid_block() {
         ruby.permutations[0]
             .condition
             .source()
-            .and_then(|s| s.raw_version()),
+            .and_then(bedrock_addon::molang::MolangSource::raw_version),
         Some(RawVersion::from(MolangVersion::V13))
     );
     assert!(
@@ -1296,7 +1301,7 @@ fn the_generic_checks_of_a_legacy_block_report_below_the_payload_key() {
         ["minecraft:block/permutations/0/condition"]
     );
     // And no finding of the load names a member the file does not have at its root.
-    for finding in found.iter() {
+    for finding in &found {
         let path = finding.location.json_path.to_string();
         assert!(
             path.is_empty() || path == "format_version" || path.starts_with("minecraft:block"),
@@ -1674,7 +1679,7 @@ fn a_legacy_tick_range_out_of_order_is_a_kept_error() {
 }
 
 /// The game's legacy selection box component logs
-/// "minecraft:selection_box: origin can't be below (-8, 0, -8) and can't be more than
+/// "`minecraft:selection_box`: origin can't be below (-8, 0, -8) and can't be more than
 /// (8, 16, 8)" at level 3 and "... origin with added
 /// size ...", each on its own test, and stores the box as read:
 /// two kept errors.

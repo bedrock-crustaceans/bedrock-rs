@@ -11,7 +11,7 @@ use super::common::*;
 /// after the identifier and tags).
 fn shaped_with(members: &str) -> Vec<u8> {
     format!(
-        r##"{{"format_version": "1.12", "minecraft:recipe_shaped": {{"description": {{"identifier": "demo:r"}}, "tags": ["crafting_table"], {members}}}}}"##
+        r#"{{"format_version": "1.12", "minecraft:recipe_shaped": {{"description": {{"identifier": "demo:r"}}, "tags": ["crafting_table"], {members}}}}}"#
     )
     .into_bytes()
 }
@@ -22,7 +22,7 @@ const PATTERN_KEY_RESULT: &str =
 /// A payload of `kind` (`brewing_container`, …) at 1.20.10 with `members`.
 fn payload(kind: &str, members: &str) -> Vec<u8> {
     format!(
-        r##"{{"format_version": "1.20.10", "minecraft:recipe_{kind}": {{"description": {{"identifier": "demo:r"}}, {members}}}}}"##
+        r#"{{"format_version": "1.20.10", "minecraft:recipe_{kind}": {{"description": {{"identifier": "demo:r"}}, {members}}}}}"#
     )
     .into_bytes()
 }
@@ -72,12 +72,12 @@ fn a_syntax_error_is_skipped() {
 #[test]
 fn a_missing_or_empty_identifier_is_skipped() {
     for description in [
-        r##""description": {}"##,
-        r##""description": {"identifier": ""}"##,
-        r##""description": {"identifier": 7}"##,
+        r#""description": {}"#,
+        r#""description": {"identifier": ""}"#,
+        r#""description": {"identifier": 7}"#,
     ] {
         let text = format!(
-            r##"{{"format_version": "1.12", "minecraft:recipe_shaped": {{{description}, "tags": ["crafting_table"], {PATTERN_KEY_RESULT}}}}}"##
+            r#"{{"format_version": "1.12", "minecraft:recipe_shaped": {{{description}, "tags": ["crafting_table"], {PATTERN_KEY_RESULT}}}}}"#
         );
         let diagnostics = rejects(text.as_bytes(), &cx());
         let finding = one(&diagnostics, "JSON: {} has no identifier", Severity::Error);
@@ -91,7 +91,7 @@ fn a_missing_or_empty_identifier_is_skipped() {
 #[test]
 fn an_invalid_unlock_ingredient_is_logged_and_the_recipe_loads() {
     let text = shaped_with(&format!(
-        r##"{PATTERN_KEY_RESULT}, "unlock": [{{"count": 1}}]"##
+        r#"{PATTERN_KEY_RESULT}, "unlock": [{{"count": 1}}]"#
     ));
     let document = parse(&text, &cx()).unwrap();
     let finding = one_kept(
@@ -114,7 +114,7 @@ fn an_invalid_unlock_ingredient_is_logged_and_the_recipe_loads() {
 #[test]
 fn an_unlock_that_is_a_string_is_absent() {
     let text = shaped_with(&format!(
-        r##"{PATTERN_KEY_RESULT}, "unlock": "AlwaysUnlocked""##
+        r#"{PATTERN_KEY_RESULT}, "unlock": "AlwaysUnlocked""#
     ));
     let document = parse(&text, &cx()).unwrap();
     let Recipe::Shaped(recipe) = document.value() else {
@@ -186,10 +186,10 @@ fn a_symbol_is_the_first_byte_of_its_key() {
 
 #[test]
 fn shapeless_ingredients_that_are_not_a_list_drop_the_recipe() {
-    let text = br##"{"format_version": "1.12", "minecraft:recipe_shapeless": {"description": {"identifier": "demo:r"}, "tags": ["crafting_table"], "ingredients": "minecraft:stick", "result": "minecraft:torch"}}"##;
+    let text = br#"{"format_version": "1.12", "minecraft:recipe_shapeless": {"description": {"identifier": "demo:r"}, "tags": ["crafting_table"], "ingredients": "minecraft:stick", "result": "minecraft:torch"}}"#;
     let diagnostics = rejects(text, &cx());
     assert!(diagnostics.has_errors());
-    let text = br##"{"format_version": "1.12", "minecraft:recipe_shapeless": {"description": {"identifier": "demo:r"}, "tags": ["crafting_table"], "ingredients": [5], "result": "minecraft:torch"}}"##;
+    let text = br#"{"format_version": "1.12", "minecraft:recipe_shapeless": {"description": {"identifier": "demo:r"}, "tags": ["crafting_table"], "ingredients": [5], "result": "minecraft:torch"}}"#;
     let diagnostics = rejects(text, &cx());
     one(&diagnostics, "Recipe result malformed", Severity::Error);
 }
@@ -268,7 +268,7 @@ fn brewing_container_input_and_output_messages() {
     let diagnostics = rejects(
         &payload(
             "brewing_container",
-            r##""tags": ["brewing_stand"], "input": {"tag": 1}, "reagent": "minecraft:gunpowder", "output": "minecraft:splash_potion""##,
+            r#""tags": ["brewing_stand"], "input": {"tag": 1}, "reagent": "minecraft:gunpowder", "output": "minecraft:splash_potion""#,
         ),
         &cx(),
     );
@@ -280,7 +280,7 @@ fn brewing_container_input_and_output_messages() {
     let diagnostics = rejects(
         &payload(
             "brewing_container",
-            r##""tags": ["brewing_stand"], "input": "minecraft:potion", "reagent": "minecraft:gunpowder", "output": {"tag": "x"}"##,
+            r#""tags": ["brewing_stand"], "input": "minecraft:potion", "reagent": "minecraft:gunpowder", "output": {"tag": "x"}"#,
         ),
         &cx(),
     );
@@ -293,7 +293,7 @@ fn brewing_container_input_and_output_messages() {
     let diagnostics = rejects(
         &payload(
             "brewing_container",
-            r##""tags": ["brewing_stand"], "input": {"item": "minecraft:potion", "count": 2}, "reagent": "minecraft:gunpowder", "output": "minecraft:splash_potion""##,
+            r#""tags": ["brewing_stand"], "input": {"item": "minecraft:potion", "count": 2}, "reagent": "minecraft:gunpowder", "output": "minecraft:splash_potion""#,
         ),
         &cx(),
     );
@@ -309,7 +309,7 @@ fn material_reduction_input_and_output_messages() {
     let diagnostics = rejects(
         &payload(
             "material_reduction",
-            r##""tags": "material_reducer", "input": {"item": "minecraft:stone", "count": 2}, "output": []"##,
+            r#""tags": "material_reducer", "input": {"item": "minecraft:stone", "count": 2}, "output": []"#,
         ),
         &cx(),
     );
@@ -321,7 +321,7 @@ fn material_reduction_input_and_output_messages() {
     let diagnostics = rejects(
         &payload(
             "material_reduction",
-            r##""tags": "material_reducer", "input": "minecraft:stone", "output": [{"tag": "x"}]"##,
+            r#""tags": "material_reducer", "input": "minecraft:stone", "output": [{"tag": "x"}]"#,
         ),
         &cx(),
     );
@@ -337,7 +337,7 @@ fn material_reduction_output_of_another_type_gives_no_outputs() {
     let document = parse(
         &payload(
             "material_reduction",
-            r##""tags": "material_reducer", "input": "minecraft:stone", "output": "minecraft:element_1""##,
+            r#""tags": "material_reducer", "input": "minecraft:stone", "output": "minecraft:element_1""#,
         ),
         &cx(),
     )
@@ -355,7 +355,7 @@ fn a_brewing_mix_part_logs_only_the_ingredient_message() {
     let diagnostics = rejects(
         &payload(
             "brewing_mix",
-            r##""tags": ["brewing_stand"], "input": "minecraft:potion_type:awkward", "reagent": {"tag": "x"}, "output": "minecraft:potion_type:swiftness""##,
+            r#""tags": ["brewing_stand"], "input": "minecraft:potion_type:awkward", "reagent": {"tag": "x"}, "output": "minecraft:potion_type:swiftness""#,
         ),
         &cx(),
     );
@@ -371,7 +371,7 @@ fn a_brewing_mix_part_logs_only_the_ingredient_message() {
     );
 }
 
-const TRANSFORM: &str = r##""tags": ["smithing_table"], "template": "minecraft:netherite_upgrade_smithing_template", "base": "minecraft:diamond_axe", "addition": "minecraft:netherite_ingot", "result": "minecraft:netherite_axe""##;
+const TRANSFORM: &str = r#""tags": ["smithing_table"], "template": "minecraft:netherite_upgrade_smithing_template", "base": "minecraft:diamond_axe", "addition": "minecraft:netherite_ingot", "result": "minecraft:netherite_axe""#;
 
 #[test]
 fn smithing_transform_part_messages() {
@@ -394,8 +394,8 @@ fn smithing_transform_part_messages() {
         ),
     ] {
         let members = TRANSFORM.replace(
-            &format!(r##""{part}": "##),
-            &format!(r##""{part}": {{"tag": "x"}}, "{part}_was": "##),
+            &format!(r#""{part}": "#),
+            &format!(r#""{part}": {{"tag": "x"}}, "{part}_was": "#),
         );
         let diagnostics = rejects(&payload("smithing_transform", &members), &cx());
         one(&diagnostics, text, Severity::Error);
@@ -405,7 +405,7 @@ fn smithing_transform_part_messages() {
 #[test]
 fn smithing_transform_template_is_optional_and_unread_before_1_20() {
     let members = TRANSFORM.replace(
-        r##""template": "minecraft:netherite_upgrade_smithing_template", "##,
+        r#""template": "minecraft:netherite_upgrade_smithing_template", "#,
         "",
     );
     let document = parse(&payload("smithing_transform", &members), &cx()).unwrap();
@@ -415,8 +415,8 @@ fn smithing_transform_template_is_optional_and_unread_before_1_20() {
     assert!(recipe.template.is_none());
     // in a world before 1.20 the template is not read, so even a bad one passes
     let members = TRANSFORM.replace(
-        r##""template": "minecraft:netherite_upgrade_smithing_template""##,
-        r##""template": {"tag": "x"}"##,
+        r#""template": "minecraft:netherite_upgrade_smithing_template""#,
+        r#""template": {"tag": "x"}"#,
     );
     let document = parse(&payload("smithing_transform", &members), &cx_world(1, 19)).unwrap();
     let Recipe::SmithingTransform(recipe) = document.value() else {
@@ -430,8 +430,8 @@ fn smithing_transform_template_is_optional_and_unread_before_1_20() {
 #[test]
 fn smithing_transform_result_takes_no_count() {
     let members = TRANSFORM.replace(
-        r##""result": "minecraft:netherite_axe""##,
-        r##""result": {"item": "minecraft:netherite_axe", "count": 3}"##,
+        r#""result": "minecraft:netherite_axe""#,
+        r#""result": {"item": "minecraft:netherite_axe", "count": 3}"#,
     );
     let diagnostics = rejects(&payload("smithing_transform", &members), &cx());
     one(
@@ -445,7 +445,7 @@ fn smithing_transform_result_takes_no_count() {
 fn smithing_trim_tag_message() {
     let text = payload(
         "smithing_trim",
-        r##""tags": ["crafting_table"], "template": {"tag": "minecraft:trim_templates"}, "base": {"tag": "minecraft:trimmable_armors"}, "addition": {"tag": "minecraft:trim_materials"}"##,
+        r#""tags": ["crafting_table"], "template": {"tag": "minecraft:trim_templates"}, "base": {"tag": "minecraft:trimmable_armors"}, "addition": {"tag": "minecraft:trim_materials"}"#,
     );
     let diagnostics = rejects(&text, &cx());
     let finding = one(
@@ -460,7 +460,7 @@ fn smithing_trim_tag_message() {
 fn unknown_members_are_kept_with_an_info() {
     let document = parse(
         &shaped_with(&format!(
-            r##"{PATTERN_KEY_RESULT}, "group": "wool", "format_version": "1.12""##
+            r#"{PATTERN_KEY_RESULT}, "group": "wool", "format_version": "1.12""#
         )),
         &cx(),
     )
@@ -483,7 +483,7 @@ fn unknown_members_are_kept_with_an_info() {
 fn the_unlock_of_a_furnace_recipe_is_parsed_and_its_malformed_forms_logged() {
     let text = payload(
         "furnace",
-        r##""tags": ["furnace"], "input": "minecraft:beef", "output": "minecraft:cooked_beef", "unlock": {"context": "PlayerHasManyItems"}"##,
+        r#""tags": ["furnace"], "input": "minecraft:beef", "output": "minecraft:cooked_beef", "unlock": {"context": "PlayerHasManyItems"}"#,
     );
     let document = parse(&text, &cx()).unwrap();
     assert_eq!(
@@ -492,7 +492,7 @@ fn the_unlock_of_a_furnace_recipe_is_parsed_and_its_malformed_forms_logged() {
     );
     let text = payload(
         "furnace",
-        r##""tags": ["furnace"], "input": "minecraft:beef", "output": "minecraft:cooked_beef", "unlock": {}"##,
+        r#""tags": ["furnace"], "input": "minecraft:beef", "output": "minecraft:cooked_beef", "unlock": {}"#,
     );
     let document = parse(&text, &cx()).unwrap();
     assert_eq!(
@@ -505,7 +505,7 @@ fn the_unlock_of_a_furnace_recipe_is_parsed_and_its_malformed_forms_logged() {
 fn unlock_on_a_type_that_does_not_read_it_is_an_unknown_member() {
     let text = payload(
         "brewing_container",
-        r##""tags": ["brewing_stand"], "input": "minecraft:potion", "reagent": "minecraft:gunpowder", "output": "minecraft:splash_potion", "unlock": {"context": "None"}"##,
+        r#""tags": ["brewing_stand"], "input": "minecraft:potion", "reagent": "minecraft:gunpowder", "output": "minecraft:splash_potion", "unlock": {"context": "None"}"#,
     );
     let document = parse(&text, &cx()).unwrap();
     assert!(document.unlock_requirement(false).is_none());
@@ -518,7 +518,7 @@ fn unlock_on_a_type_that_does_not_read_it_is_an_unknown_member() {
             .extra
             .get("unlock")
             .and_then(|v| v.as_object())
-            .map(|o| o.len()),
+            .map(facet_value::VObject::len),
         Some(1)
     ));
 }

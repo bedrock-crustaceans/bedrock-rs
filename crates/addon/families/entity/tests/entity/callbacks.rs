@@ -636,14 +636,14 @@ fn c12650_after_ops(probe: &Case) -> Result<(), &'static str> {
 
 /// Runs the check of a step on its base.
 #[track_caller]
-fn check(case: Case, check: fn(&Case) -> Result<(), &'static str>) {
-    check(&case).unwrap_or_else(|reason| panic!("{reason}"));
+fn check(case: &Case, check: fn(&Case) -> Result<(), &'static str>) {
+    check(case).unwrap_or_else(|reason| panic!("{reason}"));
 }
 
 #[test]
 fn a113_type_family_mob_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         a113_type_family_mob,
@@ -653,7 +653,7 @@ fn a113_type_family_mob_step() {
 #[test]
 fn b113_damage_sensor_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_damage_sensor,
@@ -663,7 +663,7 @@ fn b113_damage_sensor_step() {
 #[test]
 fn b113_hurt_when_wet_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_hurt_when_wet,
@@ -673,7 +673,7 @@ fn b113_hurt_when_wet_step() {
 #[test]
 fn b113_fall_damage_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_fall_damage,
@@ -683,7 +683,7 @@ fn b113_fall_damage_step() {
 #[test]
 fn b113_environment_sensor_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_environment_sensor,
@@ -693,7 +693,7 @@ fn b113_environment_sensor_step() {
 #[test]
 fn b113_giveable_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_giveable,
@@ -703,7 +703,7 @@ fn b113_giveable_step() {
 #[test]
 fn b113_interact_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_interact,
@@ -713,7 +713,7 @@ fn b113_interact_step() {
 #[test]
 fn b113_scheduler_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_scheduler,
@@ -723,7 +723,7 @@ fn b113_scheduler_step() {
 #[test]
 fn b113_spawn_entity_step() {
     check(
-        Case::of::<v1_12_0::Entity>(
+        &Case::of::<v1_12_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b113_spawn_entity,
@@ -733,7 +733,7 @@ fn b113_spawn_entity_step() {
 #[test]
 fn a115_swim_wander_step() {
     check(
-        Case::of::<v1_13_0::Entity>(
+        &Case::of::<v1_13_0::Entity>(
             r#"{"description": {"identifier": "minecraft:cod"}, "components": {}}"#,
         ),
         a115_swim_wander,
@@ -743,7 +743,7 @@ fn a115_swim_wander_step() {
 #[test]
 fn a115_circle_around_anchor_step() {
     check(
-        Case::of::<v1_13_0::Entity>(
+        &Case::of::<v1_13_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.lay_egg": {}}, "component_groups": {"g": {"minecraft:behavior.stomp_turtle_egg": {}}}}"#,
         ),
         a115_circle_around_anchor,
@@ -753,7 +753,7 @@ fn a115_circle_around_anchor_step() {
 #[test]
 fn b115_spawn_entity_step() {
     check(
-        Case::of::<v1_13_0::Entity>(
+        &Case::of::<v1_13_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.lay_egg": {}}, "component_groups": {"g": {"minecraft:behavior.stomp_turtle_egg": {}}}}"#,
         ),
         b115_spawn_entity,
@@ -763,7 +763,7 @@ fn b115_spawn_entity_step() {
 #[test]
 fn a116_instant_despawn_step() {
     check(
-        Case::of::<v1_15_0::Entity>(
+        &Case::of::<v1_15_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:breathable": {}, "minecraft:behavior.panic": {}}}"#,
         ),
         a116_instant_despawn,
@@ -773,7 +773,7 @@ fn a116_instant_despawn_step() {
 #[test]
 fn a115_silverfish_attack_interval_step() {
     check(
-        Case::of::<v1_13_0::Entity>(
+        &Case::of::<v1_13_0::Entity>(
             r#"{"description": {"identifier": "minecraft:silverfish"}, "components": {"minecraft:behavior.nearest_attackable_target": {"entity_types": [{}]}}}"#,
         ),
         a115_silverfish_attack_interval,
@@ -783,7 +783,7 @@ fn a115_silverfish_attack_interval_step() {
 #[test]
 fn b116100_rewrites_step() {
     check(
-        Case::of::<v1_16_0::Entity>(
+        &Case::of::<v1_16_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:dweller": {}}}"#,
         ),
         b116100_rewrites,
@@ -793,7 +793,7 @@ fn b116100_rewrites_step() {
 #[test]
 fn b11820_go_home_step() {
     check(
-        Case::of::<v1_18_10::Entity>(
+        &Case::of::<v1_18_10::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b11820_go_home,
@@ -803,7 +803,7 @@ fn b11820_go_home_step() {
 #[test]
 fn b11950_daytime_filter_step() {
     check(
-        Case::of::<v1_19_0::Entity>(
+        &Case::of::<v1_19_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:input_ground_controlled": {}}}"#,
         ),
         b11950_daytime_filter,
@@ -813,7 +813,7 @@ fn b11950_daytime_filter_step() {
 #[test]
 fn b12060_subsensors_step() {
     check(
-        Case::of::<v1_20_0::Entity>(
+        &Case::of::<v1_20_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b12060_subsensors,
@@ -823,7 +823,7 @@ fn b12060_subsensors_step() {
 #[test]
 fn b12070_subsensor_range_step() {
     check(
-        Case::of::<v1_20_60::Entity>(
+        &Case::of::<v1_20_60::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b12070_subsensor_range,
@@ -833,7 +833,7 @@ fn b12070_subsensor_range_step() {
 #[test]
 fn b12080_interact_slots_step() {
     check(
-        Case::of::<v1_20_70::Entity>(
+        &Case::of::<v1_20_70::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b12080_interact_slots,
@@ -843,7 +843,7 @@ fn b12080_interact_slots_step() {
 #[test]
 fn b12140_looked_at_step() {
     check(
-        Case::of::<v1_21_20::Entity>(
+        &Case::of::<v1_21_20::Entity>(
             r#"{"description": {"identifier": "minecraft:fishing_hook"}, "components": {"minecraft:home": {"restriction_radius": 16}}}"#,
         ),
         b12140_looked_at,
@@ -853,7 +853,7 @@ fn b12140_looked_at_step() {
 #[test]
 fn b12180_leashable_preset_step() {
     check(
-        Case::of::<v1_21_70::Entity>(
+        &Case::of::<v1_21_70::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:leashable": {}}}"#,
         ),
         b12180_leashable_preset,
@@ -863,7 +863,7 @@ fn b12180_leashable_preset_step() {
 #[test]
 fn b12190_preset_defaults_step() {
     check(
-        Case::of::<v1_21_89::Entity>(
+        &Case::of::<v1_21_89::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:leashable": {}}}"#,
         ),
         b12190_preset_defaults,
@@ -873,7 +873,7 @@ fn b12190_preset_defaults_step() {
 #[test]
 fn b121100_enderman_goals_step() {
     check(
-        Case::of::<v1_21_90::Entity>(
+        &Case::of::<v1_21_90::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b121100_enderman_goals,
@@ -883,7 +883,7 @@ fn b121100_enderman_goals_step() {
 #[test]
 fn b121110_dash_vertical_step() {
     check(
-        Case::of::<v1_21_100::Entity>(
+        &Case::of::<v1_21_100::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b121110_dash_vertical,
@@ -893,7 +893,7 @@ fn b121110_dash_vertical_step() {
 #[test]
 fn b121130_result_items_interval_step() {
     check(
-        Case::of::<v1_21_120::Entity>(
+        &Case::of::<v1_21_120::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
         ),
         b121130_result_items_interval,
@@ -903,7 +903,7 @@ fn b121130_result_items_interval_step() {
 #[test]
 fn b1260_interact_look_breedable_step() {
     check(
-        Case::of::<v1_21_130::Entity>(
+        &Case::of::<v1_21_130::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:jump.dynamic": {}, "minecraft:behavior.aquatic_charge_attack": {}}}"#,
         ),
         b1260_interact_look_breedable,
@@ -913,7 +913,7 @@ fn b1260_interact_look_breedable_step() {
 #[test]
 fn c1260_experience_fold_step() {
     check(
-        Case::of::<v1_21_130::Entity>(
+        &Case::of::<v1_21_130::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:jump.dynamic": {}, "minecraft:behavior.aquatic_charge_attack": {}}}"#,
         ),
         c1260_experience_fold,
@@ -923,7 +923,7 @@ fn c1260_experience_fold_step() {
 #[test]
 fn b12610_pushable_split_step() {
     check(
-        Case::of::<v1_26_0::Entity>(
+        &Case::of::<v1_26_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:buoyant": {}}}"#,
         ),
         b12610_pushable_split,
@@ -933,7 +933,7 @@ fn b12610_pushable_split_step() {
 #[test]
 fn c12630_knockback_presets_step() {
     check(
-        Case::of::<v1_26_20::Entity>(
+        &Case::of::<v1_26_20::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.pickup_items": {}, "minecraft:pushable_by_entity": {}, "minecraft:leashable": {}, "minecraft:leashable_to": {}, "minecraft:apply_knockback_rules": {"presets": [{}]}}}"#,
         ),
         c12630_knockback_presets,
@@ -943,7 +943,7 @@ fn c12630_knockback_presets_step() {
 #[test]
 fn b12640_projectile_step() {
     check(
-        Case::of::<v1_26_30::Entity>(
+        &Case::of::<v1_26_30::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.melee_attack": {}, "minecraft:pushable_by_entity": {}, "minecraft:projectile": {"on_hit": {"impact_damage": {}}}}}"#,
         ),
         b12640_projectile,
@@ -953,7 +953,7 @@ fn b12640_projectile_step() {
 #[test]
 fn c12640_shapes_step() {
     check(
-        Case::of::<v1_26_30::Entity>(
+        &Case::of::<v1_26_30::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.melee_attack": {}, "minecraft:pushable_by_entity": {}, "minecraft:projectile": {"on_hit": {"impact_damage": {}}}}}"#,
         ),
         c12640_shapes,
@@ -963,7 +963,7 @@ fn c12640_shapes_step() {
 #[test]
 fn c12650_attack_range_anchor_step() {
     check(
-        Case::of::<v1_26_40::Entity>(
+        &Case::of::<v1_26_40::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.ranged_attack": {}, "minecraft:navigation.walk": {}, "minecraft:projectile": {}, "minecraft:behavior.follow_mob": {}}}"#,
         ),
         c12650_attack_range_anchor,
@@ -973,7 +973,7 @@ fn c12650_attack_range_anchor_step() {
 #[test]
 fn b12610_buoyant_step() {
     check(
-        Case::of::<v1_26_0::Entity>(
+        &Case::of::<v1_26_0::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:buoyant": {}}}"#,
         ),
         b12610_buoyant,
@@ -983,7 +983,7 @@ fn b12610_buoyant_step() {
 #[test]
 fn c12650_after_ops_step() {
     check(
-        Case::of::<v1_26_40::Entity>(
+        &Case::of::<v1_26_40::Entity>(
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.ranged_attack": {}, "minecraft:navigation.walk": {}, "minecraft:projectile": {}, "minecraft:behavior.follow_mob": {}}}"#,
         ),
         c12650_after_ops,

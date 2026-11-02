@@ -59,18 +59,14 @@ fn origin(pack_index: usize, path: &'static str) -> Origin {
     )
 }
 
-fn copy(
-    pack_index: usize,
-    path: &'static str,
-    from: &'static str,
-) -> Result<Document<Table>, Rejected> {
+fn copy(pack_index: usize, path: &'static str, from: &'static str) -> Document<Table> {
     let v = FormatVersion::new(1, 0, 0);
-    Ok(Document::new(
+    Document::new(
         Table(from),
         origin(pack_index, path),
         VersionInfo::new(None, false, v, v, false),
         Diagnostics::default(),
-    ))
+    )
 }
 
 fn failed(pack_index: usize, path: &'static str) -> Result<Document<Table>, Rejected> {
@@ -112,8 +108,14 @@ const LOOT: &str = "loot_tables/chest.json";
 #[test]
 fn the_top_copy_wins_whatever_the_walk_order() {
     for walk in [
-        vec![(LOOT, copy(1, LOOT, "lower")), (LOOT, copy(0, LOOT, "top"))],
-        vec![(LOOT, copy(0, LOOT, "top")), (LOOT, copy(1, LOOT, "lower"))],
+        vec![
+            (LOOT, Ok(copy(1, LOOT, "lower"))),
+            (LOOT, Ok(copy(0, LOOT, "top"))),
+        ],
+        vec![
+            (LOOT, Ok(copy(0, LOOT, "top"))),
+            (LOOT, Ok(copy(1, LOOT, "lower"))),
+        ],
     ] {
         let files = build(FilesRule::TopWins, &keep_shadowed(), walk);
         assert_eq!(files.get(&path(LOOT)).map(|d| d.0), Some("top"));
@@ -127,7 +129,10 @@ fn layers_without_keep_shadowed_is_the_effective_copy_only() {
     let files = build(
         FilesRule::TopWins,
         &LoadOptions::default(),
-        vec![(LOOT, copy(1, LOOT, "lower")), (LOOT, copy(0, LOOT, "top"))],
+        vec![
+            (LOOT, Ok(copy(1, LOOT, "lower"))),
+            (LOOT, Ok(copy(0, LOOT, "top"))),
+        ],
     );
     let layers: Vec<&str> = files.layers(&path(LOOT)).map(|d| d.0).collect();
     assert_eq!(layers, ["top"]);
@@ -139,7 +144,7 @@ fn under_top_wins_a_failing_top_copy_claims_the_path() {
     let files = build(
         FilesRule::TopWins,
         &keep_shadowed(),
-        vec![(LOOT, copy(1, LOOT, "lower")), (LOOT, failed(0, LOOT))],
+        vec![(LOOT, Ok(copy(1, LOOT, "lower"))), (LOOT, failed(0, LOOT))],
     );
     assert!(files.get(&path(LOOT)).is_none());
     assert_eq!(files.iter().count(), 0);
@@ -162,8 +167,8 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
         },
         &LoadOptions::default(),
         vec![
-            (STRUCTURE, copy(2, STRUCTURE, "bottom")),
-            (STRUCTURE, copy(1, STRUCTURE, "middle")),
+            (STRUCTURE, Ok(copy(2, STRUCTURE, "bottom"))),
+            (STRUCTURE, Ok(copy(1, STRUCTURE, "middle"))),
             (STRUCTURE, failed(0, STRUCTURE)),
         ],
     );
@@ -192,10 +197,10 @@ fn iteration_is_by_first_copy_of_each_path() {
         FilesRule::TopWins,
         &LoadOptions::default(),
         vec![
-            ("b.json", copy(1, "b.json", "1b")),
-            ("a.json", copy(1, "a.json", "1a")),
-            ("c.json", copy(0, "c.json", "0c")),
-            ("b.json", copy(0, "b.json", "0b")),
+            ("b.json", Ok(copy(1, "b.json", "1b"))),
+            ("a.json", Ok(copy(1, "a.json", "1a"))),
+            ("c.json", Ok(copy(0, "c.json", "0c"))),
+            ("b.json", Ok(copy(0, "b.json", "0b"))),
         ],
     );
     let order: Vec<(&str, &str)> = files.iter().map(|(p, d)| (p.as_str(), d.0)).collect();
@@ -213,10 +218,10 @@ fn the_key_is_the_path_the_builder_is_given_not_the_subpack_path() {
         FilesRule::TopWins,
         &LoadOptions::default(),
         vec![
-            (LOOT, copy(1, LOOT, "base")),
+            (LOOT, Ok(copy(1, LOOT, "base"))),
             (
                 LOOT,
-                copy(0, "subpacks/high/loot_tables/chest.json", "subpack"),
+                Ok(copy(0, "subpacks/high/loot_tables/chest.json", "subpack")),
             ),
         ],
     );
@@ -242,9 +247,9 @@ fn all_layers(files: &Files<Table>) -> Vec<(&str, Vec<&'static str>)> {
 fn all_layers_lists_every_path_with_its_copies() {
     let walk = || {
         vec![
-            (LOOT, copy(1, LOOT, "lower")),
-            (STRUCTURE, copy(1, STRUCTURE, "house")),
-            (LOOT, copy(0, LOOT, "top")),
+            (LOOT, Ok(copy(1, LOOT, "lower"))),
+            (STRUCTURE, Ok(copy(1, STRUCTURE, "house"))),
+            (LOOT, Ok(copy(0, LOOT, "top"))),
         ]
     };
     let files = build(FilesRule::TopWins, &keep_shadowed(), walk());
@@ -267,7 +272,7 @@ fn all_layers_lists_every_path_with_its_copies() {
 
 #[test]
 fn all_layers_lists_a_path_a_failed_copy_claimed() {
-    let walk = || vec![(LOOT, copy(1, LOOT, "lower")), (LOOT, failed(0, LOOT))];
+    let walk = || vec![(LOOT, Ok(copy(1, LOOT, "lower"))), (LOOT, failed(0, LOOT))];
     let files = build(FilesRule::TopWins, &keep_shadowed(), walk());
     assert!(files.get(&path(LOOT)).is_none());
     assert_eq!(files.iter().count(), 0);
@@ -286,7 +291,10 @@ fn files_layers_is_a_named_iterator_and_files_counts_like_a_registry() {
     let files = build(
         FilesRule::TopWins,
         &keep_shadowed(),
-        vec![(LOOT, copy(1, LOOT, "lower")), (LOOT, copy(0, LOOT, "top"))],
+        vec![
+            (LOOT, Ok(copy(1, LOOT, "lower"))),
+            (LOOT, Ok(copy(0, LOOT, "top"))),
+        ],
     );
     let layers: bedrock_addon_core::document::files::Layers<'_, Table> = files.layers(&path(LOOT));
     assert_eq!(layers.len(), 2);

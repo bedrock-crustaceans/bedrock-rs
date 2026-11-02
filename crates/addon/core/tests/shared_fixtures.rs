@@ -5,6 +5,11 @@
 //! dropping a bad entry, family defaults and constraints) is the family's and is not tested
 //! here.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 #[path = "shared/common.rs"]
 mod common;
 
@@ -252,11 +257,11 @@ fn s13_simplified_multiple_conditions() {
     let row: Conditions = facet_json::from_str_borrowed_jsonc(text).unwrap();
     let second = &row.conditions[1];
     assert_eq!(second.mob_event_filter.as_deref(), Some("mob:filter"));
-    let Filter::Test(test) = &second.biome_filter else {
+    let Filter::Test(leaf) = &second.biome_filter else {
         panic!("not a test")
     };
     assert_eq!(
-        (test.test.as_str(), test.value.as_ref()),
+        (leaf.test.as_str(), leaf.value.as_ref()),
         (
             "has_biome_tag",
             Some(&FilterScalar::String("plains".into()))

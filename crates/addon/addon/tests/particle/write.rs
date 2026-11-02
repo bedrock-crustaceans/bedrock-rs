@@ -1,6 +1,8 @@
 //! Writing back: what is written is what was read, a value the loader would
 //! refuse has no text, and a few thousand generated documents round-trip.
 
+use std::fmt::Write as _;
+
 use bedrock_addon::diagnostic::Diagnostics;
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::particle::component::{
@@ -217,9 +219,10 @@ fn a_value_outside_a_constraint_of_the_loader_has_no_text() {
             collision_radius: value,
             ..ParticleMotionCollision::default()
         });
-        match fits {
-            true => drop(loaded(&effect.to_json().unwrap())),
-            false => assert_eq!(refused(&effect), radius, "{value}"),
+        if fits {
+            drop(loaded(&effect.to_json().unwrap()));
+        } else {
+            assert_eq!(refused(&effect), radius, "{value}");
         }
     }
     for (value, fits) in [(0.0, true), (-0.5, false)] {
@@ -232,23 +235,25 @@ fn a_value_outside_a_constraint_of_the_loader_has_no_text() {
             }]),
             ..EmitterLifetimeEvents::default()
         });
-        match fits {
-            true => drop(loaded(&effect.to_json().unwrap())),
-            false => assert_eq!(
+        if fits {
+            drop(loaded(&effect.to_json().unwrap()));
+        } else {
+            assert_eq!(
                 refused(&effect),
                 "particle_effect/components/minecraft:emitter_lifetime_events/looping_travel_distance_events/0/distance"
-            ),
+            );
         }
     }
     for (length, fits) in [(256, true), (257, false)] {
         let mut effect = base();
         effect.description.basic_render_parameters.texture = "t".repeat(length);
-        match fits {
-            true => drop(loaded(&effect.to_json().unwrap())),
-            false => assert_eq!(
+        if fits {
+            drop(loaded(&effect.to_json().unwrap()));
+        } else {
+            assert_eq!(
                 refused(&effect),
                 "particle_effect/description/basic_render_parameters/texture"
-            ),
+            );
         }
     }
 }
@@ -381,7 +386,7 @@ impl Rng {
         } else {
             options.iter().copied().filter(|o| *o != BAD).collect()
         };
-        options[(self.next() % options.len() as u64) as usize]
+        options[usize::try_from(self.next() % options.len() as u64).unwrap()]
     }
 
     fn next_style(&mut self) -> u64 {
@@ -598,8 +603,8 @@ fn object(rng: &mut Rng, members: &[String]) -> String {
             0 => text.push_str("/* a comment, with \"quotes\" and { */ "),
             1 => text.push_str("// a comment to the end of its line: }\n"),
             2 => {
-                let junk = JUNK[(rng.next_style() % JUNK.len() as u64) as usize];
-                text.push_str(&format!(r#""{key}": {junk}, "#));
+                let junk = JUNK[usize::try_from(rng.next_style() % JUNK.len() as u64).unwrap()];
+                write!(text, r#""{key}": {junk}, "#).unwrap();
             }
             _ => {}
         }
@@ -607,7 +612,7 @@ fn object(rng: &mut Rng, members: &[String]) -> String {
         match letters.next() {
             Some(first) if first.is_ascii() && rng.next_style().is_multiple_of(3) => {
                 let rest = letters.as_str();
-                text.push_str(&format!(r#""\u{:04x}{rest}": {value}"#, first as u32));
+                write!(text, r#""\u{:04x}{rest}": {value}"#, first as u32).unwrap();
             }
             _ => text.push_str(member),
         }
@@ -840,7 +845,7 @@ fn component(rng: &mut Rng) -> String {
         ]);
         return format!(r#""{name}": {value}"#);
     }
-    let (name, body) = COMPONENTS[(rng.next() % COMPONENTS.len() as u64) as usize];
+    let (name, body) = COMPONENTS[usize::try_from(rng.next() % COMPONENTS.len() as u64).unwrap()];
     let mut m = match body(rng) {
         Body::Members(m) => m,
         Body::Value(value) => return format!(r#""{name}": {value}"#),
@@ -993,14 +998,14 @@ enum Difference {
 /// written text is the model's.
 fn differences(input: &Value, output: &Value, path: &str, into: &mut Vec<(String, Difference)>) {
     if let (Some(input), Some(output)) = (input.as_object(), output.as_object()) {
-        for (key, value) in input.iter() {
+        for (key, value) in input {
             let at = format!("{path}/{}", key.as_str());
             match output.get(key.as_str()) {
                 Some(written) => differences(value, written, &at, into),
                 None => into.push((at, Difference::Gone)),
             }
         }
-        for (key, _) in output.iter() {
+        for (key, _) in output {
             if input.get(key.as_str()).is_none() {
                 into.push((format!("{path}/{}", key.as_str()), Difference::Added));
             }
@@ -1015,7 +1020,9 @@ fn differences(input: &Value, output: &Value, path: &str, into: &mut Vec<(String
         }
     } else if let (Some(input), Some(output)) = (input.as_number(), output.as_number()) {
         let (input, output) = (input.to_f64_lossy(), output.to_f64_lossy());
-        if input != output {
+        #[expect(clippy::float_cmp, reason = "any difference of the two doubles is one")]
+        let differ = input != output;
+        if differ {
             into.push((path.to_owned(), Difference::Number(input, output)));
         }
     } else if input != output {
@@ -1084,7 +1091,7 @@ fn record(rewrites: &mut Rewrites, path: &str, difference: &Difference, input: &
             let kind = at(input, &format!("particle_effect/curves/{name}/type"));
             let kind = kind
                 .and_then(|kind| kind.as_string())
-                .map(|kind| kind.as_str());
+                .map(facet_value::VString::as_str);
             assert_eq!(kind, Some("spiral"), "{path}: {what}");
             rewrites.curve_left_out += 1;
         }
@@ -1384,7 +1391,7 @@ fn a_wide_integer_is_written_back_as_the_shortest_decimal_of_the_float_it_was_re
                 format!("particle_effect/components/minecraft:particle_motion_collision/{member}");
             at(&written, &pointer)
                 .and_then(|value| value.as_number())
-                .map(|number| number.to_f64_lossy())
+                .map(facet_value::VNumber::to_f64_lossy)
         };
         // The nearest `f32` is 1.2345679e20; its shortest decimal, read as a JSON number.
         assert_eq!(number("collision_drag"), Some(1.234_567_9e20), "{version}");
@@ -1411,6 +1418,7 @@ fn a_legacy_document_is_written_as_a_1_20_80_document() {
 /// An unknown member may hold any value; one nested deeper than a file may be has no text.
 #[test]
 fn an_unknown_member_nested_past_the_limit_has_no_text() {
+    use bedrock_addon::families::particle::history::Any;
     let nested = |depth: usize| {
         let mut value = Value::from(1_i64);
         for _ in 0..depth {
@@ -1430,7 +1438,6 @@ fn an_unknown_member_nested_past_the_limit_has_no_text() {
     }
     // A 1.10.0 value built in code writes it (its own writer); the reader reads past it and
     // keeps nothing. `{ particle_effect {` is two levels above it.
-    use bedrock_addon::families::particle::history::Any;
     let legacy = effect_with(LEGACY, "");
     let read = || {
         let document =
@@ -1438,7 +1445,7 @@ fn an_unknown_member_nested_past_the_limit_has_no_text() {
                 .unwrap();
         match document.into_value() {
             Any::V1_10_0(effect) => effect,
-            other => panic!("{other:?}"),
+            other @ Any::V1_20_80(_) => panic!("{other:?}"),
         }
     };
     let mut old = read();

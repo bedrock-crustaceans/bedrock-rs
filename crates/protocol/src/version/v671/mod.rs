@@ -1,4 +1,4 @@
-//! r/20_u8
+//! `r/20_u8`
 
 pub mod enums;
 pub mod packets;

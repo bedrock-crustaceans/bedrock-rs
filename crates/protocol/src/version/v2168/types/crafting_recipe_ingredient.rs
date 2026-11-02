@@ -14,9 +14,17 @@ pub struct CraftingRecipeIngredient {
 #[derive(Clone, Debug)]
 pub enum CraftingItemDescriptor {
     Empty,
-    Name { item_id: String, aux_value: i32 },
-    Molang { tag_expression: String, molang_version: i16 },
-    ItemTag { item_tag: String },
+    Name {
+        item_id: String,
+        aux_value: i32,
+    },
+    Molang {
+        tag_expression: String,
+        molang_version: i16,
+    },
+    ItemTag {
+        item_tag: String,
+    },
 }
 
 impl CraftingItemDescriptor {
@@ -39,17 +47,11 @@ fn write_str<W: Write>(value: &str, stream: &mut W) -> Result<(), ProtoCodecErro
 }
 
 fn to_aux_value(value: i32) -> i32 {
-    match value == -1 {
-        true => AUX_WILDCARD,
-        false => value,
-    }
+    if value == -1 { AUX_WILDCARD } else { value }
 }
 
 fn from_aux_value(value: i32) -> i32 {
-    match value == AUX_WILDCARD {
-        true => -1,
-        false => value,
-    }
+    if value == AUX_WILDCARD { -1 } else { value }
 }
 
 impl ProtoCodec for CraftingRecipeIngredient {
@@ -92,41 +94,37 @@ impl ProtoCodec for CraftingRecipeIngredient {
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let variant = <u32 as ProtoCodecVAR>::deserialize(stream)?;
 
-        let descriptor = match variant {
-            0 => {
-                <i32 as ProtoCodecVAR>::deserialize(stream)?;
-                CraftingItemDescriptor::Empty
-            }
-            _ => {
-                let type_id = String::deserialize(stream)?;
+        let descriptor = if variant == 0 {
+            <i32 as ProtoCodecVAR>::deserialize(stream)?;
+            CraftingItemDescriptor::Empty
+        } else {
+            let type_id = String::deserialize(stream)?;
 
-                match type_id.as_str() {
-                    "empty" => CraftingItemDescriptor::Empty,
-                    "name" => {
-                        let item_id = String::deserialize(stream)?;
-                        let aux_value =
-                            from_aux_value(<i32 as ProtoCodecVAR>::deserialize(stream)?);
-                        CraftingItemDescriptor::Name { item_id, aux_value }
+            match type_id.as_str() {
+                "empty" => CraftingItemDescriptor::Empty,
+                "name" => {
+                    let item_id = String::deserialize(stream)?;
+                    let aux_value = from_aux_value(<i32 as ProtoCodecVAR>::deserialize(stream)?);
+                    CraftingItemDescriptor::Name { item_id, aux_value }
+                }
+                "molang" => {
+                    let tag_expression = String::deserialize(stream)?;
+                    let molang_version = <i16 as ProtoCodecLE>::deserialize(stream)?;
+                    CraftingItemDescriptor::Molang {
+                        tag_expression,
+                        molang_version,
                     }
-                    "molang" => {
-                        let tag_expression = String::deserialize(stream)?;
-                        let molang_version = <i16 as ProtoCodecLE>::deserialize(stream)?;
-                        CraftingItemDescriptor::Molang {
-                            tag_expression,
-                            molang_version,
-                        }
-                    }
-                    "item_tag" => {
-                        let item_tag = String::deserialize(stream)?;
-                        <i32 as ProtoCodecVAR>::deserialize(stream)?;
-                        CraftingItemDescriptor::ItemTag { item_tag }
-                    }
-                    other => {
-                        return Err(ProtoCodecError::InvalidEnumID(
-                            other.to_string(),
-                            "CraftingItemDescriptor",
-                        ));
-                    }
+                }
+                "item_tag" => {
+                    let item_tag = String::deserialize(stream)?;
+                    <i32 as ProtoCodecVAR>::deserialize(stream)?;
+                    CraftingItemDescriptor::ItemTag { item_tag }
+                }
+                other => {
+                    return Err(ProtoCodecError::InvalidEnumID(
+                        other.to_string(),
+                        "CraftingItemDescriptor",
+                    ));
                 }
             }
         };

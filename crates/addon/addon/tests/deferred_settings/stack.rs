@@ -576,7 +576,10 @@ fn t02_local_lights_merge_per_block_deviation() {
             (
                 f.code.name(),
                 f.severity,
-                f.location.pack.as_ref().and_then(|p| p.index()),
+                f.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
                 f.location.json_path.to_string(),
             )
         })
@@ -992,7 +995,7 @@ fn hinted(packs: Vec<bedrock_addon::pack::Pack>) -> Vec<Option<usize>> {
                 f.code.to_string(),
                 "render configuration files are only used when Vibrant Visuals is available; add the \"pbr\" capability"
             );
-            f.location.pack.as_ref().and_then(|pack| pack.index())
+            f.location.pack.as_ref().and_then(bedrock_addon::pack::PackRef::index)
         })
         .collect()
 }

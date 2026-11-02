@@ -39,7 +39,7 @@ fn e01_a_name_declared_twice_is_one_extension_point() {
     assert!(loads(root(&r())).extension_points().is_empty());
 }
 
-/// From 1.26.60 `ExtensionPoint` is an alternative of ListContent, so a point
+/// From 1.26.60 `ExtensionPoint` is an alternative of `ListContent`, so a point
 /// below `Context.List` (or `ScrollableGridLayout`) is read and declared; a 1.26.45 engine
 /// refuses the same control there.
 #[test]

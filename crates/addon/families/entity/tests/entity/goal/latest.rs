@@ -99,7 +99,7 @@ fn an_empty_goal_takes_the_typed_defaults() {
     assert!(choice.look_at_target() && choice.do_casting());
     assert_eq!(choice.start_sound_event(), "");
     let stage = &choice.sequence.as_ref().unwrap()[0];
-    assert!(stage.base_delay() == 0.0);
+    assert_eq!(stage.base_delay(), 0.0);
     assert_eq!((stage.event(), stage.sound_event()), ("", ""));
 }
 
@@ -262,11 +262,10 @@ fn the_legacy_send_event_conversions() {
     // The vanilla evoker of the 1.21.50 pack (format 1.26.0).
     let (entity, found) = stable(&vanilla("evocation_illager_1_26_0.json"), &cx());
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
-    let sections = std::iter::once(&entity.components)
+    let mut sections = std::iter::once(&entity.components)
         .chain(entity.component_groups.values().map(|g| &g.components));
     let send = sections
-        .filter_map(|map| map.get::<SendEvent>())
-        .next()
+        .find_map(|map| map.get::<SendEvent>())
         .expect("a typed send_event");
     let choice = &send.event_choices.as_ref().unwrap()[0];
     assert_eq!(choice.cast_duration(), 3.0);

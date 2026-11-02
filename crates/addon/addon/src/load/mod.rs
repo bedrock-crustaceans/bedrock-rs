@@ -51,6 +51,12 @@ pub trait Sans {
 
     /// Feeds one input. `Err` means the input answers nothing the machine asked for; the
     /// machine's state is then unchanged, and the input is dropped.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Self::Error` when the input answers nothing the machine asked for (an unrequested
+    /// location or job, a wrong kind of answer, or an input after the machine finished); the
+    /// machine is left unchanged.
     fn handle(&mut self, input: Self::Input) -> Result<(), Self::Error>;
 
     /// The next output, or `None` while the machine waits for inputs it has asked for.

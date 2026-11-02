@@ -3,6 +3,11 @@
 //! and version source. Without the `molang` feature, `not_checked` stands in for the compile pass
 //! not compiling.
 
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };

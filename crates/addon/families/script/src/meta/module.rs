@@ -88,6 +88,11 @@ impl ModuleMetadata {
     /// Reads a script-module file strictly and classifies it
     /// ([`RawModuleFile::classify`]); `details_key_present` of every argument is filled from
     /// the text.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`MetaError`] when the bytes are not strict JSON of the file's shape, or when
+    /// [`RawModuleFile::classify`] refuses the file.
     pub fn parse(bytes: &[u8]) -> Result<Self, MetaError> {
         let (mut file, json): (RawModuleFile, Value) = super::parse::strict(bytes)?;
         mark_details(&mut file, &json);
@@ -125,6 +130,12 @@ impl RawModuleFile {
     /// `objects`, `type_aliases` (`classes`, `interfaces`, `enums` become its overlay); a
     /// native module otherwise, which needs all nine declaration arrays and no
     /// `wrapper_module`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MetaError::Uuid`] when the module uuid does not parse; for a native module,
+    /// [`MetaError::WrapperWithoutParent`] or [`MetaError::MissingArray`]; for a stub,
+    /// [`MetaError::StubWithoutWrapper`] or [`MetaError::StubMember`].
     pub fn classify(self) -> Result<ModuleMetadata, MetaError> {
         let uuid = Uuid::parse_str(&self.uuid)?;
         let Some(parent_module) = self.parent_module else {

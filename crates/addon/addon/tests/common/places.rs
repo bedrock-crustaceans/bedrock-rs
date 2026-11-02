@@ -270,13 +270,17 @@ pub fn scalar(value: &Value) -> Option<String> {
 
 /// The number `value` is.
 pub fn number(value: &Value) -> Option<f64> {
-    value.as_number().map(|number| number.to_f64_lossy())
+    value.as_number().map(facet_value::VNumber::to_f64_lossy)
 }
 
 /// Whether `held` is the `f32` nearest to the number `token` spells.
 #[allow(
     clippy::cast_possible_truncation,
     reason = "the nearest f32 is the question"
+)]
+#[expect(
+    clippy::float_cmp,
+    reason = "the question is whether the two f32 are the same value"
 )]
 pub fn same_float(held: f64, token: &str) -> bool {
     token
@@ -287,7 +291,7 @@ pub fn same_float(held: f64, token: &str) -> bool {
 /// Every scalar of `value`, as [`scalar`] spells it.
 pub fn leaves(value: &Value, out: &mut Vec<String>) {
     if let Some(object) = value.as_object() {
-        for (_, member) in object.iter() {
+        for (_, member) in object {
             leaves(member, out);
         }
     } else if let Some(array) = value.as_array() {

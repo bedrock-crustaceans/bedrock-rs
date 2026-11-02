@@ -227,11 +227,11 @@ fn an_integer_outside_64_bits_is_a_string_in_a_value_deviation() {
     let v = value(&text("big_integer.json")).unwrap();
     let items = array(&v);
     assert_eq!(
-        items[0].as_string().map(|s| s.as_str()),
+        items[0].as_string().map(facet_value::VString::as_str),
         Some("18446744073709551616")
     );
     assert_eq!(
-        items[1].as_string().map(|s| s.as_str()),
+        items[1].as_string().map(facet_value::VString::as_str),
         Some("-9223372036854775809")
     );
 }
@@ -452,21 +452,21 @@ fn null_sets_the_default_of_a_number_and_a_bool() {
 
 #[test]
 fn a_fraction_into_an_integer_a_bool_into_a_string_and_a_scalar_into_a_list_are_rejected() {
-    assert!(facet_json::from_str_borrowed_jsonc::<One>(r#"{ "a": 1.5 }"#).is_err());
     #[derive(Debug, Facet)]
     struct S {
         s: String,
     }
-    assert!(facet_json::from_str_borrowed_jsonc::<S>(r#"{ "s": true }"#).is_err());
     #[derive(Debug, Facet)]
     struct B {
         b: bool,
     }
-    assert!(facet_json::from_str_borrowed_jsonc::<B>(r#"{ "b": 1 }"#).is_err());
     #[derive(Debug, Facet)]
     struct L {
         l: Vec<u32>,
     }
+    assert!(facet_json::from_str_borrowed_jsonc::<One>(r#"{ "a": 1.5 }"#).is_err());
+    assert!(facet_json::from_str_borrowed_jsonc::<S>(r#"{ "s": true }"#).is_err());
+    assert!(facet_json::from_str_borrowed_jsonc::<B>(r#"{ "b": 1 }"#).is_err());
     assert!(facet_json::from_str_borrowed_jsonc::<L>(r#"{ "l": 1 }"#).is_err());
 }
 

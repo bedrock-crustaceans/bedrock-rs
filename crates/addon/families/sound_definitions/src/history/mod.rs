@@ -147,6 +147,11 @@ impl Any {
     }
 
     /// The document in the struct's own version, as JSON text.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError`](bedrock_addon_core::json::EncodeError) when a value has no JSON
+    /// spelling, such as a non-finite number.
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let document = match self {
             Self::V1_0_0(value) => &value.definitions,

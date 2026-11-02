@@ -34,6 +34,11 @@ impl Any {
     }
 
     /// Writes the file in its own struct's shape (a round trip without upgrading).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError`](bedrock_addon_core::json::EncodeError) when a value has no JSON
+    /// spelling, such as a non-finite number.
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let mut out = Vec::new();
         let value = match self {
@@ -49,6 +54,11 @@ impl Any {
 /// [`AnimationControllerFile::parse_as_written`] gave: the same result
 /// [`AnimationControllerFile::parse`](bedrock_addon_core::document::Content::parse) gives for its
 /// file. The step runs over the document, which holds the origin the step needs.
+///
+/// # Errors
+///
+/// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+/// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

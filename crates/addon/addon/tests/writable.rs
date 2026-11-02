@@ -58,8 +58,8 @@
 //! A test binary runs under a limit of CPU seconds, and the probe of all the document types
 //! is far beyond it on a loaded machine: the twelve types of the most texts are probed by
 //! three binaries of their own (`writable_2.rs`: animation, atmosphere, fog,
-//! music_definitions, particle; `writable_3.rs`: entity, feature, item, ui_global_variables;
-//! `writable_4.rs`: geometry, material_file, ui_file), every other type here. The harness
+//! `music_definitions`, particle; `writable_3.rs`: entity, feature, item, `ui_global_variables`;
+//! `writable_4.rs`: geometry, `material_file`, `ui_file`), every other type here. The harness
 //! (`writable/harness.rs`) is one, and `the_binaries_of_the_probe_share_out_every_document_type`
 //! holds the four lists against each other.
 

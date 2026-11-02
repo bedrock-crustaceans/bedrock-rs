@@ -78,7 +78,7 @@ fn a_scatter_feature_and_a_feature_rule_hold_the_same_scatter_params() {
         .as_object()
         .unwrap()
         .keys()
-        .map(|key| key.as_str())
+        .map(facet_value::VString::as_str)
         .collect();
     assert_eq!(keys, ["iterations", "y", "z"], "{written}");
 }
@@ -384,13 +384,78 @@ fn scatter_doc(version: &str, members: &str) -> String {
     }
 }
 
+/// A scatter document whose `members` hold one number beyond a float: the one warning at
+/// `tail`, on `token`, the clamped value, and the written file reading back without it.
+fn check_clamped_coordinate(
+    version: &str,
+    base: &str,
+    members: &str,
+    tail: &str,
+    token: &str,
+    expected: f32,
+) {
+    use bedrock_addon::diagnostic::Phase;
+    let text = scatter_doc(version, members);
+    let document = loads(&text, &cx());
+    let found: Vec<_> = document
+        .diagnostics()
+        .iter()
+        .filter(|f| f.code.name() == "InvalidValue")
+        .collect();
+    assert_eq!(
+        found.len(),
+        1,
+        "{version} {members}: {:#?}",
+        document.diagnostics()
+    );
+    let finding = found[0];
+    assert_eq!(finding.severity, Severity::Info, "{version} {members}");
+    assert_eq!(finding.phase, Phase::Parse, "{version} {members}");
+    assert_eq!(
+        finding.location.json_path.to_string(),
+        format!("{base}/{tail}"),
+        "{version} {members}"
+    );
+    let span = finding.location.span.expect("the number's token");
+    assert_eq!(
+        &text[span.offset as usize..(span.offset + span.len) as usize],
+        token,
+        "{version} {members}"
+    );
+    assert_eq!(
+        above_info(document.diagnostics()).len(),
+        0,
+        "{version} {members}"
+    );
+    // The value, and what is written of it.
+    let Feature::Scatter(scatter) = document.value() else {
+        panic!("not a scatter feature");
+    };
+    let coordinate = match tail.as_bytes()[0] {
+        b'x' => &scatter.distribution.x,
+        b'y' => &scatter.distribution.y,
+        _ => &scatter.distribution.z,
+    };
+    let held = match coordinate.as_ref().unwrap() {
+        CoordinateRange::Single(value) => value.clone(),
+        CoordinateRange::Object(range) => range.extent[usize::from(tail.ends_with('1'))].clone(),
+    };
+    assert_eq!(held, Molang::Const(expected), "{version} {members}");
+    let written = document.to_json().unwrap();
+    let again = loads(&written, &cx());
+    assert_eq!(again.value(), document.value(), "{version} {members}");
+    assert!(
+        above_info(again.diagnostics()).is_empty(),
+        "{version} {members}"
+    );
+}
+
 /// A scatter number beyond `f32` in a member read
 /// through a conversion (`scatter_chance`, a coordinate, a bound of its `extent`) is read as
 /// the largest finite float of its sign, and core's warning says so at the number, on its
 /// token, in both eras. The value is written clamped and reads back without the finding.
 #[test]
 fn a_scatter_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
-    use bedrock_addon::diagnostic::Phase;
     for (version, base) in [
         ("1.21.10", "minecraft:scatter_feature/distribution"),
         ("1.13.0", "minecraft:scatter_feature"),
@@ -411,61 +476,7 @@ fn a_scatter_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviat
                 f32::MIN,
             ),
         ] {
-            let text = scatter_doc(version, members);
-            let document = loads(&text, &cx());
-            let found: Vec<_> = document
-                .diagnostics()
-                .iter()
-                .filter(|f| f.code.name() == "InvalidValue")
-                .collect();
-            assert_eq!(
-                found.len(),
-                1,
-                "{version} {members}: {:#?}",
-                document.diagnostics()
-            );
-            let finding = found[0];
-            assert_eq!(finding.severity, Severity::Info, "{version} {members}");
-            assert_eq!(finding.phase, Phase::Parse, "{version} {members}");
-            assert_eq!(
-                finding.location.json_path.to_string(),
-                format!("{base}/{tail}"),
-                "{version} {members}"
-            );
-            let span = finding.location.span.expect("the number's token");
-            assert_eq!(
-                &text[span.offset as usize..(span.offset + span.len) as usize],
-                token,
-                "{version} {members}"
-            );
-            assert_eq!(
-                above_info(document.diagnostics()).len(),
-                0,
-                "{version} {members}"
-            );
-            // The value, and what is written of it.
-            let Feature::Scatter(scatter) = document.value() else {
-                panic!("not a scatter feature");
-            };
-            let coordinate = match tail.as_bytes()[0] {
-                b'x' => &scatter.distribution.x,
-                b'y' => &scatter.distribution.y,
-                _ => &scatter.distribution.z,
-            };
-            let held = match coordinate.as_ref().unwrap() {
-                CoordinateRange::Single(value) => value.clone(),
-                CoordinateRange::Object(range) => {
-                    range.extent[usize::from(tail.ends_with('1'))].clone()
-                }
-            };
-            assert_eq!(held, Molang::Const(expected), "{version} {members}");
-            let written = document.to_json().unwrap();
-            let again = loads(&written, &cx());
-            assert_eq!(again.value(), document.value(), "{version} {members}");
-            assert!(
-                above_info(again.diagnostics()).is_empty(),
-                "{version} {members}"
-            );
+            check_clamped_coordinate(version, base, members, tail, token, expected);
         }
         // A percentage beyond a float is clamped with the same warning, and is then a
         // chance above 100 like any other.

@@ -80,7 +80,11 @@ fn line(finding: &Diagnostic) -> String {
         "{:?} {} pack {:?} {:?} | {}",
         finding.severity,
         finding.code.name(),
-        finding.location.pack.as_ref().and_then(|p| p.index()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         finding.location.path.as_ref().map(PackPath::as_str),
         finding.code
     )
@@ -100,7 +104,11 @@ fn reported<'a>(
     let hit = all.iter().any(|f| {
         f.code.name() == code
             && f.severity == severity
-            && f.location.pack.as_ref().and_then(|p| p.index()) == Some(pack)
+            && f.location
+                .pack
+                .as_ref()
+                .and_then(bedrock_addon::pack::PackRef::index)
+                == Some(pack)
             && f.location.path.as_ref().map(PackPath::as_str) == Some(path)
     });
     assert!(
@@ -516,7 +524,7 @@ fn sounds_two_packs_a_top_definition_that_is_no_object_takes_the_name() {
         .diagnostics()
         .filter(|f| f.code.name() == "InvalidValue")
         .collect();
-    assert_eq!(malformed.len(), 1, "{:#?}", malformed);
+    assert_eq!(malformed.len(), 1, "{malformed:#?}");
     // at information in the merged read
     assert_eq!(malformed[0].severity, Severity::Info);
     // In the pack whose value is no object, at its file.
@@ -548,7 +556,7 @@ fn sounds_three_packs_a_top_definition_that_is_no_object_takes_the_name() {
         .diagnostics()
         .filter(|f| f.code.name() == "InvalidValue")
         .collect();
-    assert_eq!(malformed.len(), 1, "{:#?}", malformed);
+    assert_eq!(malformed.len(), 1, "{malformed:#?}");
     // at information in the merged read
     assert_eq!(malformed[0].severity, Severity::Info);
     // In the pack whose value is no object, at its file.

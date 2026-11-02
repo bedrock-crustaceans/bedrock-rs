@@ -73,6 +73,10 @@ pub(super) fn read_with_rule<'a, T: Facet<'a>>(
 }
 
 /// A version struct as JSON, written as the crate writes documents (`json::to_json`).
+///
+/// # Errors
+///
+/// Returns `EncodeError` when the struct has no JSON form.
 pub fn write_payload<'f, T: Facet<'f>>(value: &T) -> Result<Value, EncodeError> {
     let text = crate::json::to_json(value)?;
     // The writer's output is JSON this reader accepts; were it not, the value has no JSON form.

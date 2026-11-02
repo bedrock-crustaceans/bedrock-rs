@@ -127,7 +127,7 @@ impl Outcome {
     fn by_code(&self) -> BTreeMap<String, usize> {
         let mut counts = BTreeMap::new();
         for (_, found) in &self.scripts {
-            for diagnostic in found.diagnostics().iter() {
+            for diagnostic in found.diagnostics() {
                 let name: String = format!("{:?}", diagnostic.code)
                     .chars()
                     .take_while(char::is_ascii_alphanumeric)

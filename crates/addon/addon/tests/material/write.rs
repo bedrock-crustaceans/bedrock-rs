@@ -1,7 +1,7 @@
 //! Writing a material file and a list back: what was read is
 //! written, nothing else, and what the loader would read differently is refused.
 
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, Extra};
 use bedrock_addon::families::material::{
     KeyRules, ListEntry, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey,
     MaterialList, MaterialListKind, SamplerState, StencilFace, StencilRefOverride, Variant,
@@ -64,7 +64,7 @@ fn flat_file(materials: Vec<(&str, MaterialDef)>) -> MaterialFile {
             .into_iter()
             .map(|(key, def)| (MaterialKey::parse(key), def))
             .collect(),
-        extra: Default::default(),
+        extra: Extra::default(),
     }
 }
 
@@ -253,6 +253,34 @@ fn x_and_written(text: &str) -> (MaterialDef, String) {
     (first.materials[&MaterialKey::new("x")].clone(), written)
 }
 
+/// A list: a define that is a number is dropped, an entry whose `path` is one too. `number`
+/// spells the number.
+fn a_list_drops_the_numbers_where_text_belongs(number: &str) {
+    let text = format!(
+        r#"[{{"path": "materials/a.material", "defines": ["A", {number}]}}, {{"path": {number}}}]"#
+    );
+    let list = parse_list("materials/common.json", &text).expect("loads");
+    let found: Vec<_> = rendered(list.diagnostics().iter())
+        .into_iter()
+        .map(|f| (f.0, f.2))
+        .collect();
+    assert_eq!(
+        found,
+        [
+            ("InvalidType", "0/defines/1".to_owned()),
+            ("InvalidType", "1/path".to_owned())
+        ]
+    );
+    assert_eq!(list.entries.len(), 1);
+    assert_eq!(list.entries[0].defines, Some(vec!["A".to_owned()]));
+    let written = list.to_json().expect("writes");
+    let dropped = Rewrites {
+        dropped: 2,
+        ..Rewrites::default()
+    };
+    assert_eq!(rewrites(&text, &written), Ok(dropped));
+}
+
 #[test]
 fn an_integer_beyond_64_bits_is_the_double_it_spells_in_every_member() {
     // Core reads an integer token too large for 64 bits as the double it spells, an
@@ -266,7 +294,7 @@ fn an_integer_beyond_64_bits_is_the_double_it_spells_in_every_member() {
     let invalid = |key: &str| vec![("InvalidValue", format!("x/{key}"))];
     let number_of = |def: &MaterialDef, key: &str| {
         let kept = def.extra.get(key).and_then(|value| value.as_number());
-        kept.map(|number| number.to_f64_lossy())
+        kept.map(facet_value::VNumber::to_f64_lossy)
     };
 
     // `stencilRefOverride`: a number, on, written as the shortest decimal of the double.
@@ -355,30 +383,7 @@ fn an_integer_beyond_64_bits_is_the_double_it_spells_in_every_member() {
     assert_eq!(found_at(&text), invalid("custom"));
     assert_eq!(number_of(&x_and_written(&text).0, "custom"), Some(f64::MAX));
 
-    // A list: a define that is a number is dropped, an entry whose `path` is one too.
-    let text = format!(
-        r#"[{{"path": "materials/a.material", "defines": ["A", {TWO_64}]}}, {{"path": {TWO_64}}}]"#
-    );
-    let list = parse_list("materials/common.json", &text).expect("loads");
-    let found: Vec<_> = rendered(list.diagnostics().iter())
-        .into_iter()
-        .map(|f| (f.0, f.2))
-        .collect();
-    assert_eq!(
-        found,
-        [
-            ("InvalidType", "0/defines/1".to_owned()),
-            ("InvalidType", "1/path".to_owned())
-        ]
-    );
-    assert_eq!(list.entries.len(), 1);
-    assert_eq!(list.entries[0].defines, Some(vec!["A".to_owned()]));
-    let written = list.to_json().expect("writes");
-    let dropped = Rewrites {
-        dropped: 2,
-        ..Rewrites::default()
-    };
-    assert_eq!(rewrites(&text, &written), Ok(dropped));
+    a_list_drops_the_numbers_where_text_belongs(TWO_64);
 }
 
 #[test]
@@ -418,7 +423,7 @@ fn a_key_that_would_read_back_as_another_is_refused() {
     let odd = |key: MaterialKey| MaterialFile {
         form: MaterialFileForm::Flat,
         materials: IndexMap::from([(key, MaterialDef::default())]),
-        extra: Default::default(),
+        extra: Extra::default(),
     };
     // A parent with a colon splits at another place on the way back.
     let parent = odd(MaterialKey {
@@ -776,10 +781,10 @@ fn the_comparison_with_the_input_sees_each_kind_of_difference() {
         (r#"{"a": 0}"#, r#"{"a": false}"#),
         (r#"{"a": 1}"#, r#"{"a": 2}"#),
         (r#"{"a": 1}"#, r#"{"a": 1, "b": 2}"#),
-        (r#"{"a": {"k": 1}}"#, r#"{}"#),
+        (r#"{"a": {"k": 1}}"#, r"{}"),
         (r#"{"a": "x"}"#, r#"{"a": "y"}"#),
-        (r#"[1, 2]"#, r#"[2, 1]"#),
-        (r#"[1]"#, r#"[1, 1]"#),
+        (r"[1, 2]", r"[2, 1]"),
+        (r"[1]", r"[1, 1]"),
         (r#"{"a": null}"#, r#"{"a": false}"#),
     ] {
         assert!(rewrites(input, written).is_err(), "{input} {written}");

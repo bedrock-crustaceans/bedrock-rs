@@ -3,6 +3,9 @@ name = "bedrock_protocol"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 bedrock_protocol_core = { path = "../protocol_core" }
 bedrock_macros = { path = "../macros" }

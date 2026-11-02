@@ -1,6 +1,11 @@
 //! Pass 2, the load-time compile check: field
 //! outcomes, allow-lists and operation sets, the cache, the empty-text rule, version sources that
 //! act in the compile, and the findings' codes, severities and paths.
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 #![cfg(feature = "molang")]
 
 use std::sync::Arc;

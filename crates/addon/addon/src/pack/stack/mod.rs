@@ -141,6 +141,10 @@ impl<S: Side> PackStack<S> {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`WrongPackType`] when a pack does not hold a module of the stack's pack type.
     pub fn of(
         packs: impl IntoIterator<Item = Pack>,
         options: LoadOptions,

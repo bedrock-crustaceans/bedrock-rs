@@ -159,6 +159,10 @@ impl Layer {
     pub fn set<K: Into<BlockPosition>>(&mut self, position: K, block: BlockDef) {
         // Check whether the block is in the palette
         let hash = Self::hash_def(&block);
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a layer palette is indexed by at most 4096 positions, so it fits in u16"
+        )]
         let palette_index = *self.hashes.entry(hash).or_insert_with(|| {
             // Block does not exist in palette, push it.
             self.palette.push(block);
@@ -227,13 +231,18 @@ impl Layer {
             HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
         hashes.extend(palette.iter().enumerate().map(|(i, block)| {
             let hash = Self::hash_def(block);
-            (hash, i as u16)
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a layer palette is indexed by at most 4096 positions, so it fits in u16"
+            )]
+            let index = i as u16;
+            (hash, index)
         }));
 
         Ok(Self {
             array,
-            hashes,
             palette,
+            hashes,
         })
     }
 
@@ -246,7 +255,12 @@ impl Layer {
 
         self.array.to_disk(writer, plen)?;
 
-        writer.write_u32::<LittleEndian>(plen as u32)?;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a layer palette is indexed by at most 4096 positions, so it fits in u32"
+        )]
+        let palette_len = plen as u32;
+        writer.write_u32::<LittleEndian>(palette_len)?;
         for entry in &self.palette {
             nbtx::to_le_bytes_in(writer, entry)?;
         }
@@ -308,8 +322,20 @@ pub const fn to_offset(position: BlockPosition) -> usize {
 /// This offset should be in the range [0, 4096).
 #[inline]
 pub const fn from_offset(offset: usize) -> BlockPosition {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the offset is below 4096, so the shifted value fits in u8 after masking"
+    )]
     let x = (offset >> 8) as u8 & 0xf;
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncation to the low nibble is the point, it is masked right after"
+    )]
     let y = offset as u8 & 0xf;
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncation to the low nibble is the point, it is masked right after"
+    )]
     let z = (offset >> 4) as u8 & 0xf;
 
     BlockPosition(x, y, z)
@@ -371,6 +397,11 @@ impl SubChunk {
     ///
     /// [`from_disk_lazy`]: Self::from_disk_lazy
     /// [`from_disk_greedy`]: Self::from_disk_greedy
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the version byte is unknown, a layer inherits its bit array or
+    /// has an invalid bit size, a palette entry is not valid NBT, or reading from `reader` fails.
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
     where
         Cursor<R>: Read,
@@ -406,6 +437,10 @@ impl SubChunk {
     /// This makes deserialising slightly faster but iteration a lot slower. This method is unable to make use of SIMD while [`from_disk_greedy`]
     /// uses a SIMD-accelerated deserializer. Additionally using this method means that editing the subchunk might cause the bit array to be repacked
     /// to accomodate the larger palette size.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`from_disk`](Self::from_disk).
     #[inline]
     pub fn from_disk_lazy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -417,6 +452,10 @@ impl SubChunk {
     /// Greedily unpacks the subchunk. This means that the entire index array is unpacked immediately. This allows the deserialisation process to be
     /// accelerated with SIMD which makes it about 2.5x faster. Additionally this means the chunk does not have to be re-encoded whenever the bit size changes.
     /// It however uses more memory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`from_disk`](Self::from_disk).
     #[inline]
     pub fn from_disk_greedy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -426,12 +465,21 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if encoding a palette entry or writing to `writer` fails.
     pub fn to_disk<M: UnpackingMethod, W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
     {
         writer.write_u8(self.version as u8)?;
-        writer.write_u8(self.layers.len() as u8)?;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a sub chunk has at most a handful of layers, the format stores the count in one byte"
+        )]
+        let layer_count = self.layers.len() as u8;
+        writer.write_u8(layer_count)?;
 
         if self.version == SubChunkVersion::Limitless {
             writer.write_i8(self.index)?;

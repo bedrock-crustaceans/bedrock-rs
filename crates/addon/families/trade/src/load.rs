@@ -107,6 +107,11 @@ impl Content for TradeTable {
 impl TradeTable {
     /// Parses one trade-table file without upgrading it: the struct its `format_version`
     /// selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
     pub fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],

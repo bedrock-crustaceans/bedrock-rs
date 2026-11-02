@@ -245,7 +245,10 @@ fn f21_the_vanilla_orange_poplar_tree_loads_from_engine_1_26_40() {
     let trunk = tree.poplar_trunk.as_ref().unwrap();
     assert!(trunk.remaining_trunk_height_above_branches.is_some());
     assert_eq!(
-        trunk.log_decoration_feature.as_ref().map(|f| f.as_str()),
+        trunk
+            .log_decoration_feature
+            .as_ref()
+            .map(bedrock_addon_core::id::Id::as_str),
         Some("minecraft:optional_shelf_mushroom_feature")
     );
     let d = rejects(&json, &engine(1, 26, 30));

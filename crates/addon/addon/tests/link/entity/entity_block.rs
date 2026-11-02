@@ -109,7 +109,7 @@ fn e10_a_host_answers_for_the_games_blocks() {
         &files,
         &[],
         hosted(&[("block", "minecraft:grass_block")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let told = said_of(&found, "block");
     assert_eq!(told.len(), 1, "{found:?}");
@@ -118,7 +118,7 @@ fn e10_a_host_answers_for_the_games_blocks() {
         ("block", "minecraft:grass_block"),
         ("block", "minecraft:dirt"),
     ]);
-    assert!(link_with(&files, &[], both, &LinkOptions::default()).is_empty());
+    assert!(link_with(&files, &[], both, LinkOptions::default()).is_empty());
 }
 
 /// Without the `block` feature no block can be known, and nothing is told.
@@ -140,7 +140,7 @@ fn e10_e11_without_the_block_feature_no_block_reference_is_told() {
 ///
 /// A block descriptor's name is resolved on first use by
 /// `BlockDescriptor::ResolveHelper::resolve`, which logs "Unknown block during Deferred
-/// BlockDescriptor resolution: %s" and goes on: a
+/// `BlockDescriptor` resolution: %s" and goes on: a
 /// kept error with that text. The two lists of plain names (`home.home_block_list`,
 /// `behavior.raid_garden.blocks`) are bound as names, not
 /// descriptors, and no line was found for them: informations.
@@ -231,7 +231,7 @@ fn e11_a_block_list_naming_a_block_nothing_defines_is_a_kept_error_a_name_an_inf
 
 /// E11 in `inside_block_notifier`: a state the block does not have is the typed node's own
 /// line, "Block of type '%s' does not have the state '%s'. This block will not be added to
-/// InsideBlockNotifierComponent's watch list due to an invalid state."
+/// `InsideBlockNotifierComponent`'s watch list due to an invalid state."
 /// at the content log's error level, after which the entry is left out and the
 /// entity loads: a kept error with that text. In every other row a
 /// state is the crate's own check, an information.
@@ -425,7 +425,7 @@ fn e11_the_games_blocks_resolve_with_a_host_and_without_one() {
         &files,
         &[],
         hosted(&[("block", "minecraft:water")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said_of(&found, "block"),
@@ -527,7 +527,7 @@ fn e10_e11_a_legacy_block_name_of_the_games_own_files_resolves() {
         ("block", "minecraft:air"),
         ("block", "minecraft:stonecutter"),
     ]);
-    let found = link_with(&files, &[], host, &LinkOptions::default());
+    let found = link_with(&files, &[], host, LinkOptions::default());
     assert_eq!(said_of(&found, "block"), expected);
 }
 

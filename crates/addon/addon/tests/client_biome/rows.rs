@@ -9,6 +9,7 @@ use bedrock_addon::families::client_biome::{Beta, ClientBiome};
 use bedrock_addon::load::{BiomeRenderIdentifiers, LoadContext};
 use bedrock_addon::version::{BaseGameVersion, ENGINE_VERSION};
 use indexmap::IndexMap;
+use std::fmt::Write as _;
 use std::sync::Arc;
 
 use super::common::{
@@ -1225,7 +1226,10 @@ fn cb23a_beta_attr_invalid() {
     );
     let float =
         failure(r#""minecraft:experimental_float_attr_1": {"value": 0.5, "operation": "xor"}"#);
-    assert!(count(&float, |c| matches!(c, Code::InvalidEnumValue { .. })) == 1);
+    assert_eq!(
+        count(&float, |c| matches!(c, Code::InvalidEnumValue { .. })),
+        1
+    );
     // `minimum` is a float operation and `xor` a bool one.
     load_beta(
         &with(
@@ -1988,21 +1992,25 @@ fn cb18_golden_output() {
     for (name, text) in fixtures("client_biome/cb18_all_vanilla_1_21_40") {
         let loaded = loads(&text, &base_game());
         let written = loaded.version().written.unwrap();
-        lines.push_str(&format!(
-            "{name} {written} -> {}\n",
+        writeln!(
+            lines,
+            "{name} {written} -> {}",
             loaded.description.identifier.as_str()
-        ));
+        )
+        .unwrap();
         for entry in loaded.components.iter() {
             if let ComponentRef::Typed {
                 name, synthesized, ..
             } = entry
             {
                 let json = component(&loaded, name).unwrap();
-                lines.push_str(&format!(
-                    "  {}{name} {}\n",
+                writeln!(
+                    lines,
+                    "  {}{name} {}",
                     if synthesized { "+" } else { " " },
                     facet_json::to_string(&json).unwrap()
-                ));
+                )
+                .unwrap();
             }
         }
     }

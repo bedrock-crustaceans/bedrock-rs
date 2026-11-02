@@ -179,5 +179,9 @@ pub fn finding(code: &'static str, severity: Severity, at: &str, text: &str) -> 
 
 /// The index in the stack of the pack a finding names.
 pub fn pack_index(finding: &Diagnostic) -> Option<usize> {
-    finding.location.pack.as_ref().and_then(|pack| pack.index())
+    finding
+        .location
+        .pack
+        .as_ref()
+        .and_then(bedrock_addon::pack::PackRef::index)
 }

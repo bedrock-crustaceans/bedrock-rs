@@ -41,6 +41,7 @@
 //! `audit:` lines (shown with `--show-output`) give the outcome per object of each document.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 
 use bedrock_addon::diagnostic::Diagnostic;
 use bedrock_addon::document::{Content, Document, Rejected};
@@ -213,7 +214,7 @@ fn places(document: &str, more: &[(&'static str, &'static str, &'static str)]) -
         for (shape, before, after, below) in SHAPES {
             let comma = if object.empty { "" } else { ", " };
             let mut template = document[..object.close].to_owned();
-            template.push_str(&format!("{comma}\"zz_probe\": {before}@{after}"));
+            write!(template, "{comma}\"zz_probe\": {before}@{after}").unwrap();
             template.push_str(&document[object.close..]);
             // `below` is the probe's own path under the object, already slash-joined.
             let mut path = json_path_text(&object.path);

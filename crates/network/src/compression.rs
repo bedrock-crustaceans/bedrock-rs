@@ -39,8 +39,8 @@ impl Compression {
     const ALGORITHM_SNAPPY: u16 = 1;
     const ALGORITHM_NONE: u16 = u16::MAX;
 
-    /// Used in the [NetworkSettingsPacket](crate::version::v729::packets::network_settings::NetworkSettingsPacket)
-    /// to identify which Compression should be used for the Connection.
+    /// Used in the [`NetworkSettingsPacket`](crate::version::v729::packets::network_settings::NetworkSettingsPacket)
+    /// to identify which `Compression` should be used for the `Connection`.
     #[inline]
     pub const fn id_u16(&self) -> u16 {
         match self {
@@ -50,6 +50,13 @@ impl Compression {
         }
     }
 
+    /// Builds the compression a `NetworkSettings` packet negotiates from its `algorithm` id and
+    /// `threshold`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CompressionError::UnknownNetworkAlgorithm`] when `algorithm` is not zlib, snappy
+    /// or none.
     pub fn from_network_settings(algorithm: u16, threshold: u16) -> Result<Self, CompressionError> {
         match algorithm {
             Self::ALGORITHM_ZLIB => Ok(Compression::Zlib {
@@ -74,22 +81,25 @@ impl Compression {
     #[inline]
     pub fn threshold(&self) -> u16 {
         match self {
-            Compression::Zlib { threshold, .. } => *threshold,
-            Compression::Snappy { threshold } => *threshold,
+            Compression::Zlib { threshold, .. } | Compression::Snappy { threshold } => *threshold,
             Compression::None => 0,
         }
     }
 
     /// Compress the given uncompressed src stream into the given dst stream
     /// with the compressed data.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CompressionError`] when writing the batch or the zlib or snappy encoder fails.
     #[inline]
-    pub fn compress(&self, src: Vec<u8>) -> Result<Vec<u8>, CompressionError> {
+    pub fn compress(&self, src: &[u8]) -> Result<Vec<u8>, CompressionError> {
         // Add one extra byte for the compression method id
         let mut dst = Vec::with_capacity(src.len() + size_of::<u8>());
 
         if self.threshold() as usize >= src.len() {
             dst.write_u8(Self::ID_NONE)?;
-            dst.write_all(src.as_slice())?;
+            dst.write_all(src)?;
 
             return Ok(dst);
         }
@@ -100,7 +110,7 @@ impl Compression {
             } => {
                 dst.write_u8(Self::ID_ZLIB)?;
 
-                Self::deflate(&src, *compression_level as u32, dst)?
+                Self::deflate(src, u32::from(*compression_level), dst)?
             }
             Compression::Snappy { .. } => {
                 dst.write_u8(Self::ID_SNAPPY)?;
@@ -108,7 +118,7 @@ impl Compression {
                 let start = dst.len();
                 dst.resize(start + snap::raw::max_compress_len(src.len()), 0);
                 let written = SNAPPY
-                    .with_borrow_mut(|encoder| encoder.compress(&src, &mut dst[start..]))
+                    .with_borrow_mut(|encoder| encoder.compress(src, &mut dst[start..]))
                     .map_err(|err| CompressionError::SnappyError(err.into()))?;
                 dst.truncate(start + written);
 
@@ -117,7 +127,7 @@ impl Compression {
             Compression::None => {
                 // Compression method id for No Compression
                 dst.write_u8(Self::ID_NONE)?;
-                dst.write_all(src.as_slice())?;
+                dst.write_all(src)?;
 
                 dst
             }
@@ -127,6 +137,11 @@ impl Compression {
     }
 
     /// Decompress the given compressed src stream, failing if it inflates past `max_len` bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CompressionError`] when the batch is empty, its method id is unknown or differs
+    /// from this compression, it fails to inflate, or it inflates past `max_len`.
     #[inline]
     pub fn decompress(
         &self,
@@ -175,6 +190,10 @@ impl Compression {
             }
             let (_, compress) = slot.as_mut().expect("the compressor was just set");
             loop {
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "total_in never exceeds src.len(), which is a usize"
+                )]
                 let consumed = compress.total_in() as usize;
                 let status = compress
                     .compress_vec(&src[consumed..], &mut dst, FlushCompress::Finish)
@@ -193,8 +212,13 @@ impl Compression {
             let mut dst = Vec::with_capacity(src.len().min(max_len));
             loop {
                 let (in_before, out_before) = (inflate.total_in(), inflate.total_out());
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "total_in never exceeds src.len(), which is a usize"
+                )]
+                let consumed = in_before as usize;
                 let status = inflate
-                    .decompress_vec(&src[in_before as usize..], &mut dst, FlushDecompress::None)
+                    .decompress_vec(&src[consumed..], &mut dst, FlushDecompress::None)
                     .map_err(|err| CompressionError::ZlibError(err.into()))?;
                 if dst.len() > max_len {
                     return Err(CompressionError::DecompressedSizeExceeded(max_len));
@@ -235,7 +259,7 @@ mod tests {
     #[test]
     fn zlib_batch_decompresses_with_no_limit() {
         let batch = vec![7u8; 4096];
-        let compressed = zlib().compress(batch.clone()).unwrap();
+        let compressed = zlib().compress(&batch).unwrap();
 
         assert_eq!(zlib().decompress(compressed, usize::MAX).unwrap(), batch);
     }
@@ -244,14 +268,14 @@ mod tests {
     fn snappy_batch_decompresses_with_no_limit() {
         let snappy = Compression::Snappy { threshold: 0 };
         let batch = vec![7u8; 4096];
-        let compressed = snappy.compress(batch.clone()).unwrap();
+        let compressed = snappy.compress(&batch).unwrap();
 
         assert_eq!(snappy.decompress(compressed, usize::MAX).unwrap(), batch);
     }
 
     #[test]
     fn zlib_batch_inflating_past_the_limit_is_rejected() {
-        let bomb = zlib().compress(vec![0u8; MAX_LEN + 1]).unwrap();
+        let bomb = zlib().compress(&vec![0u8; MAX_LEN + 1]).unwrap();
         let result = zlib().decompress(bomb, MAX_LEN);
         assert!(
             matches!(
@@ -266,7 +290,7 @@ mod tests {
     #[test]
     fn zlib_batch_at_the_limit_round_trips() {
         let batch = vec![7u8; MAX_LEN];
-        let compressed = zlib().compress(batch.clone()).unwrap();
+        let compressed = zlib().compress(&batch).unwrap();
         assert_eq!(zlib().decompress(compressed, MAX_LEN).unwrap(), batch);
     }
 
@@ -274,8 +298,10 @@ mod tests {
     fn zlib_decoder_state_does_not_leak_between_batches() {
         let sizes = [10, 100_000, 3, 70_000, 1, 4096];
         for (round, size) in sizes.into_iter().enumerate() {
-            let batch: Vec<u8> = (0..size).map(|i| (i * 31 + round) as u8).collect();
-            let compressed = zlib().compress(batch.clone()).unwrap();
+            let batch: Vec<u8> = (0..size)
+                .map(|i| u8::try_from((i * 31 + round) % 256).unwrap())
+                .collect();
+            let compressed = zlib().compress(&batch).unwrap();
             assert_eq!(
                 zlib().decompress(compressed, usize::MAX).unwrap(),
                 batch,
@@ -287,7 +313,7 @@ mod tests {
     #[test]
     fn zlib_truncated_batch_is_an_error_and_the_next_batch_still_decodes() {
         let batch = vec![9u8; 5000];
-        let compressed = zlib().compress(batch.clone()).unwrap();
+        let compressed = zlib().compress(&batch).unwrap();
         let truncated = compressed[..compressed.len() - 3].to_vec();
         assert!(matches!(
             zlib().decompress(truncated, usize::MAX),
@@ -299,7 +325,7 @@ mod tests {
     #[test]
     fn zlib_corrupt_batch_is_an_error_and_the_next_batch_still_decodes() {
         let batch = b"bedrock batch bedrock batch bedrock batch".to_vec();
-        let compressed = zlib().compress(batch.clone()).unwrap();
+        let compressed = zlib().compress(&batch).unwrap();
         let mut corrupt = vec![0u8, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
         corrupt.extend_from_slice(&compressed[1..]);
         assert!(zlib().decompress(corrupt, usize::MAX).is_err());
@@ -308,7 +334,7 @@ mod tests {
 
     #[test]
     fn zlib_limit_is_enforced_after_the_buffer_has_grown() {
-        let bomb = zlib().compress(vec![0u8; 1 << 20]).unwrap();
+        let bomb = zlib().compress(&vec![0u8; 1 << 20]).unwrap();
         assert!(matches!(
             zlib().decompress(bomb, 5000),
             Err(CompressionError::DecompressedSizeExceeded(5000))
@@ -321,8 +347,10 @@ mod tests {
             .into_iter()
             .enumerate()
         {
-            let batch: Vec<u8> = (0..size).map(|i| (i * 31 + round) as u8).collect();
-            let compressed = zlib().compress(batch.clone()).unwrap();
+            let batch: Vec<u8> = (0..size)
+                .map(|i| u8::try_from((i * 31 + round) % 256).unwrap())
+                .collect();
+            let compressed = zlib().compress(&batch).unwrap();
             assert_eq!(compressed[0], 0);
             assert_eq!(
                 zlib().decompress(compressed, usize::MAX).unwrap(),
@@ -340,7 +368,7 @@ mod tests {
                 threshold: 0,
                 compression_level: level,
             };
-            let compressed = compression.compress(batch.clone()).unwrap();
+            let compressed = compression.compress(&batch).unwrap();
             assert_eq!(
                 compression.decompress(compressed, usize::MAX).unwrap(),
                 batch,
@@ -356,8 +384,10 @@ mod tests {
             .into_iter()
             .enumerate()
         {
-            let batch: Vec<u8> = (0..size).map(|i| ((i / 3) * 31 + round) as u8).collect();
-            let compressed = snappy.compress(batch.clone()).unwrap();
+            let batch: Vec<u8> = (0..size)
+                .map(|i| u8::try_from(((i / 3) * 31 + round) % 256).unwrap())
+                .collect();
+            let compressed = snappy.compress(&batch).unwrap();
             assert_eq!(compressed[0], 1);
             assert_eq!(
                 snappy.decompress(compressed, usize::MAX).unwrap(),
@@ -384,7 +414,7 @@ mod tests {
     fn snappy_encodes_a_raw_block() {
         let batch = b"bedrock batch bedrock batch bedrock batch".to_vec();
         let wire = Compression::Snappy { threshold: 0 }
-            .compress(batch.clone())
+            .compress(&batch)
             .unwrap();
         assert_eq!(wire[0], 1);
         assert_eq!(
@@ -398,7 +428,7 @@ mod tests {
     #[test]
     fn snappy_batch_inflating_past_the_limit_is_rejected() {
         let snappy = Compression::Snappy { threshold: 0 };
-        let bomb = snappy.compress(vec![0u8; MAX_LEN + 1]).unwrap();
+        let bomb = snappy.compress(&vec![0u8; MAX_LEN + 1]).unwrap();
         let result = snappy.decompress(bomb, MAX_LEN);
         assert!(
             matches!(
@@ -450,7 +480,7 @@ mod tests {
     #[test]
     fn snappy_batch_on_zlib_connection_is_rejected() {
         let snappy_batch = Compression::Snappy { threshold: 0 }
-            .compress(vec![7u8; 64])
+            .compress(&[7u8; 64])
             .unwrap();
         let result = zlib().decompress(snappy_batch, MAX_LEN);
         assert!(
@@ -488,9 +518,9 @@ mod tests {
             threshold: 8,
             compression_level: 6,
         };
-        let at = compression.compress(vec![1u8; 8]).unwrap();
+        let at = compression.compress(&[1u8; 8]).unwrap();
         assert_eq!(at[0], 0xff);
-        let above = compression.compress(vec![1u8; 9]).unwrap();
+        let above = compression.compress(&[1u8; 9]).unwrap();
         assert_eq!(above[0], 0);
     }
 }

@@ -148,8 +148,8 @@ fn the_chain_has_the_two_structs_of_the_plan() {
 
 #[test]
 fn the_chain_is_the_plans() {
-    check_chain::<ParticleFamily>().expect("the chain is well formed");
     const HAS_BETA: bool = <Any as VersionChain<ParticleFamily>>::HAS_BETA;
+    check_chain::<ParticleFamily>().expect("the chain is well formed");
     let has_beta = HAS_BETA;
     assert!(!has_beta);
     assert_eq!(

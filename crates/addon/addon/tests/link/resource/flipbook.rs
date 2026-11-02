@@ -34,7 +34,7 @@ fn entry(members: &str) -> String {
 fn linked_with(
     files: &[(&'static str, &'static [u8])],
     load: LoadOptions,
-    link: &LinkOptions,
+    link: LinkOptions,
 ) -> Diagnostics {
     // The terrain atlas of these worlds is a pack the game ships: R34's tile half
     // is tested at its own severity. `tests/link/view.rs` has the other views.
@@ -48,7 +48,7 @@ fn linked_with(
         ],
         load,
     )
-    .link_with(link)
+    .link_with(&link)
 }
 
 /// The link findings at the flipbook file of a world with the atlas [`TERRAIN`], a 16x32
@@ -61,7 +61,7 @@ fn linked(flipbooks: &str) -> Vec<Diagnostic> {
             (LAVA, png(16, 32)),
         ],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     at_flipbooks(&found)
 }
@@ -168,7 +168,7 @@ fn r34_a_tile_only_the_game_has_resolves_when_the_host_says_so() {
                 (LAVA, png(16, 32)),
             ],
             options,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         at_flipbooks(&found)
             .iter()
@@ -246,7 +246,7 @@ fn r35_an_image_no_pack_has_is_a_lint() {
     let found = at_flipbooks(&linked_with(
         files,
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     ));
     assert_eq!(
         all_said(&found),
@@ -266,7 +266,7 @@ fn r35_an_image_no_pack_has_is_a_lint() {
     let quiet = linked_with(
         files,
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -284,7 +284,7 @@ fn framed(frames: &str, width: u32, height: u32) -> Vec<(&'static str, Severity,
             (LAVA, png(width, height)),
         ],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     all_said(&at_flipbooks(&found))
 }
@@ -329,7 +329,7 @@ fn r35_an_image_whose_header_does_not_read_is_held_to_no_frame_rule() {
             (LAVA, b"not a png"),
         ],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(at_flipbooks(&found), []);
 }

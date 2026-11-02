@@ -530,7 +530,10 @@ fn d5_a_legacy_condition_beyond_f32_is_kept_as_written_deviation() {
     );
     let trigger = g.on_start.expect("on_start");
     let kept = trigger.extra.get("condition").expect("kept for write-back");
-    assert_eq!(kept.as_number().map(|n| n.to_f64_lossy()), Some(1e39));
+    assert_eq!(
+        kept.as_number().map(facet_value::VNumber::to_f64_lossy),
+        Some(1e39)
+    );
 }
 
 /// filters: an unknown filter test name in a goal's filters is a warning

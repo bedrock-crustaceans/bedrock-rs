@@ -85,7 +85,7 @@ fn files_read(responders: [&Responder; 2]) -> Vec<String> {
         .flat_map(|responder| &responder.log.requests)
         .filter_map(|request| match request {
             bedrock_addon::load::Request::ReadFile { location, .. } => Some(location.to_string()),
-            _ => None,
+            bedrock_addon::load::Request::ListDir { .. } => None,
         })
         .collect();
     read.sort();
@@ -230,7 +230,7 @@ fn residency_all_keeps_every_file_resident_for_chunk_serving() {
         .iter()
         .map(|request| match request {
             bedrock_addon::load::Request::ReadFile { location, .. } => location.to_string(),
-            other => panic!("{other:?}"),
+            other @ bedrock_addon::load::Request::ListDir { .. } => panic!("{other:?}"),
         })
         .collect();
     read.sort();

@@ -176,7 +176,7 @@ fn the_six_groups_on_one_world_tell_each_reference_once_and_the_same_every_time(
 
     // No place holds two findings of one code: a reference two groups check is told once.
     let mut places: BTreeMap<_, Vec<String>> = BTreeMap::new();
-    for finding in found.iter() {
+    for finding in &found {
         places
             .entry(place(finding))
             .or_default()
@@ -193,7 +193,7 @@ fn the_six_groups_on_one_world_tell_each_reference_once_and_the_same_every_time(
             set.behavior
                 .scripts()
                 .iter()
-                .flat_map(|bundle| bundle.findings())
+                .flat_map(bedrock_addon::families::script::ScriptBundle::findings)
                 .map(|finding| format!("{finding:?}"))
                 .collect()
         };
@@ -203,7 +203,7 @@ fn the_six_groups_on_one_world_tell_each_reference_once_and_the_same_every_time(
             .behavior
             .scripts()
             .iter()
-            .flat_map(|bundle| bundle.findings())
+            .flat_map(bedrock_addon::families::script::ScriptBundle::findings)
             .map(|finding| finding.location.json_path.to_string())
             .collect();
         assert_eq!(at, ["modules/0/entry"]);
@@ -221,7 +221,10 @@ fn the_six_groups_on_one_world_tell_each_reference_once_and_the_same_every_time(
             .iter()
             .filter(|finding| {
                 finding.location.path.as_ref().is_some_and(|path| {
-                    path.as_str() == "manifest.json" || path.as_str().ends_with(".js")
+                    path.as_str() == "manifest.json"
+                        || std::path::Path::new(path.as_str())
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("js"))
                 })
             })
             .collect();

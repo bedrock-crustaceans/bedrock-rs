@@ -32,6 +32,11 @@ bedrock_addon_core::version_chain! {
 
 /// Runs the upgrade step of a document [`ParticleEffect::parse_as_written`] gave: the same
 /// result [`ParticleEffect::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

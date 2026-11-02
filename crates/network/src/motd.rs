@@ -18,6 +18,12 @@ pub struct BedrockMOTD {
 }
 
 impl BedrockMOTD {
+    /// Parses a pong's MOTD bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`MotdError`] when `raw` is not UTF-8, lacks a required field, or holds a field
+    /// that is not a number where one is expected.
     pub fn parse(raw: &[u8]) -> Result<Self, MotdError> {
         std::str::from_utf8(raw)?.parse()
     }
@@ -125,7 +131,7 @@ mod tests {
             version: "1.14.60".into(),
             player_count: 0,
             player_max: 10,
-            guid: 13253860892328930865,
+            guid: 13_253_860_892_328_930_865,
             sub_name: "Bedrock level".into(),
             game_mode: "Survival".into(),
             nintendo_limited: Some(false),

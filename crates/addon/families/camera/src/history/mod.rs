@@ -84,6 +84,11 @@ bedrock_addon_core::version_chain! {
 /// same result [`CameraPreset::parse`](bedrock_addon_core::document::Content::parse) gives for
 /// its file. It works on the document, which holds the origin, so the split lets a caller
 /// inspect the file as written before it is upgraded.
+///
+/// # Errors
+///
+/// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
+/// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,

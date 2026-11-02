@@ -10,7 +10,7 @@ use bedrock_addon_core::version::MinEngineVersion;
 use bedrock_addon_family_feature_rules::FeatureRule;
 
 /// The fixture folder of this family, found from whichever crate includes this file: the
-/// fixtures live in bedrock_addon's `tests/fixtures`.
+/// fixtures live in `bedrock_addon`'s `tests/fixtures`.
 pub fn fixtures() -> std::path::PathBuf {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     [root.join("tests"), root.join("../../addon/tests")]

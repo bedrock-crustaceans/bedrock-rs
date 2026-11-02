@@ -36,6 +36,11 @@ pub struct VanillaDataFile<T> {
 
 impl<T: for<'f> Facet<'f>> VanillaDataFile<T> {
     /// Reads the file strictly: a key no field takes is an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`MetaError`] when the bytes are not UTF-8, are not JSON of the expected
+    /// shape, nest deeper than the JSON depth limit, or hold a member no field takes.
     pub fn parse(bytes: &[u8]) -> Result<Self, MetaError> {
         crate::meta::parse::strict(bytes).map(|(file, _)| file)
     }

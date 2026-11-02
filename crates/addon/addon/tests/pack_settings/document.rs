@@ -1,4 +1,4 @@
-//! families/pack_settings fixtures.md "Document" rows `ps01`–`ps16` (validation.md "Save
+//! `families/pack_settings` fixtures.md "Document" rows `ps01`–`ps16` (validation.md "Save
 //! document" D1–D10).
 
 use bedrock_addon::diagnostic::{

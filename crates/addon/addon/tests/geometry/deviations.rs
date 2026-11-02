@@ -268,6 +268,7 @@ fn a_shelf_in_an_older_file_follows_the_engine_version_deviation() {
 /// finite float of its sign, with a warning, where vanilla's float conversion gives an infinity the
 /// writer has no spelling for.
 #[test]
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn a_number_beyond_f32_is_read_as_the_largest_finite_float_with_a_warning_deviation() {
     use bedrock_addon::document::Content;
     use bedrock_addon::molang::Molang;

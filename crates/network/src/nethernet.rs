@@ -10,24 +10,40 @@ pub struct IdentityStore {
 }
 
 impl IdentityStore {
+    /// Generates a new self-signed server identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`IdentityError`] when the identity cannot be generated or encoded.
     pub fn generate() -> Result<Self, IdentityError> {
         let pem = ServerIdentity::generate("self", SystemTime::now())?.to_pem()?;
         Ok(Self::new(pem))
     }
 
+    /// Wraps an existing PEM-encoded identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`IdentityError`] when `pem` is not a valid server identity.
     pub fn from_pem(pem: impl Into<String>) -> Result<Self, IdentityError> {
         let pem = pem.into();
         ServerIdentity::from_pem(&pem, "", SystemTime::now())?;
         Ok(Self::new(pem))
     }
 
+    /// Loads the identity stored at `path`, or generates and saves a new one when the file is
+    /// missing or unreadable.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`IdentityError`] when a new identity has to be generated and that fails.
     pub fn load_or_generate(path: impl AsRef<Path>) -> Result<Self, IdentityError> {
         let path = path.as_ref();
         if let Ok(pem) = std::fs::read_to_string(path) {
             match Self::from_pem(pem) {
                 Ok(store) => return Ok(store),
                 Err(error) => {
-                    tracing::warn!("ignoring unreadable {}: {error}", path.display())
+                    tracing::warn!("ignoring unreadable {}: {error}", path.display());
                 }
             }
         }
@@ -46,6 +62,11 @@ impl IdentityStore {
         &self.pem
     }
 
+    /// The server identity this store holds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`IdentityError`] when the stored PEM is no longer a valid identity.
     pub fn identity(&self) -> Result<ServerIdentity, IdentityError> {
         ServerIdentity::from_pem(&self.pem, "self", SystemTime::now())
     }
@@ -76,7 +97,7 @@ impl From<&BedrockMOTD> for ServerData {
         data.player_count = motd.player_count;
         data.max_player_count = motd.player_max;
         data.protocol_version = motd.protocol;
-        data.game_version = motd.version.clone();
+        data.game_version.clone_from(&motd.version);
         data
     }
 }
