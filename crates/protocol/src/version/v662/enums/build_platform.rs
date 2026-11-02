@@ -16,7 +16,7 @@ pub enum BuildPlatform {
     #[deprecated]
     TvOs = 10,
     Sony = 11,
-    /// PlayStation
+    /// `PlayStation`
     Nx = 12,
     /// Nintendo Switch
     Xbox = 13,

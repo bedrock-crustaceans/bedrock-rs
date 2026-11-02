@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 #[packet(id = 11, direction = "server_to_client")]
 #[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 pub struct StartGamePacket<V: ProtoVersion> {
     pub target_actor_id: V::ActorUniqueID,
     pub target_runtime_id: V::ActorRuntimeID,

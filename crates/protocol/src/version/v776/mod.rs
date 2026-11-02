@@ -1,4 +1,4 @@
-//! r/21_u6
+//! `r/21_u6`
 
 pub mod enums;
 pub mod packets;

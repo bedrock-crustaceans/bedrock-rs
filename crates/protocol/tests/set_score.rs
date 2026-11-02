@@ -10,7 +10,7 @@ fn round_trip<P: ProtoCodec>(bytes: &[u8]) -> P {
     let mut cursor = Cursor::new(bytes);
     let packet = P::deserialize(&mut cursor).expect("packet decodes");
     assert_eq!(
-        cursor.position() as usize,
+        usize::try_from(cursor.position()).unwrap(),
         bytes.len(),
         "packet left bytes unread"
     );
@@ -40,7 +40,7 @@ fn change_player_entry() -> Vec<u8> {
 }
 
 fn packet(entries: &[Vec<u8>]) -> Vec<u8> {
-    let mut bytes = vec![entries.len() as u8];
+    let mut bytes = vec![u8::try_from(entries.len()).unwrap()];
     for entry in entries {
         bytes.extend(entry);
     }

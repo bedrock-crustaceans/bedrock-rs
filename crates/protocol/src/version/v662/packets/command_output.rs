@@ -34,7 +34,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOutputPacket<V> {
         <V::CommandOriginData as ProtoCodec>::serialize(&self.origin_data, stream)?;
         stream.write_i8(output_type_cursor.read_i8()?)?;
         <u32 as ProtoCodecVAR>::serialize(&self.success_count, stream)?;
-        <u32 as ProtoCodecVAR>::serialize(&(self.output_messages.len() as u32), stream)?;
+        <u32 as ProtoCodecVAR>::serialize(&u32::try_from(self.output_messages.len())?, stream)?;
         for i in &self.output_messages {
             <OutputMessagesEntry as ProtoCodec>::serialize(i, stream)?;
         }
@@ -79,7 +79,7 @@ impl<V: ProtoVersion> ProtoCodec for CommandOutputPacket<V> {
             + self
                 .output_messages
                 .iter()
-                .map(|i| i.size_hint())
+                .map(ProtoCodec::size_hint)
                 .sum::<usize>()
     }
 }

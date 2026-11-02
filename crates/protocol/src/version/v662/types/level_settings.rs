@@ -1,6 +1,7 @@
 use crate::ProtoVersion;
 use bedrock_macros::ProtoCodec;
 
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 #[derive(ProtoCodec, Clone, Debug)]
 pub struct LevelSettings<V: ProtoVersion> {
     #[endianness(le)]

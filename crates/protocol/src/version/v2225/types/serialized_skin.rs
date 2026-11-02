@@ -3,6 +3,7 @@ use bedrock_macros::ProtoCodec;
 use uuid::Uuid;
 
 #[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 pub struct SerializedSkin<V: ProtoVersion> {
     pub skin_id: String,
     pub skin_resource_patch: String,

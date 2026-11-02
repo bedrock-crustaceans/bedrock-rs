@@ -38,10 +38,10 @@ impl<V: ProtoVersion> ProtoCodec for DisconnectPacket<V> {
 
         let skip_message = bool::deserialize(stream)?;
 
-        let message = if !skip_message {
-            Some(DisconnectMessage::deserialize(stream)?)
-        } else {
+        let message = if skip_message {
             None
+        } else {
+            Some(DisconnectMessage::deserialize(stream)?)
         };
 
         Ok(Self { reason, message })

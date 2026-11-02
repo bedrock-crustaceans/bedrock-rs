@@ -69,6 +69,7 @@ mod enabled {
         active: bool,
     }
 
+    #[must_use]
     pub fn field(name: &'static str, index: Option<usize>) -> FieldGuard {
         let active = TRACER.with_borrow_mut(|t| {
             let Some(t) = t else { return false };

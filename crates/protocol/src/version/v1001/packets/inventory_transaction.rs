@@ -17,10 +17,7 @@ pub struct InventoryTransactionPacket<V: ProtoVersion> {
 }
 
 fn expect_present<R: Read>(stream: &mut R, field: &'static str) -> Result<(), ProtoCodecError> {
-    match bool::deserialize(stream)? {
-        true => Ok(()),
-        false => Err(ProtoCodecError::ExpectedSome(field)),
-    }
+    if bool::deserialize(stream)? { Ok(()) } else { Err(ProtoCodecError::ExpectedSome(field)) }
 }
 
 impl<V: ProtoVersion> ProtoCodec for InventoryTransactionPacket<V> {

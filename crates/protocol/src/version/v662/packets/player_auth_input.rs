@@ -31,7 +31,6 @@ pub struct PlayerAuthInputPacket<V: ProtoVersion> {
 pub mod player_auth_input_packet {
     use crate::ProtoVersion;
     use bedrock_macros::ProtoCodec;
-    
 
     #[repr(u64)]
     pub enum PlayerAuthInputFlags {
@@ -123,7 +122,9 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         <V::NewInteractionModel as ProtoCodec>::serialize(&self.new_interaction_model, stream)?;
         if let ClientPlayMode::Reality = &self.play_mode {
             <(f32, f32, f32) as ProtoCodecLE>::serialize(
-                self.vr_gaze_direction.as_ref().ok_or(ProtoCodecError::ExpectedSome("vr_gaze_direction"))?,
+                self.vr_gaze_direction
+                    .as_ref()
+                    .ok_or(ProtoCodecError::ExpectedSome("vr_gaze_direction"))?,
                 stream,
             )?;
         }
@@ -131,25 +132,33 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         <(f32, f32, f32) as ProtoCodecLE>::serialize(&self.velocity, stream)?;
         if self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
             <V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::serialize(
-                self.item_use_transaction.as_ref().ok_or(ProtoCodecError::ExpectedSome("item_use_transaction"))?,
+                self.item_use_transaction
+                    .as_ref()
+                    .ok_or(ProtoCodecError::ExpectedSome("item_use_transaction"))?,
                 stream,
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
             <PerformItemStackRequestData<V> as ProtoCodec>::serialize(
-                self.item_stack_request.as_ref().ok_or(ProtoCodecError::ExpectedSome("item_stack_request"))?,
+                self.item_stack_request
+                    .as_ref()
+                    .ok_or(ProtoCodecError::ExpectedSome("item_stack_request"))?,
                 stream,
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
             <Vec<V::PlayerBlockActionData> as ProtoCodec>::serialize(
-                self.player_block_actions.as_ref().ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?,
+                self.player_block_actions
+                    .as_ref()
+                    .ok_or(ProtoCodecError::ExpectedSome("player_block_actions"))?,
                 stream,
             )?;
         }
         if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
             <ClientPredictedVehicleData<V> as ProtoCodec>::serialize(
-                self.client_predicted_vehicle.as_ref().ok_or(ProtoCodecError::ExpectedSome("client_predicted_vehicle"))?,
+                self.client_predicted_vehicle
+                    .as_ref()
+                    .ok_or(ProtoCodecError::ExpectedSome("client_predicted_vehicle"))?,
                 stream,
             )?;
         }
@@ -168,38 +177,44 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
         let play_mode = <ClientPlayMode as ProtoCodec>::deserialize(stream)?;
         let new_interaction_model = <V::NewInteractionModel as ProtoCodec>::deserialize(stream)?;
         let vr_gaze_direction = match &play_mode {
-            ClientPlayMode::Reality => Some(<(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?),
+            ClientPlayMode::Reality => {
+                Some(<(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?)
+            }
             _ => None,
         };
         let client_tick = <u64 as ProtoCodecVAR>::deserialize(stream)?;
         let velocity = <(f32, f32, f32) as ProtoCodecLE>::deserialize(stream)?;
-        let item_use_transaction = match input_data
+        let item_use_transaction = if input_data
             & PlayerAuthInputFlags::PerformItemInteraction as u64
             != 0
         {
-            true => Some(
-                <V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::deserialize(stream)?,
-            ),
-            false => None,
+            Some(<V::PackedItemUseLegacyInventoryTransaction as ProtoCodec>::deserialize(stream)?)
+        } else {
+            None
         };
         let item_stack_request =
-            match input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
-                true => Some(<PerformItemStackRequestData<V> as ProtoCodec>::deserialize(
+            if input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
+                Some(<PerformItemStackRequestData<V> as ProtoCodec>::deserialize(
                     stream,
-                )?),
-                false => None,
+                )?)
+            } else {
+                None
             };
         let player_block_actions =
-            match input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
-                true => Some(<Vec<V::PlayerBlockActionData> as ProtoCodec>::deserialize(stream)?),
-                false => None,
+            if input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
+                Some(<Vec<V::PlayerBlockActionData> as ProtoCodec>::deserialize(
+                    stream,
+                )?)
+            } else {
+                None
             };
         let client_predicted_vehicle =
-            match input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
-                true => Some(<ClientPredictedVehicleData<V> as ProtoCodec>::deserialize(
+            if input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
+                Some(<ClientPredictedVehicleData<V> as ProtoCodec>::deserialize(
                     stream,
-                )?),
-                false => None,
+                )?)
+            } else {
+                None
             };
         let analog_move_vector = <(f32, f32) as ProtoCodecLE>::deserialize(stream)?;
 
@@ -238,21 +253,33 @@ impl<V: ProtoVersion> ProtoCodec for PlayerAuthInputPacket<V> {
             }
             + ProtoCodecVAR::size_hint(&self.client_tick)
             + ProtoCodecLE::size_hint(&self.velocity)
-            + match self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
-                true => self.item_use_transaction.as_ref().map_or(0, ProtoCodec::size_hint),
-                false => 0,
+            + if self.input_data & PlayerAuthInputFlags::PerformItemInteraction as u64 != 0 {
+                self.item_use_transaction
+                    .as_ref()
+                    .map_or(0, ProtoCodec::size_hint)
+            } else {
+                0
             }
-            + match self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
-                true => self.item_stack_request.as_ref().map_or(0, ProtoCodec::size_hint),
-                false => 0,
+            + if self.input_data & PlayerAuthInputFlags::PerformItemStackRequest as u64 != 0 {
+                self.item_stack_request
+                    .as_ref()
+                    .map_or(0, ProtoCodec::size_hint)
+            } else {
+                0
             }
-            + match self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
-                true => self.player_block_actions.as_ref().map_or(0, ProtoCodec::size_hint),
-                false => 0,
+            + if self.input_data & PlayerAuthInputFlags::PerformBlockActions as u64 != 0 {
+                self.player_block_actions
+                    .as_ref()
+                    .map_or(0, ProtoCodec::size_hint)
+            } else {
+                0
             }
-            + match self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
-                true => self.client_predicted_vehicle.as_ref().map_or(0, ProtoCodec::size_hint),
-                false => 0,
+            + if self.input_data & PlayerAuthInputFlags::IsInClientPredictedVehicle as u64 != 0 {
+                self.client_predicted_vehicle
+                    .as_ref()
+                    .map_or(0, ProtoCodec::size_hint)
+            } else {
+                0
             }
             + ProtoCodecLE::size_hint(&self.analog_move_vector)
     }

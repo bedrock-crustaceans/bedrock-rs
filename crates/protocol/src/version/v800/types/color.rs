@@ -13,22 +13,23 @@ pub struct Color {
 impl ProtoCodec for Color {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         <i32 as ProtoCodecLE>::serialize(
-            &((self.a as i32)
-                | ((self.r as i32) << 8)
-                | ((self.g as i32) << 16)
-                | ((self.b as i32) << 24)),
+            &(i32::from(self.a)
+                | (i32::from(self.r) << 8)
+                | (i32::from(self.g) << 16)
+                | (i32::from(self.b) << 24)),
             stream,
         )?;
         Ok(())
     }
 
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
-        let v = <i32 as ProtoCodecLE>::deserialize(stream)?;
+        let packed = <i32 as ProtoCodecLE>::deserialize(stream)?;
+        let [alpha, red, green, blue] = packed.to_le_bytes().map(|byte| i8::from_le_bytes([byte]));
         Ok(Color {
-            a: v as i8,
-            r: (v >> 8) as i8,
-            g: (v >> 16) as i8,
-            b: (v >> 24) as i8,
+            r: red,
+            g: green,
+            b: blue,
+            a: alpha,
         })
     }
 

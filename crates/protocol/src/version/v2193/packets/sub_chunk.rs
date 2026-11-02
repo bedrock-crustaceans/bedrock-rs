@@ -63,7 +63,7 @@ impl HeightMapData {
 
 impl ProtoCodec for HeightMapData {
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
-        let run_length: u32 = Self::RUN_LENGTH as u32;
+        let run_length = u32::try_from(Self::RUN_LENGTH)?;
 
         for run in &self.runs {
             <u32 as ProtoCodecVAR>::serialize(&run_length, stream)?;
@@ -79,7 +79,7 @@ impl ProtoCodec for HeightMapData {
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let mut runs = [[0i8; Self::RUN_LENGTH]; Self::RUN_COUNT];
 
-        for run in runs.iter_mut() {
+        for run in &mut runs {
             let run_length = <u32 as ProtoCodecVAR>::deserialize(stream)?;
 
             if run_length as usize != Self::RUN_LENGTH {
@@ -88,7 +88,7 @@ impl ProtoCodec for HeightMapData {
                 ));
             }
 
-            for height in run.iter_mut() {
+            for height in run {
                 *height = <i8 as ProtoCodec>::deserialize(stream)?;
             }
         }
@@ -98,6 +98,6 @@ impl ProtoCodec for HeightMapData {
 
     fn size_hint(&self) -> usize {
         Self::RUN_COUNT
-            * (<u32 as ProtoCodecVAR>::size_hint(&(Self::RUN_LENGTH as u32)) + Self::RUN_LENGTH)
+            * (<u32 as ProtoCodecVAR>::size_hint(&u32::try_from(Self::RUN_LENGTH).unwrap_or(u32::MAX)) + Self::RUN_LENGTH)
     }
 }

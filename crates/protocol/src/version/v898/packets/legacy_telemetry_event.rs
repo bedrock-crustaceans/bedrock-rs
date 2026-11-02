@@ -187,7 +187,7 @@ impl<V: ProtoVersion> ProtoCodec for LegacyTelemetryEventPacket<V> {
         let event_type_discriminant = <i32 as ProtoCodecVAR>::deserialize(&mut event_type_cursor)?;
 
         let payload_type: u32 = match event_type_discriminant {
-            0..=7 => event_type_discriminant as u32,
+            0..=7 => event_type_discriminant.cast_unsigned(),
             11 => 8,
             13 => 9,
             15 => 10,

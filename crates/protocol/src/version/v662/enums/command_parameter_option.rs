@@ -4,7 +4,7 @@ use bedrock_macros::ProtoCodec;
 #[enum_endianness(var)]
 #[enum_repr(u32)]
 #[repr(u32)]
-/// Bitflags for AvailableCommand's ParameterDataEntry's options
+/// Bitflags for `AvailableCommand`'s `ParameterDataEntry`'s options
 pub enum CommandParameterOption {
     None = 0,
     EnumAutocompleteExpansion = 0x01,

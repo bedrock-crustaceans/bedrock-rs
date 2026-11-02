@@ -38,6 +38,7 @@ pub enum TextPacketType {
 }
 
 impl ProtoCodec for TextPacketType {
+    #[expect(clippy::too_many_lines, reason = "one match arm per text variant")]
     fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
         let category: u8 = match self {
             TextPacketType::Raw(_)
@@ -156,20 +157,9 @@ impl ProtoCodec for TextPacketType {
     fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
         let category = u8::deserialize(stream)?;
 
-        match category {
-            0 => {
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-            }
-            _ => {
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-                String::deserialize(stream)?;
-            }
+        let skipped_strings = if category == 0 { 6 } else { 3 };
+        for _ in 0..skipped_strings {
+            String::deserialize(stream)?;
         }
 
         let discriminant = u8::deserialize(stream)?;

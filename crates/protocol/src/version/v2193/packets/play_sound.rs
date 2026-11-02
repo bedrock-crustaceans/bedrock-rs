@@ -23,7 +23,7 @@ pub struct PlaySoundPacket<V: ProtoVersion> {
     pub playback_position_seconds: Option<f32>,
 }
 
-/// PlaySound stores position as signed varint coordinates scaled by 8.
+/// `PlaySound` stores position as signed varint coordinates scaled by 8.
 #[derive(Clone, Debug)]
 pub struct PlaySoundPosition<V: ProtoVersion> {
     pub x8: i32,
@@ -35,6 +35,7 @@ pub struct PlaySoundPosition<V: ProtoVersion> {
 impl<V: ProtoVersion> PlaySoundPosition<V> {
     pub const FIXED_POINT_SCALE: f32 = 8.0;
 
+    #[must_use]
     pub const fn from_raw_x8(x8: i32, y8: i32, z8: i32) -> Self {
         Self {
             x8,
@@ -44,6 +45,11 @@ impl<V: ProtoVersion> PlaySoundPosition<V> {
         }
     }
 
+    #[must_use]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "fixed-point coordinates are far below the 2^24 range where f32 is exact"
+    )]
     pub fn as_block_coords(&self) -> (f32, f32, f32) {
         (
             self.x8 as f32 / Self::FIXED_POINT_SCALE,

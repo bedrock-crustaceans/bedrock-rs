@@ -3,6 +3,7 @@ use bedrock_macros::ProtoCodec;
 use crate::ProtoVersion;
 
 #[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
 pub struct BiomeDefinitionChunkGenData<V: ProtoVersion> {
     pub climate: Option<V::BiomeClimateData>,
     pub consolidated_features: Option<V::BiomeConsolidatedFeatureList>,
