@@ -29,3 +29,6 @@ build
 
 # Nix
 .direnv
+
+# OS-specific
+.DS_Store
