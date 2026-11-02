@@ -2,63 +2,34 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
+
+# A new push to a pull request cancels the run it replaces; runs on `main` always finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  # No debug info and no incremental files: the test binaries outgrow the runners' disks with them.
+  CARGO_PROFILE_DEV_DEBUG: 0
+  CARGO_INCREMENTAL: 0
 
 jobs:
-  test:
-    name: Test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    env:
-      # The workspace's test build outgrows the runner's disk with debug info and incremental files.
-      CARGO_PROFILE_DEV_DEBUG: 0
-      CARGO_INCREMENTAL: 0
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          add-job-id-key: false
-          add-rust-environment-hash-key: false
-          shared-key: "bedrock-rs-cache"
-          cache-on-failure: false
-          cache-all-crates: true
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all
-
   fmt:
-    name: Formatting
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+          components: rustfmt
+      - run: cargo fmt --all --check
 
   clippy:
     name: Clippy (${{ matrix.os }})
@@ -68,25 +39,60 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
-      RUSTFLAGS: "-Dwarnings"
+      RUSTFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v6
-
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          add-job-id-key: false
-          add-rust-environment-hash-key: false
-          shared-key: "bedrock-rs-cache"
-          cache-on-failure: false
-          cache-all-crates: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo clippy --workspace --all-targets --all-features
 
-      - uses: actions-rs/toolchain@v1
+  # The workspace is tested in groups, one job per group and OS. Each job builds only its group's
+  # test binaries, which keeps every job inside the runner's disk and runs the groups in parallel.
+  # `rest` is every crate no other group names, so a new crate is tested without touching this.
+  test:
+    name: Test ${{ matrix.group.name }} (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        group:
+          - name: protocol
+            packages: -p bedrock_protocol -p bedrock_protocol_core -p bedrock_macros
+          # `--all-features` stands in for the `molang` and `nbt` features `bedrock_addon` turns on
+          # in a whole-workspace build, and adds the script family's `script-syntax`.
+          - name: addon-core
+            packages: >-
+              --all-features
+              -p bedrock_addon_core -p bedrock_addon_derive -p bedrock_addon_support
+              -p 'bedrock_addon_family_*'
+          - name: addon
+            packages: -p bedrock_addon
+          - name: addon-std
+            packages: -p bedrock_addon_std
+          - name: rest
+            packages: >-
+              --workspace
+              --exclude bedrock_protocol --exclude bedrock_protocol_core --exclude bedrock_macros
+              --exclude 'bedrock_addon*'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add clippy
-      - uses: actions-rs/cargo@v1
+          tool: cargo-nextest
+      - uses: Swatinem/rust-cache@v2
         with:
-          command: clippy
-          args: --all-targets --all-features
+          key: ${{ matrix.group.name }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Tests
+        shell: bash
+        run: cargo nextest run --profile ci ${{ matrix.group.packages }}
+      # nextest does not run doctests.
+      - name: Doctests
+        shell: bash
+        run: cargo test --doc ${{ matrix.group.packages }}
