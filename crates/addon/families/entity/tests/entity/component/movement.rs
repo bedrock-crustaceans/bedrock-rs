@@ -10,6 +10,7 @@ use bedrock_addon_family_entity::component::{
 
 use super::{json, lenient, read_as, round_trip, strict, write};
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn jump_static_and_dynamic_read_their_defaults() {
     let (jump, _) = strict::<JumpStatic>("{}");
@@ -50,6 +51,7 @@ fn preferred_path_reads_block_sets() {
     assert_eq!(strict::<PreferredPath>("{}").0.max_fall_blocks.0, 3);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e00d_salmon_flocking_round_trips() {
     // e00d "salmon `flocking`" (the 1.13.0 A-op's members); the vanilla spelling

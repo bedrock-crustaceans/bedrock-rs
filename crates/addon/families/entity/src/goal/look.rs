@@ -41,16 +41,19 @@ pub struct Beg {
 
 impl Beg {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `look_distance`, or its default 8.
+    #[must_use]
     pub fn look_distance(&self) -> f32 {
         self.look_distance.map_or(8.0, |v| v.0)
     }
 
     /// `look_time`, or its default 2 to 4.
+    #[must_use]
     pub fn look_time(&self) -> (i32, i32) {
         self.look_time.map_or((2, 4), |range| range.resolve(2, 4))
     }
@@ -112,32 +115,38 @@ pub struct LookAtEntity {
 
 impl LookAtEntity {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `angle_of_view_horizontal`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_horizontal(&self) -> i32 {
         self.angle_of_view_horizontal.map_or(360, |v| v.0)
     }
 
     /// `angle_of_view_vertical`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_vertical(&self) -> i32 {
         self.angle_of_view_vertical.map_or(360, |v| v.0)
     }
 
     /// `look_distance`, or its default 8.
+    #[must_use]
     pub fn look_distance(&self) -> f32 {
         self.look_distance.map_or(8.0, |v| v.0)
     }
 
     /// `look_time`, or its default 2 to 4.
+    #[must_use]
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
     }
 
     /// `probability`, or its default 0.02.
+    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -214,32 +223,38 @@ pub struct LookAtPlayer {
 
 impl LookAtPlayer {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `angle_of_view_horizontal`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_horizontal(&self) -> i32 {
         self.angle_of_view_horizontal.map_or(360, |v| v.0)
     }
 
     /// `angle_of_view_vertical`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_vertical(&self) -> i32 {
         self.angle_of_view_vertical.map_or(360, |v| v.0)
     }
 
     /// `look_distance`, or its default 8.
+    #[must_use]
     pub fn look_distance(&self) -> f32 {
         self.look_distance.map_or(8.0, |v| v.0)
     }
 
     /// `look_time`, or its default 2 to 4.
+    #[must_use]
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
     }
 
     /// `probability`, or its default 0.02.
+    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -315,32 +330,38 @@ pub struct LookAtTarget {
 
 impl LookAtTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `angle_of_view_horizontal`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_horizontal(&self) -> i32 {
         self.angle_of_view_horizontal.map_or(360, |v| v.0)
     }
 
     /// `angle_of_view_vertical`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_vertical(&self) -> i32 {
         self.angle_of_view_vertical.map_or(360, |v| v.0)
     }
 
     /// `look_distance`, or its default 8.
+    #[must_use]
     pub fn look_distance(&self) -> f32 {
         self.look_distance.map_or(8.0, |v| v.0)
     }
 
     /// `look_time`, or its default 2 to 4.
+    #[must_use]
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
     }
 
     /// `probability`, or its default 0.02.
+    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -416,32 +437,38 @@ pub struct LookAtTradingPlayer {
 
 impl LookAtTradingPlayer {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `angle_of_view_horizontal`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_horizontal(&self) -> i32 {
         self.angle_of_view_horizontal.map_or(360, |v| v.0)
     }
 
     /// `angle_of_view_vertical`, or its default 360.
+    #[must_use]
     pub fn angle_of_view_vertical(&self) -> i32 {
         self.angle_of_view_vertical.map_or(360, |v| v.0)
     }
 
     /// `look_distance`, or its default 8.
+    #[must_use]
     pub fn look_distance(&self) -> f32 {
         self.look_distance.map_or(8.0, |v| v.0)
     }
 
     /// `look_time`, or its default 2 to 4.
+    #[must_use]
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
     }
 
     /// `probability`, or its default 0.02.
+    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -514,27 +541,32 @@ pub struct RandomLookAround {
 
 impl RandomLookAround {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `look_time`, or its default 20 to 40.
+    #[must_use]
     pub fn look_time(&self) -> (i32, i32) {
         self.look_time
             .map_or((20, 40), |range| range.resolve(20, 40))
     }
 
     /// `max_angle_of_view_horizontal`, or its default 1.8e+02.
+    #[must_use]
     pub fn max_angle_of_view_horizontal(&self) -> f32 {
         self.max_angle_of_view_horizontal.map_or(1.8e2, |v| v.0)
     }
 
     /// `min_angle_of_view_horizontal`, or its default -1.8e+02.
+    #[must_use]
     pub fn min_angle_of_view_horizontal(&self) -> f32 {
         self.min_angle_of_view_horizontal.map_or(-1.8e2, |v| v.0)
     }
 
     /// `probability`, or its default 0.02.
+    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -607,56 +639,67 @@ pub struct RandomLookAroundAndSit {
 
 impl RandomLookAroundAndSit {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `continue_if_leashed`, or its default `false`.
+    #[must_use]
     pub fn continue_if_leashed(&self) -> bool {
         self.continue_if_leashed.is_some_and(|v| v.0)
     }
 
     /// `continue_sitting_on_reload`, or its default `false`.
+    #[must_use]
     pub fn continue_sitting_on_reload(&self) -> bool {
         self.continue_sitting_on_reload.is_some_and(|v| v.0)
     }
 
     /// `max_angle_of_view_horizontal`, or its default 1.8e+02.
+    #[must_use]
     pub fn max_angle_of_view_horizontal(&self) -> f32 {
         self.max_angle_of_view_horizontal.map_or(1.8e2, |v| v.0)
     }
 
     /// `max_look_count`, or its default 2.
+    #[must_use]
     pub fn max_look_count(&self) -> i32 {
         self.max_look_count.map_or(2, |v| v.0)
     }
 
     /// `max_look_time`, or its default 40.
+    #[must_use]
     pub fn max_look_time(&self) -> i32 {
         self.max_look_time.map_or(40, |v| v.0)
     }
 
     /// `min_angle_of_view_horizontal`, or its default -1.8e+02.
+    #[must_use]
     pub fn min_angle_of_view_horizontal(&self) -> f32 {
         self.min_angle_of_view_horizontal.map_or(-1.8e2, |v| v.0)
     }
 
     /// `min_look_count`, or its default 1.
+    #[must_use]
     pub fn min_look_count(&self) -> i32 {
         self.min_look_count.map_or(1, |v| v.0)
     }
 
     /// `min_look_time`, or its default 20.
+    #[must_use]
     pub fn min_look_time(&self) -> i32 {
         self.min_look_time.map_or(20, |v| v.0)
     }
 
     /// `probability`, or its default 0.02.
+    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
 
     /// `random_look_around_cooldown`, or its default 0.
+    #[must_use]
     pub fn random_look_around_cooldown(&self) -> i32 {
         self.random_look_around_cooldown.map_or(0, |v| v.0)
     }
@@ -717,31 +760,37 @@ pub struct TradeInterest {
 
 impl TradeInterest {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `carried_item_switch_time`, or its default 2.
+    #[must_use]
     pub fn carried_item_switch_time(&self) -> f32 {
         self.carried_item_switch_time.map_or(2.0, |v| v.0)
     }
 
     /// `cooldown`, or its default 2.
+    #[must_use]
     pub fn cooldown(&self) -> f32 {
         self.cooldown.map_or(2.0, |v| v.0)
     }
 
     /// `interest_time`, or its default 45.
+    #[must_use]
     pub fn interest_time(&self) -> f32 {
         self.interest_time.map_or(45.0, |v| v.0)
     }
 
     /// `remove_item_time`, or its default 1.
+    #[must_use]
     pub fn remove_item_time(&self) -> f32 {
         self.remove_item_time.map_or(1.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
+    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }

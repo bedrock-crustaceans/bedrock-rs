@@ -77,8 +77,8 @@ pub fn at_version<T: Component<Set = EntityComponent>>(
     let prefix = format!("minecraft:entity/components/{key}");
     let mut d = Diagnostics::default();
     for mut finding in outcome.diagnostics.iter().cloned() {
-        let path = finding.location.json_path.to_string();
-        let Some(rest) = path.strip_prefix(&prefix) else {
+        let json_path = finding.location.json_path.to_string();
+        let Some(rest) = json_path.strip_prefix(&prefix) else {
             continue;
         };
         let Some(rest) = rest.strip_prefix('/').or(rest.is_empty().then_some("")) else {

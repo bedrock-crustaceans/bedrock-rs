@@ -11,6 +11,7 @@ use bedrock_addon_family_entity::component::{
 
 use super::{fixture, has, json, lenient, read_as, round_trip, strict, write};
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_vanilla_1_26_50_arrow_round_trips() {
     let arrow = round_trip::<Projectile>(&fixture("projectile_arrow_1_26_50.json"));
@@ -32,6 +33,7 @@ fn the_vanilla_1_26_50_arrow_round_trips() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn projectile_reads_its_schema_defaults() {
     let (value, d) = strict::<Projectile>("{}");
@@ -196,6 +198,7 @@ fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
     ));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_lenient_conversion_maps_impact_damage_aliases_when_the_member_is_absent() {
     // `projectile.on_hit.impact_damage`: each alias onto its canonical member
@@ -458,6 +461,7 @@ fn projectile_spread_fire_defaults_to_true() {
 
 /// `FreezeOnHitSubcomponentDefinition`: `size` defaults to 1
 /// (not 0).
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn freeze_on_hit_size_defaults_to_one() {
     let (value, _) = strict::<Projectile>(r#"{"on_hit": {"freeze_on_hit": {}}}"#);
@@ -501,6 +505,7 @@ fn owner_launch_immunity_ticks_is_no_member() {
 /// the legacy on-hit readers take the
 /// camel-case spellings of `catch_fire`, `hurt_owner`, `spawn_chance` and `definition_event`;
 /// below 1.26.50 they are the members, with no finding; the typed 1.26.50 reader binds none.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_legacy_on_hit_camel_case_spellings_are_the_members_below_1_26_50() {
     // The chances are one in 2 and one in 4: the legacy reader reads integer one-in-N chances.

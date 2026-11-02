@@ -222,26 +222,35 @@ fn memory_sensors_read_their_entries() {
     );
 }
 
-/// Goal part: the three ram/jump memory goals (a `.<name>` family
-/// each) and the ram charge sensor, typed from 1.26.50 with the Brain Prototype, with their
-/// defaults; a bare family key is `GenericGoalSuffixMissing`; below 1.26.50 they are unknown.
-#[test]
-fn the_1_26_50_ram_and_jump_brain_keys_are_typed() {
-    use bedrock_addon_core::document::ComponentRef;
+/// A load context with the Brain Prototype experiment on.
+fn brain_context() -> bedrock_addon_core::load::LoadContext {
     use bedrock_addon_core::load::{Experiment, LoadContext};
     let mut cx = LoadContext::detached();
     cx.experiments.insert(Experiment::BrainPrototype);
-    let doc = |version: &str, components: &str| {
-        format!(
-            r#"{{"format_version": "{version}", "minecraft:entity": {{"description": {{"identifier": "demo:goat"}}, "components": {{{components}}}}}}}"#
-        )
-    };
+    cx
+}
+
+/// An entity document of `version` whose `components` hold the given members.
+fn goat_doc(version: &str, components: &str) -> String {
+    format!(
+        r#"{{"format_version": "{version}", "minecraft:entity": {{"description": {{"identifier": "demo:goat"}}, "components": {{{components}}}}}}}"#
+    )
+}
+
+/// Goal part: the three ram/jump memory goals (a `.<name>` family
+/// each) and the ram charge sensor, typed from 1.26.50 with the Brain Prototype, with their
+/// defaults.
+#[test]
+fn the_1_26_50_ram_and_jump_brain_keys_are_typed() {
+    use bedrock_addon_core::document::ComponentRef;
+    use bedrock_addon_family_entity::component::EntityComponent as C;
+    let cx = brain_context();
     let all = r#""minecraft:memory_behavior.jump_to_block.hop": {"priority": 1, "target_blockpos_memory": "jump_target", "jump_velocity_memory": "jump_velocity", "on_complete": [{"event": "demo:landed"}]},
         "minecraft:memory_behavior.prepare_ram_attack.ram": {"priority": 2, "target_entity_memory": "target", "target_position_memory": "target_pos", "on_entity_moved": [{"event": "demo:moved"}]},
         "minecraft:memory_behavior.ram_attack.ram": {"priority": 3, "ram_position_memory": "ram_pos", "knockback_force": 2.5, "on_collide": [{"event": "demo:hit"}]},
         "minecraft:memory_sensor.find_ram_charge_position": {"sensor_entries": [{"target_entity_memory": "target", "charge_position_memory": "charge", "min_ram_distance": 3}]}"#;
     let outcome = bedrock_addon_core::versioning::load::<bedrock_addon_family_entity::Entity>(
-        bedrock_addon_core::json::JsonSlice::new(&doc("1.26.50", all)),
+        bedrock_addon_core::json::JsonSlice::new(&goat_doc("1.26.50", all)),
         &cx,
     );
     let Some(bedrock_addon_core::versioning::Loaded::Stable(entity)) = outcome.value else {
@@ -269,7 +278,6 @@ fn the_1_26_50_ram_and_jump_brain_keys_are_typed() {
     ] {
         assert!(typed.contains(&key), "{key} is not typed: {typed:?}");
     }
-    use bedrock_addon_family_entity::component::EntityComponent as C;
     let typed_value = |key: &str| {
         entity.components.iter().find_map(|entry| match entry {
             ComponentRef::Typed { name, value, .. } if name == key => Some(value.clone()),
@@ -297,9 +305,15 @@ fn the_1_26_50_ram_and_jump_brain_keys_are_typed() {
         .expect("a sensor");
     let entry = &sensor.sensor_entries.as_ref().unwrap()[0];
     assert_eq!((entry.min_ram_distance(), entry.max_ram_distance()), (3, 7));
+}
+
+/// A bare family key is `GenericGoalSuffixMissing`; below 1.26.50 the keys are unknown.
+#[test]
+fn the_1_26_50_brain_keys_without_a_suffix_or_below_the_version_are_refused() {
+    let cx = brain_context();
     // A bare family key is a missing suffix.
     let bare = bedrock_addon_core::versioning::load::<bedrock_addon_family_entity::Entity>(
-        bedrock_addon_core::json::JsonSlice::new(&doc(
+        bedrock_addon_core::json::JsonSlice::new(&goat_doc(
             "1.26.50",
             r#""minecraft:memory_behavior.ram_attack": {"priority": 1}"#,
         )),
@@ -341,7 +355,7 @@ fn the_1_26_50_ram_and_jump_brain_keys_are_typed() {
         ),
     ] {
         let older = bedrock_addon_core::versioning::load::<bedrock_addon_family_entity::Entity>(
-            bedrock_addon_core::json::JsonSlice::new(&doc(
+            bedrock_addon_core::json::JsonSlice::new(&goat_doc(
                 "1.26.49",
                 &format!(r#""{key}": {json}"#),
             )),

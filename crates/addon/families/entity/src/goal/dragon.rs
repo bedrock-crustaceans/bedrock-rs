@@ -43,32 +43,38 @@ pub struct DragonChargePlayer {
 
 impl DragonChargePlayer {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `active_speed`, or its default 1.
+    #[must_use]
     pub fn active_speed(&self) -> f32 {
         self.active_speed.map_or(1.0, |v| v.0)
     }
 
     /// `continue_charge_threshold_time`, or its default 0.5.
+    #[must_use]
     pub fn continue_charge_threshold_time(&self) -> f32 {
         self.continue_charge_threshold_time.map_or(0.5, |v| v.0)
     }
 
     /// `flight_speed`, or its default 0.6.
+    #[must_use]
     pub fn flight_speed(&self) -> f32 {
         self.flight_speed.map_or(0.6, |v| v.0)
     }
 
     /// `target_zone`, or its default 1e+01 to 1.5e+02.
+    #[must_use]
     pub fn target_zone(&self) -> (f32, f32) {
         self.target_zone
             .map_or((1.0e1, 1.5e2), |range| range.resolve(1.0e1, 1.5e2))
     }
 
     /// `turn_speed`, or its default 0.7.
+    #[must_use]
     pub fn turn_speed(&self) -> f32 {
         self.turn_speed.map_or(0.7, |v| v.0)
     }
@@ -117,6 +123,7 @@ pub struct DragonDeath {
 
 impl DragonDeath {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -177,31 +184,37 @@ pub struct DragonFlaming {
 
 impl DragonFlaming {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 1e+01.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(1.0e1, |v| v.0)
     }
 
     /// `flame_time`, or its default 0.5.
+    #[must_use]
     pub fn flame_time(&self) -> f32 {
         self.flame_time.map_or(0.5, |v| v.0)
     }
 
     /// `ground_flame_count`, or its default 4.
+    #[must_use]
     pub fn ground_flame_count(&self) -> i32 {
         self.ground_flame_count.map_or(4, |v| v.0)
     }
 
     /// `roar_time`, or its default 2.
+    #[must_use]
     pub fn roar_time(&self) -> f32 {
         self.roar_time.map_or(2.0, |v| v.0)
     }
 
     /// `smoke_color`, or its default `#DC00EF`.
+    #[must_use]
     pub fn smoke_color(&self) -> &str {
         self.smoke_color
             .as_ref()
@@ -209,11 +222,13 @@ impl DragonFlaming {
     }
 
     /// `smoke_radius`, or its default 5.
+    #[must_use]
     pub fn smoke_radius(&self) -> f32 {
         self.smoke_radius.map_or(5.0, |v| v.0)
     }
 
     /// `smoke_time`, or its default 1e+01.
+    #[must_use]
     pub fn smoke_time(&self) -> f32 {
         self.smoke_time.map_or(1.0e1, |v| v.0)
     }
@@ -253,6 +268,7 @@ pub struct DragonHoldingPattern {
 
 impl DragonHoldingPattern {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -292,6 +308,7 @@ pub struct DragonLanding {
 
 impl DragonLanding {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -331,6 +348,7 @@ pub struct DragonScanning {
 
 impl DragonScanning {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -394,47 +412,56 @@ pub struct DragonStrafePlayer {
 
 impl DragonStrafePlayer {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `active_speed`, or its default 1.
+    #[must_use]
     pub fn active_speed(&self) -> f32 {
         self.active_speed.map_or(1.0, |v| v.0)
     }
 
     /// `fireball_range`, or its default 64.
+    #[must_use]
     pub fn fireball_range(&self) -> f32 {
         self.fireball_range.map_or(64.0, |v| v.0)
     }
 
     /// `flight_speed`, or its default 0.6.
+    #[must_use]
     pub fn flight_speed(&self) -> f32 {
         self.flight_speed.map_or(0.6, |v| v.0)
     }
 
     /// `switch_direction_probability`, or its default 0.125.
+    #[must_use]
     pub fn switch_direction_probability(&self) -> f32 {
         self.switch_direction_probability.map_or(0.125, |v| v.0)
     }
 
     /// `target_in_range_and_in_view_time`, or its default 0.25.
+    #[must_use]
     pub fn target_in_range_and_in_view_time(&self) -> f32 {
         self.target_in_range_and_in_view_time.map_or(0.25, |v| v.0)
     }
 
     /// `target_zone`, or its default 1e+01 to 1.5e+02.
+    #[must_use]
     pub fn target_zone(&self) -> (f32, f32) {
         self.target_zone
             .map_or((1.0e1, 1.5e2), |range| range.resolve(1.0e1, 1.5e2))
     }
 
     /// `turn_speed`, or its default 0.7.
+    #[must_use]
     pub fn turn_speed(&self) -> f32 {
         self.turn_speed.map_or(0.7, |v| v.0)
     }
 
     /// `view_angle`, or its default 1e+01.
+    #[must_use]
     pub fn view_angle(&self) -> f32 {
         self.view_angle.map_or(1.0e1, |v| v.0)
     }
@@ -494,6 +521,7 @@ pub struct DragonTakeoff {
 
 impl DragonTakeoff {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }

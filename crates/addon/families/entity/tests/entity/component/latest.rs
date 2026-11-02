@@ -498,7 +498,7 @@ fn healable_takes_a_lone_effect_and_string_items_only_below_the_target() {
         Some(json(r#""regeneration""#))
     );
     assert_eq!(
-        at(&lone, "items/0/effects").and_then(|e| e.as_array().map(|a| a.len())),
+        at(&lone, "items/0/effects").and_then(|e| e.as_array().map(facet_value::VArray::len)),
         Some(1)
     );
     let strings = written("1.26.50", "minecraft:healable", &ac(34));
@@ -515,8 +515,8 @@ fn healable_takes_a_lone_effect_and_string_items_only_below_the_target() {
     assert_eq!(at(&legacy, "force_use"), Some(json("true")));
 }
 
-/// The V12660 template's `teleport` with `teleports_on_projectile_hit` ("TeleportComponentDefinition
-/// should parse teleports_on_projectile_hit"), and the DEFAULT lines (light and dark 0.01).
+/// The V12660 template's `teleport` with `teleports_on_projectile_hit` ("`TeleportComponentDefinition`
+/// should parse `teleports_on_projectile_hit`"), and the DEFAULT lines (light and dark 0.01).
 #[test]
 fn teleport_reads_its_values_and_defaults() {
     let (components, _) = written_components(&ac(1));
@@ -548,7 +548,7 @@ fn teleport_reads_its_values_and_defaults() {
     }
 }
 
-/// The 1.26.60 legacy reader of teleport binds the snake_case names only, and the game knows
+/// The 1.26.60 legacy reader of teleport binds the `snake_case` names only, and the game knows
 /// none of `randomTeleports` … `darkTeleportChance` but `lightTeleportChance`, which only the
 /// 1.2 enderman fixer reads. Below 1.26.60 each camel-case spelling is an unknown
 /// member (a kept error, the component at its defaults); at 1.26.60 the typed read refuses it.
@@ -1391,7 +1391,11 @@ fn a_vector_object_missing_a_coordinate_is_told() {
             "{version} {key}: {found:#?}"
         );
         let vector = at(&member(&components, key), written_at).expect("written");
-        assert_eq!(vector.as_object().map(|o| o.len()), Some(3), "{vector:?}");
+        assert_eq!(
+            vector.as_object().map(facet_value::VObject::len),
+            Some(3),
+            "{vector:?}"
+        );
     }
 }
 
@@ -1483,7 +1487,7 @@ fn below_1_15_0_a_bad_nested_value_of_a_schema_reader_is_taken_out_alone() {
     ));
     let healable = member(&components, "minecraft:healable");
     assert_eq!(
-        at(&healable, "items").and_then(|i| i.as_array().map(|a| a.len())),
+        at(&healable, "items").and_then(|i| i.as_array().map(facet_value::VArray::len)),
         Some(2)
     );
     assert_eq!(at(&healable, "items/1/heal_amount"), Some(json("4")));
@@ -1618,7 +1622,7 @@ fn a_legacy_range_bound_that_is_no_number_reads_as_zero_with_an_information() {
 }
 
 /// The three opted-in components whose legacy reader is hand-written
-/// read member by member with defaults and keep the element (spell_effects pushes each
+/// read member by member with defaults and keep the element (`spell_effects` pushes each
 /// effect after its members are read; so do transformation and movement.jump).
 #[test]
 fn the_hand_written_legacy_readers_keep_the_element() {

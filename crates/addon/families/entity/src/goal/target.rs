@@ -66,6 +66,7 @@ pub struct AvoidBlock {
 
 impl AvoidBlock {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -78,38 +79,45 @@ impl AvoidBlock {
     }
 
     /// `search_height`, or its default 0.
+    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(0, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
+    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `sound_interval`, or its default 3 to 8.
+    #[must_use]
     pub fn sound_interval(&self) -> (f32, f32) {
         self.sound_interval
             .map_or((3.0, 8.0), |range| range.resolve(3.0, 8.0))
     }
 
     /// `sprint_speed_modifier`, or its default 1.
+    #[must_use]
     pub fn sprint_speed_modifier(&self) -> f32 {
         self.sprint_speed_modifier.map_or(1.0, |v| v.0)
     }
 
     /// `target_selection_method`, or its default `nearest`.
+    #[must_use]
     pub fn target_selection_method(&self) -> TargetSelectionMethod {
         self.target_selection_method
             .unwrap_or(TargetSelectionMethod::Nearest)
     }
 
     /// `tick_interval`, or its default 1.
+    #[must_use]
     pub fn tick_interval(&self) -> i32 {
         self.tick_interval.map_or(1, |v| v.0)
     }
 
     /// `walk_speed_modifier`, or its default 1.
+    #[must_use]
     pub fn walk_speed_modifier(&self) -> f32 {
         self.walk_speed_modifier.map_or(1.0, |v| v.0)
     }
@@ -208,6 +216,7 @@ pub struct AvoidMobType {
 
 impl AvoidMobType {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -220,62 +229,74 @@ impl AvoidMobType {
     }
 
     /// `avoid_target_xz`, or its default 16.
+    #[must_use]
     pub fn avoid_target_xz(&self) -> i32 {
         self.avoid_target_xz.map_or(16, |v| v.0)
     }
 
     /// `avoid_target_y`, or its default 7.
+    #[must_use]
     pub fn avoid_target_y(&self) -> i32 {
         self.avoid_target_y.map_or(7, |v| v.0)
     }
 
     /// `ignore_visibility`, or its default `false`.
+    #[must_use]
     pub fn ignore_visibility(&self) -> bool {
         self.ignore_visibility.is_some_and(|v| v.0)
     }
 
     /// `max_dist`, or its default 3.
+    #[must_use]
     pub fn max_dist(&self) -> f32 {
         self.max_dist.map_or(3.0, |v| v.0)
     }
 
     /// `max_flee`, or its default 1e+01.
+    #[must_use]
     pub fn max_flee(&self) -> f32 {
         self.max_flee.map_or(1.0e1, |v| v.0)
     }
 
     /// `probability_per_strength`, or its default 1.
+    #[must_use]
     pub fn probability_per_strength(&self) -> f32 {
         self.probability_per_strength.map_or(1.0, |v| v.0)
     }
 
     /// `remove_target`, or its default `false`.
+    #[must_use]
     pub fn remove_target(&self) -> bool {
         self.remove_target.is_some_and(|v| v.0)
     }
 
     /// `river_speed_multiplier`, or its default 0.75.
+    #[must_use]
     pub fn river_speed_multiplier(&self) -> f32 {
         self.river_speed_multiplier.map_or(0.75, |v| v.0)
     }
 
     /// `sound_interval`, or its default 3 to 8.
+    #[must_use]
     pub fn sound_interval(&self) -> (f32, f32) {
         self.sound_interval
             .map_or((3.0, 8.0), |range| range.resolve(3.0, 8.0))
     }
 
     /// `sprint_distance`, or its default 7.
+    #[must_use]
     pub fn sprint_distance(&self) -> f32 {
         self.sprint_distance.map_or(7.0, |v| v.0)
     }
 
     /// `sprint_speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn sprint_speed_multiplier(&self) -> f32 {
         self.sprint_speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `walk_speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn walk_speed_multiplier(&self) -> f32 {
         self.walk_speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -360,6 +381,7 @@ pub struct DefendTrustedTarget {
 
 impl DefendTrustedTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -372,22 +394,26 @@ impl DefendTrustedTarget {
     }
 
     /// `attack_interval`, or its default 0 to 0.
+    #[must_use]
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `must_see`, or its default `false`.
+    #[must_use]
     pub fn must_see(&self) -> bool {
         self.must_see.is_some_and(|v| v.0)
     }
 
     /// `must_see_forget_duration`, or its default 3.
+    #[must_use]
     pub fn must_see_forget_duration(&self) -> f32 {
         self.must_see_forget_duration.map_or(3.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
+    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -522,41 +548,49 @@ pub struct DefendVillageTarget {
 
 impl DefendVillageTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_chance`, or its default 0.05.
+    #[must_use]
     pub fn attack_chance(&self) -> f32 {
         self.attack_chance.map_or(0.05, |v| v.0)
     }
 
     /// `attack_owner`, or its default `false`.
+    #[must_use]
     pub fn attack_owner(&self) -> bool {
         self.attack_owner.is_some_and(|v| v.0)
     }
 
     /// `must_reach`, or its default `false`.
+    #[must_use]
     pub fn must_reach(&self) -> bool {
         self.must_reach.is_some_and(|v| v.0)
     }
 
     /// `must_see`, or its default `false`.
+    #[must_use]
     pub fn must_see(&self) -> bool {
         self.must_see.is_some_and(|v| v.0)
     }
 
     /// `must_see_forget_duration`, or its default 3.
+    #[must_use]
     pub fn must_see_forget_duration(&self) -> f32 {
         self.must_see_forget_duration.map_or(3.0, |v| v.0)
     }
 
     /// `persist_time`, or its default 0.
+    #[must_use]
     pub fn persist_time(&self) -> f32 {
         self.persist_time.map_or(0.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
+    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -617,11 +651,13 @@ pub struct HurtByTarget {
 
 impl HurtByTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `hurt_owner`, or its default `false`.
+    #[must_use]
     pub fn hurt_owner(&self) -> bool {
         self.hurt_owner.is_some_and(|v| v.0)
     }
@@ -740,77 +776,92 @@ pub struct NearestAttackableTarget {
 
 impl NearestAttackableTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_interval`, or its default 0 to 0.
+    #[must_use]
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `attack_owner`, or its default `false`.
+    #[must_use]
     pub fn attack_owner(&self) -> bool {
         self.attack_owner.is_some_and(|v| v.0)
     }
 
     /// `must_reach`, or its default `false`.
+    #[must_use]
     pub fn must_reach(&self) -> bool {
         self.must_reach.is_some_and(|v| v.0)
     }
 
     /// `must_see`, or its default `false`.
+    #[must_use]
     pub fn must_see(&self) -> bool {
         self.must_see.is_some_and(|v| v.0)
     }
 
     /// `must_see_forget_duration`, or its default 3.
+    #[must_use]
     pub fn must_see_forget_duration(&self) -> f32 {
         self.must_see_forget_duration.map_or(3.0, |v| v.0)
     }
 
     /// `persist_time`, or its default 0.
+    #[must_use]
     pub fn persist_time(&self) -> f32 {
         self.persist_time.map_or(0.0, |v| v.0)
     }
 
     /// `reselect_targets`, or its default `false`.
+    #[must_use]
     pub fn reselect_targets(&self) -> bool {
         self.reselect_targets.is_some_and(|v| v.0)
     }
 
     /// `scan_interval`, or its default 10.
+    #[must_use]
     pub fn scan_interval(&self) -> i32 {
         self.scan_interval.map_or(10, |v| v.0)
     }
 
     /// `set_persistent`, or its default `false`.
+    #[must_use]
     pub fn set_persistent(&self) -> bool {
         self.set_persistent.is_some_and(|v| v.0)
     }
 
     /// `target_acquisition_probability`, or its default 1.
+    #[must_use]
     pub fn target_acquisition_probability(&self) -> f32 {
         self.target_acquisition_probability.map_or(1.0, |v| v.0)
     }
 
     /// `target_invisible_multiplier`, or its default 0.7.
+    #[must_use]
     pub fn target_invisible_multiplier(&self) -> f32 {
         self.target_invisible_multiplier.map_or(0.7, |v| v.0)
     }
 
     /// `target_search_height`, or its default -1.
+    #[must_use]
     pub fn target_search_height(&self) -> f32 {
         self.target_search_height.map_or(-1.0, |v| v.0)
     }
 
     /// `target_sneak_visibility_multiplier`, or its default 0.8.
+    #[must_use]
     pub fn target_sneak_visibility_multiplier(&self) -> f32 {
         self.target_sneak_visibility_multiplier.map_or(0.8, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
+    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -903,62 +954,74 @@ pub struct NearestPrioritizedAttackableTarget {
 
 impl NearestPrioritizedAttackableTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_interval`, or its default 0 to 0.
+    #[must_use]
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `hurt_owner`, or its default `false`.
+    #[must_use]
     pub fn hurt_owner(&self) -> bool {
         self.hurt_owner.is_some_and(|v| v.0)
     }
 
     /// `must_reach`, or its default `false`.
+    #[must_use]
     pub fn must_reach(&self) -> bool {
         self.must_reach.is_some_and(|v| v.0)
     }
 
     /// `must_see`, or its default `false`.
+    #[must_use]
     pub fn must_see(&self) -> bool {
         self.must_see.is_some_and(|v| v.0)
     }
 
     /// `must_see_forget_duration`, or its default 3.
+    #[must_use]
     pub fn must_see_forget_duration(&self) -> f32 {
         self.must_see_forget_duration.map_or(3.0, |v| v.0)
     }
 
     /// `persist_time`, or its default 0.
+    #[must_use]
     pub fn persist_time(&self) -> f32 {
         self.persist_time.map_or(0.0, |v| v.0)
     }
 
     /// `reselect_targets`, or its default `false`.
+    #[must_use]
     pub fn reselect_targets(&self) -> bool {
         self.reselect_targets.is_some_and(|v| v.0)
     }
 
     /// `scan_interval`, or its default 10.
+    #[must_use]
     pub fn scan_interval(&self) -> i32 {
         self.scan_interval.map_or(10, |v| v.0)
     }
 
     /// `set_persistent`, or its default `false`.
+    #[must_use]
     pub fn set_persistent(&self) -> bool {
         self.set_persistent.is_some_and(|v| v.0)
     }
 
     /// `target_search_height`, or its default -1.
+    #[must_use]
     pub fn target_search_height(&self) -> f32 {
         self.target_search_height.map_or(-1.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
+    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -1035,6 +1098,7 @@ pub struct OwnerHurtByTarget {
 
 impl OwnerHurtByTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -1113,6 +1177,7 @@ pub struct OwnerHurtTarget {
 
 impl OwnerHurtTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -1192,11 +1257,13 @@ pub struct TargetWhenPushed {
 
 impl TargetWhenPushed {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `percent_chance`, or its default 0.
+    #[must_use]
     pub fn percent_chance(&self) -> f32 {
         self.percent_chance.map_or(0.0, |v| v.0)
     }
@@ -1242,6 +1309,7 @@ pub struct WitherTargetHighestDamage {
 
 impl WitherTargetHighestDamage {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }

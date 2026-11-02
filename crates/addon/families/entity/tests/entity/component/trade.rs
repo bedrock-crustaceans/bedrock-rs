@@ -63,6 +63,7 @@ fn tamemount_reads_items_and_its_tame_event() {
     assert_eq!(default.max_temper.0, 100);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn wither_target_highest_damage_reads_one_or_many_mob_descriptors() {
     let one = round_trip::<WitherTargetHighestDamage>(

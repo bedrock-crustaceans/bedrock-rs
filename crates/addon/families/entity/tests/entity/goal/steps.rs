@@ -22,8 +22,8 @@ fn convert<
     (value.unwrap_or_else(|| panic!("{key} is kept: {d:?}")), d)
 }
 
-fn event(trigger: &Option<EventTrigger>) -> Option<&str> {
-    trigger.as_ref().and_then(|t| t.event.as_deref())
+fn event(trigger: Option<&EventTrigger>) -> Option<&str> {
+    trigger.and_then(|t| t.event.as_deref())
 }
 
 /// `e33_1_26_30_on_kill_overlap`, the lenient conversion: on each of the five melee
@@ -41,7 +41,7 @@ fn e33_on_kill_folds_into_on_attack_on_the_five_melee_goals() {
         let k = "minecraft:behavior.melee_attack";
         let (g, d) = convert::<goal::MeleeAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
@@ -49,28 +49,28 @@ fn e33_on_kill_folds_into_on_attack_on_the_five_melee_goals() {
         let k = "minecraft:behavior.melee_box_attack";
         let (g, _) = convert::<goal::MeleeBoxAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
         let k = "minecraft:behavior.delayed_attack";
         let (g, _) = convert::<goal::DelayedAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
         let k = "minecraft:behavior.stomp_attack";
         let (g, _) = convert::<goal::StompAttack>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
         let k = "minecraft:behavior.use_kinetic_weapon";
         let (g, _) = convert::<goal::UseKineticWeapon>(k, json);
         assert_eq!(
-            (event(&g.on_attack), event(&g.on_kill)),
+            (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
             (on_attack, None),
             "{k} {case}"
         );
@@ -85,7 +85,7 @@ fn e33_on_kill_folds_into_on_attack_on_the_five_melee_goals() {
     let g = g.expect("kept");
     assert!(d.is_empty());
     assert_eq!(
-        (event(&g.on_attack), event(&g.on_kill)),
+        (event(g.on_attack.as_ref()), event(g.on_kill.as_ref())),
         (Some("x:hit"), Some("x:killed"))
     );
 }
@@ -239,6 +239,7 @@ fn e34_ranged_attack_range_and_movement_mode() {
 
 /// `e24_1_21_89_leashable_breed`, the goal part: `breed`'s lenient conversion
 /// with a wrong-typed member warns and uses the default.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e24_breed_lenient_conversion_defaults_a_wrong_typed_member() {
     let json = fixture_member("steps", "e24_breed_wrong_type");
@@ -283,6 +284,7 @@ fn e29b_look_at_goals_take_a_look_time_range() {
 /// `e29c_1_21_130_typed_to_typed`, the goal part: `charge_speed_multiplier` is
 /// `charge_speed` in an older document; at or above 1.26.0 it is a deprecated member, copied
 /// into `charge_speed` only when that is absent.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e29c_charge_speed_multiplier_becomes_charge_speed() {
     const KEY: &str = "minecraft:behavior.aquatic_charge_attack";
@@ -317,6 +319,7 @@ fn e29c_charge_speed_multiplier_becomes_charge_speed() {
 /// `e25_1_21_90_enderman_renames`, the goal part: the renamed enderman goals with
 /// the values the step writes (the 26-block list included) read as `place_block` and
 /// `take_block`.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e25_the_renamed_enderman_goals_read_as_typed_goals() {
     const NAME: &str = "e25_enderman_renames";
@@ -373,6 +376,7 @@ fn e32_pickup_items_stop_if_holding_item() {
 /// e00e, e00f, e01, e02, e04, e07, e09, e10, e11, e11b, e18, e21, e28, the goal
 /// side: what the entity chain's A/B steps write into a goal reads as the typed goal with no
 /// finding (the steps themselves are the chain's, F-ENTITY-DOC).
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_goals_the_steps_write_read_as_typed_goals() {
     let outputs = fixture("step_outputs");
@@ -429,6 +433,7 @@ fn the_goals_the_steps_write_read_as_typed_goals() {
 /// `target_when_pushed` as the 1.13.0 A-op writes it, with vanilla's `minecraft:filters` /
 /// `minecraft:all_of` key quirk: the descriptor's quirk key is an unknown member, kept and
 /// reported.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e00d_target_when_pushed_keeps_the_quirk_keys_as_unknown_members() {
     let json = r#"{"priority": 1, "percent_chance": 5.0, "entity_types": [{"minecraft:filters": {"minecraft:all_of": [
@@ -450,6 +455,7 @@ fn e00d_target_when_pushed_keeps_the_quirk_keys_as_unknown_members() {
 /// `e01c_1_16_0_component_rewrites`, the goal part: `drop_item_for.target_range`
 /// `[6, 6, 6]` (from `max_dist: 6`) and `explore_outskirts.max_wait_time` 0.25 (from
 /// `wait_time: 5` ticks) read as the typed goals.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e01c_the_rewritten_members_read_as_typed_goals() {
     let (g, d) = convert::<goal::DropItemFor>(
@@ -468,6 +474,7 @@ fn e01c_the_rewritten_members_read_as_typed_goals() {
 
 /// in the lenient conversion a failing value inside a list
 /// takes its default by itself; its neighbours are kept.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_nested_lenient_failure_drops_only_the_failing_value() {
     let (g, d) = goal::<goal::DrinkPotion>(

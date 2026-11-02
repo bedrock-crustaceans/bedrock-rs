@@ -16,6 +16,7 @@ fn e00f_instant_despawn_from_an_empty_despawn_round_trips() {
     assert_eq!(write(&value), json(r#"{"remove_child_entities": false}"#));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn tick_world_reads_its_schema_defaults() {
     let (value, _) = strict::<TickWorld>("{}");

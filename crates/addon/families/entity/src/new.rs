@@ -9,6 +9,7 @@ use super::{Description, Entity, Event, Written};
 
 impl Entity {
     /// An entity named `id` with an empty description, no components, groups or events.
+    #[must_use]
     pub fn new(id: EntityId) -> Self {
         Self {
             description: Description::new(id),
@@ -29,6 +30,7 @@ impl Entity {
 
 impl Description {
     /// A description naming `id` and nothing else.
+    #[must_use]
     pub fn new(id: EntityId) -> Self {
         Self {
             identifier: id,

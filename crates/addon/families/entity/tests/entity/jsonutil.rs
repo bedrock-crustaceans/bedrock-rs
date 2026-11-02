@@ -358,9 +358,9 @@ fn a_legacy_goal_value_out_of_its_bound_is_the_game_s_kept_error_and_takes_the_d
             .and_then(Value::as_object)
             .and_then(|o| o.get(member))
             .map(|v| format!("{v:?}"));
-        if !held
+        if held
             .as_deref()
-            .is_some_and(|v| v.trim_end_matches(".0") == default)
+            .is_none_or(|v| v.trim_end_matches(".0") != default)
         {
             wrong.push(format!(
                 "{key}: written {written:?}, not {member} {default}"

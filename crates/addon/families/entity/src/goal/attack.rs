@@ -59,37 +59,44 @@ pub struct AquaticChargeAttack {
 
 impl AquaticChargeAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_reach`, or its default 0.05.
+    #[must_use]
     pub fn attack_reach(&self) -> f32 {
         self.attack_reach.map_or(0.05, |v| v.0)
     }
 
     /// `charge_cooldown_time`, or its default 2 to 6.
+    #[must_use]
     pub fn charge_cooldown_time(&self) -> (f32, f32) {
         self.charge_cooldown_time
             .map_or((2.0, 6.0), |range| range.resolve(2.0, 6.0))
     }
 
     /// `charge_overshoot_distance`, or its default 1.5.
+    #[must_use]
     pub fn charge_overshoot_distance(&self) -> f32 {
         self.charge_overshoot_distance.map_or(1.5, |v| v.0)
     }
 
     /// `charge_speed`, or its default 0.06.
+    #[must_use]
     pub fn charge_speed(&self) -> f32 {
         self.charge_speed.map_or(0.06, |v| v.0)
     }
 
     /// `knockback_force`, or its default 2.
+    #[must_use]
     pub fn knockback_force(&self) -> f32 {
         self.knockback_force.map_or(2.0, |v| v.0)
     }
 
     /// `max_charge_distance`, or its default 16.
+    #[must_use]
     pub fn max_charge_distance(&self) -> f32 {
         self.max_charge_distance.map_or(16.0, |v| v.0)
     }
@@ -186,16 +193,19 @@ pub struct ChargeAttack {
 
 impl ChargeAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `max_distance`, or its default 3.
+    #[must_use]
     pub fn max_distance(&self) -> f32 {
         self.max_distance.map_or(3.0, |v| v.0)
     }
 
     /// `min_distance`, or its default 2.
+    #[must_use]
     pub fn min_distance(&self) -> f32 {
         self.min_distance.map_or(2.0, |v| v.0)
     }
@@ -206,11 +216,13 @@ impl ChargeAttack {
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `success_rate`, or its default 0.1428.
+    #[must_use]
     pub fn success_rate(&self) -> f32 {
         self.success_rate.map_or(0.1428, |v| v.0)
     }
@@ -327,86 +339,103 @@ pub struct DelayedAttack {
 
 impl DelayedAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_duration`, or its default 0.75.
+    #[must_use]
     pub fn attack_duration(&self) -> f32 {
         self.attack_duration.map_or(0.75, |v| v.0)
     }
 
     /// `attack_once`, or its default `false`.
+    #[must_use]
     pub fn attack_once(&self) -> bool {
         self.attack_once.is_some_and(|v| v.0)
     }
 
     /// `attack_types`, or its default `""`.
+    #[must_use]
     pub fn attack_types(&self) -> &str {
         self.attack_types.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `can_spread_on_fire`, or its default `false`.
+    #[must_use]
     pub fn can_spread_on_fire(&self) -> bool {
         self.can_spread_on_fire.is_some_and(|v| v.0)
     }
 
     /// `hit_delay_pct`, or its default 0.5.
+    #[must_use]
     pub fn hit_delay_pct(&self) -> f32 {
         self.hit_delay_pct.map_or(0.5, |v| v.0)
     }
 
     /// `inner_boundary_time_increase`, or its default 0.25.
+    #[must_use]
     pub fn inner_boundary_time_increase(&self) -> f32 {
         self.inner_boundary_time_increase.map_or(0.25, |v| v.0)
     }
 
     /// `max_path_time`, or its default 0.55.
+    #[must_use]
     pub fn max_path_time(&self) -> f32 {
         self.max_path_time.map_or(0.55, |v| v.0)
     }
 
     /// `melee_fov`, or its default 9e+01.
+    #[must_use]
     pub fn melee_fov(&self) -> f32 {
         self.melee_fov.map_or(9.0e1, |v| v.0)
     }
 
     /// `min_path_time`, or its default 0.2.
+    #[must_use]
     pub fn min_path_time(&self) -> f32 {
         self.min_path_time.map_or(0.2, |v| v.0)
     }
 
     /// `outer_boundary_time_increase`, or its default 0.5.
+    #[must_use]
     pub fn outer_boundary_time_increase(&self) -> f32 {
         self.outer_boundary_time_increase.map_or(0.5, |v| v.0)
     }
 
     /// `path_fail_time_increase`, or its default 0.75.
+    #[must_use]
     pub fn path_fail_time_increase(&self) -> f32 {
         self.path_fail_time_increase.map_or(0.75, |v| v.0)
     }
 
     /// `path_inner_boundary`, or its default 16.
+    #[must_use]
     pub fn path_inner_boundary(&self) -> f32 {
         self.path_inner_boundary.map_or(16.0, |v| v.0)
     }
 
     /// `path_outer_boundary`, or its default 32.
+    #[must_use]
     pub fn path_outer_boundary(&self) -> f32 {
         self.path_outer_boundary.map_or(32.0, |v| v.0)
     }
 
     /// `random_stop_interval`, or its default 0.
+    #[must_use]
     pub fn random_stop_interval(&self) -> i32 {
         self.random_stop_interval.map_or(0, |v| v.0)
     }
 
     /// `reach_multiplier`, or its default 1.5.
+    #[must_use]
     pub fn reach_multiplier(&self) -> f32 {
         self.reach_multiplier.map_or(1.5, |v| v.0)
     }
 
     /// `require_complete_path`, or its default `false`.
+    #[must_use]
     pub fn require_complete_path(&self) -> bool {
         self.require_complete_path.is_some_and(|v| v.0)
     }
@@ -419,21 +448,25 @@ impl DelayedAttack {
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `track_target`, or its default `true`.
+    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_none_or(|v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -574,11 +607,13 @@ pub struct EatMob {
 
 impl EatMob {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `eat_animation_time`, or its default 1.
+    #[must_use]
     pub fn eat_animation_time(&self) -> f32 {
         self.eat_animation_time.map_or(1.0, |v| v.0)
     }
@@ -589,21 +624,25 @@ impl EatMob {
     }
 
     /// `loot_table`, or its default `""`.
+    #[must_use]
     pub fn loot_table(&self) -> &str {
         self.loot_table.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `pull_in_force`, or its default 1.
+    #[must_use]
     pub fn pull_in_force(&self) -> f32 {
         self.pull_in_force.map_or(1.0, |v| v.0)
     }
 
     /// `reach_mob_distance`, or its default 1.
+    #[must_use]
     pub fn reach_mob_distance(&self) -> f32 {
         self.reach_mob_distance.map_or(1.0, |v| v.0)
     }
 
     /// `run_speed`, or its default 1.
+    #[must_use]
     pub fn run_speed(&self) -> f32 {
         self.run_speed.map_or(1.0, |v| v.0)
     }
@@ -683,37 +722,44 @@ pub struct FireAtTarget {
 
 impl FireAtTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_cooldown`, or its default 0.5.
+    #[must_use]
     pub fn attack_cooldown(&self) -> f32 {
         self.attack_cooldown.map_or(0.5, |v| v.0)
     }
 
     /// `attack_range`, or its default 0 to 0.
+    #[must_use]
     pub fn attack_range(&self) -> (f32, f32) {
         self.attack_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `max_head_rotation_x`, or its default 3e+01.
+    #[must_use]
     pub fn max_head_rotation_x(&self) -> f32 {
         self.max_head_rotation_x.map_or(3.0e1, |v| v.0)
     }
 
     /// `max_head_rotation_y`, or its default 3e+01.
+    #[must_use]
     pub fn max_head_rotation_y(&self) -> f32 {
         self.max_head_rotation_y.map_or(3.0e1, |v| v.0)
     }
 
     /// `owner_anchor`, or its default 2.
+    #[must_use]
     pub fn owner_anchor(&self) -> i32 {
         self.owner_anchor.map_or(2, |v| v.0)
     }
 
     /// `owner_offset`, or its default `[0, 0, 0]`.
+    #[must_use]
     pub fn owner_offset(&self) -> [f32; 3] {
         self.owner_offset
             .as_ref()
@@ -721,31 +767,37 @@ impl FireAtTarget {
     }
 
     /// `post_shoot_delay`, or its default 0.2.
+    #[must_use]
     pub fn post_shoot_delay(&self) -> f32 {
         self.post_shoot_delay.map_or(0.2, |v| v.0)
     }
 
     /// `pre_shoot_delay`, or its default 0.75.
+    #[must_use]
     pub fn pre_shoot_delay(&self) -> f32 {
         self.pre_shoot_delay.map_or(0.75, |v| v.0)
     }
 
     /// `projectile_def`, or its default `""`.
+    #[must_use]
     pub fn projectile_def(&self) -> &str {
         self.projectile_def.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `ranged_fov`, or its default 9e+01.
+    #[must_use]
     pub fn ranged_fov(&self) -> f32 {
         self.ranged_fov.map_or(9.0e1, |v| v.0)
     }
 
     /// `target_anchor`, or its default 2.
+    #[must_use]
     pub fn target_anchor(&self) -> i32 {
         self.target_anchor.map_or(2, |v| v.0)
     }
 
     /// `target_offset`, or its default `[0, 0, 0]`.
+    #[must_use]
     pub fn target_offset(&self) -> [f32; 3] {
         self.target_offset
             .as_ref()
@@ -830,41 +882,49 @@ pub struct GuardianAttack {
 
 impl GuardianAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `elder_extra_magic_damage`, or its default 2.
+    #[must_use]
     pub fn elder_extra_magic_damage(&self) -> i32 {
         self.elder_extra_magic_damage.map_or(2, |v| v.0)
     }
 
     /// `hard_mode_extra_magic_damage`, or its default 2.
+    #[must_use]
     pub fn hard_mode_extra_magic_damage(&self) -> i32 {
         self.hard_mode_extra_magic_damage.map_or(2, |v| v.0)
     }
 
     /// `magic_damage`, or its default 1.
+    #[must_use]
     pub fn magic_damage(&self) -> i32 {
         self.magic_damage.map_or(1, |v| v.0)
     }
 
     /// `min_distance`, or its default 3.
+    #[must_use]
     pub fn min_distance(&self) -> f32 {
         self.min_distance.map_or(3.0, |v| v.0)
     }
 
     /// `sound_delay_time`, or its default 0.5.
+    #[must_use]
     pub fn sound_delay_time(&self) -> f32 {
         self.sound_delay_time.map_or(0.5, |v| v.0)
     }
 
     /// `x_max_rotation`, or its default 9e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(9.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 9e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(9.0e1, |v| v.0)
     }
@@ -976,73 +1036,87 @@ pub struct JumpAroundTarget {
 
 impl JumpAroundTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `check_collision`, or its default `false`.
+    #[must_use]
     pub fn check_collision(&self) -> bool {
         self.check_collision.is_some_and(|v| v.0)
     }
 
     /// `entity_bounding_box_scale`, or its default 0.7.
+    #[must_use]
     pub fn entity_bounding_box_scale(&self) -> f32 {
         self.entity_bounding_box_scale.map_or(0.7, |v| v.0)
     }
 
     /// `jump_cooldown_duration`, or its default 0.5.
+    #[must_use]
     pub fn jump_cooldown_duration(&self) -> f32 {
         self.jump_cooldown_duration.map_or(0.5, |v| v.0)
     }
 
     /// `jump_cooldown_when_hurt_duration`, or its default 0.1.
+    #[must_use]
     pub fn jump_cooldown_when_hurt_duration(&self) -> f32 {
         self.jump_cooldown_when_hurt_duration.map_or(0.1, |v| v.0)
     }
 
     /// `landing_distance_from_target`, or its default 4 to 8.
+    #[must_use]
     pub fn landing_distance_from_target(&self) -> (f32, f32) {
         self.landing_distance_from_target
             .map_or((4.0, 8.0), |range| range.resolve(4.0, 8.0))
     }
 
     /// `landing_position_spread_degrees`, or its default 90.
+    #[must_use]
     pub fn landing_position_spread_degrees(&self) -> i32 {
         self.landing_position_spread_degrees.map_or(90, |v| v.0)
     }
 
     /// `last_hurt_duration`, or its default 2.
+    #[must_use]
     pub fn last_hurt_duration(&self) -> f32 {
         self.last_hurt_duration.map_or(2.0, |v| v.0)
     }
 
     /// `line_of_sight_obstruction_height_ignore`, or its default 4.
+    #[must_use]
     pub fn line_of_sight_obstruction_height_ignore(&self) -> i32 {
         self.line_of_sight_obstruction_height_ignore
             .map_or(4, |v| v.0)
     }
 
     /// `max_jump_velocity`, or its default 1.4.
+    #[must_use]
     pub fn max_jump_velocity(&self) -> f32 {
         self.max_jump_velocity.map_or(1.4, |v| v.0)
     }
 
     /// `prepare_jump_duration`, or its default 0.5.
+    #[must_use]
     pub fn prepare_jump_duration(&self) -> f32 {
         self.prepare_jump_duration.map_or(0.5, |v| v.0)
     }
 
     /// `required_vertical_space`, or its default 4.
+    #[must_use]
     pub fn required_vertical_space(&self) -> i32 {
         self.required_vertical_space.map_or(4, |v| v.0)
     }
 
     /// `snap_to_surface_block_range`, or its default 10.
+    #[must_use]
     pub fn snap_to_surface_block_range(&self) -> i32 {
         self.snap_to_surface_block_range.map_or(10, |v| v.0)
     }
 
     /// `valid_distance_to_target`, or its default 4 to 2e+01.
+    #[must_use]
     pub fn valid_distance_to_target(&self) -> (f32, f32) {
         self.valid_distance_to_target
             .map_or((4.0, 2.0e1), |range| range.resolve(4.0, 2.0e1))
@@ -1130,46 +1204,55 @@ pub struct KnockbackRoar {
 
 impl KnockbackRoar {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_time`, or its default 0.5.
+    #[must_use]
     pub fn attack_time(&self) -> f32 {
         self.attack_time.map_or(0.5, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.1.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.1, |v| v.0)
     }
 
     /// `duration`, or its default 1.
+    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(1.0, |v| v.0)
     }
 
     /// `knockback_damage`, or its default 6.
+    #[must_use]
     pub fn knockback_damage(&self) -> i32 {
         self.knockback_damage.map_or(6, |v| v.0)
     }
 
     /// `knockback_height_cap`, or its default 0.4.
+    #[must_use]
     pub fn knockback_height_cap(&self) -> f32 {
         self.knockback_height_cap.map_or(0.4, |v| v.0)
     }
 
     /// `knockback_horizontal_strength`, or its default 4.
+    #[must_use]
     pub fn knockback_horizontal_strength(&self) -> i32 {
         self.knockback_horizontal_strength.map_or(4, |v| v.0)
     }
 
     /// `knockback_range`, or its default 4.
+    #[must_use]
     pub fn knockback_range(&self) -> i32 {
         self.knockback_range.map_or(4, |v| v.0)
     }
 
     /// `knockback_vertical_strength`, or its default 4.
+    #[must_use]
     pub fn knockback_vertical_strength(&self) -> i32 {
         self.knockback_vertical_strength.map_or(4, |v| v.0)
     }
@@ -1225,21 +1308,25 @@ pub struct LeapAtTarget {
 
 impl LeapAtTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `must_be_on_ground`, or its default `true`.
+    #[must_use]
     pub fn must_be_on_ground(&self) -> bool {
         self.must_be_on_ground.is_none_or(|v| v.0)
     }
 
     /// `set_persistent`, or its default `false`.
+    #[must_use]
     pub fn set_persistent(&self) -> bool {
         self.set_persistent.is_some_and(|v| v.0)
     }
 
     /// `yd`, or its default 0.
+    #[must_use]
     pub fn yd(&self) -> f32 {
         self.yd.map_or(0.0, |v| v.0)
     }
@@ -1347,101 +1434,121 @@ pub struct MeleeAttack {
 
 impl MeleeAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_once`, or its default `false`.
+    #[must_use]
     pub fn attack_once(&self) -> bool {
         self.attack_once.is_some_and(|v| v.0)
     }
 
     /// `attack_types`, or its default `""`.
+    #[must_use]
     pub fn attack_types(&self) -> &str {
         self.attack_types.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `can_spread_on_fire`, or its default `false`.
+    #[must_use]
     pub fn can_spread_on_fire(&self) -> bool {
         self.can_spread_on_fire.is_some_and(|v| v.0)
     }
 
     /// `cooldown_time`, or its default 1.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(1.0, |v| v.0)
     }
 
     /// `inner_boundary_time_increase`, or its default 0.25.
+    #[must_use]
     pub fn inner_boundary_time_increase(&self) -> f32 {
         self.inner_boundary_time_increase.map_or(0.25, |v| v.0)
     }
 
     /// `max_path_time`, or its default 0.55.
+    #[must_use]
     pub fn max_path_time(&self) -> f32 {
         self.max_path_time.map_or(0.55, |v| v.0)
     }
 
     /// `melee_fov`, or its default 9e+01.
+    #[must_use]
     pub fn melee_fov(&self) -> f32 {
         self.melee_fov.map_or(9.0e1, |v| v.0)
     }
 
     /// `min_path_time`, or its default 0.2.
+    #[must_use]
     pub fn min_path_time(&self) -> f32 {
         self.min_path_time.map_or(0.2, |v| v.0)
     }
 
     /// `outer_boundary_time_increase`, or its default 0.5.
+    #[must_use]
     pub fn outer_boundary_time_increase(&self) -> f32 {
         self.outer_boundary_time_increase.map_or(0.5, |v| v.0)
     }
 
     /// `path_fail_time_increase`, or its default 0.75.
+    #[must_use]
     pub fn path_fail_time_increase(&self) -> f32 {
         self.path_fail_time_increase.map_or(0.75, |v| v.0)
     }
 
     /// `path_inner_boundary`, or its default 16.
+    #[must_use]
     pub fn path_inner_boundary(&self) -> f32 {
         self.path_inner_boundary.map_or(16.0, |v| v.0)
     }
 
     /// `path_outer_boundary`, or its default 32.
+    #[must_use]
     pub fn path_outer_boundary(&self) -> f32 {
         self.path_outer_boundary.map_or(32.0, |v| v.0)
     }
 
     /// `random_stop_interval`, or its default 0.
+    #[must_use]
     pub fn random_stop_interval(&self) -> i32 {
         self.random_stop_interval.map_or(0, |v| v.0)
     }
 
     /// `reach_multiplier`, or its default 2.
+    #[must_use]
     pub fn reach_multiplier(&self) -> f32 {
         self.reach_multiplier.map_or(2.0, |v| v.0)
     }
 
     /// `require_complete_path`, or its default `false`.
+    #[must_use]
     pub fn require_complete_path(&self) -> bool {
         self.require_complete_path.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `track_target`, or its default `false`.
+    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_some_and(|v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -1616,101 +1723,121 @@ pub struct MeleeBoxAttack {
 
 impl MeleeBoxAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_once`, or its default `false`.
+    #[must_use]
     pub fn attack_once(&self) -> bool {
         self.attack_once.is_some_and(|v| v.0)
     }
 
     /// `attack_types`, or its default `""`.
+    #[must_use]
     pub fn attack_types(&self) -> &str {
         self.attack_types.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `can_spread_on_fire`, or its default `false`.
+    #[must_use]
     pub fn can_spread_on_fire(&self) -> bool {
         self.can_spread_on_fire.is_some_and(|v| v.0)
     }
 
     /// `cooldown_time`, or its default 1.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(1.0, |v| v.0)
     }
 
     /// `horizontal_reach`, or its default 0.8.
+    #[must_use]
     pub fn horizontal_reach(&self) -> f32 {
         self.horizontal_reach.map_or(0.8, |v| v.0)
     }
 
     /// `inner_boundary_time_increase`, or its default 0.25.
+    #[must_use]
     pub fn inner_boundary_time_increase(&self) -> f32 {
         self.inner_boundary_time_increase.map_or(0.25, |v| v.0)
     }
 
     /// `max_path_time`, or its default 0.55.
+    #[must_use]
     pub fn max_path_time(&self) -> f32 {
         self.max_path_time.map_or(0.55, |v| v.0)
     }
 
     /// `melee_fov`, or its default 9e+01.
+    #[must_use]
     pub fn melee_fov(&self) -> f32 {
         self.melee_fov.map_or(9.0e1, |v| v.0)
     }
 
     /// `min_path_time`, or its default 0.2.
+    #[must_use]
     pub fn min_path_time(&self) -> f32 {
         self.min_path_time.map_or(0.2, |v| v.0)
     }
 
     /// `outer_boundary_time_increase`, or its default 0.5.
+    #[must_use]
     pub fn outer_boundary_time_increase(&self) -> f32 {
         self.outer_boundary_time_increase.map_or(0.5, |v| v.0)
     }
 
     /// `path_fail_time_increase`, or its default 0.75.
+    #[must_use]
     pub fn path_fail_time_increase(&self) -> f32 {
         self.path_fail_time_increase.map_or(0.75, |v| v.0)
     }
 
     /// `path_inner_boundary`, or its default 16.
+    #[must_use]
     pub fn path_inner_boundary(&self) -> f32 {
         self.path_inner_boundary.map_or(16.0, |v| v.0)
     }
 
     /// `path_outer_boundary`, or its default 32.
+    #[must_use]
     pub fn path_outer_boundary(&self) -> f32 {
         self.path_outer_boundary.map_or(32.0, |v| v.0)
     }
 
     /// `random_stop_interval`, or its default 0.
+    #[must_use]
     pub fn random_stop_interval(&self) -> i32 {
         self.random_stop_interval.map_or(0, |v| v.0)
     }
 
     /// `require_complete_path`, or its default `false`.
+    #[must_use]
     pub fn require_complete_path(&self) -> bool {
         self.require_complete_path.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `track_target`, or its default `false`.
+    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_some_and(|v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -1847,56 +1974,67 @@ pub struct Ocelotattack {
 
 impl Ocelotattack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 1.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(1.0, |v| v.0)
     }
 
     /// `max_distance`, or its default 15.
+    #[must_use]
     pub fn max_distance(&self) -> f32 {
         self.max_distance.map_or(15.0, |v| v.0)
     }
 
     /// `max_sneak_range`, or its default 15.
+    #[must_use]
     pub fn max_sneak_range(&self) -> f32 {
         self.max_sneak_range.map_or(15.0, |v| v.0)
     }
 
     /// `max_sprint_range`, or its default 4.
+    #[must_use]
     pub fn max_sprint_range(&self) -> f32 {
         self.max_sprint_range.map_or(4.0, |v| v.0)
     }
 
     /// `reach_multiplier`, or its default 2.
+    #[must_use]
     pub fn reach_multiplier(&self) -> f32 {
         self.reach_multiplier.map_or(2.0, |v| v.0)
     }
 
     /// `sneak_speed_multiplier`, or its default 0.6.
+    #[must_use]
     pub fn sneak_speed_multiplier(&self) -> f32 {
         self.sneak_speed_multiplier.map_or(0.6, |v| v.0)
     }
 
     /// `sprint_speed_multiplier`, or its default 1.33.
+    #[must_use]
     pub fn sprint_speed_multiplier(&self) -> f32 {
         self.sprint_speed_multiplier.map_or(1.33, |v| v.0)
     }
 
     /// `walk_speed_multiplier`, or its default 0.8.
+    #[must_use]
     pub fn walk_speed_multiplier(&self) -> f32 {
         self.walk_speed_multiplier.map_or(0.8, |v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -2016,32 +2154,38 @@ pub struct RamAttack {
 
 impl RamAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `baby_knockback_modifier`, or its default 0.33333334.
+    #[must_use]
     pub fn baby_knockback_modifier(&self) -> f32 {
         self.baby_knockback_modifier.map_or(0.333_333_34, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 1e+01 to 2e+01.
+    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
     }
 
     /// `knockback_force`, or its default 5.
+    #[must_use]
     pub fn knockback_force(&self) -> f32 {
         self.knockback_force.map_or(5.0, |v| v.0)
     }
 
     /// `knockback_height`, or its default 0.1.
+    #[must_use]
     pub fn knockback_height(&self) -> f32 {
         self.knockback_height.map_or(0.1, |v| v.0)
     }
 
     /// `min_ram_distance`, or its default 4.
+    #[must_use]
     pub fn min_ram_distance(&self) -> i32 {
         self.min_ram_distance.map_or(4, |v| v.0)
     }
@@ -2054,6 +2198,7 @@ impl RamAttack {
     }
 
     /// `ram_distance`, or its default 7.
+    #[must_use]
     pub fn ram_distance(&self) -> i32 {
         self.ram_distance.map_or(7, |v| v.0)
     }
@@ -2066,11 +2211,13 @@ impl RamAttack {
     }
 
     /// `ram_speed`, or its default 2.
+    #[must_use]
     pub fn ram_speed(&self) -> f32 {
         self.ram_speed.map_or(2.0, |v| v.0)
     }
 
     /// `run_speed`, or its default 1.
+    #[must_use]
     pub fn run_speed(&self) -> f32 {
         self.run_speed.map_or(1.0, |v| v.0)
     }
@@ -2160,17 +2307,20 @@ pub struct RangedAttack {
 
 impl RangedAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_interval`, or its default -1 to -1.
+    #[must_use]
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
             .map_or((-1.0, -1.0), |range| range.resolve(-1.0, -1.0))
     }
 
     /// `attack_range`, or its default 0 to 0.
+    #[must_use]
     pub fn attack_range(&self) -> (f32, f32) {
         // In the order written: the cereal range is not reordered.
         self.attack_range.map_or((0.0, 0.0), |range| {
@@ -2182,62 +2332,74 @@ impl RangedAttack {
     }
 
     /// `burst_interval`, or its default 0.
+    #[must_use]
     pub fn burst_interval(&self) -> f32 {
         self.burst_interval.map_or(0.0, |v| v.0)
     }
 
     /// `burst_shots`, or its default 1.
+    #[must_use]
     pub fn burst_shots(&self) -> i32 {
         self.burst_shots.map_or(1, |v| v.0)
     }
 
     /// `charge_charged_trigger`, or its default 0.
+    #[must_use]
     pub fn charge_charged_trigger(&self) -> f32 {
         self.charge_charged_trigger.map_or(0.0, |v| v.0)
     }
 
     /// `charge_shoot_trigger`, or its default 0.
+    #[must_use]
     pub fn charge_shoot_trigger(&self) -> f32 {
         self.charge_shoot_trigger.map_or(0.0, |v| v.0)
     }
 
     /// `in_range_movement_mode`, or its default `hold_position`.
+    #[must_use]
     pub fn in_range_movement_mode(&self) -> InRangeMovementMode {
         self.in_range_movement_mode
             .unwrap_or(InRangeMovementMode::HoldPosition)
     }
 
     /// `ranged_fov`, or its default 9e+01.
+    #[must_use]
     pub fn ranged_fov(&self) -> f32 {
         self.ranged_fov.map_or(9.0e1, |v| v.0)
     }
 
     /// `set_persistent`, or its default `false`.
+    #[must_use]
     pub fn set_persistent(&self) -> bool {
         self.set_persistent.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `swing`, or its default `false`.
+    #[must_use]
     pub fn swing(&self) -> bool {
         self.swing.is_some_and(|v| v.0)
     }
 
     /// `target_in_sight_time`, or its default 1.
+    #[must_use]
     pub fn target_in_sight_time(&self) -> f32 {
         self.target_in_sight_time.map_or(1.0, |v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -2358,31 +2520,37 @@ pub struct SlimeAttack {
 
 impl SlimeAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `grow_tired_cooldown_time`, or its default 15.
+    #[must_use]
     pub fn grow_tired_cooldown_time(&self) -> f32 {
         self.grow_tired_cooldown_time.map_or(15.0, |v| v.0)
     }
 
     /// `set_persistent`, or its default `false`.
+    #[must_use]
     pub fn set_persistent(&self) -> bool {
         self.set_persistent.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `x_max_rotation`, or its default 1e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(1.0e1, |v| v.0)
     }
 
     /// `y_max_rotation`, or its default 1e+01.
+    #[must_use]
     pub fn y_max_rotation(&self) -> f32 {
         self.y_max_rotation.map_or(1.0e1, |v| v.0)
     }
@@ -2458,26 +2626,31 @@ pub struct SonicBoom {
 
 impl SonicBoom {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_cooldown`, or its default 5.
+    #[must_use]
     pub fn attack_cooldown(&self) -> f32 {
         self.attack_cooldown.map_or(5.0, |v| v.0)
     }
 
     /// `attack_damage`, or its default 3e+01.
+    #[must_use]
     pub fn attack_damage(&self) -> f32 {
         self.attack_damage.map_or(3.0e1, |v| v.0)
     }
 
     /// `attack_range_horizontal`, or its default 15.
+    #[must_use]
     pub fn attack_range_horizontal(&self) -> f32 {
         self.attack_range_horizontal.map_or(15.0, |v| v.0)
     }
 
     /// `attack_range_vertical`, or its default 2e+01.
+    #[must_use]
     pub fn attack_range_vertical(&self) -> f32 {
         self.attack_range_vertical.map_or(2.0e1, |v| v.0)
     }
@@ -2493,31 +2666,37 @@ impl SonicBoom {
     }
 
     /// `duration`, or its default 0.
+    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(0.0, |v| v.0)
     }
 
     /// `duration_until_attack_sound`, or its default 1.7.
+    #[must_use]
     pub fn duration_until_attack_sound(&self) -> f32 {
         self.duration_until_attack_sound.map_or(1.7, |v| v.0)
     }
 
     /// `knockback_height_cap`, or its default 0.
+    #[must_use]
     pub fn knockback_height_cap(&self) -> f32 {
         self.knockback_height_cap.map_or(0.0, |v| v.0)
     }
 
     /// `knockback_horizontal_strength`, or its default 0.
+    #[must_use]
     pub fn knockback_horizontal_strength(&self) -> f32 {
         self.knockback_horizontal_strength.map_or(0.0, |v| v.0)
     }
 
     /// `knockback_vertical_strength`, or its default 0.
+    #[must_use]
     pub fn knockback_vertical_strength(&self) -> f32 {
         self.knockback_vertical_strength.map_or(0.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2590,51 +2769,61 @@ pub struct StalkAndPounceOnTarget {
 
 impl StalkAndPounceOnTarget {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `interest_time`, or its default 2.
+    #[must_use]
     pub fn interest_time(&self) -> f32 {
         self.interest_time.map_or(2.0, |v| v.0)
     }
 
     /// `leap_dist`, or its default 0.8.
+    #[must_use]
     pub fn leap_dist(&self) -> f32 {
         self.leap_dist.map_or(0.8, |v| v.0)
     }
 
     /// `leap_height`, or its default 0.9.
+    #[must_use]
     pub fn leap_height(&self) -> f32 {
         self.leap_height.map_or(0.9, |v| v.0)
     }
 
     /// `max_stalk_dist`, or its default 1e+01.
+    #[must_use]
     pub fn max_stalk_dist(&self) -> f32 {
         self.max_stalk_dist.map_or(1.0e1, |v| v.0)
     }
 
     /// `pounce_max_dist`, or its default 5.
+    #[must_use]
     pub fn pounce_max_dist(&self) -> f32 {
         self.pounce_max_dist.map_or(5.0, |v| v.0)
     }
 
     /// `set_persistent`, or its default `false`.
+    #[must_use]
     pub fn set_persistent(&self) -> bool {
         self.set_persistent.is_some_and(|v| v.0)
     }
 
     /// `stalk_speed`, or its default 1.2.
+    #[must_use]
     pub fn stalk_speed(&self) -> f32 {
         self.stalk_speed.map_or(1.2, |v| v.0)
     }
 
     /// `strike_dist`, or its default 2.
+    #[must_use]
     pub fn strike_dist(&self) -> f32 {
         self.strike_dist.map_or(2.0, |v| v.0)
     }
 
     /// `stuck_time`, or its default 2.
+    #[must_use]
     pub fn stuck_time(&self) -> f32 {
         self.stuck_time.map_or(2.0, |v| v.0)
     }
@@ -2748,106 +2937,127 @@ pub struct StompAttack {
 
 impl StompAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `attack_once`, or its default `false`.
+    #[must_use]
     pub fn attack_once(&self) -> bool {
         self.attack_once.is_some_and(|v| v.0)
     }
 
     /// `attack_types`, or its default `""`.
+    #[must_use]
     pub fn attack_types(&self) -> &str {
         self.attack_types.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `can_spread_on_fire`, or its default `false`.
+    #[must_use]
     pub fn can_spread_on_fire(&self) -> bool {
         self.can_spread_on_fire.is_some_and(|v| v.0)
     }
 
     /// `cooldown_time`, or its default 1.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(1.0, |v| v.0)
     }
 
     /// `inner_boundary_time_increase`, or its default 0.25.
+    #[must_use]
     pub fn inner_boundary_time_increase(&self) -> f32 {
         self.inner_boundary_time_increase.map_or(0.25, |v| v.0)
     }
 
     /// `max_path_time`, or its default 0.55.
+    #[must_use]
     pub fn max_path_time(&self) -> f32 {
         self.max_path_time.map_or(0.55, |v| v.0)
     }
 
     /// `min_path_time`, or its default 0.2.
+    #[must_use]
     pub fn min_path_time(&self) -> f32 {
         self.min_path_time.map_or(0.2, |v| v.0)
     }
 
     /// `no_damage_range_multiplier`, or its default 2.
+    #[must_use]
     pub fn no_damage_range_multiplier(&self) -> f32 {
         self.no_damage_range_multiplier.map_or(2.0, |v| v.0)
     }
 
     /// `outer_boundary_time_increase`, or its default 0.5.
+    #[must_use]
     pub fn outer_boundary_time_increase(&self) -> f32 {
         self.outer_boundary_time_increase.map_or(0.5, |v| v.0)
     }
 
     /// `path_fail_time_increase`, or its default 0.75.
+    #[must_use]
     pub fn path_fail_time_increase(&self) -> f32 {
         self.path_fail_time_increase.map_or(0.75, |v| v.0)
     }
 
     /// `path_inner_boundary`, or its default 16.
+    #[must_use]
     pub fn path_inner_boundary(&self) -> f32 {
         self.path_inner_boundary.map_or(16.0, |v| v.0)
     }
 
     /// `path_outer_boundary`, or its default 32.
+    #[must_use]
     pub fn path_outer_boundary(&self) -> f32 {
         self.path_outer_boundary.map_or(32.0, |v| v.0)
     }
 
     /// `random_stop_interval`, or its default 0.
+    #[must_use]
     pub fn random_stop_interval(&self) -> i32 {
         self.random_stop_interval.map_or(0, |v| v.0)
     }
 
     /// `reach_multiplier`, or its default 2.
+    #[must_use]
     pub fn reach_multiplier(&self) -> f32 {
         self.reach_multiplier.map_or(2.0, |v| v.0)
     }
 
     /// `require_complete_path`, or its default `false`.
+    #[must_use]
     pub fn require_complete_path(&self) -> bool {
         self.require_complete_path.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `stomp_range_multiplier`, or its default 2.
+    #[must_use]
     pub fn stomp_range_multiplier(&self) -> f32 {
         self.stomp_range_multiplier.map_or(2.0, |v| v.0)
     }
 
     /// `track_target`, or its default `false`.
+    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_some_and(|v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -2972,6 +3182,7 @@ pub struct SummonEntity {
 
 impl SummonEntity {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -3022,16 +3233,19 @@ pub struct Swell {
 
 impl Swell {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `start_distance`, or its default 1e+01.
+    #[must_use]
     pub fn start_distance(&self) -> f32 {
         self.start_distance.map_or(1.0e1, |v| v.0)
     }
 
     /// `stop_distance`, or its default 2.
+    #[must_use]
     pub fn stop_distance(&self) -> f32 {
         self.stop_distance.map_or(2.0, |v| v.0)
     }
@@ -3080,22 +3294,26 @@ pub struct SwoopAttack {
 
 impl SwoopAttack {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `damage_reach`, or its default 0.2.
+    #[must_use]
     pub fn damage_reach(&self) -> f32 {
         self.damage_reach.map_or(0.2, |v| v.0)
     }
 
     /// `delay_range`, or its default 1e+01 to 2e+01.
+    #[must_use]
     pub fn delay_range(&self) -> (f32, f32) {
         self.delay_range
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -3225,138 +3443,165 @@ pub struct UseKineticWeapon {
 
 impl UseKineticWeapon {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `approach_distance`, or its default 8.
+    #[must_use]
     pub fn approach_distance(&self) -> f32 {
         self.approach_distance.map_or(8.0, |v| v.0)
     }
 
     /// `attack_once`, or its default `false`.
+    #[must_use]
     pub fn attack_once(&self) -> bool {
         self.attack_once.is_some_and(|v| v.0)
     }
 
     /// `attack_types`, or its default `""`.
+    #[must_use]
     pub fn attack_types(&self) -> &str {
         self.attack_types.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `can_spread_on_fire`, or its default `false`.
+    #[must_use]
     pub fn can_spread_on_fire(&self) -> bool {
         self.can_spread_on_fire.is_some_and(|v| v.0)
     }
 
     /// `cooldown_distance`, or its default 8 to 8.
+    #[must_use]
     pub fn cooldown_distance(&self) -> (f32, f32) {
         self.cooldown_distance
             .map_or((8.0, 8.0), |range| range.resolve(8.0, 8.0))
     }
 
     /// `cooldown_speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn cooldown_speed_multiplier(&self) -> f32 {
         self.cooldown_speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 1.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(1.0, |v| v.0)
     }
 
     /// `hijack_mount_navigation`, or its default `false`.
+    #[must_use]
     pub fn hijack_mount_navigation(&self) -> bool {
         self.hijack_mount_navigation.is_some_and(|v| v.0)
     }
 
     /// `inner_boundary_time_increase`, or its default 0.25.
+    #[must_use]
     pub fn inner_boundary_time_increase(&self) -> f32 {
         self.inner_boundary_time_increase.map_or(0.25, |v| v.0)
     }
 
     /// `max_path_time`, or its default 0.55.
+    #[must_use]
     pub fn max_path_time(&self) -> f32 {
         self.max_path_time.map_or(0.55, |v| v.0)
     }
 
     /// `melee_fov`, or its default 9e+01.
+    #[must_use]
     pub fn melee_fov(&self) -> f32 {
         self.melee_fov.map_or(9.0e1, |v| v.0)
     }
 
     /// `min_path_time`, or its default 0.2.
+    #[must_use]
     pub fn min_path_time(&self) -> f32 {
         self.min_path_time.map_or(0.2, |v| v.0)
     }
 
     /// `outer_boundary_time_increase`, or its default 0.5.
+    #[must_use]
     pub fn outer_boundary_time_increase(&self) -> f32 {
         self.outer_boundary_time_increase.map_or(0.5, |v| v.0)
     }
 
     /// `path_fail_time_increase`, or its default 0.75.
+    #[must_use]
     pub fn path_fail_time_increase(&self) -> f32 {
         self.path_fail_time_increase.map_or(0.75, |v| v.0)
     }
 
     /// `path_inner_boundary`, or its default 16.
+    #[must_use]
     pub fn path_inner_boundary(&self) -> f32 {
         self.path_inner_boundary.map_or(16.0, |v| v.0)
     }
 
     /// `path_outer_boundary`, or its default 32.
+    #[must_use]
     pub fn path_outer_boundary(&self) -> f32 {
         self.path_outer_boundary.map_or(32.0, |v| v.0)
     }
 
     /// `random_stop_interval`, or its default 0.
+    #[must_use]
     pub fn random_stop_interval(&self) -> i32 {
         self.random_stop_interval.map_or(0, |v| v.0)
     }
 
     /// `reposition_distance`, or its default 2 to 2.
+    #[must_use]
     pub fn reposition_distance(&self) -> (f32, f32) {
         self.reposition_distance
             .map_or((2.0, 2.0), |range| range.resolve(2.0, 2.0))
     }
 
     /// `reposition_speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn reposition_speed_multiplier(&self) -> f32 {
         self.reposition_speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `require_complete_path`, or its default `false`.
+    #[must_use]
     pub fn require_complete_path(&self) -> bool {
         self.require_complete_path.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `track_target`, or its default `false`.
+    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_some_and(|v| v.0)
     }
 
     /// `weapon_min_speed_multiplier`, or its default 1.
+    #[must_use]
     pub fn weapon_min_speed_multiplier(&self) -> f32 {
         self.weapon_min_speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `weapon_reach_multiplier`, or its default 1.
+    #[must_use]
     pub fn weapon_reach_multiplier(&self) -> f32 {
         self.weapon_reach_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `x_max_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn x_max_rotation(&self) -> f32 {
         self.x_max_rotation.map_or(3.0e1, |v| v.0)
     }
 
     /// `y_max_head_rotation`, or its default 3e+01.
+    #[must_use]
     pub fn y_max_head_rotation(&self) -> f32 {
         self.y_max_head_rotation.map_or(3.0e1, |v| v.0)
     }
@@ -3513,36 +3758,43 @@ pub struct SummonStage {
 
 impl SummonStage {
     /// `base_delay`, or its default 0.
+    #[must_use]
     pub fn base_delay(&self) -> f32 {
         self.base_delay.map_or(0.0, |v| v.0)
     }
 
     /// `delay_per_summon`, or its default 0.
+    #[must_use]
     pub fn delay_per_summon(&self) -> f32 {
         self.delay_per_summon.map_or(0.0, |v| v.0)
     }
 
     /// `entity_lifespan`, or its default -1.
+    #[must_use]
     pub fn entity_lifespan(&self) -> f32 {
         self.entity_lifespan.map_or(-1.0, |v| v.0)
     }
 
     /// `entity_type`, or its default `""`.
+    #[must_use]
     pub fn entity_type(&self) -> &str {
         self.entity_type.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `num_entities_spawned`, or its default 1.
+    #[must_use]
     pub fn num_entities_spawned(&self) -> i32 {
         self.num_entities_spawned.map_or(1, |v| v.0)
     }
 
     /// `shape`, or its default `line`.
+    #[must_use]
     pub fn shape(&self) -> SummonShape {
         self.shape.unwrap_or(SummonShape::Line)
     }
 
     /// `size`, or its default 1.
+    #[must_use]
     pub fn size(&self) -> f32 {
         self.size.map_or(1.0, |v| v.0)
     }
@@ -3555,21 +3807,25 @@ impl SummonStage {
     }
 
     /// `summon_cap`, or its default 0.
+    #[must_use]
     pub fn summon_cap(&self) -> i32 {
         self.summon_cap.map_or(0, |v| v.0)
     }
 
     /// `summon_cap_radius`, or its default 0.
+    #[must_use]
     pub fn summon_cap_radius(&self) -> f32 {
         self.summon_cap_radius.map_or(0.0, |v| v.0)
     }
 
     /// `summon_event`, or its default `""`.
+    #[must_use]
     pub fn summon_event(&self) -> &str {
         self.summon_event.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `target`, or its default `self`.
+    #[must_use]
     pub fn target(&self) -> SummonTarget {
         self.target.unwrap_or(SummonTarget::Self_)
     }
@@ -3622,26 +3878,31 @@ pub struct SummonChoice {
 
 impl SummonChoice {
     /// `cast_duration`, or its default -1.
+    #[must_use]
     pub fn cast_duration(&self) -> f32 {
         self.cast_duration.map_or(-1.0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `do_casting`, or its default `true`.
+    #[must_use]
     pub fn do_casting(&self) -> bool {
         self.do_casting.is_none_or(|v| v.0)
     }
 
     /// `max_activation_range`, or its default 32.
+    #[must_use]
     pub fn max_activation_range(&self) -> f32 {
         self.max_activation_range.map_or(32.0, |v| v.0)
     }
 
     /// `min_activation_range`, or its default 1.
+    #[must_use]
     pub fn min_activation_range(&self) -> f32 {
         self.min_activation_range.map_or(1.0, |v| v.0)
     }
@@ -3654,6 +3915,7 @@ impl SummonChoice {
     }
 
     /// `weight`, or its default 0.
+    #[must_use]
     pub fn weight(&self) -> f32 {
         self.weight.map_or(0.0, |v| v.0)
     }
@@ -3713,6 +3975,7 @@ pub struct SendEvent {
 
 impl SendEvent {
     /// `priority`, or its default 0.
+    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -3896,31 +4159,37 @@ pub struct SendEventChoice {
 
 impl SendEventChoice {
     /// `cast_duration`, or its default 0.
+    #[must_use]
     pub fn cast_duration(&self) -> f32 {
         self.cast_duration.map_or(0.0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
+    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `do_casting`, or its default `true`.
+    #[must_use]
     pub fn do_casting(&self) -> bool {
         self.do_casting.is_none_or(|v| v.0)
     }
 
     /// `look_at_target`, or its default `true`.
+    #[must_use]
     pub fn look_at_target(&self) -> bool {
         self.look_at_target.is_none_or(|v| v.0)
     }
 
     /// `max_activation_range`, or its default 32.
+    #[must_use]
     pub fn max_activation_range(&self) -> f32 {
         self.max_activation_range.map_or(32.0, |v| v.0)
     }
 
     /// `min_activation_range`, or its default 1.
+    #[must_use]
     pub fn min_activation_range(&self) -> f32 {
         self.min_activation_range.map_or(1.0, |v| v.0)
     }
@@ -3931,6 +4200,7 @@ impl SendEventChoice {
     }
 
     /// `weight`, or its default 0.
+    #[must_use]
     pub fn weight(&self) -> f32 {
         self.weight.map_or(0.0, |v| v.0)
     }
@@ -3962,11 +4232,13 @@ pub struct SendEventStage {
 
 impl SendEventStage {
     /// `base_delay`, or its default 0.
+    #[must_use]
     pub fn base_delay(&self) -> f32 {
         self.base_delay.map_or(0.0, |v| v.0)
     }
 
     /// `event`, or its default `""`.
+    #[must_use]
     pub fn event(&self) -> &str {
         self.event.as_ref().map_or("", |v| v.0.as_str())
     }

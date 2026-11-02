@@ -81,6 +81,7 @@ fn parse_at(
 /// from 1.21.120, where `charge_speed_multiplier` is the live name: a 1.21.130 document gets no
 /// `DeprecatedMember` and the value becomes `charge_speed`; from 1.26.0 it is deprecated: an
 /// error that rejects the document (in both masks).
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e29c_charge_speed_multiplier_is_live_below_1_26_0() {
     const KEY: &str = "minecraft:behavior.aquatic_charge_attack";
@@ -130,6 +131,7 @@ fn e32_stop_if_holding_item_is_gated_at_1_26_30() {
 }
 
 /// `DragonBase`: `active_speed` = 1 for both dragon goals that derive from it.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn dragon_goals_take_the_dragon_base_defaults() {
     let (g, _) = goal::<goal::DragonChargePlayer>(
@@ -155,6 +157,7 @@ fn dragon_goals_take_the_dragon_base_defaults() {
 /// bounds for every one of them. Three derived goals construct their definition with values of
 /// their own, which the game's own 1.26.10 schema prints:
 /// `harvest_farm_block` 0.5 and 0, `fertilize_farm_block` 0.5 and 9, `drop_item_for` 1 and 0.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn move_to_goals_take_the_base_defaults_and_bounds() {
     let (g, _) = goal::<goal::HarvestFarmBlock>(
