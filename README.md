@@ -49,7 +49,7 @@ Usage examples can be found in [`bedrock/examples`](bedrock/examples).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), and come say hi on [Discord][discord_url].
 
-[![Contributors](https://contrib.rocks/image?repo=bedrock-crustaceans/bedrock-rs)](https://github.com/bedrock-crustaceans/bedrock-rs/graphs/contributors)
+[![Contributors](https://raw.githubusercontent.com/bedrock-crustaceans/bedrock-rs/contributors/contributors.svg)](https://github.com/bedrock-crustaceans/bedrock-rs/graphs/contributors)
 
 ## License
 

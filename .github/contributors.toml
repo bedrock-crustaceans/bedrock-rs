@@ -1,0 +1,10 @@
+# Read by `.github/scripts/contributors.py`, which draws the README's contributors.
+#
+# Fix names and emails git itself gets wrong in `.mailmap`. Here, credit a commit email that no
+# GitHub account has verified to the account that owns it, and hide people who asked to be.
+
+# GitHub logins, commit names or commit emails.
+hide = []
+
+# "email" = "github-login"
+[aliases]
