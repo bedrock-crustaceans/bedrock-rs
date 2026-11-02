@@ -33,7 +33,18 @@ network-tokio = ["network", "bedrock_network/tokio"]
 network-nethernet = ["network", "bedrock_network/nethernet"]
 network-nethernet-tokio = ["network-nethernet", "network-tokio", "bedrock_network/nethernet-tokio"]
 level = ["dep:bedrock_level"]
-full = ["level", "network-nethernet-tokio", "protocol", "auth"]
+full = [
+    "auth-ureq",
+    "auth-reqwest",
+    "protocol-all",
+    "protocol-packet-dyn",
+    "protocol-packet-meta",
+    "protocol-packet-trace",
+    "network-nethernet-tokio",
+    "level",
+    "form",
+    "addon-std",
+]
 form = ["dep:bedrock_form"]
 addon = ["dep:bedrock_addon"]
 addon-std = ["addon", "dep:bedrock_addon_std"]
