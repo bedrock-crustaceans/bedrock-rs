@@ -1,12 +1,12 @@
 name: Contributors
 
-# Draws everyone in the history of `main` into `.github/assets/contributors.svg` once a day,
+# Draws everyone in the history of `main` into `.github/assets/contributors.svg` once a week,
 # which the README shows, and commits it to `main` when it changed. It pushes with the deploy key
 # in `CONTRIBUTORS_DEPLOY_KEY`, which the ruleset on `main` lets bypass its pull request rule.
 
 on:
   schedule:
-    - cron: "23 3 * * *"
+    - cron: "23 3 * * 1"
   workflow_dispatch:
 
 permissions:
