@@ -15,7 +15,9 @@ mod common;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+#[cfg(unix)]
+use bedrock_addon::diagnostic::DiagnosticCode;
+use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::script::config::{
     CommandPermissionLevel, ConfigSource, ScriptConfig, ScriptProperties, ServerNet,
 };
