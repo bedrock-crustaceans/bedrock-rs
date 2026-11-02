@@ -13,6 +13,11 @@ pub struct NetherNetListener {
 
 #[cfg(feature = "nethernet-tokio")]
 impl NetherNetListener {
+    /// Binds the signaling transport and starts a `NetherNet` server on it.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the server fails to bind.
     pub async fn bind(
         signaling: impl Into<nethernet_tokio::ServerSignaling>,
         config: nethernet_tokio::ConnectionConfig,
@@ -56,16 +61,26 @@ impl TransportLayerListener {
         }
     }
 
+    /// Starts listening.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the `RakNet` server fails to start.
     pub async fn start(&mut self) -> Result<(), TransportLayerError> {
         match self {
             Self::RakNet(listener) => listener.start().await.map_err(RakNetError::from)?,
             #[cfg(feature = "nethernet-tokio")]
             Self::NetherNet(_) => {}
-        };
+        }
 
         Ok(())
     }
 
+    /// Stops listening.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the `NetherNet` server fails to close.
     pub async fn stop(&mut self) -> Result<(), TransportLayerError> {
         match self {
             Self::RakNet(listener) => listener.stop().await,
@@ -76,6 +91,11 @@ impl TransportLayerListener {
         Ok(())
     }
 
+    /// Waits for the next connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the listener fails to accept a session.
     pub async fn accept(&mut self) -> Result<TransportLayerConnection, TransportLayerError> {
         let conn = match self {
             Self::RakNet(listener) => TransportLayerConnection::RakNet(

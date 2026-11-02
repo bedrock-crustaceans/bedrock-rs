@@ -7,7 +7,7 @@ use raknet_tokio::prelude::RakClient;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-/// Dials servers over RakNet. The result is a transport [`Connection`]; the caller performs the
+/// Dials servers over `RakNet`. The result is a transport [`Connection`]; the caller performs the
 /// login with the helpers in [`crate::login`].
 #[derive(Clone, Debug, Default)]
 pub struct Client {
@@ -15,15 +15,23 @@ pub struct Client {
 }
 
 impl Client {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
+    /// Connects to the server at `addr`, giving up after the configured timeout.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError::Timeout`] when the timeout elapses and [`ClientError::RakNet`] when
+    /// the `RakNet` client fails to start or connect.
     pub async fn connect<V: Packets + ProtoVersion>(
         &self,
         addr: SocketAddr,

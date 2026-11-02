@@ -15,6 +15,12 @@ pub enum UnreadBytes {
     Reject,
 }
 
+/// Encodes `packets` with the default header, then compresses and encrypts the batch when asked.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when a packet fails to serialize, or compression or
+/// encryption fails.
 pub fn encode_packets<T: Packets>(
     packets: &[T],
     compression: Option<&Compression>,
@@ -26,6 +32,11 @@ pub fn encode_packets<T: Packets>(
 /// Encodes `packets` with the sender and target sub-client ids of `header` on every frame.
 /// `header.packet_id` is ignored; each frame carries its own packet's id. Servers route an
 /// incoming packet by its sender sub-client id and clients by its target sub-client id.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when a packet fails to serialize, or compression or
+/// encryption fails.
 pub fn encode_packets_with_header<T: Packets>(
     packets: &[T],
     header: &PacketHeader,
@@ -34,7 +45,7 @@ pub fn encode_packets_with_header<T: Packets>(
 ) -> Result<Vec<u8>, NetworkCodecError> {
     tracing::trace!("Encoding packets");
 
-    let mut packets_stream = batch_packets::<T>(packets, header)?;
+    let mut packets_stream = batch_packets::<T>(packets, *header)?;
     packets_stream = compress_packets(packets_stream, compression)?;
     packets_stream = encrypt_packets(packets_stream, encryption)?;
 
@@ -43,6 +54,11 @@ pub fn encode_packets_with_header<T: Packets>(
 
 /// Decodes a batch into its packets, each with the header it arrived under so the sender and
 /// target sub-client ids are kept.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when decryption, decompression or framing of the batch fails,
+/// or when any packet fails to decode, or leaves bytes unread under [`UnreadBytes::Reject`].
 pub fn decode_packets<T: Packets>(
     mut packets_stream: Vec<u8>,
     compression: Option<&Compression>,
@@ -54,7 +70,7 @@ pub fn decode_packets<T: Packets>(
 
     packets_stream = decrypt_packets(packets_stream, encryption)?;
     packets_stream = decompress_packets(packets_stream, compression, max_batch_len)?;
-    let packets = separate_packets::<T>(packets_stream, unread_bytes)?;
+    let packets = separate_packets::<T>(&packets_stream, unread_bytes)?;
 
     Ok(packets)
 }
@@ -64,6 +80,10 @@ pub type DecodedPackets<T> = Vec<(PacketHeader, Result<T, NetworkCodecError>)>;
 /// Decodes every frame of a batch independently, so one undecodable packet does not hide the
 /// others. A frame whose header cannot be read reports the default header. The outer error is a
 /// failure of the batch itself: decryption, decompression or framing.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when decryption, decompression or framing of the batch fails.
 pub fn decode_packets_each<T: Packets>(
     mut packets_stream: Vec<u8>,
     compression: Option<&Compression>,
@@ -91,14 +111,14 @@ fn frame_header(frame: &[u8]) -> PacketHeader {
 
 fn batch_packets<T: Packets>(
     packets: &[T],
-    template: &PacketHeader,
+    template: PacketHeader,
 ) -> Result<Vec<u8>, NetworkCodecError> {
     let frames = packets
         .iter()
         .map(|packet| {
             let header = PacketHeader {
                 packet_id: packet.id(),
-                ..*template
+                ..template
             };
 
             let mut frame = Vec::with_capacity(packet.size_hint(&header));
@@ -111,16 +131,21 @@ fn batch_packets<T: Packets>(
 }
 
 fn separate_packets<T: Packets>(
-    packets_stream: Vec<u8>,
+    packets_stream: &[u8],
     unread_bytes: UnreadBytes,
 ) -> Result<Vec<(PacketHeader, T)>, NetworkCodecError> {
-    split_batch(&packets_stream)?
+    split_batch(packets_stream)?
         .into_iter()
         .map(|frame| decode_packet(frame, unread_bytes))
         .collect()
 }
 
 /// Decodes one frame into its packet and the header it carried.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when the frame fails to deserialize, or leaves bytes unread
+/// under [`UnreadBytes::Reject`].
 pub fn decode_packet<T: Packets>(
     frame: &[u8],
     unread_bytes: UnreadBytes,
@@ -128,7 +153,7 @@ pub fn decode_packet<T: Packets>(
     let mut frame = Cursor::new(frame);
     let (packet, header) = T::deserialize(&mut frame)?;
 
-    let unread = frame.get_ref().len() - frame.position() as usize;
+    let unread = frame.get_ref().len() - cursor_position(&frame);
     if unread > 0 && unread_bytes == UnreadBytes::Reject {
         return Err(ProtoCodecError::LeftOvers(unread).into());
     }
@@ -142,13 +167,29 @@ pub fn decode_packet<T: Packets>(
     Ok((header, packet))
 }
 
+/// The position of `cursor` over a slice, which cannot exceed the slice length.
+fn cursor_position(cursor: &Cursor<&[u8]>) -> usize {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the position of a cursor over a slice is at most the slice length, a usize"
+    )]
+    let position = cursor.position() as usize;
+    position
+}
+
+/// Splits a decrypted, decompressed batch into its frames, without the length prefixes.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when a length prefix cannot be read, is zero, runs past the end
+/// of the batch, or the batch holds more than [`MAX_BATCH_PACKETS`] frames.
 pub fn split_batch(batch: &[u8]) -> Result<Vec<&[u8]>, NetworkCodecError> {
     let mut stream = Cursor::new(batch);
     let mut frames = vec![];
 
-    while (stream.position() as usize) < batch.len() {
+    while cursor_position(&stream) < batch.len() {
         let declared = <u32 as ProtoCodecVAR>::deserialize(&mut stream)?;
-        let rest = &batch[stream.position() as usize..];
+        let rest = &batch[cursor_position(&stream)..];
         if declared == 0 {
             return Err(NetworkCodecError::EmptyPacket);
         }
@@ -163,36 +204,55 @@ pub fn split_batch(batch: &[u8]) -> Result<Vec<&[u8]>, NetworkCodecError> {
         };
 
         frames.push(frame);
-        stream.set_position(stream.position() + declared as u64);
+        stream.set_position(stream.position() + u64::from(declared));
     }
 
     Ok(frames)
 }
 
+/// Prefixes each of `frames` with its length and concatenates them into a batch.
+///
+/// # Panics
+///
+/// Panics if serializing a length into a `Vec` fails, which cannot happen.
 pub fn join_batch<F: AsRef<[u8]>>(frames: &[F]) -> Vec<u8> {
     let mut batch = Vec::with_capacity(frames.iter().map(|frame| frame.as_ref().len() + 5).sum());
 
     for frame in frames {
         let frame = frame.as_ref();
-        <u32 as ProtoCodecVAR>::serialize(&(frame.len() as u32), &mut batch)
-            .expect("writing to a Vec cannot fail");
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a frame is never 4 GiB or larger"
+        )]
+        let len = frame.len() as u32;
+        <u32 as ProtoCodecVAR>::serialize(&len, &mut batch).expect("writing to a Vec cannot fail");
         batch.extend_from_slice(frame);
     }
 
     batch
 }
 
+/// Compresses a batch when `compression` is set.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when compression fails.
 pub fn compress_packets(
     mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
 ) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(compression) = compression {
-        packet_stream = compression.compress(packet_stream)?;
+        packet_stream = compression.compress(&packet_stream)?;
     }
 
     Ok(packet_stream)
 }
 
+/// Decompresses a batch when `compression` is set, failing if it inflates past `max_len` bytes.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when decompression fails or the batch inflates past `max_len`.
 pub fn decompress_packets(
     mut packet_stream: Vec<u8>,
     compression: Option<&Compression>,
@@ -205,17 +265,27 @@ pub fn decompress_packets(
     Ok(packet_stream)
 }
 
+/// Encrypts a batch when `encryption` is set.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when encryption fails.
 pub fn encrypt_packets(
     mut packet_stream: Vec<u8>,
     encryption: Option<&mut Encryption>,
 ) -> Result<Vec<u8>, NetworkCodecError> {
     if let Some(encryption) = encryption {
-        packet_stream = encryption.encrypt(packet_stream)?;
+        packet_stream = encryption.encrypt(&packet_stream)?;
     }
 
     Ok(packet_stream)
 }
 
+/// Decrypts a batch when `encryption` is set.
+///
+/// # Errors
+///
+/// Returns a [`NetworkCodecError`] when the batch is too short or its trailer does not match.
 pub fn decrypt_packets(
     mut packet_stream: Vec<u8>,
     encryption: Option<&mut Encryption>,

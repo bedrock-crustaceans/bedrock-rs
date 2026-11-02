@@ -19,6 +19,7 @@ impl From<RakSession> for RakNetConnection {
 }
 
 impl RakNetConnection {
+    #[must_use]
     pub fn dialled(session: RakSession, client: RakClient) -> Self {
         Self {
             session,
@@ -26,6 +27,11 @@ impl RakNetConnection {
         }
     }
 
+    /// Sends `batch` as one reliable, ordered game packet.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the session fails to send it.
     pub async fn send(&mut self, batch: &[u8]) -> Result<(), TransportLayerError> {
         self.session
             .send(
@@ -38,6 +44,12 @@ impl RakNetConnection {
         Ok(())
     }
 
+    /// Receives the next game packet and strips its header.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`TransportLayerError`] when the session fails, or the datagram is empty or does
+    /// not start with the game packet header.
     pub async fn recv(&mut self) -> Result<Vec<u8>, TransportLayerError> {
         let datagram = self
             .session
@@ -59,7 +71,9 @@ impl RakNetConnection {
     }
 
     pub fn max_message_len(&self) -> usize {
-        RakSessionConfig::default().max_queued_bytes as usize
+        #[expect(clippy::cast_sign_loss, reason = "the default queue size is positive")]
+        let max = RakSessionConfig::default().max_queued_bytes as usize;
+        max
     }
 
     pub async fn close(&self) {

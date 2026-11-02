@@ -11,7 +11,7 @@ use std::time::Duration;
 
 type Protocol = V2225;
 
-const PROTOCOL: i32 = Protocol::PROTOCOL_VERSION as i32;
+const PROTOCOL: i32 = Protocol::PROTOCOL_VERSION.cast_signed();
 
 async fn recv_one(conn: &mut Connection<Protocol>) -> Result<Protocol, Box<dyn std::error::Error>> {
     let batch = conn.recv().await?;

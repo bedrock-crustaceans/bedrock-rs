@@ -41,18 +41,21 @@ enum Binding {
 }
 
 impl ListenerBuilder {
+    #[must_use]
     pub fn raknet(mut self, bind_addr: SocketAddr) -> Self {
         self.bindings.push(Binding::RakNet(bind_addr));
         self
     }
 
     #[cfg(feature = "nethernet-tokio")]
+    #[must_use]
     pub fn nethernet_lan(mut self, bind_addr: SocketAddr) -> Self {
         self.bindings.push(Binding::NetherNetLan(bind_addr));
         self
     }
 
     #[cfg(feature = "nethernet-tokio")]
+    #[must_use]
     pub fn nethernet_http(
         mut self,
         bind_addr: SocketAddr,
@@ -65,33 +68,39 @@ impl ListenerBuilder {
         self
     }
 
+    #[must_use]
     pub fn name(mut self, name: impl Into<String>) -> Self {
         self.name = name.into();
         self
     }
 
+    #[must_use]
     pub fn sub_name(mut self, sub_name: impl Into<String>) -> Self {
         self.sub_name = sub_name.into();
         self
     }
 
+    #[must_use]
     pub fn max_players(mut self, max_players: i32) -> Self {
         self.max_players = max_players;
         self
     }
 
+    #[must_use]
     pub fn player_count(mut self, player_count: i32) -> Self {
         self.player_count = player_count;
         self
     }
 
+    #[must_use]
     pub fn nintendo_limited(mut self, limited: bool) -> Self {
         self.nintendo_limited = limited;
         self
     }
 
+    #[must_use]
     pub fn protocol<V: ProtoVersion>(mut self) -> Self {
-        self.display_version = V::GAME_VERSION.to_owned();
+        V::GAME_VERSION.clone_into(&mut self.display_version);
         self.protocol = V::PROTOCOL_VERSION;
         self.rak_version = V::RAKNET_VERSION;
         self
@@ -123,6 +132,12 @@ impl ListenerBuilder {
         }
     }
 
+    /// Binds every configured transport and starts listening.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ListenerError::NoTransport`] when no transport was configured, and the error of
+    /// the first transport that fails to bind or start.
     pub async fn bind(self) -> Result<Listener, ListenerError> {
         if self.bindings.is_empty() {
             return Err(ListenerError::NoTransport);
@@ -165,7 +180,7 @@ impl ListenerBuilder {
             conf.guid = guid;
             conf.max_connections = max_connections;
             conf.protocols = Box::new([rak_version]);
-            conf.message = motd.into()
+            conf.message = motd.into();
         }))
     }
 }
@@ -209,6 +224,7 @@ async fn bind_nethernet(
 }
 
 impl Listener {
+    #[must_use]
     pub fn builder() -> ListenerBuilder {
         ListenerBuilder {
             bindings: Vec::new(),
@@ -223,10 +239,12 @@ impl Listener {
         }
     }
 
+    #[must_use]
     pub fn motd(&self) -> &BedrockMOTD {
         &self.motd
     }
 
+    #[must_use]
     pub fn max_connections(&self) -> usize {
         self.max_connections
     }
@@ -245,6 +263,11 @@ impl Listener {
         }
     }
 
+    /// Stops every transport listener.
+    ///
+    /// # Errors
+    ///
+    /// Returns the [`ListenerError`] of the first transport that fails to stop.
     pub async fn shutdown(mut self) -> Result<(), ListenerError> {
         for transport in &mut self.listeners {
             transport.stop().await?;
@@ -252,6 +275,11 @@ impl Listener {
         Ok(())
     }
 
+    /// Waits for the first transport to accept a connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns the [`ListenerError`] of the transport that failed to accept.
     pub async fn accept<V: Packets>(&mut self) -> Result<Connection<V>, ListenerError> {
         let accepts = self
             .listeners

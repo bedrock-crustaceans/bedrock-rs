@@ -24,18 +24,28 @@ pub struct ConnectionShared<T: Packets, Tr = TransportLayerConnection> {
 }
 
 impl<T: Packets, Tr: Transport> ConnectionShared<T, Tr> {
+    /// Queues `packet` with the default header for the next [`send`](Self::send).
+    ///
+    /// # Errors
+    ///
+    /// Never fails today; the `Result` leaves room for queueing to become fallible.
     pub async fn write(&mut self, packet: T) -> Result<(), ConnectionError> {
         self.write_with_header(&PacketHeader::default(), packet)
             .await
     }
 
+    /// Queues `packet` under the sub-client ids of `header` for the next [`send`](Self::send).
+    ///
+    /// # Errors
+    ///
+    /// Never fails today; the `Result` leaves room for queueing to become fallible.
     pub async fn write_with_header(
         &mut self,
         header: &PacketHeader,
         packet: T,
     ) -> Result<(), ConnectionError> {
         let mut queue_send = self.queue_send.write().await;
-        let header = sub_clients(header);
+        let header = sub_clients(*header);
 
         match queue_send.last_mut() {
             Some((last, run)) if *last == header => run.push(packet),
@@ -69,6 +79,13 @@ impl<T: Packets, Tr: Transport> ConnectionShared<T, Tr> {
         queue_recv.drain(..).collect::<Vec<_>>()
     }
 
+    /// Sends the queued packets, one batch per run of packets sharing sub-client ids, and drops
+    /// the runs that were sent.
+    ///
+    /// # Errors
+    ///
+    /// Returns the [`ConnectionError`] of the first batch that fails to send; it and the runs
+    /// after it stay queued.
     pub async fn send(&mut self) -> Result<(), ConnectionError> {
         let mut queued = self.queue_send.write().await;
         let mut conn = self.connection.write().await;
@@ -87,6 +104,11 @@ impl<T: Packets, Tr: Transport> ConnectionShared<T, Tr> {
         outcome
     }
 
+    /// Receives one batch and queues its packets for [`read`](Self::read).
+    ///
+    /// # Errors
+    ///
+    /// The errors of [`Connection::recv_with_headers`].
     pub async fn recv(&mut self) -> Result<(), ConnectionError> {
         let mut conn = self.connection.write().await;
 
@@ -118,10 +140,10 @@ impl<T: Packets, Tr: Transport> ConnectionShared<T, Tr> {
     }
 }
 
-fn sub_clients(header: &PacketHeader) -> PacketHeader {
+fn sub_clients(header: PacketHeader) -> PacketHeader {
     PacketHeader {
         packet_id: 0,
-        ..*header
+        ..header
     }
 }
 
@@ -153,9 +175,9 @@ mod tests {
         sender.send().await.unwrap();
         receiver.recv().await.unwrap();
 
-        let (received, _) = receiver.read_with_header().await.unwrap();
-        assert_eq!(received.sender_sub_client_id, 3);
-        assert_eq!(received.target_sub_client_id, 1);
+        let (got, _) = receiver.read_with_header().await.unwrap();
+        assert_eq!(got.sender_sub_client_id, 3);
+        assert_eq!(got.target_sub_client_id, 1);
     }
 
     #[::tokio::test]
@@ -192,11 +214,8 @@ mod tests {
         sender.send().await.unwrap();
         receiver.recv().await.unwrap();
 
-        let (received, _) = receiver.read_with_header().await.unwrap();
-        assert_eq!(
-            (received.sender_sub_client_id, received.target_sub_client_id),
-            (0, 0)
-        );
+        let (got, _) = receiver.read_with_header().await.unwrap();
+        assert_eq!((got.sender_sub_client_id, got.target_sub_client_id), (0, 0));
         assert!(receiver.read().await.is_none());
     }
 

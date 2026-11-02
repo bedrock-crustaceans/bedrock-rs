@@ -78,6 +78,11 @@ impl<V: Packets, T: Transport> Connection<V, T> {
         self.transport_layer.remote_addr()
     }
 
+    /// Sends `packets` in one batch with the default header.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when encoding the batch or the transport fails.
     pub async fn send(&mut self, packets: &[V]) -> Result<(), ConnectionError> {
         self.send_with_header(packets, &PacketHeader::default())
             .await
@@ -86,6 +91,10 @@ impl<V: Packets, T: Transport> Connection<V, T> {
     /// Sends `packets` with the sender and target sub-client ids of `header` on every frame;
     /// `header.packet_id` is ignored. A server routes a received packet by its sender
     /// sub-client id and a client by its target sub-client id.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when encoding the batch or the transport fails.
     pub async fn send_with_header(
         &mut self,
         packets: &[V],
@@ -103,12 +112,22 @@ impl<V: Packets, T: Transport> Connection<V, T> {
         Ok(())
     }
 
+    /// Sends `data` as one transport message, without batching, compression or encryption.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when the transport fails.
     pub async fn send_raw(&mut self, data: &[u8]) -> Result<(), ConnectionError> {
         self.transport_layer.send(data).await?;
 
         Ok(())
     }
 
+    /// Receives one batch and returns its packets in order.
+    ///
+    /// # Errors
+    ///
+    /// The errors of [`Self::recv_with_headers`].
     pub async fn recv(&mut self) -> Result<Vec<V>, ConnectionError> {
         Ok(self
             .recv_with_headers()
@@ -120,6 +139,11 @@ impl<V: Packets, T: Transport> Connection<V, T> {
 
     /// Receives one batch with each packet's header, exposing its sender and target
     /// sub-client ids. A packet that fails to decode is handled per `bad_packets`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when the transport or the batch fails, or when a packet fails
+    /// to decode and `bad_packets` is [`BadPacketPolicy::Fail`].
     pub async fn recv_with_headers(&mut self) -> Result<Vec<(PacketHeader, V)>, ConnectionError> {
         let decoded = self.recv_each().await?;
         let mut packets = Vec::with_capacity(decoded.len());
@@ -142,6 +166,11 @@ impl<V: Packets, T: Transport> Connection<V, T> {
 
     /// Receives one batch and returns the outcome of every packet in order, regardless of
     /// `bad_packets`. Only a failure of the batch itself is an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when the transport fails or the batch fails to decrypt,
+    /// decompress or split into frames.
     pub async fn recv_each(&mut self) -> Result<DecodedPackets<V>, ConnectionError> {
         let packet_stream = self.transport_layer.recv().await?;
 
@@ -154,6 +183,11 @@ impl<V: Packets, T: Transport> Connection<V, T> {
         )?)
     }
 
+    /// Receives one transport message as it arrived, without decrypting or decoding it.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when the transport fails.
     pub async fn recv_raw(&mut self) -> Result<Vec<u8>, ConnectionError> {
         let stream = self.transport_layer.recv().await?;
 
@@ -161,6 +195,11 @@ impl<V: Packets, T: Transport> Connection<V, T> {
     }
 
     /// Receives one decrypted and decompressed batch without decoding its packets.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when the transport fails or the batch fails to decrypt or
+    /// decompress.
     pub async fn recv_batch(&mut self) -> Result<Vec<u8>, ConnectionError> {
         let stream = self.transport_layer.recv().await?;
         let stream = decrypt_packets(stream, self.encryption.as_mut())?;
@@ -170,6 +209,10 @@ impl<V: Packets, T: Transport> Connection<V, T> {
     }
 
     /// Compresses, encrypts and sends an already encoded batch.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConnectionError`] when compression, encryption or the transport fails.
     pub async fn send_batch(&mut self, batch: Vec<u8>) -> Result<(), ConnectionError> {
         let stream = compress_packets(batch, self.compression.as_ref())?;
         let stream = encrypt_packets(stream, self.encryption.as_mut())?;

@@ -5,6 +5,7 @@ pub struct RakNetGamePacket;
 impl RakNetGamePacket {
     pub const ID: u8 = 0xfe;
 
+    #[must_use]
     pub fn wrap(batch: &[u8]) -> Vec<u8> {
         let mut datagram = Vec::with_capacity(batch.len() + 1);
         datagram.push(Self::ID);
@@ -12,6 +13,12 @@ impl RakNetGamePacket {
         datagram
     }
 
+    /// Strips the game packet header off `datagram`, leaving the batch.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetworkCodecError::EmptyPacket`] for an empty datagram and
+    /// [`NetworkCodecError::InvalidGamePacketHeader`] when it starts with another byte.
     pub fn unwrap(datagram: &[u8]) -> Result<&[u8], NetworkCodecError> {
         match datagram.split_first() {
             Some((&Self::ID, batch)) => Ok(batch),

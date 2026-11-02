@@ -19,11 +19,16 @@ impl Default for NetworkSettings {
 }
 
 impl NetworkSettings {
+    #[must_use]
     pub fn new(compression: Compression) -> Self {
         Self { compression }
     }
 
     /// Builds the settings from the algorithm id and threshold a network settings packet carries.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LoginError::Compression`] when `algorithm` is unknown.
     pub fn from_wire(algorithm: u16, threshold: u16) -> Result<Self, LoginError> {
         Ok(Self {
             compression: Compression::from_network_settings(algorithm, threshold)?,
@@ -31,16 +36,22 @@ impl NetworkSettings {
     }
 
     /// The algorithm id a network settings packet carries.
+    #[must_use]
     pub fn algorithm(&self) -> u16 {
         self.compression.id_u16()
     }
 
+    #[must_use]
     pub fn threshold(&self) -> u16 {
         self.compression.threshold()
     }
 }
 
 /// Requires the protocol a client announced to be the one the server supports.
+///
+/// # Errors
+///
+/// Returns [`LoginError::ProtocolMismatch`] when `client` differs from `server`.
 pub fn check_protocol(client: i32, server: i32) -> Result<(), LoginError> {
     if client == server {
         Ok(())

@@ -2,6 +2,7 @@ use super::Connection;
 use super::error::TransportLayerError;
 use super::transport::Transport;
 use bedrock_protocol::V2225;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -35,11 +36,15 @@ impl MemoryTransport {
 }
 
 impl Transport for MemoryTransport {
-    async fn send(&mut self, batch: &[u8]) -> Result<(), TransportLayerError> {
-        self.tx
-            .send(batch.to_vec())
-            .map_err(|_| std::io::Error::from(std::io::ErrorKind::BrokenPipe))?;
-        Ok(())
+    fn send(
+        &mut self,
+        batch: &[u8],
+    ) -> impl Future<Output = Result<(), TransportLayerError>> + Send {
+        std::future::ready(
+            self.tx
+                .send(batch.to_vec())
+                .map_err(|_| std::io::Error::from(std::io::ErrorKind::BrokenPipe).into()),
+        )
     }
 
     async fn recv(&mut self) -> Result<Vec<u8>, TransportLayerError> {
@@ -58,12 +63,13 @@ impl Transport for MemoryTransport {
         1 << 20
     }
 
-    async fn close(&self) {
+    fn close(&self) -> impl Future<Output = ()> + Send {
         self.closed.store(true, Ordering::SeqCst);
+        std::future::ready(())
     }
 
-    async fn is_closed(&self) -> bool {
-        self.closed.load(Ordering::SeqCst) || self.tx.is_closed()
+    fn is_closed(&self) -> impl Future<Output = bool> + Send {
+        std::future::ready(self.closed.load(Ordering::SeqCst) || self.tx.is_closed())
     }
 }
 
