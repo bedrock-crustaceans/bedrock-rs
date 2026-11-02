@@ -561,7 +561,6 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<ClientBiom
 /// whatever the client's component checks say of it: what the link pass asks of a claiming
 /// document those checks refused and of a document a higher pack shadows, neither of which
 /// the registry keeps. `None` for a file that does not load.
-#[must_use]
 pub fn identifier_in(origin: &Origin, bytes: &[u8], cx: &LoadContext) -> Option<BiomeId> {
     match load(origin.clone(), bytes, cx).ok()?.0 {
         Loaded::Stable(biome) => Some(biome.description.identifier),
@@ -702,7 +701,6 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
 
 /// The loader of `rp.client_biomes()`: `biomes/**/*.json` of every resource pack, the highest
 /// pack's document claiming its identifier.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<ClientBiome>, Contribution<ClientBiome>> {
     CollectionLoader {
         walk: WALK,

@@ -114,7 +114,6 @@ fn combine(parsed: Vec<FileCopy>, stack: &StackCx<'_>) -> Files<LootTable> {
 
 /// The loader of `bp.loot_tables()`: `loot_tables/**/*.json` of every behaviour pack, keyed by
 /// path, the top pack's copy winning.
-#[must_use]
 pub const fn load_files() -> CollectionLoader<Files<LootTable>, FileCopy> {
     CollectionLoader {
         walk: WALK,

@@ -26,7 +26,6 @@ pub struct ScriptVersion {
 
 impl ScriptVersion {
     /// The release `major.minor.patch`.
-    #[must_use]
     pub const fn new(major: u16, minor: u16, patch: u16) -> Self {
         Self {
             major,
@@ -37,7 +36,6 @@ impl ScriptVersion {
     }
 
     /// `major.minor.patch-pre`.
-    #[must_use]
     pub fn with_pre(major: u16, minor: u16, patch: u16, pre: &str) -> Self {
         Self {
             major,
@@ -49,7 +47,6 @@ impl ScriptVersion {
 
     /// Reads `major.minor.patch[-pre][+build]`; the build metadata is dropped. `None` for
     /// anything else (a partial version, the any-version `*`).
-    #[must_use]
     pub fn parse(text: &str) -> Option<Self> {
         let core = text.split(['-', '+']).next().unwrap_or_default();
         if core.split('.').count() != 3 {
@@ -66,7 +63,6 @@ impl ScriptVersion {
     /// equal request. Otherwise the candidate must not be lower and must have the request's
     /// major, and then serves it when neither has a tag; when `strict` is off, a candidate
     /// with a tag also serves a request without one.
-    #[must_use]
     pub fn satisfies(&self, request: &ScriptVersion, strict: bool) -> bool {
         // A pre-release tag is compared as the script engine compares it, not as semver does.
         if self.major == 0 || (!self.pre.is_empty() && self.pre == request.pre) {
@@ -83,14 +79,12 @@ impl ScriptVersion {
 
     /// Whether the Beta APIs gate covers this version: the tag is exactly `beta`, or the
     /// major is 0.
-    #[must_use]
     pub fn is_beta(&self) -> bool {
         // Every 0.x version belongs to the Beta APIs, whatever its tag.
         self.pre == "beta" || self.major == 0
     }
 
     /// Whether the tag is exactly `internal`.
-    #[must_use]
     pub fn is_internal(&self) -> bool {
         // Only the exact tag counts: `internal.1` is an ordinary pre-release.
         self.pre == "internal"

@@ -502,7 +502,6 @@ fn combine(parsed: Vec<Contribution<FogSettings>>, stack: &StackCx<'_>) -> Regis
 
 /// The loader of `rp.fogs()`: `fogs/*.json` of every resource pack, the highest pack's
 /// definition winning per identifier.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<FogSettings>, Contribution<FogSettings>> {
     CollectionLoader {
         walk: WALK,

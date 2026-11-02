@@ -313,7 +313,6 @@ impl Feature {
     /// Whether the feature is of an internal type: one only the game's own packs may define
     /// and only their rules may place.
     #[doc(hidden)]
-    #[must_use]
     pub fn is_internal(&self) -> bool {
         self.dispatch(Internal)
     }
@@ -1066,7 +1065,6 @@ fn combine(parsed: Vec<Contribution<Feature>>, stack: &StackCx<'_>) -> Registry<
 /// The loader of `bp.features()`: `features/**/*.json` of every behaviour pack and the app's
 /// `definitions/features`, the first definition of an identifier winning.
 #[doc(hidden)]
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Feature>, Contribution<Feature>> {
     CollectionLoader {
         walk: WALK,

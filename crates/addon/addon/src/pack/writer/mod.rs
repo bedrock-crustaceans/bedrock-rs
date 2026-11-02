@@ -94,7 +94,6 @@ impl Clone for PackWriter {
 
 impl PackWriter {
     /// A writer with this manifest and no files.
-    #[must_use]
     pub fn new(manifest: Manifest) -> Self {
         Self {
             manifest,

@@ -32,13 +32,11 @@ pub struct Breed {
 
 impl Breed {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -98,7 +96,6 @@ pub struct Celebrate {
 
 impl Celebrate {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -111,20 +108,17 @@ impl Celebrate {
     }
 
     /// `duration`, or its default 3e+01.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(3.0e1, |v| v.0)
     }
 
     /// `jump_interval`, or its default 1 to 3.5.
-    #[must_use]
     pub fn jump_interval(&self) -> (f32, f32) {
         self.jump_interval
             .map_or((1.0, 3.5), |range| range.resolve(1.0, 3.5))
     }
 
     /// `sound_interval`, or its default 2 to 7.
-    #[must_use]
     pub fn sound_interval(&self) -> (f32, f32) {
         self.sound_interval
             .map_or((2.0, 7.0), |range| range.resolve(2.0, 7.0))
@@ -195,19 +189,16 @@ pub struct CelebrateSurvive {
 
 impl CelebrateSurvive {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `duration`, or its default 3e+01.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(3.0e1, |v| v.0)
     }
 
     /// `fireworks_interval`, or its default 1e+01 to 2e+01.
-    #[must_use]
     pub fn fireworks_interval(&self) -> (f32, f32) {
         self.fireworks_interval
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
@@ -270,20 +261,17 @@ pub struct Croak {
 
 impl Croak {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `duration`, or its default 4.5 to 4.5.
-    #[must_use]
     pub fn duration(&self) -> (f32, f32) {
         self.duration
             .map_or((4.5, 4.5), |range| range.resolve(4.5, 4.5))
     }
 
     /// `interval`, or its default 1e+01 to 2e+01.
-    #[must_use]
     pub fn interval(&self) -> (f32, f32) {
         self.interval
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
@@ -353,43 +341,36 @@ pub struct Dig {
 
 impl Dig {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `allow_dig_when_named`, or its default `false`.
-    #[must_use]
     pub fn allow_dig_when_named(&self) -> bool {
         self.allow_dig_when_named.is_some_and(|v| v.0)
     }
 
     /// `digs_in_daylight`, or its default `false`.
-    #[must_use]
     pub fn digs_in_daylight(&self) -> bool {
         self.digs_in_daylight.is_some_and(|v| v.0)
     }
 
     /// `duration`, or its default 0.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(0.0, |v| v.0)
     }
 
     /// `idle_time`, or its default 0.
-    #[must_use]
     pub fn idle_time(&self) -> f32 {
         self.idle_time.map_or(0.0, |v| v.0)
     }
 
     /// `suspicion_is_disturbance`, or its default `false`.
-    #[must_use]
     pub fn suspicion_is_disturbance(&self) -> bool {
         self.suspicion_is_disturbance.is_some_and(|v| v.0)
     }
 
     /// `vibration_is_disturbance`, or its default `false`.
-    #[must_use]
     pub fn vibration_is_disturbance(&self) -> bool {
         self.vibration_is_disturbance.is_some_and(|v| v.0)
     }
@@ -448,19 +429,16 @@ pub struct Emerge {
 
 impl Emerge {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.5.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.5, |v| v.0)
     }
 
     /// `duration`, or its default 5.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(5.0, |v| v.0)
     }
@@ -528,51 +506,43 @@ pub struct FertilizeFarmBlock {
 
 impl FertilizeFarmBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 1.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(1.5, |v| v.0)
     }
 
     /// `max_fertilizer_usage`, or its default 1.
-    #[must_use]
     pub fn max_fertilizer_usage(&self) -> i32 {
         self.max_fertilizer_usage.map_or(1, |v| v.0)
     }
 
     /// `search_cooldown_max_seconds`, or its default 8.
-    #[must_use]
     pub fn search_cooldown_max_seconds(&self) -> f32 {
         self.search_cooldown_max_seconds.map_or(8.0, |v| v.0)
     }
 
     /// `search_count`, or its default 9.
     // The goal's own default (the game's schema for this goal), not the base shape's.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(9, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 1.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(1, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 0.5.
     // The goal's own default (the game's schema for this goal), not the base shape's.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.5, |v| v.0)
     }
@@ -655,57 +625,48 @@ pub struct HarvestFarmBlock {
 
 impl HarvestFarmBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 1.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(1.5, |v| v.0)
     }
 
     /// `max_seconds_before_search`, or its default 1.
-    #[must_use]
     pub fn max_seconds_before_search(&self) -> f32 {
         self.max_seconds_before_search.map_or(1.0, |v| v.0)
     }
 
     /// `search_cooldown_max_seconds`, or its default 8.
-    #[must_use]
     pub fn search_cooldown_max_seconds(&self) -> f32 {
         self.search_cooldown_max_seconds.map_or(8.0, |v| v.0)
     }
 
     /// `search_count`, or its default 0.
     // The goal's own default (the game's schema for this goal), not the base shape's.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(0, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 16.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(16, |v| v.0)
     }
 
     /// `seconds_until_new_task`, or its default 0.5.
-    #[must_use]
     pub fn seconds_until_new_task(&self) -> f32 {
         self.seconds_until_new_task.map_or(0.5, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 0.5.
     // The goal's own default (the game's schema for this goal), not the base shape's.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.5, |v| v.0)
     }
@@ -786,25 +747,21 @@ pub struct HoldGround {
 
 impl HoldGround {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `broadcast`, or its default `false`.
-    #[must_use]
     pub fn broadcast(&self) -> bool {
         self.broadcast.is_some_and(|v| v.0)
     }
 
     /// `broadcast_range`, or its default 0.
-    #[must_use]
     pub fn broadcast_range(&self) -> f32 {
         self.broadcast_range.map_or(0.0, |v| v.0)
     }
 
     /// `min_radius`, or its default 1e+01.
-    #[must_use]
     pub fn min_radius(&self) -> f32 {
         self.min_radius.map_or(1.0e1, |v| v.0)
     }
@@ -868,37 +825,31 @@ pub struct InspectBookshelf {
 
 impl InspectBookshelf {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -953,19 +904,16 @@ pub struct InvestigateSuspiciousLocation {
 
 impl InvestigateSuspiciousLocation {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 1.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(1.5, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1011,19 +959,16 @@ pub struct LayDown {
 
 impl LayDown {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `random_stop_interval`, or its default 120.
-    #[must_use]
     pub fn random_stop_interval(&self) -> i32 {
         self.random_stop_interval.map_or(120, |v| v.0)
     }
@@ -1106,19 +1051,16 @@ pub struct LayEgg {
 
 impl LayEgg {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `allow_laying_from_below`, or its default `false`.
-    #[must_use]
     pub fn allow_laying_from_below(&self) -> bool {
         self.allow_laying_from_below.is_some_and(|v| v.0)
     }
 
     /// `egg_type`, or its default `minecraft:turtle_egg`.
-    #[must_use]
     pub fn egg_type(&self) -> &str {
         self.egg_type
             .as_ref()
@@ -1126,7 +1068,6 @@ impl LayEgg {
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
@@ -1139,31 +1080,26 @@ impl LayEgg {
     }
 
     /// `lay_seconds`, or its default 1e+01.
-    #[must_use]
     pub fn lay_seconds(&self) -> f32 {
         self.lay_seconds.map_or(1.0e1, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `use_default_animation`, or its default `true`.
-    #[must_use]
     pub fn use_default_animation(&self) -> bool {
         self.use_default_animation.is_none_or(|v| v.0)
     }
@@ -1241,7 +1177,6 @@ pub struct MakeLove {
 
 impl MakeLove {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -1298,31 +1233,26 @@ pub struct Mingle {
 
 impl Mingle {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `duration`, or its default 1.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(1.0, |v| v.0)
     }
 
     /// `mingle_distance`, or its default 2.
-    #[must_use]
     pub fn mingle_distance(&self) -> f32 {
         self.mingle_distance.map_or(2.0, |v| v.0)
     }
 
     /// `mingle_partner_type`, or its default `""`.
-    #[must_use]
     pub fn mingle_partner_type(&self) -> &str {
         self.mingle_partner_type
             .as_ref()
@@ -1330,7 +1260,6 @@ impl Mingle {
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1406,31 +1335,26 @@ pub struct Nap {
 
 impl Nap {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_max`, or its default 0.
-    #[must_use]
     pub fn cooldown_max(&self) -> f32 {
         self.cooldown_max.map_or(0.0, |v| v.0)
     }
 
     /// `cooldown_min`, or its default 0.
-    #[must_use]
     pub fn cooldown_min(&self) -> f32 {
         self.cooldown_min.map_or(0.0, |v| v.0)
     }
 
     /// `mob_detect_dist`, or its default 6.
-    #[must_use]
     pub fn mob_detect_dist(&self) -> f32 {
         self.mob_detect_dist.map_or(6.0, |v| v.0)
     }
 
     /// `mob_detect_height`, or its default 6.
-    #[must_use]
     pub fn mob_detect_height(&self) -> f32 {
         self.mob_detect_height.map_or(6.0, |v| v.0)
     }
@@ -1484,31 +1408,26 @@ pub struct PetSleepWithOwner {
 
 impl PetSleepWithOwner {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1572,25 +1491,21 @@ pub struct Play {
 
 impl Play {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `chance_to_start`, or its default 0.0025.
-    #[must_use]
     pub fn chance_to_start(&self) -> f32 {
         self.chance_to_start.map_or(0.0025, |v| v.0)
     }
 
     /// `follow_distance`, or its default 2.
-    #[must_use]
     pub fn follow_distance(&self) -> i32 {
         self.follow_distance.map_or(2, |v| v.0)
     }
 
     /// `friend_search_area`, or its default `[6, 3, 6]`.
-    #[must_use]
     pub fn friend_search_area(&self) -> [f32; 3] {
         self.friend_search_area
             .as_ref()
@@ -1598,25 +1513,21 @@ impl Play {
     }
 
     /// `max_play_duration_seconds`, or its default 5e+01.
-    #[must_use]
     pub fn max_play_duration_seconds(&self) -> f32 {
         self.max_play_duration_seconds.map_or(5.0e1, |v| v.0)
     }
 
     /// `random_pos_search_height`, or its default 3.
-    #[must_use]
     pub fn random_pos_search_height(&self) -> i32 {
         self.random_pos_search_height.map_or(3, |v| v.0)
     }
 
     /// `random_pos_search_range`, or its default 16.
-    #[must_use]
     pub fn random_pos_search_range(&self) -> i32 {
         self.random_pos_search_range.map_or(16, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1708,38 +1619,32 @@ pub struct PlayDead {
 
 impl PlayDead {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `apply_regeneration`, or its default `false`.
-    #[must_use]
     pub fn apply_regeneration(&self) -> bool {
         self.apply_regeneration.is_some_and(|v| v.0)
     }
 
     /// `duration`, or its default 1.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(1.0, |v| v.0)
     }
 
     /// `force_below_health`, or its default 0.
-    #[must_use]
     pub fn force_below_health(&self) -> i32 {
         self.force_below_health.map_or(0, |v| v.0)
     }
 
     /// `random_damage_range`, or its default 0 to 0.
-    #[must_use]
     pub fn random_damage_range(&self) -> (i32, i32) {
         self.random_damage_range
             .map_or((0, 0), |range| range.resolve(0, 0))
     }
 
     /// `random_start_chance`, or its default 1.
-    #[must_use]
     pub fn random_start_chance(&self) -> f32 {
         self.random_start_chance.map_or(1.0, |v| v.0)
     }
@@ -1810,55 +1715,46 @@ pub struct RaidGarden {
 
 impl RaidGarden {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `eat_delay`, or its default 2.
-    #[must_use]
     pub fn eat_delay(&self) -> i32 {
         self.eat_delay.map_or(2, |v| v.0)
     }
 
     /// `full_delay`, or its default 100.
-    #[must_use]
     pub fn full_delay(&self) -> i32 {
         self.full_delay.map_or(100, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `initial_eat_delay`, or its default 0.
-    #[must_use]
     pub fn initial_eat_delay(&self) -> i32 {
         self.initial_eat_delay.map_or(0, |v| v.0)
     }
 
     /// `max_to_eat`, or its default 6.
-    #[must_use]
     pub fn max_to_eat(&self) -> i32 {
         self.max_to_eat.map_or(6, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1978,75 +1874,63 @@ pub struct RandomSearchAndDig {
 
 impl RandomSearchAndDig {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 0 to 0.
-    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `digging_duration_range`, or its default 8 to 1e+01.
-    #[must_use]
     pub fn digging_duration_range(&self) -> (f32, f32) {
         self.digging_duration_range
             .map_or((8.0, 1.0e1), |range| range.resolve(8.0, 1.0e1))
     }
 
     /// `find_valid_position_retries`, or its default 5.
-    #[must_use]
     pub fn find_valid_position_retries(&self) -> i32 {
         self.find_valid_position_retries.map_or(5, |v| v.0)
     }
 
     /// `goal_radius`, or its default 1.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(1.5, |v| v.0)
     }
 
     /// `item_table`, or its default `""`.
-    #[must_use]
     pub fn item_table(&self) -> &str {
         self.item_table.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `search_range_xz`, or its default 10.
-    #[must_use]
     pub fn search_range_xz(&self) -> i32 {
         self.search_range_xz.map_or(10, |v| v.0)
     }
 
     /// `search_range_y`, or its default 7.
-    #[must_use]
     pub fn search_range_y(&self) -> i32 {
         self.search_range_y.map_or(7, |v| v.0)
     }
 
     /// `spawn_item_after_seconds`, or its default 0.
-    #[must_use]
     pub fn spawn_item_after_seconds(&self) -> f32 {
         self.spawn_item_after_seconds.map_or(0.0, |v| v.0)
     }
 
     /// `spawn_item_pos_offset`, or its default 0.
-    #[must_use]
     pub fn spawn_item_pos_offset(&self) -> f32 {
         self.spawn_item_pos_offset.map_or(0.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `target_dig_position_offset`, or its default 2.25.
-    #[must_use]
     pub fn target_dig_position_offset(&self) -> f32 {
         self.target_dig_position_offset.map_or(2.25, |v| v.0)
     }
@@ -2154,31 +2038,26 @@ pub struct RandomSitting {
 
 impl RandomSitting {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown`, or its default 1e+02.
-    #[must_use]
     pub fn cooldown(&self) -> f32 {
         self.cooldown.map_or(1.0e2, |v| v.0)
     }
 
     /// `min_sit_time`, or its default 1e+01.
-    #[must_use]
     pub fn min_sit_time(&self) -> f32 {
         self.min_sit_time.map_or(1.0e1, |v| v.0)
     }
 
     /// `start_chance`, or its default 0.1.
-    #[must_use]
     pub fn start_chance(&self) -> f32 {
         self.start_chance.map_or(0.1, |v| v.0)
     }
 
     /// `stop_chance`, or its default 0.3.
-    #[must_use]
     pub fn stop_chance(&self) -> f32 {
         self.stop_chance.map_or(0.3, |v| v.0)
     }
@@ -2218,7 +2097,6 @@ pub struct ReceiveLove {
 
 impl ReceiveLove {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -2261,13 +2139,11 @@ pub struct Roar {
 
 impl Roar {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `duration`, or its default 0.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(0.0, |v| v.0)
     }
@@ -2311,13 +2187,11 @@ pub struct Roll {
 
 impl Roll {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `probability`, or its default 0.02.
-    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -2360,13 +2234,11 @@ pub struct RunAroundLikeCrazy {
 
 impl RunAroundLikeCrazy {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2409,13 +2281,11 @@ pub struct Scared {
 
 impl Scared {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `sound_delay`, or its default 0.
-    #[must_use]
     pub fn sound_delay(&self) -> i32 {
         self.sound_delay.map_or(0, |v| v.0)
     }
@@ -2455,7 +2325,6 @@ pub struct SilverfishMergeWithStone {
 
 impl SilverfishMergeWithStone {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -2495,7 +2364,6 @@ pub struct SilverfishWakeUpFriends {
 
 impl SilverfishWakeUpFriends {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -2541,19 +2409,16 @@ pub struct SkeletonHorseTrap {
 
 impl SkeletonHorseTrap {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `duration`, or its default 1.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(1.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
-    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -2616,49 +2481,41 @@ pub struct Sleep {
 
 impl Sleep {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `can_sleep_while_riding`, or its default `false`.
-    #[must_use]
     pub fn can_sleep_while_riding(&self) -> bool {
         self.can_sleep_while_riding.is_some_and(|v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `sleep_collider_height`, or its default 1.
-    #[must_use]
     pub fn sleep_collider_height(&self) -> f32 {
         self.sleep_collider_height.map_or(1.0, |v| v.0)
     }
 
     /// `sleep_collider_width`, or its default 1.
-    #[must_use]
     pub fn sleep_collider_width(&self) -> f32 {
         self.sleep_collider_width.map_or(1.0, |v| v.0)
     }
 
     /// `sleep_y_offset`, or its default 1.
-    #[must_use]
     pub fn sleep_y_offset(&self) -> f32 {
         self.sleep_y_offset.map_or(1.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `timeout_cooldown`, or its default 8.
-    #[must_use]
     pub fn timeout_cooldown(&self) -> f32 {
         self.timeout_cooldown.map_or(8.0, |v| v.0)
     }
@@ -2753,25 +2610,21 @@ pub struct Sneeze {
 
 impl Sneeze {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `drop_item_chance`, or its default 1.
-    #[must_use]
     pub fn drop_item_chance(&self) -> f32 {
         self.drop_item_chance.map_or(1.0, |v| v.0)
     }
 
     /// `loot_table`, or its default `""`.
-    #[must_use]
     pub fn loot_table(&self) -> &str {
         self.loot_table.as_ref().map_or("", |v| v.0.as_str())
     }
@@ -2782,13 +2635,11 @@ impl Sneeze {
     }
 
     /// `prepare_time`, or its default 1.
-    #[must_use]
     pub fn prepare_time(&self) -> f32 {
         self.prepare_time.map_or(1.0, |v| v.0)
     }
 
     /// `probability`, or its default 0.02.
-    #[must_use]
     pub fn probability(&self) -> f32 {
         self.probability.map_or(0.02, |v| v.0)
     }
@@ -2799,7 +2650,6 @@ impl Sneeze {
     }
 
     /// `within_radius`, or its default 0.
-    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -2857,38 +2707,32 @@ pub struct Sniff {
 
 impl Sniff {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 3 to 1e+01.
-    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((3.0, 1.0e1), |range| range.resolve(3.0, 1.0e1))
     }
 
     /// `duration`, or its default 1.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(1.0, |v| v.0)
     }
 
     /// `sniffing_radius`, or its default 5.
-    #[must_use]
     pub fn sniffing_radius(&self) -> f32 {
         self.sniffing_radius.map_or(5.0, |v| v.0)
     }
 
     /// `suspicion_radius_horizontal`, or its default 3.
-    #[must_use]
     pub fn suspicion_radius_horizontal(&self) -> f32 {
         self.suspicion_radius_horizontal.map_or(3.0, |v| v.0)
     }
 
     /// `suspicion_radius_vertical`, or its default 3.
-    #[must_use]
     pub fn suspicion_radius_vertical(&self) -> f32 {
         self.suspicion_radius_vertical.map_or(3.0, |v| v.0)
     }
@@ -2946,31 +2790,26 @@ pub struct StayNearNoteblock {
 
 impl StayNearNoteblock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `listen_time`, or its default 30.
-    #[must_use]
     pub fn listen_time(&self) -> i32 {
         self.listen_time.map_or(30, |v| v.0)
     }
 
     /// `speed`, or its default 1.
-    #[must_use]
     pub fn speed(&self) -> f32 {
         self.speed.map_or(1.0, |v| v.0)
     }
 
     /// `start_distance`, or its default 1e+01.
-    #[must_use]
     pub fn start_distance(&self) -> f32 {
         self.start_distance.map_or(1.0e1, |v| v.0)
     }
 
     /// `stop_distance`, or its default 2.
-    #[must_use]
     pub fn stop_distance(&self) -> f32 {
         self.stop_distance.map_or(2.0, |v| v.0)
     }
@@ -3010,7 +2849,6 @@ pub struct StayWhileSitting {
 
 impl StayWhileSitting {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -3068,43 +2906,36 @@ pub struct StompTurtleEgg {
 
 impl StompTurtleEgg {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -3171,20 +3002,17 @@ pub struct TimerFlag1 {
 
 impl TimerFlag1 {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 0 to 0.
-    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `duration_range`, or its default 0 to 0.
-    #[must_use]
     pub fn duration_range(&self) -> (f32, f32) {
         self.duration_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
@@ -3251,20 +3079,17 @@ pub struct TimerFlag2 {
 
 impl TimerFlag2 {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 0 to 0.
-    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `duration_range`, or its default 0 to 0.
-    #[must_use]
     pub fn duration_range(&self) -> (f32, f32) {
         self.duration_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
@@ -3331,20 +3156,17 @@ pub struct TimerFlag3 {
 
 impl TimerFlag3 {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 0 to 0.
-    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `duration_range`, or its default 0 to 0.
-    #[must_use]
     pub fn duration_range(&self) -> (f32, f32) {
         self.duration_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
@@ -3423,49 +3245,41 @@ pub struct Work {
 
 impl Work {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `active_time`, or its default 0.
-    #[must_use]
     pub fn active_time(&self) -> i32 {
         self.active_time.map_or(0, |v| v.0)
     }
 
     /// `can_work_in_rain`, or its default `false`.
-    #[must_use]
     pub fn can_work_in_rain(&self) -> bool {
         self.can_work_in_rain.is_some_and(|v| v.0)
     }
 
     /// `goal_cooldown`, or its default 0.
-    #[must_use]
     pub fn goal_cooldown(&self) -> i32 {
         self.goal_cooldown.map_or(0, |v| v.0)
     }
 
     /// `sound_delay_max`, or its default 0.
-    #[must_use]
     pub fn sound_delay_max(&self) -> i32 {
         self.sound_delay_max.map_or(0, |v| v.0)
     }
 
     /// `sound_delay_min`, or its default 0.
-    #[must_use]
     pub fn sound_delay_min(&self) -> i32 {
         self.sound_delay_min.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 0.5.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.5, |v| v.0)
     }
 
     /// `work_in_rain_tolerance`, or its default -1.
-    #[must_use]
     pub fn work_in_rain_tolerance(&self) -> i32 {
         self.work_in_rain_tolerance.map_or(-1, |v| v.0)
     }
@@ -3573,79 +3387,66 @@ pub struct WorkComposter {
 
 impl WorkComposter {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `active_time`, or its default 0.
-    #[must_use]
     pub fn active_time(&self) -> i32 {
         self.active_time.map_or(0, |v| v.0)
     }
 
     /// `block_interaction_max`, or its default 1.
-    #[must_use]
     pub fn block_interaction_max(&self) -> i32 {
         self.block_interaction_max.map_or(1, |v| v.0)
     }
 
     /// `can_empty_composter`, or its default `true`.
-    #[must_use]
     pub fn can_empty_composter(&self) -> bool {
         self.can_empty_composter.is_none_or(|v| v.0)
     }
 
     /// `can_fill_composter`, or its default `true`.
-    #[must_use]
     pub fn can_fill_composter(&self) -> bool {
         self.can_fill_composter.is_none_or(|v| v.0)
     }
 
     /// `can_work_in_rain`, or its default `false`.
-    #[must_use]
     pub fn can_work_in_rain(&self) -> bool {
         self.can_work_in_rain.is_some_and(|v| v.0)
     }
 
     /// `goal_cooldown`, or its default 0.
-    #[must_use]
     pub fn goal_cooldown(&self) -> i32 {
         self.goal_cooldown.map_or(0, |v| v.0)
     }
 
     /// `items_per_use_max`, or its default 20.
-    #[must_use]
     pub fn items_per_use_max(&self) -> i32 {
         self.items_per_use_max.map_or(20, |v| v.0)
     }
 
     /// `min_item_count`, or its default 10.
-    #[must_use]
     pub fn min_item_count(&self) -> i32 {
         self.min_item_count.map_or(10, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 0.5.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.5, |v| v.0)
     }
 
     /// `use_block_max`, or its default 200.
-    #[must_use]
     pub fn use_block_max(&self) -> i32 {
         self.use_block_max.map_or(200, |v| v.0)
     }
 
     /// `use_block_min`, or its default 100.
-    #[must_use]
     pub fn use_block_min(&self) -> i32 {
         self.use_block_min.map_or(100, |v| v.0)
     }
 
     /// `work_in_rain_tolerance`, or its default -1.
-    #[must_use]
     pub fn work_in_rain_tolerance(&self) -> i32 {
         self.work_in_rain_tolerance.map_or(-1, |v| v.0)
     }

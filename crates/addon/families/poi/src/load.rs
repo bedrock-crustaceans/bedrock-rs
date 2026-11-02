@@ -702,7 +702,6 @@ impl TagDocuments {
 
 /// The loader of `bp.poi()`: the POI directories of every behaviour pack, combined into the
 /// group.
-#[must_use]
 pub const fn load_group() -> CollectionLoader<Poi, PoiFile> {
     CollectionLoader {
         walk: WALK,

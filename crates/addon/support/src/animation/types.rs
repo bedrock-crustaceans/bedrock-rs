@@ -56,13 +56,11 @@ impl ParticleEffect {
     }
 
     /// `effect` as vanilla stores it: lower-cased.
-    #[must_use]
     pub fn to_effect_name(&self) -> String {
         self.effect.to_ascii_lowercase()
     }
 
     /// `locator` as vanilla stores it: lower-cased, empty when absent.
-    #[must_use]
     pub fn to_locator_name(&self) -> String {
         self.locator
             .as_deref()
@@ -71,7 +69,6 @@ impl ParticleEffect {
     }
 
     /// `bind_to_actor`, with its default (bound).
-    #[must_use]
     pub fn binds_to_actor(&self) -> bool {
         self.bind_to_actor.unwrap_or(true)
     }
@@ -87,7 +84,6 @@ impl SoundEffect {
     }
 
     /// `effect` as vanilla stores it: lower-cased.
-    #[must_use]
     pub fn to_effect_name(&self) -> String {
         self.effect.to_ascii_lowercase()
     }

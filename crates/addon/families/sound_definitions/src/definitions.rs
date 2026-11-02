@@ -53,13 +53,11 @@ pub struct SoundDefinitions {
 impl SoundDefinitions {
     /// The document as JSON, after the version steps: what the typed members were read from
     /// and what the value writes.
-    #[must_use]
     pub fn json(&self) -> &Value {
         &self.json
     }
 
     /// The definition of the sound event `name`.
-    #[must_use]
     pub fn get(&self, name: &str) -> Option<&SoundDefinition> {
         self.sound_definitions.get(&SoundEventName::parse(name))
     }
@@ -67,7 +65,6 @@ impl SoundDefinitions {
     /// The value of a document that is already the 1.26.50 shape, read as it is: no version
     /// step runs and the findings of the read are dropped. `Content::parse` reads a file with
     /// both.
-    #[must_use]
     pub fn from_json(json: Value) -> Self {
         Self::read(json, &mut Diagnostics::default())
     }
@@ -113,7 +110,6 @@ pub struct SoundDefinition {
 impl SoundDefinition {
     /// Whether an entry is positional when it does not say: every category but `music` and
     /// `ui`, compared without case.
-    #[must_use]
     pub fn is_3d_by_default(&self) -> bool {
         !(self.category.eq_ignore_ascii_case("music") || self.category.eq_ignore_ascii_case("ui"))
     }

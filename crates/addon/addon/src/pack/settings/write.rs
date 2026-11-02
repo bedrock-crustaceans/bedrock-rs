@@ -18,7 +18,6 @@ impl SavedSettings {
     // The game writes its newest document version; the crate writes the floor version unless a
     // value needs the newest one, so older clients can read the file. This is the one deliberate
     // difference from the game's writer.
-    #[must_use]
     pub fn format_version(&self) -> FormatVersion {
         let lists = self.settings.iter().any(|entry| {
             entry

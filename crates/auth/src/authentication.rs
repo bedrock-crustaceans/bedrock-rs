@@ -48,7 +48,6 @@ pub enum Authentication {
 }
 
 impl Authentication {
-    #[must_use]
     pub fn identity(&self) -> &Identity {
         match self {
             Self::Authenticated(identity)
@@ -57,7 +56,6 @@ impl Authentication {
         }
     }
 
-    #[must_use]
     pub fn into_identity(self) -> Identity {
         match self {
             Self::Authenticated(identity)
@@ -66,12 +64,10 @@ impl Authentication {
         }
     }
 
-    #[must_use]
     pub fn is_authenticated(&self) -> bool {
         matches!(self, Self::Authenticated(_) | Self::AuthenticatedGuest(_))
     }
 
-    #[must_use]
     pub fn is_guest(&self) -> bool {
         matches!(self, Self::AuthenticatedGuest(_))
     }

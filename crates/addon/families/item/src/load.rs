@@ -695,7 +695,6 @@ fn numeric_version(text: &str) -> Option<Diagnostic> {
 
 /// The identifier of the item file `bytes` of the pack of `cx`, when the file loads there:
 /// what the link pass reads of a resource pack's `items/` files, which no collection holds.
-#[must_use]
 pub fn loaded_identifier(bytes: &[u8], cx: &LoadContext) -> Option<String> {
     let load = load_item(bytes, cx);
     load.outcome.value.as_ref()?;
@@ -928,7 +927,6 @@ fn is_json(path: &PackPath) -> bool {
 }
 
 /// The `bp.items()` loader: every `.json` below `items/`, bottom-up.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Item>, ParsedItem> {
     CollectionLoader {
         walk: Walk {
@@ -1124,7 +1122,6 @@ impl Any {
     }
 
     /// The identifier the document names.
-    #[must_use]
     pub fn identifier(&self) -> &str {
         match self {
             Any::V1_10_0(v) => &v.description.identifier,

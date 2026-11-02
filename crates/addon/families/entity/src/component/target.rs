@@ -92,7 +92,6 @@ impl Default for EntityTypes {
 
 impl EntityTypes {
     /// The descriptors, in order.
-    #[must_use]
     pub fn as_slice(&self) -> &[MobDescriptor] {
         match self {
             Self::Many(list) => list,

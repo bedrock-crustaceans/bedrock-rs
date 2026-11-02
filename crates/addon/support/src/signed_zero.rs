@@ -28,7 +28,6 @@ fn is_negative_zero(value: &Value) -> bool {
 /// negative zero written `-0.0` where `T` reads the text so (a float member then holds the
 /// zero of the file) and `0` where it does not (an integer member, which takes the integer).
 /// The text of [`to_facet_json`] when `T` reads neither.
-#[must_use]
 pub fn text_for<T: for<'a> facet::Facet<'a>>(value: &Value) -> Option<String> {
     let plain = to_facet_json(value).ok()?;
     let mut signed = to_facet_json_signed(value).ok()?;

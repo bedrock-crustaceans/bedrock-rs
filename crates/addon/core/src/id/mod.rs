@@ -80,7 +80,6 @@ impl<K: Kind> Id<K> {
     /// # Panics
     ///
     /// Panics when `text` is malformed (at compile time in a `const`).
-    #[must_use]
     pub const fn from_static(text: &'static str) -> Self {
         assert!(
             syntax::validate(text, K::SYNTAX, K::SUFFIX).is_ok(),
@@ -100,13 +99,11 @@ impl<K: Kind> Id<K> {
     }
 
     /// The text as written.
-    #[must_use]
     pub fn as_str(&self) -> &str {
         self.text.as_str()
     }
 
     /// `Some("demo")` for `demo:x`; `None` for kinds without namespaces or a bare id.
-    #[must_use]
     pub fn namespace(&self) -> Option<&str> {
         match K::SYNTAX {
             Syntax::Namespaced { .. } => split(self.as_str(), K::SUFFIX).0,
@@ -116,7 +113,6 @@ impl<K: Kind> Id<K> {
 
     /// The part after the namespace (or the whole text). An entity's `<event>` and an item's
     /// `:aux` suffix are not part of it.
-    #[must_use]
     pub fn path(&self) -> &str {
         match K::SYNTAX {
             Syntax::Namespaced { .. } => split(self.as_str(), K::SUFFIX).1,
@@ -125,7 +121,6 @@ impl<K: Kind> Id<K> {
     }
 
     /// The namespace is `minecraft` (explicit or defaulted).
-    #[must_use]
     pub fn is_vanilla(&self) -> bool {
         match K::SYNTAX {
             Syntax::Namespaced { default_vanilla } => match self.namespace() {
@@ -137,13 +132,11 @@ impl<K: Kind> Id<K> {
     }
 
     /// The text satisfies `K`'s syntax (the loader keeps malformed identifiers as written).
-    #[must_use]
     pub fn is_well_formed(&self) -> bool {
         syntax::validate(self.as_str(), K::SYNTAX, K::SUFFIX).is_ok()
     }
 
     /// Converts between kinds that share an identifier space (e.g. `EntityId` → spawn rules key).
-    #[must_use]
     pub fn cast<L: Kind<Space = K::Space>>(self) -> Id<L> {
         Id {
             text: self.text,
@@ -164,7 +157,6 @@ impl Id<kind::Entity> {
     /// aim-assist exclusion list): `Some("minecraft:entity_born")` for
     /// `minecraft:pig<minecraft:entity_born>`, `None` without a complete `<…>` suffix. The
     /// identifier compares without it.
-    #[must_use]
     pub fn event(&self) -> Option<&str> {
         let text = self.as_str();
         let open = text.find('<')?;
@@ -176,7 +168,6 @@ impl Id<kind::Item> {
     /// The aux value of a legacy `ns:name:aux` item text (`minecraft:wool:3` → `Some(3)`):
     /// the last of three or more `:`-separated parts, when it is an `i16`. The identifier
     /// compares without that part, as vanilla's item reference registers it.
-    #[must_use]
     pub fn aux(&self) -> Option<i16> {
         let text = self.as_str();
         if text.matches(':').count() < 2 {

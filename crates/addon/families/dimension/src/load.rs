@@ -215,7 +215,6 @@ impl Dimension {
     /// identifier and the pack's UUID, at the document's identifier. The game writes the line
     /// at the content log's warning level. The failure is the runtime's, which no document
     /// rule predicts; a host that creates dimensions reports it with this.
-    #[must_use]
     pub fn creation_failed(document: &Document<Dimension>) -> Diagnostic {
         let origin = document.origin();
         let mut at = JsonPath::new();
@@ -486,7 +485,6 @@ fn combine(parsed: Vec<Contribution<Dimension>>, stack: &StackCx<'_>) -> Registr
 }
 
 /// The loader of `bp.dimensions()`.
-#[must_use]
 pub const fn load_dimensions() -> CollectionLoader<Registry<Dimension>, Contribution<Dimension>> {
     CollectionLoader {
         walk: WALK,

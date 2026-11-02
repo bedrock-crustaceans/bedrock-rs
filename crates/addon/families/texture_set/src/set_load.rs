@@ -121,7 +121,6 @@ fn version_info(schema: Schema) -> VersionInfo {
 }
 
 /// The path of the payload in the document.
-#[must_use]
 pub fn payload_at() -> JsonPath {
     let mut at = JsonPath::new();
     at.push(PAYLOAD);
@@ -211,7 +210,6 @@ pub(super) fn texture_path(key: &str) -> Option<&str> {
 /// The path a layer named `name` of the texture set beside `texture` is loaded from, before
 /// the extensions: the set's folder, a `/`, and the name as written.
 // The value is joined to the set's folder as written and is not normalised.
-#[must_use]
 pub fn layer_path(texture: &str, name: &str) -> String {
     match texture.rsplit_once('/') {
         Some((folder, _)) => format!("{folder}/{name}"),

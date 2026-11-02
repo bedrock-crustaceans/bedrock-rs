@@ -44,7 +44,6 @@ impl SemVersion {
     };
 
     /// The release `major.minor.patch`.
-    #[must_use]
     pub const fn new(major: u16, minor: u16, patch: u16) -> Self {
         Self {
             major,
@@ -114,7 +113,6 @@ impl SemVersion {
     /// Reads a version from JSON: a string by [`parse`](Self::parse)'s rules, or an array of
     /// exactly three numbers, each non-negative, reals truncated,
     /// and none above 65 535 (0xFFFF). Anything else is `None`.
-    #[must_use]
     pub fn from_json(value: &Value) -> Option<Self> {
         if let Some(text) = value.as_string() {
             return Self::parse(text.as_str());
@@ -151,7 +149,6 @@ impl SemVersion {
     /// convertible to an unsigned integer as jsoncpp converts (`null` is 0, `false` / `true`
     /// are 0 / 1, a non-negative real is truncated), none above 65 535. Anything else is
     /// `None`. [`from_json`](Self::from_json) takes numbers only.
-    #[must_use]
     pub fn from_json_array(elements: &[Value]) -> Option<Self> {
         let [major, minor, patch] = elements else {
             return None;
@@ -182,13 +179,11 @@ impl SemVersion {
     }
 
     /// This is the any-version `*`.
-    #[must_use]
     pub fn is_any(&self) -> bool {
         self.any
     }
 
     /// The version has a pre-release tag (`1.21.60-beta.3`).
-    #[must_use]
     pub fn is_pre_release(&self) -> bool {
         !self.any && !self.pre_release.is_empty()
     }
@@ -196,13 +191,11 @@ impl SemVersion {
     /// This version can stand in for `other` (vanilla's compatibility rule, used for
     /// premium-pack version matching): the same major and a minor at least `other`'s; the patch,
     /// pre-release and build take no part.
-    #[must_use]
     pub fn satisfies(&self, other: &SemVersion) -> bool {
         self.major == other.major && self.minor >= other.minor
     }
 
     /// The three numbers as a document version (pre-release and build dropped).
-    #[must_use]
     pub fn format_version(&self) -> FormatVersion {
         FormatVersion::new(self.major, self.minor, self.patch)
     }
@@ -353,7 +346,6 @@ pub struct FormatVersion {
 
 impl FormatVersion {
     /// `major.minor.patch`.
-    #[must_use]
     pub const fn new(major: u16, minor: u16, patch: u16) -> Self {
         Self {
             major,
@@ -386,7 +378,6 @@ impl FormatVersionInput {
     /// `"9999.9999.9999-beta"` are the beta literal, a pre-release tag sets `prerelease`, build
     /// metadata is ignored. `None` (vanilla's "Malformed format version") for a string that is
     /// not a version and for the any-version `"*"`, which no document version can hold.
-    #[must_use]
     pub fn parse(text: &str) -> Option<Self> {
         // `"9999.9999.9999-beta"` is the sentinel itself: every beta check compares the three
         // numbers and the pre-release `beta`, build metadata aside.
@@ -416,7 +407,6 @@ impl FormatVersionInput {
     /// array of exactly three integer-tagged, non-negative numbers that fit `u32`, each taken
     /// modulo 65 536. Anything else (a number, a bool, null,
     /// an object, an array with a real element) is `None`, "Malformed format version".
-    #[must_use]
     pub fn from_json(value: &Value) -> Option<Self> {
         if let Some(text) = value.as_string() {
             return Self::parse(text.as_str());
@@ -433,7 +423,6 @@ impl FormatVersionInput {
     /// The version of a three-integer array: each element must fit `u32` (`RapidJSON`'s
     /// unsigned-integer flag) and is stored in 16 bits, so a value above 65 535 is taken modulo
     /// 65 536 rather than refused.
-    #[must_use]
     pub fn from_array(parts: [u64; 3]) -> Option<Self> {
         let [major, minor, patch] = parts.map(|part| {
             u32::try_from(part)
@@ -570,7 +559,6 @@ pub struct VersionRange {
 
 impl VersionRange {
     /// `[min, max]`.
-    #[must_use]
     pub const fn closed(min: FormatVersion, max: FormatVersion) -> Self {
         Self {
             min,
@@ -580,7 +568,6 @@ impl VersionRange {
     }
 
     /// `[min, max)`.
-    #[must_use]
     pub const fn right_open(min: FormatVersion, max: FormatVersion) -> Self {
         Self {
             min,
@@ -590,13 +577,11 @@ impl VersionRange {
     }
 
     /// `[version, version]`: only `version`.
-    #[must_use]
     pub const fn exact(version: FormatVersion) -> Self {
         Self::closed(version, version)
     }
 
     /// `version` lies in the range.
-    #[must_use]
     pub fn contains(&self, version: FormatVersion) -> bool {
         self.min <= version
             && if self.max_inclusive {
@@ -611,7 +596,6 @@ impl VersionRange {
     /// pre-release too), so it lies in a range that reaches `v` without starting at it: the
     /// struct below `v` takes `v-beta.n`, and `min-beta.n` is outside. The literal `"beta"` is
     /// in no range.
-    #[must_use]
     pub fn contains_input(&self, input: &FormatVersionInput) -> bool {
         match input.version {
             None => false,
@@ -701,7 +685,6 @@ impl MinEngineVersion {
     pub const FORMAT_1_CAP: MinEngineVersion = MinEngineVersion::new(1, 12, 0);
 
     /// `major.minor.patch`.
-    #[must_use]
     pub const fn new(major: u16, minor: u16, patch: u16) -> Self {
         Self {
             version: SemVersion::new(major, minor, patch),
@@ -711,7 +694,6 @@ impl MinEngineVersion {
     /// The `min_engine_version` of a behaviour or resource pack whose manifest has format 1 or
     /// lower: [`FORMAT_1_DEFAULT`](Self::FORMAT_1_DEFAULT) when absent, and
     /// [`FORMAT_1_CAP`](Self::FORMAT_1_CAP) for a version of 1.13.0 or above.
-    #[must_use]
     pub fn format_1(written: Option<SemVersion>) -> Self {
         match written {
             None => Self::FORMAT_1_DEFAULT,
@@ -727,14 +709,12 @@ impl MinEngineVersion {
     }
 
     /// The version is 1.13.0 or above, so a format-1 manifest caps it.
-    #[must_use]
     pub fn exceeds_format_1_cap(&self) -> bool {
         self.version >= SemVersion::new(1, 13, 0)
     }
 
     /// The version as molangx's engine version: the any-version, or the three numbers with a
     /// pre-release tag when the version has one (the tag text matters only as "present").
-    #[must_use]
     pub fn engine_version(&self) -> EngineVersion {
         use crate::molang::molangx::version::semver::{Prerelease, Version};
         if self.version.any {
@@ -755,7 +735,6 @@ impl MinEngineVersion {
 
     /// The Molang version vanilla maps this engine version to: a
     /// pre-release sorts below its release and `*` is the newest.
-    #[must_use]
     pub fn molang_version(&self) -> MolangVersion {
         MolangVersion::from(&self.engine_version())
     }
@@ -766,7 +745,6 @@ impl MinEngineVersion {
     /// below the first entry (1.8.0) and [`CURRENT_COMMAND_VERSION`] from the last (1.26.10). A
     /// pre-release sorts below its release (`1.16.0-beta` is 11) and `*` is the newest. An
     /// invalid version is the caller's `None`, which gets [`CURRENT_COMMAND_VERSION`].
-    #[must_use]
     pub fn command_version(&self) -> u8 {
         COMMAND_VERSION_MAP
             .iter()
@@ -811,7 +789,6 @@ impl BaseGameVersion {
     };
 
     /// A world or template at `version`.
-    #[must_use]
     pub const fn new(version: SemVersion) -> Self {
         Self {
             version: Some(version),
@@ -827,7 +804,6 @@ impl BaseGameVersion {
     /// A pack versioned `version` (a base-game slice, a chemistry pack) applies to a world of this
     /// base-game version: always for `*` or no version, never when
     /// never compatible, otherwise when `version` is not above this one.
-    #[must_use]
     pub fn includes(&self, version: &SemVersion) -> bool {
         if self.never_compatible {
             return false;

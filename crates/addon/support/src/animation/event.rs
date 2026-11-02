@@ -8,7 +8,6 @@ use bedrock_addon_core::version::{CURRENT_COMMAND_VERSION, MinEngineVersion};
 impl EventString {
     /// Splits `text` the way the game does: `""` and `@…` other than `@s ` are nothing, `/…` a
     /// command, `@s <name>` an entity event, anything else Molang.
-    #[must_use]
     pub fn classify(text: &str, command_version: u8) -> Self {
         let bytes = text.as_bytes();
         match bytes.first() {
@@ -27,7 +26,6 @@ impl EventString {
     }
 
     /// The string as it is written back: the inverse of [`EventString::classify`].
-    #[must_use]
     pub fn to_text(&self) -> String {
         match self {
             Self::Command { command, .. } => format!("/{command}"),

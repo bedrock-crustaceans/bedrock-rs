@@ -98,7 +98,6 @@ impl CategoryName {
     ];
 
     /// The JSON name (`"construction"`).
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Construction => "construction",
@@ -110,7 +109,6 @@ impl CategoryName {
 
     /// The category a JSON name selects; `None` for any other string (`"Construction"`
     /// included).
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL
             .into_iter()
@@ -121,7 +119,6 @@ impl CategoryName {
     ///
     /// The game numbers the categories from one (Construction 1 up to Items 4), so its value is
     /// the discriminant here plus one.
-    #[must_use]
     pub fn creative_category(self) -> CreativeCategory {
         match self {
             Self::Construction => CreativeCategory::Construction,

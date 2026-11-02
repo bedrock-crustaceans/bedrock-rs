@@ -57,13 +57,11 @@ impl ItemName {
     /// tokens are `<namespace>:<name>`, three add the aux value, and of four or more the first
     /// three count. Namespace and name are lower-cased, an `item.` prefix is dropped, and the
     /// aux value must be an integer from 0 to 255.
-    #[must_use]
     pub fn parse(text: &str) -> ItemName {
         parse_item(text).0
     }
 
     /// `namespace:name`.
-    #[must_use]
     pub fn id(&self) -> String {
         format!("{}:{}", self.namespace, self.name)
     }
@@ -156,7 +154,6 @@ impl Ingredient {
     }
 
     /// The potion the string form names (`minecraft:awkward`).
-    #[must_use]
     pub fn potion(&self) -> Option<String> {
         match self {
             Self::Name(text) => potion(text),
@@ -165,7 +162,6 @@ impl Ingredient {
     }
 
     /// The item tag of a tag ingredient: an object whose `item` is not a string.
-    #[must_use]
     pub fn tag(&self) -> Option<&str> {
         match self {
             Self::Object(object) if object.item.is_none() => object.tag.as_deref(),
@@ -174,7 +170,6 @@ impl Ingredient {
     }
 
     /// How many: `count`, default 1.
-    #[must_use]
     pub fn count(&self) -> i32 {
         match self {
             Self::Object(IngredientObject {
@@ -186,7 +181,6 @@ impl Ingredient {
 
     /// The aux value: an inline aux in the item text wins, then what `data` evaluated to (a
     /// constant `data` of a value built by hand counts too), else 32767, any aux.
-    #[must_use]
     pub fn aux(&self) -> i32 {
         if let Some(aux) = self.item_name().and_then(|name| name.aux) {
             return aux;
@@ -201,7 +195,6 @@ impl Ingredient {
     }
 
     /// The aux value of a result item: [`aux`](Self::aux), with 32767 read as 0.
-    #[must_use]
     pub fn result_aux(&self) -> i32 {
         match self.aux() {
             WILDCARD_AUX => 0,

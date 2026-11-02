@@ -116,7 +116,6 @@ pub enum BlockStateValue {
 
 impl BlockStateValue {
     /// The property type this value's JSON type belongs to.
-    #[must_use]
     pub fn property_type(&self) -> BlockPropertyType {
         match self {
             Self::Bool(_) => BlockPropertyType::Bool,

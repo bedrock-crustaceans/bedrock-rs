@@ -377,7 +377,6 @@ fn combine(parsed: Vec<Contribution<Block>>, stack: &StackCx<'_>) -> Registry<Bl
 
 /// The loader of `bp.blocks()`: `blocks/**/*.json` of every behaviour pack, combined top pack
 /// wins.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Block>, Contribution<Block>> {
     CollectionLoader {
         walk: WALK,

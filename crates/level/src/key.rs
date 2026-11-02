@@ -42,7 +42,6 @@ pub enum KeyVariant {
 
 impl KeyVariant {
     /// Returns the discriminant of `self`.
-    #[must_use]
     pub const fn discriminant(&self) -> u8 {
         match self {
             KeyVariant::Biome3d => 0x2b,
@@ -82,7 +81,6 @@ pub struct Key {
 }
 
 impl Key {
-    #[must_use]
     pub fn size_hint(&self) -> usize {
         let dim_size = if self.dimension == Dimension::Overworld {
             0

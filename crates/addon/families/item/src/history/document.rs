@@ -43,14 +43,12 @@ use bedrock_addon_core::load::LoadContext;
 /// A packed `major.minor.patch` (`major × 1 000 000 + minor × 1 000 + patch`), the version
 /// parameter of [`ItemDocument`].
 #[doc(hidden)]
-#[must_use]
 pub const fn pack(major: u32, minor: u32, patch: u32) -> u32 {
     major * 1_000_000 + minor * 1_000 + patch
 }
 
 /// The version a packed number stands for.
 #[doc(hidden)]
-#[must_use]
 pub const fn unpack(packed: u32) -> FormatVersion {
     #[allow(clippy::cast_possible_truncation, reason = "each part is below 1 000")]
     FormatVersion::new(

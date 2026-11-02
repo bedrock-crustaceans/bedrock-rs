@@ -122,7 +122,6 @@ impl Splines {
     }
 
     /// Every spline of every file, in load order.
-    #[must_use]
     pub fn iter(&self) -> SplinesIter<'_> {
         SplinesIter {
             files: self.files.iter(),

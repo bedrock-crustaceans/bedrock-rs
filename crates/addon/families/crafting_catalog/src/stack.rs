@@ -172,7 +172,6 @@ fn combine(files: Vec<CatalogFile>, stack: &StackCx<'_>) -> Merged<CraftingCatal
 }
 
 /// The loader of `bp.crafting_catalog()`.
-#[must_use]
 pub const fn load() -> CollectionLoader<Merged<CraftingCatalog>, CatalogFile> {
     CollectionLoader {
         walk: WALK,

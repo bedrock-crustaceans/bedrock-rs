@@ -17,7 +17,6 @@ use bedrock_addon_core::shared::BlockSpecifier;
 
 impl Description {
     /// The description of `identifier`.
-    #[must_use]
     pub fn new(identifier: BiomeId) -> Self {
         Self {
             identifier,
@@ -28,7 +27,6 @@ impl Description {
 
 impl Biome {
     /// A biome named `identifier` without components.
-    #[must_use]
     pub fn new(identifier: BiomeId) -> Self {
         Self {
             description: Description::new(identifier),
@@ -40,7 +38,6 @@ impl Biome {
 
 impl Beta {
     /// A beta biome named `identifier` without components or environment attributes.
-    #[must_use]
     pub fn new(identifier: BiomeId) -> Self {
         Self {
             description: Description::new(identifier),
@@ -55,7 +52,6 @@ impl Beta {
 
 impl Humidity {
     /// `minecraft:humidity` with `is_humid`.
-    #[must_use]
     pub fn new(is_humid: bool) -> Self {
         Self {
             is_humid: StrictBool(is_humid),
@@ -76,7 +72,6 @@ impl Tags {
 
 impl TopSlide {
     /// `top_slide` with `enabled`.
-    #[must_use]
     pub fn new(enabled: bool) -> Self {
         Self {
             enabled: StrictBool(enabled),
@@ -87,7 +82,6 @@ impl TopSlide {
 
 impl ReplaceBiomes {
     /// `minecraft:replace_biomes` with `replacements`.
-    #[must_use]
     pub fn new(replacements: Vec<BiomeReplacement>) -> Self {
         Self {
             replacements,
@@ -120,7 +114,6 @@ impl BiomeReplacement {
 
 impl MapTints {
     /// `minecraft:map_tints` with `grass` and no foliage colour.
-    #[must_use]
     pub fn new(grass: GrassTint) -> Self {
         Self {
             grass,
@@ -132,7 +125,6 @@ impl MapTints {
 
 impl SurfaceBuilder {
     /// `minecraft:surface_builder` with `builder`.
-    #[must_use]
     pub fn new(builder: Builder) -> Self {
         Self {
             builder,
@@ -143,7 +135,6 @@ impl SurfaceBuilder {
 
 impl SubsurfaceBuilder {
     /// `minecraft:subsurface_builder` with `builder`.
-    #[must_use]
     pub fn new(builder: Builder) -> Self {
         Self {
             builder,
@@ -155,7 +146,6 @@ impl SubsurfaceBuilder {
 impl OverworldSurface {
     /// The layered surface: sea floor depth, then the sea floor, foundation, middle, top and
     /// sea blocks.
-    #[must_use]
     pub fn new(
         sea_floor_depth: i32,
         sea_floor_material: BlockSpecifier,
@@ -178,7 +168,6 @@ impl OverworldSurface {
 
 impl SwampSurface {
     /// The swamp surface: `surface`'s members and the puddle depth below sea level.
-    #[must_use]
     pub fn new(surface: OverworldSurface, max_puddle_depth_below_sea_level: i32) -> Self {
         Self {
             sea_floor_depth: surface.sea_floor_depth,
@@ -195,7 +184,6 @@ impl SwampSurface {
 
 impl CappedSurface {
     /// The capped surface: floor and ceiling blocks, the sea and foundation blocks, no beach.
-    #[must_use]
     pub fn new(
         floor_materials: Vec<BlockSpecifier>,
         ceiling_materials: Vec<BlockSpecifier>,
@@ -216,7 +204,6 @@ impl CappedSurface {
 impl MesaSurface {
     /// The mesa surface: `surface`'s members, the clay and hardened clay, and whether bryce
     /// pillars and a forest generate.
-    #[must_use]
     pub fn new(
         surface: OverworldSurface,
         clay_material: BlockSpecifier,
@@ -243,7 +230,6 @@ impl MesaSurface {
 impl NoiseGradientSurface {
     /// The noise gradient of `noise_descriptor` over `noise_block_specifiers`, replacing every
     /// block.
-    #[must_use]
     pub fn new(
         noise_descriptor: NoiseDescriptor,
         noise_block_specifiers: Vec<NoiseBlockSpecifier>,
@@ -271,7 +257,6 @@ impl NoiseDescriptor {
 
 impl NoiseBlockSpecifier {
     /// `block` with no noise, threshold or range written (they read as `""`, `0`, `{0, 0}`).
-    #[must_use]
     pub fn new(block: BlockSpecifier) -> Self {
         Self {
             noise: None,
@@ -285,7 +270,6 @@ impl NoiseBlockSpecifier {
 
 impl Adjustment {
     /// An adjustment setting `materials`, everywhere (no range, no scale).
-    #[must_use]
     pub fn new(materials: AdjustmentMaterials) -> Self {
         Self {
             materials,
@@ -299,7 +283,6 @@ impl Adjustment {
 
 impl BoolAttribute {
     /// `value`, combined by `operation`.
-    #[must_use]
     pub fn new(value: bool, operation: BoolOperation) -> Self {
         Self {
             value: StrictBool(value),
@@ -311,7 +294,6 @@ impl BoolAttribute {
 
 impl ColorAttribute {
     /// `value`, combined by `operation`.
-    #[must_use]
     pub fn new(value: ColorRgba, operation: ColorOperation) -> Self {
         Self {
             value,
@@ -323,7 +305,6 @@ impl ColorAttribute {
 
 impl FloatAttribute {
     /// `value`, combined by `operation`.
-    #[must_use]
     pub fn new(value: f32, operation: FloatOperation) -> Self {
         Self {
             operation,

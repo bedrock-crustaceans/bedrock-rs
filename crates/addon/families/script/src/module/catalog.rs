@@ -49,7 +49,6 @@ pub struct CatalogVersion {
 
 impl CatalogVersion {
     /// A listed version that requires nothing.
-    #[must_use]
     pub fn new(version: ScriptVersion) -> Self {
         Self {
             version,
@@ -79,7 +78,6 @@ impl Extend<(String, CatalogModule)> for ModuleCatalog {
 
 impl ModuleCatalog {
     /// An empty catalog.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -187,7 +185,6 @@ impl ModuleCatalog {
     }
 
     /// The module called `name`, compared byte for byte (`@Minecraft/Server` is unknown).
-    #[must_use]
     pub fn module(&self, name: &str) -> Option<&CatalogModule> {
         self.modules.get(name)
     }

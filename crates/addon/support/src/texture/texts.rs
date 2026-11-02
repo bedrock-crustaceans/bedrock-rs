@@ -8,7 +8,6 @@ use bedrock_addon_core::diagnostic::VanillaText;
     clippy::unnecessary_wraps,
     reason = "every call site fills an `Option<VanillaText>` field"
 )]
-#[must_use]
 pub fn fixed(text: &'static str) -> Option<VanillaText> {
     Some(VanillaText::Formatted {
         template: text,
@@ -22,7 +21,6 @@ pub fn fixed(text: &'static str) -> Option<VanillaText> {
     clippy::unnecessary_wraps,
     reason = "every call site fills an `Option<VanillaText>` field"
 )]
-#[must_use]
 pub fn formatted<const N: usize>(template: &'static str, args: [String; N]) -> Option<VanillaText> {
     Some(VanillaText::Formatted {
         template,

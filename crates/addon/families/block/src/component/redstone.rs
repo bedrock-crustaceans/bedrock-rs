@@ -22,13 +22,11 @@ pub struct RedstoneConductivity {
 
 impl RedstoneConductivity {
     /// Whether the block conducts power: `redstone_conductor`, `false` when absent.
-    #[must_use]
     pub fn redstone_conductor(&self) -> bool {
         self.redstone_conductor.is_some_and(|b| b.0)
     }
 
     /// Whether wire may step down the block: `allows_wire_to_step_down`, `true` when absent.
-    #[must_use]
     pub fn allows_wire_to_step_down(&self) -> bool {
         self.allows_wire_to_step_down.is_none_or(|b| b.0)
     }
@@ -50,13 +48,11 @@ pub struct RedstoneConsumer {
 
 impl RedstoneConsumer {
     /// The lowest power it reacts to: `min_power`, 0 when absent.
-    #[must_use]
     pub fn min_power(&self) -> u8 {
         self.min_power.map_or(0, |power| power.0)
     }
 
     /// Whether it passes the power on: `propagates_power`, `false` when absent.
-    #[must_use]
     pub fn propagates_power(&self) -> bool {
         self.propagates_power.is_some_and(|b| b.0)
     }
@@ -84,7 +80,6 @@ pub struct RedstoneProducer {
 impl RedstoneProducer {
     /// Whether the faces turn with the block's rotation: `transform_relative`, `true` when
     /// absent.
-    #[must_use]
     pub fn transform_relative(&self) -> bool {
         self.transform_relative.is_none_or(|b| b.0)
     }

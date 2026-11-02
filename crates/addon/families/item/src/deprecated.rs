@@ -76,7 +76,6 @@ const SLOTS: [Slot; 7] = [
 
 impl ItemDeprecatedData {
     /// Whether nothing is stored.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         *self == Self::default()
     }

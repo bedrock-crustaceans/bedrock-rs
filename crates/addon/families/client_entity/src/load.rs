@@ -535,7 +535,6 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
 /// The loader of `rp.client_entities()`: `entity/**/*.json` of every resource pack and the
 /// client entities of `attachables/**/*.json` and of the app's `definitions/attachables`, one
 /// definition per identifier by `description.min_engine_version`.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<ClientEntity>, FileOutcome> {
     CollectionLoader {
         walk: WALK,

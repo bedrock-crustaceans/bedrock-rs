@@ -22,7 +22,6 @@ fn hex_bytes(text: &str) -> [u8; 3] {
 
 impl FogSettings {
     /// Settings named `identifier` that set nothing.
-    #[must_use]
     pub fn new(identifier: FogId) -> Self {
         Self {
             description: FogDescription::new(identifier),
@@ -34,7 +33,6 @@ impl FogSettings {
 
     /// The identifier's namespace as the game takes it: the lower-cased text before the first
     /// `:`, or the whole lower-cased identifier when it has none.
-    #[must_use]
     pub fn namespace(&self) -> String {
         let identifier = self.description.identifier.as_str();
         identifier
@@ -47,7 +45,6 @@ impl FogSettings {
 
 impl FogDescription {
     /// A description with `identifier`.
-    #[must_use]
     pub fn new(identifier: FogId) -> Self {
         Self {
             identifier,
@@ -58,7 +55,6 @@ impl FogDescription {
 
 impl DistanceType {
     /// The JSON spelling: `"fixed"` or `"render"`.
-    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Fixed => "fixed",
@@ -69,7 +65,6 @@ impl DistanceType {
 
 impl FogColor {
     /// The colour as the game uses it: red, green and blue from 0 to 1 (each byte over 255).
-    #[must_use]
     pub fn rgb(&self) -> [f32; 3] {
         let bytes = match self {
             Self::Hex(text) => hex_bytes(text),
@@ -81,7 +76,6 @@ impl FogColor {
 
 impl ColorNorm {
     /// The colour as the game uses it: each component clamped to 0 to 1.
-    #[must_use]
     pub fn rgb(&self) -> [f32; 3] {
         match self {
             Self::Hex(text) => hex_bytes(text).map(|c| f32::from(c) / 255.0),
@@ -92,19 +86,16 @@ impl ColorNorm {
 
 impl FogDistanceSetting {
     /// `fog_start`; 0 when the setting leaves it out.
-    #[must_use]
     pub fn fog_start(&self) -> f32 {
         self.fog_start.unwrap_or(0.0)
     }
 
     /// `fog_end`; 0 when the setting leaves it out.
-    #[must_use]
     pub fn fog_end(&self) -> f32 {
         self.fog_end.unwrap_or(0.0)
     }
 
     /// `render_distance_type`; `fixed` when the setting leaves it out.
-    #[must_use]
     pub fn render_distance_type(&self) -> DistanceType {
         self.render_distance_type.unwrap_or_default()
     }
@@ -112,19 +103,16 @@ impl FogDistanceSetting {
 
 impl FogWaterDistanceSetting {
     /// `fog_start`; 0 when the setting leaves it out.
-    #[must_use]
     pub fn fog_start(&self) -> f32 {
         self.fog_start.unwrap_or(0.0)
     }
 
     /// `fog_end`; 0 when the setting leaves it out.
-    #[must_use]
     pub fn fog_end(&self) -> f32 {
         self.fog_end.unwrap_or(0.0)
     }
 
     /// `render_distance_type`; `fixed` when the setting leaves it out.
-    #[must_use]
     pub fn render_distance_type(&self) -> DistanceType {
         self.render_distance_type.unwrap_or_default()
     }

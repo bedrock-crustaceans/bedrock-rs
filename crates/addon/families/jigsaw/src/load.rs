@@ -606,7 +606,6 @@ fn no_json() -> EncodeError {
 
 impl JigsawMetadata {
     /// The file's bytes: the version string, length-prefixed, then the body as read.
-    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(5 + self.format_version.len() + self.body.len());
         let mut length = self.format_version.len();
@@ -961,7 +960,6 @@ fn combine(parsed: Vec<JigsawFile>, stack: &StackCx<'_>) -> Jigsaw {
 
 /// The loader of `bp.jigsaw()`: the five directories of every behaviour pack, combined into
 /// the group.
-#[must_use]
 pub const fn load_group() -> CollectionLoader<Jigsaw, JigsawFile> {
     CollectionLoader {
         walk: WALK,

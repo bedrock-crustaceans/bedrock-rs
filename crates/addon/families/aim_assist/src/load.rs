@@ -347,7 +347,6 @@ fn combine(parsed: Vec<AimAssistFile>, stack: &StackCx<'_>) -> AimAssist {
 
 /// The loader of `bp.aim_assist()`: the two directories of every behaviour pack, combined into
 /// the group.
-#[must_use]
 pub const fn load_group() -> CollectionLoader<AimAssist, AimAssistFile> {
     CollectionLoader {
         walk: WALK,

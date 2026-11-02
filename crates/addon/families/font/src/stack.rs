@@ -371,7 +371,6 @@ impl Fonts {
     /// The font file at `path` (`font/smooth/remapping.dat`): the highest pack that has it.
     /// Only font files are known here: the files below `font/`, in a `texts/<language>/font/`
     /// and in the directory of an MSDF font's pages.
-    #[must_use]
     pub fn file(&self, path: &str) -> Option<&FontFile> {
         self.files.get(path)
     }
@@ -380,7 +379,6 @@ impl Fonts {
     /// `prefix` (`font/glyph_`), for a client in `language`: the highest pack that has the
     /// page, and in that pack the language's copy (`texts/<language>/font/glyph_XX`) before
     /// the pack's own.
-    #[must_use]
     pub fn glyph_sheet(&self, prefix: &str, page: u8, language: Option<&str>) -> Option<&FontFile> {
         let stem = format!("{prefix}{page:02X}");
         let own = resolve(&self.files, &stem, &IMAGE);
@@ -397,7 +395,6 @@ impl Fonts {
     /// `font/glyph_4E`) for a client in `language`, by the rule of
     /// [`glyph_sheet`](Self::glyph_sheet): what a pass that checks the sheets' bytes asks for
     /// a sheet that is no page.
-    #[must_use]
     pub fn sheet(&self, stem: &str, language: Option<&str>) -> Option<&FontFile> {
         let own = resolve(&self.files, stem, &IMAGE);
         let overlay = language
@@ -413,7 +410,6 @@ impl Fonts {
     /// extension the highest pack has (`.ttf`, `.otf`; for `ttfmsdf` also `.ttc`, `.otc`), so
     /// a higher pack's `.otf` stands before a lower pack's `.ttf`. `None` for another format
     /// and when no pack has the file.
-    #[must_use]
     pub fn true_type_file(&self, font: &FontEntry) -> Option<&FontFile> {
         let extensions = font.format()?.file_extensions();
         resolve(&self.files, font.font_file.as_deref()?, extensions)

@@ -238,7 +238,6 @@ pub struct JwkSet {
 }
 
 impl JwkSet {
-    #[must_use]
     pub fn find(&self, kid: &str) -> Option<&Jwk> {
         self.keys.iter().find(|key| key.kid.as_deref() == Some(kid))
     }

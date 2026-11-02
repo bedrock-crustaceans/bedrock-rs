@@ -25,7 +25,6 @@ pub struct GrammarRange {
 impl GrammarRange {
     /// Whether a line under `command_version` sees the overloads.
     // The game's parser shows an overload when `from <= command_version <= to`.
-    #[must_use]
     pub fn contains(&self, command_version: u8) -> bool {
         self.from <= command_version && self.to.is_none_or(|to| command_version <= to)
     }
@@ -161,7 +160,6 @@ static RANGES: [GrammarRange; 18] = [
 
 /// Every range of command versions vanilla registers a command's overloads for, other than
 /// "every version".
-#[must_use]
 pub fn grammar_ranges() -> &'static [GrammarRange] {
     &RANGES
 }

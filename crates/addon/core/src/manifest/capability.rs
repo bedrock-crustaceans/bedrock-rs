@@ -30,7 +30,6 @@ pub enum Capability {
 
 impl Capability {
     /// The capability spelled `name`, matched exactly.
-    #[must_use]
     pub fn from_name(name: &str) -> Capability {
         match name {
             "chemistry" => Self::Chemistry,
@@ -43,7 +42,6 @@ impl Capability {
     }
 
     /// The JSON spelling.
-    #[must_use]
     pub fn name(&self) -> &str {
         match self {
             Self::Chemistry => "chemistry",
@@ -117,7 +115,6 @@ pub struct CapabilityRegistry {
 
 impl CapabilityRegistry {
     /// A registry that knows no capability.
-    #[must_use]
     pub fn empty() -> CapabilityRegistry {
         Self {
             validators: IndexMap::new(),
@@ -126,7 +123,6 @@ impl CapabilityRegistry {
 
     /// The server default with the education toggle set: `chemistry` succeeds trusted when
     /// `education` is on and fails otherwise; the other four as [`CapabilityRegistry::default`].
-    #[must_use]
     pub fn server(education: bool) -> CapabilityRegistry {
         // Vanilla registers exactly these five capabilities, each with a validator; these are
         // the crate's own defaults for a server.
@@ -171,7 +167,6 @@ impl CapabilityRegistry {
 
     /// Checks the capability in `cx`: its validator's answer, or
     /// [`CapabilityValidation::NotFound`] when no validator is registered under its name.
-    #[must_use]
     pub fn validate(&self, cx: &CapabilityCx<'_>) -> CapabilityValidation {
         self.validators
             .get(cx.capability.name())

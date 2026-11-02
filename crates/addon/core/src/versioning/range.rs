@@ -23,7 +23,6 @@ pub enum Selection {
 /// The first range starts at `floor`; inner ranges are `[V_i, V_{i+1})`; the last one ends at
 /// `ceiling` when given, else at the model's top (the engine, or `V_last` under
 /// `ClosedToLatest`). Under `ExactOnly` every range is `[V_i, V_i]`.
-#[must_use]
 pub fn ranges(
     versions: &[FormatVersion],
     floor: FormatVersion,
@@ -60,7 +59,6 @@ pub fn ranges(
 
 /// The struct of family `F` that a stable document version selects (the literal `"beta"`
 /// selects no stable struct and is `Unsupported` here).
-#[must_use]
 pub fn select<F: Family>(input: &FormatVersionInput) -> Selection {
     let versions = <F::Any as VersionChain<F>>::VERSIONS;
     select_versions(versions, F::FLOOR, F::RANGE_MODEL, F::CEILING, input)

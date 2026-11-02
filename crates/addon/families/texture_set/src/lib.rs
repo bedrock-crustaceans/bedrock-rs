@@ -68,14 +68,12 @@ impl TextureSets {
 
     /// The set of the pack at `stack_index` beside the texture `texture`, as it loaded.
     #[doc(hidden)]
-    #[must_use]
     pub fn set_of(&self, stack_index: usize, texture: &str) -> Option<&SetCopy> {
         self.sets.get(stack_index)?.get(texture)
     }
 
     /// The sets of each pack, in stack order.
     #[doc(hidden)]
-    #[must_use]
     pub fn packs(&self) -> &[PackSets] {
         &self.sets
     }

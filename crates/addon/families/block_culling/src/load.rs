@@ -323,7 +323,6 @@ fn combine_culling(
 
 /// The loader of `rp.block_culling()`: `block_culling/**/*.json` of every resource pack, the
 /// highest pack's document winning per identifier.
-#[must_use]
 pub const fn load_culling_rules()
 -> CollectionLoader<Registry<CullingRules>, Contribution<CullingRules>> {
     CollectionLoader {

@@ -25,7 +25,6 @@ pub enum ServerNet {
 
 impl ServerNet {
     /// Whether a request to `uri` passes the configuration (before any TLS rule).
-    #[must_use]
     pub fn allows_uri(&self, uri: &str) -> bool {
         match self {
             Self::Unrestricted => true,
@@ -35,7 +34,6 @@ impl ServerNet {
     }
 
     /// Whether `http://` and `ws://` requests are refused.
-    #[must_use]
     pub fn requires_tls(&self) -> bool {
         match self {
             Self::Unrestricted | Self::Denied => false,
@@ -78,14 +76,12 @@ impl NetModuleConfig {
     /// written, whatever its value.
     // The server refuses `http://` and `ws://` even for `force_tls: false`, answering with
     // a TLS-only error.
-    #[must_use]
     pub fn requires_tls(&self) -> bool {
         self.force_tls.is_some()
     }
 
     /// Whether a request to `uri` passes `allowed_uris`: some entry is a prefix of it. The
     /// request's scheme compares in lower case.
-    #[must_use]
     pub fn allows_uri(&self, uri: &str) -> bool {
         let Some(allowed) = &self.allowed_uris else {
             return true;

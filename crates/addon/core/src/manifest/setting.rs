@@ -75,7 +75,6 @@ pub enum Setting {
 
 impl Setting {
     /// The setting's `name`; a label has none.
-    #[must_use]
     pub fn name(&self) -> Option<&str> {
         match self {
             Self::Label { .. } => None,
@@ -87,7 +86,6 @@ impl Setting {
     }
 
     /// The JSON `type` of this kind: `label`, `slider`, `toggle`, `dropdown`, `multiselect`.
-    #[must_use]
     pub fn type_name(&self) -> &'static str {
         match self {
             Self::Label { .. } => "label",

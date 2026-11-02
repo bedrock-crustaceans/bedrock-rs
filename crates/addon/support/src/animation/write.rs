@@ -11,7 +11,6 @@ use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::version::FormatVersion;
 
 /// The error for a value the format cannot hold, at the root.
-#[must_use]
 pub fn refused(what: Unrepresentable) -> EncodeError {
     EncodeError::NotRepresentable {
         at: JsonPath::new(),
@@ -52,13 +51,11 @@ pub fn molang(value: &Molang) -> Result<Value, EncodeError> {
 }
 
 /// A JSON string.
-#[must_use]
 pub fn string(text: &str) -> Value {
     Value::from(text)
 }
 
 /// A `format_version` as its JSON string.
-#[must_use]
 pub fn version(version: FormatVersion) -> Value {
     string(&version.to_string())
 }
@@ -97,7 +94,6 @@ impl Object {
     }
 
     /// The finished JSON object.
-    #[must_use]
     pub fn done(self) -> Value {
         Value::from(self.0)
     }

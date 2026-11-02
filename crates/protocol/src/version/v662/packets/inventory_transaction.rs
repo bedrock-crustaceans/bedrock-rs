@@ -21,7 +21,6 @@ pub struct LegacySetItemSlotsEntry {
     pub slots: Vec<i8>,
 }
 
-#[must_use]
 pub fn has_legacy_set_item_slots(legacy_request_id: i32) -> bool {
     legacy_request_id < -1 && legacy_request_id & 1 == 0
 }

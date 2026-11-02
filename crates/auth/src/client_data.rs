@@ -110,7 +110,6 @@ pub struct PersonaPieceTintColour {
 }
 
 impl ClientData {
-    #[must_use]
     #[expect(
         clippy::cast_possible_wrap,
         clippy::cast_possible_truncation,

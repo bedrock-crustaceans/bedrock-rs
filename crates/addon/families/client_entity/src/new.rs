@@ -8,7 +8,6 @@ use super::{ClientEntity, Description};
 
 impl ClientEntity {
     /// A client entity for `identifier` with nothing to draw yet, at format version 1.26.0.
-    #[must_use]
     pub fn new(identifier: EntityId) -> Self {
         Self {
             format_version: Self::VERSION,
@@ -19,7 +18,6 @@ impl ClientEntity {
 
 impl Description {
     /// A description of `identifier` with every other member absent.
-    #[must_use]
     pub fn new(identifier: EntityId) -> Self {
         Self {
             identifier,

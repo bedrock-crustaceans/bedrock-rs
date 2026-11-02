@@ -58,7 +58,6 @@ impl IdentityStore {
         Ok(store)
     }
 
-    #[must_use]
     pub fn pem(&self) -> &str {
         &self.pem
     }

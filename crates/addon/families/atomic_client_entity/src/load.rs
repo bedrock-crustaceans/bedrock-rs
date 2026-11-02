@@ -301,7 +301,6 @@ fn combine(
 
 /// The loader of `rp.atomic_client_entities()`: `atomic_client_entities/**/*.json` of every
 /// resource pack, the last document of an identifier winning.
-#[must_use]
 pub const fn load_registry()
 -> CollectionLoader<Registry<AtomicClientEntity>, Contribution<AtomicClientEntity>> {
     CollectionLoader {

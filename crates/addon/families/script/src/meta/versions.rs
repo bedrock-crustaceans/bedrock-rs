@@ -84,27 +84,23 @@ pub struct PeerReq {
 }
 
 /// Every module of the catalog, sorted by name.
-#[must_use]
 pub fn modules() -> &'static [ModuleEntry] {
     MODULES
 }
 
 /// The release tag of the metadata the catalog was generated from (`v1.26.50.4`): a pack
 /// written for a newer game may name a version this tag does not ship.
-#[must_use]
 pub fn samples_tag() -> &'static str {
     SAMPLES_TAG
 }
 
 /// Versions the engine knows but the metadata release ships no file for (`@minecraft/server` `3.0.0-alpha`,
 /// `2.11.0-internal`), as (module, version): never selectable by packs.
-#[must_use]
 pub fn engine_only() -> &'static [(&'static str, &'static str)] {
     ENGINE_ONLY
 }
 
 /// The module called `name` (`@minecraft/server`).
-#[must_use]
 pub fn module(name: &str) -> Option<&'static ModuleEntry> {
     MODULES
         .binary_search_by(|entry| entry.name.cmp(name))
@@ -113,7 +109,6 @@ pub fn module(name: &str) -> Option<&'static ModuleEntry> {
 }
 
 /// The module whose UUID is `uuid`.
-#[must_use]
 pub fn module_by_uuid(uuid: Uuid) -> Option<&'static ModuleEntry> {
     MODULES.iter().find(|entry| entry.uuid == uuid.as_u128())
 }

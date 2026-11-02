@@ -167,7 +167,6 @@ pub enum TemperatureCategory {
 
 impl TemperatureCategory {
     /// The JSON spelling.
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Medium => "medium",
@@ -179,7 +178,6 @@ impl TemperatureCategory {
     }
 
     /// The category spelled `name`.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Some(match name {
             "medium" => Self::Medium,
@@ -380,7 +378,6 @@ impl NoiseType {
     /// The `(depth, scale)` the preset stands for.
     // The game keeps the depths and the scales in two tables; which table is the depth and
     // which the scale follows the order of the values.
-    #[must_use]
     pub fn depth_and_scale(self) -> (f32, f32) {
         match self {
             Self::Default => (0.1, 0.2),

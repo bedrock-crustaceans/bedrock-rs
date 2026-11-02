@@ -98,7 +98,6 @@ pub struct AsepriteFrame {
 impl UiTextureInfo {
     /// The size the UV rectangle is measured against: a nine-slice's `base_size`, a sheet's
     /// `meta.size`; 0 × 0 when absent and for a rejected sheet.
-    #[must_use]
     pub fn base_size(&self) -> [f32; 2] {
         match self {
             #[allow(clippy::cast_precision_loss, reason = "an image size is small")]
@@ -109,7 +108,6 @@ impl UiTextureInfo {
     }
 
     /// The frames of an accepted sheet; none otherwise.
-    #[must_use]
     pub fn frames(&self) -> &[AsepriteFrame] {
         match self {
             Self::Aseprite(sheet) => &sheet.frames,
@@ -118,7 +116,6 @@ impl UiTextureInfo {
     }
 
     /// The summed duration of the frames, in milliseconds.
-    #[must_use]
     pub fn total_duration(&self) -> i64 {
         self.frames()
             .iter()

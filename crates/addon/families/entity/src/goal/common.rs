@@ -181,7 +181,6 @@ impl LiquidMaterial {
     pub const ALL: &'static [Self] = &[Self::Any, Self::Water, Self::Lava];
 
     /// The name vanilla's bind spells it with.
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Any => "Any",
@@ -191,7 +190,6 @@ impl LiquidMaterial {
     }
 
     /// The material spelt `name`, in any case.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL
             .iter()
@@ -222,7 +220,6 @@ pub struct MaterialType {
 
 impl MaterialType {
     /// `material`, spelt in lower case as vanilla's files write it.
-    #[must_use]
     pub fn new(material: LiquidMaterial) -> Self {
         Self {
             material,
@@ -425,13 +422,11 @@ impl SoundEvent {
     }
 
     /// The event's name.
-    #[must_use]
     pub fn name(&self) -> &str {
         &self.0
     }
 
     /// The name is one of the level sound events the crate knows.
-    #[must_use]
     pub fn is_known(&self) -> bool {
         SOUND_EVENTS.binary_search(&self.0.as_str()).is_ok()
     }
@@ -593,7 +588,6 @@ pub struct Vec3 {
 
 impl Vec3 {
     /// The vector `[x, y, z]`, written as an array.
-    #[must_use]
     pub fn new(x: f32, y: f32, z: f32) -> Self {
         Self {
             x,
@@ -650,7 +644,6 @@ pub struct Vec2 {
 
 impl Vec2 {
     /// The vector `[x, y]`, written as an array.
-    #[must_use]
     pub fn new(x: f32, y: f32) -> Self {
         Self {
             x,
@@ -709,7 +702,6 @@ impl Default for EntityTypes {
 
 impl EntityTypes {
     /// The descriptors, in document order.
-    #[must_use]
     pub fn as_slice(&self) -> &[MobDescriptor] {
         match self {
             Self::List(list) => list,
@@ -779,7 +771,6 @@ pub struct MobDescriptor {
 
 impl MobDescriptor {
     /// A descriptor matching the mobs `filters` passes, every other member at its default.
-    #[must_use]
     pub fn new(filters: Filter) -> Self {
         Self {
             filters: Some(filters),

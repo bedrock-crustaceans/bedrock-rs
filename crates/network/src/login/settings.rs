@@ -19,7 +19,6 @@ impl Default for NetworkSettings {
 }
 
 impl NetworkSettings {
-    #[must_use]
     pub fn new(compression: Compression) -> Self {
         Self { compression }
     }
@@ -36,12 +35,10 @@ impl NetworkSettings {
     }
 
     /// The algorithm id a network settings packet carries.
-    #[must_use]
     pub fn algorithm(&self) -> u16 {
         self.compression.id_u16()
     }
 
-    #[must_use]
     pub fn threshold(&self) -> u16 {
         self.compression.threshold()
     }

@@ -47,7 +47,6 @@ pub enum ParticleInitialSpeed {
 
 impl ParticleInitialSpeed {
     /// The speed on each axis: a uniform speed three times, or the vector.
-    #[must_use]
     pub fn speed(&self) -> [Molang; 3] {
         match self {
             Self::Uniform(speed) => [speed.clone(), speed.clone(), speed.clone()],
@@ -57,7 +56,6 @@ impl ParticleInitialSpeed {
 
     /// Whether the speed replaces the direction the emitter shape gives: the array form
     /// does (the game keeps this as a flag of its own, which no JSON key sets).
-    #[must_use]
     pub fn overrides_initial_direction(&self) -> bool {
         matches!(self, Self::Vector(_))
     }
@@ -277,7 +275,6 @@ pub enum CollisionEvents {
 
 impl CollisionEvents {
     /// The events, in order.
-    #[must_use]
     pub fn events(&self) -> &[CollisionEvent] {
         match self {
             Self::One(event) => std::slice::from_ref(event),

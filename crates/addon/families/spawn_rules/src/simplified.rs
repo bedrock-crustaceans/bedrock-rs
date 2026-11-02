@@ -284,7 +284,6 @@ pub(crate) const OBSTRUCTION_PREDICATES: &[&str] = &[
 impl Placement {
     /// The placement type the runtime uses: the written one when registered, else
     /// `minecraft:no_restrictions`.
-    #[must_use]
     pub fn resolved_type(&self) -> &str {
         resolved(
             self.r#type.as_ref(),
@@ -295,7 +294,6 @@ impl Placement {
 
     /// The heightmap the runtime uses: the written one when registered, else
     /// `minecraft:motion_blocking_no_leaves`.
-    #[must_use]
     pub fn resolved_heightmap(&self) -> &str {
         resolved(
             self.heightmap.as_ref(),
@@ -306,7 +304,6 @@ impl Placement {
 
     /// The entity spawn predicate the runtime uses: the written one when registered (built-ins
     /// only: a predicate registered by a script is not known here), else `minecraft:mob`.
-    #[must_use]
     pub fn resolved_spawn_predicate(&self) -> &str {
         resolved(
             self.spawn_predicate.as_ref(),
@@ -317,7 +314,6 @@ impl Placement {
 
     /// The obstruction predicate the runtime uses: the written one when registered, else
     /// `minecraft:mob`.
-    #[must_use]
     pub fn resolved_spawn_obstruction_predicate(&self) -> &str {
         resolved(
             self.spawn_obstruction_predicate.as_ref(),
@@ -336,13 +332,11 @@ fn resolved<'a>(written: Option<&'a StrictString>, names: &[&str], fallback: &'a
 
 impl SimplifiedHerd {
     /// The smallest herd (1 when absent).
-    #[must_use]
     pub fn min_size(&self) -> i32 {
         self.min.map_or(1, |n| n.0)
     }
 
     /// The largest herd (1 when absent).
-    #[must_use]
     pub fn max_size(&self) -> i32 {
         self.max.map_or(1, |n| n.0)
     }

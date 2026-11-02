@@ -78,7 +78,6 @@ pub struct MemoryMoveToPosition {
 
 impl MemoryMoveToPosition {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -155,7 +154,6 @@ pub struct MemoryWait {
 
 impl MemoryWait {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -228,7 +226,6 @@ pub struct MemoryLookAtEntity {
 
 impl MemoryLookAtEntity {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -310,7 +307,6 @@ pub struct MemoryFollowTarget {
 
 impl MemoryFollowTarget {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -674,7 +670,6 @@ pub struct MemoryJumpToBlock {
 
 impl MemoryJumpToBlock {
     /// `scale_factor`, or its default 0.7.
-    #[must_use]
     pub fn scale_factor(&self) -> f32 {
         self.scale_factor.map_or(0.7, |v| v.0)
     }
@@ -800,19 +795,16 @@ pub struct MemoryRamAttack {
 
 impl MemoryRamAttack {
     /// `baby_knockback_modifier`, or its default 1/3.
-    #[must_use]
     pub fn baby_knockback_modifier(&self) -> f32 {
         self.baby_knockback_modifier.map_or(1.0 / 3.0, |v| v.0)
     }
 
     /// `knockback_force`, or its default 5.
-    #[must_use]
     pub fn knockback_force(&self) -> f32 {
         self.knockback_force.map_or(5.0, |v| v.0)
     }
 
     /// `knockback_height`, or its default 0.1.
-    #[must_use]
     pub fn knockback_height(&self) -> f32 {
         self.knockback_height.map_or(0.1, |v| v.0)
     }
@@ -903,13 +895,11 @@ pub struct FindRamChargePositionEntry {
 
 impl FindRamChargePositionEntry {
     /// `min_ram_distance`, or its default 4.
-    #[must_use]
     pub fn min_ram_distance(&self) -> i32 {
         self.min_ram_distance.map_or(4, |v| v.0)
     }
 
     /// `max_ram_distance`, or its default 7.
-    #[must_use]
     pub fn max_ram_distance(&self) -> i32 {
         self.max_ram_distance.map_or(7, |v| v.0)
     }

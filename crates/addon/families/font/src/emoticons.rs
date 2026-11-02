@@ -68,7 +68,6 @@ impl Emoticon {
     /// after optional white space, a sign and `0x`, with whatever follows the digits ignored.
     /// `None` when no digit is there or the number is outside a 32-bit integer: the game skips
     /// the emoticon.
-    #[must_use]
     pub fn code_point(&self) -> Option<i32> {
         hex_int32(&self.code)
     }
@@ -155,7 +154,6 @@ impl EmoticonList {
     /// The emoticons the game registers: each name with its character, the first entry of a
     /// name standing and an entry whose `code` is no number left out. A name with a character
     /// other than a letter, a digit or `_` is registered and never matched in text.
-    #[must_use]
     pub fn code_points(&self) -> IndexMap<&str, i32> {
         let mut registered = IndexMap::new();
         for emoticon in &self.emoticons {

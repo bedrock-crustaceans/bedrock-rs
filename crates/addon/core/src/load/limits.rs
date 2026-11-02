@@ -63,14 +63,12 @@ pub enum JsonDocumentSize {
 }
 
 /// Classifies a JSON document of `len` bytes.
-#[must_use]
 pub fn json_document_size(len: usize) -> JsonDocumentSize {
     json_document_size_against(len, MAX_JSON_DOCUMENT_BYTES)
 }
 
 /// [`json_document_size`] against the limit `max`: refused above it, approaching from three
 /// quarters of it (the game's `size >> 25 >= 3` against 2²⁷).
-#[must_use]
 pub fn json_document_size_against(len: usize, max: usize) -> JsonDocumentSize {
     if len > max {
         JsonDocumentSize::TooLarge

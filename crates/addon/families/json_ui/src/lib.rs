@@ -70,7 +70,6 @@ pub struct UiDefinitions {
 
 impl UiDefinitions {
     /// The definition `name` of `namespace`.
-    #[must_use]
     pub fn get(&self, namespace: &str, name: &str) -> Option<&Control> {
         self.namespaces.get(namespace)?.get(name)
     }
@@ -81,7 +80,6 @@ impl UiDefinitions {
     }
 
     /// The definition a reference names, read from a file of `namespace`.
-    #[must_use]
     pub fn resolve(&self, namespace: &str, reference: &DefRef) -> Option<&Control> {
         self.get(
             reference.namespace.as_deref().unwrap_or(namespace),
@@ -109,7 +107,6 @@ impl UiFile {
     /// an empty one.
     // The game asserts "Namespace should not be empty at this point.", so an empty namespace
     // is read as `_root`, the same as an absent one.
-    #[must_use]
     pub fn namespace_or_root(&self) -> &str {
         match self.namespace.as_deref() {
             None | Some("") => ROOT_NAMESPACE,
@@ -198,7 +195,6 @@ pub enum UiPackErrorKind {
 
 impl UiPackErrorKind {
     /// The localisation key (`uiPackError.parseError`).
-    #[must_use]
     pub fn key(self) -> &'static str {
         match self {
             Self::InvalidChildNames => "uiPackError.invalidChildNames",
@@ -216,7 +212,6 @@ impl UiPackErrorKind {
     /// The English text of the vanilla resource pack, with `{}` for each argument.
     // The vanilla resource pack's `texts/en_US.lang` has these lines; the `missingArrayName`
     // line ends with a space there.
-    #[must_use]
     pub fn template(self) -> &'static str {
         match self {
             Self::InvalidChildNames => {

@@ -41,7 +41,6 @@ pub enum ShadowReason {
 /// the stack's `full_stack` version (the highest pack-manifest `min_engine_version` of the
 /// stack). Above the stack → ignored; no definition → created; lower → ignored; equal →
 /// merged; higher → replaced. Equal means equal numbers and pre-release (build metadata aside).
-#[must_use]
 pub fn merge_step(
     full_stack: &SemVersion,
     offered: &SemVersion,
@@ -295,7 +294,6 @@ pub struct EngineVersionMerge<T> {
 impl<T: SharedDescription> EngineVersionMerge<T> {
     /// An empty map for a stack whose highest pack-manifest `min_engine_version` is
     /// `full_stack` (vanilla: the current game version for an empty stack).
-    #[must_use]
     pub fn new(full_stack: SemVersion) -> Self {
         Self {
             full_stack,
@@ -333,7 +331,6 @@ impl<T: SharedDescription> EngineVersionMerge<T> {
     }
 
     /// The effective definition of `identifier`.
-    #[must_use]
     pub fn get(&self, identifier: &str) -> Option<&T> {
         self.entries
             .get(&identifier.to_ascii_lowercase())
@@ -341,7 +338,6 @@ impl<T: SharedDescription> EngineVersionMerge<T> {
     }
 
     /// The `min_engine_version` the definition of `identifier` competes with.
-    #[must_use]
     pub fn min_engine_version(&self, identifier: &str) -> Option<&SemVersion> {
         self.entries
             .get(&identifier.to_ascii_lowercase())
@@ -349,13 +345,11 @@ impl<T: SharedDescription> EngineVersionMerge<T> {
     }
 
     /// The number of identifiers.
-    #[must_use]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// No identifier is defined.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }

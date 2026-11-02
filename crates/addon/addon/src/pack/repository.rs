@@ -51,7 +51,6 @@ struct Registered {
 
 impl PackRepository {
     /// An empty repository.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -111,19 +110,16 @@ impl PackRepository {
     }
 
     /// The pack with this identity: the first registered, whatever its origin.
-    #[must_use]
     pub fn get(&self, id: &PackIdVersion) -> Option<&Pack> {
         self.packs().find(|pack| pack.id() == id)
     }
 
     /// Packs that could not be opened.
-    #[must_use]
     pub fn invalid(&self) -> &[InvalidPack] {
         &self.invalid
     }
 
     /// One report per source of the `RepositoryLoader` that built this repository.
-    #[must_use]
     pub fn source_reports(&self) -> &[SourceReport] {
         &self.source_reports
     }
@@ -138,7 +134,6 @@ impl PackRepository {
     /// The resource stack is the world's list with its dependencies, then the resource packs
     /// behaviour packs depend on. A subpack the world does not choose is the highest memory
     /// tier the pack offers.
-    #[must_use]
     pub fn stacks(&self, world: &WorldPacks, options: LoadOptions) -> StackSet {
         let candidates: Vec<Candidate<'_>> = self
             .packs
@@ -421,7 +416,6 @@ fn parse_list(
 impl StackSet {
     /// Pack selection and dependency findings of [`PackRepository::stacks`]; also in `load_all`'s
     /// report.
-    #[must_use]
     pub fn selection(&self) -> &Diagnostics {
         // Both sides' findings are kept on the behaviour stack, so `selection` has one place to
         // read them.
@@ -442,7 +436,6 @@ impl StackSet {
     /// The pass returns findings and changes nothing: a definition whose reference does not
     /// resolve stays in its registry as the load left it, also where the game would drop the
     /// document; the finding then has the severity of an error.
-    #[must_use]
     pub fn link(&self) -> Diagnostics {
         self.link_with(&super::LinkOptions::default())
     }
@@ -450,7 +443,6 @@ impl StackSet {
     /// [`link`](Self::link) with `options`: with `LinkOptions { lints: false, ..Default::default() }` the pass
     /// returns no finding of information severity: the lints', and also a miss under a
     /// partial view and the note of a file that is not loaded.
-    #[must_use]
     pub fn link_with(&self, options: &super::LinkOptions) -> Diagnostics {
         super::link::link(self, *options)
     }

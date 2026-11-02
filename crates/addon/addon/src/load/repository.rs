@@ -57,7 +57,6 @@ enum SourceKind {
 
 impl RepositoryLoader {
     /// Sources in priority order (first registration of a `(PackIdVersion, PackOrigin)` wins).
-    #[must_use]
     pub fn new(sources: Vec<Source>, options: OpenOptions) -> RepositoryLoader {
         let mut io = Io::new(options.limits);
         let options = Arc::new(options);

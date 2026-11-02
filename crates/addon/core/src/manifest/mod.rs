@@ -86,7 +86,6 @@ pub enum ManifestFormat {
 
 impl ManifestFormat {
     /// The `format_version` number.
-    #[must_use]
     pub fn number(self) -> u8 {
         match self {
             Self::V0 => 0,
@@ -137,7 +136,6 @@ pub struct Header {
 impl Header {
     /// The name reports show: the header name, or `manifestvalidation.noname` when it is empty.
     #[doc(hidden)]
-    #[must_use]
     pub fn display_name(&self) -> &str {
         if self.name.is_empty() {
             legacy::NO_NAME
@@ -168,7 +166,6 @@ pub struct Module {
 
 impl Module {
     /// A module of `module_type` with `uuid` and `version` and nothing else.
-    #[must_use]
     pub fn new(module_type: ModuleType, uuid: Uuid, version: SemVersion) -> Module {
         Self {
             module_type,
@@ -269,13 +266,11 @@ impl Manifest {
 
     /// A format-2 manifest with fresh random UUIDs for the header and one module of
     /// `pack_type`, version 1.0.0 and `min_engine_version` = `ENGINE_VERSION`.
-    #[must_use]
     pub fn new(name: &str, pack_type: PackType) -> Manifest {
         Self::with_ids(name, pack_type, Uuid::new_v4(), Uuid::new_v4())
     }
 
     /// As [`Manifest::new`] with caller-chosen UUIDs: deterministic output for tests and generators.
-    #[must_use]
     pub fn with_ids(name: &str, pack_type: PackType, header: Uuid, module: Uuid) -> Manifest {
         let version = SemVersion::new(1, 0, 0);
         Self {
@@ -313,13 +308,11 @@ impl Manifest {
     }
 
     /// The pack type: the last module's, or [`PackType::Invalid`] without modules.
-    #[must_use]
     pub fn pack_type(&self) -> PackType {
         legacy::pack_type(&self.modules)
     }
 
     /// The pack's identity: the header's `uuid` and `version`, with the pack type.
-    #[must_use]
     pub fn identity(&self) -> PackIdVersion {
         PackIdVersion::new(
             self.header.uuid,

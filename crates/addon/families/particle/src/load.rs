@@ -374,7 +374,6 @@ fn combine(
 
 /// The loader of `rp.particles()`: `particles/**/*.json` of every resource pack, the effect
 /// loaded last winning per identifier.
-#[must_use]
 pub const fn load_registry()
 -> CollectionLoader<Registry<ParticleEffect>, Contribution<ParticleEffect>> {
     CollectionLoader {

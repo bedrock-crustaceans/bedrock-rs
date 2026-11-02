@@ -42,7 +42,6 @@ pub enum SimpleCurveType {
 
 impl SimpleCurveType {
     /// The JSON spelling.
-    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Linear => "linear",
@@ -52,7 +51,6 @@ impl SimpleCurveType {
     }
 
     /// The fewest and the most nodes the game takes for the kind.
-    #[must_use]
     pub fn node_limits(self) -> (usize, usize) {
         match self {
             Self::Linear => (1, 100),
@@ -103,7 +101,6 @@ object! {
 
 impl SimpleCurve {
     /// Whether the number of nodes is one the game takes for the kind.
-    #[must_use]
     pub fn has_valid_node_count(&self) -> bool {
         let (least, most) = self.kind.node_limits();
         (least..=most).contains(&self.nodes.len())
@@ -112,7 +109,6 @@ impl SimpleCurve {
     /// The nodes the game uses: the written ones, and after a count it does not take
     /// ("Invalid number of control nodes in curve!  Defaulting curve to 0.0") as many nodes
     /// of 0 as the kind needs at least, appended to them.
-    #[must_use]
     pub fn effective_nodes(&self) -> Vec<Molang> {
         let mut nodes = self.nodes.clone();
         if !self.has_valid_node_count() {
@@ -154,7 +150,6 @@ object! {
 
 impl BezierChainNode {
     /// The values left and right of the node: the one-sided member, else `value`, else 0.
-    #[must_use]
     pub fn values(&self) -> (f32, f32) {
         let shared = self.value.unwrap_or(0.0);
         (
@@ -164,7 +159,6 @@ impl BezierChainNode {
     }
 
     /// The slopes left and right of the node: the one-sided member, else `slope`, else 0.
-    #[must_use]
     pub fn slopes(&self) -> (f32, f32) {
         let shared = self.slope.unwrap_or(0.0);
         (

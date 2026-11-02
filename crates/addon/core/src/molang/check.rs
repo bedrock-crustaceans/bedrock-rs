@@ -34,7 +34,6 @@ pub struct MolangCheck {
 
 impl MolangCheck {
     /// The standard catalogues of molangx (`stdlib::queries`) and a new, empty cache.
-    #[must_use]
     pub fn new() -> Self {
         Self {
             cache: Arc::new(CompileCache::new()),
@@ -67,13 +66,11 @@ impl MolangCheck {
     }
 
     /// The compile cache; its `hits()` and `misses()` count the load's compiles.
-    #[must_use]
     pub fn cache(&self) -> &Arc<CompileCache> {
         &self.cache
     }
 
     /// The catalogue expressions of `side` compile against.
-    #[must_use]
     pub fn catalog(&self, side: Side) -> &QueryCatalog {
         match side {
             Side::Server => &self.server,
@@ -352,7 +349,6 @@ fn is_no_expression(source: &MolangSource, rule: EmptyRule) -> bool {
 /// The detail is the compiler's diagnostic, so the content-log line ends in
 /// vanilla's `<expression> | <message>`.
 #[doc(hidden)]
-#[must_use]
 pub fn molang_diagnostic(
     diagnostic: &MolangDiagnostic,
     source: &MolangSource,

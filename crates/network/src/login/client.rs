@@ -12,12 +12,10 @@ pub struct ClientIdentity {
 }
 
 impl ClientIdentity {
-    #[must_use]
     pub fn new(key: SecretKey, request: Vec<u8>) -> Self {
         Self { key, request }
     }
 
-    #[must_use]
     pub fn generate_key() -> SecretKey {
         SecretKey::generate_from_rng(&mut rand::rng())
     }
@@ -50,13 +48,11 @@ impl ClientIdentity {
         Ok(Self::new(key, request.to_bytes()?))
     }
 
-    #[must_use]
     pub fn key(&self) -> &SecretKey {
         &self.key
     }
 
     /// The bytes of the login packet's connection request.
-    #[must_use]
     pub fn request(&self) -> &[u8] {
         &self.request
     }

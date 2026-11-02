@@ -47,7 +47,6 @@ pub(super) use each;
 
 impl Recipe {
     /// The recipe's type.
-    #[must_use]
     pub fn kind(&self) -> RecipeKind {
         match self {
             Self::Shaped(_) => RecipeKind::Shaped,
@@ -62,19 +61,16 @@ impl Recipe {
     }
 
     /// The namespace its identifier lives in.
-    #[must_use]
     pub fn namespace(&self) -> RecipeNamespace {
         self.kind().namespace()
     }
 
     /// `description`.
-    #[must_use]
     pub fn description(&self) -> &Description {
         each!(self, r => &r.description)
     }
 
     /// `description.identifier`.
-    #[must_use]
     pub fn identifier(&self) -> &RecipeId {
         &self.description().identifier
     }
@@ -85,13 +81,11 @@ impl Recipe {
     }
 
     /// The file's `format_version`; `None` when absent or unreadable.
-    #[must_use]
     pub fn format_version(&self) -> Option<FormatVersion> {
         each!(self, r => r.format_version)
     }
 
     /// The version vanilla's gates compare against: `format_version`, or 1.0.0 without one.
-    #[must_use]
     pub fn effective_version(&self) -> FormatVersion {
         self.format_version().unwrap_or(MISSING_VERSION)
     }
@@ -102,7 +96,6 @@ impl Recipe {
     ///
     /// Without `unlock`, a furnace recipe is always unlocked; so is a shaped or shapeless one
     /// below `format_version` 1.20.10, except in a base-game pack, where its context is `None`.
-    #[must_use]
     pub fn unlock_requirement(&self, is_base_game_pack: bool) -> Option<UnlockRequirement> {
         let (unlock, gated) = match self {
             Self::Shaped(r) => (r.unlock.as_ref(), true),
@@ -140,13 +133,11 @@ impl Recipe {
 
 impl Shaped {
     /// `assume_symmetry`, default `true`.
-    #[must_use]
     pub fn assumes_symmetry(&self) -> bool {
         self.assume_symmetry.unwrap_or(true)
     }
 
     /// `priority`, default 0.
-    #[must_use]
     pub fn effective_priority(&self) -> i32 {
         self.priority.unwrap_or(0)
     }
@@ -163,13 +154,11 @@ impl Shapeless {
     }
 
     /// The item made: the first of `result`.
-    #[must_use]
     pub fn result_item(&self) -> Option<&Ingredient> {
         self.result.as_slice().first()
     }
 
     /// `priority`, default 0.
-    #[must_use]
     pub fn effective_priority(&self) -> i32 {
         self.priority.unwrap_or(0)
     }
@@ -177,7 +166,6 @@ impl Shapeless {
 
 impl Furnace {
     /// `priority`, default 0.
-    #[must_use]
     pub fn effective_priority(&self) -> i32 {
         self.priority.unwrap_or(0)
     }
@@ -186,7 +174,6 @@ impl Furnace {
 impl BrewingMix {
     /// The potion mix, when both `input` and `output` name potions: vanilla then adds it for
     /// the potion, splash and lingering containers ([`PotionMix::CONTAINERS`]).
-    #[must_use]
     pub fn potion_mix(&self) -> Option<PotionMix> {
         Some(PotionMix {
             input: self.input.potion()?,

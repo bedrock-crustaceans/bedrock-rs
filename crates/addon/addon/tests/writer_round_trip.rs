@@ -186,7 +186,6 @@ pub struct Row {
 }
 
 impl Row {
-    #[must_use]
     pub fn of(collection: &'static str, kinds: Vec<Kind>) -> Self {
         Self { collection, kinds }
     }

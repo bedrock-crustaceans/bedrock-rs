@@ -77,7 +77,6 @@ pub struct Materials {
 
 impl Materials {
     /// The group of `kind`.
-    #[must_use]
     pub fn group(&self, kind: MaterialGroupKind) -> &MaterialGroup {
         match kind {
             MaterialGroupKind::Common => &self.common,
@@ -89,7 +88,6 @@ impl Materials {
     /// The material `name`: the common group's, else the fancy group's, else the sad group's.
     /// A variant (`entity_static.skinning`) is no material of its own: ask
     /// [`contains`](Self::contains) or [`Material::has_variant`].
-    #[must_use]
     pub fn get(&self, name: &str) -> Option<&Material> {
         self.common
             .get(name)
@@ -101,7 +99,6 @@ impl Materials {
     /// a reference from a client entity is checked against. The client checks its active
     /// groups only; a name one graphics mode lacks is still defined here.
     // A name counts when it is in the common group or in either graphics mode's group.
-    #[must_use]
     pub fn contains(&self, id: &MaterialId) -> bool {
         let name = id.as_str();
         self.common.contains(name) || self.fancy.contains(name) || self.sad.contains(name)
@@ -114,7 +111,6 @@ impl Materials {
     /// The cost is the length of the parent chain, walked on every call: right for one name
     /// or a few. Resolving every material of a group this way is quadratic in a long chain;
     /// [`resolve_all`](Self::resolve_all) resolves them all at the cost of the group.
-    #[must_use]
     pub fn resolve(&self, kind: MaterialGroupKind, name: &str) -> Option<ResolvedMaterial> {
         resolve::resolve(self, self.group(kind), name)
     }
@@ -130,7 +126,6 @@ impl Materials {
     /// What is returned can itself be large: each material holds the defines of its whole
     /// chain, so a long chain whose links each add a define returns a number of defines that
     /// is quadratic in the chain.
-    #[must_use]
     pub fn resolve_all(&self, kind: MaterialGroupKind) -> IndexMap<String, ResolvedMaterial> {
         resolve::resolve_all(self, self.group(kind))
     }

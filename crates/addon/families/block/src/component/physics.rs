@@ -39,7 +39,6 @@ pub enum DestructibleByMining {
 
 impl DestructibleByMining {
     /// Mined in `seconds` by hand, with no item-specific speeds.
-    #[must_use]
     pub fn seconds(seconds: f32) -> Self {
         DestructibleByMining::Params(MiningParams {
             seconds_to_destroy: StrictFloat(seconds),
@@ -185,13 +184,11 @@ pub struct FlammableParams {
 
 impl FlammableParams {
     /// The chance to catch fire: `catch_chance_modifier`, 5 when absent.
-    #[must_use]
     pub fn catch_chance_modifier(&self) -> u16 {
         self.catch_chance_modifier.map_or(5, |chance| chance.0)
     }
 
     /// The chance to burn away: `destroy_chance_modifier`, 20 when absent.
-    #[must_use]
     pub fn destroy_chance_modifier(&self) -> u16 {
         self.destroy_chance_modifier.map_or(20, |chance| chance.0)
     }
@@ -282,7 +279,6 @@ pub struct OffsetAxis {
 
 impl OffsetAxis {
     /// The number of steps the range is divided into: `steps`, 0 (continuous) when absent.
-    #[must_use]
     pub fn steps(&self) -> u32 {
         self.steps.map_or(0, |steps| steps.0)
     }
@@ -325,7 +321,6 @@ pub struct Tick {
 
 impl Tick {
     /// Whether it ticks again after each tick: `looping`, `true` when absent.
-    #[must_use]
     pub fn looping(&self) -> bool {
         self.looping.is_none_or(|b| b.0)
     }
@@ -344,7 +339,6 @@ pub struct EntityFallOn {
 
 impl EntityFallOn {
     /// The shortest fall that is reported: `min_fall_distance`, 0 when absent.
-    #[must_use]
     pub fn min_fall_distance(&self) -> f32 {
         self.min_fall_distance.map_or(0.0, |distance| distance.0)
     }
@@ -363,7 +357,6 @@ pub struct Leashable {
 
 impl Leashable {
     /// Where the knot sits: `offset`, `[0, 0.25, 0]` when absent.
-    #[must_use]
     pub fn offset(&self) -> Vec3 {
         self.offset.unwrap_or(super::types::vec3(0.0, 0.25, 0.0))
     }
@@ -382,7 +375,6 @@ pub struct ChestObstruction {
 
 impl ChestObstruction {
     /// The rule: `obstruction_rule`, `shape` when absent (the game's constructor default).
-    #[must_use]
     pub fn obstruction_rule(&self) -> ObstructionRule {
         self.obstruction_rule.unwrap_or(ObstructionRule::Shape)
     }
@@ -421,7 +413,6 @@ pub struct ConnectionRule {
 
 impl ConnectionRule {
     /// Who connects: `accepts_connections_from`, `all` when absent (the game's constructor default).
-    #[must_use]
     pub fn accepts_connections_from(&self) -> AcceptsConnections {
         self.accepts_connections_from
             .unwrap_or(AcceptsConnections::All)
@@ -429,7 +420,6 @@ impl ConnectionRule {
 
     /// The directions: `enabled_directions`, all four when absent, in the game's default order
     /// south, north, east, west.
-    #[must_use]
     pub fn enabled_directions(&self) -> Vec<Direction> {
         self.enabled_directions.clone().unwrap_or_else(|| {
             vec![
@@ -488,7 +478,6 @@ pub struct CraftingTable {
 
 impl CraftingTable {
     /// The screen title: `table_name`, `""` when absent.
-    #[must_use]
     pub fn table_name(&self) -> &str {
         self.table_name.as_ref().map_or("", |name| name.0.as_str())
     }
@@ -507,7 +496,6 @@ pub struct PlacementFilter {
 
 impl PlacementFilter {
     /// The conditions: `conditions`, none when absent.
-    #[must_use]
     pub fn conditions(&self) -> &[PlacementCondition] {
         self.conditions.as_deref().unwrap_or_default()
     }
@@ -529,13 +517,11 @@ pub struct PlacementCondition {
 
 impl PlacementCondition {
     /// The faces the block may be placed against: `allowed_faces`, none listed when absent.
-    #[must_use]
     pub fn allowed_faces(&self) -> &[PlacementFace] {
         self.allowed_faces.as_deref().unwrap_or_default()
     }
 
     /// The blocks it may be placed on: `block_filter`, none listed when absent.
-    #[must_use]
     pub fn block_filter(&self) -> &[BlockDescriptor] {
         self.block_filter.as_deref().unwrap_or_default()
     }
@@ -653,14 +639,12 @@ pub struct DetectionRule {
 
 impl DetectionRule {
     /// Whether the block can hold the liquid: `can_contain_liquid`, `false` when absent.
-    #[must_use]
     pub fn can_contain_liquid(&self) -> bool {
         self.can_contain_liquid.is_some_and(|b| b.0)
     }
 
     /// The directions the block stops the liquid flowing from:
     /// `stops_liquid_flowing_from_direction`, none when absent.
-    #[must_use]
     pub fn stops_liquid_flowing_from_direction(&self) -> &[Facing] {
         self.stops_liquid_flowing_from_direction
             .as_deref()
@@ -669,7 +653,6 @@ impl DetectionRule {
 
     /// Whether the liquid is clipped to the block's shape: `use_liquid_clipping`, `false` when
     /// absent.
-    #[must_use]
     pub fn use_liquid_clipping(&self) -> bool {
         self.use_liquid_clipping.is_some_and(|b| b.0)
     }
@@ -753,14 +736,12 @@ pub struct ContainerData {
 
 impl BlockEntity {
     /// Whether it stores entities: `entity_storage`, `false` when absent.
-    #[must_use]
     pub fn entity_storage(&self) -> bool {
         self.entity_storage.is_some_and(|b| b.0)
     }
 
     /// Whether scripts may store dynamic properties on it: `dynamic_properties`, `false` when
     /// absent.
-    #[must_use]
     pub fn dynamic_properties(&self) -> bool {
         self.dynamic_properties.is_some_and(|b| b.0)
     }
@@ -859,13 +840,11 @@ pub struct VibrationProperties {
 
 impl VibrationProperties {
     /// `dampen_vibrations`, `false` when absent.
-    #[must_use]
     pub fn dampen_vibrations(&self) -> bool {
         self.dampen_vibrations.is_some_and(|b| b.0)
     }
 
     /// `occlude_vibrations`, `false` when absent.
-    #[must_use]
     pub fn occlude_vibrations(&self) -> bool {
         self.occlude_vibrations.is_some_and(|b| b.0)
     }
@@ -886,7 +865,6 @@ pub struct NeighborChange {
 impl NeighborChange {
     /// The directions observed: `neighbor_directions`, `[all]` when absent (the game's constructor
     /// default).
-    #[must_use]
     pub fn neighbor_directions(&self) -> Vec<NeighborChangeDirection> {
         self.neighbor_directions
             .clone()

@@ -209,7 +209,6 @@ impl Any {
     }
 
     /// The version of the struct that parsed the file.
-    #[must_use]
     pub fn parsed_version(&self) -> FormatVersion {
         VERSIONS[match self {
             Self::V0_0_0(_) => 0,

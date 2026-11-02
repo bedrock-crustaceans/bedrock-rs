@@ -82,7 +82,6 @@ pub struct SoundMetadata {
 
 impl SoundMetadata {
     /// The sound event name as an identifier.
-    #[must_use]
     pub fn id(&self) -> SoundEventName {
         SoundEventName::parse(self.sound_event_name.0.as_str())
     }
@@ -115,7 +114,6 @@ impl DurationInfo {
         clippy::cast_precision_loss,
         reason = "vanilla converts with a truncating cast"
     )]
-    #[must_use]
     pub fn duration(&self) -> SoundDuration {
         match self.mode {
             DurationMode::GameTime => {
@@ -194,7 +192,6 @@ pub enum TagValueList {
 
 impl TagValueList {
     /// The values: a single value is a list of one.
-    #[must_use]
     pub fn values(&self) -> &[String] {
         match self {
             Self::One(value) => std::slice::from_ref(value),

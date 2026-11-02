@@ -100,7 +100,6 @@ impl ModuleMetadata {
     }
 
     /// `name`.
-    #[must_use]
     pub fn name(&self) -> &str {
         match self {
             Self::Native(native) => &native.name,
@@ -109,7 +108,6 @@ impl ModuleMetadata {
     }
 
     /// `uuid`.
-    #[must_use]
     pub fn uuid(&self) -> Uuid {
         match self {
             Self::Native(native) => native.uuid,
@@ -118,7 +116,6 @@ impl ModuleMetadata {
     }
 
     /// `peer_dependencies`.
-    #[must_use]
     pub fn peer_dependencies(&self) -> &[PeerDependency] {
         match self {
             Self::Native(native) => &native.peer_dependencies,

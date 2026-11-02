@@ -210,7 +210,6 @@ fn discipline_value(discipline: &CreditsDiscipline) -> Value {
 // Parsing a seed string fails on an empty text without a log line, and only the developer
 // assert "Failed to parse the starter seed from file" follows, so the crate reports it as an
 // information. A non-numeric line is hashed into a seed.
-#[must_use]
 pub fn check_starter_seeds(bytes: &[u8]) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     let text = String::from_utf8_lossy(bytes);

@@ -45,7 +45,6 @@ pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
 
 /// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
 /// deep.
-#[must_use]
 pub fn text(bytes: &[u8]) -> Option<&str> {
     let bytes = strip_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).ok()?;
@@ -236,7 +235,6 @@ pub fn upgrade<F: FileFamily>(
 
 /// The identity of a payload whose identifier is its own member `key` (not in a
 /// `description`).
-#[must_use]
 pub fn identity(payload: JsonSlice<'_>, key: &str) -> Identity {
     let identifier = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text)
         .ok()
@@ -258,7 +256,6 @@ pub fn identity(payload: JsonSlice<'_>, key: &str) -> Identity {
 
 /// The JSON of `text`, a slice of the text `versioning::parse_as_written` read, in which a
 /// member written twice has its last value only (core's last-wins rule).
-#[must_use]
 pub fn last_wins(text: &str) -> Option<Value> {
     bedrock_addon_core::json::from_str_jsonc::<Value>(&bedrock_addon_core::json::last_wins(text))
         .ok()
@@ -485,7 +482,6 @@ impl From<bedrock_addon_core::version::FormatVersion> for SourceVersion {
 }
 
 /// `{"format_version": version, key: payload}`: the whole document of a family read whole.
-#[must_use]
 pub fn document(version: &str, key: &str, payload: Value) -> Value {
     let mut root = facet_value::VObject::new();
     root.insert("format_version", version);

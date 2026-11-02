@@ -29,7 +29,6 @@ pub const MAX_JSON_DEPTH: usize = 128;
 
 /// `bytes` without one leading UTF-8 byte order mark: vanilla's reader skips it, facet-json
 /// rejects it.
-#[must_use]
 pub fn strip_bom(bytes: &[u8]) -> &[u8] {
     // jsoncpp skips a leading UTF-8 byte order mark.
     bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(bytes)

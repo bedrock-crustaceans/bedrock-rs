@@ -145,7 +145,6 @@ pub struct MergeCx<'a, K> {
 
 impl<K: Eq + std::hash::Hash> MergeCx<'_, K> {
     /// Where the copy being merged came from.
-    #[must_use]
     pub fn origin(&self) -> &Origin {
         self.origin
     }
@@ -217,7 +216,6 @@ impl RawLayer {
     /// A layer from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
     /// builds it here).
     #[doc(hidden)]
-    #[must_use]
     pub fn new(origin: Origin, json: json::Value) -> Self {
         Self { origin, json }
     }

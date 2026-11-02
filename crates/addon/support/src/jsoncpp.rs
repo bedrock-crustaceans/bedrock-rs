@@ -37,7 +37,6 @@ impl From<facet_json::DeserializeError> for ReadError {
 }
 
 /// The member `key` of an object when it is present and not null.
-#[must_use]
 pub fn member<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
     value
         .as_object()

@@ -147,7 +147,6 @@ pub type CollisionBox = AabbDimensions;
 
 impl AabbDimensions {
     /// A box `width` wide and deep and `height` high.
-    #[must_use]
     pub fn new(width: f32, height: f32) -> Self {
         Self {
             width: StrictFloat(width),
@@ -157,7 +156,6 @@ impl AabbDimensions {
 
     /// The box around the entity's position as vanilla builds it: `(min, max)` corners, half
     /// the width to each side and from 0 up to the height.
-    #[must_use]
     pub fn bounds(&self) -> ([f32; 3], [f32; 3]) {
         // Half the width is the extent to each side; each corner is the component-wise minimum
         // and maximum of the two signed extents.
@@ -191,7 +189,6 @@ impl CompanionBlockAvoidance {
     pub const DEFAULT_ANCHOR_SWITCH_COOLDOWN: u16 = 200;
 
     /// A component with `offsets` and every other member left out.
-    #[must_use]
     pub fn new(offsets: Vec<[f32; 3]>) -> Self {
         Self {
             backup_anchor_offsets: offsets
@@ -204,7 +201,6 @@ impl CompanionBlockAvoidance {
     }
 
     /// The offsets as floats.
-    #[must_use]
     pub fn to_offsets(&self) -> Vec<[f32; 3]> {
         self.backup_anchor_offsets
             .iter()
@@ -213,7 +209,6 @@ impl CompanionBlockAvoidance {
     }
 
     /// `require_hidden_before_fallback` as the client holds it.
-    #[must_use]
     pub fn require_hidden_before_fallback(&self) -> bool {
         self.require_hidden_before_fallback
             .map_or(Self::DEFAULT_REQUIRE_HIDDEN_BEFORE_FALLBACK, |value| {
@@ -222,7 +217,6 @@ impl CompanionBlockAvoidance {
     }
 
     /// `anchor_switch_cooldown` as the client holds it.
-    #[must_use]
     pub fn anchor_switch_cooldown(&self) -> u16 {
         self.anchor_switch_cooldown
             .map_or(Self::DEFAULT_ANCHOR_SWITCH_COOLDOWN, |value| value.0)
@@ -268,40 +262,34 @@ impl CompanionBlockClipping {
     pub const DEFAULT_HIDE_TRANSITION_SECONDS: f32 = 0.25;
 
     /// `reveal_boundary` as the client holds it.
-    #[must_use]
     pub fn reveal_boundary(&self) -> VisibilityBoundary {
         self.reveal_boundary.unwrap_or_default()
     }
 
     /// `hide_boundary` as the client holds it.
-    #[must_use]
     pub fn hide_boundary(&self) -> VisibilityBoundary {
         self.hide_boundary.unwrap_or_default()
     }
 
     /// `min_hidden_seconds` as the client holds it.
-    #[must_use]
     pub fn min_hidden_seconds(&self) -> f32 {
         self.min_hidden_seconds
             .map_or(Self::DEFAULT_MIN_HIDDEN_SECONDS, |value| value.0)
     }
 
     /// `min_visible_seconds` as the client holds it.
-    #[must_use]
     pub fn min_visible_seconds(&self) -> f32 {
         self.min_visible_seconds
             .map_or(Self::DEFAULT_MIN_VISIBLE_SECONDS, |value| value.0)
     }
 
     /// `hide_delay_seconds` as the client holds it.
-    #[must_use]
     pub fn hide_delay_seconds(&self) -> f32 {
         self.hide_delay_seconds
             .map_or(Self::DEFAULT_HIDE_DELAY_SECONDS, |value| value.0)
     }
 
     /// `hide_transition_seconds` as the client holds it.
-    #[must_use]
     pub fn hide_transition_seconds(&self) -> f32 {
         self.hide_transition_seconds
             .map_or(Self::DEFAULT_HIDE_TRANSITION_SECONDS, |value| value.0)
@@ -335,20 +323,17 @@ impl VisibilityBoundary {
     pub const DEFAULT_LOOKAHEAD_MAX: f32 = 1.0;
 
     /// `margin` as the client holds it.
-    #[must_use]
     pub fn margin(&self) -> f32 {
         self.margin.map_or(Self::DEFAULT_MARGIN, |value| value.0)
     }
 
     /// `lookahead_per_speed` as the client holds it.
-    #[must_use]
     pub fn lookahead_per_speed(&self) -> f32 {
         self.lookahead_per_speed
             .map_or(Self::DEFAULT_LOOKAHEAD_PER_SPEED, |value| value.0)
     }
 
     /// `lookahead_max` as the client holds it.
-    #[must_use]
     pub fn lookahead_max(&self) -> f32 {
         self.lookahead_max
             .map_or(Self::DEFAULT_LOOKAHEAD_MAX, |value| value.0)
@@ -357,7 +342,6 @@ impl VisibilityBoundary {
 
 impl AtomicClientEntity {
     /// An atomic client entity for `identifier` with nothing to draw and no component.
-    #[must_use]
     pub fn new(identifier: AtomicClientEntityId) -> Self {
         Self {
             description: AtomicDescription::new(identifier),
@@ -366,19 +350,16 @@ impl AtomicClientEntity {
     }
 
     /// `minecraft:aabb_dimensions`, when the entity has one.
-    #[must_use]
     pub fn aabb_dimensions(&self) -> Option<&AabbDimensions> {
         self.components.as_ref()?.aabb_dimensions.as_ref()
     }
 
     /// `minecraft:companion_block_avoidance`, when the entity has one.
-    #[must_use]
     pub fn companion_block_avoidance(&self) -> Option<&CompanionBlockAvoidance> {
         self.components.as_ref()?.companion_block_avoidance.as_ref()
     }
 
     /// `minecraft:companion_block_clipping`, when the entity has one.
-    #[must_use]
     pub fn companion_block_clipping(&self) -> Option<&CompanionBlockClipping> {
         self.components.as_ref()?.companion_block_clipping.as_ref()
     }
@@ -386,7 +367,6 @@ impl AtomicClientEntity {
 
 impl AtomicDescription {
     /// A description of `identifier` with every other member absent.
-    #[must_use]
     pub fn new(identifier: AtomicClientEntityId) -> Self {
         Self {
             identifier,

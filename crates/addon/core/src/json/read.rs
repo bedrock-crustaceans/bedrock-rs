@@ -109,7 +109,6 @@ pub enum UnsafeText {
 
 impl UnsafeText {
     /// Where in the scanned text.
-    #[must_use]
     pub fn span(&self) -> Span {
         let (offset, len) = match *self {
             Self::BadEscape { offset, len, .. }
@@ -1343,7 +1342,6 @@ fn text_outside_comments(bytes: &[u8]) -> Result<String, DeserializeError> {
 /// byte to the end of the text, trailing white space left out. Vanilla's reader stops at the
 /// end of the root value and never looks at it, so the
 /// file loads; `None` when nothing follows, and when the text is not one facet is given.
-#[must_use]
 pub fn trailing_content(text: &str) -> Option<Span> {
     let start = scan(text.as_bytes(), true).ok()?.trailing?;
     let len = text.get(start..)?.trim_end().len();
@@ -1362,7 +1360,6 @@ pub fn trailing_content(text: &str) -> Option<Span> {
 /// told, as `RapidJSON` stops there: a rejecting `MalformedInput` error with the game's text, on
 /// the number or the content, at file offsets. `None` when the text has neither, and when facet
 /// does not read it (its syntax error is the reader's to tell).
-#[must_use]
 pub fn document_json_refusal(document: JsonSlice<'_>) -> Option<Diagnostic> {
     let number = super::first_beyond_double(document.text);
     let trailing = trailing_content(document.text);
@@ -1416,7 +1413,6 @@ pub const TRAILING_CONTENT: &str = "content after the JSON value is ignored";
 /// silence. The Minecraft Document reader refuses such a text instead (`RapidJSON`'s "root not
 /// singular" error; the versioned load's own check). One per file: the
 /// reader of the file's root raises it, not the readers of its slices.
-#[must_use]
 pub fn trailing_content_finding(document: JsonSlice<'_>) -> Option<Diagnostic> {
     let span = trailing_content(document.text)?;
     let offset = u32::try_from(document.offset).unwrap_or(u32::MAX);

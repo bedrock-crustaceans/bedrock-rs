@@ -812,7 +812,6 @@ fn merge_documents(earlier: &mut Attachable, mut later: Attachable) {
 /// The loader of `rp.attachables()`: the app's `definitions/attachables`, then the
 /// `minecraft:attachable` documents of `entity/**/*.json` and `attachables/**/*.json` of every
 /// resource pack; one definition per identifier by `description.min_engine_version`.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Attachable>, FileOutcome> {
     CollectionLoader {
         walk: WALK,

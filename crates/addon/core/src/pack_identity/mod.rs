@@ -43,7 +43,6 @@ impl PackPath {
     /// # Panics
     ///
     /// Panics when `path` breaks a path rule.
-    #[must_use]
     pub fn from_static(path: &'static str) -> PackPath {
         match check_path(path) {
             // Already normalised: keep the literal.
@@ -100,7 +99,6 @@ impl PackPath {
     }
 
     /// The normalised text (`blocks/ruby.json`; empty for the root).
-    #[must_use]
     pub fn as_str(&self) -> &str {
         match &self.text {
             PathText::Static(text) => text,
@@ -109,7 +107,6 @@ impl PackPath {
     }
 
     /// This is the root (the empty path).
-    #[must_use]
     pub fn is_root(&self) -> bool {
         self.as_str().is_empty()
     }
@@ -323,7 +320,6 @@ impl PackRef {
     /// The synthetic handle of the app-data layer: nil UUID, version 0.0.0, name `app data`
     /// (hidden: `bedrock_addon` builds it).
     #[doc(hidden)]
-    #[must_use]
     pub fn app_data() -> Self {
         Self {
             index: None,
@@ -335,26 +331,22 @@ impl PackRef {
     }
 
     /// The pack's display name.
-    #[must_use]
     pub fn name(&self) -> &str {
         &self.pack.name
     }
 
     /// The pack's `(uuid, version)`.
-    #[must_use]
     pub fn id(&self) -> &PackIdVersion {
         &self.pack.id
     }
 
     /// The pack's stack index (0 = highest priority); `None` for the app-data layer.
-    #[must_use]
     pub fn index(&self) -> Option<usize> {
         self.index
     }
 
     /// Whether this is the synthetic pack of the app-data layer (`LoadOptions::app_data`),
     /// ordered below every pack: `true` for that layer, `false` for a pack on the stack.
-    #[must_use]
     pub fn is_app_data(&self) -> bool {
         self.index.is_none()
     }
@@ -374,7 +366,6 @@ pub struct PackIdVersion {
 
 impl PackIdVersion {
     /// The identity `(uuid, version)` of a pack of `pack_type`.
-    #[must_use]
     pub fn new(uuid: Uuid, version: SemVersion, pack_type: PackType) -> Self {
         Self {
             uuid,
@@ -442,7 +433,6 @@ pub enum PackSide {
 
 impl PackSide {
     /// The pack type every pack on this side's stack has.
-    #[must_use]
     pub const fn pack_type(self) -> PackType {
         match self {
             Self::Behavior => PackType::Behavior,
@@ -488,7 +478,6 @@ pub enum PackOrigin {
 impl PackOrigin {
     /// Packs of this origin are base-game packs (vanilla's base-game check): exactly
     /// [`PackOrigin::Package`].
-    #[must_use]
     pub const fn is_base_game(self) -> bool {
         matches!(self, Self::Package)
     }
@@ -519,20 +508,17 @@ pub enum PackScope {
 
 impl PackScope {
     /// The flag bits (Global 1, `AddOn` 2, Level 4, System 8).
-    #[must_use]
     pub const fn bits(self) -> u8 {
         self as u8
     }
 
     /// Every flag of `other` is set in `self` (`World` contains `Level`).
-    #[must_use]
     pub const fn contains(self, other: PackScope) -> bool {
         self.bits() & other.bits() == other.bits()
     }
 
     /// The scope a manifest names: `"global"`, `"system"`, `"world"` or `"any"`
     /// (case-sensitive); `addon` and `level` have no manifest spelling.
-    #[must_use]
     pub fn from_json_name(name: &str) -> Option<PackScope> {
         match name {
             "global" => Some(Self::Global),
@@ -544,7 +530,6 @@ impl PackScope {
     }
 
     /// The manifest spelling, for the four scopes that have one.
-    #[must_use]
     pub const fn json_name(self) -> Option<&'static str> {
         match self {
             Self::Global => Some("global"),

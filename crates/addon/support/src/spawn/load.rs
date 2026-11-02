@@ -30,7 +30,6 @@ pub struct FileLoad<T> {
 
 /// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
 /// deep.
-#[must_use]
 pub fn text(bytes: &[u8]) -> Option<&str> {
     let bytes = strip_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).ok()?;
@@ -38,7 +37,6 @@ pub fn text(bytes: &[u8]) -> Option<&str> {
 }
 
 /// A rejection finding at the document root.
-#[must_use]
 pub fn error(code: DiagnosticCode) -> Diagnostic {
     Diagnostic::new(code, Severity::Error, Phase::Parse, Location::default())
 }
@@ -76,7 +74,6 @@ pub(crate) fn not_an_object(root: &Value) -> Diagnostic {
 }
 
 /// The text of a rejected document's closing line.
-#[must_use]
 pub fn closing(text: &'static str) -> Diagnostic {
     Diagnostic::new(
         DiagnosticCode::DocumentRejected {
@@ -181,7 +178,6 @@ pub fn load_file<T>(
 }
 
 /// The origin of a file of `pack`.
-#[must_use]
 pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::new(pack, side, path.clone(), None, Vec::new())
 }
@@ -216,7 +212,6 @@ pub fn contribution<T: Definition>(
 }
 
 /// A `.json` file, the extension compared exactly (`a.JSON` is not one).
-#[must_use]
 pub fn is_json(path: &PackPath) -> bool {
     path.as_str()
         .rsplit_once('.')
@@ -225,7 +220,6 @@ pub fn is_json(path: &PackPath) -> bool {
 
 /// The registry of the contributions in walk order, the top pack winning; the findings of a
 /// document vanilla does not register are added to it as they are.
-#[must_use]
 pub fn combine<T: Definition>(parsed: Vec<Parsed<T>>, stack: &StackCx<'_>) -> Registry<T> {
     let mut builder = RegistryBuilder::new(
         CombineRule::top_wins(),

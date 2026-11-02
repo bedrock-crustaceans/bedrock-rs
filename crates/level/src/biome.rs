@@ -17,7 +17,6 @@ pub struct BiomeArray {
 }
 
 impl BiomeArray {
-    #[must_use]
     pub fn palette(&self) -> &[u32] {
         &self.palette
     }
@@ -42,14 +41,12 @@ pub struct Biomes {
 impl Biomes {
     /// This chunk's heightmap.
     #[inline]
-    #[must_use]
     pub fn heightmap(&self) -> &[u16; 256] {
         &self.heightmap
     }
 
     // This roughly estimates the size of the output buffer. Chunks with many paletted fragments
     // will be larger than this estimate while chunks with many inherited biome fragments will be smaller.
-    #[must_use]
     pub fn size_hint(&self) -> usize {
         const HEIGHTMAP_SIZE: usize = 256 * 2;
         HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>()

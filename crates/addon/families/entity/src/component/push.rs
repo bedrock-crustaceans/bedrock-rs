@@ -24,7 +24,6 @@ pub struct ApplyKnockbackRules {
 
 impl ApplyKnockbackRules {
     /// The rules with one preset.
-    #[must_use]
     pub fn with_preset(preset: KnockbackPreset) -> Self {
         Self {
             presets: vec![preset],
@@ -90,7 +89,6 @@ impl Default for KnockbackPreset {
 
 impl KnockbackPreset {
     /// A preset for every target with these powers, the 1.26.30 members at their defaults.
-    #[must_use]
     pub fn new(
         horizontal_power: f32,
         vertical_power: f32,
@@ -175,7 +173,6 @@ pub struct PushableByEntity {
 impl PushableByEntity {
     /// Whether the built-in behaviour checks for overlap (`use_default_with_overlap_check`,
     /// default `true`).
-    #[must_use]
     pub fn uses_default_with_overlap_check(&self) -> bool {
         self.use_default_with_overlap_check.is_none_or(|b| b.0)
     }

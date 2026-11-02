@@ -125,7 +125,6 @@ impl ItemDescription {
     /// Whether the creative category is one the document states: it wrote `category`, or the
     /// category is not the `none` an absent member means. `false` is an item whose author
     /// left the category out and so never asked for a place in the creative menu.
-    #[must_use]
     pub fn category_is_written(&self) -> bool {
         self.menu_category_presence == MenuCategoryPresence::Category
             || self.menu_category.category

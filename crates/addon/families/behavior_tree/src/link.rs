@@ -121,7 +121,6 @@ fn finding(tree: &Document<BehaviorTree>, at: JsonPath, code: DiagnosticCode) ->
 /// `subtree_id` that names no tree of the registry (a pack's or a built-in one) is an
 /// `UnresolvedReference` warning, and one through which the tree reaches itself a
 /// `ReferenceCycle` warning; one finding per node, in registry and document order.
-#[must_use]
 pub fn link(trees: &Registry<BehaviorTree>) -> Diagnostics {
     // Every tree's subtree nodes, read once.
     let index: HashMap<&BehaviorTreeId, usize> = trees

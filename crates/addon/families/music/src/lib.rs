@@ -38,20 +38,17 @@ pub struct MusicDefinitions {
 
 impl MusicDefinitions {
     /// The document as JSON: what the typed members were read from and what the value writes.
-    #[must_use]
     pub fn json(&self) -> &Value {
         &self.json
     }
 
     /// The definition of the music name `name`.
-    #[must_use]
     pub fn get(&self, name: &str) -> Option<&MusicDefinition> {
         self.definitions.get(&MusicDefinitionId::parse(name))
     }
 
     /// The value of a document, read as it is; the findings of the read are dropped.
     /// `Content::parse` reads a file with them.
-    #[must_use]
     pub fn from_json(json: Value) -> Self {
         Self::read(json, &mut Diagnostics::default())
     }
@@ -90,14 +87,12 @@ pub struct MusicDefinition {
 impl MusicDefinition {
     /// The shortest pause in game ticks, as vanilla stores it: `min_delay` × 20, truncated.
     #[allow(clippy::cast_possible_truncation, reason = "vanilla truncates")]
-    #[must_use]
     pub fn min_delay_ticks(&self) -> i32 {
         (self.min_delay * TICKS_PER_SECOND) as i32
     }
 
     /// The longest pause in game ticks, as vanilla stores it: `max_delay` × 20, truncated.
     #[allow(clippy::cast_possible_truncation, reason = "vanilla truncates")]
-    #[must_use]
     pub fn max_delay_ticks(&self) -> i32 {
         (self.max_delay * TICKS_PER_SECOND) as i32
     }
@@ -125,7 +120,6 @@ pub enum MusicCategory {
 impl MusicCategory {
     /// The category vanilla gives a music definition of this name; `None` for every other
     /// name, which leaves the category as it was.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Some(match name {
             "menu" => Self::Menu,

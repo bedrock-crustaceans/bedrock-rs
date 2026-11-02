@@ -16,37 +16,31 @@ pub struct LazyArray {
 
 impl LazyArray {
     /// Creates a new array from the given words.
-    #[must_use]
     pub const fn new(bits: u8, words: Vec<u32>) -> Self {
         Self { bits, words }
     }
 
     /// Returns the amount of words that are in this array.
-    #[must_use]
     pub fn word_count(&self) -> usize {
         self.words.len()
     }
 
     /// Creates an iterator over this array.
-    #[must_use]
     pub fn iter(&self) -> LazyArrayIter<'_> {
         LazyArrayIter::from(self)
     }
 
     /// The amount of bits that are currently being used by this array.
-    #[must_use]
     pub fn bits(&self) -> u8 {
         self.bits
     }
 
     /// The packed words that this array consists of.
-    #[must_use]
     pub fn words(&self) -> &[u32] {
         &self.words
     }
 
     /// Returns the value at `index`, or `None` if the index is greater than or equal to 4096.
-    #[must_use]
     pub fn get(&self, index: usize) -> Option<u16> {
         if index >= 4096 {
             return None;

@@ -259,7 +259,6 @@ fn combine(
 }
 
 /// The loader of `bp.server_sound_definitions()`.
-#[must_use]
 pub const fn load_registry()
 -> CollectionLoader<Registry<SoundMetadata>, Result<Document<SoundMetadataFile>, Rejected>> {
     CollectionLoader {

@@ -134,7 +134,6 @@ pub enum Prim {
 
 impl Prim {
     /// The primitive written `name`, compared exactly.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Some(match name {
             "string" => Self::String,

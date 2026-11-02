@@ -91,13 +91,11 @@ pub struct BoundingBox {
 
 impl BoundingBox {
     /// The minimum corner: `origin`, `[-8, 0, -8]` when absent.
-    #[must_use]
     pub fn origin(&self) -> Vec3 {
         self.origin.unwrap_or(vec3(-8.0, 0.0, -8.0))
     }
 
     /// The extent: `size`, `[16, 16, 16]` when absent.
-    #[must_use]
     pub fn size(&self) -> Vec3 {
         self.size.unwrap_or(vec3(16.0, 16.0, 16.0))
     }
@@ -178,7 +176,6 @@ pub struct Bounds {
 }
 
 /// `[x, y, z]` as a [`Vec3`].
-#[must_use]
 pub const fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
     [StrictFloat(x), StrictFloat(y), StrictFloat(z)]
 }

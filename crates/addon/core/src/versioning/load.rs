@@ -31,7 +31,6 @@ const FORMAT_VERSION: &str = "format_version";
 /// `document` is the file text after `blank_bom` / `check_depth` (an MCB document as
 /// written-out text). The value is `None` when the document is rejected; then `diagnostics`
 /// holds why (an error, or an `EmptyDocument` at the family's severity).
-#[must_use]
 pub fn load<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> LoadOutcome<F> {
     finish(parse_as_written::<F>(document, cx), cx)
 }
@@ -123,7 +122,6 @@ where
 /// version (envelope, else `Family::payload_version`, else `MISSING_VERSION`), the beta
 /// permission, struct selection by the range model and `Family::route`, the parse with Molang
 /// pass 1, and the identity, actor type and skip key the steps need.
-#[must_use]
 pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<F> {
     let mut told = Diagnostics::default();
     // The game's document input sizes the text first. An MCB source is a binary input, so it
@@ -470,7 +468,6 @@ pub(super) fn molang_context(written: &FormatVersionInput, cx: &LoadContext) -> 
 /// The version an envelope gives, without loading it: `None` when absent, unreadable, `"beta"`
 /// or the text is not an object. What a caller routing between two families of one payload
 /// key passes to `Family::selected`.
-#[must_use]
 pub fn file_version(document: JsonSlice<'_>) -> Option<FormatVersion> {
     let envelope = probe_envelope(document).ok()?;
     read_version(&envelope.format_version).ok()??.version
@@ -479,7 +476,6 @@ pub fn file_version(document: JsonSlice<'_>) -> Option<FormatVersion> {
 /// The version a member `key` of the payload object holds (a string or three integers, as
 /// the envelope's), for `Family::payload_version` (entity: `minecraft:entity.format_version`).
 /// `None` when absent or unreadable.
-#[must_use]
 pub fn member_version(payload: JsonSlice<'_>, key: &str) -> Option<FormatVersionInput> {
     let members =
         crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(payload.text).ok()?;

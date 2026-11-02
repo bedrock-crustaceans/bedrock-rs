@@ -224,7 +224,6 @@ async fn bind_nethernet(
 }
 
 impl Listener {
-    #[must_use]
     pub fn builder() -> ListenerBuilder {
         ListenerBuilder {
             bindings: Vec::new(),
@@ -239,12 +238,10 @@ impl Listener {
         }
     }
 
-    #[must_use]
     pub fn motd(&self) -> &BedrockMOTD {
         &self.motd
     }
 
-    #[must_use]
     pub fn max_connections(&self) -> usize {
         self.max_connections
     }

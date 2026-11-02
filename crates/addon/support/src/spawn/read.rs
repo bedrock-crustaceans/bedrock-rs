@@ -30,7 +30,6 @@ pub fn wrong_type(at: &JsonPath, text: Option<VanillaText>, d: &mut Diagnostics)
 }
 
 /// `at` followed by `key`.
-#[must_use]
 pub fn child(at: &JsonPath, key: &str) -> JsonPath {
     let mut path = at.clone();
     path.push(key);
@@ -38,7 +37,6 @@ pub fn child(at: &JsonPath, key: &str) -> JsonPath {
 }
 
 /// `at` followed by the element `index`.
-#[must_use]
 pub fn element(at: &JsonPath, index: usize) -> JsonPath {
     let mut path = at.clone();
     path.push_index(index);

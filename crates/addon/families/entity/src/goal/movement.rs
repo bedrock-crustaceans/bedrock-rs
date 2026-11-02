@@ -36,7 +36,6 @@ pub struct BreakDoor {
 
 impl BreakDoor {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -103,64 +102,54 @@ pub struct CircleAroundAnchor {
 
 impl CircleAroundAnchor {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `angle_change`, or its default 15.
-    #[must_use]
     pub fn angle_change(&self) -> f32 {
         self.angle_change.map_or(15.0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `height_above_target_range`, or its default 0 to 0.
-    #[must_use]
     pub fn height_above_target_range(&self) -> (f32, f32) {
         self.height_above_target_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `height_adjustment_chance`, or its default 0.002857.
-    #[must_use]
     pub fn height_adjustment_chance(&self) -> f32 {
         self.height_adjustment_chance.map_or(0.002_857, |v| v.0)
     }
 
     /// `height_offset_range`, or its default 0 to 0.
-    #[must_use]
     pub fn height_offset_range(&self) -> (f32, f32) {
         self.height_offset_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `radius_adjustment_chance`, or its default 0.004.
-    #[must_use]
     pub fn radius_adjustment_chance(&self) -> f32 {
         self.radius_adjustment_chance.map_or(0.004, |v| v.0)
     }
 
     /// `radius_change`, or its default 1.
-    #[must_use]
     pub fn radius_change(&self) -> f32 {
         self.radius_change.map_or(1.0, |v| v.0)
     }
 
     /// `radius_range`, or its default 5 to 15.
-    #[must_use]
     pub fn radius_range(&self) -> (f32, f32) {
         self.radius_range
             .map_or((5.0, 15.0), |range| range.resolve(5.0, 15.0))
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -215,25 +204,21 @@ pub struct ControlledByPlayer {
 
 impl ControlledByPlayer {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `fractional_rotation`, or its default 0.5.
-    #[must_use]
     pub fn fractional_rotation(&self) -> f32 {
         self.fractional_rotation.map_or(0.5, |v| v.0)
     }
 
     /// `fractional_rotation_limit`, or its default 5.
-    #[must_use]
     pub fn fractional_rotation_limit(&self) -> f32 {
         self.fractional_rotation_limit.map_or(5.0, |v| v.0)
     }
 
     /// `mount_speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn mount_speed_multiplier(&self) -> f32 {
         self.mount_speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -278,7 +263,6 @@ pub struct DoorInteract {
 
 impl DoorInteract {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -351,13 +335,11 @@ pub struct ExploreOutskirts {
 
 impl ExploreOutskirts {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `dist_from_boundary`, or its default `[5, 0, 5]`.
-    #[must_use]
     pub fn dist_from_boundary(&self) -> [f32; 3] {
         self.dist_from_boundary
             .as_ref()
@@ -365,61 +347,51 @@ impl ExploreOutskirts {
     }
 
     /// `explore_dist`, or its default 5.
-    #[must_use]
     pub fn explore_dist(&self) -> f32 {
         self.explore_dist.map_or(5.0, |v| v.0)
     }
 
     /// `max_travel_time`, or its default 6e+01.
-    #[must_use]
     pub fn max_travel_time(&self) -> f32 {
         self.max_travel_time.map_or(6.0e1, |v| v.0)
     }
 
     /// `max_wait_time`, or its default 0.
-    #[must_use]
     pub fn max_wait_time(&self) -> f32 {
         self.max_wait_time.map_or(0.0, |v| v.0)
     }
 
     /// `min_dist_from_target`, or its default 2.25.
-    #[must_use]
     pub fn min_dist_from_target(&self) -> f32 {
         self.min_dist_from_target.map_or(2.25, |v| v.0)
     }
 
     /// `min_perimeter`, or its default 1.
-    #[must_use]
     pub fn min_perimeter(&self) -> f32 {
         self.min_perimeter.map_or(1.0, |v| v.0)
     }
 
     /// `min_wait_time`, or its default 3.
-    #[must_use]
     pub fn min_wait_time(&self) -> f32 {
         self.min_wait_time.map_or(3.0, |v| v.0)
     }
 
     /// `next_xz`, or its default 5.
-    #[must_use]
     pub fn next_xz(&self) -> i32 {
         self.next_xz.map_or(5, |v| v.0)
     }
 
     /// `next_y`, or its default 3.
-    #[must_use]
     pub fn next_y(&self) -> i32 {
         self.next_y.map_or(3, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `timer_ratio`, or its default 2.
-    #[must_use]
     pub fn timer_ratio(&self) -> f32 {
         self.timer_ratio.map_or(2.0, |v| v.0)
     }
@@ -469,19 +441,16 @@ pub struct FindCover {
 
 impl FindCover {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -539,43 +508,36 @@ pub struct FindMount {
 
 impl FindMount {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `avoid_water`, or its default `false`.
-    #[must_use]
     pub fn avoid_water(&self) -> bool {
         self.avoid_water.is_some_and(|v| v.0)
     }
 
     /// `max_failed_attempts`, or its default 20.
-    #[must_use]
     pub fn max_failed_attempts(&self) -> i32 {
         self.max_failed_attempts.map_or(20, |v| v.0)
     }
 
     /// `mount_distance`, or its default -1.
-    #[must_use]
     pub fn mount_distance(&self) -> f32 {
         self.mount_distance.map_or(-1.0, |v| v.0)
     }
 
     /// `start_delay`, or its default 0.
-    #[must_use]
     pub fn start_delay(&self) -> i32 {
         self.start_delay.map_or(0, |v| v.0)
     }
 
     /// `target_needed`, or its default `false`.
-    #[must_use]
     pub fn target_needed(&self) -> bool {
         self.target_needed.is_some_and(|v| v.0)
     }
 
     /// `within_radius`, or its default 0.
-    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -624,25 +586,21 @@ pub struct FindUnderwaterTreasure {
 
 impl FindUnderwaterTreasure {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `stop_distance`, or its default 2.
-    #[must_use]
     pub fn stop_distance(&self) -> f32 {
         self.stop_distance.map_or(2.0, |v| v.0)
     }
@@ -687,13 +645,11 @@ pub struct FleeSun {
 
 impl FleeSun {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -748,25 +704,21 @@ pub struct Float {
 
 impl Float {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `chance_per_tick_to_float`, or its default 0.8.
-    #[must_use]
     pub fn chance_per_tick_to_float(&self) -> f32 {
         self.chance_per_tick_to_float.map_or(0.8, |v| v.0)
     }
 
     /// `sink_with_passengers`, or its default `false`.
-    #[must_use]
     pub fn sink_with_passengers(&self) -> bool {
         self.sink_with_passengers.is_some_and(|v| v.0)
     }
 
     /// `time_under_water_to_dismount_passengers`, or its default 0.
-    #[must_use]
     pub fn time_under_water_to_dismount_passengers(&self) -> f32 {
         self.time_under_water_to_dismount_passengers
             .map_or(0.0, |v| v.0)
@@ -871,86 +823,72 @@ pub struct FloatWander {
 
 impl FloatWander {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `additional_collision_buffer`, or its default `false`.
-    #[must_use]
     pub fn additional_collision_buffer(&self) -> bool {
         self.additional_collision_buffer.is_some_and(|v| v.0)
     }
 
     /// `allow_navigating_through_liquids`, or its default `false`.
-    #[must_use]
     pub fn allow_navigating_through_liquids(&self) -> bool {
         self.allow_navigating_through_liquids.is_some_and(|v| v.0)
     }
 
     /// `float_duration`, or its default 0 to 0.
-    #[must_use]
     pub fn float_duration(&self) -> (f32, f32) {
         self.float_duration
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `float_wander_has_move_control`, or its default `true`.
-    #[must_use]
     pub fn float_wander_has_move_control(&self) -> bool {
         self.float_wander_has_move_control.is_none_or(|v| v.0)
     }
 
     /// `must_reach`, or its default `false`.
-    #[must_use]
     pub fn must_reach(&self) -> bool {
         self.must_reach.is_some_and(|v| v.0)
     }
 
     /// `navigate_around_surface`, or its default `false`.
-    #[must_use]
     pub fn navigate_around_surface(&self) -> bool {
         self.navigate_around_surface.is_some_and(|v| v.0)
     }
 
     /// `random_reselect`, or its default `false`.
-    #[must_use]
     pub fn random_reselect(&self) -> bool {
         self.random_reselect.is_some_and(|v| v.0)
     }
 
     /// `surface_xz_dist`, or its default 8.
-    #[must_use]
     pub fn surface_xz_dist(&self) -> i32 {
         self.surface_xz_dist.map_or(8, |v| v.0)
     }
 
     /// `surface_y_dist`, or its default 8.
-    #[must_use]
     pub fn surface_y_dist(&self) -> i32 {
         self.surface_y_dist.map_or(8, |v| v.0)
     }
 
     /// `use_home_position_restriction`, or its default `true`.
-    #[must_use]
     pub fn use_home_position_restriction(&self) -> bool {
         self.use_home_position_restriction.is_none_or(|v| v.0)
     }
 
     /// `xz_dist`, or its default 10.
-    #[must_use]
     pub fn xz_dist(&self) -> i32 {
         self.xz_dist.map_or(10, |v| v.0)
     }
 
     /// `y_dist`, or its default 7.
-    #[must_use]
     pub fn y_dist(&self) -> i32 {
         self.y_dist.map_or(7, |v| v.0)
     }
 
     /// `y_offset`, or its default 0.
-    #[must_use]
     pub fn y_offset(&self) -> f32 {
         self.y_offset.map_or(0.0, |v| v.0)
     }
@@ -1000,19 +938,16 @@ pub struct FollowCaravan {
 
 impl FollowCaravan {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `entity_count`, or its default 1.
-    #[must_use]
     pub fn entity_count(&self) -> i32 {
         self.entity_count.map_or(1, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1074,19 +1009,16 @@ pub struct FollowMob {
 
 impl FollowMob {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `abort_navigation_on_stop`, or its default `true`.
-    #[must_use]
     pub fn abort_navigation_on_stop(&self) -> bool {
         self.abort_navigation_on_stop.is_none_or(|v| v.0)
     }
 
     /// `preferred_actor_type`, or its default `""`.
-    #[must_use]
     pub fn preferred_actor_type(&self) -> &str {
         self.preferred_actor_type
             .as_ref()
@@ -1094,25 +1026,21 @@ impl FollowMob {
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `stop_distance`, when written.
-    #[must_use]
     pub fn stop_distance(&self) -> Option<f32> {
         self.stop_distance.map(|v| v.0)
     }
 
     /// `use_home_position_restriction`, or its default `false`.
-    #[must_use]
     pub fn use_home_position_restriction(&self) -> bool {
         self.use_home_position_restriction.is_some_and(|v| v.0)
     }
@@ -1190,49 +1118,41 @@ pub struct FollowOwner {
 
 impl FollowOwner {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `can_teleport`, or its default `true`.
-    #[must_use]
     pub fn can_teleport(&self) -> bool {
         self.can_teleport.is_none_or(|v| v.0)
     }
 
     /// `ignore_vibration`, or its default `false`.
-    #[must_use]
     pub fn ignore_vibration(&self) -> bool {
         self.ignore_vibration.is_some_and(|v| v.0)
     }
 
     /// `max_distance`, or its default 6e+01.
-    #[must_use]
     pub fn max_distance(&self) -> f32 {
         self.max_distance.map_or(6.0e1, |v| v.0)
     }
 
     /// `post_teleport_distance`, or its default 3.
-    #[must_use]
     pub fn post_teleport_distance(&self) -> i32 {
         self.post_teleport_distance.map_or(3, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `start_distance`, or its default 1e+01.
-    #[must_use]
     pub fn start_distance(&self) -> f32 {
         self.start_distance.map_or(1.0e1, |v| v.0)
     }
 
     /// `stop_distance`, or its default 2.
-    #[must_use]
     pub fn stop_distance(&self) -> f32 {
         self.stop_distance.map_or(2.0, |v| v.0)
     }
@@ -1275,13 +1195,11 @@ pub struct FollowParent {
 
 impl FollowParent {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1339,37 +1257,31 @@ pub struct FollowTargetLeader {
 
 impl FollowTargetLeader {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `always_look_for_leader`, or its default `false`.
-    #[must_use]
     pub fn always_look_for_leader(&self) -> bool {
         self.always_look_for_leader.is_some_and(|v| v.0)
     }
 
     /// `follow_distance`, or its default 0.
-    #[must_use]
     pub fn follow_distance(&self) -> f32 {
         self.follow_distance.map_or(0.0, |v| v.0)
     }
 
     /// `search_cooldown`, or its default 20.
-    #[must_use]
     pub fn search_cooldown(&self) -> i32 {
         self.search_cooldown.map_or(20, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
-    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -1451,31 +1363,26 @@ pub struct GoHome {
 
 impl GoHome {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `calculate_new_path_radius`, or its default 2.
-    #[must_use]
     pub fn calculate_new_path_radius(&self) -> f32 {
         self.calculate_new_path_radius.map_or(2.0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1534,31 +1441,26 @@ pub struct Hide {
 
 impl Hide {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `duration`, or its default 1.
-    #[must_use]
     pub fn duration(&self) -> f32 {
         self.duration.map_or(1.0, |v| v.0)
     }
 
     /// `poi_type`, when written.
-    #[must_use]
     pub fn poi_type(&self) -> Option<PoiType> {
         self.poi_type
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `timeout_cooldown`, or its default 8.
-    #[must_use]
     pub fn timeout_cooldown(&self) -> f32 {
         self.timeout_cooldown.map_or(8.0, |v| v.0)
     }
@@ -1609,7 +1511,6 @@ pub struct Hover {
 
 impl Hover {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -1679,56 +1580,47 @@ pub struct JumpToBlock {
 
 impl JumpToBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_range`, or its default 1e+01 to 2e+01.
-    #[must_use]
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
     }
 
     /// `max_velocity`, or its default 1.5.
-    #[must_use]
     pub fn max_velocity(&self) -> f32 {
         self.max_velocity.map_or(1.5, |v| v.0)
     }
 
     /// `minimum_distance`, or its default 2.
-    #[must_use]
     pub fn minimum_distance(&self) -> i32 {
         self.minimum_distance.map_or(2, |v| v.0)
     }
 
     /// `minimum_path_length`, or its default 5.
-    #[must_use]
     pub fn minimum_path_length(&self) -> i32 {
         self.minimum_path_length.map_or(5, |v| v.0)
     }
 
     /// `preferred_blocks_chance`, or its default 1.
-    #[must_use]
     pub fn preferred_blocks_chance(&self) -> f32 {
         self.preferred_blocks_chance.map_or(1.0, |v| v.0)
     }
 
     /// `scale_factor`, or its default 0.7.
-    #[must_use]
     pub fn scale_factor(&self) -> f32 {
         self.scale_factor.map_or(0.7, |v| v.0)
     }
 
     /// `search_height`, or its default 10.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(10, |v| v.0)
     }
 
     /// `search_width`, or its default 8.
-    #[must_use]
     pub fn search_width(&self) -> i32 {
         self.search_width.map_or(8, |v| v.0)
     }
@@ -1794,25 +1686,21 @@ pub struct MountPathing {
 
 impl MountPathing {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `target_dist`, or its default 0.
-    #[must_use]
     pub fn target_dist(&self) -> f32 {
         self.target_dist.map_or(0.0, |v| v.0)
     }
 
     /// `track_target`, or its default `false`.
-    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_some_and(|v| v.0)
     }
@@ -1873,44 +1761,37 @@ pub struct MoveAroundTarget {
 
 impl MoveAroundTarget {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `destination_pos_spread_degrees`, or its default 9e+01.
-    #[must_use]
     pub fn destination_pos_spread_degrees(&self) -> f32 {
         self.destination_pos_spread_degrees.map_or(9.0e1, |v| v.0)
     }
 
     /// `destination_position_range`, or its default 4 to 8.
-    #[must_use]
     pub fn destination_position_range(&self) -> (f32, f32) {
         self.destination_position_range
             .map_or((4.0, 8.0), |range| range.resolve(4.0, 8.0))
     }
 
     /// `height_difference_limit`, or its default 1e+01.
-    #[must_use]
     pub fn height_difference_limit(&self) -> f32 {
         self.height_difference_limit.map_or(1.0e1, |v| v.0)
     }
 
     /// `horizontal_search_distance`, or its default 5.
-    #[must_use]
     pub fn horizontal_search_distance(&self) -> i32 {
         self.horizontal_search_distance.map_or(5, |v| v.0)
     }
 
     /// `movement_speed`, or its default 0.6.
-    #[must_use]
     pub fn movement_speed(&self) -> f32 {
         self.movement_speed.map_or(0.6, |v| v.0)
     }
 
     /// `vertical_search_distance`, or its default 5.
-    #[must_use]
     pub fn vertical_search_distance(&self) -> i32 {
         self.vertical_search_distance.map_or(5, |v| v.0)
     }
@@ -1976,19 +1857,16 @@ pub struct MoveIndoors {
 
 impl MoveIndoors {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 0.8.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.8, |v| v.0)
     }
 
     /// `timeout_cooldown`, or its default 8.
-    #[must_use]
     pub fn timeout_cooldown(&self) -> f32 {
         self.timeout_cooldown.map_or(8.0, |v| v.0)
     }
@@ -2047,43 +1925,36 @@ pub struct MoveOutdoors {
 
 impl MoveOutdoors {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 2.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(2.0, |v| v.0)
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 5.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(5, |v| v.0)
     }
 
     /// `search_range`, or its default 15.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(15, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 0.5.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.5, |v| v.0)
     }
 
     /// `timeout_cooldown`, or its default 8.
-    #[must_use]
     pub fn timeout_cooldown(&self) -> f32 {
         self.timeout_cooldown.map_or(8.0, |v| v.0)
     }
@@ -2133,19 +2004,16 @@ pub struct MoveThroughVillage {
 
 impl MoveThroughVillage {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `only_at_night`, or its default `false`.
-    #[must_use]
     pub fn only_at_night(&self) -> bool {
         self.only_at_night.is_some_and(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2229,49 +2097,41 @@ pub struct MoveToBlock {
 
 impl MoveToBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `start_chance`, or its default 1.
-    #[must_use]
     pub fn start_chance(&self) -> f32 {
         self.start_chance.map_or(1.0, |v| v.0)
     }
 
     /// `stay_duration`, or its default 0.
-    #[must_use]
     pub fn stay_duration(&self) -> f32 {
         self.stay_duration.map_or(0.0, |v| v.0)
     }
 
     /// `target_offset`, or its default `[0, 0, 0]`.
-    #[must_use]
     pub fn target_offset(&self) -> [f32; 3] {
         self.target_offset
             .as_ref()
@@ -2279,14 +2139,12 @@ impl MoveToBlock {
     }
 
     /// `target_selection_method`, or its default `nearest`.
-    #[must_use]
     pub fn target_selection_method(&self) -> TargetSelectionMethod {
         self.target_selection_method
             .unwrap_or(TargetSelectionMethod::Nearest)
     }
 
     /// `tick_interval`, or its default 20.
-    #[must_use]
     pub fn tick_interval(&self) -> i32 {
         self.tick_interval.map_or(20, |v| v.0)
     }
@@ -2359,37 +2217,31 @@ pub struct MoveToLand {
 
 impl MoveToLand {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2455,37 +2307,31 @@ pub struct MoveToLava {
 
 impl MoveToLava {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2558,19 +2404,16 @@ pub struct MoveToLiquid {
 
 impl MoveToLiquid {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `material_type`, or its default `any`.
-    #[must_use]
     pub fn material_type(&self) -> LiquidMaterial {
         self.material_type
             .as_ref()
@@ -2578,25 +2421,21 @@ impl MoveToLiquid {
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2651,19 +2490,16 @@ pub struct MoveToPoi {
 
 impl MoveToPoi {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `poi_type`, when written.
-    #[must_use]
     pub fn poi_type(&self) -> Option<PoiType> {
         self.poi_type
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2717,25 +2553,21 @@ pub struct MoveToRandomBlock {
 
 impl MoveToRandomBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `block_distance`, or its default 16.
-    #[must_use]
     pub fn block_distance(&self) -> f32 {
         self.block_distance.map_or(16.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
-    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -2787,31 +2619,26 @@ pub struct MoveToVillage {
 
 impl MoveToVillage {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 8.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(8.0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 1.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(1.5, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2875,37 +2702,31 @@ pub struct MoveToWater {
 
 impl MoveToWater {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `search_count`, or its default 10.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(10, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -2963,13 +2784,11 @@ pub struct MoveTowardsDwellingRestriction {
 
 impl MoveTowardsDwellingRestriction {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -3012,13 +2831,11 @@ pub struct MoveTowardsHomeRestriction {
 
 impl MoveTowardsHomeRestriction {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -3064,19 +2881,16 @@ pub struct MoveTowardsTarget {
 
 impl MoveTowardsTarget {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `within_radius`, or its default 0.
-    #[must_use]
     pub fn within_radius(&self) -> f32 {
         self.within_radius.map_or(0.0, |v| v.0)
     }
@@ -3121,13 +2935,11 @@ pub struct OcelotSitOnBlock {
 
 impl OcelotSitOnBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -3181,13 +2993,11 @@ pub struct OpenDoor {
 
 impl OpenDoor {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `close_door_after`, or its default `true`.
-    #[must_use]
     pub fn close_door_after(&self) -> bool {
         self.close_door_after.is_none_or(|v| v.0)
     }
@@ -3227,7 +3037,6 @@ pub struct PlayerRideTamed {
 
 impl PlayerRideTamed {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -3282,37 +3091,31 @@ pub struct RandomBreach {
 
 impl RandomBreach {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 0.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(0.0, |v| v.0)
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `xz_dist`, or its default 10.
-    #[must_use]
     pub fn xz_dist(&self) -> i32 {
         self.xz_dist.map_or(10, |v| v.0)
     }
 
     /// `y_dist`, or its default 7.
-    #[must_use]
     pub fn y_dist(&self) -> i32 {
         self.y_dist.map_or(7, |v| v.0)
     }
@@ -3366,31 +3169,26 @@ pub struct RandomFly {
 
 impl RandomFly {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `can_land_on_trees`, or its default `true`.
-    #[must_use]
     pub fn can_land_on_trees(&self) -> bool {
         self.can_land_on_trees.is_none_or(|v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `xz_dist`, or its default 10.
-    #[must_use]
     pub fn xz_dist(&self) -> i32 {
         self.xz_dist.map_or(10, |v| v.0)
     }
 
     /// `y_dist`, or its default 7.
-    #[must_use]
     pub fn y_dist(&self) -> i32 {
         self.y_dist.map_or(7, |v| v.0)
     }
@@ -3454,44 +3252,37 @@ pub struct RandomHover {
 
 impl RandomHover {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `hover_height`, or its default 0 to 0.
-    #[must_use]
     pub fn hover_height(&self) -> (i32, i32) {
         self.hover_height
             .map_or((0, 0), |range| range.resolve(0, 0))
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `xz_dist`, or its default 10.
-    #[must_use]
     pub fn xz_dist(&self) -> i32 {
         self.xz_dist.map_or(10, |v| v.0)
     }
 
     /// `y_dist`, or its default 7.
-    #[must_use]
     pub fn y_dist(&self) -> i32 {
         self.y_dist.map_or(7, |v| v.0)
     }
 
     /// `y_offset`, or its default 0.
-    #[must_use]
     pub fn y_offset(&self) -> f32 {
         self.y_offset.map_or(0.0, |v| v.0)
     }
@@ -3544,31 +3335,26 @@ pub struct RandomStroll {
 
 impl RandomStroll {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `xz_dist`, or its default 10.
-    #[must_use]
     pub fn xz_dist(&self) -> i32 {
         self.xz_dist.map_or(10, |v| v.0)
     }
 
     /// `y_dist`, or its default 7.
-    #[must_use]
     pub fn y_dist(&self) -> i32 {
         self.y_dist.map_or(7, |v| v.0)
     }
@@ -3623,37 +3409,31 @@ pub struct RandomSwim {
 
 impl RandomSwim {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `avoid_surface`, or its default `true`.
-    #[must_use]
     pub fn avoid_surface(&self) -> bool {
         self.avoid_surface.is_none_or(|v| v.0)
     }
 
     /// `interval`, or its default 120.
-    #[must_use]
     pub fn interval(&self) -> i32 {
         self.interval.map_or(120, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `xz_dist`, or its default 10.
-    #[must_use]
     pub fn xz_dist(&self) -> i32 {
         self.xz_dist.map_or(10, |v| v.0)
     }
 
     /// `y_dist`, or its default 7.
-    #[must_use]
     pub fn y_dist(&self) -> i32 {
         self.y_dist.map_or(7, |v| v.0)
     }
@@ -3693,7 +3473,6 @@ pub struct RestrictOpenDoor {
 
 impl RestrictOpenDoor {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -3733,7 +3512,6 @@ pub struct RestrictSun {
 
 impl RestrictSun {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -3782,25 +3560,21 @@ pub struct RiseToLiquidLevel {
 
 impl RiseToLiquidLevel {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `liquid_y_offset`, or its default 0.
-    #[must_use]
     pub fn liquid_y_offset(&self) -> f32 {
         self.liquid_y_offset.map_or(0.0, |v| v.0)
     }
 
     /// `rise_delta`, or its default 0.
-    #[must_use]
     pub fn rise_delta(&self) -> f32 {
         self.rise_delta.map_or(0.0, |v| v.0)
     }
 
     /// `sink_delta`, or its default 0.
-    #[must_use]
     pub fn sink_delta(&self) -> f32 {
         self.sink_delta.map_or(0.0, |v| v.0)
     }
@@ -3846,19 +3620,16 @@ pub struct SlimeFloat {
 
 impl SlimeFloat {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `jump_chance_percentage`, or its default 0.8.
-    #[must_use]
     pub fn jump_chance_percentage(&self) -> f32 {
         self.jump_chance_percentage.map_or(0.8, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.2.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.2, |v| v.0)
     }
@@ -3901,13 +3672,11 @@ pub struct SlimeKeepOnJumping {
 
 impl SlimeKeepOnJumping {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -3956,25 +3725,21 @@ pub struct SlimeRandomDirection {
 
 impl SlimeRandomDirection {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `add_random_time_range`, or its default 3.
-    #[must_use]
     pub fn add_random_time_range(&self) -> i32 {
         self.add_random_time_range.map_or(3, |v| v.0)
     }
 
     /// `min_change_direction_time`, or its default 2.
-    #[must_use]
     pub fn min_change_direction_time(&self) -> f32 {
         self.min_change_direction_time.map_or(2.0, |v| v.0)
     }
 
     /// `turn_range`, or its default 360.
-    #[must_use]
     pub fn turn_range(&self) -> i32 {
         self.turn_range.map_or(360, |v| v.0)
     }
@@ -4014,7 +3779,6 @@ pub struct SquidDive {
 
 impl SquidDive {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -4054,7 +3818,6 @@ pub struct SquidFlee {
 
 impl SquidFlee {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -4094,7 +3857,6 @@ pub struct SquidIdle {
 
 impl SquidIdle {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -4134,7 +3896,6 @@ pub struct SquidMoveAwayFromGround {
 
 impl SquidMoveAwayFromGround {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -4174,7 +3935,6 @@ pub struct SquidOutOfWater {
 
 impl SquidOutOfWater {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -4229,37 +3989,31 @@ pub struct StrollTowardsVillage {
 
 impl StrollTowardsVillage {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_time`, or its default 8.
-    #[must_use]
     pub fn cooldown_time(&self) -> f32 {
         self.cooldown_time.map_or(8.0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 1.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(1.5, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `start_chance`, or its default 1.
-    #[must_use]
     pub fn start_chance(&self) -> f32 {
         self.start_chance.map_or(1.0, |v| v.0)
     }
@@ -4313,19 +4067,16 @@ pub struct SwimIdle {
 
 impl SwimIdle {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `idle_time`, or its default 5.
-    #[must_use]
     pub fn idle_time(&self) -> f32 {
         self.idle_time.map_or(5.0, |v| v.0)
     }
 
     /// `success_rate`, or its default 0.1.
-    #[must_use]
     pub fn success_rate(&self) -> f32 {
         self.success_rate.map_or(0.1, |v| v.0)
     }
@@ -4378,13 +4129,11 @@ pub struct SwimUpForBreath {
 
 impl SwimUpForBreath {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `material_type`, or its default `water`.
-    #[must_use]
     pub fn material_type(&self) -> LiquidMaterial {
         self.material_type
             .as_ref()
@@ -4392,19 +4141,16 @@ impl SwimUpForBreath {
     }
 
     /// `search_height`, or its default 16.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(16, |v| v.0)
     }
 
     /// `search_radius`, or its default 4.
-    #[must_use]
     pub fn search_radius(&self) -> i32 {
         self.search_radius.map_or(4, |v| v.0)
     }
 
     /// `speed_mod`, or its default 1.4.
-    #[must_use]
     pub fn speed_mod(&self) -> f32 {
         self.speed_mod.map_or(1.4, |v| v.0)
     }
@@ -4456,31 +4202,26 @@ pub struct SwimWander {
 
 impl SwimWander {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `interval`, or its default 0.00833.
-    #[must_use]
     pub fn interval(&self) -> f32 {
         self.interval.map_or(0.008_33, |v| v.0)
     }
 
     /// `look_ahead`, or its default 5.
-    #[must_use]
     pub fn look_ahead(&self) -> f32 {
         self.look_ahead.map_or(5.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `wander_time`, or its default 5.
-    #[must_use]
     pub fn wander_time(&self) -> f32 {
         self.wander_time.map_or(5.0, |v| v.0)
     }
@@ -4550,61 +4291,51 @@ pub struct SwimWithEntity {
 
 impl SwimWithEntity {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `catch_up_multiplier`, or its default 2.5.
-    #[must_use]
     pub fn catch_up_multiplier(&self) -> f32 {
         self.catch_up_multiplier.map_or(2.5, |v| v.0)
     }
 
     /// `catch_up_threshold`, or its default 12.
-    #[must_use]
     pub fn catch_up_threshold(&self) -> f32 {
         self.catch_up_threshold.map_or(12.0, |v| v.0)
     }
 
     /// `chance_to_stop`, or its default 0.0333.
-    #[must_use]
     pub fn chance_to_stop(&self) -> f32 {
         self.chance_to_stop.map_or(0.0333, |v| v.0)
     }
 
     /// `match_direction_threshold`, or its default 2.
-    #[must_use]
     pub fn match_direction_threshold(&self) -> f32 {
         self.match_direction_threshold.map_or(2.0, |v| v.0)
     }
 
     /// `search_range`, or its default 2e+01.
-    #[must_use]
     pub fn search_range(&self) -> f32 {
         self.search_range.map_or(2.0e1, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.5.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.5, |v| v.0)
     }
 
     /// `state_check_interval`, or its default 0.5.
-    #[must_use]
     pub fn state_check_interval(&self) -> f32 {
         self.state_check_interval.map_or(0.5, |v| v.0)
     }
 
     /// `stop_distance`, or its default 5.
-    #[must_use]
     pub fn stop_distance(&self) -> f32 {
         self.stop_distance.map_or(5.0, |v| v.0)
     }
 
     /// `success_rate`, or its default 0.1.
-    #[must_use]
     pub fn success_rate(&self) -> f32 {
         self.success_rate.map_or(0.1, |v| v.0)
     }
@@ -4684,13 +4415,11 @@ pub struct TeleportToOwner {
 
 impl TeleportToOwner {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown`, or its default 1.
-    #[must_use]
     pub fn cooldown(&self) -> f32 {
         self.cooldown.map_or(1.0, |v| v.0)
     }
@@ -4734,7 +4463,6 @@ pub struct WitherRandomAttackPosGoal {
 
 impl WitherRandomAttackPosGoal {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -4835,25 +4563,21 @@ pub struct Panic {
 
 impl Panic {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `damage_sources`, or its default (empty).
-    #[must_use]
     pub fn damage_sources(&self) -> &[DamageCause] {
         self.damage_sources.as_deref().unwrap_or_default()
     }
 
     /// `force`, or its default `false`.
-    #[must_use]
     pub fn force(&self) -> bool {
         self.force.is_some_and(|v| v.0)
     }
 
     /// `ignore_mob_damage`, or its default `false`.
-    #[must_use]
     pub fn ignore_mob_damage(&self) -> bool {
         self.ignore_mob_damage.is_some_and(|v| v.0)
     }
@@ -4866,20 +4590,17 @@ impl Panic {
     }
 
     /// `prefer_water`, or its default `false`.
-    #[must_use]
     pub fn prefer_water(&self) -> bool {
         self.prefer_water.is_some_and(|v| v.0)
     }
 
     /// `sound_interval`, or its default 0 to 0.
-    #[must_use]
     pub fn sound_interval(&self) -> (f32, f32) {
         self.sound_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }

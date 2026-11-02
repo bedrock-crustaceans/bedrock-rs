@@ -101,7 +101,6 @@ pub enum SettingsFile {
 
 impl SettingsFile {
     /// The file's name.
-    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::World => WORLD_FILE,
@@ -111,7 +110,6 @@ impl SettingsFile {
 
     /// The file a pack of `pack_type` keeps its values in: behaviour packs the world file,
     /// resource packs the global file; other packs have no saved settings.
-    #[must_use]
     pub fn for_pack_type(pack_type: PackType) -> Option<Self> {
         match pack_type {
             PackType::Behavior => Some(Self::World),
@@ -153,7 +151,6 @@ impl From<Vec<String>> for SettingValue {
 
 impl Settings {
     /// An entry for `pack_id` with `values` and no `last_used`.
-    #[must_use]
     pub fn new(pack_id: Uuid, values: IndexMap<String, SettingValue>) -> Self {
         Self {
             pack_id,
@@ -166,7 +163,6 @@ impl Settings {
 
 impl SavedSettings {
     /// The first entry for `pack_id`: the one vanilla reads and updates.
-    #[must_use]
     pub fn get(&self, pack_id: Uuid) -> Option<&Settings> {
         self.settings.iter().find(|entry| entry.pack_id == pack_id)
     }

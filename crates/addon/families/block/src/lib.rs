@@ -133,20 +133,17 @@ pub struct VanillaBlockData {
 
 impl VanillaBlockData {
     /// The legacy numeric block id: `block_id`, −1 when absent (the game's constructor default).
-    #[must_use]
     pub fn block_id(&self) -> i32 {
         self.block_id.map_or(-1, |id| id.0)
     }
 
     /// The material: `material`, dirt when absent (the game's constructor default).
-    #[must_use]
     pub fn material(&self) -> MaterialType {
         self.material.unwrap_or(MaterialType::Dirt)
     }
 
     /// `requires_correct_tool_for_drops`, `false` when absent, as the game's block loader
     /// defaults it.
-    #[must_use]
     pub fn requires_correct_tool_for_drops(&self) -> bool {
         self.requires_correct_tool_for_drops.is_some_and(|b| b.0)
     }

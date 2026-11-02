@@ -78,7 +78,6 @@ impl TextureFiles {
         reason = "used by the stack's composition and the link rules, which need other features"
     )]
     #[doc(hidden)]
-    #[must_use]
     pub fn pack(&self, stack_index: usize) -> Option<&PackRef> {
         self.files.packs.get(stack_index).map(|pack| &pack.pack)
     }
@@ -89,7 +88,6 @@ impl TextureFiles {
         reason = "used by the stack's composition and the link rules, which need other features"
     )]
     #[doc(hidden)]
-    #[must_use]
     pub fn files(&self) -> &StackFiles {
         &self.files
     }
@@ -120,7 +118,6 @@ impl TextureFiles {
         reason = "used by the stack's composition and the link rules, which need other features"
     )]
     #[doc(hidden)]
-    #[must_use]
     pub fn image_in<'a>(&'a self, stack_index: usize, stem: &str) -> Option<TextureImage<'a>> {
         let found = self.files.in_pack(stack_index, stem, &VERBATIM_OR_IMAGE)?;
         Some(TextureImage {

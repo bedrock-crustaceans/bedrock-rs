@@ -47,7 +47,6 @@ pub const PARSE_ERROR: &str = "parse error:\n{}";
     clippy::unnecessary_wraps,
     reason = "every code field is an `Option<VanillaText>`"
 )]
-#[must_use]
 pub fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
     Some(VanillaText::Formatted {
         template,
@@ -94,20 +93,17 @@ pub struct Node<'a> {
 impl<'a> Node<'a> {
     /// The value of a whole text (comments and whitespace around it skipped); `None` when the
     /// text is not JSON.
-    #[must_use]
     pub fn root(text: &'a str) -> Option<Self> {
         Self::of(JsonSlice::new(text))
     }
 
     /// The value of a slice.
-    #[must_use]
     pub fn of(slice: JsonSlice<'a>) -> Option<Self> {
         let raw: RawJson<'a> = parse_at(slice).ok()?;
         slice.nested(&raw).map(|slice| Self { slice })
     }
 
     /// The JSON type of the node, from its first byte.
-    #[must_use]
     pub fn kind(&self) -> Kind {
         match self.slice.text.as_bytes().first() {
             Some(b'{') => Kind::Object,
@@ -120,13 +116,11 @@ impl<'a> Node<'a> {
     }
 
     /// The value's text.
-    #[must_use]
     pub fn text(&self) -> &'a str {
         self.slice.text
     }
 
     /// The node's place in the file, saturated to `u32`.
-    #[must_use]
     pub fn span(&self) -> Span {
         let to_u32 = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
         Span {
@@ -160,7 +154,6 @@ pub enum Pattern {
 impl Pattern {
     /// Whether `key` is a name this pattern accepts (names and prefixes compare without regard to
     /// case).
-    #[must_use]
     pub fn matches(self, key: &str) -> bool {
         match self {
             Self::Name(name) => key.eq_ignore_ascii_case(name),
@@ -176,7 +169,6 @@ impl Pattern {
     }
 
     /// The pattern as vanilla prints it in "Required child %s not found".
-    #[must_use]
     pub fn text(self) -> &'static str {
         match self {
             Self::Name(name) => name,
@@ -207,7 +199,6 @@ pub(crate) fn is_time_key(key: &str) -> bool {
 
 /// vanilla's `atof` of a key that matched `is_time_key` (or any key: `atof` reads the longest
 /// numeric prefix and gives 0 for none).
-#[must_use]
 pub fn atof(key: &str) -> f32 {
     let end = key
         .char_indices()
@@ -233,7 +224,6 @@ pub struct Group {
 
 impl Group {
     /// An optional group of one fixed name.
-    #[must_use]
     pub const fn name(name: &'static str) -> Self {
         Self {
             pattern: Pattern::Name(name),
@@ -242,7 +232,6 @@ impl Group {
     }
 
     /// A required group of one fixed name.
-    #[must_use]
     pub const fn required(name: &'static str) -> Self {
         Self {
             pattern: Pattern::Name(name),
@@ -251,7 +240,6 @@ impl Group {
     }
 
     /// A group of any pattern.
-    #[must_use]
     pub const fn pattern(pattern: Pattern, required: bool) -> Self {
         Self { pattern, required }
     }
@@ -299,7 +287,6 @@ pub struct Walk {
 
 impl Walk {
     /// An empty walk, at the root.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -377,7 +364,6 @@ impl Walk {
     /// The members of an object node, in file order (a repeated key keeps its first position
     /// and its last value, as jsoncpp keeps the last).
     #[allow(clippy::unused_self, reason = "read like the other node accessors")]
-    #[must_use]
     pub fn members<'a>(&self, node: Node<'a>) -> Option<Vec<(String, Node<'a>)>> {
         let map: IndexMap<String, RawJson<'a>> = parse_at(node.slice).ok()?;
         map.iter()

@@ -102,7 +102,6 @@ impl ResolvedMaterial {
     /// The stem of [`vertex_shader`](Self::vertex_shader): the text between its last `/` and
     /// the first `.` after it. A material drawn for an actor needs one of
     /// [`ACTOR_SHADER_STEMS`](super::ACTOR_SHADER_STEMS).
-    #[must_use]
     pub fn vertex_shader_stem(&self) -> &str {
         let name = self
             .vertex_shader

@@ -10,7 +10,6 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 
 /// The origin of a file read on its own.
-#[must_use]
 pub fn detached(path: &PackPath) -> Origin {
     Origin::new(
         PackRef::app_data(),
@@ -30,7 +29,6 @@ pub fn unversioned<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) ->
 }
 
 /// A rejection of the file `origin` with its findings.
-#[must_use]
 pub fn rejected(origin: Origin, mut diagnostics: Diagnostics) -> Rejected {
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
@@ -47,13 +45,11 @@ pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
 }
 
 /// A finding about the whole file `origin`.
-#[must_use]
 pub fn file_finding(code: DiagnosticCode, severity: Severity, origin: &Origin) -> Diagnostic {
     finding_at(code, severity, origin, JsonPath::new())
 }
 
 /// A finding at `path` of the file `origin`.
-#[must_use]
 pub fn finding_at(
     code: DiagnosticCode,
     severity: Severity,

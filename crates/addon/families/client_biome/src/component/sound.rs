@@ -140,7 +140,6 @@ pub struct BiomeMusic {
 impl BiomeMusic {
     /// Whether the underwater music plays in the biome's water; `false` when the member is
     /// absent (the game fills an absent member with zero).
-    #[must_use]
     pub fn underwater_music(&self) -> bool {
         self.underwater_music.is_some_and(|underwater| underwater.0)
     }

@@ -45,13 +45,11 @@ pub struct Envelope<'a> {
 impl<'a> Envelope<'a> {
     /// The number of root members, `format_version` included: vanilla requires exactly two.
     /// A duplicate key counts once, as in jsoncpp's object.
-    #[must_use]
     pub fn member_count(&self) -> usize {
         self.members.len() + usize::from(self.format_version != EnvelopeVersion::Absent)
     }
 
     /// The member `key` (the family's payload key) as a slice of the text.
-    #[must_use]
     pub fn payload(&self, key: &str) -> Option<JsonSlice<'a>> {
         self.members.get(key).copied()
     }

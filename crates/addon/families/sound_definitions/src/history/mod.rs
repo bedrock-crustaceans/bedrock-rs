@@ -91,7 +91,6 @@ impl Any {
     /// The version of the struct that reads a file whose gate version is `version` (1.13.0
     /// for a file without a readable `format_version`): the newest struct at or below it.
     /// There is no ceiling.
-    #[must_use]
     pub fn select(version: &SemVersion) -> FormatVersion {
         VERSIONS
             .iter()
@@ -119,7 +118,6 @@ impl Any {
 
     /// The version of the struct that read the file (named so that `Document<Any>`'s own
     /// `version` does not hide it).
-    #[must_use]
     pub fn parsed_version(&self) -> FormatVersion {
         match self {
             Self::V1_0_0(_) => <v1_0_0::SoundDefinitions as Versioned>::VERSION,

@@ -79,7 +79,6 @@ pub fn format_version(walk: &mut Walk, node: Node<'_>, minimum: &SemVersion) -> 
 }
 
 /// The version input of a parsed `SemVersion`.
-#[must_use]
 pub fn input_of(version: &SemVersion) -> FormatVersionInput {
     FormatVersionInput {
         version: Some(version.format_version()),

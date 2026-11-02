@@ -9,13 +9,11 @@ use bedrock_addon_core::id::LootTablePath;
 
 impl Pool {
     /// The rolls: JSON `rolls`, 0..0 when absent.
-    #[must_use]
     pub fn rolls(&self) -> RandomValueBounds {
         self.rolls.unwrap_or(RandomValueBounds::Exact(0.0))
     }
 
     /// The entries; none when JSON `entries` is absent.
-    #[must_use]
     pub fn entries(&self) -> &[Entry] {
         self.entries.as_deref().unwrap_or_default()
     }
@@ -23,19 +21,16 @@ impl Pool {
 
 impl Tiers {
     /// JSON `initial_range`, 0 when absent.
-    #[must_use]
     pub fn initial_range(&self) -> i32 {
         self.initial_range.unwrap_or(0)
     }
 
     /// JSON `bonus_rolls`, 0 when absent.
-    #[must_use]
     pub fn bonus_rolls(&self) -> i32 {
         self.bonus_rolls.unwrap_or(0)
     }
 
     /// JSON `bonus_chance`, 0.0 when absent.
-    #[must_use]
     pub fn bonus_chance(&self) -> f32 {
         self.bonus_chance.unwrap_or(0.0)
     }
@@ -43,7 +38,6 @@ impl Tiers {
 
 impl Entry {
     /// An entry of `kind` with no other member.
-    #[must_use]
     pub fn new(kind: EntryKind) -> Self {
         Self {
             kind,
@@ -56,13 +50,11 @@ impl Entry {
     }
 
     /// JSON `weight`, 1 when absent.
-    #[must_use]
     pub fn weight(&self) -> i32 {
         self.weight.unwrap_or(1)
     }
 
     /// JSON `quality`, 0 when absent.
-    #[must_use]
     pub fn quality(&self) -> i32 {
         self.quality.unwrap_or(0)
     }
@@ -70,7 +62,6 @@ impl Entry {
     /// The table a `loot_table` entry references: its `name` without everything up to and
     /// including the last `:` (`"minecraft:loot_tables/x.json"` references
     /// `loot_tables/x.json`). Vanilla compares the path without case when it looks it up.
-    #[must_use]
     pub fn table(&self) -> Option<LootTablePath> {
         match &self.kind {
             EntryKind::LootTable { name: Some(name) } => Some(referenced(name)),
@@ -90,7 +81,6 @@ pub(crate) fn referenced(name: &LootTablePath) -> LootTablePath {
 
 impl RandomValueBounds {
     /// Both bounds `min..max` (a `Range` with both written).
-    #[must_use]
     pub fn new(min: f32, max: f32) -> Self {
         Self::Range {
             min: Some(min),
@@ -99,7 +89,6 @@ impl RandomValueBounds {
     }
 
     /// The lower bound: the number, or `min` (0.0 when absent).
-    #[must_use]
     pub fn min(&self) -> f32 {
         match *self {
             Self::Exact(x) => x,
@@ -108,7 +97,6 @@ impl RandomValueBounds {
     }
 
     /// The upper bound: the number, or `max` (0.0 when absent).
-    #[must_use]
     pub fn max(&self) -> f32 {
         match *self {
             Self::Exact(x) => x,
@@ -119,7 +107,6 @@ impl RandomValueBounds {
 
 impl LootFunction {
     /// The function `kind` without a namespace, conditions or other members.
-    #[must_use]
     pub fn new(kind: FunctionKind) -> Self {
         Self {
             namespace: None,
@@ -130,7 +117,6 @@ impl LootFunction {
     }
 
     /// The JSON `function` text: the namespace as written and the function's name.
-    #[must_use]
     pub fn function_name(&self) -> String {
         format!(
             "{}{}",
@@ -142,7 +128,6 @@ impl LootFunction {
 
 impl FunctionKind {
     /// The function's name in vanilla's registry (`"set_count"`).
-    #[must_use]
     pub fn name(&self) -> &'static str {
         match self {
             Self::SetCount { .. } => "set_count",
@@ -178,7 +163,6 @@ impl FunctionKind {
 
 impl ItemData {
     /// The function type vanilla's parser stores: by `data`, else by `values`.
-    #[must_use]
     pub fn kind(&self) -> ItemDataKind {
         match (&self.data, &self.values) {
             (Some(_), _) => ItemDataKind::SetItemData,
@@ -188,7 +172,6 @@ impl ItemData {
     }
 
     /// The range: `data`, else `values`, else 0..0.
-    #[must_use]
     pub fn range(&self) -> RandomValueBounds {
         self.data
             .or(self.values)
@@ -198,7 +181,6 @@ impl ItemData {
 
 impl BannerType {
     /// The JSON name (`"default"`, `"illager_captain"`).
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Default => "default",
@@ -229,7 +211,6 @@ impl ItemColor {
     ];
 
     /// The JSON name (`"light_blue"`).
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Black => "black",
@@ -252,7 +233,6 @@ impl ItemColor {
     }
 
     /// The index 0..15.
-    #[must_use]
     pub fn index(self) -> u8 {
         // `ALL` holds each colour once, in index order.
         Self::ALL
@@ -263,7 +243,6 @@ impl ItemColor {
     }
 
     /// The colour of a name.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|c| c.name() == name)
     }
@@ -280,7 +259,6 @@ impl SpecificEnchant {
     }
 
     /// The levels: JSON `level`, 1..1 when absent.
-    #[must_use]
     pub fn levels(&self) -> (i32, i32) {
         self.level.map_or((1, 1), |level| level.resolve(1, 1))
     }
@@ -288,7 +266,6 @@ impl SpecificEnchant {
 
 impl LootCondition {
     /// The condition `kind` with no other member.
-    #[must_use]
     pub fn new(kind: ConditionKind) -> Self {
         Self {
             kind,
@@ -299,7 +276,6 @@ impl LootCondition {
 
 impl ConditionKind {
     /// The condition's name in vanilla's factory map (`"random_chance"`).
-    #[must_use]
     pub fn name(&self) -> &'static str {
         match self {
             Self::KilledByPlayer => "killed_by_player",
@@ -327,7 +303,6 @@ impl ConditionKind {
 
     /// The chances of `random_difficulty_chance` for peaceful, easy, normal and hard: each one
     /// left out is `default_chance` (0.0 when that is absent too). `None` for another condition.
-    #[must_use]
     pub fn difficulty_chances(&self) -> Option<[f32; 4]> {
         match *self {
             Self::RandomDifficultyChance {

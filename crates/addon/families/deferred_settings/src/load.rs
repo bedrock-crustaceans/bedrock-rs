@@ -851,7 +851,6 @@ fn combine(parsed: Vec<SettingsFile>, stack: &StackCx<'_>) -> DeferredSettings {
 
 /// The loader of `rp.deferred_settings()`: the eight folders of every resource pack, combined
 /// into the group.
-#[must_use]
 pub const fn load_group() -> CollectionLoader<DeferredSettings, SettingsFile> {
     CollectionLoader {
         walk: WALK,

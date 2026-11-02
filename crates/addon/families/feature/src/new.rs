@@ -6,7 +6,6 @@ use bedrock_addon_core::id::FeatureId;
 
 impl Description {
     /// The description of the feature `identifier`.
-    #[must_use]
     pub fn new(identifier: FeatureId) -> Self {
         Self { identifier }
     }
@@ -14,7 +13,6 @@ impl Description {
 
 impl TreeFeature {
     /// A tree with this identifier and no parts yet.
-    #[must_use]
     pub fn new(identifier: FeatureId) -> Self {
         Self {
             description: Description::new(identifier),

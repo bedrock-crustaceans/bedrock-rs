@@ -18,7 +18,6 @@ use crate::json::Value;
 /// An integer literal outside `i64` / `u64` reaches a `Value` as a string of its digits, so it is
 /// read as a Molang string, not a constant (an accepted loss).
 #[doc(hidden)]
-#[must_use]
 pub fn json_scalar(value: &Value) -> JsonScalar {
     if let Some(number) = value.as_number() {
         return JsonScalar::Number(number.to_f64_lossy());

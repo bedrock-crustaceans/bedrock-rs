@@ -14,7 +14,6 @@ impl Item {
     /// numbers as `Int` or `Float` as written; custom and unknown components are not sent. An
     /// item in the legacy item format is sent as a non-component-based entry: an empty
     /// compound.
-    #[must_use]
     pub fn network_properties(&self) -> nbtx::Value {
         let mut root = nbtx::Compound::new();
         if self.legacy.format == ItemFormat::Legacy {

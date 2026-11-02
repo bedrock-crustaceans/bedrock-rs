@@ -119,7 +119,6 @@ impl LangFile {
     ///
     /// A file never fails as a whole: a line vanilla drops is kept as [`Line::Dropped`], with
     /// a warning when vanilla logs one.
-    #[must_use]
     pub fn from_bytes(language: Language, bytes: &[u8]) -> (LangFile, Diagnostics) {
         let mut lines = Vec::new();
         let mut diagnostics = Diagnostics::default();
@@ -235,14 +234,12 @@ impl LangFile {
 
     /// What the stack loader makes of the file: every entry but the pack keywords, the key
     /// lower-cased, the last definition of a key winning.
-    #[must_use]
     pub fn translations(&self) -> Translations {
         self.select(&KeyFilter::GLOBAL)
     }
 
     /// The entries `filter` lets through, stored under its prefix: vanilla's reader with its
     /// exclude list, include list and key prefix.
-    #[must_use]
     pub fn select(&self, filter: &KeyFilter<'_>) -> Translations {
         let mut table = Translations::new();
         for line in &self.lines {

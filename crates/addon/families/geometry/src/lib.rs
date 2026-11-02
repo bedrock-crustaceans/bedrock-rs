@@ -112,7 +112,6 @@ pub struct GeometryLegacy {
 
 impl GeometryLegacy {
     /// Nothing was carried over.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         *self == Self::default()
     }
@@ -165,7 +164,6 @@ pub struct BoneLegacy {
 
 impl BoneLegacy {
     /// Nothing was carried over.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         *self == Self::default()
     }
@@ -377,25 +375,21 @@ impl Inherited {
     }
 
     /// The parent geometry's identifier.
-    #[must_use]
     pub fn identifier(&self) -> &str {
         &self.identifier
     }
 
     /// The parent geometry's own bones.
-    #[must_use]
     pub fn bones(&self) -> &[Bone] {
         &self.bones
     }
 
     /// What the parent inherits itself.
-    #[must_use]
     pub fn parent(&self) -> Option<&Inherited> {
         self.parent.as_deref()
     }
 
     /// How many geometries the chain holds, this parent included.
-    #[must_use]
     pub fn depth(&self) -> usize {
         self.depth
     }

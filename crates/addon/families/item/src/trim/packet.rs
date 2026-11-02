@@ -90,7 +90,6 @@ impl TrimData {
 
     /// The two lists a server sends for these registries: the patterns one per template
     /// item, the materials in order.
-    #[must_use]
     pub fn to_packet(&self) -> (Vec<PatternEntry>, Vec<MaterialEntry>) {
         // The patterns come from walking the template-item map; the materials are the list.
         let patterns = self

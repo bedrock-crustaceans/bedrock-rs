@@ -19,7 +19,6 @@ pub trait AsyncHttpClient {
     fn get(&self, url: &str) -> impl Future<Output = Result<Vec<u8>, HttpError>>;
 }
 
-#[must_use]
 #[cfg(feature = "ureq")]
 pub fn ureq_agent() -> ureq::Agent {
     ureq::Agent::config_builder()

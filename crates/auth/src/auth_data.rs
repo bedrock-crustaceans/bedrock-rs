@@ -143,7 +143,6 @@ impl From<AuthDataClaims> for Identity {
     }
 }
 
-#[must_use]
 pub fn identity_from_xuid(xuid: &str) -> Uuid {
     let digest = Md5::new()
         .chain_update(b"pocket-auth-1-xuid:")

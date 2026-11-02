@@ -58,7 +58,6 @@ pub enum ScriptTarget {
 
 impl ScriptTarget {
     /// The manifest module `type`: `script` or `client_script`.
-    #[must_use]
     pub fn module_type(self) -> &'static str {
         match self {
             Self::Server => "script",
@@ -67,7 +66,6 @@ impl ScriptTarget {
     }
 
     /// The target of the module `type` spelled `name`, compared byte for byte.
-    #[must_use]
     pub fn from_module_type(name: &str) -> Option<Self> {
         match name {
             "script" => Some(Self::Server),
@@ -165,7 +163,6 @@ impl ScriptModule {
     /// module.
     ///
     /// Paths count the manifest's modules and dependencies as [`Manifest`] holds them.
-    #[must_use]
     pub fn from_manifest(manifest: &Manifest) -> Option<ScriptModule> {
         Self::build(manifest, PackPath::from_static("manifest.json"), None)
     }
@@ -438,7 +435,6 @@ impl ScriptModule {
     }
 
     /// The name vanilla prints for the plugin: `<pack name> - <module version>`.
-    #[must_use]
     pub fn plugin_name(&self) -> String {
         format!(
             "{} - {}",
@@ -453,7 +449,6 @@ impl ScriptModule {
 /// JavaScript and its entry a `.js` file. Vanilla drops any other before it looks at a file
 /// (an unsupported language or entry), and a pack without one has no plugin at all, so a stack reads the script files
 /// of no other pack.
-#[must_use]
 pub fn starts_a_plugin(manifest: &Manifest) -> bool {
     manifest
         .modules
@@ -481,7 +476,6 @@ pub(crate) struct Stage1 {
 }
 
 /// The native module a pack dependency's UUID stands for: vanilla knows two.
-#[must_use]
 pub fn native_module_of(uuid: Uuid) -> Option<&'static str> {
     match uuid.as_u128() {
         0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678 => Some("@minecraft/server"),

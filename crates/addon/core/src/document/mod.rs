@@ -167,7 +167,6 @@ impl Origin {
     /// An origin from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
     /// builds it here).
     #[doc(hidden)]
-    #[must_use]
     pub fn new(
         pack: PackRef,
         side: PackSide,
@@ -235,7 +234,6 @@ impl VersionInfo {
     /// Version information from its parts (the struct is `#[non_exhaustive]`, so
     /// `bedrock_addon` builds it here).
     #[doc(hidden)]
-    #[must_use]
     pub fn new(
         written: Option<FormatVersion>,
         beta: bool,
@@ -269,7 +267,6 @@ impl Rejected {
     /// A rejection from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
     /// builds it here).
     #[doc(hidden)]
-    #[must_use]
     pub fn new(origin: Origin, diagnostics: Diagnostics) -> Self {
         Self {
             origin,

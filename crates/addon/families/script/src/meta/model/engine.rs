@@ -51,7 +51,6 @@ impl AfterEventsOrdering {
 impl OrderForVersion {
     /// The module part of [`name`](Self::name), before the space (`@minecraft/server`); the
     /// whole name when it has no space.
-    #[must_use]
     pub fn module(&self) -> &str {
         self.name
             .split_once(' ')

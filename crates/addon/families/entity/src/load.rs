@@ -576,7 +576,6 @@ fn combine(parsed: Vec<Contribution<Entity>>, cx: &StackCx<'_>) -> Registry<Enti
 }
 
 /// The loader of `bp.entities()`.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Entity>, Contribution<Entity>> {
     CollectionLoader {
         walk: Walk {

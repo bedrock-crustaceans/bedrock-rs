@@ -1313,7 +1313,6 @@ pub struct PackLoader {
 
 impl PackLoader {
     /// A pack folder at `root`. First request: `ListDir { Place::root(root), Recursive }`.
-    #[must_use]
     pub fn directory(root: RootId, options: OpenOptions) -> PackLoader {
         let mut io = Io::new(options.limits);
         let mut opener = Opener::default();
@@ -1332,7 +1331,6 @@ impl PackLoader {
 
     /// A single file at `root`, detected by magic bytes. First request:
     /// `ReadFile { range: Prefix(256) }`, then `Whole` if it is an archive.
-    #[must_use]
     pub fn file(root: RootId, len_hint: Option<u64>, options: OpenOptions) -> PackLoader {
         let mut io = Io::new(options.limits);
         io.progress.stage = ProgressStage::Index;

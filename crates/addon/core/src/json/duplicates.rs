@@ -24,7 +24,6 @@ const MAX_DEPTH: usize = super::MAX_JSON_DEPTH;
 /// object repeats a key, and also when the text is not well-formed JSON(C): the parser reports
 /// that, and so that it does, a text with a syntax fault keeps every copy that does not end
 /// before the fault. Keys compare by their value (`"a"` and `"a"` are one key).
-#[must_use]
 pub fn last_wins(text: &str) -> Cow<'_, str> {
     last_wins_except(text, &[])
 }

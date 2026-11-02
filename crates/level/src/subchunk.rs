@@ -141,7 +141,6 @@ impl Layer {
 
     /// Whether this layer uses the lazy unpacking strategy.
     #[inline]
-    #[must_use]
     pub fn is_lazy(&self) -> bool {
         self.array.is_lazy()
     }
@@ -182,14 +181,12 @@ impl Layer {
     }
 
     /// Determines the index in the palette of the block.
-    #[must_use]
     pub fn palette_index(&self, block: &BlockDef) -> Option<u16> {
         let hash = Self::hash_def(block);
         self.hashes.get(&hash).copied()
     }
 
     /// Whether the palette contains the given block.
-    #[must_use]
     pub fn contains(&self, block: &BlockDef) -> bool {
         let hash = Self::hash_def(block);
         self.hashes.contains_key(&hash)
@@ -197,14 +194,12 @@ impl Layer {
 
     /// Returns the palette used for this chunk
     #[inline]
-    #[must_use]
     pub fn palette(&self) -> &[BlockDef] {
         &self.palette
     }
 
     /// Returns the indices
     #[inline]
-    #[must_use]
     pub fn indices(&self) -> &BitArray {
         &self.array
     }
@@ -276,13 +271,11 @@ impl Layer {
     /// Creates an iterator over the blocks in this layer.
     ///
     /// This iterates over every indices
-    #[must_use]
     pub fn iter(&self) -> LayerIter<'_> {
         LayerIter::from(self)
     }
 
     /// Whether this subchunk layer is empty.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.palette.is_empty()
     }
@@ -320,7 +313,6 @@ where
 ///
 /// These coordinates should be in the range [0, 16) for each component.
 #[inline]
-#[must_use]
 pub const fn to_offset(position: BlockPosition) -> usize {
     16 * 16 * position.0 as usize + 16 * position.2 as usize + position.1 as usize
 }
@@ -329,7 +321,6 @@ pub const fn to_offset(position: BlockPosition) -> usize {
 ///
 /// This offset should be in the range [0, 4096).
 #[inline]
-#[must_use]
 pub const fn from_offset(offset: usize) -> BlockPosition {
     #[expect(
         clippy::cast_possible_truncation,
@@ -373,14 +364,12 @@ impl SubChunk {
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
     #[inline]
-    #[must_use]
     pub fn version(&self) -> SubChunkVersion {
         self.version
     }
 
     /// Vertical index of this subchunk
     #[inline]
-    #[must_use]
     pub fn index(&self) -> i8 {
         self.index
     }
@@ -389,7 +378,6 @@ impl SubChunk {
     ///
     /// Returns `None` if the layer does not exist.
     #[inline]
-    #[must_use]
     pub fn get_layer(&self, index: usize) -> Option<&Layer> {
         self.layers.get(index)
     }

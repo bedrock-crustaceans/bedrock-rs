@@ -639,7 +639,6 @@ fn combine(parsed: Vec<CameraFile>, stack: &StackCx<'_>) -> Cameras {
 
 /// The loader of `bp.cameras()`: the three directories of every behaviour pack, combined into
 /// the group.
-#[must_use]
 pub const fn load_group() -> CollectionLoader<Cameras, CameraFile> {
     CollectionLoader {
         walk: WALK,

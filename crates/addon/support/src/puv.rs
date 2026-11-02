@@ -26,7 +26,6 @@ pub fn puv_below_floor(diagnostics: &mut Diagnostics, written: Option<FormatVers
 }
 
 /// `ShadowedDefinition` (info) at a dropped document.
-#[must_use]
 pub fn shadowed(origin: &Origin) -> Diagnostic {
     Diagnostic::new(
         DiagnosticCode::ShadowedDefinition { text: None },

@@ -54,7 +54,6 @@ impl ImageFormat {
     }
 
     /// The format of a file path whose extension matches in any case.
-    #[must_use]
     pub fn from_path_ignoring_case(path: &str) -> Option<ImageFormat> {
         let lower = path.to_ascii_lowercase();
         Self::from_path(&lower)
@@ -259,7 +258,6 @@ fn ktx(bytes: &[u8]) -> Option<ImageInfo> {
 /// The first bytes of a PNG of this size and colour type (the header is all the reader looks
 /// at): for the tests of this crate and of the crates that read images.
 #[doc(hidden)]
-#[must_use]
 pub fn png_header(width: u32, height: u32, color_type: u8) -> Vec<u8> {
     let mut bytes = b"\x89PNG\r\n\x1a\n\0\0\0\x0dIHDR".to_vec();
     bytes.extend(width.to_be_bytes());

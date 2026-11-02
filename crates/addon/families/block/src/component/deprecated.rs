@@ -56,7 +56,6 @@ pub struct DeprecatedComponents {
 
 impl DeprecatedComponents {
     /// Nothing was moved aside.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self == &DeprecatedComponents::default()
     }

@@ -650,7 +650,6 @@ fn is_base_game(stack: &StackCx<'_>, pack: &PackRef) -> bool {
 
 /// The loader of `bp.biomes()`: `biomes/**/*.json` of every behaviour pack, combined top pack
 /// wins.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Biome>, Contribution<Biome>> {
     CollectionLoader {
         walk: WALK,

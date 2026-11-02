@@ -36,27 +36,23 @@ impl Job {
     }
 
     /// The job's id, matched by the loader when it is fed back.
-    #[must_use]
     pub fn id(&self) -> JobId {
         self.id
     }
 
     /// What kind of work.
-    #[must_use]
     pub fn kind(&self) -> JobKind {
         self.kind
     }
 
     /// Input bytes the job processes: a scheduling hint (run big jobs first, or bound
     /// in-flight bytes).
-    #[must_use]
     pub fn weight(&self) -> u64 {
         self.weight
     }
 
     /// Does the work. Never blocks, never performs I/O, and returns promptly once the loader
     /// it came from has been dropped (cancellation).
-    #[must_use]
     pub fn run(self) -> JobDone {
         let Job {
             id, cancel, work, ..
@@ -91,7 +87,6 @@ pub struct JobDone {
 
 impl JobDone {
     /// The id of the job that produced it.
-    #[must_use]
     pub fn id(&self) -> JobId {
         self.id
     }

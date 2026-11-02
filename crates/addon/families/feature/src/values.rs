@@ -29,7 +29,6 @@ pub enum IntToken {
 
 impl JsonInt {
     /// `value`, written as an integer token.
-    #[must_use]
     pub fn new(value: i32) -> Self {
         JsonInt(value, IntToken::Integer)
     }
@@ -147,7 +146,6 @@ pub enum BlockList {
 
 impl BlockList {
     /// The descriptors, one or many.
-    #[must_use]
     pub fn descriptors(&self) -> &[BlockDescriptor] {
         match self {
             Self::One(one) => std::slice::from_ref(one),
@@ -263,7 +261,6 @@ pub enum ChanceList {
 
 impl ChanceList {
     /// The chances, one or many.
-    #[must_use]
     pub fn chances(&self) -> &[Chance] {
         match self {
             Self::One(one) => std::slice::from_ref(one),

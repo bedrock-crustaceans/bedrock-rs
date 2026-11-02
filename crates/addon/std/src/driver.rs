@@ -263,7 +263,6 @@ impl Driver {
     }
 
     /// The root table.
-    #[must_use]
     pub fn roots(&self) -> &io::Roots {
         &self.roots
     }

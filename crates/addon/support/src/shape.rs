@@ -56,7 +56,6 @@ pub struct Member {
 }
 
 /// A required member.
-#[must_use]
 pub const fn req(key: &'static str, shape: Shape) -> Member {
     Member {
         key,
@@ -66,7 +65,6 @@ pub const fn req(key: &'static str, shape: Shape) -> Member {
 }
 
 /// An optional member.
-#[must_use]
 pub const fn opt(key: &'static str, shape: Shape) -> Member {
     Member {
         key,
@@ -76,7 +74,6 @@ pub const fn opt(key: &'static str, shape: Shape) -> Member {
 }
 
 /// A parse finding at `at`.
-#[must_use]
 pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
     Diagnostic::new(
         code,
@@ -87,13 +84,11 @@ pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagno
 }
 
 /// An error-level parse finding at `at`.
-#[must_use]
 pub fn error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
     finding(code, Severity::Error, at)
 }
 
 /// `base` followed by the member `key`.
-#[must_use]
 pub fn child(base: &JsonPath, key: &str) -> JsonPath {
     let mut path = base.clone();
     path.push(key);
@@ -101,7 +96,6 @@ pub fn child(base: &JsonPath, key: &str) -> JsonPath {
 }
 
 /// `base` followed by the element `index`.
-#[must_use]
 pub fn element(base: &JsonPath, index: usize) -> JsonPath {
     let mut path = base.clone();
     path.push_index(index);
@@ -113,7 +107,6 @@ pub fn element(base: &JsonPath, index: usize) -> JsonPath {
     clippy::unnecessary_wraps,
     reason = "every caller fills a code's optional text"
 )]
-#[must_use]
 pub fn fixed(text: &'static str) -> Option<VanillaText> {
     Some(VanillaText::Fixed(text))
 }
@@ -316,7 +309,6 @@ fn word(text: &str) -> bool {
 }
 
 /// `^\w+:\w+$`: a namespaced name.
-#[must_use]
 pub fn namespace_name(text: &str) -> bool {
     text.split_once(':')
         .is_some_and(|(namespace, name)| word(namespace) && word(name))

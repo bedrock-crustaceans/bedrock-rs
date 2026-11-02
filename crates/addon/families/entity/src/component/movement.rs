@@ -60,7 +60,6 @@ pub struct JumpDynamic {
 impl JumpDynamic {
     /// The skip data the 1.26.0 upgrade writes over any value the author wrote:
     /// [`SkipData::regular_1_26_0`] and [`SkipData::fast_1_26_0`].
-    #[must_use]
     pub fn upgraded_1_26_0() -> Self {
         Self {
             fast_skip_data: SkipData::fast_1_26_0(),
@@ -100,7 +99,6 @@ impl Default for SkipData {
 
 impl SkipData {
     /// Skip data with these values.
-    #[must_use]
     pub fn new(animation_duration: i32, distance_scale: f32, height: f32, jump_delay: i32) -> Self {
         Self {
             animation_duration: StrictInt(animation_duration),
@@ -113,14 +111,12 @@ impl SkipData {
 
     /// The regular jump the 1.26.0 upgrade writes: distance 0.8, height 0.1, delay 20,
     /// animation 3.
-    #[must_use]
     pub fn regular_1_26_0() -> Self {
         Self::new(3, 0.8, 0.1, 20)
     }
 
     /// The fast jump the 1.26.0 upgrade writes: distance 1.75, height 0.15, delay 1,
     /// animation 1.
-    #[must_use]
     pub fn fast_1_26_0() -> Self {
         Self::new(1, 1.75, 0.15, 1)
     }
@@ -414,7 +410,6 @@ impl Default for CollisionBox {
 
 impl CollisionBox {
     /// A box `width` wide and `height` high.
-    #[must_use]
     pub fn new(width: f32, height: f32) -> Self {
         Self {
             height: StrictFloat(height),

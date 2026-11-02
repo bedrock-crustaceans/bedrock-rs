@@ -14,13 +14,11 @@ use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::FormatVersion;
 
 /// The origin of a file read on its own: no pack.
-#[must_use]
 pub fn lone(path: &PackPath) -> Origin {
     origin(PackRef::app_data(), PackSide::Resource, path)
 }
 
 /// The origin of a file of `pack`.
-#[must_use]
 pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::new(pack, side, path.clone(), None, Vec::new())
 }
@@ -38,7 +36,6 @@ pub fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Do
 }
 
 /// A rejection with one finding.
-#[must_use]
 pub fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding);
@@ -57,7 +54,6 @@ pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
 }
 
 /// A finding at `at` inside a file.
-#[must_use]
 pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
     Diagnostic::new(
         code,
@@ -68,7 +64,6 @@ pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagno
 }
 
 /// A finding about the file `path` of `pack` as a whole.
-#[must_use]
 pub fn file_finding(
     code: DiagnosticCode,
     severity: Severity,
@@ -89,13 +84,11 @@ pub fn file_finding(
 }
 
 /// `InvalidValue` without a vanilla text (a finding of the crate's own).
-#[must_use]
 pub fn invalid() -> DiagnosticCode {
     DiagnosticCode::InvalidValue { text: None }
 }
 
 /// `InvalidValue` carrying vanilla's text.
-#[must_use]
 pub fn invalid_text(text: &'static str) -> DiagnosticCode {
     DiagnosticCode::InvalidValue {
         text: Some(VanillaText::Fixed(text)),
@@ -112,7 +105,6 @@ pub fn malformed(message: String, text: Option<&'static str>) -> DiagnosticCode 
 }
 
 /// `at` with the member `key` appended.
-#[must_use]
 pub fn key(at: &JsonPath, key: &str) -> JsonPath {
     let mut path = at.clone();
     path.push(key);
@@ -120,7 +112,6 @@ pub fn key(at: &JsonPath, key: &str) -> JsonPath {
 }
 
 /// `at` with the element `index` appended.
-#[must_use]
 pub fn index(at: &JsonPath, index: usize) -> JsonPath {
     let mut path = at.clone();
     path.push_index(index);
@@ -129,14 +120,12 @@ pub fn index(at: &JsonPath, index: usize) -> JsonPath {
 
 /// The member `key` of an object, a `null` included; `None` for a missing member and for
 /// anything but an object.
-#[must_use]
 pub fn raw_member<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
     value.as_object().and_then(|object| object.get(key))
 }
 
 /// `Json::Value::asString("")`: a string is its text, a boolean `true` / `false`, and null,
 /// numbers, arrays and objects are empty.
-#[must_use]
 pub fn to_text(value: &Value) -> String {
     if let Some(text) = value.as_string() {
         text.as_str().to_owned()
@@ -150,7 +139,6 @@ pub fn to_text(value: &Value) -> String {
 /// What `begin()` / `end()` iterate of a value, each with its path below `at`: the elements of
 /// an array, the member values of an object in key order (jsoncpp's objects are a `std::map`),
 /// nothing for a scalar.
-#[must_use]
 pub fn iterated<'v>(value: &'v Value, at: &JsonPath) -> Vec<(JsonPath, &'v Value)> {
     if let Some(array) = value.as_array() {
         return array
@@ -172,7 +160,6 @@ pub fn iterated<'v>(value: &'v Value, at: &JsonPath) -> Vec<(JsonPath, &'v Value
 
 /// jsoncpp's `isInt` for a member read into an `i32`: a number written without a fraction or
 /// an exponent, in `i32`.
-#[must_use]
 pub fn as_int(value: &Value) -> Option<i32> {
     let number = value.as_number()?;
     if number.is_float() {
@@ -182,7 +169,6 @@ pub fn as_int(value: &Value) -> Option<i32> {
 }
 
 /// jsoncpp's `isDouble`: a number written as a real.
-#[must_use]
 pub fn as_real(value: &Value) -> Option<f64> {
     let number = value.as_number()?;
     if number.is_float() {
@@ -240,7 +226,6 @@ impl Object {
     }
 
     /// The object.
-    #[must_use]
     pub fn finish(self) -> Value {
         self.0.into_value()
     }

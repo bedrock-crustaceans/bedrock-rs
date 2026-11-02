@@ -4,7 +4,6 @@ use super::{KeyFilter, LangFile, LangLayout, Language, Line, RESERVED_KEYS, Tran
 
 impl LangFile {
     /// An empty file of `language`.
-    #[must_use]
     pub fn new(language: Language) -> Self {
         Self {
             language,
@@ -37,7 +36,6 @@ impl Line {
 
 impl Translations {
     /// An empty table.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -59,7 +57,6 @@ impl<'a> KeyFilter<'a> {
     /// under `prefix` (the pack's [`pack_key_prefix`](super::pack_key_prefix)).
     // The game's pack loader allows its reserved pack keys plus extra ones. The extra keys (format-3 settings and subpack names) are the
     // caller's to add: `include` is a public field.
-    #[must_use]
     pub const fn pack_keywords(prefix: &'a str) -> Self {
         KeyFilter {
             exclude: &[],

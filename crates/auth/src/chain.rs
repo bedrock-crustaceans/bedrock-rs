@@ -21,7 +21,6 @@ impl ChainRoot {
         Self(Cow::Owned(public_key_base64.into()))
     }
 
-    #[must_use]
     pub fn public_key_base64(&self) -> &str {
         &self.0
     }

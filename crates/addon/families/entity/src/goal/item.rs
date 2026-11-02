@@ -61,7 +61,6 @@ pub struct AdmireItem {
 
 impl AdmireItem {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -72,7 +71,6 @@ impl AdmireItem {
     }
 
     /// `sound_interval`, or its default 0 to 0.
-    #[must_use]
     pub fn sound_interval(&self) -> (f32, f32) {
         self.sound_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
@@ -130,7 +128,6 @@ pub struct Barter {
 
 impl Barter {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -173,7 +170,6 @@ pub struct ChargeHeldItem {
 
 impl ChargeHeldItem {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -228,13 +224,11 @@ pub struct DrinkMilk {
 
 impl DrinkMilk {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown_seconds`, or its default 5.
-    #[must_use]
     pub fn cooldown_seconds(&self) -> f32 {
         self.cooldown_seconds.map_or(5.0, |v| v.0)
     }
@@ -281,13 +275,11 @@ pub struct DrinkPotion {
 
 impl DrinkPotion {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `speed_modifier`, or its default 0.
-    #[must_use]
     pub fn speed_modifier(&self) -> f32 {
         self.speed_modifier.map_or(0.0, |v| v.0)
     }
@@ -402,86 +394,72 @@ pub struct DropItemFor {
 
 impl DropItemFor {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `cooldown`, or its default 0.25.
-    #[must_use]
     pub fn cooldown(&self) -> f32 {
         self.cooldown.map_or(0.25, |v| v.0)
     }
 
     /// `drop_item_chance`, or its default 1.
-    #[must_use]
     pub fn drop_item_chance(&self) -> f32 {
         self.drop_item_chance.map_or(1.0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `loot_table`, or its default `""`.
-    #[must_use]
     pub fn loot_table(&self) -> &str {
         self.loot_table.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `max_head_look_at_height`, or its default 1e+01.
-    #[must_use]
     pub fn max_head_look_at_height(&self) -> f32 {
         self.max_head_look_at_height.map_or(1.0e1, |v| v.0)
     }
 
     /// `minimum_teleport_distance`, or its default 2.
-    #[must_use]
     pub fn minimum_teleport_distance(&self) -> f32 {
         self.minimum_teleport_distance.map_or(2.0, |v| v.0)
     }
 
     /// `offering_distance`, or its default 1.
-    #[must_use]
     pub fn offering_distance(&self) -> f32 {
         self.offering_distance.map_or(1.0, |v| v.0)
     }
 
     /// `search_count`, or its default 0.
     // The goal's own default (the game's 1.26.10 schema), not the base shape's.
-    #[must_use]
     pub fn search_count(&self) -> i32 {
         self.search_count.map_or(0, |v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `search_range`, or its default 0.
-    #[must_use]
     pub fn search_range(&self) -> i32 {
         self.search_range.map_or(0, |v| v.0)
     }
 
     /// `seconds_before_pickup`, or its default 0.
-    #[must_use]
     pub fn seconds_before_pickup(&self) -> f32 {
         self.seconds_before_pickup.map_or(0.0, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `target_range`, or its default `[1, 1, 1]`.
-    #[must_use]
     pub fn target_range(&self) -> [f32; 3] {
         self.target_range
             .as_ref()
@@ -489,7 +467,6 @@ impl DropItemFor {
     }
 
     /// `teleport_offset`, or its default `[0, 1, 0]`.
-    #[must_use]
     pub fn teleport_offset(&self) -> [f32; 3] {
         self.teleport_offset
             .as_ref()
@@ -497,7 +474,6 @@ impl DropItemFor {
     }
 
     /// `time_of_day_range`, or its default 0 to 1.
-    #[must_use]
     pub fn time_of_day_range(&self) -> (f32, f32) {
         self.time_of_day_range
             .map_or((0.0, 1.0), |range| range.resolve(0.0, 1.0))
@@ -611,13 +587,11 @@ pub struct EatBlock {
 
 impl EatBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `time_until_eat`, or its default 1.8.
-    #[must_use]
     pub fn time_until_eat(&self) -> f32 {
         self.time_until_eat.map_or(1.8, |v| v.0)
     }
@@ -684,13 +658,11 @@ pub struct EatCarriedItem {
 
 impl EatCarriedItem {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `delay_before_eating`, or its default 0.
-    #[must_use]
     pub fn delay_before_eating(&self) -> f32 {
         self.delay_before_eating.map_or(0.0, |v| v.0)
     }
@@ -735,7 +707,6 @@ pub struct EquipItem {
 
 impl EquipItem {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
@@ -801,31 +772,26 @@ pub struct GoAndGiveItemsToNoteblock {
 
 impl GoAndGiveItemsToNoteblock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `listen_time`, or its default 30.
-    #[must_use]
     pub fn listen_time(&self) -> i32 {
         self.listen_time.map_or(30, |v| v.0)
     }
 
     /// `reach_block_distance`, or its default 3.
-    #[must_use]
     pub fn reach_block_distance(&self) -> f32 {
         self.reach_block_distance.map_or(3.0, |v| v.0)
     }
 
     /// `run_speed`, or its default 1.
-    #[must_use]
     pub fn run_speed(&self) -> f32 {
         self.run_speed.map_or(1.0, |v| v.0)
     }
 
     /// `throw_force`, or its default 0.2.
-    #[must_use]
     pub fn throw_force(&self) -> f32 {
         self.throw_force.map_or(0.2, |v| v.0)
     }
@@ -836,7 +802,6 @@ impl GoAndGiveItemsToNoteblock {
     }
 
     /// `vertical_throw_mul`, or its default 1.5.
-    #[must_use]
     pub fn vertical_throw_mul(&self) -> f32 {
         self.vertical_throw_mul.map_or(1.5, |v| v.0)
     }
@@ -909,25 +874,21 @@ pub struct GoAndGiveItemsToOwner {
 
 impl GoAndGiveItemsToOwner {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `reach_mob_distance`, or its default 3.
-    #[must_use]
     pub fn reach_mob_distance(&self) -> f32 {
         self.reach_mob_distance.map_or(3.0, |v| v.0)
     }
 
     /// `run_speed`, or its default 1.
-    #[must_use]
     pub fn run_speed(&self) -> f32 {
         self.run_speed.map_or(1.0, |v| v.0)
     }
 
     /// `throw_force`, or its default 0.2.
-    #[must_use]
     pub fn throw_force(&self) -> f32 {
         self.throw_force.map_or(0.2, |v| v.0)
     }
@@ -938,7 +899,6 @@ impl GoAndGiveItemsToOwner {
     }
 
     /// `vertical_throw_mul`, or its default 1.5.
-    #[must_use]
     pub fn vertical_throw_mul(&self) -> f32 {
         self.vertical_throw_mul.map_or(1.5, |v| v.0)
     }
@@ -1006,37 +966,31 @@ pub struct OfferFlower {
 
 impl OfferFlower {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `chance_to_start`, or its default 0.000125.
-    #[must_use]
     pub fn chance_to_start(&self) -> f32 {
         self.chance_to_start.map_or(0.000_125, |v| v.0)
     }
 
     /// `max_head_rotation_y`, or its default 3e+01.
-    #[must_use]
     pub fn max_head_rotation_y(&self) -> f32 {
         self.max_head_rotation_y.map_or(3.0e1, |v| v.0)
     }
 
     /// `max_offer_flower_duration`, or its default 2e+01.
-    #[must_use]
     pub fn max_offer_flower_duration(&self) -> f32 {
         self.max_offer_flower_duration.map_or(2.0e1, |v| v.0)
     }
 
     /// `max_rotation_x`, or its default 3e+01.
-    #[must_use]
     pub fn max_rotation_x(&self) -> f32 {
         self.max_rotation_x.map_or(3.0e1, |v| v.0)
     }
 
     /// `search_area`, or its default `[6, 2, 6]`.
-    #[must_use]
     pub fn search_area(&self) -> [f32; 3] {
         self.search_area
             .as_ref()
@@ -1143,73 +1097,61 @@ pub struct PickupItems {
 
 impl PickupItems {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `can_pickup_any_item`, or its default `false`.
-    #[must_use]
     pub fn can_pickup_any_item(&self) -> bool {
         self.can_pickup_any_item.is_some_and(|v| v.0)
     }
 
     /// `can_pickup_to_hand_or_equipment`, or its default `true`.
-    #[must_use]
     pub fn can_pickup_to_hand_or_equipment(&self) -> bool {
         self.can_pickup_to_hand_or_equipment.is_none_or(|v| v.0)
     }
 
     /// `cooldown_after_being_attacked`, or its default 0.
-    #[must_use]
     pub fn cooldown_after_being_attacked(&self) -> i32 {
         self.cooldown_after_being_attacked.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `max_dist`, or its default 1.
-    #[must_use]
     pub fn max_dist(&self) -> i32 {
         self.max_dist.map_or(1, |v| v.0)
     }
 
     /// `pickup_based_on_chance`, or its default `false`.
-    #[must_use]
     pub fn pickup_based_on_chance(&self) -> bool {
         self.pickup_based_on_chance.is_some_and(|v| v.0)
     }
 
     /// `pickup_same_items_as_in_hand`, or its default `false`.
-    #[must_use]
     pub fn pickup_same_items_as_in_hand(&self) -> bool {
         self.pickup_same_items_as_in_hand.is_some_and(|v| v.0)
     }
 
     /// `search_height`, or its default 1.
-    #[must_use]
     pub fn search_height(&self) -> i32 {
         self.search_height.map_or(1, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
 
     /// `stop_if_holding_item`, or its default `false`.
-    #[must_use]
     pub fn stop_if_holding_item(&self) -> bool {
         self.stop_if_holding_item.is_some_and(|v| v.0)
     }
 
     /// `track_target`, or its default `false`.
-    #[must_use]
     pub fn track_target(&self) -> bool {
         self.track_target.is_some_and(|v| v.0)
     }
@@ -1303,31 +1245,26 @@ pub struct PlaceBlock {
 
 impl PlaceBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `affected_by_griefing_rule`, or its default `true`.
-    #[must_use]
     pub fn affected_by_griefing_rule(&self) -> bool {
         self.affected_by_griefing_rule.is_none_or(|v| v.0)
     }
 
     /// `chance`, or its default 1.
-    #[must_use]
     pub fn chance(&self) -> f32 {
         self.chance.map_or(1.0, |v| v.0)
     }
 
     /// `xz_range`, or its default -2 to 2.
-    #[must_use]
     pub fn xz_range(&self) -> (i32, i32) {
         self.xz_range.map_or((-2, 2), |range| range.resolve(-2, 2))
     }
 
     /// `y_range`, or its default 0 to 3.
-    #[must_use]
     pub fn y_range(&self) -> (i32, i32) {
         self.y_range.map_or((0, 3), |range| range.resolve(0, 3))
     }
@@ -1406,25 +1343,21 @@ pub struct ShareItems {
 
 impl ShareItems {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `goal_radius`, or its default 0.5.
-    #[must_use]
     pub fn goal_radius(&self) -> f32 {
         self.goal_radius.map_or(0.5, |v| v.0)
     }
 
     /// `max_dist`, or its default 1.
-    #[must_use]
     pub fn max_dist(&self) -> i32 {
         self.max_dist.map_or(1, |v| v.0)
     }
 
     /// `speed_multiplier`, or its default 1.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(1.0, |v| v.0)
     }
@@ -1477,25 +1410,21 @@ pub struct Snacking {
 
 impl Snacking {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `snacking_cooldown`, or its default 7.5.
-    #[must_use]
     pub fn snacking_cooldown(&self) -> f32 {
         self.snacking_cooldown.map_or(7.5, |v| v.0)
     }
 
     /// `snacking_cooldown_min`, or its default 0.5.
-    #[must_use]
     pub fn snacking_cooldown_min(&self) -> f32 {
         self.snacking_cooldown_min.map_or(0.5, |v| v.0)
     }
 
     /// `snacking_stop_chance`, or its default 0.0016666667.
-    #[must_use]
     pub fn snacking_stop_chance(&self) -> f32 {
         self.snacking_stop_chance.map_or(0.001_666_666_7, |v| v.0)
     }
@@ -1567,37 +1496,31 @@ pub struct TakeBlock {
 
 impl TakeBlock {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `affected_by_griefing_rule`, or its default `true`.
-    #[must_use]
     pub fn affected_by_griefing_rule(&self) -> bool {
         self.affected_by_griefing_rule.is_none_or(|v| v.0)
     }
 
     /// `chance`, or its default 1.
-    #[must_use]
     pub fn chance(&self) -> f32 {
         self.chance.map_or(1.0, |v| v.0)
     }
 
     /// `requires_line_of_sight`, or its default `true`.
-    #[must_use]
     pub fn requires_line_of_sight(&self) -> bool {
         self.requires_line_of_sight.is_none_or(|v| v.0)
     }
 
     /// `xz_range`, or its default -2 to 2.
-    #[must_use]
     pub fn xz_range(&self) -> (i32, i32) {
         self.xz_range.map_or((-2, 2), |range| range.resolve(-2, 2))
     }
 
     /// `y_range`, or its default 0 to 3.
-    #[must_use]
     pub fn y_range(&self) -> (i32, i32) {
         self.y_range.map_or((0, 3), |range| range.resolve(0, 3))
     }
@@ -1680,43 +1603,36 @@ pub struct TakeFlower {
 
 impl TakeFlower {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `max_head_rotation_y`, or its default 3e+01.
-    #[must_use]
     pub fn max_head_rotation_y(&self) -> f32 {
         self.max_head_rotation_y.map_or(3.0e1, |v| v.0)
     }
 
     /// `max_rotation_x`, or its default 3e+01.
-    #[must_use]
     pub fn max_rotation_x(&self) -> f32 {
         self.max_rotation_x.map_or(3.0e1, |v| v.0)
     }
 
     /// `max_wait_time`, or its default 2e+01.
-    #[must_use]
     pub fn max_wait_time(&self) -> f32 {
         self.max_wait_time.map_or(2.0e1, |v| v.0)
     }
 
     /// `min_distance_to_target`, or its default 2.
-    #[must_use]
     pub fn min_distance_to_target(&self) -> f32 {
         self.min_distance_to_target.map_or(2.0, |v| v.0)
     }
 
     /// `min_wait_time`, or its default 4.
-    #[must_use]
     pub fn min_wait_time(&self) -> f32 {
         self.min_wait_time.map_or(4.0, |v| v.0)
     }
 
     /// `search_area`, or its default `[6, 2, 6]`.
-    #[must_use]
     pub fn search_area(&self) -> [f32; 3] {
         self.search_area
             .as_ref()
@@ -1724,7 +1640,6 @@ impl TakeFlower {
     }
 
     /// `speed_multiplier`, or its default 0.5.
-    #[must_use]
     pub fn speed_multiplier(&self) -> f32 {
         self.speed_multiplier.map_or(0.5, |v| v.0)
     }
@@ -1803,13 +1718,11 @@ pub struct TradeWithPlayer {
 
 impl TradeWithPlayer {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `max_distance_from_player`, or its default 8.
-    #[must_use]
     pub fn max_distance_from_player(&self) -> f32 {
         self.max_distance_from_player.map_or(8.0, |v| v.0)
     }
@@ -1894,55 +1807,46 @@ pub struct TransportItems {
 
 impl TransportItems {
     /// `priority`, or its default 0.
-    #[must_use]
     pub fn priority(&self) -> i32 {
         self.priority.map_or(0, |v| v.0)
     }
 
     /// `allow_simultaneous_interaction`, or its default `false`.
-    #[must_use]
     pub fn allow_simultaneous_interaction(&self) -> bool {
         self.allow_simultaneous_interaction.is_some_and(|v| v.0)
     }
 
     /// `idle_cooldown`, or its default 20.
-    #[must_use]
     pub fn idle_cooldown(&self) -> u32 {
         self.idle_cooldown.map_or(20, |v| v.0)
     }
 
     /// `initial_cooldown`, or its default 0.
-    #[must_use]
     pub fn initial_cooldown(&self) -> u32 {
         self.initial_cooldown.map_or(0, |v| v.0)
     }
 
     /// `interaction_time`, or its default 3.
-    #[must_use]
     pub fn interaction_time(&self) -> f32 {
         self.interaction_time.map_or(3.0, |v| v.0)
     }
 
     /// `max_stack_size`, or its default 64.
-    #[must_use]
     pub fn max_stack_size(&self) -> u32 {
         self.max_stack_size.map_or(64, |v| v.0)
     }
 
     /// `max_visited_containers`, or its default 16.
-    #[must_use]
     pub fn max_visited_containers(&self) -> u32 {
         self.max_visited_containers.map_or(16, |v| v.0)
     }
 
     /// `place_strategy`, or its default `any`.
-    #[must_use]
     pub fn place_strategy(&self) -> PlaceStrategy {
         self.place_strategy.unwrap_or(PlaceStrategy::Any)
     }
 
     /// `search_distance`, or its default `[64, 32]`.
-    #[must_use]
     pub fn search_distance(&self) -> [f32; 2] {
         self.search_distance
             .as_ref()
@@ -1950,7 +1854,6 @@ impl TransportItems {
     }
 
     /// `search_strategy`, or its default `random`.
-    #[must_use]
     pub fn search_strategy(&self) -> SearchStrategy {
         self.search_strategy.unwrap_or(SearchStrategy::Random)
     }
@@ -2039,13 +1942,11 @@ pub struct Potion {
 
 impl Potion {
     /// `chance`, or its default 1.
-    #[must_use]
     pub fn chance(&self) -> f32 {
         self.chance.map_or(1.0, |v| v.0)
     }
 
     /// `id`, or its default -1.
-    #[must_use]
     pub fn id(&self) -> i32 {
         self.id.map_or(-1, |v| v.0)
     }
@@ -2074,13 +1975,11 @@ pub struct EatAndReplaceBlockPair {
 
 impl EatAndReplaceBlockPair {
     /// `eat_block`, or its default `""`.
-    #[must_use]
     pub fn eat_block(&self) -> &str {
         self.eat_block.as_ref().map_or("", |v| v.0.as_str())
     }
 
     /// `replace_block`, or its default `""`.
-    #[must_use]
     pub fn replace_block(&self) -> &str {
         self.replace_block.as_ref().map_or("", |v| v.0.as_str())
     }
@@ -2111,7 +2010,6 @@ pub struct WeightedBlock {
 
 impl WeightedBlock {
     /// `weight`, or its default 1.
-    #[must_use]
     pub fn weight(&self) -> i32 {
         self.weight.map_or(1, |v| v.0)
     }

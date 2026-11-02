@@ -20,7 +20,6 @@ impl Language {
     }
 
     /// The code as written (`en_US`).
-    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -30,7 +29,6 @@ impl Language {
     /// whose login code fails this; codes read from a pack are never checked.
     // Only the code a client logs in with is checked, when a player is created; codes read
     // from a pack are never checked.
-    #[must_use]
     pub fn is_valid_code(&self) -> bool {
         match self.as_str().as_bytes() {
             [a, b, b'_', c, d] => {

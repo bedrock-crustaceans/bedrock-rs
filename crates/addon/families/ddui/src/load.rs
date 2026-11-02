@@ -991,7 +991,6 @@ pub(crate) fn combine(parsed: Vec<UiFile>, stack: &StackCx<'_>) -> DataDrivenUi 
 
 /// The loader of `rp.data_driven_ui()`: the three directories of every resource pack, combined
 /// into the group.
-#[must_use]
 pub const fn load_group() -> CollectionLoader<DataDrivenUi, UiFile> {
     CollectionLoader {
         walk: WALK,

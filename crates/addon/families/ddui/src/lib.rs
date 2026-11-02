@@ -192,14 +192,12 @@ pub struct Control {
 
 impl Control {
     /// The controls directly below this one; none when it writes no `children`.
-    #[must_use]
     pub fn children(&self) -> &[Control] {
         self.children.as_deref().unwrap_or_default()
     }
 
     /// The name an `ExtensionPoint` control declares: its `attribs.name`, when that is a
     /// string. `None` for every other control.
-    #[must_use]
     pub fn extension_point_name(&self) -> Option<&str> {
         if self.component != Component::ExtensionPoint {
             return None;

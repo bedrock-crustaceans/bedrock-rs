@@ -272,7 +272,6 @@ impl Reported for Fonts {
 
 /// The loader of `rp.fonts()`: `font/font_metadata.json` and `font/emoticons.json` of every
 /// resource pack. The other font files are known from each pack's listing; none is read.
-#[must_use]
 pub const fn load_fonts() -> CollectionLoader<Fonts, FontCopy> {
     CollectionLoader {
         walk: Walk {

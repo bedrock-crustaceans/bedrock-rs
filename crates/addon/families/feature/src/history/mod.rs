@@ -41,7 +41,6 @@ pub enum Any {
 
 impl Any {
     /// The payload key of the document's feature type.
-    #[must_use]
     pub fn type_key(&self) -> &'static str {
         match self {
             Self::ScatterV1_13_0(_) => "minecraft:scatter_feature",
@@ -52,7 +51,6 @@ impl Any {
     }
 
     /// The feature's identifier (`description.identifier`).
-    #[must_use]
     pub fn identifier(&self) -> &FeatureId {
         match self {
             Self::ScatterV1_13_0(value) => &value.description.identifier,
@@ -63,7 +61,6 @@ impl Any {
     }
 
     /// The version of the struct that parsed the document.
-    #[must_use]
     pub fn parsed_version(&self) -> FormatVersion {
         match self {
             Self::ScatterV1_13_0(_)

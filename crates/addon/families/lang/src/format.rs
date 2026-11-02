@@ -54,7 +54,6 @@ impl Translations {
     /// `%%` is one `%`. A parameter that starts with `%` and names a key is that key's value.
     /// The parameters then fill the placeholders ([`replace_tokens`]).
     // `Localization::_get`.
-    #[must_use]
     pub fn format(&self, id: &str, params: &[&str]) -> Option<String> {
         let text = if id.contains('%') {
             self.expand_keys(id)
@@ -128,7 +127,6 @@ impl Translations {
 ///
 /// `%%` is not an escape: `+%d%% %s` with `5` and `Speed` is `+5%% Speed`.
 // `Localization::replaceTokens`.
-#[must_use]
 pub fn replace_tokens(value: &str, params: &[&str]) -> String {
     if params.is_empty() {
         return value.to_owned();

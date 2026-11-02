@@ -211,7 +211,6 @@ impl<S: Side> PackStack<S> {
     }
 
     /// The options the stack was built with.
-    #[must_use]
     pub fn options(&self) -> &LoadOptions {
         &self.options
     }
@@ -227,7 +226,6 @@ impl<S: Side> PackStack<S> {
     /// listed once, by the first collection that walks it, though every collection that walks
     /// it keeps the `ReadError` among its own loader findings (not among its diagnostics).
     /// Collections not loaded yet are not loaded by it.
-    #[must_use]
     pub fn report(&self) -> StackReport<'_> {
         let mut findings: Vec<&Diagnostic> = self.selection.iter().collect();
         findings.extend(self.icons.iter());

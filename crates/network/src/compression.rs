@@ -42,7 +42,6 @@ impl Compression {
     /// Used in the [`NetworkSettingsPacket`](crate::version::v729::packets::network_settings::NetworkSettingsPacket)
     /// to identify which `Compression` should be used for the `Connection`.
     #[inline]
-    #[must_use]
     pub const fn id_u16(&self) -> u16 {
         match self {
             Compression::Zlib { .. } => Self::ALGORITHM_ZLIB,
@@ -70,7 +69,6 @@ impl Compression {
         }
     }
 
-    #[must_use]
     pub fn id(&self) -> u8 {
         match self {
             Compression::Zlib { .. } => Self::ID_ZLIB,
@@ -81,7 +79,6 @@ impl Compression {
 
     /// Get the compression threshold of the Compression.
     #[inline]
-    #[must_use]
     pub fn threshold(&self) -> u16 {
         match self {
             Compression::Zlib { threshold, .. } | Compression::Snappy { threshold } => *threshold,

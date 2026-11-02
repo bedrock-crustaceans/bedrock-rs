@@ -32,7 +32,6 @@ pub enum Stored {
 
 /// How the reader stores `value`. A number is an integer or a real by its spelling, so `1` and
 /// `1.0` differ as they do for `isInt()` and `isDouble()`.
-#[must_use]
 pub fn stored(value: &Value) -> Stored {
     if value.is_null() {
         Stored::Null
@@ -69,7 +68,6 @@ fn number(value: &Value) -> Option<f64> {
     clippy::cast_possible_truncation,
     reason = "vanilla narrows the double to a float"
 )]
-#[must_use]
 pub fn as_float(value: &Value, default: f32) -> f32 {
     match stored(value) {
         Stored::Null => default,
@@ -81,7 +79,6 @@ pub fn as_float(value: &Value, default: f32) -> f32 {
 
 /// `asBool(default)`: a bool as is, a number whether it is not zero, a string, array or object
 /// whether it is not empty (so `"false"` is true), `null` the default.
-#[must_use]
 pub fn as_bool(value: &Value, default: bool) -> bool {
     match stored(value) {
         Stored::Null => default,
@@ -114,7 +111,6 @@ pub fn as_int(value: &Value, default: i32) -> i32 {
 
 /// `asString()`: a string as is, a bool `"true"` or `"false"`, and `null`, a number, an array
 /// or an object `""`.
-#[must_use]
 pub fn to_text(value: &Value) -> String {
     match stored(value) {
         Stored::String => text(value).unwrap_or_default().to_owned(),
@@ -125,7 +121,6 @@ pub fn to_text(value: &Value) -> String {
 
 /// The const `operator[]`: the member `key` of an object, and `null` for a missing member or
 /// a value that is no object. Nothing is changed.
-#[must_use]
 pub fn member<'a>(value: &'a Value, key: &str) -> &'a Value {
     value
         .as_object()
@@ -134,7 +129,6 @@ pub fn member<'a>(value: &'a Value, key: &str) -> &'a Value {
 }
 
 /// Whether `value` is an object with a member `key` (`isMember`).
-#[must_use]
 pub fn has_member(value: &Value, key: &str) -> bool {
     value
         .as_object()
@@ -175,7 +169,6 @@ pub fn member_names(value: &Value) -> Vec<String> {
 /// What a `begin()` / `end()` walk visits: the elements of an array, the member values of an
 /// object in sorted key order, and nothing for a scalar. Vanilla walks its lists without an
 /// `isArray()` check.
-#[must_use]
 pub fn elements(value: &Value) -> Vec<&Value> {
     if let Some(array) = value.as_array() {
         array.as_slice().iter().collect()

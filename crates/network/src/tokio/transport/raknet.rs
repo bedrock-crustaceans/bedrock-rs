@@ -19,7 +19,6 @@ impl From<RakSession> for RakNetConnection {
 }
 
 impl RakNetConnection {
-    #[must_use]
     pub fn dialled(session: RakSession, client: RakClient) -> Self {
         Self {
             session,

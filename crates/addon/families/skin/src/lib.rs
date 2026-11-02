@@ -97,7 +97,6 @@ fn text<'a>(typed: Option<&'a String>, extra: &'a Extra, name: &str) -> Cow<'a, 
 
 impl SkinPack {
     /// The pack's name as the game reads `localization_name`; empty when absent.
-    #[must_use]
     pub fn name(&self) -> Cow<'_, str> {
         text(
             self.localization_name.as_ref(),
@@ -109,7 +108,6 @@ impl SkinPack {
 
 impl Skin {
     /// The skin's name as the game reads `localization_name`; empty when absent.
-    #[must_use]
     pub fn name(&self) -> Cow<'_, str> {
         text(
             self.localization_name.as_ref(),
@@ -119,21 +117,18 @@ impl Skin {
     }
 
     /// The model name as the game reads `geometry`.
-    #[must_use]
     pub fn geometry_name(&self) -> Cow<'_, str> {
         text(self.geometry.as_ref(), &self.extra, "geometry")
     }
 
     /// The path of the skin image as the game reads `texture`. A path too long for the
     /// game's buffer (1024 bytes and more) reads as empty.
-    #[must_use]
     pub fn texture_path(&self) -> Cow<'_, str> {
         fits(text(self.texture.as_ref(), &self.extra, "texture"))
     }
 
     /// The path of the cape image as the game reads `cape`; `None` when the skin has no
     /// `cape` member or its reading is empty.
-    #[must_use]
     pub fn cape_path(&self) -> Option<Cow<'_, str>> {
         let written = self.cape.is_some() || self.extra.get("cape").is_some();
         let path = fits(text(self.cape.as_ref(), &self.extra, "cape"));
@@ -142,7 +137,6 @@ impl Skin {
 
     /// The skin's type for a pack that came from `origin`: `type` as the game reads it, and
     /// `free` whatever is written for a pack the user or a developer supplied.
-    #[must_use]
     pub fn effective_type(&self, origin: PackOrigin) -> Cow<'_, str> {
         if matches!(origin, PackOrigin::User | PackOrigin::Dev) {
             Cow::Borrowed("free")
@@ -152,7 +146,6 @@ impl Skin {
     }
 
     /// Whether the skin uses one of the game's own two models.
-    #[must_use]
     pub fn uses_built_in_geometry(&self) -> bool {
         BUILT_IN_GEOMETRIES.contains(&self.geometry_name().as_ref())
     }

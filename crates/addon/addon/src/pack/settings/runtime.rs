@@ -57,7 +57,6 @@ pub enum SetError {
 impl SetError {
     /// The diagnostic code of the refusal: `SettingUnknownName`, `SettingTypeMismatch` or
     /// `SettingUnknownOption`; `InvalidValue` for a number that is not finite.
-    #[must_use]
     pub fn code(self) -> DiagnosticCode {
         match self {
             Self::UnknownName => DiagnosticCode::SettingUnknownName,
@@ -189,27 +188,23 @@ impl PackSettings {
     }
 
     /// The pack's header UUID.
-    #[must_use]
     pub fn pack_id(&self) -> Uuid {
         self.pack_id
     }
 
     /// Every named setting in manifest order, with its value and its default; a label has no
     /// entry, and a repeated name keeps its first definition.
-    #[must_use]
     pub fn values(&self) -> &IndexMap<String, SettingValueAndDefault> {
         &self.values
     }
 
     /// The saved entry's `last_used`, 0 without one. Vanilla stamps the time the values were
     /// last requested; nothing here has a clock.
-    #[must_use]
     pub fn last_used(&self) -> u64 {
         self.last_used
     }
 
     /// The current value of the setting `name`.
-    #[must_use]
     pub fn value(&self, name: &str) -> Option<&SettingValue> {
         self.values.get(name).map(|entry| &entry.value)
     }
@@ -253,7 +248,6 @@ impl PackSettings {
 
     /// The values that differ from their defaults, sorted by name: what a save stores for the
     /// pack (vanilla keeps them in a map ordered by name).
-    #[must_use]
     pub fn changed(&self) -> IndexMap<String, SettingValue> {
         let mut changed: IndexMap<String, SettingValue> = self
             .values
@@ -357,7 +351,6 @@ fn report(d: &mut Diagnostics, code: DiagnosticCode, severity: Severity, name: &
 /// An entry with the nil UUID is not told: its `pack_id` was no UUID, which the load already
 /// reported.
 // A proposed rule: no folder rule; the game keeps the entry and logs nothing.
-#[must_use]
 pub fn unmatched_entries(saved: &Document<SavedSettings>, set: &StackSet) -> Diagnostics {
     let origin = saved.origin();
     let on_stack: std::collections::HashSet<Uuid> = match origin.side {

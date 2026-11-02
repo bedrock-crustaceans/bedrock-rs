@@ -7,7 +7,6 @@ use super::{KeyFilter, LangFile, Language, Translations, is_pack_keyword};
 
 /// The prefix a pack's keywords are stored under: the header UUID followed directly by the
 /// header version, with no separator (`ee649bcf-256c-4013-9068-6a802b89d7560.0.1`).
-#[must_use]
 pub fn pack_key_prefix(pack: &PackIdVersion) -> String {
     // `_generatePackKeyPrefix`: `getIdentity().mId.asString()` followed directly by
     // `getIdentity().mVersion.asString()`. The two text formats are
@@ -42,7 +41,6 @@ pub fn pack_keyword_value<'a>(
 impl LangFile {
     /// The keywords `pack` reads of this file for its manifest: `pack.name` and
     /// `pack.description`, stored under the pack's [`pack_key_prefix`].
-    #[must_use]
     pub fn pack_keywords(&self, pack: &PackIdVersion) -> Translations {
         self.select(&KeyFilter::pack_keywords(&pack_key_prefix(pack)))
     }

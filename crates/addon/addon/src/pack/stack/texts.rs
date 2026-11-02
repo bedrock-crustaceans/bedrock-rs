@@ -11,7 +11,6 @@ impl<S: Side> PackStack<S> {
     /// pack keyword; for a keyword, its value in the first of `tables` (the current language,
     /// then the base language) that the pack's own `texts/languages.json` lists and whose
     /// table has it; otherwise the keyword itself.
-    #[must_use]
     pub fn pack_keyword_value<'a>(
         &self,
         text: &'a str,

@@ -29,7 +29,6 @@ impl std::fmt::Write for Spelling {
     clippy::float_cmp,
     reason = "the narrowing is what is asked about, and it is exact or it is not"
 )]
-#[must_use]
 pub fn narrows(number: f64) -> bool {
     let nearest = number as f32;
     if !nearest.is_finite() || f64::from(nearest) == number {

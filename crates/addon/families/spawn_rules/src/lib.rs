@@ -48,7 +48,6 @@ pub enum SpawnRules {
 
 impl SpawnRules {
     /// The entity the rules are for (`description.identifier`).
-    #[must_use]
     pub fn identifier(&self) -> &SpawnRulesId {
         match self {
             Self::Standard(rules) => &rules.description.identifier,
@@ -96,7 +95,6 @@ pub struct StandardDescription {
 
 impl StandardSpawnRules {
     /// The version the document is read at: its `format_version`, 1.8.0 when absent.
-    #[must_use]
     pub fn effective_version(&self) -> FormatVersion {
         self.format_version.unwrap_or(FormatVersion::new(1, 8, 0))
     }

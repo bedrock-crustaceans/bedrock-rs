@@ -33,7 +33,6 @@ impl AudioExt {
     pub const PROBE_ORDER: [Self; 3] = [Self::Fsb, Self::Ogg, Self::Wav];
 
     /// The extension with its dot.
-    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Fsb => ".fsb",
@@ -82,7 +81,6 @@ pub enum AudioContainer {
 
 impl AudioContainer {
     /// The container of a file that starts with `head`.
-    #[must_use]
     pub fn sniff(head: &[u8]) -> Self {
         let word = |at: usize| {
             head.get(at..at + 4)
@@ -116,7 +114,6 @@ impl AudioContainer {
 
     /// Whether the client plays a file with extension `ext` that holds this container: an
     /// `FSB5` bank under `.fsb`, Ogg Vorbis under `.ogg`, RIFF WAVE under `.wav`.
-    #[must_use]
     pub fn fits(self, ext: AudioExt) -> bool {
         matches!(
             (ext, self),
@@ -169,7 +166,6 @@ pub struct SoundFiles {
 
 impl SoundFiles {
     /// The file `name` resolves to.
-    #[must_use]
     pub fn get(&self, name: &str) -> Option<&SoundAsset> {
         self.by_name.get(name)
     }

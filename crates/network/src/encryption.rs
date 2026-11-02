@@ -49,7 +49,6 @@ fn iv_from_key(key: &[u8; 32]) -> [u8; 16] {
 impl Encryption {
     /// Derives the session key from the ECDH secret of `secret` and `public` hashed with `salt`,
     /// and starts both keystreams at zero.
-    #[must_use]
     pub fn new(secret: &SecretKey, public: &PublicKey, salt: &[u8]) -> Self {
         let shared = p384::ecdh::diffie_hellman(secret.to_nonzero_scalar(), public.as_affine());
 
@@ -75,7 +74,6 @@ impl Encryption {
         }
     }
 
-    #[must_use]
     pub fn snapshot(&self) -> EncryptionSnapshot {
         EncryptionSnapshot {
             key: self.key,
@@ -88,7 +86,6 @@ impl Encryption {
 
     /// Rebuilds the ciphers from a [`snapshot`](Self::snapshot), resuming each keystream where it
     /// stopped.
-    #[must_use]
     pub fn restore(state: &EncryptionSnapshot) -> Self {
         let iv = iv_from_key(&state.key);
 
@@ -152,7 +149,6 @@ impl Encryption {
         Ok(out)
     }
 
-    #[must_use]
     pub fn trailer(&self, buf: &[u8], counter: u64) -> [u8; 8] {
         let mut hasher = Sha256::new();
         hasher.update(counter.to_le_bytes());

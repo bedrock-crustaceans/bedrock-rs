@@ -32,7 +32,6 @@ pub struct BlockPlacer {
 
 impl BlockPlacer {
     /// Places `block` on anything.
-    #[must_use]
     pub fn new(block: BlockSpecifier) -> Self {
         Self {
             block,

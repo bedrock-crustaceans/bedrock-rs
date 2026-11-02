@@ -271,25 +271,21 @@ impl Pack {
     }
 
     /// The parsed manifest, upgraded to the comprehensive (format 3) model.
-    #[must_use]
     pub fn manifest(&self) -> &Manifest {
         &self.inner.manifest
     }
 
     /// `(uuid, version)` of the header, the identity a stack refers to.
-    #[must_use]
     pub fn id(&self) -> &PackIdVersion {
         &self.inner.facts.id
     }
 
     /// Behaviour, resources, skins, world template, …, from the manifest's modules.
-    #[must_use]
     pub fn pack_type(&self) -> PackType {
         self.inner.facts.id.pack_type
     }
 
     /// Manifest and container findings (vanilla's `PackReport` field set).
-    #[must_use]
     pub fn report(&self) -> &PackReport {
         &self.inner.report
     }
@@ -297,7 +293,6 @@ impl Pack {
     /// `pack_icon.png`, if resident and decodable as PNG.
     // "Decodable" means the bytes start with the PNG signature; the crate carries no image
     // decoder.
-    #[must_use]
     pub fn icon(&self) -> Option<Bytes> {
         self.resident(&PackPath::from_static(ICON_PATH))
             .ok()
@@ -357,13 +352,11 @@ impl Pack {
     }
 
     /// Where a loader found the pack; `RootId::MEMORY` for `from_files` / `from_archive`.
-    #[must_use]
     pub fn location(&self) -> &Place {
         &self.inner.location
     }
 
     /// Whether the file's bytes are loaded, not only indexed.
-    #[must_use]
     pub fn is_resident(&self, path: &PackPath) -> bool {
         self.inner.files.is_resident(path)
     }

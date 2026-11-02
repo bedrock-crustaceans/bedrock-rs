@@ -9,7 +9,6 @@ use bedrock_addon_support::animation::walk::atof;
 
 impl AnimationControllerFile {
     /// An empty file at format 1.10.0.
-    #[must_use]
     pub fn new() -> Self {
         Self {
             format_version: FormatVersion::new(1, 10, 0),
@@ -26,7 +25,6 @@ impl Default for AnimationControllerFile {
 
 impl AnimationController {
     /// A controller with no states.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -52,7 +50,6 @@ impl AnimationController {
 
 impl StateVariable {
     /// A variable that stores `input` unchanged.
-    #[must_use]
     pub fn new(input: Molang) -> Self {
         Self {
             input,
@@ -62,7 +59,6 @@ impl StateVariable {
 
     /// The remap curve's frames `(input, output)` in the order vanilla adds them: member order of
     /// its JSON reader, which is the key text sorted; vanilla never re-sorts them.
-    #[must_use]
     pub fn frames(&self) -> Vec<(f32, f32)> {
         let Some(curve) = &self.remap_curve else {
             return Vec::new();
@@ -78,7 +74,6 @@ impl StateVariable {
 impl AnimationController {
     /// The text vanilla compiles for `transition`: lower-cased whole (string literals included)
     /// when [`lowercase_transitions`](Self::lowercase_transitions) is set, else as written.
-    #[must_use]
     pub fn transition_expression(&self, transition: &super::Transition) -> String {
         let text = transition.condition.as_str();
         if self.lowercase_transitions {
@@ -92,7 +87,6 @@ impl AnimationController {
 impl AnimationController {
     /// The state vanilla registers as `name`: state names are lower-cased, so the lookup ignores
     /// case.
-    #[must_use]
     pub fn state(&self, name: &str) -> Option<&super::State> {
         self.states
             .iter()
@@ -103,7 +97,6 @@ impl AnimationController {
 
 impl super::State {
     /// A state with no members set.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -122,7 +115,6 @@ impl super::State {
 impl super::StateAnimation {
     /// The short name of a plain-string entry as vanilla stores it (lower-cased); `None` for a
     /// weighted entry.
-    #[must_use]
     pub fn name(&self) -> Option<String> {
         match self {
             Self::Name(name) => Some(name.to_ascii_lowercase()),
@@ -135,7 +127,6 @@ impl super::BlendTransition {
     /// The blend key frames `(seconds, weight)` vanilla builds, sorted by time: a number `t`
     /// gives `(0, 1), (t, 0)` (none for 0); a curve gives its keys read with `atof`, plus
     /// `(0, 1)` when no key is at time 0.
-    #[must_use]
     pub fn frames(&self) -> Vec<(f32, f32)> {
         let mut frames = match self {
             Self::Seconds(t) if *t == 0.0 => Vec::new(),

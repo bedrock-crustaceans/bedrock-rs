@@ -72,20 +72,17 @@ pub enum BitArray {
 impl BitArray {
     /// Creates an iterator over this array.
     #[inline]
-    #[must_use]
     pub fn iter(&self) -> BitArrayIter<'_> {
         self.into_iter()
     }
 
     /// Whether this array uses the lazy unpacking strategy.
     #[inline]
-    #[must_use]
     pub fn is_lazy(&self) -> bool {
         matches!(self, BitArray::Lazy(_))
     }
 
     /// Creates an array where every index is zero, which is what a layer without index data means.
-    #[must_use]
     pub fn zeroed<M: UnpackingMethod>() -> Self {
         if M::IS_LAZY {
             BitArray::Lazy(LazyArray::new(1, vec![0; 4096 / 32]))
@@ -96,7 +93,6 @@ impl BitArray {
 
     /// The smallest bit size able to index a palette of `palette_size` entries, or 0 when
     /// the palette has at most one entry and no indices need to be stored.
-    #[must_use]
     pub fn bits_for(palette_size: usize) -> u8 {
         if palette_size <= 1 {
             return 0;
@@ -166,7 +162,6 @@ impl BitArray {
     }
 
     /// Gets the value at the specified index.
-    #[must_use]
     pub fn get(&self, index: usize) -> Option<u16> {
         match self {
             Self::Greedy(array) => array.get(index),

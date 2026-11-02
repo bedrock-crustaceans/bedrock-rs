@@ -16,7 +16,6 @@ use super::Language;
 // with its own overlay first), then this pack's overlay, then the pack root.
 // The overlay is `texts` joined with the chosen language's code as
 // `languages.json` lists it (`ResourcePack::setLocale`).
-#[must_use]
 pub fn locale_overlay_paths(
     language: &Language,
     path: &PackPath,

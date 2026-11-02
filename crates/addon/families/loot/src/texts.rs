@@ -9,7 +9,6 @@ use bedrock_addon_core::diagnostic::VanillaText;
 pub struct Template<const N: usize>(pub(crate) &'static str);
 
 /// The text of `template` with `args`.
-#[must_use]
 pub fn formatted<const N: usize>(template: Template<N>, args: [&str; N]) -> VanillaText {
     if N == 0 {
         return VanillaText::Fixed(template.0);

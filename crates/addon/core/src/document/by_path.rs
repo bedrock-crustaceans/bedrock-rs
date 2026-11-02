@@ -24,13 +24,11 @@ pub struct Files<T: Content> {
 
 impl<T: Content> Files<T> {
     /// The effective file at `path`, or `None` if no pack has it.
-    #[must_use]
     pub fn get(&self, path: &PackPath) -> Option<&Document<T>> {
         self.entries.get(path)?.effective.as_ref()
     }
 
     /// How many paths have an effective copy.
-    #[must_use]
     pub fn len(&self) -> usize {
         self.entries
             .values()
@@ -39,13 +37,11 @@ impl<T: Content> Files<T> {
     }
 
     /// No path has an effective copy.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Whether a pack has `path`.
-    #[must_use]
     pub fn contains(&self, path: &PackPath) -> bool {
         self.get(path).is_some()
     }
@@ -53,14 +49,12 @@ impl<T: Content> Files<T> {
     /// `(path, effective document)`; named ([`files::Iter`]) like [`Registry::iter`].
     ///
     /// [`Registry::iter`]: super::Registry::iter
-    #[must_use]
     pub fn iter(&self) -> files::Iter<'_, T> {
         files::Iter::new(self.entries.iter())
     }
 
     /// Every pack's copy of `path`, effective first. Only the effective one unless
     /// `LoadOptions::keep_shadowed`.
-    #[must_use]
     pub fn layers(&self, path: &PackPath) -> files::Layers<'_, T> {
         files::Layers::new(self.entries.get(path))
     }
@@ -80,7 +74,6 @@ impl<T: Content> Files<T> {
     }
 
     /// Files that failed to load, with their diagnostics.
-    #[must_use]
     pub fn rejected(&self) -> &[Rejected] {
         &self.rejected
     }
@@ -142,7 +135,6 @@ impl<T: Content> fmt::Debug for FilesBuilder<T> {
 
 impl<T: Content> FilesBuilder<T> {
     /// A builder applying `rule`, with the stack's `keep_shadowed`.
-    #[must_use]
     pub fn new(rule: FilesRule, options: &LoadOptions) -> Self {
         Self {
             rule,
@@ -175,7 +167,6 @@ impl<T: Content> FilesBuilder<T> {
     }
 
     /// The collection.
-    #[must_use]
     pub fn finish(self) -> Files<T> {
         let Self {
             rule,

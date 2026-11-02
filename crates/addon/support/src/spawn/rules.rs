@@ -25,7 +25,6 @@ impl Difficulty {
     /// The difficulty a filter names, compared after lower-casing (`"EASY"` is easy); `None` for
     /// any other name.
     // The name is lower-cased first.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         match name.to_ascii_lowercase().as_str() {
             "peaceful" => Some(Self::Peaceful),
@@ -37,7 +36,6 @@ impl Difficulty {
     }
 
     /// The JSON name (`"peaceful"`, …).
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Peaceful => "peaceful",
@@ -73,7 +71,6 @@ impl PopulationControl {
     /// The pool a name selects, compared after lower-casing (`"Monster"` is the monster pool);
     /// `None` for an empty or unknown name, which leaves the spawn rules unregistered.
     // The name is lower-cased first; an unknown name leaves the rules unregistered.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         match name.to_ascii_lowercase().as_str() {
             "animal" => Some(Self::Animal),
@@ -88,7 +85,6 @@ impl PopulationControl {
     }
 
     /// The JSON name (`"animal"`, …).
-    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Animal => "animal",
@@ -205,7 +201,6 @@ pub struct MobSpawnRules {
 impl Condition {
     /// The condition's spawn weight: 100 without `minecraft:weight`, else its `default` (100
     /// when absent), negative values 0.
-    #[must_use]
     pub fn spawn_weight(&self) -> i32 {
         // Starts at 100 and is read with a default of 100, then clamped to be non-negative.
         self.weight
@@ -214,7 +209,6 @@ impl Condition {
     }
 
     /// What vanilla's spawn-rules parser loads from this condition (spawn-distance cap 128).
-    #[must_use]
     pub fn to_spawn_rules(&self) -> MobSpawnRules {
         self.rules_with(super::condition::SPAWN_RULES)
     }

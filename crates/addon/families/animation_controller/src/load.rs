@@ -189,7 +189,6 @@ fn combine_controllers(
 
 /// The loader of `animation_controllers()` on the stack of `side`:
 /// `animation_controllers/*.json`, combined per identifier, the higher pack winning.
-#[must_use]
 pub fn load_controllers(
     side: PackSide,
 ) -> CollectionLoader<Registry<AnimationController>, FileContribution<AnimationController>> {

@@ -14,7 +14,6 @@ use super::DiagnosticCode;
 /// has a path and `MalformedInput` otherwise. The kinds that only a bug of this crate can cause are
 /// `MalformedInput` and trip a debug assertion.
 #[allow(clippy::match_same_arms)] // one arm per kind of the kind-to-code table, plus the fallback
-#[must_use]
 pub fn code_for_deserialize_error_kind(
     kind: &DeserializeErrorKind,
     has_path: bool,

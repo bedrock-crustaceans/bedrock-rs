@@ -144,7 +144,6 @@ impl Experiment {
     /// [`DisabledExperiment`](Self::DisabledExperiment).
     // The names of `GameplayUi`, `GameEventSystemRefactor`, `OffhandParity`, `Mao` and
     // `CreatorWorldClocks` are the snake case of the enum name.
-    #[must_use]
     pub const fn save_name(self) -> Option<&'static str> {
         Some(match self {
             Self::TestExperiment => "test_experiment",
@@ -182,7 +181,6 @@ impl Experiment {
     }
 
     /// The experiment saved as `name`; case-sensitive, as vanilla's lookup.
-    #[must_use]
     pub fn from_save_name(name: &str) -> Option<Experiment> {
         Self::ALL
             .iter()
@@ -192,7 +190,6 @@ impl Experiment {
 
     /// The crate's number for the experiment: its bit in [`Experiments`] and in the Molang
     /// experiment mask.
-    #[must_use]
     pub const fn bit(self) -> u8 {
         self as u8
     }
@@ -227,13 +224,11 @@ pub struct Experiments {
 
 impl Experiments {
     /// No experiment enabled; `Default` too.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Whether `experiment` is enabled.
-    #[must_use]
     pub fn contains(&self, experiment: Experiment) -> bool {
         self.bits & experiment.mask() != 0
     }
@@ -284,20 +279,17 @@ impl Experiments {
     }
 
     /// The kept names that are no experiment's save name, in the order they were inserted.
-    #[must_use]
     pub fn unknown(&self) -> &[String] {
         &self.unknown
     }
 
     /// No experiment enabled and no name kept.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.bits == 0 && self.unknown.is_empty()
     }
 
     /// The enabled experiments as molangx's experiment mask: bit `n` is the experiment whose
     /// [`Experiment::bit`] is `n`.
-    #[must_use]
     pub fn molang_mask(&self) -> ExperimentMask {
         self.iter()
             .filter_map(|experiment| MolangExperiment::new(experiment.bit()))
@@ -363,7 +355,6 @@ const LEGACY_CREATOR_FEATURES_PACKS: [Uuid; 10] = [
 
 impl LoadRequirement {
     /// Whether a document loaded with `cx` meets the requirement.
-    #[must_use]
     pub fn satisfied(&self, cx: &LoadContext) -> bool {
         match *self {
             // The two toggles are also their experiments.

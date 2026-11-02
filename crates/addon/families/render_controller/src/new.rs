@@ -22,7 +22,6 @@ fn built_in(text: &'static str) -> Molang {
 
 impl RenderControllerFile {
     /// An empty file at format 1.8.0, the version the game's own files use.
-    #[must_use]
     pub fn new() -> Self {
         Self {
             format_version: FormatVersion::new(1, 8, 0),
@@ -32,7 +31,6 @@ impl RenderControllerFile {
     }
 
     /// The controller whose key is `name` after case folding (the game folds the whole file).
-    #[must_use]
     pub fn get(&self, name: &str) -> Option<&RenderController> {
         self.render_controllers.get(fold_case(name).as_str())
     }
@@ -46,7 +44,6 @@ impl Default for RenderControllerFile {
 
 impl RenderController {
     /// A controller with the two required members and every other member absent.
-    #[must_use]
     pub fn new(geometry: MolangSource, textures: Vec<MolangSource>) -> Self {
         Self {
             geometry,
@@ -77,13 +74,11 @@ impl RenderController {
     }
 
     /// `color` as the game uses it (r, g, b, a): absent, `this` in every channel, which is 0.
-    #[must_use]
     pub fn color(&self) -> [Molang; 4] {
         self.rgba(self.color.as_ref(), || [(); 4].map(|()| built_in("this")))
     }
 
     /// `overlay_color` as the game uses it: absent, `this` in every channel.
-    #[must_use]
     pub fn overlay_color(&self) -> [Molang; 4] {
         self.rgba(self.overlay_color.as_ref(), || {
             [(); 4].map(|()| built_in("this"))
@@ -92,7 +87,6 @@ impl RenderController {
 
     /// `on_fire_color` as the game uses it: absent, red 0.8, the flicker [`ON_FIRE_GREEN`],
     /// blue 0 and the fade [`ON_FIRE_ALPHA`], compiled with Molang version 13.
-    #[must_use]
     pub fn on_fire_color(&self) -> [Molang; 4] {
         self.rgba(self.on_fire_color.as_ref(), || {
             [
@@ -105,7 +99,6 @@ impl RenderController {
     }
 
     /// `is_hurt_color` as the game uses it: absent, (1, 0, 0, 0.25).
-    #[must_use]
     pub fn is_hurt_color(&self) -> [Molang; 4] {
         self.rgba(self.is_hurt_color.as_ref(), || {
             [
@@ -118,7 +111,6 @@ impl RenderController {
     }
 
     /// `uv_anim` with its default: offset (0, 0), scale (1, 1).
-    #[must_use]
     pub fn uv_anim(&self) -> UvAnim {
         self.uv_anim.clone().unwrap_or(UvAnim {
             offset: [Molang::Const(0.0), Molang::Const(0.0)],
@@ -127,7 +119,6 @@ impl RenderController {
     }
 
     /// `light_color_multiplier` with its default, the constant 1.
-    #[must_use]
     pub fn light_color_multiplier(&self) -> Molang {
         self.light_color_multiplier
             .clone()
@@ -135,19 +126,16 @@ impl RenderController {
     }
 
     /// `ignore_lighting` with its default, false.
-    #[must_use]
     pub fn ignore_lighting(&self) -> bool {
         self.ignore_lighting.unwrap_or(false)
     }
 
     /// `filter_lighting`: true when written (only `true` may be), else false.
-    #[must_use]
     pub fn filter_lighting(&self) -> bool {
         self.filter_lighting.is_some()
     }
 
     /// `rebuild_animation_matrices` with its default, false.
-    #[must_use]
     pub fn rebuild_animation_matrices(&self) -> bool {
         self.rebuild_animation_matrices.unwrap_or(false)
     }
@@ -157,7 +145,6 @@ impl Rgba {
     /// The four channels (r, g, b, a) of a written colour object: a channel it leaves out is
     /// the expression `this`, compiled like the file's other expressions with the pack's Molang
     /// version `context`.
-    #[must_use]
     pub fn channels(&self, context: RawVersion) -> [Molang; 4] {
         [&self.r, &self.g, &self.b, &self.a].map(|channel| {
             channel
@@ -169,7 +156,6 @@ impl Rgba {
 
 impl BonePattern {
     /// The pattern as written.
-    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -177,7 +163,6 @@ impl BonePattern {
     /// The regular expression the game matches bone names with: each `*` becomes
     /// `[a-zA-Z0-9_\.]*` and every other character is copied as it is, so a `.` of the pattern
     /// matches any character.
-    #[must_use]
     pub fn to_regex(&self) -> String {
         self.0.replace('*', r"[a-zA-Z0-9_\.]*")
     }

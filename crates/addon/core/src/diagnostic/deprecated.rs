@@ -15,7 +15,6 @@ pub const ENUM_VALUE_DEPRECATED: &str = "enum value is deprecated";
 impl Diagnostic {
     /// `member "<member>" is deprecated` at `at` (the member's path): an error, which rejects
     /// the document; the member's value is not read.
-    #[must_use]
     pub fn deprecated_member(member: &str, at: JsonPath) -> Self {
         Self::new(
             DiagnosticCode::DeprecatedMember {
@@ -31,7 +30,6 @@ impl Diagnostic {
 
     /// `enum value is deprecated` at `at` (the member holding the value): an error, which
     /// rejects the document.
-    #[must_use]
     pub fn deprecated_enum_value(at: JsonPath) -> Self {
         Self::new(
             DiagnosticCode::DeprecatedMember {

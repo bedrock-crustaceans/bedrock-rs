@@ -30,7 +30,6 @@ pub struct ItemTags {
 
 impl ItemTags {
     /// The item carries `tag`, compared as written.
-    #[must_use]
     pub fn contains(&self, tag: &str) -> bool {
         self.tags.iter().any(|own| own == tag)
     }

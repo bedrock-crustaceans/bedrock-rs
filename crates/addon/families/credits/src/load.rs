@@ -113,7 +113,6 @@ fn combine_credits(parsed: Vec<FileCopy<Credits>>, _: &StackCx<'_>) -> Merged<Cr
 }
 
 /// The loader of `rp.credits()`: `credits/credits.json` of the app data only.
-#[must_use]
 pub const fn load_credits() -> CollectionLoader<Merged<Credits>, FileCopy<Credits>> {
     CollectionLoader {
         walk: Walk {

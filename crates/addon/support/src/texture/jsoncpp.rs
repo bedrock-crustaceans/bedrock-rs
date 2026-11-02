@@ -44,7 +44,6 @@ pub fn read_lenient(bytes: &[u8]) -> Result<Lenient, ReadError> {
 
 /// The byte offset just past the first JSON value of `text`, when its brackets and strings
 /// close; `None` leaves the whole text to the reader (and its error).
-#[must_use]
 pub fn root_end(text: &str) -> Option<usize> {
     let bytes = text.as_bytes();
     let mut at = skip_trivia(bytes, 0);
@@ -84,7 +83,6 @@ pub fn root_end(text: &str) -> Option<usize> {
 }
 
 /// The offset just past the string that opens at `at`.
-#[must_use]
 pub fn string_end(bytes: &[u8], at: usize) -> Option<usize> {
     let mut at = at + 1;
     loop {
@@ -98,7 +96,6 @@ pub fn string_end(bytes: &[u8], at: usize) -> Option<usize> {
 
 /// The offset of the first byte at or after `at` that is neither white space nor inside a
 /// comment.
-#[must_use]
 pub fn skip_trivia(bytes: &[u8], mut at: usize) -> usize {
     loop {
         match (bytes.get(at), bytes.get(at + 1)) {
@@ -128,7 +125,6 @@ fn only_trivia(text: &str) -> bool {
 /// `Json::Value::asInt(default)`: `null` is the default; an integer keeps its low 32 bits; a
 /// real is truncated toward zero and saturates; a bool is 0 or 1; a string, an array or an
 /// object is 0.
-#[must_use]
 pub fn as_int(value: Option<&Value>, default: i32) -> i32 {
     let Some(value) = value.filter(|value| !value.is_null()) else {
         return default;
@@ -186,7 +182,6 @@ pub fn int_is_coerced(value: &Value) -> bool {
     clippy::cast_possible_truncation,
     reason = "vanilla stores the double as a float"
 )]
-#[must_use]
 pub fn as_float(value: Option<&Value>, default: f32) -> f32 {
     let Some(value) = value.filter(|value| !value.is_null()) else {
         return default;
@@ -211,7 +206,6 @@ fn finite(value: f32) -> f32 {
     clippy::cast_possible_truncation,
     reason = "the question is what the cast gives"
 )]
-#[must_use]
 pub fn float_is_clamped(value: &Value) -> bool {
     value
         .as_number()
@@ -220,7 +214,6 @@ pub fn float_is_clamped(value: &Value) -> bool {
 
 /// `Json::Value::asBool(default)`: `null` is the default; a number is `!= 0`; a string, an
 /// array or an object is true when it is not empty (so `"false"` is true).
-#[must_use]
 pub fn as_bool(value: Option<&Value>, default: bool) -> bool {
     let Some(value) = value.filter(|value| !value.is_null()) else {
         return default;
@@ -240,7 +233,6 @@ pub fn as_bool(value: Option<&Value>, default: bool) -> bool {
 
 /// `Json::Value::asString("")`: a string is itself; a bool is `"true"` or `"false"`; `null`,
 /// a number, an array or an object is `""`.
-#[must_use]
 pub fn to_text(value: Option<&Value>) -> String {
     match value {
         Some(value) if value.is_string() => value
@@ -272,7 +264,6 @@ pub fn is_empty(value: Option<&Value>) -> bool {
 }
 
 /// A present member that is not `null` (`!isNull()`).
-#[must_use]
 pub fn non_null(value: Option<&Value>) -> Option<&Value> {
     value.filter(|value| !value.is_null())
 }
@@ -282,7 +273,6 @@ pub fn non_null(value: Option<&Value>) -> Option<&Value> {
 /// byte that is no hex digit (no digit at all is 0), and a value past `0xFFFF_FFFF` is
 /// `0xFFFF_FFFF`.
 // `default_leather_color`.
-#[must_use]
 pub fn strtouint32_hex(text: &str) -> u32 {
     let mut rest = text.trim_start_matches(|c: char| c.is_ascii_whitespace() || c == '\x0b');
     let negative = rest.starts_with('-');

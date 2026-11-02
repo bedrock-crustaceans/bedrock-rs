@@ -205,13 +205,11 @@ pub struct AttachConditions {
 
 impl AttachConditions {
     /// The sides that must attach: `min_sides_must_attach`, or 4.
-    #[must_use]
     pub fn min_sides(&self) -> i32 {
         self.min_sides_must_attach.map_or(4, |n| n.0)
     }
 
     /// Whether the block auto-rotates: `auto_rotate`, or `true`.
-    #[must_use]
     pub fn rotates(&self) -> bool {
         self.auto_rotate.is_none_or(|b| b.0)
     }
@@ -219,7 +217,6 @@ impl AttachConditions {
 
 impl SingleBlockFeature {
     /// Whether the block is placed in a random rotation: `randomize_rotation`, or `false`.
-    #[must_use]
     pub fn randomizes_rotation(&self) -> bool {
         self.randomize_rotation.is_some_and(|b| b.0)
     }

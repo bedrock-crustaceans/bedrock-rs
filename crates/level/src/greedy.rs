@@ -18,13 +18,11 @@ pub struct GreedyArray {
 
 impl GreedyArray {
     /// Returns the item at the given index.
-    #[must_use]
     pub fn get(&self, index: usize) -> Option<u16> {
         self.array.get(index).copied()
     }
 
     /// Creates an iterator over the items of this array.
-    #[must_use]
     pub fn iter(&self) -> GreedyArrayIter<'_> {
         self.into_iter()
     }

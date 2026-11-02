@@ -5,7 +5,6 @@ pub struct RakNetGamePacket;
 impl RakNetGamePacket {
     pub const ID: u8 = 0xfe;
 
-    #[must_use]
     pub fn wrap(batch: &[u8]) -> Vec<u8> {
         let mut datagram = Vec::with_capacity(batch.len() + 1);
         datagram.push(Self::ID);

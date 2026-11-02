@@ -128,7 +128,6 @@ impl From<Buffer<'_>> for Vec<u8> {
 pub struct WriteBatch(leveldb::WriteBatch);
 
 impl WriteBatch {
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -144,12 +143,10 @@ impl WriteBatch {
     }
 
     /// The amount of queued operations.
-    #[must_use]
     pub fn len(&self) -> usize {
         self.0.count() as usize
     }
 
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

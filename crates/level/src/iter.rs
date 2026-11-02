@@ -17,13 +17,11 @@ pub struct KvRef<'k, 'db> {
 
 impl KvRef<'_, '_> {
     /// Returns the key of this tuple.
-    #[must_use]
     pub fn key(&self) -> Buffer<'static> {
         Buffer::new(self.key.clone())
     }
 
     /// Returns the value in this tuple.
-    #[must_use]
     pub fn value(&self) -> Buffer<'static> {
         Buffer::new(self.value.clone())
     }

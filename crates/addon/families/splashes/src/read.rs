@@ -149,7 +149,6 @@ impl Splashes {
 
     /// The copy's unconditional splashes as the game reads them: a string as written, a
     /// boolean as `true` / `false`, anything else as the empty text (which can be shown).
-    #[must_use]
     pub fn texts(&self) -> Vec<String> {
         texts(self.splashes.as_ref())
     }
@@ -236,7 +235,6 @@ fn requires_pass(requires: &Value, client: &SplashClient) -> bool {
 
 impl ConditionalSplashes {
     /// The requirements, when `requires` is an object.
-    #[must_use]
     pub fn requirements(&self) -> Option<SplashRequires> {
         let requires = self.requires.as_ref().filter(|v| v.is_object())?;
         let mut extra = Extra::default();
@@ -255,7 +253,6 @@ impl ConditionalSplashes {
     }
 
     /// The entry's splashes as the game reads them ([`Splashes::texts`]).
-    #[must_use]
     pub fn texts(&self) -> Vec<String> {
         texts(self.splashes.as_ref())
     }

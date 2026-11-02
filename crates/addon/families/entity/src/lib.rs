@@ -201,7 +201,6 @@ impl std::fmt::Display for PropertyType {
 
 impl PropertyType {
     /// The JSON spelling.
-    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Bool => "bool",
@@ -307,7 +306,6 @@ impl SpawnCategory {
     ];
 
     /// The JSON spelling.
-    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Creature => "creature",
@@ -322,7 +320,6 @@ impl SpawnCategory {
     }
 
     /// The category a JSON spelling names.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|c| c.as_str() == name)
     }
@@ -442,7 +439,6 @@ impl MemoryType {
     ];
 
     /// The JSON spelling.
-    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Bool => "bool",
@@ -457,7 +453,6 @@ impl MemoryType {
     }
 
     /// The type a JSON spelling names.
-    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|t| t.as_str() == name)
     }
@@ -497,27 +492,23 @@ impl Deref for Beta {
 
 impl Entity {
     /// The component group named `name`.
-    #[must_use]
     pub fn component_group(&self, name: &str) -> Option<&ComponentGroup> {
         self.component_groups.get(name)
     }
 
     /// The entity's properties, by name (`description.properties`).
-    #[must_use]
     pub fn properties(&self) -> &IndexMap<String, Property> {
         &self.description.properties
     }
 
     /// Whether a spawn egg exists for the entity: `description.is_spawnable`, `false` when
     /// absent.
-    #[must_use]
     pub fn is_spawnable(&self) -> bool {
         self.description.is_spawnable.unwrap_or(false)
     }
 
     /// Whether `/summon` may create the entity: `description.is_summonable`, `false` when
     /// absent.
-    #[must_use]
     pub fn is_summonable(&self) -> bool {
         self.description.is_summonable.unwrap_or(false)
     }
@@ -525,7 +516,6 @@ impl Entity {
 
 impl Event {
     /// The event's name, its key in [`Entity::events`].
-    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }

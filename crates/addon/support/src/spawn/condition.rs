@@ -916,7 +916,6 @@ pub fn sorted<T: PartialOrd>((min, max): (T, T)) -> (T, T) {
 
 impl RangeFilter {
     /// The ends with their defaults (24, 128), as written (not swapped).
-    #[must_use]
     pub fn ends(&self) -> (i32, i32) {
         (
             self.min.unwrap_or(MIN_DEFAULT_SPAWN_DISTANCE),

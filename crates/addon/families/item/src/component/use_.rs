@@ -63,7 +63,6 @@ pub struct Fuel {
 
 impl Fuel {
     /// A burn time of `duration` seconds.
-    #[must_use]
     pub fn new(duration: f32) -> Self {
         Self {
             duration,
@@ -148,7 +147,6 @@ pub struct UseModifiers {
 
 impl UseModifiers {
     /// A use of `use_duration` seconds that emits vibrations and starts `if_first`.
-    #[must_use]
     pub fn new(use_duration: f32) -> Self {
         Self {
             use_duration,

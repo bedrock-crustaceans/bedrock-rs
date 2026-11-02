@@ -65,7 +65,6 @@ where
 
 impl JigsawStructure {
     /// A structure with the required members and every other member left out (its default).
-    #[must_use]
     pub fn new(
         identifier: JigsawStructureId,
         step: GenerationStep,
@@ -96,19 +95,16 @@ impl JigsawStructure {
     }
 
     /// The biome filter; absent is the empty group, which admits every biome.
-    #[must_use]
     pub fn biome_filters(&self) -> Filter {
         self.biome_filters.clone().unwrap_or_default()
     }
 
     /// The terrain adaptation; `none` when absent.
-    #[must_use]
     pub fn terrain_adaptation(&self) -> TerrainAdaptation {
         self.terrain_adaptation.unwrap_or_default()
     }
 
     /// The start jigsaw name; `""` when absent.
-    #[must_use]
     pub fn start_jigsaw_name(&self) -> &str {
         self.start_jigsaw_name
             .as_ref()
@@ -117,20 +113,17 @@ impl JigsawStructure {
 
     /// The `on_placed` callback name; `""` when absent (an empty name, never
     /// `minecraft:no_op`, which is a callback the game registers, not a default).
-    #[must_use]
     pub fn on_placed(&self) -> &str {
         self.on_placed.as_ref().map_or("", |name| name.0.as_str())
     }
 
     /// The heightmap projection; `none` when absent.
-    #[must_use]
     pub fn heightmap_projection(&self) -> HeightmapProjection {
         self.heightmap_projection.unwrap_or_default()
     }
 
     /// The padding at the top and the bottom of the world, `(top, bottom)`; `(0, 0)` when
     /// absent.
-    #[must_use]
     pub fn dimension_padding(&self) -> (u32, u32) {
         match &self.dimension_padding {
             None => (0, 0),
@@ -143,7 +136,6 @@ impl JigsawStructure {
 
     /// The maximum distance from the start, `(horizontal, vertical)`; `(80, i32::MAX)` when
     /// absent, `vertical` `i32::MAX` (no limit) when not written.
-    #[must_use]
     pub fn max_distance_from_center(&self) -> (i32, i32) {
         match &self.max_distance_from_center {
             None => (DEFAULT_HORIZONTAL, i32::MAX),
@@ -157,20 +149,17 @@ impl JigsawStructure {
     }
 
     /// The pool aliases; none when absent.
-    #[must_use]
     pub fn pool_aliases(&self) -> &[PoolAlias] {
         self.pool_aliases.as_deref().unwrap_or_default()
     }
 
     /// The liquid settings; `apply_waterlogging` when absent.
-    #[must_use]
     pub fn liquid_settings(&self) -> LiquidSettings {
         self.liquid_settings.unwrap_or_default()
     }
 
     /// Runs the family's parse constraints and registration checks as if the structure were
     /// loaded from a behaviour pack with `cx`. The structure is not changed.
-    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         validate_detached::<StructureFamily>(self, cx)
     }
@@ -178,7 +167,6 @@ impl JigsawStructure {
 
 impl TemplatePool {
     /// A pool without elements, falling back to `minecraft:empty`.
-    #[must_use]
     pub fn new(identifier: TemplatePoolId) -> TemplatePool {
         TemplatePool {
             description: PoolDescription {
@@ -192,14 +180,12 @@ impl TemplatePool {
     }
 
     /// The fallback pool; `minecraft:empty` when absent.
-    #[must_use]
     pub fn fallback(&self) -> TemplatePoolId {
         self.fallback.clone().unwrap_or(EMPTY_POOL)
     }
 
     /// Runs the family's parse constraints and registration checks as if the pool were loaded
     /// from a behaviour pack with `cx`. The pool is not changed.
-    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         validate_detached::<PoolFamily>(self, cx)
     }
@@ -207,7 +193,6 @@ impl TemplatePool {
 
 impl TemplatePoolElement {
     /// An entry placing `element` with the default weight.
-    #[must_use]
     pub fn new(element: PoolElement) -> TemplatePoolElement {
         TemplatePoolElement {
             element,
@@ -217,7 +202,6 @@ impl TemplatePoolElement {
     }
 
     /// The entry's weight; 1 when absent.
-    #[must_use]
     pub fn weight(&self) -> u8 {
         self.weight.map_or(1, |w| w.0)
     }
@@ -226,7 +210,6 @@ impl TemplatePoolElement {
 impl PoolElement {
     /// The processor list of a single element; `None` for no processors (absent or `""`) and
     /// for the other element types.
-    #[must_use]
     pub fn processors(&self) -> Option<&ProcessorListId> {
         match self {
             PoolElement::Single {
@@ -239,7 +222,6 @@ impl PoolElement {
 
     /// The projection of a single element (`rigid` when absent); `None` for the other element
     /// types.
-    #[must_use]
     pub fn projection(&self) -> Option<Projection> {
         match self {
             PoolElement::Single { projection, .. } => Some(projection.unwrap_or_default()),
@@ -250,7 +232,6 @@ impl PoolElement {
 
 impl StructureSet {
     /// A set without structures.
-    #[must_use]
     pub fn new(identifier: StructureSetId, placement: RandomSpreadPlacement) -> StructureSet {
         StructureSet {
             description: StructureSetDescription {
@@ -265,7 +246,6 @@ impl StructureSet {
 
     /// Runs the family's parse constraints and registration checks as if the set were loaded
     /// from a behaviour pack with `cx`. The set is not changed.
-    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         validate_detached::<StructureSetFamily>(self, cx)
     }
@@ -273,7 +253,6 @@ impl StructureSet {
 
 impl RandomSpreadPlacement {
     /// A random-spread placement with the default spread type.
-    #[must_use]
     pub fn new(salt: i32, separation: u16, spacing: u16) -> RandomSpreadPlacement {
         RandomSpreadPlacement {
             placement_type: super::PlacementType::RandomSpread,
@@ -286,7 +265,6 @@ impl RandomSpreadPlacement {
     }
 
     /// The spread type; `linear` when absent.
-    #[must_use]
     pub fn spread_type(&self) -> SpreadType {
         self.spread_type.unwrap_or_default()
     }
@@ -294,7 +272,6 @@ impl RandomSpreadPlacement {
 
 impl ProcessorList {
     /// A list without processors.
-    #[must_use]
     pub fn new(identifier: ProcessorListId) -> ProcessorList {
         ProcessorList {
             description: ProcessorListDescription {
@@ -308,7 +285,6 @@ impl ProcessorList {
 
     /// Runs the family's parse constraints and registration checks as if the list were loaded
     /// from a behaviour pack with `cx`. The list is not changed.
-    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         validate_detached::<ProcessorListFamily>(self, cx)
     }
@@ -316,7 +292,6 @@ impl ProcessorList {
 
 impl ProcessorRule {
     /// A rule placing `output_state` for every block, with every predicate left out.
-    #[must_use]
     pub fn new(output_state: BlockSpecifier) -> ProcessorRule {
         ProcessorRule {
             input_predicate: None,
@@ -329,7 +304,6 @@ impl ProcessorRule {
     }
 
     /// The input predicate; `always_true` when absent.
-    #[must_use]
     pub fn input_predicate(&self) -> BlockPredicate {
         self.input_predicate
             .clone()
@@ -339,7 +313,6 @@ impl ProcessorRule {
     }
 
     /// The location predicate; `always_true` when absent.
-    #[must_use]
     pub fn location_predicate(&self) -> BlockPredicate {
         self.location_predicate
             .clone()
@@ -352,7 +325,6 @@ impl ProcessorRule {
 impl PositionPredicate {
     /// The axis of an `axis_aligned_linear_pos` predicate (`y` when absent); `None` for
     /// `always_true`.
-    #[must_use]
     pub fn axis(&self) -> Option<Axis> {
         match self {
             PositionPredicate::AxisAlignedLinearPos { axis, .. } => Some(axis.unwrap_or_default()),
@@ -363,7 +335,6 @@ impl PositionPredicate {
 
 impl StructureDescription {
     /// A description with this identifier.
-    #[must_use]
     pub fn new(identifier: JigsawStructureId) -> StructureDescription {
         StructureDescription {
             identifier,

@@ -52,7 +52,6 @@ pub struct Poi {
 
 impl Poi {
     /// The POI type `block` belongs to: the type loaded last among those listing it.
-    #[must_use]
     pub fn type_of_block(&self, block: &BlockId) -> Option<&PoiTypeId> {
         self.resolved.blocks.get(block)
     }
@@ -64,14 +63,12 @@ impl Poi {
     }
 
     /// Whether `tag` exists.
-    #[must_use]
     pub fn contains_tag(&self, tag: &PoiTagId) -> bool {
         self.resolved.tags.contains_key(tag)
     }
 
     /// The types `tag` holds: the ones that name it, then the ones its narrower tags hold.
     /// Empty for a tag that does not exist.
-    #[must_use]
     pub fn members(&self, tag: &PoiTagId) -> &[PoiTypeId] {
         self.resolved
             .tags
@@ -80,14 +77,12 @@ impl Poi {
     }
 
     /// Whether `poi_type` is a member of `tag`, directly or through a narrower tag.
-    #[must_use]
     pub fn has_tag(&self, poi_type: &PoiTypeId, tag: &PoiTagId) -> bool {
         self.members(tag).contains(poi_type)
     }
 
     /// The broader tags of `tag`: the ones it names in `parents` and the ones that name it in
     /// `children`, without the edges of a cycle and the ones to a tag that does not exist.
-    #[must_use]
     pub fn parents(&self, tag: &PoiTagId) -> &[PoiTagId] {
         self.resolved
             .tags
@@ -96,7 +91,6 @@ impl Poi {
     }
 
     /// The narrower tags of `tag`: the mirror of [`parents`](Self::parents).
-    #[must_use]
     pub fn children(&self, tag: &PoiTagId) -> &[PoiTagId] {
         self.resolved
             .tags

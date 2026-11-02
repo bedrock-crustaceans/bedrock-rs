@@ -85,14 +85,12 @@ impl NetherNetConnection {
         }
     }
 
-    #[must_use]
     pub fn remote_addr(&self) -> SocketAddr {
         self.remote
             .socket_addr
             .unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 0)))
     }
 
-    #[must_use]
     pub fn max_message_len(&self) -> usize {
         #[expect(clippy::cast_sign_loss, reason = "the default queue size is positive")]
         let max = RakSessionConfig::default().max_queued_bytes as usize;
@@ -108,7 +106,6 @@ impl NetherNetConnection {
     }
 
     /// The player whose signaling token the server validated, when it validates tokens.
-    #[must_use]
     pub fn player(&self) -> Option<&PlayerInfo> {
         self.player.as_deref()
     }

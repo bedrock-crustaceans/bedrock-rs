@@ -44,13 +44,11 @@ impl ByPlace<'_> {
 
 impl Origins {
     /// No move.
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// No move was recorded.
-    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -96,7 +94,6 @@ impl Origins {
 
     /// The path the member at `at` (a path of the upgraded document) has in the file: every
     /// move undone, the latest first. A path no move touched is itself.
-    #[must_use]
     pub fn source_of(&self, at: &JsonPath) -> JsonPath {
         self.undo(&self.by_place(), at, usize::MAX)
     }

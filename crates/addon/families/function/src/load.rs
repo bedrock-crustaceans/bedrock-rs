@@ -267,7 +267,6 @@ fn combine(parsed: Vec<Contribution<Function>>, stack: &StackCx<'_>) -> Registry
 
 /// The loader of `bp.functions()`: `functions/**/*.mcfunction` of every behaviour pack, by
 /// name.
-#[must_use]
 pub const fn load_registry() -> CollectionLoader<Registry<Function>, Contribution<Function>> {
     CollectionLoader {
         walk: WALK,
@@ -355,7 +354,6 @@ fn combine_tick(parsed: Vec<TickWalkFile>, stack: &StackCx<'_>) -> Merged<TickLi
 }
 
 /// The loader of `bp.tick_functions()`: every behaviour pack's `functions/tick.json`, merged.
-#[must_use]
 pub const fn load_tick() -> CollectionLoader<Merged<TickList>, TickWalkFile> {
     CollectionLoader {
         walk: TICK_WALK,

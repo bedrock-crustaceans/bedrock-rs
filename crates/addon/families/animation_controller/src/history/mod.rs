@@ -26,7 +26,6 @@ pub enum Any {
 
 impl Any {
     /// The version of the struct that parsed the file.
-    #[must_use]
     pub fn parsed_version(&self) -> FormatVersion {
         match self {
             Self::V1_8_0(_) => FormatVersion::new(1, 8, 0),

@@ -170,7 +170,6 @@ pub struct MaxStackSize {
 
 impl MaxStackSize {
     /// A stack size of `value`.
-    #[must_use]
     pub fn new(value: i32) -> Self {
         Self {
             value,

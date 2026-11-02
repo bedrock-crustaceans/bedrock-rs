@@ -52,7 +52,6 @@ pub struct Components {
 
 impl Components {
     /// The bounds vanilla uses: the written ones, or `{0, 0}`.
-    #[must_use]
     pub fn bounds(&self) -> DimensionBounds {
         self.dimension_bounds
             .clone()

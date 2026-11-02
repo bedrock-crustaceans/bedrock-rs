@@ -160,7 +160,6 @@ impl Parts {
 
 impl BlockDescriptor {
     /// One block without states, written as a string.
-    #[must_use]
     pub fn block(name: BlockId) -> Self {
         Self::Block {
             name,
@@ -377,7 +376,6 @@ impl From<&StateValue> for Value {
 
 impl BlockSpecifier {
     /// One block without states, written as a string.
-    #[must_use]
     pub fn new(name: BlockId) -> Self {
         Self {
             name,
@@ -391,7 +389,6 @@ impl BlockSpecifier {
 impl BlockSpecifier {
     /// The findings for this specifier, located under `at`: each member kept in `extra` is an
     /// `UnrecognizedField` warning at its own path.
-    #[must_use]
     pub fn check(&self, at: &JsonPath) -> Diagnostics {
         let mut out = Diagnostics::default();
         unrecognized(&self.extra, at, &mut out);

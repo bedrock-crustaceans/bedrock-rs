@@ -23,7 +23,6 @@ pub struct Roots {
 
 impl Roots {
     /// An empty table.
-    #[must_use]
     pub fn new() -> Roots {
         Roots::default()
     }
@@ -48,7 +47,6 @@ impl Roots {
 
     /// The host path of a location: the root joined with `location.path.segments()`.
     /// `None` for an unknown root or `RootId::MEMORY`.
-    #[must_use]
     pub fn host_path(&self, location: &Place) -> Option<PathBuf> {
         if location.root == RootId::MEMORY {
             return None;
@@ -87,7 +85,6 @@ impl Roots {
     /// Entry names are `/`-separated paths relative to the listed location; a name that is not
     /// UTF-8 is converted with replacement characters and marked `lossy`, and so is every entry
     /// below it.
-    #[must_use]
     pub fn respond(&self, request: Request) -> Input {
         match request {
             Request::ReadFile {
@@ -115,7 +112,6 @@ impl Roots {
 
 /// Answers one request against `roots`; the same as [`Roots::respond`], for a loop that holds
 /// the table by reference.
-#[must_use]
 pub fn respond(roots: &Roots, request: Request) -> Input {
     roots.respond(request)
 }

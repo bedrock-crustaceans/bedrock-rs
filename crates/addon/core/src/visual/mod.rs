@@ -67,7 +67,6 @@ pub struct Visuals<'a> {
 
 impl<'a> Visuals<'a> {
     /// The view over a document's slots.
-    #[must_use]
     pub fn new(
         materials: Option<&'a IndexMap<String, MaterialId>>,
         textures: Option<&'a IndexMap<String, TexturePath>>,
@@ -85,25 +84,21 @@ impl<'a> Visuals<'a> {
     }
 
     /// The material of the slot `name`, as written.
-    #[must_use]
     pub fn material(&self, name: &str) -> Option<&'a MaterialId> {
         self.materials?.get(name)
     }
 
     /// The texture of the slot `name`, as written.
-    #[must_use]
     pub fn texture(&self, name: &str) -> Option<&'a TexturePath> {
         self.textures?.get(name)
     }
 
     /// The geometry of the slot `name`, as written.
-    #[must_use]
     pub fn geometry(&self, name: &str) -> Option<&'a GeometryId> {
         self.geometry?.get(name)
     }
 
     /// The animation or animation controller of the short name `name`, as written.
-    #[must_use]
     pub fn animation(&self, name: &str) -> Option<&'a AnimationRef> {
         self.animations?.get(name)
     }
