@@ -64,7 +64,7 @@ jobs:
             key: protocol-network
             packages: >-
               -p bedrock_protocol -p bedrock_protocol_core -p bedrock_macros
-              -p bedrock_network -p bedrock
+              -p bedrock_network
           - name: addon
             key: addon
             packages: -p 'bedrock_addon*' -p xtask
@@ -76,7 +76,10 @@ jobs:
             packages: -p bedrock_auth
           - name: level
             key: level
-            packages: -p bedrock_level -p bedrock_shared
+            packages: -p bedrock_level
+          - name: general
+            key: general
+            packages: -p bedrock -p bedrock_shared
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
