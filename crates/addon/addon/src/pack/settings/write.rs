@@ -18,6 +18,7 @@ impl SavedSettings {
     // The game writes its newest document version; the crate writes the floor version unless a
     // value needs the newest one, so older clients can read the file. This is the one deliberate
     // difference from the game's writer.
+    #[must_use]
     pub fn format_version(&self) -> FormatVersion {
         let lists = self.settings.iter().any(|entry| {
             entry
@@ -35,6 +36,10 @@ impl SavedSettings {
     /// Writes the document to `out` in `style`: `format_version` (a string,
     /// [`format_version`](Self::format_version)) and the payload, entries and values in their
     /// order, `last_used` only where an entry has one.
+    ///
+    /// # Errors
+    ///
+    /// [`EncodeError`] when a value has no JSON spelling (a non-finite number).
     pub fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         let mut root = facet_value::VObject::new();
         root.insert(
@@ -46,6 +51,10 @@ impl SavedSettings {
     }
 
     /// The document as JSON text in the default style.
+    ///
+    /// # Errors
+    ///
+    /// [`EncodeError`] when a value has no JSON spelling (a non-finite number).
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let mut out = Vec::new();
         self.write_json(&mut out, WriteStyle::default())?;

@@ -43,6 +43,7 @@ impl StackReport<'_> {
     }
 
     /// At least one error-level finding.
+    #[must_use]
     pub fn has_errors(&self) -> bool {
         self.iter()
             .any(|diagnostic| diagnostic.severity == Severity::Error)

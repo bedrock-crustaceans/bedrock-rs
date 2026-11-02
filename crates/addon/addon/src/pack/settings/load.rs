@@ -127,6 +127,11 @@ impl SavedSettings {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the file is not a valid settings document; the rejection carries every
+    /// finding.
     pub fn parse(bytes: &[u8]) -> Result<Document<Self>, Rejected> {
         Self::parse_named(WORLD_FILE, bytes)
     }
@@ -135,6 +140,11 @@ impl SavedSettings {
     /// shows it, which the closing finding of a rejected file quotes). The document's origin
     /// is the file's last path segment: the global file ([`GLOBAL_FILE`]) is on the resource
     /// side, every other file on the behaviour side.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the file is not a valid settings document; the rejection carries every
+    /// finding.
     pub fn parse_named(name: &str, bytes: &[u8]) -> Result<Document<Self>, Rejected> {
         let origin = origin(name);
         let mut found = Diagnostics::default();

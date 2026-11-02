@@ -49,6 +49,7 @@ impl CollectionSet {
     }
 
     /// Whether `collection` is in the set.
+    #[must_use]
     pub fn contains(&self, collection: Collection) -> bool {
         bit(collection).is_some_and(|bit| self.bits & bit != 0)
     }

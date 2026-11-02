@@ -15,12 +15,14 @@ pub struct ContentKey {
 
 impl ContentKey {
     /// A key from its 32 bytes.
+    #[must_use]
     pub fn new(bytes: [u8; 32]) -> ContentKey {
         ContentKey { bytes }
     }
 
     /// A key from the first 32 bytes of a key string (the game reads only those); `None` if it
     /// is shorter.
+    #[must_use]
     pub fn from_slice(text: &[u8]) -> Option<ContentKey> {
         let bytes = text.get(..32)?.try_into().ok()?;
         Some(ContentKey { bytes })
@@ -59,6 +61,7 @@ impl ContentIdentity {
     }
 
     /// The identity text.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.text
     }
@@ -98,6 +101,7 @@ pub struct ContentKeys {
 
 impl ContentKeys {
     /// An empty map.
+    #[must_use]
     pub fn new() -> ContentKeys {
         ContentKeys::default()
     }
@@ -108,6 +112,7 @@ impl ContentKeys {
     }
 
     /// The key for `identity`, if held.
+    #[must_use]
     pub fn get(&self, identity: &ContentIdentity) -> Option<&ContentKey> {
         self.keys.get(identity)
     }
@@ -118,11 +123,13 @@ impl ContentKeys {
     }
 
     /// How many keys are held.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.keys.len()
     }
 
     /// No key is held.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.keys.is_empty()
     }

@@ -141,6 +141,10 @@ impl<S: Side> PackStack<S> {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`WrongPackType`] when a pack does not hold a module of the stack's pack type.
     pub fn of(
         packs: impl IntoIterator<Item = Pack>,
         options: LoadOptions,
@@ -202,11 +206,13 @@ impl<S: Side> PackStack<S> {
     }
 
     /// The packs, top first.
+    #[must_use]
     pub fn packs(&self) -> impl ExactSizeIterator<Item = PackRef> + '_ {
         self.packs.iter().map(|entry| entry.pack.clone())
     }
 
     /// The options the stack was built with.
+    #[must_use]
     pub fn options(&self) -> &LoadOptions {
         &self.options
     }
@@ -222,6 +228,7 @@ impl<S: Side> PackStack<S> {
     /// listed once, by the first collection that walks it, though every collection that walks
     /// it keeps the `ReadError` among its own loader findings (not among its diagnostics).
     /// Collections not loaded yet are not loaded by it.
+    #[must_use]
     pub fn report(&self) -> StackReport<'_> {
         let mut findings: Vec<&Diagnostic> = self.selection.iter().collect();
         findings.extend(self.icons.iter());

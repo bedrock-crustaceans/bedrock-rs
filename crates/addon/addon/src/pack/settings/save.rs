@@ -85,6 +85,11 @@ impl SavedSettings {
     ///
     /// A file that failed to load is never replaced: when the save would write,
     /// it is refused instead.
+    ///
+    /// # Errors
+    ///
+    /// [`SaveRefused::FileFailedToLoad`] when `previous` is a file that failed to load and the save
+    /// would write.
     // The game compares against an empty document when the load failed and overwrites the file
     // as soon as one value differs from its default; the crate refuses instead.
     pub fn save<'a>(
