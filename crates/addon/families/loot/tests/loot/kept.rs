@@ -24,12 +24,13 @@ fn with_functions(functions: &str) -> String {
     ))
 }
 
-#[test]
-fn the_game_s_content_log_errors_of_a_kept_table_are_kept_errors() {
+/// The tables whose one finding is a kept error of the game's content log: the table, whether it
+/// needs the upcoming-creator-features experiment, where the finding is, and its text.
+fn kept_error_rows() -> Vec<(String, bool, String, String)> {
     const F0: &str = "pools/0/entries/0/functions/0";
     let pattern = r#"{"pattern": "bri", "color": "red"}"#;
     let seven = [pattern; 7].join(", ");
-    let rows: Vec<(String, bool, String, String)> = vec![
+    vec![
         (
             with_conditions("7"),
             false,
@@ -124,7 +125,12 @@ fn the_game_s_content_log_errors_of_a_kept_table_are_kept_errors() {
             format!("{F0}/patterns/0/color"),
             "Invalid color input in banner pattern \"x\"\n".into(),
         ),
-    ];
+    ]
+}
+
+#[test]
+fn the_game_s_content_log_errors_of_a_kept_table_are_kept_errors() {
+    let rows = kept_error_rows();
     let mut wrong = Vec::new();
     for (table, ucf, at, expected) in rows {
         let document = match load_in(&table, &cx_at(1, 26, 60, ucf)) {

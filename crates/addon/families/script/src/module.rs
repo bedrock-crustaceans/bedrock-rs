@@ -58,6 +58,7 @@ pub enum ScriptTarget {
 
 impl ScriptTarget {
     /// The manifest module `type`: `script` or `client_script`.
+    #[must_use]
     pub fn module_type(self) -> &'static str {
         match self {
             Self::Server => "script",
@@ -66,6 +67,7 @@ impl ScriptTarget {
     }
 
     /// The target of the module `type` spelled `name`, compared byte for byte.
+    #[must_use]
     pub fn from_module_type(name: &str) -> Option<Self> {
         match name {
             "script" => Some(Self::Server),
@@ -163,6 +165,7 @@ impl ScriptModule {
     /// module.
     ///
     /// Paths count the manifest's modules and dependencies as [`Manifest`] holds them.
+    #[must_use]
     pub fn from_manifest(manifest: &Manifest) -> Option<ScriptModule> {
         Self::build(manifest, PackPath::from_static("manifest.json"), None)
     }
@@ -175,6 +178,11 @@ impl ScriptModule {
     /// refused when `cx.engine_version` is below 1.26.30, and is a warning when the pack's
     /// own `min_engine_version` is; a legacy `optional` is reported as ignored. The value is
     /// `None` for a manifest without a script module. Paths are those of the file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the manifest is refused ([`Manifest::parse`]), or when the script
+    /// side of it carries an error, such as a relaxed dependency `version` below 1.26.30.
     pub fn parse(
         path: &PackPath,
         bytes: &[u8],
@@ -185,6 +193,11 @@ impl ScriptModule {
 
     /// [`parse`](Self::parse) with the capabilities the host grants: `registry` is what
     /// [`Manifest::parse`] checks the manifest's `capabilities` against.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the manifest is refused ([`Manifest::parse`]), or when the script
+    /// side of it carries an error, such as a relaxed dependency `version` below 1.26.30.
     pub fn parse_with(
         path: &PackPath,
         bytes: &[u8],
@@ -425,6 +438,7 @@ impl ScriptModule {
     }
 
     /// The name vanilla prints for the plugin: `<pack name> - <module version>`.
+    #[must_use]
     pub fn plugin_name(&self) -> String {
         format!(
             "{} - {}",
@@ -439,6 +453,7 @@ impl ScriptModule {
 /// JavaScript and its entry a `.js` file. Vanilla drops any other before it looks at a file
 /// (an unsupported language or entry), and a pack without one has no plugin at all, so a stack reads the script files
 /// of no other pack.
+#[must_use]
 pub fn starts_a_plugin(manifest: &Manifest) -> bool {
     manifest
         .modules
@@ -466,6 +481,7 @@ pub(crate) struct Stage1 {
 }
 
 /// The native module a pack dependency's UUID stands for: vanilla knows two.
+#[must_use]
 pub fn native_module_of(uuid: Uuid) -> Option<&'static str> {
     match uuid.as_u128() {
         0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678 => Some("@minecraft/server"),

@@ -2,6 +2,7 @@
 //! with no finding when each has the JSON type vanilla reads.
 
 use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::shared::{IntRange, RangeForm};
 use bedrock_addon_family_loot::{
@@ -119,10 +120,9 @@ fn range(min: i32, max: i32, form: RangeForm) -> IntRange {
     IntRange::new(min, max, form)
 }
 
-#[test]
-fn every_function_reads_its_parameters() {
-    let text = with_functions(ALL_FUNCTIONS);
-    let expected = vec![
+/// What `ALL_FUNCTIONS` reads as up to `explosion_decay`, in order.
+fn earlier_function_kinds() -> Vec<FunctionKind> {
+    vec![
         FunctionKind::SetCount {
             count: Some(RandomValueBounds::Exact(3.0)),
         },
@@ -149,7 +149,7 @@ fn every_function_reads_its_parameters() {
                 name: "sharpness".to_owned(),
                 min: Some(1),
                 max: Some(5),
-                extra: Default::default(),
+                extra: Extra::default(),
             }]),
         },
         FunctionKind::EnchantRandomly {
@@ -176,9 +176,15 @@ fn every_function_reads_its_parameters() {
             patterns: Some(vec![BannerPattern {
                 pattern: "bo".to_owned(),
                 color: Some(ItemColor::Blue),
-                extra: Default::default(),
+                extra: Extra::default(),
             }]),
         },
+    ]
+}
+
+/// What `ALL_FUNCTIONS` reads as from `explosion_decay` on, in order.
+fn later_function_kinds() -> Vec<FunctionKind> {
+    vec![
         FunctionKind::ExplosionDecay,
         FunctionKind::SetName {
             name: Some("Excalibur".to_owned()),
@@ -192,7 +198,7 @@ fn every_function_reads_its_parameters() {
                 SpecificEnchant {
                     id: "unbreaking".to_owned(),
                     level: Some(range(1, 3, RangeForm::Array)),
-                    extra: Default::default(),
+                    extra: Extra::default(),
                 },
             ]),
         },
@@ -210,7 +216,7 @@ fn every_function_reads_its_parameters() {
         FunctionKind::SetStewEffect {
             effects: Some(vec![StewEffect {
                 id: Some(3),
-                extra: Default::default(),
+                extra: Extra::default(),
             }]),
         },
         FunctionKind::SetOminousBottleAmplifier {
@@ -223,7 +229,14 @@ fn every_function_reads_its_parameters() {
         FunctionKind::SetPotion {
             id: Some("healing".to_owned()),
         },
-    ];
+    ]
+}
+
+#[test]
+fn every_function_reads_its_parameters() {
+    let text = with_functions(ALL_FUNCTIONS);
+    let mut expected = earlier_function_kinds();
+    expected.extend(later_function_kinds());
     assert_eq!(kinds(functions(&text)), expected);
 }
 
@@ -266,7 +279,7 @@ fn every_condition_reads_its_parameters() {
             enchantments: Some(vec![ToolEnchantment {
                 enchantment: Some("silk_touch".to_owned()),
                 levels: Some(levels),
-                extra: Default::default(),
+                extra: Extra::default(),
             }]),
             filter_any: Some(vec!["minecraft:is_pickaxe".to_owned()]),
             filter_all: Some(vec!["minecraft:is_tool".to_owned()]),
@@ -325,7 +338,7 @@ fn pool_tiers_and_entry_members_are_read() {
             initial_range: Some(2),
             bonus_rolls: Some(3),
             bonus_chance: Some(0.095),
-            extra: Default::default(),
+            extra: Extra::default(),
         })
     );
     let entry = &pool.entries()[0];

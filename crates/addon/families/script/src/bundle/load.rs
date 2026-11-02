@@ -336,6 +336,7 @@ impl Reported for ScriptBundle {
 /// The loader of `stack.scripts()`: the script files of every pack of the stack, one bundle
 /// per pack. The walk is the same on both sides; the side decides which module type runs the
 /// scripts (`script` in a behaviour pack, `client_script` in a resource pack).
+#[must_use]
 pub const fn load_bundles(_side: PackSide) -> CollectionLoader<Vec<ScriptBundle>, Walked> {
     CollectionLoader {
         walk: WALK,

@@ -169,11 +169,13 @@ impl Record {
 
     /// The comparator signal the game uses: the written one, else 1 (in the stable and in
     /// the beta struct alike).
+    #[must_use]
     pub fn effective_comparator_signal(&self) -> i32 {
         self.comparator_signal.unwrap_or(1)
     }
 
     /// The duration the game uses: the written one, else 0.0.
+    #[must_use]
     pub fn effective_duration(&self) -> f32 {
         self.duration.unwrap_or(0.0)
     }
@@ -181,6 +183,7 @@ impl Record {
     /// The sound name the beta struct plays: the written one, else the empty name. A stable
     /// document's unset sound is
     /// [`STABLE_DEFAULT_SOUND_EVENT`](Self::STABLE_DEFAULT_SOUND_EVENT).
+    #[must_use]
     pub fn effective_beta_sound_event(&self) -> &str {
         self.sound_event.as_ref().map_or("", |name| name.as_str())
     }

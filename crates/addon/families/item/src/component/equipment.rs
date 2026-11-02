@@ -37,6 +37,7 @@ pub struct Durability {
 
 impl Durability {
     /// A durability of `max_durability`.
+    #[must_use]
     pub fn new(max_durability: i32) -> Self {
         Self {
             max_durability,
@@ -85,6 +86,7 @@ impl DurabilityThreshold {
     pub const DEFAULT_PARTICLE_TYPE: u32 = 0;
 
     /// The sound name the game uses: the written one, else the empty name.
+    #[must_use]
     pub fn effective_sound_event(&self) -> &str {
         self.sound_event.as_ref().map_or("", |name| name.as_str())
     }
@@ -211,6 +213,7 @@ pub struct Wearable {
 
 impl Wearable {
     /// Worn in `slot`, no protection.
+    #[must_use]
     pub fn new(slot: WearableSlot) -> Self {
         Self {
             slot,
@@ -247,6 +250,7 @@ pub enum WearableSlot {
 
 impl WearableSlot {
     /// The JSON spelling.
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Offhand => "slot.weapon.offhand",

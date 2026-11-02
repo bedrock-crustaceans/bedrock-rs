@@ -36,6 +36,7 @@ const LEGACY_RECIPE_UNTIL: SemVersion = SemVersion::new(1, 19, 22);
 /// Whether a shaped or shapeless recipe written in `format_version` must have `unlock`: from
 /// 1.20.10 a recipe without it is not loaded ("1.20+ Recipes require unlock data"); below, the
 /// game fills in a default requirement.
+#[must_use]
 pub fn unlock_required(format_version: FormatVersion) -> bool {
     format_version >= UNLOCK_REQUIRED_SINCE
 }
@@ -43,6 +44,7 @@ pub fn unlock_required(format_version: FormatVersion) -> bool {
 /// Whether input ingredients (shaped `key` values, brewing and material-reduction `input`) may
 /// carry `count` in a pack with this `min_engine_version`: only up to 1.19.22, inclusive
 /// ("legacy recipes"). Reagents never may.
+#[must_use]
 pub fn input_count_allowed(min_engine_version: &MinEngineVersion) -> bool {
     min_engine_version.version <= LEGACY_RECIPE_UNTIL
 }
@@ -488,11 +490,13 @@ pub struct SmithingTrim {
 
 impl Recipes {
     /// The recipe `id` of `namespace`.
+    #[must_use]
     pub fn get(&self, namespace: RecipeNamespace, id: &RecipeId) -> Option<&Document<Recipe>> {
         self.registry(namespace).get(id)
     }
 
     /// The registry of `namespace`.
+    #[must_use]
     pub fn registry(&self, namespace: RecipeNamespace) -> &Registry<Recipe> {
         match namespace {
             RecipeNamespace::Crafting => &self.crafting,
@@ -507,6 +511,7 @@ impl Recipes {
 
     /// Every effective recipe: namespace by namespace in the order of [`RecipeNamespace`], each
     /// in load order.
+    #[must_use]
     pub fn iter(&self) -> Iter<'_> {
         Iter {
             recipes: self,
@@ -516,6 +521,7 @@ impl Recipes {
     }
 
     /// How many effective recipes there are, over every namespace.
+    #[must_use]
     pub fn len(&self) -> usize {
         RecipeNamespace::ALL
             .iter()
@@ -524,6 +530,7 @@ impl Recipes {
     }
 
     /// No recipe loaded.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -579,6 +586,7 @@ impl RecipeKind {
     ];
 
     /// The payload key (`minecraft:recipe_shaped`).
+    #[must_use]
     pub fn payload_key(self) -> &'static str {
         match self {
             Self::Shaped => "minecraft:recipe_shaped",
@@ -593,6 +601,7 @@ impl RecipeKind {
     }
 
     /// The type of a payload key.
+    #[must_use]
     pub fn from_payload_key(key: &str) -> Option<RecipeKind> {
         Self::ALL
             .iter()
@@ -601,6 +610,7 @@ impl RecipeKind {
     }
 
     /// The namespace its identifiers live in.
+    #[must_use]
     pub fn namespace(self) -> RecipeNamespace {
         match self {
             Self::Shaped | Self::Shapeless => RecipeNamespace::Crafting,
@@ -616,6 +626,7 @@ impl RecipeKind {
 
 impl Tags {
     /// The tags, in order.
+    #[must_use]
     pub fn as_slice(&self) -> &[String] {
         match self {
             Self::One(tag) => std::slice::from_ref(tag),
@@ -626,6 +637,7 @@ impl Tags {
 
 impl Output {
     /// The items, in order.
+    #[must_use]
     pub fn as_slice(&self) -> &[Ingredient] {
         match self {
             Self::One(item) => std::slice::from_ref(item),
@@ -636,6 +648,7 @@ impl Output {
 
 impl UnlockContext {
     /// The JSON spelling (`"AlwaysUnlocked"`).
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::None => "None",
@@ -646,6 +659,7 @@ impl UnlockContext {
     }
 
     /// The context a JSON spelling names; case matters.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<UnlockContext> {
         match name {
             "None" => Some(Self::None),

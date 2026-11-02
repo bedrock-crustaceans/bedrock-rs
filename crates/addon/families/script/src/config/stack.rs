@@ -48,6 +48,7 @@ impl ScriptConfig {
     ///
     /// One call reads the folder's whole list; for every script module of a stack use
     /// [`filter_stack`](Self::filter_stack), which reads each folder's list once.
+    #[must_use]
     pub fn filter(&self, plugin: &ScriptPlugin) -> PluginVerdict {
         let config = self.for_module(plugin.module_uuid);
         verdict(config, &allowed_set(config), plugin)
@@ -220,6 +221,7 @@ impl ScriptConfig {
     /// A server-net entry with `max_websocket_payload_size` is refused as a whole by an
     /// engine before [`PAYLOAD_SIZE_SINCE`], which then leaves the pack's requests
     /// unrestricted.
+    #[must_use]
     pub fn engine_findings(&self, target: FormatVersion) -> Diagnostics {
         let mut findings = Diagnostics::default();
         if target >= PAYLOAD_SIZE_SINCE {

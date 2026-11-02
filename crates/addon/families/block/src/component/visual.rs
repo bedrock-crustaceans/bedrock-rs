@@ -32,6 +32,7 @@ pub enum Geometry {
 
 impl Geometry {
     /// The geometry identifier.
+    #[must_use]
     pub fn identifier(&self) -> &str {
         match self {
             Geometry::Identifier(id) => id,
@@ -181,12 +182,14 @@ impl MaterialInstances {
     ];
 
     /// The instance `*` (or the one it names) renders opaque, as the game's render-layer check treats it.
+    #[must_use]
     pub fn is_opaque(&self) -> bool {
         self.resolve("*")
             .is_none_or(|i| i.render_method.unwrap_or_default() == RenderMethod::Opaque)
     }
 
     /// The instance `name`, following aliases (at most 64 hops).
+    #[must_use]
     pub fn resolve(&self, name: &str) -> Option<&MaterialInstance> {
         let mut name = name;
         for _ in 0..64 {

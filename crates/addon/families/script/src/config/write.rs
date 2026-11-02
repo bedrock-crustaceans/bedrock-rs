@@ -107,6 +107,11 @@ impl PackPermissions {
     /// over one that loads, has no JSON form and is refused, as is an unknown member named
     /// like a known one, and a setting of another module or an unknown member nested so
     /// deep that the file would not load.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError::NotRepresentable`] for the cases named above: an `Unrepresentable` setting
+    /// of `server_net` or a member too deeply nested for the file to load.
     pub fn to_json(&self) -> Result<String, EncodeError> {
         const KNOWN: [&str; 3] = [
             "allowed_modules",
@@ -193,6 +198,10 @@ impl NetModuleConfig {
 impl PackScriptConfig {
     /// `variables.json` as JSON text: every variable, in order. A variable nested so deep
     /// that the file would not load is refused, at the place that is too deep.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError::NotRepresentable`] for a value nested so deep that the file would not load.
     pub fn variables_json(&self) -> Result<String, EncodeError> {
         let mut root = VObject::new();
         for (name, value) in &self.variables {
@@ -202,6 +211,11 @@ impl PackScriptConfig {
     }
 
     /// `secrets.json` as JSON text: every secret **with its value**, in order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError`] when the text cannot be written; every secret is a string, so a
+    /// refusal is not expected in practice.
     pub fn secrets_json(&self) -> Result<String, EncodeError> {
         let mut root = VObject::new();
         for (name, secret) in &self.secrets {
@@ -215,6 +229,11 @@ impl CommandsConfig {
     /// The file as JSON text: `default_permission_level` when set, `permission_levels` when
     /// not empty, then the unknown members. An unknown member named like a known one is
     /// refused, as is one nested so deep that the file would not load.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError::NotRepresentable`] for an unknown member named like a known one, or
+    /// one nested so deep that the file would not load.
     pub fn to_json(&self) -> Result<String, EncodeError> {
         const KNOWN: [&str; 2] = ["default_permission_level", "permission_levels"];
         let mut root = VObject::new();

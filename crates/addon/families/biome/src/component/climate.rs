@@ -224,6 +224,7 @@ pub struct Tags {
 
 impl Tags {
     /// Whether the biome has `tag`.
+    #[must_use]
     pub fn contains(&self, tag: &str) -> bool {
         self.tags.iter().any(|t| t.0 == tag)
     }
@@ -242,6 +243,7 @@ pub struct VillageType {
 
 impl VillageType {
     /// The component with `kind` and no unknown members.
+    #[must_use]
     pub fn new(kind: VillageKind) -> Self {
         Self {
             kind,

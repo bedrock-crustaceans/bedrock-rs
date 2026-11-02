@@ -237,6 +237,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Recipes {
 
 /// The loader of `bp.recipes()`: `recipes/**/*.json` of every behaviour pack, one registry per
 /// namespace.
+#[must_use]
 pub const fn load_recipes() -> CollectionLoader<Recipes, FileOutcome> {
     CollectionLoader {
         walk: WALK,

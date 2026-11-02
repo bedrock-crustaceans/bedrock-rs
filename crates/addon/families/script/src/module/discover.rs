@@ -53,6 +53,7 @@ impl<'a> ScriptContext<'a> {
 impl ScriptContext<'static> {
     /// The gates of a pack loaded with `cx`: its Beta APIs toggle and whether it is a
     /// base-game pack. Not an editor world, no internal versions, no permission list.
+    #[must_use]
     pub fn for_pack(cx: &LoadContext) -> Self {
         Self {
             beta_apis: cx.beta_apis,
@@ -98,6 +99,7 @@ impl ScriptFiles {
     }
 
     /// Whether `member` (a path below `scripts/`) is a script file.
+    #[must_use]
     pub fn contains(&self, member: &str) -> bool {
         self.members
             .binary_search_by(|have| (**have).cmp(member))
@@ -105,11 +107,13 @@ impl ScriptFiles {
     }
 
     /// How many script files.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.members.len()
     }
 
     /// Whether there is no script file.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.members.is_empty()
     }
@@ -132,6 +136,7 @@ pub enum ScriptRuntime {
 impl ScriptRuntime {
     /// The runtime of a module's `language`; `None` for a language vanilla has no runtime
     /// for (`typescript`, `js`, `javascript ` with a space).
+    #[must_use]
     pub fn from_language(language: Option<&str>) -> Option<Self> {
         // The game compares the name with `javascript` after ASCII lower-casing, and an
         // empty name gets the default runtime.
@@ -143,6 +148,7 @@ impl ScriptRuntime {
     }
 
     /// The runtime's name as vanilla prints it: `JavaScript`.
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::JavaScript => "JavaScript",
@@ -150,6 +156,7 @@ impl ScriptRuntime {
     }
 
     /// The extension of the runtime's files, with its dot: `.js`.
+    #[must_use]
     pub fn extension(self) -> &'static str {
         match self {
             Self::JavaScript => ".js",
@@ -357,11 +364,13 @@ pub struct Discovery {
 impl Discovery {
     /// The script to run; `None` when a finding disabled it. The pack's data loads either
     /// way.
+    #[must_use]
     pub fn plugin(&self) -> Option<&ScriptPlugin> {
         self.plugin.as_ref()
     }
 
     /// The findings, in the order vanilla logs them.
+    #[must_use]
     pub fn diagnostics(&self) -> &Diagnostics {
         &self.diagnostics
     }
@@ -389,6 +398,7 @@ pub struct ScriptDiscovery<'a> {
 
 impl<'a> ScriptDiscovery<'a> {
     /// A discovery against `catalog`, with no plugin yet.
+    #[must_use]
     pub fn new(catalog: &'a ModuleCatalog) -> Self {
         Self {
             catalog,

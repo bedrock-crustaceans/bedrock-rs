@@ -134,6 +134,7 @@ pub enum Prim {
 
 impl Prim {
     /// The primitive written `name`, compared exactly.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Some(match name {
             "string" => Self::String,
@@ -187,6 +188,13 @@ impl TypeDescriptor {
     /// [`TypeKind::Generic`] whatever the name; `is_bind_type` a [`TypeKind::Bind`]; a name in
     /// the primitive table a [`TypeKind::Prim`]; anything else is [`TypeKind::Opaque`].
     /// `valid_range` is dropped.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`MetaError`] when a composite tag lacks one of its payload members
+    /// ([`MetaError::MissingPayload`]), a descriptor carries a payload member its name does not
+    /// take ([`MetaError::UnexpectedPayload`]), or `error_types` is empty or given without
+    /// `is_errorable` ([`MetaError::ErrorTypes`]).
     pub fn lower(raw: &RawTypeDesc) -> Result<Self, MetaError> {
         check_payload(raw)?;
         let kind = if let Some(base) = &raw.generic_base {

@@ -16,6 +16,7 @@ impl Item {
     /// The stack size vanilla uses: `minecraft:max_stack_size`, else 1 for an item worn in an
     /// armour slot (as of 1.26.45; which slots count is inferred: all but the off hand), else
     /// 64; for the legacy item format, its `minecraft:max_stack_size`.
+    #[must_use]
     pub fn max_stack_size(&self) -> i32 {
         use super::component::{MaxStackSize, Wearable, WearableSlot};
         if let Some(format) = &self.legacy.format_item {
@@ -40,6 +41,7 @@ impl Item {
     /// custom component, a key no table knows or a side-car member set on it alone
     /// (`NotRepresentable` at `components`). With a registered component it is written in the
     /// newest format.
+    #[must_use]
     pub fn new(identifier: ItemId) -> Item {
         Item {
             description: ItemDescription {
@@ -61,6 +63,7 @@ impl Item {
 
     /// Runs the family's rules as if the item were loaded at the newest format version from a
     /// pack with `cx`: the component gates, the identifier rule and the validators.
+    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         let version = FormatVersion::new(1, 26, 50);
         let mut at = JsonPath::new();

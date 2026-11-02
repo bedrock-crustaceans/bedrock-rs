@@ -37,6 +37,7 @@ impl TrimPattern {
     ///
     /// Vanilla has no per-entry version and always sends its whole table; this is for a tool
     /// that builds the lists for an older client.
+    #[must_use]
     pub fn since_engine(&self) -> Option<SemVersion> {
         table::pattern_since(self.pattern_id.as_str())
     }
@@ -61,6 +62,7 @@ impl TrimMaterial {
     ///
     /// Vanilla has no per-entry version and always sends its whole table; this is for a tool
     /// that builds the lists for an older client.
+    #[must_use]
     pub fn since_engine(&self) -> Option<SemVersion> {
         table::material_since(self.material_id.as_str())
     }
@@ -80,11 +82,13 @@ impl FormatCode {
     }
 
     /// The text as given.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// The character after the section sign, when the text is exactly `§` and one character.
+    #[must_use]
     pub fn letter(&self) -> Option<char> {
         let mut rest = self.0.strip_prefix('§')?.chars();
         let letter = rest.next()?;
@@ -117,16 +121,19 @@ pub struct TrimData {
 impl TrimData {
     /// The tables compiled into the engine: 18 patterns and 11 materials, in vanilla's build
     /// order.
+    #[must_use]
     pub fn vanilla() -> &'static TrimData {
         table::vanilla()
     }
 
     /// The pattern a smithing template item applies.
+    #[must_use]
     pub fn pattern_for_item(&self, item: &ItemId) -> Option<&TrimPattern> {
         self.by_item.get(item)
     }
 
     /// The pattern with this identifier (`ward`), compared as written.
+    #[must_use]
     pub fn pattern(&self, id: &str) -> Option<&TrimPattern> {
         self.by_pattern
             .values()
@@ -134,6 +141,7 @@ impl TrimData {
     }
 
     /// The first material whose ingredient is this item.
+    #[must_use]
     pub fn material_for_item(&self, item: &ItemId) -> Option<&TrimMaterial> {
         self.materials
             .iter()
@@ -141,6 +149,7 @@ impl TrimData {
     }
 
     /// The first material with this identifier (`quartz`), compared as written.
+    #[must_use]
     pub fn material(&self, id: &str) -> Option<&TrimMaterial> {
         self.materials
             .iter()
@@ -149,17 +158,20 @@ impl TrimData {
 
     /// The patterns, one per template item: in build order for the vanilla table, by template
     /// item for one built from a packet.
+    #[must_use]
     pub fn patterns(&self) -> impl ExactSizeIterator<Item = &TrimPattern> + '_ {
         self.by_item.values()
     }
 
     /// The materials, in build order.
+    #[must_use]
     pub fn materials(&self) -> &[TrimMaterial] {
         &self.materials
     }
 
     /// What building this value found: a pattern [`filtered`](Self::filtered) left out, a
     /// template item [`from_packet`](Self::from_packet) met twice. Empty for the vanilla table.
+    #[must_use]
     pub fn diagnostics(&self) -> &Diagnostics {
         &self.diagnostics
     }

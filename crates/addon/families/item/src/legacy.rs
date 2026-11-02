@@ -90,6 +90,7 @@ pub struct LegacyItemData {
 impl LegacyItemData {
     /// The legacy use duration in ticks (`(int)(seconds × 20)` of `minecraft:use_duration`),
     /// when the document wrote one.
+    #[must_use]
     pub fn use_duration_ticks(&self) -> Option<i32> {
         let raw = self.shared.get("minecraft:use_duration")?;
         let seconds = number(raw).or_else(|| raw.as_object()?.get("value").and_then(number))?;
@@ -537,6 +538,7 @@ pub struct LegacyFood {
 impl LegacyFood {
     /// The saturation factor vanilla uses: the number, or the name's value (lower-cased; an
     /// unknown name is 0.6, silently).
+    #[must_use]
     pub fn saturation(&self) -> f32 {
         match &self.saturation_modifier {
             None => 0.6,

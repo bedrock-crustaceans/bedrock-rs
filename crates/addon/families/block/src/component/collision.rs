@@ -31,6 +31,7 @@ pub enum CollisionBox {
 
 impl CollisionBox {
     /// The boxes it describes: none for `false`, the full block for `true`.
+    #[must_use]
     pub fn boxes(&self) -> Vec<CollisionBoundingBox> {
         match self {
             CollisionBox::Enabled(true) => vec![CollisionBoundingBox::default()],
@@ -68,16 +69,19 @@ pub struct CollisionBoundingBox {
 
 impl CollisionBoundingBox {
     /// The minimum corner of the 1.26.20 reading: `origin`, `[-8, 0, -8]` when absent.
+    #[must_use]
     pub fn origin(&self) -> Vec3 {
         self.origin.unwrap_or(vec3(-8.0, 0.0, -8.0))
     }
 
     /// The extent of the 1.26.20 reading: `size`, `[16, 16, 16]` when absent.
+    #[must_use]
     pub fn size(&self) -> Vec3 {
         self.size.unwrap_or(vec3(16.0, 16.0, 16.0))
     }
 
     /// Whether the box is written by `min`/`max` (either of them).
+    #[must_use]
     pub fn has_min_max(&self) -> bool {
         self.min.is_some() || self.max.is_some()
     }
@@ -86,6 +90,7 @@ impl CollisionBoundingBox {
     /// `a = origin + (8, 0, 8)`, `b = a + size`, `lo`/`hi` their componentwise minimum and
     /// maximum, `min = (16 − hi.x, lo.y, lo.z)`, `max = (16 − lo.x, hi.y, hi.z)`: the x axis
     /// is mirrored. Only `min` and `max` are set.
+    #[must_use]
     pub fn from_origin_size(origin: Vec3, size: Vec3) -> CollisionBoundingBox {
         let (min, max) = legacy_aabb(origin, size);
         CollisionBoundingBox {
@@ -117,6 +122,7 @@ impl CollisionBoundingBox {
     /// axis: the inverse of [`from_origin_size`](Self::from_origin_size) on the box's
     /// [`corners`](Self::corners), `origin = (8 − max.x, min.y, min.z − 8)`,
     /// `size = max − min`.
+    #[must_use]
     pub fn legacy_origin_size(&self) -> (Vec3, Vec3) {
         let (min, max) = self.corners();
         let origin = [8.0 - max[0], min[1], min[2] - 8.0];

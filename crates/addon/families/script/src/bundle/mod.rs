@@ -38,6 +38,7 @@ impl ScriptRoot {
     pub const DIRECTORY: &'static str = "scripts";
 
     /// `scripts/`.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         Self::PREFIX
     }
@@ -67,12 +68,14 @@ impl ScriptPath {
     /// `scripts/` at any depth and ends in the three bytes `.js`. `.JS`, `.mjs`, `.ts` and
     /// `.json` files are no script files, nor is any file outside `scripts/`.
     // The game compares the file's extension, byte for byte, with `.js`.
+    #[must_use]
     pub fn of_pack_path(path: &PackPath) -> Option<Self> {
         let name = path.as_str().strip_prefix(ScriptRoot::PREFIX)?;
         (normalize::extension(name) == ".js").then(|| Self(name.to_owned()))
     }
 
     /// The name as text.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -157,6 +160,7 @@ pub struct ScriptFile {
 
 impl ScriptFile {
     /// The file's import sites, in file order; none for a file that was not read.
+    #[must_use]
     pub fn imports(&self) -> &[ImportSite] {
         self.content
             .as_ref()
@@ -247,6 +251,7 @@ pub enum ImportKind {
 impl ImportKind {
     /// The import is linked with the importing file: `Static`, `ReExport`, `SideEffect`. A
     /// failure of one is a failure of every file that statically reaches it.
+    #[must_use]
     pub fn is_static(self) -> bool {
         matches!(self, Self::Static | Self::ReExport | Self::SideEffect)
     }
@@ -327,6 +332,7 @@ pub struct ImportGraph {
 
 impl ImportGraph {
     /// Whether the entry reaches `file` at all.
+    #[must_use]
     pub fn reaches(&self, file: &ScriptPath) -> bool {
         self.reachable_static.contains(file) || self.reachable_dynamic.contains(file)
     }
@@ -461,6 +467,7 @@ impl ScriptBundle {
     }
 
     /// The main file, when the entry names a file of the bundle.
+    #[must_use]
     pub fn main(&self) -> Option<&ScriptFile> {
         self.files.get(&self.entry.as_ref()?.main)
     }

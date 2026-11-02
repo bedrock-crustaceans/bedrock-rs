@@ -729,7 +729,7 @@ fn the_member_the_newest_format_refuses_is_noted_at_the_load_as_an_information()
 /// In a cereal item (1.26.30 and later, the
 /// `MinecraftDocumentInput` slices) a component whose typed read fails (`0x8`) or whose required
 /// member is missing (`0x80`) rejects the item with an error at the member, under both masks;
-/// below 1.26.30 (1.21.0: the JsonCpp `ComponentItemData_*` chain) the read fails the same way
+/// below 1.26.30 (1.21.0: the `JsonCpp` `ComponentItemData_*` chain) the read fails the same way
 /// and the item is refused as well.
 #[test]
 fn a_failed_component_read_rejects_the_item_in_a_cereal_and_in_a_legacy_one() {

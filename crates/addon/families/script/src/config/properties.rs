@@ -169,6 +169,7 @@ impl ServerProperties {
     /// Differences from the server: a line longer than [`PROPERTIES_LINE_MAX`] bytes is an
     /// error and the lines after it are still read (the server stops reading there); bytes
     /// that are not UTF-8 are replaced by U+FFFD with an information.
+    #[must_use]
     pub fn parse(bytes: &[u8]) -> ServerProperties {
         let mut properties = ServerProperties::default();
         let mut offset = 0;
@@ -191,11 +192,13 @@ impl ServerProperties {
     }
 
     /// What the file said while it was read.
+    #[must_use]
     pub fn diagnostics(&self) -> &Diagnostics {
         &self.diagnostics
     }
 
     /// The value the server ends with for `key`: that of its last applied line.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&str> {
         self.entries
             .iter()
@@ -345,6 +348,10 @@ impl ServerProperties {
     /// path: an empty value, a `=` or a line break in either, trailing white space in either,
     /// a key that starts with a space or `#`, a line longer than [`PROPERTIES_LINE_MAX`]
     /// bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`EncodeError::NotRepresentable`] for the first entry the format cannot hold.
     pub fn to_text(&self) -> Result<String, EncodeError> {
         let mut out = String::new();
         for (index, entry) in self.entries.iter().enumerate() {
@@ -467,6 +474,7 @@ pub enum AutoAttach {
 
 impl AutoAttach {
     /// The mode's word in the file.
+    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Disabled => "disabled",
@@ -476,6 +484,7 @@ impl AutoAttach {
     }
 
     /// The mode called `name`, exactly (case-sensitive).
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         [Self::Disabled, Self::Connect, Self::Listen]
             .into_iter()
@@ -587,6 +596,7 @@ pub enum ContentLogLevel {
 
 impl ContentLogLevel {
     /// The level's word in the file.
+    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Verbose => "verbose",
@@ -597,6 +607,7 @@ impl ContentLogLevel {
     }
 
     /// The level called `name`, exactly (case-sensitive).
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         [Self::Verbose, Self::Info, Self::Warning, Self::Error]
             .into_iter()

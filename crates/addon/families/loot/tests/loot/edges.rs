@@ -2,7 +2,7 @@
 //! (reviewers mutate each rule; a test here fails for each mutation).
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Severity};
-use bedrock_addon_core::document::{Content, Document};
+use bedrock_addon_core::document::{Content, Document, Extra};
 use bedrock_addon_core::json::{EncodeError, Unrepresentable};
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::shared::RangeForm;
@@ -863,7 +863,7 @@ fn patterns_need_a_default_banner() {
         Some(vec![BannerPattern {
             pattern: "bo".to_owned(),
             color: Some(ItemColor::Brown),
-            extra: Default::default()
+            extra: Extra::default()
         }])
     );
     // A captain's banner takes no patterns, not even none.
@@ -1092,7 +1092,7 @@ fn enchant_book_options_read_whole_levels_and_keep_other_members() {
             name: "bow_infinity".to_owned(),
             min: None,
             max: None,
-            extra: Default::default()
+            extra: Extra::default()
         }
     );
     assert_eq!(
@@ -1325,7 +1325,7 @@ fn every_member_of_every_nested_object_is_written_back() {
                 enchantments: Some(vec![ToolEnchantment {
                     enchantment: Some("silk_touch".to_owned()),
                     levels: None,
-                    extra: Default::default(),
+                    extra: Extra::default(),
                 }]),
                 filter_any: None,
                 filter_all: Some(vec!["minecraft:is_tool".to_owned()]),
@@ -1337,7 +1337,7 @@ fn every_member_of_every_nested_object_is_written_back() {
                     LootFunction::new(FunctionKind::SetStewEffect {
                         effects: Some(vec![StewEffect {
                             id: Some(3),
-                            extra: Default::default(),
+                            extra: Extra::default(),
                         }]),
                     }),
                     LootFunction::new(FunctionKind::EnchantBookForTrading {
@@ -1349,7 +1349,7 @@ fn every_member_of_every_nested_object_is_written_back() {
                             name: "mending".to_owned(),
                             min: None,
                             max: Some(1),
-                            extra: Default::default(),
+                            extra: Extra::default(),
                         }]),
                     }),
                 ]),

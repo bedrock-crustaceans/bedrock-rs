@@ -10,13 +10,14 @@ use bedrock_addon_family_loot::{
     ItemData, ItemDataKind, LootCondition, LootFunction, LootTable, Pool, RandomValueBounds,
     SpecificEnchant,
 };
+use facet_value::VString;
 
 use super::common::{
     at_least, cx, cx_at, findings, fixture, load, load_fixture, load_in, path, table_path, text,
 };
 
-fn item(name: &str) -> Option<ItemId> {
-    Some(ItemId::new(name).unwrap())
+fn item(name: &str) -> ItemId {
+    ItemId::new(name).unwrap()
 }
 
 #[test]
@@ -35,7 +36,7 @@ fn lt01_pools_only_loads_without_a_version_warning() {
     let EntryKind::Item { name, functions } = &entries[0].kind else {
         panic!("an item entry: {:?}", entries[0].kind);
     };
-    assert_eq!(*name, item("minecraft:rotten_flesh"));
+    assert_eq!(*name, Some(item("minecraft:rotten_flesh")));
     assert_eq!(
         functions.as_deref().unwrap(),
         [
@@ -142,7 +143,7 @@ fn lt06_an_entry_with_pools_carries_a_sub_table() {
     let EntryKind::Item { name, .. } = &sub[0].entries()[0].kind else {
         panic!("an item entry");
     };
-    assert_eq!(*name, item("minecraft:apple"));
+    assert_eq!(*name, Some(item("minecraft:apple")));
 }
 
 #[test]
@@ -412,7 +413,7 @@ fn lt23_keys_vanilla_does_not_read_are_kept_and_reported_at_info() {
             .extra
             .get("type")
             .and_then(|v| v.as_string())
-            .map(|s| s.as_str()),
+            .map(VString::as_str),
         Some("minecraft:chest")
     );
     let found = findings(&table);

@@ -193,6 +193,7 @@ impl ScriptConfig {
     /// The configuration of a world a client hosts: no file is read and every module is
     /// allowed.
     // A client-hosted world lets every script module through, whatever a server would say.
+    #[must_use]
     pub fn client_hosted() -> ScriptConfig {
         let mut config = ScriptConfig::default();
         config.default.permissions.allowed_modules = vec![WILDCARD_MODULE.to_owned()];
@@ -202,6 +203,7 @@ impl ScriptConfig {
 
     /// What the files said while they were read, folders in name order and `commands.json`
     /// last.
+    #[must_use]
     pub fn diagnostics(&self) -> &Diagnostics {
         &self.diagnostics
     }
@@ -209,6 +211,7 @@ impl ScriptConfig {
     /// The configuration the script module `script_module_uuid` uses: the folder named with
     /// the UUID's lower-case hyphenated form, else the whole of `default`.
     // The folder's name is the UUID's string form, which is lower case with hyphens.
+    #[must_use]
     pub fn for_module(&self, script_module_uuid: Uuid) -> &PackScriptConfig {
         let mut buffer = Uuid::encode_buffer();
         let key: &str = script_module_uuid.hyphenated().encode_lower(&mut buffer);
@@ -276,6 +279,7 @@ impl PackPermissions {
     /// Whether a pack may depend on the module `name`: the list holds exactly that name
     /// (case-sensitive, without a version), or [`WILDCARD_MODULE`].
     // The comparison is exact: the server does not fold case or strip a version.
+    #[must_use]
     pub fn is_module_allowed(&self, name: &str) -> bool {
         self.allowed_modules
             .iter()
@@ -295,6 +299,7 @@ impl SecretString {
     }
 
     /// The secret's value.
+    #[must_use]
     pub fn expose(&self) -> &str {
         &self.0
     }
@@ -359,6 +364,7 @@ impl CommandPermissionLevel {
     ];
 
     /// The level's name in the files.
+    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Any => "any",
@@ -371,6 +377,7 @@ impl CommandPermissionLevel {
     }
 
     /// The level called `name`, exactly (case-sensitive).
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|level| level.name() == name)
     }

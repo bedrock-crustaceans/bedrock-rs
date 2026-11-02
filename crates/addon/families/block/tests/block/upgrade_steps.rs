@@ -5,6 +5,7 @@ use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::testing::{Checks, Run, step_output};
 use bedrock_addon_family_block::history::v1_18_0;
+use facet_value::VNumber;
 
 /// A JSON value from text.
 fn json(text: &str) -> Value {
@@ -25,7 +26,7 @@ fn at<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {
 
 /// The number at `path`.
 fn number(value: &Value, path: &str) -> Option<f64> {
-    at(value, path)?.as_number().map(|n| n.to_f64_lossy())
+    at(value, path)?.as_number().map(VNumber::to_f64_lossy)
 }
 
 #[test]
@@ -71,7 +72,7 @@ fn ticking_becomes_queued_ticking_in_ticks() {
         .and_then(Value::as_array)
         .expect("queued_ticking.interval_range")
         .iter()
-        .filter_map(|v| v.as_number().map(|n| n.to_f64_lossy()))
+        .filter_map(|v| v.as_number().map(VNumber::to_f64_lossy))
         .collect();
     assert_eq!(range, [20.0, 50.0], "[2.5, 1.0] → [20, 50]");
     assert!(

@@ -23,11 +23,13 @@ impl Privilege {
     pub const EARLY_EXECUTION: Self = Self(2);
 
     /// The flags as vanilla's bitmask.
+    #[must_use]
     pub const fn bits(self) -> u8 {
         self.0
     }
 
     /// The set with the bits of `bits`; `None` when a bit other than the two flags is set.
+    #[must_use]
     pub const fn from_bits(bits: u8) -> Option<Self> {
         if bits & !3 == 0 {
             Some(Self(bits))
@@ -37,11 +39,13 @@ impl Privilege {
     }
 
     /// Every flag of `other` is in this set.
+    #[must_use]
     pub const fn contains(self, other: Self) -> bool {
         self.0 & other.0 == other.0
     }
 
     /// No flag: the `default` privilege.
+    #[must_use]
     pub const fn is_default(self) -> bool {
         self.0 == 0
     }
@@ -114,6 +118,12 @@ impl PrivilegeList {
     /// `restricted_execution` and `early_execution`, each at most once and in that order; any
     /// other name goes to `overlay`. An empty list, `default` beside another name, or a repeated
     /// or reordered flag is an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MetaError::EmptyPrivilegeList`] for an empty list, [`MetaError::DefaultNotAlone`]
+    /// for `default` beside another name, and [`MetaError::PrivilegeOrder`] for a repeated or
+    /// reordered flag.
     pub fn from_names(names: &[PrivilegeName]) -> Result<Self, MetaError> {
         // The game writes a privilege value as a list: value 0 is `default`; bit 0 is
         // `restricted_execution`, then bit 1 `early_execution`; any other value adds nothing.

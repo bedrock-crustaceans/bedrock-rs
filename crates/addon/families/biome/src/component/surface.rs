@@ -66,6 +66,7 @@ pub enum Builder {
 
 impl Builder {
     /// The JSON `type` of the builder.
+    #[must_use]
     pub fn type_name(&self) -> &'static str {
         match self {
             Self::Overworld(_) => "minecraft:overworld",
@@ -229,16 +230,19 @@ pub struct NoiseBlockSpecifier {
 
 impl NoiseBlockSpecifier {
     /// The noise name, `""` when absent.
+    #[must_use]
     pub fn noise(&self) -> &str {
         self.noise.as_ref().map_or("", |noise| noise.0.as_str())
     }
 
     /// The threshold, `0` when absent.
+    #[must_use]
     pub fn threshold(&self) -> f32 {
         self.threshold.map_or(0.0, |t| t.0)
     }
 
     /// The range's ends as written, `(0, 0)` when absent (an absent end is `0`).
+    #[must_use]
     pub fn range(&self) -> (f32, f32) {
         self.range.as_ref().map_or((0.0, 0.0), |range| {
             // `FloatRange` orders a reversed pair; the game keeps the ends as written.

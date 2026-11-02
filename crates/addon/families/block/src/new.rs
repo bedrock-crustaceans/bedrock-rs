@@ -16,6 +16,7 @@ use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion};
 impl Block {
     /// A block with this identifier, no states, no components, no permutations, at the newest
     /// format version.
+    #[must_use]
     pub fn new(id: BlockId) -> Block {
         Block {
             description: Description::new(id),
@@ -33,6 +34,7 @@ impl Block {
     /// Runs the family's validation rules as if the block were loaded from a pack with `cx`:
     /// identifier and state rules, the permutation rules, component gates, the cross-component
     /// and trait rules. The block is not changed.
+    #[must_use]
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         let mut block = self.clone();
         let mut diagnostics = Diagnostics::default();
@@ -43,6 +45,7 @@ impl Block {
     }
 
     /// The states, the block's own followed by the ones its traits imply, by name.
+    #[must_use]
     pub fn states_with_traits(&self) -> IndexMap<String, StateValues> {
         let mut states = self.description.states.clone();
         for (name, values) in self.description.traits.implied_states() {
@@ -53,6 +56,7 @@ impl Block {
 
     /// How many permutations of state values the block has: the product of every state's
     /// value count, the trait states included.
+    #[must_use]
     pub fn permutation_count(&self) -> u64 {
         self.states_with_traits()
             .values()
@@ -63,6 +67,7 @@ impl Block {
 
 impl Description {
     /// A description with this identifier and nothing else.
+    #[must_use]
     pub fn new(identifier: BlockId) -> Description {
         Description {
             identifier,
@@ -106,6 +111,7 @@ impl Traits {
 
 impl Permutation {
     /// A permutation applied when `condition` is true, with no components yet.
+    #[must_use]
     pub fn new(condition: Molang) -> Permutation {
         Permutation {
             condition,
@@ -118,6 +124,7 @@ impl Permutation {
 
     /// [`Permutation::new`] from expression text, versioned as a block file of 1.26.20 or
     /// newer (Molang version 13).
+    #[must_use]
     pub fn when(condition: &str) -> Permutation {
         Permutation::new(Molang::Expr(MolangSource::string(
             condition,

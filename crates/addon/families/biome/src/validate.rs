@@ -180,6 +180,7 @@ fn check_identifier(identifier: &BiomeId, report: &mut Report<'_>) {
 // ---- block specifiers: unknown members -----------------------------------------------------
 
 /// Every block specifier of a component, with its path below the component.
+#[must_use]
 pub fn blocks(component: &BiomeComponent) -> Vec<(JsonPath, &BlockSpecifier)> {
     fn add<'b>(
         out: &mut Vec<(JsonPath, &'b BlockSpecifier)>,

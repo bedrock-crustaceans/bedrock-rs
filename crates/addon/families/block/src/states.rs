@@ -38,11 +38,13 @@ pub enum StateValues {
 
 impl StateValues {
     /// A boolean state: `[false, true]`.
+    #[must_use]
     pub fn bools() -> StateValues {
         StateValues::Bools(vec![false, true])
     }
 
     /// An integer state from `min` to `max` inclusive.
+    #[must_use]
     pub fn range(min: i32, max: i32) -> StateValues {
         StateValues::Range { min, max }
     }
@@ -60,6 +62,7 @@ impl StateValues {
     }
 
     /// How many values the state has (a range counts its integers).
+    #[must_use]
     pub fn len(&self) -> usize {
         match self {
             StateValues::Range { min, max } => {
@@ -70,6 +73,7 @@ impl StateValues {
     }
 
     /// The state has no values.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -193,6 +197,7 @@ pub struct Traits {
 
 impl Traits {
     /// No trait is set.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self == &Traits::default()
     }
@@ -220,6 +225,7 @@ pub struct PlacementDirection {
 
 impl PlacementDirection {
     /// The blocks a corner placement connects with: `blocks_to_corner_with`, none when absent.
+    #[must_use]
     pub fn blocks_to_corner_with(&self) -> &[BlockDescriptor] {
         self.blocks_to_corner_with.as_deref().unwrap_or_default()
     }
@@ -267,6 +273,7 @@ pub struct MultiBlock {
 
 impl MultiBlock {
     /// How many parts: `parts`, 2 when absent.
+    #[must_use]
     pub fn parts(&self) -> u8 {
         self.parts.map_or(2, |parts| parts.0)
     }

@@ -42,6 +42,10 @@ bedrock_addon_core::version_chain! {
 /// result [`Biome::parse`](bedrock_addon_core::document::Content::parse) gives for its file
 /// (`history::Any::upgrade`, realised over the document, which holds the origin of the file).
 /// A beta document is rejected here (it is a [`Beta`]).
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an error finding.
 pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Biome>, Rejected> {
     super::load::upgrade_document(document, cx)
 }
