@@ -12,14 +12,19 @@ permissions:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     env:
       # The workspace's test build outgrows the runner's disk with debug info and incremental files.
       CARGO_PROFILE_DEV_DEBUG: 0
       CARGO_INCREMENTAL: 0
     steps:
       - name: Free disk space
+        if: runner.os == 'Linux'
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
 
       - uses: actions/checkout@v6
@@ -60,8 +65,12 @@ jobs:
           args: --all -- --check
 
   clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
+    name: Clippy (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
