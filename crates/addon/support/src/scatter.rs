@@ -142,6 +142,7 @@ impl RandomDistribution {
     ];
 
     /// The JSON name.
+    #[must_use]
     pub fn name(self) -> &'static str {
         Self::NAMES
             .iter()
@@ -150,6 +151,7 @@ impl RandomDistribution {
     }
 
     /// The distribution of the JSON name `name`.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         Self::NAMES
             .iter()
@@ -159,6 +161,7 @@ impl RandomDistribution {
 
     /// `fixed_grid` or `jittered_grid`: the distributions that read `step_size` and
     /// `grid_offset`.
+    #[must_use]
     pub fn is_grid(self) -> bool {
         matches!(self, Self::FixedGrid | Self::JitteredGrid)
     }
@@ -187,12 +190,14 @@ pub enum CoordinateEvalOrder {
 
 impl ScatterParams {
     /// The coordinate order: `coordinate_eval_order`, `xzy` when absent.
+    #[must_use]
     pub fn eval_order(&self) -> CoordinateEvalOrder {
         self.coordinate_eval_order.unwrap_or_default()
     }
 
     /// The iterations vanilla uses: a constant below 0 is replaced by 1 (vanilla logs "Bad
     /// value for iterations - should be >= 0").
+    #[must_use]
     pub fn effective_iterations(&self) -> Molang {
         match self.iterations {
             Molang::Const(c) if c < 0.0 => Molang::Const(1.0),
@@ -202,6 +207,7 @@ impl ScatterParams {
 
     /// The chance vanilla uses: 100 % when absent or when a constant percentage is outside
     /// `(0, 100]`; a fraction whose denominator is not above its numerator gets denominator 1.
+    #[must_use]
     pub fn effective_chance(&self) -> ScatterChance {
         let always = ScatterChance::Percent(Molang::Const(100.0));
         match &self.scatter_chance {
@@ -221,12 +227,14 @@ impl ScatterParams {
 }
 
 /// Vanilla's percentage check: `value <= 0 || value > 100` fails, so 100 itself passes.
+#[must_use]
 pub fn percent_in_range(value: f32) -> bool {
     value > 0.0 && value <= 100.0
 }
 
 impl CoordinateDistribution {
     /// The grid step vanilla uses: `step_size` for a grid distribution, else (or when absent) 1.
+    #[must_use]
     pub fn effective_step_size(&self) -> i32 {
         match self.step_size {
             Some(step) if self.distribution.is_grid() => step.0,
@@ -236,6 +244,7 @@ impl CoordinateDistribution {
 
     /// The grid offset vanilla uses: `grid_offset` for a grid distribution, else (or when
     /// absent) 0.
+    #[must_use]
     pub fn effective_grid_offset(&self) -> i32 {
         match self.grid_offset {
             Some(offset) if self.distribution.is_grid() => offset.0,
@@ -246,6 +255,7 @@ impl CoordinateDistribution {
     /// Whether both bounds are constants and, rounded to integers, the upper one is not above
     /// the lower one (vanilla logs "Bad value for extent - maximum must be greater than
     /// minimum" and keeps them).
+    #[must_use]
     pub fn extent_is_empty(&self) -> bool {
         match &self.extent {
             [Molang::Const(min), Molang::Const(max)] => max.round() <= min.round(),
@@ -464,6 +474,11 @@ impl MolangFields for ScatterParams {
 
 impl ScatterParams {
     /// `distribution` as JSON: the members as written, unknown ones last.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError::NotRepresentable` when a member holds a Molang value that cannot be written as
+    /// JSON.
     pub fn write(&self) -> Result<Value, bedrock_addon_core::json::EncodeError> {
         let mut object = VObject::new();
         object.insert("iterations", scatter_molang(&self.iterations)?);

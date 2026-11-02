@@ -101,7 +101,7 @@ fn load_biomes(driver: &Driver, repository: &PackRepository, roots: &[PathBuf]) 
                 .location
                 .path
                 .as_ref()
-                .map(|p| p.to_string())
+                .map(std::string::ToString::to_string)
                 .unwrap_or_default(),
             finding.location.json_path,
             finding.code,
@@ -110,7 +110,9 @@ fn load_biomes(driver: &Driver, repository: &PackRepository, roots: &[PathBuf]) 
     }
     Outcome {
         biomes: biomes.len(),
-        beta: biomes.beta().map_or(0, |beta| beta.len()),
+        beta: biomes
+            .beta()
+            .map_or(0, bedrock_addon::document::Registry::len),
         rejected: biomes.rejected().len(),
         rejected_files: biomes
             .rejected()
@@ -321,16 +323,14 @@ fn molang_pairs_biome_height_ranges_load_with_their_text_and_version() {
     let text =
         |value: Option<Value>| value.and_then(|v| v.as_string().map(|s| s.as_str().to_owned()));
     let mut checked = 0;
-    for pair in member(&pairs, "pairs")
+    for pair in &member(&pairs, "pairs")
         .and_then(|p| p.as_array().cloned())
         .unwrap_or_default()
-        .iter()
     {
         let expression = text(member(pair, "expr")).unwrap_or_default();
-        for occurrence in member(pair, "occurrences")
+        for occurrence in &member(pair, "occurrences")
             .and_then(|o| o.as_array().cloned())
             .unwrap_or_default()
-            .iter()
         {
             if text(member(occurrence, "family")).as_deref() != Some("biomes") {
                 continue;
@@ -339,7 +339,7 @@ fn molang_pairs_biome_height_ranges_load_with_their_text_and_version() {
             let file = text(member(occurrence, "file")).unwrap_or_default();
             let pointer = text(member(occurrence, "pointer")).unwrap_or_default();
             let version = member(occurrence, "version_effective")
-                .and_then(|v| v.as_number().and_then(|n| n.to_i64()))
+                .and_then(|v| v.as_number()?.to_i64())
                 .expect("a version");
             let rest = pointer
                 .strip_prefix(

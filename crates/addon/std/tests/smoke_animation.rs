@@ -247,6 +247,10 @@ fn client_install_a_resource_packs_load() {
 /// loads with the pair's text and its effective version: the pack's for animations, the
 /// controller rule for controllers.
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one test walks the pairs file; its helpers are local to it"
+)]
 fn every_animation_molang_occurrence_loads_with_its_text_and_version() {
     use bedrock_addon::document::Content;
     use bedrock_addon::families::animation::AnimationFile;
@@ -368,7 +372,7 @@ fn every_animation_molang_occurrence_loads_with_its_text_and_version() {
                 Some((text, version))
                     if (text.trim(), version) == (expected.0.as_str(), &expected.1) =>
                 {
-                    checked += 1
+                    checked += 1;
                 }
                 found => failures.push(format!(
                     "{}: {pointer}: {found:?} != {expected:?}",

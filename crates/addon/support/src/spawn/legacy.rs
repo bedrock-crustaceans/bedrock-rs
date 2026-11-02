@@ -39,6 +39,7 @@ pub enum Flavor {
 
 impl Flavor {
     /// The key the flavor's payload lies under.
+    #[must_use]
     pub fn key(self) -> &'static str {
         match self {
             Self::Rules => RULES_KEY,
@@ -47,6 +48,7 @@ impl Flavor {
     }
 
     /// The condition profile the flavor's conditions are checked against.
+    #[must_use]
     pub fn profile(self) -> Profile {
         match self {
             Self::Rules => condition::SPAWN_RULES,
@@ -273,6 +275,7 @@ pub fn write(
 
 /// The description object from its identifier, its population control and the members kept as
 /// written.
+#[must_use]
 pub fn description_value(
     identifier: &str,
     population_control: Option<&str>,

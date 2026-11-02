@@ -276,9 +276,9 @@ fn client_install_b_sounds_load_and_every_name_resolves() {
     let packs = client.join("resource_packs");
     let files = client_files(&packs);
     let (fsb, ogg, wav) = (
-        files.iter().filter(|p| p.ends_with(".fsb")).count(),
-        files.iter().filter(|p| p.ends_with(".ogg")).count(),
-        files.iter().filter(|p| p.ends_with(".wav")).count(),
+        files.iter().filter(|p| has_extension(p, "fsb")).count(),
+        files.iter().filter(|p| has_extension(p, "ogg")).count(),
+        files.iter().filter(|p| has_extension(p, "wav")).count(),
     );
     eprintln!(
         "client install B: {} client audio paths ({fsb} .fsb, {ogg} .ogg, {wav} .wav)",
@@ -541,10 +541,10 @@ fn the_variant_keys_of_the_client_install_b_packs_match_the_molang_pairs() {
     });
     eprintln!(
         "Molang pairs sounds.json: {} occurrences in {} files",
-        checked.checked, checked.files
+        checked.compared, checked.files
     );
     assert!(checked.failures.is_empty(), "{:#?}", checked.failures);
-    assert_eq!((checked.checked, checked.files), (18, 9));
+    assert_eq!((checked.compared, checked.files), (18, 9));
 }
 
 /// Every `events` key below `value`, lower-cased.
@@ -617,4 +617,9 @@ fn every_event_key_of_vanillas_sounds_json_files_is_a_known_level_sound_event() 
     {
         assert_eq!((files.len(), keys.len()), (91, 563));
     }
+}
+
+/// Whether `name` ends in `.{ext}`, the extension compared as written.
+fn has_extension(name: &str, ext: &str) -> bool {
+    name.rsplit_once('.').is_some_and(|(_, found)| found == ext)
 }

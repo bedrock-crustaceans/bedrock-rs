@@ -30,6 +30,11 @@ use crate::SaveError;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Errors
+///
+/// `SaveError::NotEmpty` when `dir` is not empty, `SaveError::Io` when a directory or file
+/// cannot be written, and `SaveError::Pack` when the writer's manifest cannot be encoded.
 pub fn write_dir(writer: &PackWriter, dir: impl AsRef<Path>) -> Result<(), SaveError> {
     let dir = dir.as_ref();
     require_manifest(writer)?;
@@ -68,6 +73,11 @@ fn require_manifest(writer: &PackWriter) -> Result<(), SaveError> {
 /// `sync_all`s it, and renames it over `path` (`std::fs::rename` replaces an existing file on
 /// every platform); on any error the temporary file is removed. A crash leaves either the old
 /// archive or the new one, never a torn file.
+///
+/// # Errors
+///
+/// `SaveError::Pack` when the archive cannot be built, and `SaveError::Io` when the
+/// temporary file cannot be written or renamed.
 #[cfg(feature = "zip")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
 pub fn write_archive(writer: &PackWriter, path: impl AsRef<Path>) -> Result<(), SaveError> {

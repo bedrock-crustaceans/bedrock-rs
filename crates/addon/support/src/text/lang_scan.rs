@@ -13,6 +13,7 @@ pub const RESERVED_KEYS: [&str; 2] = ["pack.name", "pack.description"];
 
 /// Whether a manifest header's `name` or `description` is a pack keyword: exactly `pack.name`
 /// or `pack.description`, case-sensitive.
+#[must_use]
 pub fn is_pack_keyword(text: &str) -> bool {
     // An exact match against the reserved keys.
     RESERVED_KEYS.contains(&text)
@@ -101,6 +102,7 @@ struct Current {
 }
 
 /// Runs the machine over `bytes`: one segment per line, in order.
+#[must_use]
 pub fn scan(bytes: &[u8]) -> Vec<Segment> {
     let mut segments = Vec::new();
     let mut state = State::LineStart;
@@ -235,6 +237,7 @@ fn span(start: usize, end: usize) -> Span {
 ///
 /// A line of the machine ends at a line feed or a NUL and depends on no other line, so only
 /// the lines whose first key byte is a `p` are run through it.
+#[must_use]
 pub fn defines_pack_keywords(bytes: &[u8]) -> [bool; 2] {
     let bytes = bytes.strip_prefix(BOM).unwrap_or(bytes);
     let mut found = [false; 2];

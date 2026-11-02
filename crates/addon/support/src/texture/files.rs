@@ -53,6 +53,7 @@ impl StackFiles {
     /// The highest pack that has `stem` with one of `extensions`; inside a pack the extensions
     /// are tried in order.
     // The stack is searched top-first, and inside each pack the extension list in order.
+    #[must_use]
     pub fn first<'a>(&'a self, stem: &str, extensions: &[&str]) -> Option<Found<'a>> {
         self.packs
             .iter()
@@ -61,6 +62,7 @@ impl StackFiles {
     }
 
     /// `stem` with one of `extensions` in the pack at `stack_index` only.
+    #[must_use]
     pub fn in_pack<'a>(
         &'a self,
         stack_index: usize,
@@ -95,6 +97,7 @@ pub const VERBATIM_OR_IMAGE: [&str; 7] = ["", ".tga", ".png", ".jpg", ".jpeg", "
 
 /// Every file below `textures/`, and every image and texture set anywhere in the pack (a
 /// texture path may point outside `textures/`).
+#[must_use]
 pub fn is_texture_file(path: &PackPath) -> bool {
     let path = path.as_str();
     path.starts_with(TEXTURES)
@@ -103,6 +106,7 @@ pub fn is_texture_file(path: &PackPath) -> bool {
 }
 
 /// The texture files of each pack of the stack, by name: what the stack lists, bytes unread.
+#[must_use]
 pub fn listed_files(stack: &StackCx<'_>) -> StackFiles {
     let packs = stack.packs.iter().map(|entry| {
         let files = entry

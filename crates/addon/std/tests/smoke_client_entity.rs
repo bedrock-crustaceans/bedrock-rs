@@ -190,11 +190,6 @@ fn assert_install_loads(source: &str, packs: &Path) -> Tally {
 
 #[test]
 fn sample_packs_resource_pack_loads() {
-    let samples = skip!(game_files::SAMPLE_PACKS);
-    let mut tally = load_packs(
-        "sample packs resource_pack",
-        &[samples.join("resource_pack")],
-    );
     // The sample packs' pack is the game's layered packs merged member by member. Seven of its
     // files join an old slice's 1.8.0 `animation_controllers` list to a newer slice's 1.10.0 or
     // 1.26.0 body, a document no game pack holds: in the packs of client install B the same list is only in
@@ -209,6 +204,11 @@ fn sample_packs_resource_pack_loads() {
         "zombie_pigman",
         "zombie_villager_v2",
     ];
+    let samples = skip!(game_files::SAMPLE_PACKS);
+    let mut tally = load_packs(
+        "sample packs resource_pack",
+        &[samples.join("resource_pack")],
+    );
     tally.errors.retain(|error| {
         let merged = MERGED.iter().any(|name| {
             error.contains(&format!("| entity/{name}.entity.json |"))
@@ -326,7 +326,7 @@ fn every_client_entity_molang_occurrence_loads_with_its_text_and_version() {
         }
         Ok((members, Diagnostics::default()))
     });
-    let (checked, keys, geometry) = (found.checked, found.keys, found.foreign);
+    let (checked, keys, geometry) = (found.compared, found.keys, found.foreign);
     let context_version = found
         .matched
         .iter()

@@ -87,7 +87,7 @@ pub fn of(set: &StackSet) -> Vec<Unprinted> {
     // the chain with its own bones, nearest parent first.
     family!("geometry" => {
         let geometries = set.resource.geometries();
-        for (id, geometry) in geometries.iter() {
+        for (id, geometry) in geometries {
             if let Some(chain) = inherited_by(geometry) {
                 found.push(Unprinted::new(
                     format!("what geometry {} inherits", id.as_str()),
@@ -99,7 +99,7 @@ pub fn of(set: &StackSet) -> Vec<Unprinted> {
     // A jigsaw metadata file prints the length of its body: the bytes.
     family!("jigsaw" => {
         let jigsaw = set.behavior.jigsaw();
-        for (path, file) in jigsaw.metadata.iter() {
+        for (path, file) in &jigsaw.metadata {
             found.push(Unprinted::new(
                 format!("the body of {path}"),
                 body_of(file).unwrap_or_default(),
@@ -111,7 +111,7 @@ pub fn of(set: &StackSet) -> Vec<Unprinted> {
     // the root tag): the bytes the structure is written as show all of it.
     family!("structure" => {
         let structures = set.behavior.structures();
-        for (path, file) in structures.iter() {
+        for (path, file) in structures {
             found.push(Unprinted::new(
                 format!("the bytes {path} is written as"),
                 bytes_of(file).unwrap_or_default(),
@@ -141,7 +141,11 @@ pub fn of(set: &StackSet) -> Vec<Unprinted> {
 }
 
 // The bytes of a jigsaw metadata body, which its `Debug` gives the length of.
-family!("jigsaw" => fn body_of(
+family!("jigsaw" => #[expect(
+    clippy::unnecessary_wraps,
+    reason = "`files` takes readers that return `Option`"
+)]
+fn body_of(
     file: &Document<bedrock_addon::families::jigsaw::JigsawMetadata>,
 ) -> Option<String> {
     Some(file.value().body.escape_ascii().to_string())
@@ -150,7 +154,11 @@ family!("jigsaw" => fn body_of(
 // The bytes a structure is written as. Its `Debug` prints of the layout only whether the
 // file's tree is kept; the layout is what makes the written file the read one (tag order,
 // integer widths, the bytes after the root tag), so the written bytes show all of it.
-family!("structure" => fn bytes_of(
+family!("structure" => #[expect(
+    clippy::unnecessary_wraps,
+    reason = "`files` takes readers that return `Option`"
+)]
+fn bytes_of(
     file: &Document<bedrock_addon::families::structure::Structure>,
 ) -> Option<String> {
     Some(match file.value().to_bytes() {

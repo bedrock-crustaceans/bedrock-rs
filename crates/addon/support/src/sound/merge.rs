@@ -60,6 +60,7 @@ pub fn located(found: Diagnostics, origin: &Origin, into: &mut Diagnostics) {
 }
 
 /// A finding of the merge itself.
+#[must_use]
 pub fn merge_finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
     Diagnostic::new(
         code,
@@ -114,6 +115,7 @@ pub fn readable(
 }
 
 /// The layers of a merge, top first.
+#[must_use]
 pub fn layers(copies: &[(Origin, Value, i16)]) -> Vec<RawLayer> {
     copies
         .iter()
@@ -124,6 +126,7 @@ pub fn layers(copies: &[(Origin, Value, i16)]) -> Vec<RawLayer> {
 
 /// The member name at segment `at` of a finding's path; `None` when the path is shorter or the
 /// segment is an array index.
+#[must_use]
 pub fn path_member(path: &JsonPath, at: usize) -> Option<String> {
     path.segments().nth(at).and_then(|segment| match segment {
         JsonPathSegment::Key(key) => Some(key.to_owned()),
@@ -132,6 +135,7 @@ pub fn path_member(path: &JsonPath, at: usize) -> Option<String> {
 }
 
 /// The origin of a file parsed outside a stack.
+#[must_use]
 pub fn detached_origin(path: &PackPath) -> Origin {
     Origin::new(
         PackRef::app_data(),
@@ -143,6 +147,7 @@ pub fn detached_origin(path: &PackPath) -> Origin {
 }
 
 /// The rejection of a file that is no JSON.
+#[must_use]
 pub fn not_json(origin: Origin, error: &ReadError) -> Rejected {
     let mut found = Diagnostics::default();
     found.push(merge_finding(
@@ -159,6 +164,11 @@ pub fn not_json(origin: Origin, error: &ReadError) -> Rejected {
 }
 
 /// Writes a document's JSON.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `json` holds a non-finite number, or nests deeper than the
+/// readers of the crate follow.
 pub fn write_document(
     json: &Value,
     out: &mut Vec<u8>,
@@ -168,6 +178,11 @@ pub fn write_document(
 }
 
 /// The text of a document's JSON.
+///
+/// # Errors
+///
+/// `EncodeError::NotRepresentable` when `json` holds a non-finite number, or nests deeper than the
+/// readers of the crate follow.
 pub fn document_text(json: &Value) -> Result<String, EncodeError> {
     let mut out = Vec::new();
     write_document(json, &mut out, WriteStyle::default())?;
@@ -175,6 +190,7 @@ pub fn document_text(json: &Value) -> Result<String, EncodeError> {
 }
 
 /// The version information of a file no loader reads a version of.
+#[must_use]
 pub fn unversioned() -> VersionInfo {
     VersionInfo::new(None, false, ENGINE_VERSION, ENGINE_VERSION, false)
 }

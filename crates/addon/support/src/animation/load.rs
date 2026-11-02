@@ -14,6 +14,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
 /// The side a context's pack is on (a resource pack is the client).
+#[must_use]
 pub fn side_of(cx: &LoadContext) -> PackSide {
     if cx.pack_type == PackType::Resource {
         PackSide::Resource
@@ -23,6 +24,7 @@ pub fn side_of(cx: &LoadContext) -> PackSide {
 }
 
 /// Gives every finding the file's pack and path.
+#[must_use]
 pub fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
     let mut out = Diagnostics::default();
     for mut finding in diagnostics {
@@ -35,12 +37,18 @@ pub fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
 
 /// The version record of a file whose `format_version` was written as `written`, parsed as
 /// `parsed_as`, and whether it was upgraded to get there.
+#[must_use]
 pub fn version_info(written: &SemVersion, parsed_as: FormatVersion, upgraded: bool) -> VersionInfo {
     let written = written.format_version();
     VersionInfo::new(Some(written), false, written, parsed_as, upgraded)
 }
 
 /// One file's result as a document of the whole file.
+///
+/// # Errors
+///
+/// `Rejected` (with the file's located diagnostics) when the parse produced no value or the file's
+/// `format_version` was not read.
 pub fn whole<T>(
     parsed: Parsed<T>,
     origin: Origin,
@@ -62,6 +70,7 @@ pub fn whole<T>(
 }
 
 /// `<directory>/<first key without its prefix>.json`.
+#[must_use]
 pub fn file_path(directory: &str, prefix: &str, first: Option<&String>) -> PackPath {
     let name = first.map_or("unnamed", |key| {
         key.get(..prefix.len())
@@ -157,6 +166,7 @@ pub fn walk_origin(file: &WalkFile) -> Origin {
 }
 
 /// A `.json` file: vanilla compares the four bytes of the extension as written.
+#[must_use]
 pub fn is_json(path: &PackPath) -> bool {
     path.as_str()
         .rsplit_once('.')
@@ -165,6 +175,7 @@ pub fn is_json(path: &PackPath) -> bool {
 
 /// Combine the files' contributions into one registry: per identifier the higher pack's definition
 /// replaces the lower one whole; `shadowed` is the finding for a replaced one.
+#[must_use]
 pub fn combine<T: Definition>(
     mut parsed: Vec<FileContribution<T>>,
     stack: &StackCx<'_>,

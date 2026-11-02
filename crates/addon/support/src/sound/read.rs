@@ -24,6 +24,7 @@ pub fn float(value: &Value, key: &str, default: f32, report: &mut Reporter<'_>) 
 }
 
 /// A float member that counts only when it is written with a fraction (`isDouble()`).
+#[must_use]
 pub fn real(value: &Value, key: &str) -> f32 {
     let member = fork::member(value, key);
     if fork::stored(member) == Stored::Real {

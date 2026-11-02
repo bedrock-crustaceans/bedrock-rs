@@ -9,6 +9,7 @@ use bedrock_addon_core::document::{Document, Origin, VersionInfo};
 use bedrock_addon_core::version::FormatVersion;
 
 /// The origin of a file of `pack`.
+#[must_use]
 pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::new(pack, side, path.clone(), None, Vec::new())
 }
@@ -22,6 +23,7 @@ pub fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Do
 }
 
 /// A rejection with one finding.
+#[must_use]
 pub fn reject(origin: Origin, finding: Box<Diagnostic>) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(*finding);

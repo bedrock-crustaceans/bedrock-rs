@@ -271,7 +271,7 @@ fn leaves(
         for (index, element) in array.iter().enumerate() {
             let written = format!("{written}/{index}");
             if let (true, true, Some(object)) = (bones, is_controller_member, element.as_object()) {
-                let mut keys: Vec<&str> = object.keys().map(|k| k.as_str()).collect();
+                let mut keys: Vec<&str> = object.iter().map(|(key, _)| key.as_str()).collect();
                 keys.sort_by_key(|k| k.to_ascii_lowercase().into_bytes());
                 for key in keys {
                     let member = object.get(key).unwrap();
@@ -340,7 +340,7 @@ fn every_render_controller_molang_occurrence_loads_with_its_text_and_version() {
                 for name in map.keys() {
                     members.insert(
                         format!("/render_controllers/{key}/arrays/{kind}/{name}"),
-                        (name.to_string(), None),
+                        (name.clone(), None),
                     );
                 }
             }
@@ -367,7 +367,7 @@ fn every_render_controller_molang_occurrence_loads_with_its_text_and_version() {
     });
     eprintln!(
         "Molang pairs render_controllers: {} values and {} keys in {} files, {} failures",
-        found.checked,
+        found.compared,
         found.keys,
         found.files,
         found.failures.len()
@@ -379,5 +379,5 @@ fn every_render_controller_molang_occurrence_loads_with_its_text_and_version() {
         found.failures.iter().take(10).collect::<Vec<_>>()
     );
     // The pairs of client install B: 2745 occurrences (2598 values, 147 array names) in 211 files.
-    assert_eq!((found.checked, found.keys, found.files), (2598, 147, 211));
+    assert_eq!((found.compared, found.keys, found.files), (2598, 147, 211));
 }

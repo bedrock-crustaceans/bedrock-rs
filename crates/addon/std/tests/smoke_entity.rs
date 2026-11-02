@@ -136,7 +136,7 @@ fn assert_loads(
     let mut documents = 0;
     let mut mcb = 0;
     let mut warnings: BTreeMap<&str, usize> = BTreeMap::new();
-    let mut notes: BTreeMap<&str, usize> = BTreeMap::new();
+    let mut found_notes: BTreeMap<&str, usize> = BTreeMap::new();
     let mut errors = Vec::new();
     for dir in dirs {
         if !dir.join("entities").is_dir() && !dir.join("manifest.json").is_file() {
@@ -151,7 +151,7 @@ fn assert_loads(
             *warnings.entry(code).or_insert(0) += count;
         }
         for (code, count) in found.notes {
-            *notes.entry(code).or_insert(0) += count;
+            *found_notes.entry(code).or_insert(0) += count;
         }
         errors.extend(
             found
@@ -196,9 +196,12 @@ fn assert_loads(
     errors.retain(|error| !known.iter().any(|tail| error.ends_with(tail)));
     assert!(errors.is_empty(), "{source}: {errors:#?}");
     game_files::assert_warnings(source, &warnings, expected);
-    eprintln!("{source}: notes of the upgrade steps {notes:?}");
+    eprintln!("{source}: notes of the upgrade steps {found_notes:?}");
     let noted: BTreeMap<&str, usize> = noted.iter().copied().collect();
-    assert_eq!(notes, noted, "{source}: the notes of the upgrade steps");
+    assert_eq!(
+        found_notes, noted,
+        "{source}: the notes of the upgrade steps"
+    );
     assert_eq!(
         found_self_references, self_references,
         "{source}: the references of an entity to itself that name nothing"

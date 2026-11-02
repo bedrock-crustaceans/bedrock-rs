@@ -172,7 +172,7 @@ fn check_files(source: &str, dir: &Path) -> (usize, usize, usize) {
                 Ok(document) => {
                     legacy += usize::from(document.version().upgraded);
                     stamped += usize::from(document.version().written == Some(stamp));
-                    for finding in document.diagnostics().iter() {
+                    for finding in document.diagnostics() {
                         if finding.severity == Severity::Warning {
                             count(&mut warnings, finding.code.name());
                         }
@@ -184,7 +184,7 @@ fn check_files(source: &str, dir: &Path) -> (usize, usize, usize) {
                     assert_eq!(again.value(), document.value(), "{}", file.display());
                 }
                 Err(rejected) => {
-                    for finding in rejected.diagnostics.iter() {
+                    for finding in &rejected.diagnostics {
                         errors.push(format!("{}: {finding}", file.display()));
                     }
                 }

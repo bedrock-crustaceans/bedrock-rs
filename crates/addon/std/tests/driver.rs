@@ -94,6 +94,10 @@ impl Loader<Vec<(Place, Answer)>> for Reader {
 /// Asks for one key, then finishes with the answer.
 struct KeyAsker {
     request: Option<KeyRequest>,
+    #[expect(
+        clippy::option_option,
+        reason = "`None` is no answer yet, `Some(None)` an answer without a key"
+    )]
     answer: Option<Option<ContentKey>>,
 }
 

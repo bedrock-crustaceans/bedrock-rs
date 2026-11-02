@@ -48,6 +48,7 @@ pub const ABOVE_MAX_VERSION: &str = "Version {} greater than max allowed version
     clippy::unnecessary_wraps,
     reason = "every code field is an `Option<VanillaText>`"
 )]
+#[must_use]
 pub fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
     Some(VanillaText::Formatted {
         template,
@@ -56,6 +57,7 @@ pub fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
 }
 
 /// C's `%f` of a float: six decimals, no exponent.
+#[must_use]
 pub fn percent_f(x: f32) -> String {
     format!("{:.6}", f64::from(x))
 }
@@ -88,12 +90,14 @@ pub struct Node<'a> {
 impl<'a> Node<'a> {
     /// The value of a slice (comments and whitespace around it skipped); `None` when the text
     /// is not JSON.
+    #[must_use]
     pub fn of(slice: JsonSlice<'a>) -> Option<Self> {
         let raw: RawJson<'a> = parse_at(slice).ok()?;
         slice.nested(&raw).map(|slice| Self { slice })
     }
 
     /// The JSON type of the node, from its first byte.
+    #[must_use]
     pub fn kind(&self) -> Kind {
         match self.slice.text.as_bytes().first() {
             Some(b'{') => Kind::Object,
@@ -106,11 +110,13 @@ impl<'a> Node<'a> {
     }
 
     /// The value's text.
+    #[must_use]
     pub fn text(&self) -> &'a str {
         self.slice.text
     }
 
     /// The node's place in the file, saturated to `u32`.
+    #[must_use]
     pub fn span(&self) -> Span {
         let to_u32 = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
         Span {
@@ -120,6 +126,7 @@ impl<'a> Node<'a> {
     }
 
     /// The value as an untyped JSON value (an unknown member kept for write-back).
+    #[must_use]
     pub fn value(&self) -> Option<Value> {
         parse_at::<Value>(self.slice).ok()
     }
@@ -145,6 +152,7 @@ pub enum Pattern {
 
 impl Pattern {
     /// Whether `key` is a name this pattern accepts.
+    #[must_use]
     pub fn matches(self, key: &str) -> bool {
         match self {
             Self::Name(name) => key == name,
@@ -156,6 +164,7 @@ impl Pattern {
     }
 
     /// The pattern as vanilla prints it in "Required child %s not found".
+    #[must_use]
     pub fn text(self) -> &'static str {
         match self {
             Self::Name(name) => name,
@@ -166,6 +175,7 @@ impl Pattern {
 }
 
 /// `[a-zA-Z0-9<extra>]+`, in full.
+#[must_use]
 pub fn charset(key: &str, extra: &[u8]) -> bool {
     !key.is_empty()
         && key
@@ -184,6 +194,7 @@ pub struct Group {
 
 impl Group {
     /// An optional group of one fixed name.
+    #[must_use]
     pub const fn name(name: &'static str) -> Self {
         Self {
             pattern: Pattern::Name(name),
@@ -192,6 +203,7 @@ impl Group {
     }
 
     /// A required group of one fixed name.
+    #[must_use]
     pub const fn required(name: &'static str) -> Self {
         Self {
             pattern: Pattern::Name(name),
@@ -200,6 +212,7 @@ impl Group {
     }
 
     /// A group of any pattern.
+    #[must_use]
     pub const fn pattern(pattern: Pattern, required: bool) -> Self {
         Self { pattern, required }
     }
@@ -219,6 +232,7 @@ pub struct Walk {
 
 impl Walk {
     /// A walk whose findings are reported below `at`.
+    #[must_use]
     pub fn with_path(at: &JsonPath) -> Self {
         Self {
             diagnostics: Diagnostics::default(),
@@ -316,6 +330,7 @@ impl Walk {
     /// The members of an object node in document order (of a key written twice the last value
     /// stands, as jsoncpp keeps it); `None` when the node is not an object.
     #[allow(clippy::unused_self, reason = "read like the other node accessors")]
+    #[must_use]
     pub fn members<'a>(&self, node: Node<'a>) -> Option<Vec<(String, Node<'a>)>> {
         if node.kind() != Kind::Object {
             return None;
@@ -328,6 +343,7 @@ impl Walk {
 
     /// The elements of an array node; `None` when the node is not an array.
     #[allow(clippy::unused_self, reason = "read like the other node accessors")]
+    #[must_use]
     pub fn elements<'a>(&self, node: Node<'a>) -> Option<Vec<Node<'a>>> {
         if node.kind() != Kind::Array {
             return None;

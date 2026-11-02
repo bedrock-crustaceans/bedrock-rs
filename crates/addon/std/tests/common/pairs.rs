@@ -64,14 +64,14 @@ pub fn errors(d: &Diagnostics) -> Vec<String> {
 #[allow(dead_code, reason = "each family reads the counts it asserts")]
 pub struct Checked {
     /// Occurrences that are no keys whose member read to the pair's text and version.
-    pub checked: usize,
+    pub compared: usize,
     /// Key occurrences: matched ([`Keys::Members`]) or only counted ([`Keys::Counted`]).
     pub keys: usize,
     /// Occurrences left to another family ([`Rules::foreign`]).
     pub foreign: usize,
     /// Distinct files loaded.
     pub files: usize,
-    /// The file and pointer (as the pairs write it) of every occurrence in `checked`.
+    /// The file and pointer (as the pairs write it) of every occurrence in `compared`.
     pub matched: Vec<(PathBuf, String)>,
     /// Every mismatch, unreadable file and error-level finding.
     pub failures: Vec<String>,
@@ -199,48 +199,9 @@ fn check_occurrences(
                 .join(field("pack_type"))
                 .join(field("pack"))
                 .join(field("file"));
-            let members = cache.entry(path.clone()).or_insert_with(|| {
-                let text = std::fs::read_to_string(&path)
-                    .map_err(|e| vec![format!("{}: {e}", path.display())])?;
-                let version = SemVersion::parse(&field("pack_min_engine_version"))
-                    .expect("a pack min_engine_version");
-                let pack_type = if field("pack_type") == "resource_packs" {
-                    PackType::Resource
-                } else {
-                    PackType::Behavior
-                };
-                let cx = LoadContext::for_pack(
-                    &LoadOptions::default(),
-                    uuid::Uuid::nil(),
-                    pack_type,
-                    Some(MinEngineVersion { version }),
-                    true,
-                );
-                let at = PackPath::new(&field("file")).unwrap();
-                let fail = |d: &Diagnostics, what: &str| {
-                    let mut errors = errors(d);
-                    if errors.is_empty() {
-                        errors.push(String::from("no error-level finding"));
-                    }
-                    errors
-                        .into_iter()
-                        .map(|e| format!("{} {what}: {e}", path.display()))
-                        .collect::<Vec<_>>()
-                };
-                match parse(File {
-                    path: &path,
-                    at,
-                    text: &text,
-                    cx,
-                }) {
-                    Err(rejected) => Err(fail(&rejected, "rejected")),
-                    Ok((_, d)) if !errors(&d).is_empty() => Err(fail(&d, "error")),
-                    Ok((members, _)) => Ok(members
-                        .into_iter()
-                        .map(|(pointer, member)| ((rules.pointer)(&pointer), member))
-                        .collect()),
-                }
-            });
+            let members = cache
+                .entry(path.clone())
+                .or_insert_with(|| load_members(&path, &field, rules, &mut parse));
             let members = match members {
                 Ok(members) => members,
                 Err(errors) => {
@@ -281,11 +242,61 @@ fn check_occurrences(
         }
     }
     Checked {
-        checked,
+        compared: checked,
         keys,
         foreign,
         files: cache.len(),
         matched,
         failures,
+    }
+}
+
+/// The members `parse` returns for one pairs file's occurrence: its file read and parsed with
+/// the pack's context, or every error-level finding of the attempt.
+fn load_members(
+    path: &Path,
+    field: &dyn Fn(&str) -> String,
+    rules: &Rules,
+    parse: &mut impl FnMut(File<'_>) -> Result<(Members, Diagnostics), Diagnostics>,
+) -> Result<Members, Vec<String>> {
+    let text =
+        std::fs::read_to_string(path).map_err(|e| vec![format!("{}: {e}", path.display())])?;
+    let version =
+        SemVersion::parse(&field("pack_min_engine_version")).expect("a pack min_engine_version");
+    let pack_type = if field("pack_type") == "resource_packs" {
+        PackType::Resource
+    } else {
+        PackType::Behavior
+    };
+    let cx = LoadContext::for_pack(
+        &LoadOptions::default(),
+        uuid::Uuid::nil(),
+        pack_type,
+        Some(MinEngineVersion { version }),
+        true,
+    );
+    let at = PackPath::new(&field("file")).unwrap();
+    let fail = |d: &Diagnostics, what: &str| {
+        let mut errors = errors(d);
+        if errors.is_empty() {
+            errors.push(String::from("no error-level finding"));
+        }
+        errors
+            .into_iter()
+            .map(|e| format!("{} {what}: {e}", path.display()))
+            .collect::<Vec<_>>()
+    };
+    match parse(File {
+        path,
+        at,
+        text: &text,
+        cx,
+    }) {
+        Err(rejected) => Err(fail(&rejected, "rejected")),
+        Ok((_, d)) if !errors(&d).is_empty() => Err(fail(&d, "error")),
+        Ok((members, _)) => Ok(members
+            .into_iter()
+            .map(|(pointer, member)| ((rules.pointer)(&pointer), member))
+            .collect()),
     }
 }

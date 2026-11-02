@@ -7,6 +7,7 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// `at` followed by `keys`.
+#[must_use]
 pub fn path(at: &JsonPath, keys: &[&str]) -> JsonPath {
     let mut path = at.clone();
     for key in keys {

@@ -204,7 +204,7 @@ fn molang_pairs_feature_rule_molang_loads_with_its_text_and_version() {
     });
     eprintln!(
         "Molang pairs: {} feature rule occurrences checked in {} files",
-        found.checked, found.files
+        found.compared, found.files
     );
     assert!(
         found.failures.is_empty(),
@@ -213,7 +213,7 @@ fn molang_pairs_feature_rule_molang_loads_with_its_text_and_version() {
         &found.failures[..found.failures.len().min(20)]
     );
     assert_eq!(
-        found.checked, 214,
+        found.compared, 214,
         "the feature rule occurrences of the Molang pairs file"
     );
     assert_eq!(

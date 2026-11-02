@@ -24,6 +24,11 @@ use crate::{ReadError, io as host};
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Errors
+///
+/// `ReadError::Io` when a `world_*_packs.json` exists but cannot be read, and
+/// `ReadError::Rejected` when one is read but rejected.
 pub fn read_world_packs(world_dir: impl AsRef<Path>) -> Result<WorldPacks, ReadError> {
     let world_dir = world_dir.as_ref();
     let behavior = read_optional(&world_dir.join(WorldPacks::BEHAVIOR_FILE))?;
@@ -41,6 +46,10 @@ pub fn read_world_packs(world_dir: impl AsRef<Path>) -> Result<WorldPacks, ReadE
 /// directory or single file that does not exist is skipped. `ReadError::Io` when `dir` itself is missing or
 /// not a directory, when a directory or file cannot be read, and (with
 /// `ErrorKind::InvalidData`) when a file's name is not a valid pack path.
+///
+/// # Errors
+///
+/// `ReadError::Io` as described above.
 pub fn read_app_data(dir: impl AsRef<Path>) -> Result<AppData, ReadError> {
     let root = dir.as_ref();
     match fs::metadata(root) {

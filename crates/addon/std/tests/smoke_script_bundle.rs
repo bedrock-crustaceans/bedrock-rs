@@ -277,7 +277,7 @@ fn server_install_scripts_load_without_errors() {
             to_natives: 4,
             not_checked: 0,
             known_missing_main: 0,
-            parsed: if ScriptBundle::SYNTAX_CHECKED { 1 } else { 0 },
+            parsed: usize::from(ScriptBundle::SYNTAX_CHECKED),
         }
     );
 }
@@ -328,7 +328,7 @@ fn client_install_b_scripts_load_without_errors() {
             to_natives: 4,
             not_checked: 0,
             known_missing_main: 0,
-            parsed: if ScriptBundle::SYNTAX_CHECKED { 1 } else { 0 },
+            parsed: usize::from(ScriptBundle::SYNTAX_CHECKED),
         }
     );
 }

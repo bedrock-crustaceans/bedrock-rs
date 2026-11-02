@@ -57,7 +57,7 @@ impl PieceSource for OnDisk {
         self.pack.id()
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "persona"
     }
 
@@ -102,6 +102,10 @@ fn by_code(pieces: &PersonaPieces) -> BTreeMap<String, usize> {
 }
 
 /// Whether two values are the same JSON, members compared by key.
+#[expect(
+    clippy::float_cmp,
+    reason = "two numbers are the same JSON only when they read to the same value"
+)]
 fn same(a: &Value, b: &Value) -> bool {
     if let (Some(a), Some(b)) = (a.as_object(), b.as_object()) {
         return a.len() == b.len()
@@ -138,6 +142,10 @@ fn counts(entries: &[(&str, usize)]) -> BTreeMap<String, usize> {
 }
 
 /// Loads the built-in persona pack of the install `entry` and pins what it holds.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one load of the pack, with the findings pinned after each step"
+)]
 fn builtin_pack_loads(entry: &str, data: &Path) {
     let root = data.join(PERSONA);
     if !root.is_dir() {
@@ -191,10 +199,10 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
     );
 
     // With them: the bodies are named there, the skeletons nowhere.
-    let names = std::fs::read(data.join("resource_packs/vanilla/texts/en_US.lang"))
+    let lang = std::fs::read(data.join("resource_packs/vanilla/texts/en_US.lang"))
         .expect("the vanilla resource pack's en_US.lang");
     pack.read.borrow_mut().clear();
-    let named = PersonaPiece::load_all_with_texts(&pack, &[&names]);
+    let named = PersonaPiece::load_all_with_texts(&pack, &[&lang]);
     assert_eq!(
         by_code(&named),
         counts(&[("info UnresolvedLangKey", 4)]),
@@ -256,10 +264,10 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
     let read = pack.read.borrow();
     assert!(
         read.iter()
-            .all(|path| path.ends_with(".json") || path.ends_with(".lang")),
+            .all(|path| has_extension(path, "json") || has_extension(path, "lang")),
         "{entry}: {:?}",
         read.iter()
-            .filter(|path| !path.ends_with(".json") && !path.ends_with(".lang"))
+            .filter(|path| !has_extension(path, "json") && !has_extension(path, "lang"))
             .collect::<Vec<_>>()
     );
     let metas = read
@@ -472,4 +480,9 @@ fn the_persona_geometry_of_both_installs_loads_through_the_keyed_door() {
         // 8 of 8 in each install: 16 of 16 where both are there.
         assert_eq!(found, PERSONA_GEOMETRY, "{entry}");
     }
+}
+
+/// Whether `name` ends in `.{ext}`, the extension compared as written.
+fn has_extension(name: &str, ext: &str) -> bool {
+    name.rsplit_once('.').is_some_and(|(_, found)| found == ext)
 }

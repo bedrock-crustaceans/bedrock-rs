@@ -360,6 +360,13 @@ pub fn assert_same(what: &str, found: &Snapshot, reference: &Snapshot) {
 /// A package is built from its own files alone (`cargo package`, a registry download): a test
 /// that includes a neighbour crate's file builds in the workspace and nowhere else.
 pub fn includes_outside_the_package(file: &str, source: &str) -> Vec<String> {
+    // The string literal `rest` starts with, after white space, and what follows it.
+    fn literal(rest: &str) -> Option<(&str, &str)> {
+        let rest = rest.trim_start().strip_prefix('"')?;
+        let end = rest.find('"')?;
+        Some((&rest[..end], &rest[end + 1..]))
+    }
+
     // How many folders `file` is below the package root.
     let folders = file.split('/').count() - 1;
     let leaves = |path: &str, below: usize| {
@@ -374,12 +381,6 @@ pub fn includes_outside_the_package(file: &str, source: &str) -> Vec<String> {
         }
         false
     };
-    // The string literal `rest` starts with, after white space, and what follows it.
-    fn literal(rest: &str) -> Option<(&str, &str)> {
-        let rest = rest.trim_start().strip_prefix('"')?;
-        let end = rest.find('"')?;
-        Some((&rest[..end], &rest[end + 1..]))
-    }
     // (where in the source, the path as written, whether it leaves the package)
     let mut found: Vec<(usize, String)> = Vec::new();
     for (at, attribute) in source.match_indices("#[path") {

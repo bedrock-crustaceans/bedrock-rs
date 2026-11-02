@@ -107,6 +107,10 @@ fn text(folder: &str, file: &str, finding: &Diagnostic) -> String {
 }
 
 /// Loads the resource pack at `root`: as a stack of its own, then file by file.
+#[expect(
+    clippy::too_many_lines,
+    reason = "the stack load and the file-by-file load share one outcome"
+)]
 fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
     let directory = root.join("particles");
     if !directory.is_dir() {
@@ -204,7 +208,7 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
                 rejected.diagnostics
             }
         };
-        for finding in diagnostics.iter() {
+        for finding in &diagnostics {
             let text = text(&folder, &relative, finding);
             if matches!(
                 finding.code,
@@ -453,7 +457,7 @@ fn molang_pairs_particle_molang_loads_with_its_text_and_version() {
     });
     eprintln!(
         "Molang pairs: {} particle occurrences checked in {} files",
-        found.checked, found.files
+        found.compared, found.files
     );
     assert!(
         found.failures.is_empty(),
@@ -462,7 +466,7 @@ fn molang_pairs_particle_molang_loads_with_its_text_and_version() {
         &found.failures[..found.failures.len().min(20)]
     );
     assert_eq!(
-        (found.checked + found.keys, found.keys),
+        (found.compared + found.keys, found.keys),
         (1730, 4),
         "the particle occurrences of the Molang pairs file, and the curve names among them"
     );

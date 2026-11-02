@@ -222,7 +222,11 @@ fn two_packs_on_disk_load_through_the_driver_and_the_lower_one_keeps_a_shared_sc
         DiagnosticCode::DuplicateIdentifier { text: Some(_) }
     ));
     assert_eq!(
-        errors[0].location.pack.as_ref().and_then(|p| p.index()),
+        errors[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     let stem = if kept == "first" { "b" } else { "a" };

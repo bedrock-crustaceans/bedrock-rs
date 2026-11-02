@@ -72,14 +72,12 @@ fn pack_roots(dir: &Path) -> Vec<PathBuf> {
 
 /// The `.json` files directly below `dir`.
 fn json_files(dir: &Path) -> usize {
-    std::fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(Result::ok)
-                .filter(|entry| entry.path().extension().is_some_and(|e| e == "json"))
-                .count()
-        })
-        .unwrap_or(0)
+    std::fs::read_dir(dir).map_or(0, |entries| {
+        entries
+            .filter_map(Result::ok)
+            .filter(|entry| entry.path().extension().is_some_and(|e| e == "json"))
+            .count()
+    })
 }
 
 /// Loads the resource pack at `root` on its own, as a base-game pack.

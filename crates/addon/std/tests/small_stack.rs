@@ -164,9 +164,9 @@ struct Loaded {
 
 /// Loads the world of [`script_world`] with `main` through the real pipeline, on a thread
 /// with one mebibyte of stack: an overflow aborts the process.
-fn load_script_world(main: String) -> Loaded {
+fn load_script_world(main: &str) -> Loaded {
     let dir = tempfile::tempdir().unwrap();
-    script_world(dir.path(), &main);
+    script_world(dir.path(), main);
     let root = dir.path().to_path_buf();
     std::thread::Builder::new()
         .stack_size(SMALL_STACK)
@@ -246,7 +246,7 @@ const DEEPEST: [usize; 3] = [6, 19, 62];
 fn a_script_as_deep_as_the_bound_admits_loads_on_a_thread_with_one_mebibyte_of_stack() {
     for (k, depth) in DEEPEST.into_iter().enumerate() {
         let (name, source) = shapes(depth).into_iter().nth(k).unwrap();
-        let loaded = load_script_world(source);
+        let loaded = load_script_world(&source);
         // Without `script-syntax` nothing is parsed; with it the file is, so the load went
         // through the parser at the deepest nesting it is given.
         assert_eq!(
@@ -262,7 +262,7 @@ fn a_script_as_deep_as_the_bound_admits_loads_on_a_thread_with_one_mebibyte_of_s
 fn a_script_one_level_past_the_bound_loads_unparsed_and_says_so() {
     for (k, depth) in DEEPEST.into_iter().enumerate() {
         let (name, source) = shapes(depth + 1).into_iter().nth(k).unwrap();
-        let loaded = load_script_world(source);
+        let loaded = load_script_world(&source);
         assert!(!loaded.parsed, "{name} at {} levels", depth + 1);
         assert_eq!(
             loaded.not_checked,

@@ -11,7 +11,7 @@
 mod common;
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::load::{Collection, CollectionSet, LoadOptions, StackOptions};
@@ -26,14 +26,12 @@ const FILE: &str = "textures/flipbook_textures.json";
 
 /// The pack folders below `dir` that hold `FILE`.
 fn packs_with_file(dir: &Path) -> usize {
-    std::fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok().map(|entry| entry.path()))
-                .filter(|pack| pack.join(FILE).is_file())
-                .count()
-        })
-        .unwrap_or(0)
+    std::fs::read_dir(dir).map_or(0, |entries| {
+        entries
+            .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+            .filter(|pack| pack.join(FILE).is_file())
+            .count()
+    })
 }
 
 /// The stacks of every pack below `dir`, with the texture group loaded.
@@ -89,14 +87,14 @@ fn stacked(stacks: &StackSet) -> usize {
 }
 
 /// Loads the resource packs below `dir` and checks the flipbooks of the stack.
-fn smoke(source: &str, dir: PathBuf, origin: PackOrigin, warnings: &[(&str, usize)]) {
-    let on_disk = packs_with_file(&dir);
+fn smoke(source: &str, dir: &Path, origin: PackOrigin, warnings: &[(&str, usize)]) {
+    let on_disk = packs_with_file(dir);
     assert!(
         on_disk > 0,
         "{source}: no pack below {} has {FILE}",
         dir.display()
     );
-    let stacks = load(&dir, origin);
+    let stacks = load(dir, origin);
     let in_stack = stacked(&stacks);
     let flipbooks = stacks.resource.flipbooks();
     assert!(
@@ -132,7 +130,7 @@ fn sample_packs_flipbooks_load_without_errors() {
         eprintln!("{}", game_files::missing(game_files::SAMPLE_PACKS));
         return;
     };
-    smoke("sample packs", samples, PackOrigin::Package, &[]);
+    smoke("sample packs", &samples, PackOrigin::Package, &[]);
 }
 
 #[test]
@@ -143,7 +141,7 @@ fn client_install_b_flipbooks_load_without_errors() {
     };
     smoke(
         "client install B",
-        client.join("resource_packs"),
+        &client.join("resource_packs"),
         PackOrigin::Package,
         &[],
     );
@@ -157,7 +155,7 @@ fn client_install_a_flipbooks_load_without_errors() {
     };
     smoke(
         "client install A",
-        client.join("resource_packs"),
+        &client.join("resource_packs"),
         PackOrigin::Package,
         &[],
     );
