@@ -51,7 +51,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), and come say hi on [Discord][discord_url
 
 <p align="center">
   <a href="https://github.com/bedrock-crustaceans/bedrock-rs/graphs/contributors">
-    <img src="https://raw.githubusercontent.com/bedrock-crustaceans/bedrock-rs/contributors/contributors.svg" alt="Contributors" width="100%" />
+    <img src=".github/assets/contributors.svg" alt="Contributors" width="100%" />
   </a>
 </p>
 

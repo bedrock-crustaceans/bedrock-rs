@@ -1,8 +1,7 @@
 name: Contributors
 
-# Draws everyone in the history of `main` into `contributors.svg` once a day and publishes it as
-# the only file on the orphan branch `contributors`, which the README shows. Publishing there
-# keeps the daily commit out of `main`'s history.
+# Draws everyone in the history of `main` into `.github/assets/contributors.svg` once a day,
+# which the README shows, and commits it to `main` when it changed.
 
 on:
   schedule:
@@ -32,26 +31,16 @@ jobs:
       - name: Draw
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node .github/scripts/contributors.ts --out "$RUNNER_TEMP/contributors.svg"
+        run: node .github/scripts/contributors.ts --out .github/assets/contributors.svg
 
-      - name: Publish
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Commit
         run: |
-          drawing="$RUNNER_TEMP/contributors.svg"
-          if git fetch -q --depth=1 origin contributors 2>/dev/null \
-            && git show FETCH_HEAD:contributors.svg | cmp -s - "$drawing"; then
+          if [ -z "$(git status --porcelain -- .github/assets/contributors.svg)" ]; then
             echo "The drawing is unchanged."
             exit 0
           fi
-          site="$RUNNER_TEMP/site"
-          mkdir "$site"
-          cp "$drawing" "$site/"
-          cd "$site"
-          git init -q -b contributors
-          git add contributors.svg
+          git add .github/assets/contributors.svg
           git -c user.name="github-actions[bot]" \
             -c user.email="41898273+github-actions[bot]@users.noreply.github.com" \
             commit -q -m "chore: draw contributors"
-          git push -q --force \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" contributors
+          git push -q origin HEAD:main
