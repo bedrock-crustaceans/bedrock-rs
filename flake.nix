@@ -29,6 +29,7 @@
           packages = with pkgs;
             [
               rust-toolchain
+              cargo-nextest
               taplo
             ]
             ++ lib.optionals stdenv.hostPlatform.isDarwin [

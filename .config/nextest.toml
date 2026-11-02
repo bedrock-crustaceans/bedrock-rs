@@ -1,0 +1,17 @@
+# The test runner of this workspace: `cargo nextest run`. Doctests are the one thing it does not
+# run; they stay with `cargo test --doc`.
+#
+# Install: `cargo install --locked cargo-nextest` (or `cargo binstall cargo-nextest`).
+
+# Refuse to run under a nextest too old for this file.
+nextest-version = { required = "0.9.100" }
+
+[profile.default]
+# A test past a minute is reported as slow; past five it is killed.
+slow-timeout = { period = "60s", terminate-after = 5 }
+
+# CI: run every test even after a failure, and print each failure again at the end.
+[profile.ci]
+fail-fast = false
+failure-output = "immediate-final"
+final-status-level = "slow"
