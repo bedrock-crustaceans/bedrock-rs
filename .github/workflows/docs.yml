@@ -1,73 +1,46 @@
-name: CD
+name: Docs
+
+# Builds the API docs of every crate on `main` and publishes them to GitHub Pages.
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-concurrency: 
-  group: "pages-deployment"
+concurrency:
+  group: pages
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    name: Generate
+    name: Build
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --workspace --no-deps --all-features
+      - name: Redirect the root to the facade
+        run: echo '<meta http-equiv="refresh" content="0; url=bedrock/index.html">' > target/doc/index.html
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: target/doc
 
-    - uses: dtolnay/rust-toolchain@stable
-  
-    - uses: Swatinem/rust-cache@v2
-      with:
-        add-job-id-key: false
-        add-rust-environment-hash-key: false
-        shared-key: "bedrock-rs-cache"
-        cache-on-failure: false
-        cache-all-crates: true
-
-    - name: Generate Documentation
-      run: cargo doc --no-deps --all-features
-
-    - name: Configure Pages
-      id: pages
-      uses: actions/configure-pages@v6
-      
-    - name: Add Root
-      run: |
-        cd target/doc
-        touch index.html
-        echo "<meta http-equiv=\"refresh\" content=\"0; url=bedrock/index.html\">" > index.html
-
-    - name: Upload Artifact
-      uses: actions/upload-pages-artifact@v5
-      with:
-        path: target/doc
-    
   deploy:
     name: Deploy
     needs: build
-
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
       pages: write
       id-token: write
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
-    runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Github Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
