@@ -206,7 +206,6 @@ impl<S: Side> PackStack<S> {
     }
 
     /// The packs, top first.
-    #[must_use]
     pub fn packs(&self) -> impl ExactSizeIterator<Item = PackRef> + '_ {
         self.packs.iter().map(|entry| entry.pack.clone())
     }

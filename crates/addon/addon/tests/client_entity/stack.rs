@@ -119,7 +119,6 @@ fn p01_merge_details() {
     assert!(!ghost_of(&set).unwrap().hide_armor());
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn p01_a_later_scale_at_or_below_zero_keeps_the_earlier_one() {
     let low = ghost("1.26.0", r#""held_item_scale": 2.0"#);

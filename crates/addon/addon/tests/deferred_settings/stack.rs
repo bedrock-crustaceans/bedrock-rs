@@ -141,7 +141,6 @@ fn every_payload_is_read_from_its_folder() {
     assert_eq!(settings.defaults.water, None);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn c10_the_higher_pack_wins_per_identifier_deviation() {
     // vanilla = "silent" about the hidden definitions.
@@ -318,7 +317,6 @@ fn c13_the_default_identifier_is_the_top_loadable_default_files() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_top_packs_default_file_decides_when_it_loads() {
     let stack = stack(&[

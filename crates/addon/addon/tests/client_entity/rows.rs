@@ -266,7 +266,6 @@ fn rule_12_an_empty_identifier_is_rejected() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn l04_held_item_scale_zero() {
     let document = loaded(entity(&ghost("1.26.0", r#""held_item_scale": 0"#), &cx()));
@@ -284,7 +283,6 @@ fn l04_held_item_scale_zero() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn l04_held_item_scale_bounds() {
     // Below zero is refused the same way; just above it is the scale.
@@ -311,7 +309,6 @@ fn l04_held_item_scale_bounds() {
     assert_eq!(absent.held_item_scale(), 1.0);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn l05_held_item_scale_pre_1_26() {
     let d = rejected(entity(&ghost("1.10.0", r#""held_item_scale": 2.0"#), &cx()));

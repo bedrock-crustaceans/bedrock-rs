@@ -279,7 +279,6 @@ fn air_color(document: &FogSettings) -> FogColor {
         .unwrap()
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn u04_int_array_colour() {
     let members = air(&AIR.replace("\"#ABD2FF\"", "[128, 64, 255]"));
@@ -295,7 +294,6 @@ fn u04_int_array_colour() {
     assert_eq!(old.value(), new.value());
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// TOML `vanilla = "Expected Integral Number. (LogArea Json), component 255, file loaded"`.
 #[test]
 fn u05_colour_array_old_era_deviation() {
@@ -382,7 +380,6 @@ fn u05_colour_array_old_era_deviation() {
     assert_eq!(scattering.single().unwrap().rgb(), [1.0, 0.0, 0.5]);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn u06_hex_colour_both_eras() {
     let members = air(&AIR.replace("#ABD2FF", "#44AFF5"));

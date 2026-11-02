@@ -44,7 +44,6 @@ fn owned(names: &[&str]) -> Vec<String> {
     names.iter().map(|name| (*name).to_owned()).collect()
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_material_without_a_parent_starts_from_the_clients_defaults() {
     for resolved in [versioned(r#""x": {}"#, "x"), legacy(r#""x": {}"#, "x")] {
@@ -490,7 +489,6 @@ fn vertex_fields_are_a_set_that_always_has_the_position() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn scalar_members_are_inherited_until_a_material_writes_them() {
     let members = r#""p": {"vertexShader": "shaders/entity.vertex", "fragmentShader": "f", "geometryShader": "g",

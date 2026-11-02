@@ -392,7 +392,6 @@ fn charge_held_item_needs_items() {
 
 /// `v12_component_value_messages`, `transport_items.search_distance: 0`: vanilla's
 /// retail text; the default is used. An error in a strict parse, a warning in a lenient one.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v12_transport_items_search_distance_must_be_positive() {
     let key = "minecraft:behavior.transport_items";
@@ -601,7 +600,6 @@ fn unknown_goal_members_are_kept_and_written_back() {
 }
 
 /// Vectors take `[x, y, z]` and `{x, y, z}` and are written in the form read.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn vectors_take_both_forms() {
     let key = "minecraft:behavior.offer_flower";

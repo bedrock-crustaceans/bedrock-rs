@@ -117,9 +117,9 @@ impl LazyArray {
         // The amount of bits required to store the given value. This is not necessarily a valid bit size.
         #[expect(
             clippy::cast_possible_truncation,
-            reason = "u16::BITS - leading_zeros is at most 16"
+            reason = "the bit width of a u16 is at most 16"
         )]
-        let required_bits = (u16::BITS - value.leading_zeros()) as u8;
+        let required_bits = value.bit_width() as u8;
         if required_bits > self.bits {
             // Needs re-encoding. The function will automatically select a proper bit size that fits the value.
             self.repack(required_bits);

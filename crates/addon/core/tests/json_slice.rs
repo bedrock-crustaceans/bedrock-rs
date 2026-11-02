@@ -87,7 +87,6 @@ fn an_owned_or_foreign_raw_json_has_no_offset() {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn a_good_entry_parses_from_its_slice() {
     let document = JsonSlice::new(DOCUMENT);
     let shell = shell(document);

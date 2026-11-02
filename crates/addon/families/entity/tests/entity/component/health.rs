@@ -72,7 +72,6 @@ fn burns_in_daylight_reads_its_protection_slot() {
     assert!(d.has_errors());
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn damage_over_time_and_insomnia_round_trip() {
     let dot = round_trip::<DamageOverTime>(r#"{"damage_per_hurt": 2, "time_between_hurt": 0.5}"#);
@@ -84,7 +83,6 @@ fn damage_over_time_and_insomnia_round_trip() {
     assert_eq!(Insomnia::default().days_until_insomnia.0, 3.0);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e08_exhaustion_values_from_an_empty_object_are_the_vanilla_defaults() {
     // e08: the 1.18.30 A-op writes `{}` for the player; the typed read fills the

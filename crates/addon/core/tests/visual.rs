@@ -404,7 +404,6 @@ mod spawn_egg {
     }
 
     #[test]
-    #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
     fn aarrggbb_carries_alpha() {
         let color = Color::from_hex("#80ff8000").unwrap();
         assert_eq!(color.a, 128.0 / 255.0);

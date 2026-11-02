@@ -115,7 +115,6 @@ fn an_object_form_expression_is_a_wrong_type() {
     }
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn m11_held_item_scale_molang_shapes() {
     // A string and a boolean are Molang from engine 1.26.30; before it the schema's float.

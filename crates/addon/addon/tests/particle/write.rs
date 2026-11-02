@@ -1056,7 +1056,6 @@ struct Rewrites {
 
 /// Classes the difference at `path`, which must be one of the recorded rewrites, each of
 /// which but the first two comes with a finding of the load.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn record(rewrites: &mut Rewrites, path: &str, difference: &Difference, input: &Value, what: &str) {
     let steps: Vec<&str> = path.split('/').collect();
     match (difference, steps.as_slice()) {

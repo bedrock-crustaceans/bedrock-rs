@@ -14,7 +14,6 @@ fn one(min: &str, max: &str) -> String {
     shape("test:corner", &[(min, max)])
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn vs21_a_corner_may_be_an_object() {
     let shape = loads(&one(r#"{"x": 0, "y": 0, "z": 0}"#, "[16, 8, 16]"));
@@ -22,7 +21,6 @@ fn vs21_a_corner_may_be_an_object() {
     assert_eq!(shape.shape.boxes[0].max, [16.0, 8.0, 16.0]);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn vs21b_absent_members_of_an_object_corner_are_zero() {
     let shape = loads(&one("{}", r#"{"x": 16, "y": 8, "z": 16}"#));
@@ -30,7 +28,6 @@ fn vs21b_absent_members_of_an_object_corner_are_zero() {
     assert_eq!(shape.shape.boxes[0].max, [16.0, 8.0, 16.0]);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn each_member_of_an_object_corner_is_its_own_axis() {
     for (min, expected) in [
@@ -46,7 +43,6 @@ fn each_member_of_an_object_corner_is_its_own_axis() {
     assert_eq!(shape.shape.boxes[0].max, [4.0, 8.0, 2.0]);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_array_corner_is_three_numbers_in_x_y_z_order() {
     let shape = loads(&one("[-1e0, -0.5, 2]", "[1.6e1, 8.25, 16.0]"));

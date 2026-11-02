@@ -612,7 +612,6 @@ fn b14_1_26_30_noise_gradient() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `b15_beta_environment_attributes`: a beta biome with an environment attribute loads from a
 /// base-game pack and is refused elsewhere without Beta APIs.
 #[test]

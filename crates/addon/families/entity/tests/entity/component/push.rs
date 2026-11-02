@@ -35,7 +35,6 @@ fn older<T>(
     (value, d)
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn apply_knockback_rules_preset_reads_its_1_26_30_defaults() {
     let (rules, _) = strict::<ApplyKnockbackRules>(r#"{"presets": [{}]}"#);
@@ -54,7 +53,6 @@ fn apply_knockback_rules_preset_reads_its_1_26_30_defaults() {
     assert_eq!(preset.slowdown_scale.0, 0.5);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e31b_iron_golem_knockback_preset_round_trips() {
     // e31b: the rescaled 1.26.20 A-op values (iron golem ≥ 1.18.30: 1.3 × 0.4).
@@ -96,7 +94,6 @@ fn deviation_apply_knockback_rules_empty_presets_is_an_error() {
     ));
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn e32_floor_knockback_preset_upgrades_with_the_1_26_30_defaults() {
     // e32 "knockback preset defaults";: every preset gets
@@ -137,7 +134,6 @@ fn a_floor_knockback_preset_does_not_know_the_1_26_30_members() {
     ));
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn pushable_by_entity_preset_reads_its_1_26_40_defaults() {
     let (value, _) = strict::<PushableByEntity>(r#"{"presets": [{}]}"#);

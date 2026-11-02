@@ -635,7 +635,6 @@ fn l13_a_sun_key_outside_the_day_is_dropped() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_games_lighting_values_stand_in_for_absent_members() {
     let document = loads::<LightingSettings>(&lighting("1.26.0", ""));
@@ -739,7 +738,6 @@ fn w01_sample_width_is_dropped_with_an_info_deviation() {
     assert!(none.diagnostics().is_empty());
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn w02_the_vanilla_water_file_loads_and_resolves_the_games_values() {
     let document = loads::<WaterSettings>(&fixture("water/w02_vanilla_1_21_120.json"));
@@ -1664,7 +1662,6 @@ fn g07_g6_description_and_its_identifier_are_optional_deviation() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_games_grading_values_stand_in_for_absent_members() {
     let document = loads::<ColorGradingSettings>(&grading("1.21.90", r#""color_grading": {}"#));

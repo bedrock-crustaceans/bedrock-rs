@@ -25,7 +25,6 @@ fn interact_reads_a_vanilla_saddle_interaction() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_interaction_reads_its_schema_defaults() {
     let (value, _) = strict::<Interact>(r#"{"interactions": [{}]}"#);

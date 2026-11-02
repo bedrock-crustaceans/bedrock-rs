@@ -646,7 +646,6 @@ fn u13_pre18_non_object_cubes() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn u14_pivot_default_all_versions() {
     let cube = r#"{"origin": [-4, 0, -2], "size": [8, 12, 4], "rotation": [0, 0, 45]}"#;

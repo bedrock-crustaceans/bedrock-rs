@@ -69,7 +69,6 @@ fn the_fox_tempt_reads_its_members_and_defaults() {
 }
 
 /// The typed defaults: an empty goal of each kind at 1.26.60.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_empty_goal_takes_the_typed_defaults() {
     let (panic, d) = at_version::<Panic>("minecraft:behavior.panic", "{}", (1, 26, 60));
@@ -209,7 +208,6 @@ fn the_legacy_panic_damage_sources_messages() {
 /// negative minimum becomes 1, a negative maximum 512, a minimum above the maximum is
 /// swapped, each with its text; the times go through whole ticks (truncated); the vanilla
 /// evoker (1.26.0) converts without a warning.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_legacy_send_event_conversions() {
     let json = r#"{"event_choices": [

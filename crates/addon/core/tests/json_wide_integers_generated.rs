@@ -594,7 +594,6 @@ fn a_megabyte_of_wide_integers_is_read_in_linear_time() {
 /// One integer of a million digits against one of four million is read in linear time: as a
 /// value (infinity), skipped as an unread member, and held raw.
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn an_integer_of_a_million_digits_is_read_in_linear_time() {
     #[derive(Facet)]
     struct Read {

@@ -275,7 +275,6 @@ struct Floats {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn an_out_of_range_real_into_f32_is_infinity_without_an_error() {
     let parsed: Floats = facet_json::from_str_borrowed_jsonc(&text("float_overflow.json")).unwrap();
     assert_eq!(parsed.big, f32::INFINITY);
@@ -428,7 +427,6 @@ struct Coerced {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn scalars_are_coerced_into_typed_fields() {
     let parsed: Coerced = facet_json::from_str_borrowed_jsonc(&text("coercions.json")).unwrap();
     assert_eq!(parsed.string, "5");

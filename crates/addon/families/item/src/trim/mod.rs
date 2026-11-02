@@ -158,7 +158,6 @@ impl TrimData {
 
     /// The patterns, one per template item: in build order for the vanilla table, by template
     /// item for one built from a packet.
-    #[must_use]
     pub fn patterns(&self) -> impl ExactSizeIterator<Item = &TrimPattern> + '_ {
         self.by_item.values()
     }

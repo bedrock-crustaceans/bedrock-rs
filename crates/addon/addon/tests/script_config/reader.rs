@@ -577,7 +577,6 @@ fn a_number_too_large_for_a_double_is_held_to_the_largest_deviation() {
     assert_eq!(findings[0].location.span, Some(Span { offset, len: 5 }));
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_integer_wider_than_64_bits_is_a_number() {
     let config = variables(r#"{"wide": 123456789012345678901234567890}"#);

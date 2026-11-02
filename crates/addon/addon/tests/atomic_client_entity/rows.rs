@@ -1077,7 +1077,6 @@ fn a02_companion_block_avoidance_reads_its_offsets_and_defaults() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `minecraft:companion_block_clipping` and `CompanionVisibilityBoundary`: every member may be left out, with the constructor's defaults.
 #[test]
 fn a03_companion_block_clipping_defaults() {

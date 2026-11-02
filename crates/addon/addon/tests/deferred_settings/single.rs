@@ -407,7 +407,6 @@ const K01: &str = r#"{
   }
 }"#;
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn k01_the_documentation_example_loads_and_its_values_are_the_games() {
     let document = loads::<CubemapSettings>(K01);

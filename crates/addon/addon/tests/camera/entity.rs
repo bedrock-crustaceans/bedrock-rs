@@ -73,7 +73,6 @@ fn cam23_the_seven_vanilla_camera_documents_parse_without_a_finding() {
     assert!(!keys.contains("minecraft:camera_fly_move"));
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn cam23_absent_members_take_the_constructor_defaults() {
     let free = loads(entity(&vanilla("free")));

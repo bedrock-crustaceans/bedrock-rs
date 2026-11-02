@@ -328,7 +328,6 @@ fn tints(stack: &PackStack<Resource>) -> Vec<Option<Color>> {
 const BAD_COLOR: &str = "Expected [ r, g, b ] or [r, g, b, a] or \"#RRGGBB\".";
 const NOT_INTEGRAL: &str = "Expected Integral Number.";
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn t16_colours() {
     let stack = stack("t16_colours");
@@ -952,7 +951,6 @@ fn without_an_active_subpack_the_subpack_s_copy_is_not_read() {
 // the folder does not say what `asFloat` makes of a
 // double beyond a float; ours reads the largest finite float of its sign, with a warning, so
 // the atlas can be written back. Vanilla stores the infinity.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_mip_fade_amount_beyond_a_float_is_the_largest_finite_float_deviation() {
     const FILE: &str = "textures/terrain_texture.json";

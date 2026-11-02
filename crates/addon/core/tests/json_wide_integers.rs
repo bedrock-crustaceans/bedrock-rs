@@ -236,7 +236,6 @@ fn a_wide_integer_is_never_a_string() {
 /// The rule in one line: a wide integer reads, as every type, exactly as the real token that
 /// spells its double reads; beyond the range of a double that is `1e999`, read as before.
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn a_wide_integer_reads_as_every_type_as_its_real_spelling_does() {
     for (token, wide) in boundaries() {
         if !wide {
@@ -363,7 +362,6 @@ fn four_of(value: &Value) -> [f64; 4] {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn every_entry_point_reads_a_wide_integer_as_its_double() {
     let (text, expected) = wide_document();
     assert_eq!(four_of(&from_str::<Value>(&text).unwrap()), expected);
@@ -419,7 +417,6 @@ fn every_entry_point_reads_a_wide_integer_as_its_double() {
 /// and keys without escapes, and raw slices, which hold the author's digits and lie where
 /// `JsonSlice::nested` looks for them.
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn a_borrowed_read_of_a_text_with_a_wide_integer_borrows_from_that_text() {
     #[derive(Debug, Facet)]
     struct Shell<'a> {

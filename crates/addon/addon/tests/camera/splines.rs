@@ -25,7 +25,6 @@ fn at(path: &str) -> String {
     format!("minecraft:camera_custom_splines/splines/0/{path}")
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn cam11_spline_names_types_and_times_are_constrained() {
     for name in ["nonamespace", "a:b:c", ":s", "ex:", "ex:with-dash", ""] {
@@ -181,7 +180,6 @@ fn rule_6_every_required_spline_member_is_required() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn cam25_easing_is_one_of_the_32_names() {
     let document = loads(spline(&splines_json(&spline_json(

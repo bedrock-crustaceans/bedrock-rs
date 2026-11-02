@@ -285,7 +285,6 @@ fn a_beta_allow_off_hand_defaults_to_true() {
 /// member the document leaves out; the crate keeps the member unset (the writer leaves it out
 /// again) and states the value.
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn the_defaults_of_record_and_of_a_durability_threshold() {
     use bedrock_addon_family_item::component::{DurabilityThreshold, Record};
     let record = Record::default();

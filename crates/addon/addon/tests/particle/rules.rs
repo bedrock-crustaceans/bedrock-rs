@@ -591,7 +591,6 @@ fn effect_cereal_billboard(size: &str) -> String {
 /// Ours (the settings precedent): a number beyond `f32` is read as the largest finite float
 /// of its sign with a warning, in a Molang member and in a plain float, in both eras; it is
 /// never infinity, and the document writes back.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
     for version in [LEGACY, CEREAL] {
@@ -645,7 +644,6 @@ fn a_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
 
 /// An integer literal too long for 64 bits is the float it spells, in a plain float member as
 /// in a Molang one and as `1e20` is, in both eras: one rule for every number of the family.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_integer_literal_beyond_64_bits_is_read_as_the_float_it_is() {
     for (literal, value) in [
@@ -873,7 +871,6 @@ fn a_long_run_of_digits_in_a_string_a_key_or_a_comment_is_not_a_number() {
 
 // ---- rule 7 is fixture p11; rule 8: the collision radius -------------------------------------
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn rule_8_the_collision_radius_is_0_to_one_half() {
     let collision = |version: &str, radius: &str| {

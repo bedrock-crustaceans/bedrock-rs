@@ -16,7 +16,6 @@ fn strict_fixture<T: Component<Set = EntityComponent>>(name: &str, key: &str) ->
 
 /// `v07_strict_vs_lenient`: the same bad `melee_attack` is a warning and kept in a
 /// lenient conversion (1.21.130), an error and dropped in a strict parse (1.26.0).
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v07_a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
     let json = r#"{"priority": 2, "speed_multiplier": "fast", "track_target": true}"#;
@@ -46,7 +45,6 @@ fn v07_a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
 /// text and are dropped: errors in a typed read (in both masks), which
 /// reject the document; `move_outdoors.search_count`, deprecated and re-bound, is an ordinary
 /// member.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v13_deprecated_inherited_names_are_reported_and_dropped() {
     const NAME: &str = "v13_deprecated_inherited_names";

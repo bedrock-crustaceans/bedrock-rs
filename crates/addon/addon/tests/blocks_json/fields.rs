@@ -474,7 +474,6 @@ fn the_current_shape_is_what_a_lower_entry_made_it() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn members_the_client_never_reads_deviation() {
     // `vanilla = "silent"`: an information for every member, the two with a fix too
@@ -599,7 +598,6 @@ fn the_base_game_check_runs_before_the_key_is_looked_at() {
     assert_eq!(loaded.found(), []);
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn ambient_occlusion_takes_a_number() {
     for (value, read) in [

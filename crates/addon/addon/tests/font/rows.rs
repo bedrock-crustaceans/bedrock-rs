@@ -1334,7 +1334,6 @@ fn fo13_a_header_that_is_not_zero() {
     }
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn fo14_a_short_file_leaves_the_missing_advances_at_zero_deviation() {
     let (page, diagnostics) = GlyphPage::from_bytes(&fontdata(0, &[0.5; 128])).expect("header 0");
@@ -1366,7 +1365,6 @@ fn f24_bytes_after_the_last_advance_are_ignored() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn fo26_f25_an_advance_that_is_not_positive() {
     let mut advances = [0.5_f32; 256];

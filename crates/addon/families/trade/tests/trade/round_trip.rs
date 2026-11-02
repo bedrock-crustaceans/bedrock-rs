@@ -250,7 +250,6 @@ fn k107_a_blob_written_under_its_deprecated_name_is_announced_at_the_member_of_t
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn the_forms_and_the_presence_of_members_are_kept() {
     let tiers = r#"[{"groups": [{"trades": [{
         "wants": [

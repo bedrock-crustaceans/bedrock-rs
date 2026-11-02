@@ -53,7 +53,6 @@ const RENDER_IDS: [&str; 4] = [
 
 // ---- F.1 -----------------------------------------------------------------------------------
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `cb01_plains_1_21_40_oracle`: vanilla's 1.21.40 plains file upgrades to the payload of
 /// vanilla's current one. The inserted `ambient_sounds.addition` reads as the constructor's
 /// default through its accessor and is not written.
@@ -1004,7 +1003,6 @@ fn cb17_all_vanilla_samples() {
     );
 }
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `cb18_all_vanilla_1_21_80`: vanilla's first client biomes (1.21.40, identifiers without a
 /// namespace), here from retail's `vanilla_1.21.40` slice, load through the whole chain.
 #[test]
@@ -1125,7 +1123,6 @@ const BETA: &str = r##"{"description": {"identifier": "myns:glade"},
     "components": {"minecraft:sky_color": {"sky_color": "#102030"}},
     "environment_attributes": {"minecraft:experimental_float_attr_1": {"operation": "add", "value": 1.0}}}"##;
 
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `cb23_beta_literal` (ours follows retail 1.26.45; vanilla 1.26.20 has no beta parser).
 #[test]
 fn cb23_beta_literal_deviation() {

@@ -219,7 +219,6 @@ fn an_identifier_that_is_an_object_is_a_type_error_and_no_panic() {
 
 /// The game reads an entity so that a member written as `null` is absent, also at the typed
 /// version: a bare strict member keeps its default.
-#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_null_member_of_a_typed_component_takes_its_default() {
     let payload = r#"{ "description": { "identifier": "demo:x" }, "components": { "minecraft:insomnia": { "days_until_insomnia": null } } }"#;

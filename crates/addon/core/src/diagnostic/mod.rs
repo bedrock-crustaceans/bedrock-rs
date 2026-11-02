@@ -397,7 +397,6 @@ impl JsonPath {
 
     /// The segments, from the document root down: each key as the file has it (the `Display`
     /// text escapes `/` and `~` in a key) and each index as a number.
-    #[must_use]
     pub fn segments(&self) -> impl ExactSizeIterator<Item = JsonPathSegment<'_>> + '_ {
         self.segments.iter().map(|segment| match segment {
             Segment::Key(key) => JsonPathSegment::Key(key),
