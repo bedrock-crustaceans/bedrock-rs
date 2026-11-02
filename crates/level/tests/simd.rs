@@ -1,3 +1,5 @@
+#![cfg(target_arch = "x86_64")]
+
 use bedrock_level::greedy::GreedyArray;
 
 #[test]

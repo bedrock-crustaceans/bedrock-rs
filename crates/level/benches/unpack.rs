@@ -6,6 +6,7 @@ fn unpack_regular(bits: u32, packed: &LazyArray) {
     GreedyArray::unpack_nonsimd(bits as u8, packed.words(), &mut indices);
 }
 
+#[cfg(target_arch = "x86_64")]
 fn unpack_oct(bits: u32, packed: &LazyArray) {
     let mut indices = [0; 4096];
     match bits {
@@ -62,6 +63,7 @@ fn benchmark(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("nonvectorized", bits), &array, |b, i| {
             b.iter(|| unpack_regular(bits, i))
         });
+        #[cfg(target_arch = "x86_64")]
         group.bench_with_input(
             BenchmarkId::new("vectorized_simd256", bits),
             &array,

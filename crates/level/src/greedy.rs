@@ -79,13 +79,15 @@ impl GreedyArray {
     pub(crate) fn unpack(words: &[u32], bits: u8) -> Self {
         let mut array = Box::new([0u16; 4096]);
 
+        #[cfg(target_arch = "x86_64")]
         if is_x86_feature_detected!("avx2") {
             // Safety: The condition above ensures that the host supports AVX-2. Therefore this function is safe to call.
             unsafe { Self::unpack_avx(bits, words, &mut array) };
-        } else {
-            // Fall back to regular implementation if AVX-2 is not supported.
-            Self::unpack_nonsimd(bits, words, array.as_mut());
+            return Self { array };
         }
+
+        // Fall back to regular implementation if AVX-2 is not supported.
+        Self::unpack_nonsimd(bits, words, array.as_mut());
 
         Self { array }
     }
@@ -100,6 +102,7 @@ impl GreedyArray {
     ///
     /// This function panics if `words` is too small for `bits`. In other words, `words.len() >= 4096 / (32 / bits)`.
     /// Furthermore, `BITS` must be valid, i.e. it is either 1, 2, 3, 4, 5, 6, 8 or 16.
+    #[cfg(target_arch = "x86_64")]
     #[target_feature(enable = "avx2")]
     pub fn unpack_avx(bits: u8, words: &[u32], indices: &mut [u16; 4096]) {
         // Bits are compile-time constants using generics to enable more bitsize-specific optimisations.
@@ -176,6 +179,7 @@ impl GreedyArray {
     ///
     /// This function panics if `words` is too small for `BITS`. In other words, `words.len() >= 4096 / (32 / BITS)`.
     /// Furthermore, `BITS` must be valid, i.e. it is either 1, 2, 4, 8 or 16.
+    #[cfg(target_arch = "x86_64")]
     #[inline]
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
