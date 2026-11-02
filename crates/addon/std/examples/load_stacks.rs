@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Load a world's two stacks from disk with the std `Driver`, then register its custom blocks
 //! with their Molang permutation conditions compiled, as a server does at start-up.
 //!

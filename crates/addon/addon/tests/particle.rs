@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The particle family (`bedrock_addon::families::particle`): its rows, the validation rules at
 //! their boundaries, the chain, round trips, cost, and the stack's registry.
 

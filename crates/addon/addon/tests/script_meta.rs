@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Script-module metadata (`script::meta`): the strict models of the published
 //! script metadata (`metadata/`), privileges, type-descriptor lowering, the module catalog and the generated core
 //! tables. The `cargo xtask script-meta` generator, its vendoring checks and the comparison of

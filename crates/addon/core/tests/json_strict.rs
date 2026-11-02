@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The strict wrappers: where vanilla's reader rejects a value of the wrong
 //! JSON type, a field takes `StrictInt<T>`, `StrictFloat<T>`, `StrictBool` or `StrictString`,
 //! because facet coerces scalars and cannot be told not to. Each wrapper against every JSON

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! A tree feature, the largest document of the crate, loads on a thread with three quarters of
 //! a mebibyte of stack, in whatever profile the test is built with.
 //!

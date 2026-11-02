@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Flipbook smoke over the game's own files: the resource packs of the sample packs and
 //! of the client installs load through `Driver` into `rp.flipbooks()`, the flipbooks of each
 //! stack are merged, and they have no error-level diagnostic.

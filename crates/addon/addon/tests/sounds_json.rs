@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The sounds.json family (`bedrock_addon::families::sounds_json`, the resource pack's
 //! `sounds.json`): every row of the fixtures and the rules of the file, the merge of the
 //! block `base` chains, and round trips.

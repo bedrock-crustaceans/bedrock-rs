@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Open a pack from bytes already in memory, put it on a behaviour stack and look up a block.
 //! No file is read: the crate is sans-IO, and `Pack::from_files` takes the bytes as they are.
 //!

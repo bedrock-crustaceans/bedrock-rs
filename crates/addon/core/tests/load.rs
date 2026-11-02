@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `load`'s plain data: the virtual locations loaders speak in, the
 //! default limits and in-memory app data.
 

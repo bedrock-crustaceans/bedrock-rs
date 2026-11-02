@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Geometry smoke over the game's own files: every geometry file of the resource packs of
 //! the sample packs and of the client installs (`models/mobs.json`, `models/entity/**`,
 //! `models/blocks/**`) loads through `Driver` into `rp.geometries()` with no error-level

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `script::config` (families/script_config): the BDS `config/` folder and `server.properties`.
 //!
 //! Every row of the folder's fixtures is a server root under

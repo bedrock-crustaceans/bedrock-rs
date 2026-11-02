@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The item family (`items/`, `minecraft:item`): the chain, its steps, round trips, Molang and
 //! the network NBT.
 

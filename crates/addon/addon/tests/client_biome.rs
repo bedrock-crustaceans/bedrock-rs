@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The client-biome family (`bedrock_addon::families::client_biome`): every row of its
 //! fixtures, the steps, the chain, the validation rules, round trips and the stack's registry.
 

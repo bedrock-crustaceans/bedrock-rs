@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Texture sets (`bedrock_addon::families::texture_set`): every fixture row
 //! through the stack accessor `rp.texture_sets()` and the resolver `rp.resolve_texture`, the
 //! chain, the write side, and the walk that reads no image.

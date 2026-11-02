@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Persona piece smoke over the game's own files: the client's built-in persona pack of each
 //! client install (`resource_packs/persona/`) opens through `Driver`, its 66 pieces load with no
 //! error-level finding, the findings are exactly the pinned ones, every meta and store-info

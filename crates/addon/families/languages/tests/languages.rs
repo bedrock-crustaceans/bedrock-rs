@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The `languages` family (`texts/languages.json`, `texts/language_names.json`): the shapes of
 //! both documents, the deviations, the merge rules and the locale fallback.
 

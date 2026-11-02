@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Versions as a user of `bedrock_addon_core::version` sees them: `SemVersion` parsing in every
 //! form the game accepts and its ordering, `FormatVersion` and what an envelope said about it,
 //! `VersionRange` containment under the four range models, and the manifest version types.

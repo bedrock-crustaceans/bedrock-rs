@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The `from_value` canary: typed structs are deserialised from text, never
 //! from a `facet_value::Value`, because in rc.7 `facet_value::from_value` fills a missing
 //! required field with its `Default`, drops the keys bound for a `#[facet(flatten)]` map and

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The round-trip guarantees, for every family, through `PackWriter`: a stack
 //! is loaded, every document of every pack is written back with `PackWriter::put` into a
 //! writer started with `PackWriter::from_pack`, the written packs are loaded as a stack again,

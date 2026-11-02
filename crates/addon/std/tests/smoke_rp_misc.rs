@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `rp_misc` smoke over the game's own files: the splashes, loading messages, fonts, emoticons
 //! and UI side files of the client installs' resource packs load through the `Driver` with zero
 //! error-level diagnostics; the game's own credits and texture mapping

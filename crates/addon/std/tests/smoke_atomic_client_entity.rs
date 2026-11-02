@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Atomic client entity smoke over the game's own files. No vanilla pack ships an
 //! `atomic_client_entities/` folder (none in the client installs, the server install or the
 //! The sample packs), so there is nothing to load: the test proves the folder is absent from every

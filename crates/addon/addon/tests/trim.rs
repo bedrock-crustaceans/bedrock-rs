@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Armour trims (`item::trim`): the tables, the packet, the world gate and template-item filter,
 //! and the deviations. The folder has no pack format, so there is no chain, round trip of a
 //! document or stack accessor to test.

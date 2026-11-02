@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Locations across nesting levels: a read error names the member inside the value
 //! where it happened (`ShapeError.path`), and each type's `check` reports every member kept in
 //! an `extra`, at any depth, as an `UnrecognizedField` warning at its full path.

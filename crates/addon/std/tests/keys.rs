@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `keys`: the provider a `Driver` asks for content keys, and the `<file>.key` sidecar.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

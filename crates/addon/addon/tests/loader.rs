@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The sans-IO loaders: `Pack::from_files` / `from_archive` over the fixtures, the
 //! `PackLoader` request sequences, the `RepositoryLoader` and `StackLoader`, driven by the
 //! scripted responder of `common/responder.rs` (12 "Loader conformance layer").

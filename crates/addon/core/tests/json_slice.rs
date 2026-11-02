@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Per-entry isolation without a tree: a map whose entries fail one by one is held as
 //! `IndexMap<String, RawJson>`, each entry is parsed from its own slice with `parse_at`, and a
 //! failure is reported at file offsets.

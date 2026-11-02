@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The function family (`bedrock_addon::families::function`, families/function): every row of its
 //! The fixtures through the stack accessors `bp.functions()` and `bp.tick_functions()`, the line
 //! rules, the command-table lints, the tick list's merge and the write side.

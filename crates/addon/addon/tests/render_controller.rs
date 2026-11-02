@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The render controller family (`bedrock_addon::families::render_controller`): the rows of
 //! its fixtures.
 

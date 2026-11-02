@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Documents nested to `MAX_JSON_DEPTH`, and a level past it, load through every strategy of
 //! the driver without a stack that overflows: on the calling thread with a megabyte of stack
 //! (`Strategy::Sequential`), on the driver's own pool (`Strategy::Rayon`) and on a pool the

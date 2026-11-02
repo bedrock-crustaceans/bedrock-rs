@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `blocks.json` smoke over the game's own files: the `blocks.json` of every resource pack of
 //! the sample packs and of the client installs loads through `Driver` into
 //! `rp.client_blocks()` with no error-level diagnostic.

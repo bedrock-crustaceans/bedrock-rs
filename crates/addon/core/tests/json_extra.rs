@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Extra`, the unknown members of one object kept for write-back: a
 //! `#[facet(transparent)]` newtype over `IndexMap<String, json::Value>` in document order.
 

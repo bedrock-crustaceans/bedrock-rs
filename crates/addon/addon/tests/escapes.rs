@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Every family reads its JSON through core's door (`json::read`): a string escape
 //! outside RFC 8259 is a syntax error of the file in every family, its own reader included,
 //! and never reaches facet-json, which decodes `"\é"` out of bounds (an abort in a debug

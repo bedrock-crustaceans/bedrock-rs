@@ -3,7 +3,6 @@ name = "bedrock_addon_core"
 description = "The shared vocabulary of the bedrock_addon crate family: identifiers, versions, diagnostics, documents, load context, JSON helpers, Molang re-exports and the version-chain machinery; no I/O"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 readme = "README.md"
 
@@ -38,6 +37,3 @@ stacker = { workspace = true } # facet reads a typed target by a call of itself 
 # The version-chain tests derive a toy family's component enum (a dev-only cycle: the derive's
 # tests depend on core).
 bedrock_addon_derive = { path = "../derive" }
-
-[lints]
-workspace = true

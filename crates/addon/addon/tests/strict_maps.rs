@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! A JSON map level given an array (`[]`, which facet would read
 //! as an empty map) is an `InvalidType` at that level, in every family that has a map level
 //! read through core's `parse_at`. One test per family with a map level; the families without

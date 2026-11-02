@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Merged<T, L>`: a value folded from every pack's copy with the family's
 //! merge strategy, the winning origin per entry and the layers top-first.
 

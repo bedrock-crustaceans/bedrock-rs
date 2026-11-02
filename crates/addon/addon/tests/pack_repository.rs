@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `PackRepository`: registration and `stacks`, the 05 composition rules through the public
 //! API. Packs are opened with `Pack::from_files` from small in-memory manifests.
 

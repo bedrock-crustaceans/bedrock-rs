@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The vanilla gate: the game's own packs load and link with no error and no warning, every
 //! experiment on, apart from the lines the game itself logs for its own files.
 //!

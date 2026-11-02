@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Experiments by save name and the set that keeps unknown names.
 
 use bedrock_addon_core::load::{Experiment, Experiments, SaveName};

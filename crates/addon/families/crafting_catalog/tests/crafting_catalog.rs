@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The crafting item catalogue (`item_catalog/crafting_item_catalog.json`,
 //! `minecraft:crafting_items_catalog`): its rules, the chain, round trips and the stack accessor.
 

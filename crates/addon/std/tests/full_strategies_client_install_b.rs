@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Strategy::Sequential` against `Strategy::Rayon` over the second client install: one of the two
 //! client-install targets beside `full_strategies.rs`, which says what is compared and how. Each
 //! client install has a target of its own (`full_strategies_client_install_a`,

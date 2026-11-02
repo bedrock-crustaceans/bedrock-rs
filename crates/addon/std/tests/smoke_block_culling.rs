@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Block-culling smoke over the game's own files: every `block_culling/*.json` of the
 //! resource packs of the two client installs loads through `Driver` into `rp.block_culling()`
 //! with no error-level diagnostic. The sample packs ship no `block_culling/` and are skipped

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Registry<T>` and the combine rules on synthetic documents: load order,
 //! `layers` with and without `keep_shadowed`, `beta()` and `resolve`.
 

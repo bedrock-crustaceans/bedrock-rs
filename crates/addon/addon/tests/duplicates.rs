@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Of a member written twice the last value stands, whole, at every level:
 //! every family on the one rule, its own reader included. One test per family with
 //! a reader of its own: a member doubled at the root, and one doubled inside. `FIRST` marks

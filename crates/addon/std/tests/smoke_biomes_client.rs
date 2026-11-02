@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for client biomes: the `biomes/` documents and the
 //! `biomes_client.json` of the sample packs' `resource_pack/` and of every resource pack of the
 //! two client installs load through the `Driver` with zero error-level diagnostics; MCB

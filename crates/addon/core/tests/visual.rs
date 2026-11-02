@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The shared description members and the resolver as a user of `bedrock_addon_core::visual`
 //! sees them: the name-or-condition entries, `scripts`, `spawn_egg`, the `Visuals` view, and
 //! `EngineVersionMerge` over the client-entity and attachable fixture rows.

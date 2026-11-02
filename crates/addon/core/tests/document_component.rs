@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `ComponentMap<C>` over a toy component enum that implements `ComponentSet`
 //! and `Component` by hand, as `#[derive(Components)]` will.
 

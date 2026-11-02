@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The feature-rule family (`feature_rules/`, `minecraft:feature_rules`): the fixture rows, the
 //! validation rules, the chain, round trips, Molang and the stack accessor.
 

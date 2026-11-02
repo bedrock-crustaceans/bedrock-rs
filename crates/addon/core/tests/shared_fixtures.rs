@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The family fixture rows whose members are shared types, copied under
 //! `tests/fixtures/shared/<family>/<row>.json` with only the members that hold the shared type.
 //! Each test pins what the shared type does for its row: the value read, the form written back

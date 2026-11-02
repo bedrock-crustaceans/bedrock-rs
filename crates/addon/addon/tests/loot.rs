@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The loot table family (`loot_tables/`): every row of the fixtures, every rule
 //! of the validation rules, the round trip, the stack accessor and the deviations.
 

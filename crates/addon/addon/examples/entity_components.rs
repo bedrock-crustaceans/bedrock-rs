@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Read an entity's components by typed access: `components.get::<T>()` for a component the
 //! crate has a type for, and the JSON as written for a component vanilla itself still parses at
 //! run time (`minecraft:health`, `minecraft:movement`, `minecraft:type_family`).

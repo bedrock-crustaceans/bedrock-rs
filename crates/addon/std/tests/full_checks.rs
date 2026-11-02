@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Questions about the game's own packs, each answered with a number that is pinned here. The
 //! packs are not in the repository: the tests read them from the folder `BEDROCK_ADDON_CORPUS`
 //! names and skip without it.

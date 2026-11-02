@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Render controller smoke over the game's own files: every `render_controllers/` file of the
 //! resource packs of the sample packs, the server install and the client installs loads
 //! through `Driver` and `rp.render_controllers()` with no error-level diagnostic, with the

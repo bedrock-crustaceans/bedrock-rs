@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The animation family on both stacks (`bedrock_addon::families::animation`) and the behaviour-
 //! pack controller rows: the behaviour-pack side (`behavior`), the resource-pack side
 //! (`resource`), the deviations, round trips and Molang.

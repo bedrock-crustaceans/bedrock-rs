@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The determinism rule: a loader's result is identical for every order in which
 //! the caller completes requests and jobs. One fixture stack is loaded with completions in
 //! issue order, in reverse and in three seeded random orders; the `Debug` of the `StackReport`

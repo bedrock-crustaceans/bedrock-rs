@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Attachable smoke over the game's own files: every `attachables/` file of the sample packs'
 //! resource pack, of the resource packs of the two client installs and of the app's own
 //! `definitions/attachables` loads through `Driver` and `attachables()` with no error-level

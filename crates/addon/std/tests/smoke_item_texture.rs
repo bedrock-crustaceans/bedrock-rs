@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Item atlas smoke over the game's own files: the resource packs of the sample packs and of
 //! the client installs load through `Driver` into `rp.texture_atlases()`, the item atlas of
 //! each stack is built, and it has no error-level diagnostic.

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! A CI gate over `Severity` and `DiagnosticCode`: load both stacks of a world, run the link
 //! pass, print what a pack author must see and decide whether the build passes.
 //!

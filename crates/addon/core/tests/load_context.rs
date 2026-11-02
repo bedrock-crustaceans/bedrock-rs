@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The per-pack load context (including a detached one) and the load requirements
 //! components and members are gated on.
 

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The dimension family (`dimensions/`, `minecraft:dimension`): the fixture rows, the
 //! validation rules, the chain, round trips and the stack accessor.
 

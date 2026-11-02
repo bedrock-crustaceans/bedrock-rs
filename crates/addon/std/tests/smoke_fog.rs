@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Fog smoke over the game's own files: every `fogs/` file of the resource packs of the sample
 //! packs and the client installs (the server install ships no `fogs/`) loads through `Driver`
 //! and `rp.fogs()` with no error-level diagnostic (MCB documents, baked documents the loaders

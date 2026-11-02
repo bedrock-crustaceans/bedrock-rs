@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Entity smoke over the game's own files: every behaviour-pack entity definition of the
 //! sample packs, the server install and client install B loads through `Driver` and
 //! `bp.entities()` with no error-level diagnostic (MCB documents, baked documents the

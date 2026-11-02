@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `PackWriter`: a pack built in memory, its files in order, its zip
 //! bytes, and the pack it opens as; the round trips run over the fixture packs.
 

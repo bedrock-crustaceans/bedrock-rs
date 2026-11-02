@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for the worldgen root: the feature rules of the vanilla
 //! behaviour packs and of the app data's `definitions/feature_rules`, and the dimension
 //! documents, load through the `Driver` with zero error-level findings; MCB documents (baked

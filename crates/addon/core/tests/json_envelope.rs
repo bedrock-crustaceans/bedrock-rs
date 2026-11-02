@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The envelope probe: `{ "format_version": …, "<payload key>": {…} }` read from the
 //! text into a shell whose only typed member is `format_version` and whose other members stay raw
 //! slices of the text, so the payload is deserialised from its own slice.

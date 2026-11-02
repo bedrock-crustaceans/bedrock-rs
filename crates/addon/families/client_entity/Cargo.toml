@@ -3,7 +3,6 @@ name = "bedrock_addon_family_client_entity"
 description = "The `client_entity` content family of bedrock_addon, re-exported as bedrock_addon::families::client_entity; sans-IO"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 
 [package.metadata.docs.rs]
@@ -19,6 +18,3 @@ facet = { workspace = true }
 facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
-
-[lints]
-workspace = true

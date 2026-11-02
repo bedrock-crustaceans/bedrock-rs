@@ -3,7 +3,6 @@ name = "bedrock_addon_family_feature_rules"
 description = "The `feature_rules` content family of bedrock_addon, re-exported as bedrock_addon::families::feature_rules; sans-IO"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 
 [package.metadata.docs.rs]
@@ -20,6 +19,3 @@ facet = { workspace = true }
 facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
-
-[lints]
-workspace = true

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The public face of `storage`: pack paths, content keys and the storage error. The container
 //! formats themselves are crate-private and tested beside their code (`src/storage/tests/`).
 

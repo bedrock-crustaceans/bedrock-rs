@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Molang versions: the pack's version from its
 //! `min_engine_version` over every range of the game's Molang version table and the pack kinds, the
 //! document's from its `format_version`, and one test per `MolangVersionSource`.

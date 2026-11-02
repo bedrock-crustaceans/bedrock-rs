@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The skip-field convention: facet binds a JSON member to a
 //! `#[facet(skip)]` field of its name, so every skipped field of the crate is declared
 //! `#[facet(skip, rename = "\u{0}<name>")]` (core's `Extra`, "Skipped fields"). One test holds

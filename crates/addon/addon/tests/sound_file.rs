@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The sound files family (`bedrock_addon::families::sound_file`, the audio files below
 //! `sounds/` of the resource packs): the listing, the probe order, what is ignored, and what a
 //! load asks the host for.

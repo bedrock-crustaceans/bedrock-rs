@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `read_saved_settings`: the saved pack-settings files read from disk, and the smoke test over
 //! every such file the game's own files hold.
 

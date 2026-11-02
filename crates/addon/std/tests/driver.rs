@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Driver`: the loop that runs a loader to completion, its strategies and its key lookup,
 //! driven by small scripted loaders over a temporary directory.
 

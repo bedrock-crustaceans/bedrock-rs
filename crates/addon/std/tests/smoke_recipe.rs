@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Recipe smoke over the game's own files: the vanilla behaviour-pack recipes of the sample
 //! packs and of the server install load through `Driver` into `bp.recipes()` with zero
 //! error-level diagnostics. MCB documents (baked documents the loaders do not decode) in the

@@ -3,7 +3,6 @@ name = "bedrock_addon_family_voxel_shape"
 description = "The `voxel_shape` content family of bedrock_addon, re-exported as bedrock_addon::families::voxel_shape; sans-IO"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 
 [package.metadata.docs.rs]
@@ -15,6 +14,3 @@ bedrock_addon_core = { path = "../../core" }
 facet = { workspace = true }
 facet-json = { workspace = true }
 facet-value = { workspace = true }
-
-[lints]
-workspace = true

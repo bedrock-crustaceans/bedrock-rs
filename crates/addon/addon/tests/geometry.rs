@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The geometry family (`bedrock_addon::families::geometry`): its rows, the chain, round trips,
 //! Molang and the pack stack.
 

@@ -3,7 +3,6 @@ name = "bedrock_addon_derive"
 description = "The #[derive(Components)] proc-macro of the bedrock_addon crate family: Component impls, From<T> for the family's component enum and the static component table"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 readme = "README.md"
 
@@ -24,6 +23,3 @@ quote = { workspace = true }
 bedrock_addon_core = { path = "../core" }
 # `compile_fail` cases with their expected compiler errors (tests/ui).
 trybuild = "1"
-
-[lints]
-workspace = true

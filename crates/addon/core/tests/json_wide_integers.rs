@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! An integer token too large for 64 bits reads as the double it spells, through
 //! every entry point of the door (`json/read.rs`): never as a string, never as the end of the
 //! file. Vanilla's readers (rapidjson, jsoncpp, the Minecraft Document reader) read such a

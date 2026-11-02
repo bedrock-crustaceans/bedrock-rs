@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The entity family (`bedrock_addon::families::entity`): document, version chain, steps and
 //! validation.
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

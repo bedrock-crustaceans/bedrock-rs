@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `read_script_config`, `read_script_config_files` and `read_server_properties`: a server's
 //! `config/` folder and `server.properties` read from disk, and the smoke test over a dedicated
 //! server install of the game.

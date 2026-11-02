@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Material smoke over the game's own files: the `materials/` folders of the resource packs
 //! of the client installs (`vanilla`, `vanilla_base`, `chemistry`) and of the server install load
 //! through `Driver` and `rp.materials()` with no error-level diagnostic. The sample packs ship

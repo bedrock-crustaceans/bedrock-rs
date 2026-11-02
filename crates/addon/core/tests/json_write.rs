@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The writer: fields in declaration order, `extra` members after the known
 //! members of their object, `IndexMap` order kept, `f32` in the shortest form that reads back to
 //! the same `f32` with a `.0` on integral values, a non-finite number refused as

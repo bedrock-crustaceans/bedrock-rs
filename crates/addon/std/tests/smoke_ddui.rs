@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Data-driven UI smoke over the game's own files: the `ddui/root/` files of the client installs'
 //! resource packs load through `Driver` and `rp.data_driven_ui()`. Neither install ships a
 //! `ddui/composition/` folder and the sample packs ship no `ddui/` at all, so those trees are

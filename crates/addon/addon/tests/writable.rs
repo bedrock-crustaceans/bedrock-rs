@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! Every document that loads is writable, and no value is rewritten or dropped in silence.

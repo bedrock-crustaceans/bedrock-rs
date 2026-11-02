@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `ItemDescriptor`: the five JSON forms round trip with their `form`; a wrong shape is kept as
 //! `Invalid` with vanilla's `InvalidType` text; several keys follow the interim rule of taking one
 //! and keeping the rest.

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Unknown members: version structs have no flatten field, so
 //! `unknown_members(T::SHAPE, &Value)` walks the struct shapes and a `Value` of the same text
 //! together and reports every key no field takes; `keep_unknown_members` also stores them in the

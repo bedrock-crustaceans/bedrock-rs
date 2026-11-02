@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! JSON parse and typed-deserialisation errors: the facet-json error kind → code table,
 //! one test per row (and per kind where a row lists several). Kinds facet-json raises from text
 //! are produced by parsing; the rest are built by hand.

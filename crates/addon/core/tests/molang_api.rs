@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The public surface of `molang`: the molangx re-exports at their one
 //! path, the `Molang` alias, `MolangList`, the crate itself at `molang::molangx`, and, with the
 //! `molang` feature, `MolangCheck` and the compile items.

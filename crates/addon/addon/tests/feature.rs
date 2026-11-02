@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The feature family (`features/`, one schema per feature type): the fixture rows, the
 //! steps, the chains, round trips, Molang and the stack.
 

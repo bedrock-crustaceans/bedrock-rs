@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Files<T>`: the top pack's copy of a path wins; under `TopWinsFallback`
 //! (structures) a failing copy falls through to the next pack.
 

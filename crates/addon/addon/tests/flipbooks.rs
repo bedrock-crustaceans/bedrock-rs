@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Flipbooks (`bedrock_addon::families::flipbooks`): every fixture row
 //! through `rp.flipbooks()`. The rows that check an entry against the
 //! terrain atlas or its image wait for the link pass.

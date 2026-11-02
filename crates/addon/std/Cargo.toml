@@ -3,7 +3,6 @@ name = "bedrock_addon_std"
 description = "The std driver of bedrock_addon: answers the sans-IO loaders with std::fs, runs jobs sequentially or on rayon, reads the server-side files around packs and writes packs to disk"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 readme = "README.md"
 
@@ -35,6 +34,3 @@ facet-json = { workspace = true }
 [[example]]
 name = "rayon_driver"
 required-features = ["rayon"]
-
-[lints]
-workspace = true

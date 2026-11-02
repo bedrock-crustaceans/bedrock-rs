@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Reading Molang fields: the reader matrix and facet
 //! cases of molangx `tests/serialised_forms.rs`, copied as a table into
 //! `tests/fixtures/molang/reader_matrix.json`, run three ways that must agree:

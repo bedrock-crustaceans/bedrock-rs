@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Of a member written twice the last value stands, whole, at every level (the game keeps the
 //! last copy of a duplicate key): `json::last_wins` blanks every earlier copy, keeping every
 //! other byte where it was, so spans into the text stay right.

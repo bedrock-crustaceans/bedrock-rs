@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Function smoke over the game's own files: the behaviour packs of the sample packs, of the
 //! server install and of client install B load through `Driver` into `bp.functions()` and
 //! `bp.tick_functions()` with zero error-level diagnostics, and every `.mcfunction` file on

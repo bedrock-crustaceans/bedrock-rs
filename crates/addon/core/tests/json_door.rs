@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The door rule: `bedrock_addon_core::json::read` is the only module of the crate
 //! family that calls a facet-json parser, so no text reaches facet without the scan that
 //! refuses what facet cannot read safely; and `json::write` the only one that calls a

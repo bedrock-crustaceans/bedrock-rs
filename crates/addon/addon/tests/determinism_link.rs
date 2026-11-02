@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The determinism rule for the link pass (: `link()` is a pure call
 //! over the loaded stacks): the fixture stack of `determinism.rs`, with the cross-references of
 //! this test's own fragment, is loaded with completions in issue order, in reverse and in three

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The std driver with rayon, in three lines: a driver whose default strategy is a rayon pool,
 //! a repository over two pack directories, and the world's two stacks loaded by that driver.
 //!

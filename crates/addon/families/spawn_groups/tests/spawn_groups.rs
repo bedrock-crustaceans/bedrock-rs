@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The spawn-groups family (`bedrock_addon::families::spawn_groups::SpawnGroup`), read from the
 //! app data only.
 

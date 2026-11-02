@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The message rows the shared types add to `VanillaText`, rendered byte
 //! for byte as vanilla's content log prints them, and the codes they ride on.
 

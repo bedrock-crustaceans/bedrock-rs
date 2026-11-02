@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The pre-parse helpers: `strip_bom` and `check_depth`: the game skips a leading UTF-8 BOM, and a
 //! document nested deeper than the limit is refused before any parser sees it.
 

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `IntRange` / `FloatRange`: every JSON form round trips with its `form`; a range with
 //! `max < min` is swapped, with an `InvalidValue` info; and `range_min` / `range_max` (read by
 //! one of the game's JSON readers) and `min` / `max` (read by another) are one type that

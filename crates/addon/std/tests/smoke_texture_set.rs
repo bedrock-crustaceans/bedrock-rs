@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Texture set smoke over the game's own files: the resource packs of the sample packs and of
 //! the client installs load through `Driver` into `rp.texture_sets()`, every
 //! `*.texture_set.json` of the stack is read, none has an error-level diagnostic, and the load

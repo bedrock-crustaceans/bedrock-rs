@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! A file that starts with a UTF-8 byte-order mark: vanilla's reader skips the mark,

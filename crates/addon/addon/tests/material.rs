@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The material family (`bedrock_addon::families::material`, families/materials): every row of
 //! its fixtures.md and every rule of its validation.md, through the files read on their own
 //! and through the stack accessor `rp.materials()`.

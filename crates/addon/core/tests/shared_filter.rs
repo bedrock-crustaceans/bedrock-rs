@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Filter`: the grammar `group := test | [group] | {key: group | [group]}` with the
 //! eight group keys kept apart, test members with the interim typing, the unknown-test-name
 //! warning, and unknown members kept at every level.

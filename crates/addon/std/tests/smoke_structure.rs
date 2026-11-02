@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for structures: the `.mcstructure` files of the server install's behaviour
 //! packs, of the packs of client installs B and A, and of the sample packs' `behavior_pack/`
 //! (which ships none) load through the `Driver` with zero error-level diagnostics and are

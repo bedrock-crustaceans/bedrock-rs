@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Pass 2, the load-time compile check: field
 //! outcomes, allow-lists and operation sets, the cache, the empty-text rule, version sources that
 //! act in the compile, and the findings' codes, severities and paths.

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `io::Roots` and `io::respond`: the root table and the blocking answer to one loader request,
 //! against a real directory tree built in a temporary directory.
 

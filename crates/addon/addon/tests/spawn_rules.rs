@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The spawn-rules family (`bedrock_addon::families::spawn_rules`, both shapes): the routing
 //! gates, the chains, round trips, Molang and the stack accessor.
 

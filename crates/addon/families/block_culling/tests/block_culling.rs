@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The block-culling family (`block_culling/`, `minecraft:block_culling_rules`): every row of
 //! its rules, the chain and its step, round trips and the stack accessor.
 

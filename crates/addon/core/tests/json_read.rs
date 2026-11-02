@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The door to facet-json (`json/read.rs`): no text reaches its parsers unless its string
 //! escapes are RFC 8259's, its nesting is within the limit and nothing follows its root value.
 //!

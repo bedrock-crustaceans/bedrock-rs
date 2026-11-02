@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Texture list smoke over the game's own files: the resource packs of the client installs load
 //! through `Driver` into `rp.texture_lists()`, every pack's list is read, and none has an
 //! error-level diagnostic. The sample packs ship the list under a name no client reads.

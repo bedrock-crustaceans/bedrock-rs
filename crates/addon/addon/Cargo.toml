@@ -3,7 +3,6 @@ name = "bedrock_addon"
 description = "Minecraft Bedrock Edition behaviour and resource packs as typed Rust data: manifests, containers, pack stacks, every content family, diagnostics and write-back; sans-IO"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 readme = "README.md"
 
@@ -244,6 +243,3 @@ required-features = ["client_entity", "entity", "geometry", "texture_file", "tex
 [[example]]
 name = "diagnostics_gate"
 required-features = ["block", "entity", "loot"]
-
-[lints]
-workspace = true

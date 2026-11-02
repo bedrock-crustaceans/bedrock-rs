@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The biome family (`bedrock_addon::families::biome`): every row of its fixtures, the steps, the
 //! chain, the validation rules, round trips, Molang and the stack's registry.
 

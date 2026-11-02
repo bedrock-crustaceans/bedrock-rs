@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `splashes.json`: reading one copy, the stack's pool, write-back as authored and the cost of
 //! a long list.
 

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Item smoke over the game's own files: the vanilla behaviour-pack items of the sample packs
 //! and of the server install load through `Driver` into `bp.items()` with zero error-level
 //! diagnostics. MCB documents (baked items in the server install's brarchives) are decoded and

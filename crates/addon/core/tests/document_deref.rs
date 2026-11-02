@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The `Deref` name-collision rule: `Document<T>` dereferences to `T`, so a
 //! method of `Document` hides one of `T` with the same name. No root type may name a field or a
 //! method `value`, `into_value`, `origin`, `version`, `diagnostics` or `map`.

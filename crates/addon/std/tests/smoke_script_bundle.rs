@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Script-bundle smoke over the game's own files: every behaviour and resource pack of the
 //! sample packs, the server install, the two client installs and the split client pack tree
 //! loads through `Driver` into `scripts()` with zero error-level findings, every `.js` file

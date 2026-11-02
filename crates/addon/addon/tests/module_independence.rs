@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! A family lifted into its own crate (`crates/addon/families/<name>/`, the package
 //! `bedrock_addon_family_<name>`, which `families/mod.rs` re-exports) depends on no
 //! `bedrock_addon` and no other family: its manifest names neither, and its sources do not

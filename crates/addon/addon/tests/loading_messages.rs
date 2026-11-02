@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `loading_messages.json`: reading the file, the highest pack's copy, write-back as authored,
 //! the cost of a long list and the tips no language translates.
 

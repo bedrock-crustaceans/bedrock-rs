@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The server sound definitions family (`bedrock_addon::families::server_sound_definitions`,
 //! the behaviour pack's `sounds/sound_definitions.json`): every row of the fixtures and every
 //! rule of the file, at the one stable slice 1.26.60 of 1.26.60. No vanilla file exists, so

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Generated documents with integers too large for 64 bits at random places, from
 //! fixed seeds, and the cost of reading them.
 //!

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The voxel-shape family (`shapes/`, `minecraft:voxel_shape`): its rules, the chain, round trips
 //! and the stack accessor.
 

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! One test per row of the table of how the game's jsoncpp reader differs from facet-json, each
 //! over its fixture in `tests/fixtures/json/`. A test asserts what facet-json / facet-value
 //! `0.50.0-rc.7` do with the input and, for a recorded deviation, what vanilla does instead (in the

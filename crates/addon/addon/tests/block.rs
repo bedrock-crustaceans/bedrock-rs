@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The block family (`bedrock_addon::families::block`): the fixture rows, the upgrade steps, the chain,
 //! round trips, Molang, network NBT and the thin slice.
 

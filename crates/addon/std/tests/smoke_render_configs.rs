@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for the deferred renderer's settings: the `lighting/`,
 //! `atmospherics/`, `water/`, `color_grading/`, `cubemaps/`, `shadows/`, `pbr/` and
 //! `local_lighting/` files of the sample packs' `resource_pack/` and of every resource pack of

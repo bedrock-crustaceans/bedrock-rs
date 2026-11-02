@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Server sound definitions smoke: no game tree ships the file (no `behavior_packs/*/sounds/`
 //! in the client installs or the server install, no `behavior_pack/sounds/` in the sample
 //! packs), so the family is covered by its fixtures

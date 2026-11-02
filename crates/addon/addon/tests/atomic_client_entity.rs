@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The atomic client entity family
 //! (`bedrock_addon::families::atomic_client_entity::AtomicClientEntity`): every row of its
 //! fixtures, the chain, round trips and the stack resolution.

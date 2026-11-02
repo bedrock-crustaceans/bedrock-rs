@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Walk the client entities of the resource stack and follow their geometry and texture
 //! references through `HasVisuals`, the view client entities, attachables and atomic client
 //! entities share.

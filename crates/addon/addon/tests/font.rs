@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `font/`: the font list and the emoticon list, the binary files of a stack, write-back as
 //! authored and the cost of long lists.
 

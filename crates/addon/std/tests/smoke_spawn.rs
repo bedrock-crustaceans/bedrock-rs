@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Spawn smoke over the game's own files: the vanilla spawn rules of the sample packs'
 //! `behavior_pack/` and of the server install's behaviour packs load through `Driver` into
 //! `bp.spawn_rules()` with zero error-level diagnostics, with the Simplified Spawn Rules

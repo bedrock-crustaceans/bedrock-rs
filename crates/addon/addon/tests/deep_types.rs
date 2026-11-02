@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The document types of this crate that hold themselves and are read by facet, nested to
 //! `MAX_JSON_DEPTH` and a level past it, on a thread with a megabyte of stack: a script
 //! type descriptor (`RawTypeDesc`, itself in a box: the most stack a level of any type here)

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The `blocks.json` family (`ClientBlock`): its rules, the version gates, round trips and the
 //! stack accessor.
 

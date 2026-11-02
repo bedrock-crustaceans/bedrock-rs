@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The skip-field convention: facet rc.7 still matches a JSON
 //! member against a `#[facet(skip)]` field's name (`FieldLookup` takes every field, skipped or
 //! not), so every skipped field is renamed to its name behind a NUL,

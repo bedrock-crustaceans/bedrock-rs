@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! A world's two stacks load on a thread with 1 MiB of stack, in whatever profile the test is
 //! built with.
 //!

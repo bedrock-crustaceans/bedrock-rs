@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The `Molang` detail (feature `molang`): an `InvalidMolang` carries the
 //! compiler's diagnostic, and the content-log line is vanilla's scope chain
 //! `<member> | <expression> | <message>`.

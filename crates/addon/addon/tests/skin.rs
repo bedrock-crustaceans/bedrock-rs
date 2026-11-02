@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `skins.json`, the one file a skin pack is described by.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

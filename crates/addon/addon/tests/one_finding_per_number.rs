@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! A number no double holds is told once: where the member that holds the number

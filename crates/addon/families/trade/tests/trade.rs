@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The trade-table family (`bedrock_addon::families::trade`): its rows and rules, the upgrade
 //! step, the chain, round trips and the stack accessor.
 

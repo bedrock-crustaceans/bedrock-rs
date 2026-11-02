@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Animation smoke over the game's own files: every animation and animation controller of the
 //! behaviour and resource packs of the sample packs, the server install and the two client
 //! installs loads through `Driver` and `animations()` / `animation_controllers()` on its stack

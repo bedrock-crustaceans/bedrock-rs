@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! A document that loads can be written: a number no double

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `write_dir` and `write_archive` through the public API. The disk side is tested in
 //! `src/write.rs` without a `PackWriter`; the round trips here go through one.
 

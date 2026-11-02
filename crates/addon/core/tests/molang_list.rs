@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `MolangList`, the value-or-array Molang field: `Option<MolangList>` reads `null`
 //! as no expression, a scalar as `One`, an array as `Many`, element by element.
 

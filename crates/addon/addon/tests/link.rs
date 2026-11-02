@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The link pass, `StackSet::link`: the frame (`link/infra`) and one module per rule group,
 //! each filled by its rule package. The helpers every group shares are in `link/common`.
 

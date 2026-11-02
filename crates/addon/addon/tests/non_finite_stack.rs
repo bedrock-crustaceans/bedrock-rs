@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! What a stack load yields can be written: `non_finite.rs` proves each

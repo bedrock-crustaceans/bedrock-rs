@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `MinEngineVersion::command_version`: the game maps a pack's `min_engine_version` to the
 //! command-system version its `.mcfunction` commands parse at. The tests cover the whole table,
 //! both ends of every range.

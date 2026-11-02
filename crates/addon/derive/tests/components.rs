@@ -1,11 +1,5 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Expansion tests for `#[derive(Components)]` on a toy family: the `Component` impls, the
 //! `From` conversions, the sorted component table and the metadata every attribute carries.
-
-// `bedrock_addon` compiles the expansion under `clippy::pedantic`; so does this test.
-#![warn(clippy::pedantic)]
-// The toy parse functions keep the signature of `ComponentMeta::parse`.
-#![allow(clippy::unnecessary_wraps)]
 
 use std::convert::Infallible;
 

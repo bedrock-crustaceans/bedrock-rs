@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Sounds smoke over the game's own files: `sounds/sound_definitions.json`, `sounds.json` and
 //! `sounds/music_definitions.json` of every resource pack of the client installs and of the
 //! sample packs load through `Driver` into the four sound families with no error-level

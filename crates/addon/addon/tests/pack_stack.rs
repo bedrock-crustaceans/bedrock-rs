@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `PackStack::of` and the `Pack` accessors. Packs are opened with `Pack::from_files` from small
 //! in-memory manifests.
 

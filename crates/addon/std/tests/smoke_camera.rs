@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for cameras and aim assist: the `cameras/` and `aim_assist/`
 //! documents of the sample packs' `behavior_pack/`, of the server install's behaviour packs and of
 //! the client installs' packs load through the `Driver` into `bp.cameras()` and

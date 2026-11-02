@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for features: the feature documents of the server install's behaviour packs
 //! and its `definitions/features` (app data), of the packs and app data of client install B,
 //! and of the sample packs' `behavior_pack/` (which ships no `features/`) load through the

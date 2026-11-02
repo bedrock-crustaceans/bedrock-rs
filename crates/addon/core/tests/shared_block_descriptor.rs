@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `BlockDescriptor`, `BlockSpecifier`, `StateValue`: the JSON forms round trip;
 //! `Mixed` and `Invalid` are kept and reported with vanilla's texts as `InvalidValue` warnings.
 

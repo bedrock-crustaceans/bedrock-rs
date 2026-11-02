@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The readers of `json` on a small stack: a document nested up to
 //! `MAX_JSON_DEPTH` is read on a thread with a megabyte of stack, the stack of a spawned
 //! thread on some hosts, and a level more is the depth error, in a debug build as in any

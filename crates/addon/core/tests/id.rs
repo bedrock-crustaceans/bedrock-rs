@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Typed identifiers as a user of `bedrock_addon_core::id` sees them: canonical-form equality
 //! and the `as_str` round trip per `Syntax`, strict `new` against lenient `parse`, `from_static`,
 //! `cast` inside one identifier space, the namespace helpers and the entity / item suffixes.

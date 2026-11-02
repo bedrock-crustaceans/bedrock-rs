@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Pass 1 over a document's Molang fields (the first of the two Molang passes): a toy version
 //! struct deserialised by facet from text, walked through `MolangFields`; each field's reader check
 //! and version source. Without the `molang` feature, `not_checked` stands in for the compile pass

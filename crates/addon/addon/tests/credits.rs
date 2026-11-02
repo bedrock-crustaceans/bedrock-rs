@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `credits/credits.json` and the files a resource pack carries in vain.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

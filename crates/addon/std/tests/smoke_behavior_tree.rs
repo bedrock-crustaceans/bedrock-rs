@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Behavior-tree smoke over the game's own files: the 22 trees of the vanilla behaviour pack
 //! (`behavior_packs/vanilla/behavior_trees/` and its brarchive) of the server install and of the
 //! two client installs load through `Driver` into `bp.behavior_trees()` with zero error-level

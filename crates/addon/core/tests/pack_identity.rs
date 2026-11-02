@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The pack-identity vocabulary as a user of `bedrock_addon_core::pack_identity` sees it:
 //! `PackPath` under the storage rules, `PackIdVersion` equality, the
 //! `PackRef` handle and the vanilla enums.

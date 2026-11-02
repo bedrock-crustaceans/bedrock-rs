@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The version-chain machinery struct selection per range model, the
 //! envelope, a toy family through `version_chain!` and `#[derive(Components)]`, the generic
 //! component checks, and `step_output`, which runs one step.

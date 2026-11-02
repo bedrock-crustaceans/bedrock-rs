@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The diagnostic mapping of the compile pass: one input per
 //! row of molangx's `LanguageMessage` table, `tests/fixtures/molang/language_messages.json`,
 //! taken from molangx `tests/parse_vectors.json` where it has one. Each message becomes one

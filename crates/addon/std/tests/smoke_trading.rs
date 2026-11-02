@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for trade tables: the `trading/` documents of the sample packs'
 //! `behavior_pack/`, of the server install's behaviour packs and of the packs of both client
 //! installs load through the `Driver` with zero error-level diagnostics. Vanilla bakes its

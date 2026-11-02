@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The code vocabulary: every code the crate lists is a `DiagnosticCode` variant, and no name from
 //! the rejected list is one.
 

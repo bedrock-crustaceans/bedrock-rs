@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `pack::VANILLA_EXPERIMENTAL_PACKS` against the shipped pack folders: every row is the header
 //! UUID of an experimental pack of its type in the 1.26.20 dev or the 1.26.45 retail build, or
 //! (the Drop 4 rows) in the 1.26.60 install. Needs `BEDROCK_ADDON_CORPUS`;

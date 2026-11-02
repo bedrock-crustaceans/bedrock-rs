@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for blocks: the block documents of the sample packs' `behavior_pack/` and of
 //! the server install's behaviour packs load through the `Driver` with zero error-level
 //! diagnostics; MCB documents (baked documents the loaders do not decode) are counted,

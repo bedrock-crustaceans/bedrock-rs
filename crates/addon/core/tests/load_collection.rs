@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The per-collection loader signature the accessor macro calls: a toy family's
 //! `load_registry` driven the way the loaders drive it, a walk's matching rules and an
 //! accessor line of the shape the families use.

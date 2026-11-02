@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The `lang` family (`texts/*.lang`): every row of the fixtures, the lint findings of a file,
 //! the lookup formatting, the keyword helpers, the translations table and the Lines round trip.
 

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `EventTrigger`: `"ns:event"` or `{event, target?, filters?}`; a legacy
 //! `condition` and other members are kept in `extra`.
 

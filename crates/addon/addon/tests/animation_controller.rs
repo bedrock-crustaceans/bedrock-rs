@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The animation controller family (`bedrock_addon::families::animation_controller`) on the
 //! resource stack: the rows and the chain.
 

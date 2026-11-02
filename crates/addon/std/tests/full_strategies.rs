@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Strategy::Sequential` against `Strategy::Rayon` over whole trees of the game's packs: each
 //! install is loaded twice, every collection of both stacks, and the two loads must be the same
 //! load: the same `StackReport` (`Debug`, the findings in load order, and `Display`) and the

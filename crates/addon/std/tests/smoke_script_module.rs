@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for the script side of manifests: every behaviour pack of the server install
 //! and of both client installs that has a script module is discovered and resolved against the compiled-in module catalog with zero error-level
 //! findings. The packs are those of the world the other smokes load (`common::world`): the

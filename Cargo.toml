@@ -19,25 +19,6 @@ members = [
 ]
 resolver = "3"
 
-# The lints of the addon crates (`[lints] workspace = true` in each). Cargo applies them to every
-# target, so each test, example and bench root opts out with
-# `#![allow(clippy::pedantic, missing_docs)]`: test code is not held to the library's lints.
-[workspace.lints.rust]
-unsafe_code = "forbid"
-missing_docs = "warn"
-
-[workspace.lints.clippy]
-pedantic = { level = "warn", priority = -1 }
-# `#[must_use]` goes on methods returning a changed copy and on values whose loss is a bug, not
-# on every pure getter.
-must_use_candidate = "allow"
-# The error enums' variants document each failure.
-missing_errors_doc = "allow"
-# A panic here is a broken invariant of the crate, never an outcome a caller handles, so no
-# function carries a `# Panics` section.
-missing_panics_doc = "allow"
-module_name_repetitions = "allow"
-
 [workspace.package]
 version = "0.1.0"
 edition = "2024"

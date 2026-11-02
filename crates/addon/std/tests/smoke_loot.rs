@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for loot tables: the loot tables of the sample packs'
 //! `behavior_pack/`, of every behaviour pack of the server install and of every behaviour pack
 //! of the two client installs load through the `Driver`, one pack at a time, with zero

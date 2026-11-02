@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Texture lists (`bedrock_addon::families::texture_list`): every fixture
 //! row. Each fixture is a pack tree `<name>/pack/` (`pack0`, `pack1` for a stack, the
 //! first on top), loaded through `rp.texture_lists()`; the subpack rows read the two lists and ask

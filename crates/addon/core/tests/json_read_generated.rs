@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Generated inputs for the door to facet-json (`json/read.rs`), from fixed seeds: string
 //! contents over every byte after a backslash, cut escapes and random UTF-8, and whole
 //! documents with faults put in. Nothing here panics; a string that reads is the string a

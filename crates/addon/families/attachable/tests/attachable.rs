@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The attachable family (`bedrock_addon::families::attachable::Attachable`, families/attachable):
 //! every row of its fixtures, the rules it shares with client entities, the upgrade steps, the
 //! chain, round trips, Molang and the stack resolution.

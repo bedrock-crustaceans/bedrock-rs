@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for the jigsaw documents: the `worldgen/` documents of the sample packs'
 //! `behavior_pack/` (it ships none today) and of the server install's behaviour packs load
 //! through the `Driver` with zero error-level diagnostics; MCB documents (baked documents the

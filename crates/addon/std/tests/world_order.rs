@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The smoke tests' world list (`common::world::base_game_world`): every pack of a vanilla
 //! install, with the base-game layer in the order the game stacks its base-game packs. Needs no
 //! game files: the install is a handful of manifests in a temporary directory.

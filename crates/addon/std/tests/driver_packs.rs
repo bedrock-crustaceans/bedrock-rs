@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Driver` with the real loaders: pack folders, archives, repositories and key sidecars on a
 //! temporary disk tree and the storage fixtures of `bedrock_addon`.
 

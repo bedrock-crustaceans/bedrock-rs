@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The terrain and item atlases (`bedrock_addon::families::texture_atlas`): the two atlas files
 //! and the link rules that check a block's or an item's texture against them.
 

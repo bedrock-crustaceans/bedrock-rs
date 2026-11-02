@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for voxel shapes: the `shapes/` documents of the sample packs'
 //! `behavior_pack/`, of the server install's and of the client installs' behaviour packs load
 //! through the `Driver` with zero error-level findings; MCB documents are decoded and read like

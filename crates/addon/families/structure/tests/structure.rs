@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The structure family (`structures/**/*.mcstructure`, little-endian NBT): every row of
 //! The fixtures, the exact round trip, the lookups by identifier, the stack
 //! and the deviations.

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! JSON UI smoke over the game's own files: the `ui/`
 //! trees of the sample packs' `resource_pack/` and of the client installs' `vanilla`, `vanilla_base`
 //! and `chemistry` resource packs load through the `Driver` into `rp.ui()` with zero

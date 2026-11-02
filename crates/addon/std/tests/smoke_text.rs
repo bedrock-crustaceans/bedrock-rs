@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Text smoke over the game's own files: the `texts/` folder of every behaviour and resource
 //! pack of the sample packs, the server install and the client installs loads through `Driver`
 //! into `languages()` and `translations(&language)` with no error-level diagnostic, and every

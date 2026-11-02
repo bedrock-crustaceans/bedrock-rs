@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The script bundle (`bedrock_addon::families::script::ScriptBundle`, families/script_bundle): every row
 //! of its fixtures through the stack accessor `scripts()`, the normaliser against the
 //! observed table, the validation rules that no fixture row reaches, and the costs.

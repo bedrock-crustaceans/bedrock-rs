@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The aim-assist family (`aim_assist/`): the fixture rows, the validation rules, the chains,
 //! round trips and the stack accessor.
 

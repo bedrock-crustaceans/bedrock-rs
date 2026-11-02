@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for the POI documents: the POI directories of the sample packs'
 //! `behavior_pack/`, of the server install's behaviour packs and of the behaviour packs of
 //! client install A (which include `experimental_poi`) load through the `Driver` with the `poi`

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `MenuCategory` and `CreativeCategory`: the object round trips; the five
 //! category spellings; and the per-family constraints are not the type's.
 

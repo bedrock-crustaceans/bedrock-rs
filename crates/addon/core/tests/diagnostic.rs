@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Diagnostic`, `Diagnostics`, `Location`, `JsonPath`, `Span` and `PackReport`. Assertions match
 //! on codes and values; the content-log line is checked for its shape (segment order and
 //! separators) only.

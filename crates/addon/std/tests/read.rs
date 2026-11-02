@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The readers of server-side files around packs: `read_world_packs` and `read_app_data`.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

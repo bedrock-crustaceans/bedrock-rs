@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The legacy `biomes_client.json` family (`bedrock_addon::families::biomes_client`): the file
 //! merged over the resource stack and read from the merged value.
 

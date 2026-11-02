@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Pack-opening smoke over the game's own files: every pack of the server install, both client
 //! installs, the sample packs and the split client pack tree opens through `Driver::pack_dir` /
 //! `Driver::pack_archive` with no `OpenError`, and `Strategy::Sequential` and

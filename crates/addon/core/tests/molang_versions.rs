@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The version a Molang string compiles at. `$BEDROCK_ADDON_CORPUS/corpus_pairs.json`, when
 //! present, records for every Molang string of a set of the game's own packs the pack's
 //! `min_engine_version`, the file's `format_version`, the version the game compiles that string

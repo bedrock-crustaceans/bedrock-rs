@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The script side of a manifest (`bedrock_addon::families::script::ScriptModule`,
 //! families/script_module): every row of its fixtures as a pack folder that mirrors a BDS
 //! 1.26.36.1 probe run, resolved against `catalog_bds_1_26_36.toml`.

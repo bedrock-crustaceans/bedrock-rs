@@ -3,7 +3,6 @@ name = "bedrock_addon_family_spawn_groups"
 description = "The `spawn_groups` content family of bedrock_addon, re-exported as bedrock_addon::families::spawn_groups; sans-IO"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 
 [package.metadata.docs.rs]
@@ -13,6 +12,3 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_support = { path = "../../support" }
-
-[lints]
-workspace = true

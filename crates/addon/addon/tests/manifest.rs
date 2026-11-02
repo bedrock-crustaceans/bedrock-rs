@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `manifest`: the legacy and comprehensive readers against vanilla's manifests, the malformed
 //! corpus, the quirk table of 12, the pack-settings definitions and the writer.
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

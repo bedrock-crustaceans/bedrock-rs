@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The generated vanilla tables as a user of `bedrock_addon_core::vanilla` sees them: `ActorType`
 //! (the game's identifier-to-type lookup, the runtime-identifier fallback and the `Mob` default),
 //! its numeric ids against the join table, the regeneration check, and the lookups

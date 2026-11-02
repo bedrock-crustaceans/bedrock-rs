@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The std traits the public types of the core implement: `Debug` without a content bound,
 //! `Clone`/`Hash`/`Eq` where the data allows, conversions and iterator traits.
 

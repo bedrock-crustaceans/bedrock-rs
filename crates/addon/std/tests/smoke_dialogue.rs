@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Dialogue smoke over the game's own files: the NPC dialogue files of
 //! the sample packs' `behavior_pack/` and of the server install's behaviour packs load through the
 //! `Driver` into `bp.dialogue()` with zero error-level diagnostics. Vanilla ships no dialogue

@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for the crafting item catalogue: the base-game stacks
 //! of the server install and of the client installs load `bp.crafting_catalog()` through the
 //! `Driver` with zero error-level findings; MCB documents (baked documents the loaders

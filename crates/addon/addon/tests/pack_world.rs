@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `WorldPacks::parse`: the world's `world_behavior_packs.json` and `world_resource_packs.json`.
 
 use bedrock_addon::diagnostic::DiagnosticCode;

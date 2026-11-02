@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Vanilla smoke for particle effects: the `particles/` documents of the sample packs'
 //! `resource_pack/` and of every resource pack of the two client installs load with zero
 //! error-level diagnostics; MCB documents are decoded and read like their JSON twins. The Molang

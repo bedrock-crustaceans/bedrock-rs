@@ -3,7 +3,6 @@ name = "bedrock_addon_family_server_sound_definitions"
 description = "The `server_sound_definitions` content family of bedrock_addon, re-exported as bedrock_addon::families::server_sound_definitions; sans-IO"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.98"
 license = "Apache-2.0"
 
 [package.metadata.docs.rs]
@@ -19,6 +18,3 @@ indexmap = { workspace = true }
 [dev-dependencies]
 facet-json = { workspace = true }
 uuid = { workspace = true }
-
-[lints]
-workspace = true

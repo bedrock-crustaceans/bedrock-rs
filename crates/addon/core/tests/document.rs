@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `Document<T>` and its provenance, `Rejected` and the `Placed::default_path`
 //! helper.
 

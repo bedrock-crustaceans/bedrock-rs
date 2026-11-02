@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The message table: every vanilla content-log template rendered from a `DiagnosticCode`
 //! with sample arguments and compared with the template byte for byte. This is the one test in
 //! the crate family that matches on diagnostic text.

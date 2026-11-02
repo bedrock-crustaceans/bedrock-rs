@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! The full-stack smoke: whole trees of the game's own packs, which are not in the repository,
 //! are loaded the way a server loads its world, every family at once, and what the load, the
 //! link pass and the writer come to is pinned, number by number.

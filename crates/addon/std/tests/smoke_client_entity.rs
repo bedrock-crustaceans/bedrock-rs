@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Client entity smoke over the game's own files: every `entity/` file of the sample packs'
 //! resource pack and of the resource packs of the client installs loads through `Driver` and
 //! `client_entities()` with no error-level diagnostic with the Molang compile check on (MCB

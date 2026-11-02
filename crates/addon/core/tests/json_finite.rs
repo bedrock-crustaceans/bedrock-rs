@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! `json::clamp_non_finite` and `json::span_at`: the one walk that replaces
 //! the numbers no double holds in a value kept as written, and the span of a value by its
 //! path.

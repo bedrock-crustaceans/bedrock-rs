@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic, missing_docs)]
 //! Build a block in code, add it to a new pack with `PackWriter::add`, write the pack to a
 //! directory with `bedrock_addon_std::write_dir`, then load the directory back and find the
 //! same block.
