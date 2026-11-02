@@ -1,115 +1,95 @@
+<br />
+<div align="center">
+
 # bedrock-rs
 
-**_Universal Toolkit for Minecraft Bedrock Edition in Rust_**
+A toolkit for Minecraft Bedrock Edition written in Rust.
 
-**bedrock-rs** is a comprehensive and user-friendly library written in Rust, designed to provide a universal solution for working with Minecraft Bedrock Edition. This project offers:  
+[![rust][rust_badge_url]][rust_url]
+[![discord][discord_badge_url]][discord_url]
+[![license][license_badge_url]][license_url]
 
-- **Standards:** Adhering to best practices and conventions.  
-- **Common Implementations:** Reusable components for various Minecraft Bedrock needs.  
-- **Easy-to-Use API:** Streamlined interfaces to make development efficient and enjoyable.  
+</div>
 
-Join our growing community on Discord to learn more about the project’s future, seek support, or collaborate with others:
-**[Join our Discord](https://discord.com/invite/VCVcrvt3JC)**  
+<!-- BADGES -->
+[rust_badge_url]: https://img.shields.io/badge/rust-2024-%23D34516?style=flat-square&logo=rust&logoColor=%23D34516&labelColor=white
+[rust_url]: https://rust-lang.org/
 
----
+[discord_badge_url]: https://img.shields.io/badge/discord-join-%235865F2?style=flat-square&logo=discord&logoColor=white
+[discord_url]: https://discord.com/invite/VCVcrvt3JC
 
-## Crates
+[license_badge_url]: https://img.shields.io/github/license/bedrock-crustaceans/bedrock-rs?style=flat-square
+[license_url]: LICENSE
+<!-- BADGES -->
 
-To maintain modularity and scalability, **bedrock-rs** is divided into multiple crates. Each crate focuses on a specific functionality, making it easier to use and manage. All crates are accessible through the primary `bedrock` crate. Additionally, the library offers a variety of optional features you can enable to suit your needs.
-
-### Crate Breakdown:
-
-- [`bedrock::core`](crates/shared) (`bedrock_shared`)  
-  - Shared data types (vectors, actor runtime/unique IDs, world enums) used across other crates.  
-
-- [`bedrock_protocol_core`](crates/protocol_core) and [`bedrock_macros`](crates/macros)  
-  - The `ProtoCodec` traits, packet header, error types, and codecs for primitives.  
-  - `#[derive(ProtoCodec)]` and `#[packet(id = ...)]`, which every packet, type, and enum is built from.  
-  - Re-exported through `bedrock::protocol`.  
-
-- [`bedrock::protocol`](crates/protocol)  
-  - Complete implementation of the Minecraft Bedrock protocol.  
-  - Support for both server-side and client-side operations.  
-  - Multi-protocol compatibility: one feature per protocol version (`protocol-v662` through `protocol-v2225`), each version described as a diff over the previous one and expanded by `cargo xtask`.  
-  - `protocol-v2168hotfix4` (`V2168Hotfix4`) is 1.26.44, which reports protocol 2168 like 1.26.40 but writes SetScore remove entries differently; a server picks it after login by the client's game version (`Connection::into_ver`).  
-
-- [`bedrock::network`](crates/network)  
-  - RakNet-based transport layer for accepting, tracking, and communicating with client connections.  
-  - Packet batching/codec support, including Zlib/Snappy compression and AES encryption.  
-  - Server MOTD (server list ping) construction and connection listener utilities.  
-  - The `network` feature is sans-io (codec, compression, encryption, and the version-agnostic login helpers in `network::login`: `LoginOptions`, `NetworkSettings`, `check_protocol`, `begin_encryption`, `ClientIdentity`) and pulls neither tokio nor RakNet; enable `network-tokio` for the `network::tokio` module: `Connection`, `Listener::builder` and `Client`. A server or client receives, matches its own version's login packets, calls the helpers and sends the reply; `bedrock/examples/server.rs` and `client.rs` show the whole exchange.  
-  - `network-nethernet` adds the sans-io NetherNet helpers (`IdentityStore`, `server_data`); `network-nethernet-tokio` adds NetherNet to `Listener::builder`, which takes any mix of `raknet`, `nethernet_http` and `nethernet_lan`.  
-
-- [`bedrock::auth`](crates/auth)  
-  - Validation of Xbox Live login identity chains (JWTs) against Microsoft’s OIDC discovery service.  
-  - Online and offline (self-signed) logins; guest (split-screen) logins are rejected unless the caller opts in (`AuthData::validate_allowing_guests`, `LoginOptions::allow_guests`), and are then verified like online logins.  
-  - No I/O of its own: bring any HTTP client, or enable `auth-ureq` (blocking, no tokio) or `auth-reqwest` (async).  
-
-- [`bedrock::form`](crates/form)  
-  - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
-
-- [`bedrock::addon`](crates/addon/addon) (`bedrock_addon`) and [`bedrock::addon_std`](crates/addon/std) (`bedrock_addon_std`)
-  - Behaviour and resource packs as typed Rust data: manifests, containers, pack stacks, every content family the game loads, diagnostics shaped like the game's content log, and write-back.
-  - `bedrock_addon` is sans-IO; `bedrock_addon_std` is the driver that answers its loaders with the file system and, optionally, a thread pool. Enabled through the `addon` and `addon-std` features.
-  - Built from `bedrock_addon_core` (shared vocabulary), `bedrock_addon_derive` (the component derive), `bedrock_addon_support` (helpers shared by families) and one crate per content family under `crates/addon/families/`.
-
-- [`bedrock::level`](crates/level)  
-  - Data structures for managing Minecraft Bedrock levels.  
-  - Implementation of Bedrock's level format on top of a pure-Rust LevelDB implementation
-    (`rusty-leveldb`) that understands Bedrock's on-disk block compression ids, so no native
-    toolchain is required to build it.
-
----
-
-## Features
-
-- **Modular Architecture:** Enable only the features you need for your project.  
-- **Multi-Protocol Support:** Work with different protocol versions effortlessly.  
-- **Cross-Platform Compatibility:** Designed to work seamlessly across platforms.  
-- **Lightweight and Efficient:** Built with Rust’s performance and safety features.  
-
----
-
-## Getting Started
-
-To use **bedrock-rs** in your Rust project, add the following to your `Cargo.toml`:  
+### Installation
 
 ```toml
 [dependencies]
 bedrock = { git = "https://github.com/bedrock-crustaceans/bedrock-rs.git", features = ["full"] }
 ```
 
-Refer to the individual crate documentation for details on specific modules and features.
+Everything is reached through the `bedrock` crate; enable only the features you need.
 
-We also plan to release bedrock-rs on [crates.io](https://crates.io) in the future.
+### Features
 
----
+- **`protocol`** - every packet of the Bedrock protocol, one `protocol-v<N>` feature per version.
+- **`network`** - batching, compression and encryption, plus login helpers. Add **`network-tokio`** for an async listener and client over RakNet, and **`network-nethernet-tokio`** for NetherNet.
+- **`auth`** - Xbox Live login verification. Bring your own HTTP client, or enable **`auth-ureq`** or **`auth-reqwest`**.
+- **`level`** - reading and writing worlds.
+- **`form`** - the JSON forms the client renders.
+- **`addon`** / **`addon-std`** - behaviour and resource packs as typed data, loaded from disk with **`addon-std`**.
+- **`full`** - `protocol`, `network-nethernet-tokio`, `auth` and `level`.
 
-## Contributors  
+### Usage
 
-A huge thank you to all the amazing individuals who have contributed to **bedrock-rs**! Your time, effort, and expertise are what make this project possible.  
+- server:
+
+    ```rust
+    let mut listener = Listener::builder()
+        .raknet("0.0.0.0:19132".parse()?)
+        .name("Bedrock in Rust")
+        .protocol::<V2225>()
+        .max_players(100)
+        .bind()
+        .await?;
+
+    loop {
+        let conn = listener.accept().await?.into_ver::<V2225>();
+        tokio::spawn(async move {
+            // log the player in, then send and receive packets
+        });
+    }
+    ```
+
+- add-ons:
+
+    ```rust
+    let mut driver = Driver::new(Options::default())?;
+    let repository = driver.repository([
+        DirSource::packs("behavior_packs", PackOrigin::World),
+        DirSource::packs("resource_packs", PackOrigin::World),
+    ])?;
+    let world = read_world_packs("worlds/Bedrock level")?;
+    let stacks = driver.load_stacks(
+        repository.stacks(&world, LoadOptions::default()),
+        StackOptions::default(),
+    )?;
+
+    for finding in stacks.load_all().at_least(Severity::Warning) {
+        eprintln!("{finding}");
+    }
+    ```
+
+Full login flows are in [`bedrock/examples`](bedrock/examples):
+
+```sh
+cargo run --example server --features network-tokio,protocol-v2225,protocol-unknown
+cargo run --example client --features network-tokio,protocol-v2225,protocol-unknown
+```
+
+### Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), and come say hi on [Discord][discord_url].
 
 [![Contributors](https://contrib.rocks/image?repo=bedrock-crustaceans/bedrock-rs)](https://github.com/bedrock-crustaceans/bedrock-rs/graphs/contributors)
-
-Whether it’s fixing bugs, implementing features, or providing feedback, every contribution helps shape the future of this library. We appreciate each and every one of you!  
-
-Want to join this incredible group? Check out our Contributing Guide and make your mark on the project.  
-
----
-
-## Contributing
-
-We welcome contributions of all kinds, including bug fixes, new features, docs updates, and improvements across crates.  
-Please read the full contribution guide here: **[CONTRIBUTING.md](CONTRIBUTING.md)**  
-It covers setup, where things live, the test-first workflow, the checks CI runs, and how protocol versions are added.
-[AGENTS.md](AGENTS.md) is the step-by-step working method used by coding agents on this repo.  
-
-For guidance or collaboration, connect with the community on Discord.  
-
-If you find **bedrock-rs** helpful, don’t forget to give the repository a ⭐ on GitHub.  
-
----
-
-## License
-
-**bedrock-rs** is open-source software licensed under the [Apache-2.0 License](LICENSE).  
