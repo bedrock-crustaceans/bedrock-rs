@@ -43,15 +43,7 @@ Everything is reached through the `bedrock` crate, enable only the features you 
 
 ## Usage
 
-Usage examples can be found in [`bedrock/examples`](bedrock/examples), a server and a client
-that log in over the newest protocol:
-
-```sh
-cargo run --example server --features network-tokio,protocol-v2225,protocol-unknown
-cargo run --example client --features network-tokio,protocol-v2225,protocol-unknown
-```
-
-Examples for loading and writing add-ons are in [`crates/addon/std/examples`](crates/addon/std/examples).
+Usage examples can be found in [`bedrock/examples`](bedrock/examples).
 
 ## Contributing
 
