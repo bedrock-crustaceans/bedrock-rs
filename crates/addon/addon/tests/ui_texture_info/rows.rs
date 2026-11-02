@@ -34,6 +34,7 @@ fn texts(doc: &Document<UiTextureInfo>) -> Vec<(&'static str, Severity, String)>
     doc.diagnostics().iter().map(shown).collect()
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn ui01_one_width_for_all_sides() {
     let doc = parse(r#"{ "nineslice_size": 1, "base_size": [4, 4] }"#);
@@ -125,6 +126,7 @@ fn ui05_t7_the_vanilla_tiled_page_edge_deviation() {
     assert_eq!(json(&doc.to_json().unwrap()), json(&text));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn ui06_the_vanilla_jump_animation() {
     // gdk-retail 1.26.45 resource_packs/vanilla/textures/ui/game_tip_animations/jump-mouse.json.
@@ -144,6 +146,7 @@ fn ui06_the_vanilla_jump_animation() {
 
 const SHEET: &str = r#"{ "frames": [{ "frame": { "x": 0, "y": 0, "w": 8, "h": 8 }, "duration": 100 }, { "frame": { "x": 8, "y": 0, "w": 8, "h": 8 }, "duration": 50 }], "meta": { "image": "x.png", "size": { "w": 16, "h": 8 } } }"#;
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn rejected_sheet(text: &str) {
     let doc = parse(text);
     assert!(
@@ -179,6 +182,7 @@ fn ui07_t5_the_hash_export_is_rejected() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn ui12_t5_the_tests_of_a_sheet() {
     // Accepted: w and h of a frame are not read, and an empty frame list is a sheet.

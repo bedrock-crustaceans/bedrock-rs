@@ -158,7 +158,10 @@ fn infos(stack: &PackStack<Resource>, code: &str) -> Vec<(String, Option<usize>)
                     .as_ref()
                     .map(ToString::to_string)
                     .unwrap_or_default(),
-                d.location.pack.as_ref().and_then(|pack| pack.index()),
+                d.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
             )
         })
         .collect()

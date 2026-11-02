@@ -261,7 +261,10 @@ fn l15_a_js_file_outside_scripts_is_a_note_in_a_pack_whose_module_has_another_la
             (
                 f.code.name(),
                 f.severity,
-                f.location.path.as_ref().map(|p| p.as_str()),
+                f.location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str),
             )
         })
         .collect();
@@ -388,7 +391,15 @@ fn a_subpack_s_script_stands_in_for_the_pack_s_file_of_its_name() {
     // `.js` file outside `scripts/` (L15).
     let found: Vec<(&str, Option<&str>)> = bundle
         .findings()
-        .map(|f| (f.code.name(), f.location.path.as_ref().map(|p| p.as_str())))
+        .map(|f| {
+            (
+                f.code.name(),
+                f.location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str),
+            )
+        })
         .collect();
     assert_eq!(
         found,
@@ -899,9 +910,13 @@ fn a_load_asks_for_the_scripts_of_a_pack_whose_module_runs_and_of_no_other() {
         .flat_map(|responder| &responder.log.requests)
         .filter_map(|request| match request {
             bedrock_addon::load::Request::ReadFile { location, .. } => Some(location.to_string()),
-            _ => None,
+            bedrock_addon::load::Request::ListDir { .. } => None,
         })
-        .filter(|location| location.ends_with(".js"))
+        .filter(|location| {
+            std::path::Path::new(location)
+                .extension()
+                .is_some_and(|extension| extension == "js")
+        })
         .collect();
     scripts_read.sort();
     assert_eq!(scripts_read.len(), 3, "{scripts_read:?}");
@@ -942,7 +957,15 @@ fn a_load_asks_for_the_scripts_of_a_pack_whose_module_runs_and_of_no_other() {
     let codes = |index: usize| -> Vec<(&str, Option<&str>)> {
         bundles[index]
             .findings()
-            .map(|f| (f.code.name(), f.location.path.as_ref().map(|p| p.as_str())))
+            .map(|f| {
+                (
+                    f.code.name(),
+                    f.location
+                        .path
+                        .as_ref()
+                        .map(bedrock_addon::storage::PackPath::as_str),
+                )
+            })
             .collect()
     };
     assert_eq!(codes(0), []);

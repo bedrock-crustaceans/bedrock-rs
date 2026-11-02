@@ -611,7 +611,7 @@ fn generated_permissions_files_round_trip() {
         if root
             .get("allowed_modules")
             .and_then(Value::as_array)
-            .is_some_and(|a| a.is_empty())
+            .is_some_and(facet_value::VArray::is_empty)
         {
             *classes
                 .entry("as the input, with an empty allowed_modules")
@@ -620,7 +620,7 @@ fn generated_permissions_files_round_trip() {
         if root
             .get("module_permissions")
             .and_then(Value::as_object)
-            .is_some_and(|o| o.is_empty())
+            .is_some_and(facet_value::VObject::is_empty)
         {
             root.remove("module_permissions");
             *classes
@@ -809,7 +809,7 @@ fn generated_commands_files_round_trip() {
         if root
             .get("permission_levels")
             .and_then(Value::as_object)
-            .is_some_and(|o| o.is_empty())
+            .is_some_and(facet_value::VObject::is_empty)
         {
             root.remove("permission_levels");
             *classes

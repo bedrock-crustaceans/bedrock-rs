@@ -219,6 +219,8 @@ fn u03_more_curves_than_parameters() {
 /// taken out lost both inputs with no word).
 #[test]
 fn u03b_a_parameter_no_curve_reads_is_noted_as_dropped() {
+    const STATE: &str = "animation_controllers/controller.animation.x/states/default";
+
     let noted = |state: &str| -> Vec<String> {
         let file = loaded(controller(&ctrl("1.8.0", state), &unchecked()));
         file.diagnostics()
@@ -227,7 +229,6 @@ fn u03b_a_parameter_no_curve_reads_is_noted_as_dropped() {
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect()
     };
-    const STATE: &str = "animation_controllers/controller.animation.x/states/default";
     // Two inputs, one curve: the second input is read by nothing.
     assert_eq!(
         noted(r#"{"parameters": ["q.x", "q.y"], "animations": [{"walk": [{"0": 0}]}]}"#),
@@ -253,6 +254,8 @@ fn u03b_a_parameter_no_curve_reads_is_noted_as_dropped() {
 /// written over by another is noted where it is.
 #[test]
 fn u03c_a_curve_a_later_entry_of_its_name_writes_over_is_noted_as_dropped() {
+    const STATE: &str = "animation_controllers/controller.animation.x/states/default";
+
     let noted = |state: &str| -> Vec<String> {
         let file = loaded(controller(&ctrl("1.8.0", state), &unchecked()));
         file.diagnostics()
@@ -261,7 +264,6 @@ fn u03c_a_curve_a_later_entry_of_its_name_writes_over_is_noted_as_dropped() {
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect()
     };
-    const STATE: &str = "animation_controllers/controller.animation.x/states/default";
     // The second `walk` has one curve: it takes `walk_0`; `walk_1` stays the first's.
     assert_eq!(
         noted(
@@ -607,6 +609,8 @@ fn p14_member_case() {
 /// case, has nothing replaced.
 #[test]
 fn p14b_a_member_another_spelling_of_its_name_replaces_is_told_where_it_is() {
+    const STATE: &str = "animation_controllers/controller.animation.x/states/default";
+
     let replaced = |text: &str| -> Vec<String> {
         loaded(controller(text, &rp(1, 16, 0)))
             .diagnostics()
@@ -615,7 +619,6 @@ fn p14b_a_member_another_spelling_of_its_name_replaces_is_told_where_it_is() {
             .map(|d| format!("{:?} {}", d.severity, d.location.json_path))
             .collect()
     };
-    const STATE: &str = "animation_controllers/controller.animation.x/states/default";
     for version in ["1.10.0", "1.8.0"] {
         assert_eq!(
             replaced(&ctrl(

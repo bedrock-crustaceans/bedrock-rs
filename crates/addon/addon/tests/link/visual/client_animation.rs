@@ -36,7 +36,7 @@ fn linked(entities: &[&str], file: &'static str, text: &str, lints: bool) -> Vec
         &[("entities/pig.json", &pig)],
         &resource,
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints,
             ..Default::default()
         },
@@ -155,7 +155,7 @@ fn r15_an_animation_only_an_attachable_plays_is_not_checked() {
         &[],
         &[(ANIMATION, &text), ("attachables/bow.json", &wand)],
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(told(&found, "rp 2", ANIMATION), []);
 }

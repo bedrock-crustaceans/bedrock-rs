@@ -1,4 +1,4 @@
-//! `script::config` (families/script_config): the BDS `config/` folder and `server.properties`.
+//! `script::config` (`families/script_config`): the BDS `config/` folder and `server.properties`.
 //!
 //! Every row of the folder's fixtures is a server root under
 //! `tests/fixtures/script/script_config/<row>/` with the findings it must give in

@@ -73,6 +73,7 @@ fn cam23_the_seven_vanilla_camera_documents_parse_without_a_finding() {
     assert!(!keys.contains("minecraft:camera_fly_move"));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn cam23_absent_members_take_the_constructor_defaults() {
     let free = loads(entity(&vanilla("free")));
@@ -377,6 +378,11 @@ fn rule_7_camera_entity_ranges_enums_and_unknown_components() {
             "{component}"
         );
     }
+}
+
+#[test]
+fn rule_7_camera_entity_lower_bound_only_members() {
+    let at = |path: &str| format!("minecraft:camera_entity/components/{path}");
     // A lower bound only: 0 or more.
     for (component, path) in [
         (
@@ -409,6 +415,10 @@ fn rule_7_camera_entity_ranges_enums_and_unknown_components() {
             "{component}"
         );
     }
+}
+
+#[test]
+fn rule_7_camera_entity_range_ends_load() {
     // The ends load; the vertical limit of `minecraft:target` has no order check.
     loads(entity(&entity_json(
         "minecraft:free",
@@ -421,7 +431,11 @@ fn rule_7_camera_entity_ranges_enums_and_unknown_components() {
         "minecraft:free",
         r#""minecraft:camera_orbit": {"radius": 64}, "minecraft:target": {"rotation_speed": 0}"#,
     )));
+}
 
+#[test]
+fn rule_7_camera_entity_enums_and_unknown_components() {
+    let at = |path: &str| format!("minecraft:camera_entity/components/{path}");
     for (component, path) in [
         (
             r#""minecraft:camera_perspective_option": {"view_mode": "second_person"}"#,

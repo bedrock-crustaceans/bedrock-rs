@@ -75,7 +75,7 @@ fn e13_a_host_answers_for_the_games_tables_and_an_empty_member_names_none() {
         &files,
         &[],
         hosted(&[("trade table", "trading/economy_trades/farmer_trades.json")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(found.is_empty(), "{found:?}");
 }

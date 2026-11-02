@@ -14,12 +14,12 @@ use super::common::*;
 
 const UNRECOGNIZED: &str = "Unrecognized field on camera preset!";
 
-fn f(value: f32) -> Option<StrictFloat<f32>> {
-    Some(StrictFloat(value))
+fn f(value: f32) -> StrictFloat<f32> {
+    StrictFloat(value)
 }
 
-fn pair(x: f32, y: f32) -> Option<[StrictFloat<f32>; 2]> {
-    Some([StrictFloat(x), StrictFloat(y)])
+fn pair(x: f32, y: f32) -> [StrictFloat<f32>; 2] {
+    [StrictFloat(x), StrictFloat(y)]
 }
 
 /// The range text of `[min, max]`.
@@ -84,11 +84,11 @@ fn cam01_the_docs_1_19_50_example_reaches_latest_unchanged() {
     );
     let mut expected = CameraPreset::new(CameraPresetId::parse("example:example_free"));
     expected.inherit_from = Some(CameraPresetId::parse("minecraft:free"));
-    expected.pos_x = f(30.0);
-    expected.pos_y = f(90.0);
-    expected.pos_z = f(-20.0);
-    expected.rot_x = f(10.0);
-    expected.rot_y = f(40.0);
+    expected.pos_x = Some(f(30.0));
+    expected.pos_y = Some(f(90.0));
+    expected.pos_z = Some(f(-20.0));
+    expected.rot_x = Some(f(10.0));
+    expected.rot_y = Some(f(40.0));
     // The step sets the flag.
     expected.apply_inherited_starting_rotation = true;
     assert_eq!(document.value(), &expected);
@@ -204,29 +204,29 @@ fn cam06_every_field_is_accepted_at_1_19_50() {
     );
     let mut expected = CameraPreset::new(CameraPresetId::parse("ex:all"));
     expected.inherit_from = Some(CameraPresetId::parse("minecraft:follow_orbit"));
-    expected.pos_x = f(1.0);
-    expected.pos_y = f(2.5);
-    expected.pos_z = f(-3.0);
-    expected.rot_x = f(-45.0);
-    expected.rot_y = f(720.0);
-    expected.rotation_speed = f(180.0);
+    expected.pos_x = Some(f(1.0));
+    expected.pos_y = Some(f(2.5));
+    expected.pos_z = Some(f(-3.0));
+    expected.rot_x = Some(f(-45.0));
+    expected.rot_y = Some(f(720.0));
+    expected.rotation_speed = Some(f(180.0));
     expected.snap_to_target = Some(StrictBool(true));
-    expected.horizontal_rotation_limit = pair(10.0, 20.0);
-    expected.vertical_rotation_limit = pair(30.0, 60.0);
+    expected.horizontal_rotation_limit = Some(pair(10.0, 20.0));
+    expected.vertical_rotation_limit = Some(pair(30.0, 60.0));
     expected.continue_targeting = Some(StrictBool(false));
-    expected.tracking_radius = f(25.0);
-    expected.view_offset = pair(1.0, -1.0);
+    expected.tracking_radius = Some(f(25.0));
+    expected.view_offset = Some(pair(1.0, -1.0));
     expected.entity_offset = Some([StrictFloat(0.5), StrictFloat(1.5), StrictFloat(-2.0)]);
-    expected.radius = f(12.0);
-    expected.yaw_limits_min = f(-90.0);
-    expected.yaw_limits_max = f(90.0);
+    expected.radius = Some(f(12.0));
+    expected.yaw_limits_min = Some(f(-90.0));
+    expected.yaw_limits_max = Some(f(90.0));
     expected.listener = Some(AudioListener::Player);
     expected.player_effects = Some(StrictBool(true));
     expected.aim_assist = Some(PresetAimAssist {
         preset: Some(AimAssistPresetId::parse("ex:aa")),
         target_mode: Some(TargetMode::Distance),
-        angle: pair(40.0, 30.0),
-        distance: f(8.0),
+        angle: Some(pair(40.0, 30.0)),
+        distance: Some(f(8.0)),
     });
     expected.control_scheme = Some(ControlScheme::CameraRelativeStrafe);
     expected.apply_inherited_starting_rotation = true;
@@ -408,11 +408,14 @@ fn c2_below_1_26_50_a_bool_takes_a_number_and_a_float_takes_a_bool() {
         assert_eq!(document.snap_to_target, Some(StrictBool(true)), "{version}");
         assert_eq!(document.continue_targeting, Some(StrictBool(false)));
         assert_eq!(document.player_effects, Some(StrictBool(true)));
-        assert_eq!((document.pos_x, document.pos_y), (f(1.0), f(0.0)));
-        assert_eq!(document.radius, f(1.0));
-        assert_eq!(document.horizontal_rotation_limit, pair(1.0, 0.0));
-        assert_eq!(document.vertical_rotation_limit, pair(0.0, 1.0));
-        assert_eq!(document.view_offset, pair(1.0, 2.0));
+        assert_eq!(
+            (document.pos_x, document.pos_y),
+            (Some(f(1.0)), Some(f(0.0)))
+        );
+        assert_eq!(document.radius, Some(f(1.0)));
+        assert_eq!(document.horizontal_rotation_limit, Some(pair(1.0, 0.0)));
+        assert_eq!(document.vertical_rotation_limit, Some(pair(0.0, 1.0)));
+        assert_eq!(document.view_offset, Some(pair(1.0, 2.0)));
         assert_eq!(
             document.entity_offset,
             Some([StrictFloat(0.0), StrictFloat(1.0), StrictFloat(3.0)])
@@ -420,7 +423,7 @@ fn c2_below_1_26_50_a_bool_takes_a_number_and_a_float_takes_a_bool() {
         let aim_assist = document.aim_assist.as_ref().unwrap();
         assert_eq!(
             (aim_assist.angle, aim_assist.distance),
-            (pair(1.0, 0.0), f(1.0))
+            (Some(pair(1.0, 0.0)), Some(f(1.0)))
         );
         // No warning or error; one information at each coerced place, in document order.
         let d = document.diagnostics();
@@ -609,7 +612,7 @@ fn cam12_starting_rot_loads_at_1_26_50_only() {
         "1.26.50",
         r#""starting_rot": [10, 20]"#,
     )));
-    assert_eq!(document.starting_rot, pair(10.0, 20.0));
+    assert_eq!(document.starting_rot, Some(pair(10.0, 20.0)));
     assert_eq!(document.version().parsed_as, FormatVersion::new(1, 26, 50));
     assert!(!document.version().upgraded);
     // The copy step leaves it unset.
@@ -866,7 +869,7 @@ fn p10_a_vanilla_camera_s_starting_rotation_is_kept_with_an_information_deviatio
             )],
             "{name}"
         );
-        assert_eq!(document.starting_rot, pair(10.0, 20.0));
+        assert_eq!(document.starting_rot, Some(pair(10.0, 20.0)));
     }
     // Not a vanilla camera, or no `starting_rot`: no finding.
     for members in [
@@ -934,7 +937,7 @@ fn a_duplicate_member_keeps_its_last_value_in_the_check_and_in_the_struct() {
         "1.21.60",
         r#""radius": 100, "radius": 5, "listener": 7, "listener": "player""#,
     )));
-    assert_eq!(document.radius, f(5.0));
+    assert_eq!(document.radius, Some(f(5.0)));
     assert_eq!(document.listener, Some(AudioListener::Player));
     // The last value is the one checked: a good first value does not save a bad last one.
     assert_eq!(

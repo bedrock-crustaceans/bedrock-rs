@@ -18,7 +18,7 @@ fn read_paths(responder: &Responder) -> Vec<String> {
         .iter()
         .filter_map(|request| match request {
             Request::ReadFile { location, .. } => Some(location.path.as_str().to_owned()),
-            _ => None,
+            Request::ListDir { .. } => None,
         })
         .collect()
 }
@@ -65,7 +65,7 @@ fn a_load_reads_the_lists_and_the_material_files_and_nothing_that_only_looks_lik
         ..StackOptions::default()
     };
     let mut loader = StackLoader::new(repository.stacks(&world, LoadOptions::default()), options);
-    let loaded = responder.drive(&mut loader);
+    let stack = responder.drive(&mut loader);
     let mut read: Vec<String> = read_paths(&responder).split_off(0);
     assert!(responder.log.requests.len() > before, "the files were read");
     read.retain(|path| !path.ends_with("manifest.json"));
@@ -80,8 +80,12 @@ fn a_load_reads_the_lists_and_the_material_files_and_nothing_that_only_looks_lik
             "rp/materials/gameface.json",
         ]
     );
-    let materials = loaded.resource.materials();
-    let files: Vec<&str> = materials.files.keys().map(|path| path.as_str()).collect();
+    let materials = stack.resource.materials();
+    let files: Vec<&str> = materials
+        .files
+        .keys()
+        .map(bedrock_addon::storage::PackPath::as_str)
+        .collect();
     assert_eq!(files, ["materials/a.material", "deep/dir/b.material"]);
     assert!(materials.common.contains("a"));
     // The listed `.material.bin` exists and is not read: the entry says so.

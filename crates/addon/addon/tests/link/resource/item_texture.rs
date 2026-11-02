@@ -1,5 +1,5 @@
 //! 20 R32 (and I6): a behaviour pack item's `minecraft:icon` against the merged item atlas,
-//! with the rules of the item_texture folder that travel with it: `textures` without
+//! with the rules of the `item_texture` folder that travel with it: `textures` without
 //! `default` (rule 10), a `textures` key the game never reads (rule 11), a tile the atlas
 //! dropped (rule 12), trimmable armour without an icon, without `minecraft:wearable` or worn
 //! in no armour slot (rules 21 to 23) and the palette values that are no atlas keys (rule 24).
@@ -167,7 +167,7 @@ fn r32_a_key_only_the_game_has_resolves_when_the_host_says_so() {
             &[(ITEM, &item("1.21.80", r#""minecraft:icon": "apple""#))],
             &[(ATLAS, GEMS)],
             options,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         at_item(&found).iter().map(said).collect::<Vec<_>>()
     };
@@ -286,7 +286,7 @@ fn r32_without_an_item_atlas_and_without_a_host_no_name_is_compared() {
         &[(ITEM, &item("1.21.80", components))],
         &other,
         hosted(&[("atlas key", "none")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         at_item(&found).iter().map(said).collect::<Vec<_>>(),
@@ -354,7 +354,7 @@ fn rule_11_a_key_the_game_never_reads_is_a_lint_at_the_key() {
         &[(ITEM, &item("1.21.80", components))],
         &[(ATLAS, GEMS)],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },

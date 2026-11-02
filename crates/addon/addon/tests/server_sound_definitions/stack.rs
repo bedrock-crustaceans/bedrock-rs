@@ -278,7 +278,11 @@ fn ssd23_a_name_without_a_resource_pack_definition_is_an_info() {
     assert_eq!(unknown.len(), 1, "{:#?}", lines(&report));
     assert_eq!(unknown[0].severity, Severity::Info);
     assert_eq!(
-        unknown[0].location.path.as_ref().map(|path| path.as_str()),
+        unknown[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon_core::pack_identity::PackPath::as_str),
         Some(PATH)
     );
     assert_eq!(
@@ -290,7 +294,7 @@ fn ssd23_a_name_without_a_resource_pack_definition_is_an_info() {
             .location
             .pack
             .as_ref()
-            .and_then(|pack| pack.index()),
+            .and_then(bedrock_addon_core::pack_identity::PackRef::index),
         Some(0)
     );
 }

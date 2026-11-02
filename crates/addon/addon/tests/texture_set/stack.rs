@@ -13,8 +13,8 @@ use crate::{FAMILY, STONE, STONE_SET, file, findings, rejected, set, stack};
 
 const PNG: &str = "textures/blocks/stone.png";
 
-fn name(text: &str) -> Option<LayerValue<Rgba>> {
-    Some(LayerValue::Texture(TextureName(text.to_owned())))
+fn name(text: &str) -> LayerValue<Rgba> {
+    LayerValue::Texture(TextureName(text.to_owned()))
 }
 
 #[test]
@@ -24,7 +24,7 @@ fn ts50_a_texture_set_with_its_image() {
     assert_eq!(file.stack_index, 0);
     assert_eq!(file.pack.index(), Some(0));
     let document = file.set.expect("the set");
-    assert_eq!(document.color, name("stone"));
+    assert_eq!(document.color, Some(name("stone")));
     assert_eq!(document.origin().path.as_str(), STONE_SET);
     // The colour's image is the layer's, in the set's pack.
     let image = file.image.expect("the colour image");

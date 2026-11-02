@@ -257,7 +257,7 @@ fn an_entry_named_format_version_is_not_written() {
         .insert("format_version".to_owned(), Value::from("1.1.0"));
     match built.to_json() {
         Err(EncodeError::NotRepresentable { at, .. }) => {
-            assert_eq!(at.to_string(), "format_version")
+            assert_eq!(at.to_string(), "format_version");
         }
         other => panic!("{other:?}"),
     }
@@ -290,6 +290,95 @@ struct Generated {
     authored: String,
     /// Whether an entry repeats a member.
     repeats_a_member: bool,
+}
+
+/// The members of one generated entry, each in a form sound or unsound, in the order the file
+/// has them.
+fn entry_fields(g: &mut Generator) -> Vec<String> {
+    let mut fields = Vec::new();
+    let textures = [
+        r#""t""#,
+        r#"{"up": "u", "down": "d", "side": "s"}"#,
+        r#"{"up": "u", "down": "d", "north": "n", "south": "s", "west": "w", "east": "e"}"#,
+        r#"{"up": "u", "down": 5, "side": "s"}"#,
+        "5",
+        "null",
+        r#"["t"]"#,
+        "18446744073709551616",
+    ];
+    if g.next(3) != 0 {
+        fields.push(format!(r#""textures": {}"#, g.pick(&textures)));
+    }
+    if g.next(4) == 0 {
+        fields.push(format!(r#""carried_textures": {}"#, g.pick(&textures)));
+    }
+    if g.next(3) == 0 {
+        fields.push(format!(
+            r#""isotropic": {}"#,
+            g.pick(&[
+                "true",
+                "false",
+                r#"{"up": true, "down": true}"#,
+                r#"{"side": true, "north": true}"#,
+                r#"{"side": null, "north": true}"#,
+                r#""yes""#,
+                "null",
+            ])
+        ));
+    }
+    if g.next(4) == 0 {
+        fields.push(format!(
+            r#""blockshape": {}"#,
+            g.pick(&[r#""tree""#, r#""cross_texture""#, r#""nope""#, "null", "5"])
+        ));
+    }
+    if g.next(3) == 0 {
+        fields.push(format!(
+            r#""ambient_occlusion_exponent": {}"#,
+            g.pick(&[
+                "0.5",
+                "2",
+                "true",
+                r#""high""#,
+                "1e39",
+                "-1e39",
+                "null",
+                "1e999",
+                "-1e999",
+                "-18446744073709551616",
+            ])
+        ));
+    }
+    if g.next(2) == 0 {
+        fields.push(format!(
+            r#""sound": {}"#,
+            g.pick(&[
+                r#""stone""#,
+                r#""""#,
+                "5",
+                "false",
+                "null",
+                "[]",
+                "18446744073709551616"
+            ])
+        ));
+    }
+    if g.next(6) == 0 {
+        fields.push(format!(
+            r#""{}": {}"#,
+            g.pick(&["brightness_gamma", "sounds", "client_entity", "extra"]),
+            g.pick(&[
+                "1",
+                r#""x""#,
+                r#"{"a": [1, 2.5, null]}"#,
+                "1e999",
+                r#"[{"b": -1e999}]"#,
+                "123456789012345678901234567890",
+                r#"{"a": [18446744073709551616]}"#,
+            ])
+        ));
+    }
+    fields
 }
 
 /// One generated file: each member in each of its forms, sound and unsound.
@@ -333,89 +422,7 @@ fn generate(g: &mut Generator) -> Generated {
             authored.push(members.last().cloned().unwrap());
             continue;
         }
-        let mut fields = Vec::new();
-        let textures = [
-            r#""t""#,
-            r#"{"up": "u", "down": "d", "side": "s"}"#,
-            r#"{"up": "u", "down": "d", "north": "n", "south": "s", "west": "w", "east": "e"}"#,
-            r#"{"up": "u", "down": 5, "side": "s"}"#,
-            "5",
-            "null",
-            r#"["t"]"#,
-            "18446744073709551616",
-        ];
-        if g.next(3) != 0 {
-            fields.push(format!(r#""textures": {}"#, g.pick(&textures)));
-        }
-        if g.next(4) == 0 {
-            fields.push(format!(r#""carried_textures": {}"#, g.pick(&textures)));
-        }
-        if g.next(3) == 0 {
-            fields.push(format!(
-                r#""isotropic": {}"#,
-                g.pick(&[
-                    "true",
-                    "false",
-                    r#"{"up": true, "down": true}"#,
-                    r#"{"side": true, "north": true}"#,
-                    r#"{"side": null, "north": true}"#,
-                    r#""yes""#,
-                    "null",
-                ])
-            ));
-        }
-        if g.next(4) == 0 {
-            fields.push(format!(
-                r#""blockshape": {}"#,
-                g.pick(&[r#""tree""#, r#""cross_texture""#, r#""nope""#, "null", "5"])
-            ));
-        }
-        if g.next(3) == 0 {
-            fields.push(format!(
-                r#""ambient_occlusion_exponent": {}"#,
-                g.pick(&[
-                    "0.5",
-                    "2",
-                    "true",
-                    r#""high""#,
-                    "1e39",
-                    "-1e39",
-                    "null",
-                    "1e999",
-                    "-1e999",
-                    "-18446744073709551616",
-                ])
-            ));
-        }
-        if g.next(2) == 0 {
-            fields.push(format!(
-                r#""sound": {}"#,
-                g.pick(&[
-                    r#""stone""#,
-                    r#""""#,
-                    "5",
-                    "false",
-                    "null",
-                    "[]",
-                    "18446744073709551616"
-                ])
-            ));
-        }
-        if g.next(6) == 0 {
-            fields.push(format!(
-                r#""{}": {}"#,
-                g.pick(&["brightness_gamma", "sounds", "client_entity", "extra"]),
-                g.pick(&[
-                    "1",
-                    r#""x""#,
-                    r#"{"a": [1, 2.5, null]}"#,
-                    "1e999",
-                    r#"[{"b": -1e999}]"#,
-                    "123456789012345678901234567890",
-                    r#"{"a": [18446744073709551616]}"#,
-                ])
-            ));
-        }
+        let mut fields = entry_fields(g);
         // A member may come twice in one entry: the earlier copy is anywhere before the
         // last one, of any form.
         let kept = fields.clone();
@@ -508,6 +515,28 @@ fn member_order(text: &str) -> Vec<(String, Vec<String>)> {
         .collect()
 }
 
+/// The findings but the repeated keys, which are written once, and the numbers beyond a
+/// double, which are written finite.
+fn findings_but_rewrites(d: &Diagnostics) -> Vec<(&'static str, String)> {
+    codes(d)
+        .into_iter()
+        .filter(|(code, _)| !matches!(*code, "DuplicateIdentifier" | "ClampedValue"))
+        .collect()
+}
+
+/// The merged blocks of the file `text` and of what was written of it are the same.
+fn assert_same_merged_blocks(text: &str, written: &str) {
+    let (before, after) = (load_one(text), load_one(written));
+    assert_eq!(before.registry().len(), after.registry().len(), "{text}");
+    for (id, block) in before.registry() {
+        assert_eq!(
+            Some(block.value()),
+            after.registry().get(id).map(Document::value),
+            "{text}"
+        );
+    }
+}
+
 #[test]
 fn four_thousand_generated_files_round_trip() {
     let mut g = Generator(0x000B_10C5);
@@ -583,30 +612,16 @@ fn four_thousand_generated_files_round_trip() {
         assert_eq!(read.to_json().unwrap(), written, "{text}");
         // The same findings, but for the repeated keys, which are written once, and the
         // numbers beyond a double, which are written finite.
-        let kept = |d: &Diagnostics| -> Vec<(&'static str, String)> {
-            codes(d)
-                .into_iter()
-                .filter(|(code, _)| !matches!(*code, "DuplicateIdentifier" | "ClampedValue"))
-                .collect()
-        };
         assert_eq!(
-            kept(read.diagnostics()),
-            kept(document.diagnostics()),
+            findings_but_rewrites(read.diagnostics()),
+            findings_but_rewrites(document.diagnostics()),
             "{text}"
         );
         // And, for every fourth file, the same merged blocks.
         if round % 4 != 0 {
             continue;
         }
-        let (before, after) = (load_one(&text), load_one(&written));
-        assert_eq!(before.registry().len(), after.registry().len(), "{text}");
-        for (id, block) in before.registry() {
-            assert_eq!(
-                Some(block.value()),
-                after.registry().get(id).map(Document::value),
-                "{text}"
-            );
-        }
+        assert_same_merged_blocks(&text, &written);
     }
     assert!(warned > 1000, "the generator makes findings: {warned}");
     eprintln!(

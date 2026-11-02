@@ -11,6 +11,7 @@
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Phase, Severity};
@@ -227,10 +228,18 @@ fn param<T>(param: &Param<T>, literal: impl Fn(&T) -> Value) -> Value {
     out.into_value()
 }
 
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "passed as the `Fn(&T)` of `param`"
+)]
 fn int(value: &i32) -> Value {
     Value::from(i64::from(*value))
 }
 
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "passed as the `Fn(&T)` of `param`"
+)]
 fn float(value: &f32) -> Value {
     Value::from(f64::from(*value))
 }
@@ -240,6 +249,10 @@ fn text(value: &String) -> Value {
     Value::from(value.as_str())
 }
 
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "passed as the `Fn(&T)` of `param`"
+)]
 fn boolean(value: &bool) -> Value {
     Value::from(*value)
 }
@@ -501,17 +514,17 @@ pub fn canon(value: &Value) -> String {
         } else if let Some(flag) = value.as_bool() {
             out.push_str(&flag.to_string());
         } else if let Some(number) = value.as_number() {
-            out.push_str(&format!("{:?}", number.to_f64_lossy()));
+            write!(out, "{:?}", number.to_f64_lossy()).unwrap();
         } else if let Some(text) = value.as_string() {
-            out.push_str(&format!("{:?}", text.as_str()));
+            write!(out, "{:?}", text.as_str()).unwrap();
         } else if let Some(array) = value.as_array() {
             out.push('[');
             for element in array {
-                out.push_str(&format!("\n{pad}  "));
+                write!(out, "\n{pad}  ").unwrap();
                 write(element, indent + 1, out);
                 out.push(',');
             }
-            out.push_str(&format!("\n{pad}]"));
+            write!(out, "\n{pad}]").unwrap();
         } else if let Some(object) = value.as_object() {
             let mut members: Vec<(&str, &Value)> = object
                 .iter()
@@ -520,11 +533,11 @@ pub fn canon(value: &Value) -> String {
             members.sort_by_key(|(key, _)| *key);
             out.push('{');
             for (key, member) in members {
-                out.push_str(&format!("\n{pad}  {key:?}: "));
+                write!(out, "\n{pad}  {key:?}: ").unwrap();
                 write(member, indent + 1, out);
                 out.push(',');
             }
-            out.push_str(&format!("\n{pad}}}"));
+            write!(out, "\n{pad}}}").unwrap();
         } else {
             panic!("not a JSON value: {value:?}");
         }

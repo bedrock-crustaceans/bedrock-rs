@@ -162,6 +162,7 @@ fn p07_point_direction_default() {
 
 /// `p08_min_speed_threshold`: the legacy default 0.01 is written out by the upgrade; a
 /// 1.20.80 document without the member has the default 0.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn p08_min_speed_threshold() {
     let billboard = r#""minecraft:particle_appearance_billboard": {"size": [1, 1], "direction": {"mode": "custom", "custom_direction": [0, 1, 0]}}"#;

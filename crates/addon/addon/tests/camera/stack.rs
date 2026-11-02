@@ -485,6 +485,7 @@ fn rule_5_a_list_file_is_strict_and_names_its_json_errors() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn cam22_two_files_defining_one_spline_name_both_stay_with_a_warning_deviation() {
     let stack = stack(&[

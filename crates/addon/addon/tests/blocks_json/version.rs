@@ -10,6 +10,7 @@ use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
+use std::fmt::Write as _;
 
 use super::common::{E, Found, I, W, file_at, load_one, ours, six, vanilla};
 
@@ -59,8 +60,10 @@ fn wool_is_an_old_name() -> Found {
         "black",
     ]
     .iter()
-    .map(|colour| format!("\n - minecraft:{colour}_wool"))
-    .collect();
+    .fold(String::new(), |mut out, colour| {
+        write!(out, "\n - minecraft:{colour}_wool").unwrap();
+        out
+    });
     vanilla(
         "DeprecatedMember",
         E,

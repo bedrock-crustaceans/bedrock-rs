@@ -68,7 +68,10 @@ fn the_binding_version_is_the_pack_s_not_the_file_s() {
         let text = binding(r#""1""#);
         let document = loaded(load_at("models/entity/x.json", &text, &cx));
         let binding = document.value().geometries[0].bones()[0].binding.clone();
-        let raw = binding.unwrap().source().and_then(|s| s.raw_version());
+        let raw = binding
+            .unwrap()
+            .source()
+            .and_then(bedrock_addon::molang::MolangSource::raw_version);
         assert_eq!(
             raw,
             Some(bedrock_addon::molang::RawVersion(version)),
@@ -138,6 +141,8 @@ fn m04_binding_compile_error() {
 #[cfg(feature = "molang")]
 #[test]
 fn m05_binding_invalid_pack_version() {
+    const AT: &str = "app data | models/entity/x.json | minecraft:geometry/0/bones/0/binding | q.item_slot_to_bone_name(c.item_slot) | ";
+
     // A pack whose `min_engine_version` is unreadable compiles at version -1, where no query
     // resolves.
     let mut cx = rp();
@@ -149,7 +154,6 @@ fn m05_binding_invalid_pack_version() {
     ));
     // Every finding of the file, in order: the crate's two notes (`InvalidVersion`,
     // `QueryDeprecated`), the parser's two messages, and the schema's closing line.
-    const AT: &str = "app data | models/entity/x.json | minecraft:geometry/0/bones/0/binding | q.item_slot_to_bone_name(c.item_slot) | ";
     let found: Vec<String> = d
         .iter()
         .map(|f| format!("{:?} {} {f}", f.severity, f.code.name()))

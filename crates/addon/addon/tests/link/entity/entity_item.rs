@@ -55,7 +55,7 @@ fn e15_a_legacy_transform_to_item_is_linked_as_the_result_item_it_becomes() {
     }
 }
 
-/// The game logs "Unknown item during Deferred ItemDescriptor
+/// The game logs "Unknown item during Deferred `ItemDescriptor`
 /// resolution: %s" at level 1 alone: an
 /// information.
 #[cfg(feature = "item")]
@@ -150,7 +150,7 @@ fn e15_a_host_answers_for_the_games_items() {
         &files,
         &[],
         hosted(&[("item", "minecraft:apple")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said_of(&found, "item"),
@@ -185,7 +185,7 @@ fn e15_an_item_tag_is_a_lint_and_a_tag_expression_is_not_checked() {
         &files,
         &[],
         bedrock_addon::load::LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -233,7 +233,7 @@ fn e15_a_legacy_item_name_of_the_games_own_files_resolves() {
         unresolved(&format!("{at}/11"), "item", "Apple"),
     ];
     assert_eq!(said_of(&link(&files, &[]), "item"), expected);
-    let found = link_with(&files, &[], hosted(&[]), &LinkOptions::default());
+    let found = link_with(&files, &[], hosted(&[]), LinkOptions::default());
     assert_eq!(said_of(&found, "item"), expected);
 }
 
@@ -272,13 +272,13 @@ fn e15_a_shareables_item_may_be_an_item_tag() {
         ("item tag", "minecraft:is_food"),
         ("item", "minecraft:apple"),
     ]);
-    let found = link_with(&files, &[], host, &LinkOptions::default());
+    let found = link_with(&files, &[], host, LinkOptions::default());
     assert_eq!(said_of(&found, "item").len(), 1, "{found:?}");
     let quiet = link_with(
         &files,
         &[],
         bedrock_addon::load::LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },

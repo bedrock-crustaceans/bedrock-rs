@@ -486,7 +486,7 @@ fn three_numbers_in_no_form_are_a_type_error() {
         )
     );
     out_of_range(
-        one_error::<ColorGradingSettings>(&contrast(r#"{"x": 1, "y": 5}"#)),
+        &one_error::<ColorGradingSettings>(&contrast(r#"{"x": 1, "y": 5}"#)),
         &format!("{AT}/y"),
     );
     // An unknown member of the object form is reported and not kept.

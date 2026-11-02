@@ -291,7 +291,7 @@ fn s16_simplified_constraints() {
 #[test]
 fn s17_simplified_required_weights() {
     for body in [
-        r#"{}"#,
+        r"{}",
         r#"{"weight": 1, "permute_types": [{"entity_type": "x:a"}]}"#,
     ] {
         let d = rejected(
@@ -471,7 +471,7 @@ fn s22_vanilla_upgrade_table() {
         table
             .get(key)
             .and_then(|v| v.as_array())
-            .map_or(0, |a| a.len())
+            .map_or(0, facet_value::VArray::len)
     };
     assert_eq!(count("minecraft:in_water"), 10);
     assert_eq!(count("minecraft:in_lava"), 1);

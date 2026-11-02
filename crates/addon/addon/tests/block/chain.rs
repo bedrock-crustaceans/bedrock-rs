@@ -40,6 +40,8 @@ fn selects(version: &str) -> Selection {
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_60() {
+    const HAS_BETA: bool = <Any as VersionChain<BlockFamily>>::HAS_BETA;
+
     check_chain::<BlockFamily>().expect("the chain is well formed");
     let versions: Vec<_> = VERSIONS
         .iter()
@@ -49,7 +51,6 @@ fn the_chain_is_contiguous_and_ends_at_1_26_60() {
         <Any as VersionChain<BlockFamily>>::VERSIONS,
         versions.as_slice()
     );
-    const HAS_BETA: bool = <Any as VersionChain<BlockFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
 }

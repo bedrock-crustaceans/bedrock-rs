@@ -3,7 +3,7 @@
 //! value; each built value is either written as text that reads back equal, or refused with
 //! `NotRepresentable`.
 
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, Extra};
 use bedrock_addon::families::material::{
     KeyRules, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, MaterialList,
     SamplerState, StencilFace, Variant, VertexField,
@@ -76,6 +76,10 @@ impl Rng {
         self.0.wrapping_mul(0x2545_f491_4f6c_dd1d)
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the remainder is below `n`, which is a usize"
+    )]
     fn below(&mut self, n: usize) -> usize {
         (self.next() % n as u64) as usize
     }
@@ -320,12 +324,9 @@ fn every_generated_document_that_loads_writes_text_that_loads_back_equal() {
     let (mut total, mut as_authored) = (Rewrites::default(), 0);
     for n in 0..6000 {
         let text = document(&mut rng);
-        let first = match parse_at("materials/gen.material", &text) {
-            Ok(first) => first,
-            Err(_) => {
-                rejected += 1;
-                continue;
-            }
+        let Ok(first) = parse_at("materials/gen.material", &text) else {
+            rejected += 1;
+            continue;
         };
         loaded += 1;
         // A document that loaded has no value the writer cannot spell: it is never refused.
@@ -368,49 +369,33 @@ fn every_generated_document_that_loads_writes_text_that_loads_back_equal() {
     assert!(total.rounded > 0, "{total:?}");
 }
 
-/// A random built definition, with the things a reader would never produce among them.
-fn built(rng: &mut Rng, depth: usize) -> MaterialDef {
-    let text = |rng: &mut Rng| {
-        rng.pick(&["Less", "One", "Keep", "Point", "UV0", "Nope", "", "Both"])
-            .to_owned()
-    };
-    let strings = |rng: &mut Rng| -> Option<Vec<String>> {
-        rng.chance(3).then(|| {
-            (0..rng.below(3))
-                .map(|_| {
-                    rng.pick(&["Blending", "A", "PolygonOffset", "x"])
-                        .to_owned()
-                })
-                .collect()
-        })
-    };
-    let listed = |rng: &mut Rng| Listed {
-        replace: strings(rng),
-        add: strings(rng),
-        sub: strings(rng),
-    };
-    let float = |rng: &mut Rng| {
-        [
-            0.0,
-            1.5,
-            -3.0,
-            0.1,
-            f32::MAX,
-            f32::MIN,
-            f32::NAN,
-            f32::INFINITY,
-        ][rng.below(8)]
-    };
-    let mut def = MaterialDef {
-        states: listed(rng),
-        defines: listed(rng),
-        ..MaterialDef::default()
-    };
+/// One of the words a material states hold, or a word it does not.
+fn word(rng: &mut Rng) -> String {
+    rng.pick(&["Less", "One", "Keep", "Point", "UV0", "Nope", "", "Both"])
+        .to_owned()
+}
+
+/// One of the floats a material holds, or one the writer cannot spell as a number.
+fn float(rng: &mut Rng) -> f32 {
+    [
+        0.0,
+        1.5,
+        -3.0,
+        0.1,
+        f32::MAX,
+        f32::MIN,
+        f32::NAN,
+        f32::INFINITY,
+    ][rng.below(8)]
+}
+
+/// Puts random members into `def`.
+fn sprinkle(rng: &mut Rng, def: &mut MaterialDef) {
     if rng.chance(3) {
-        def.vertex_shader = Some(text(rng));
+        def.vertex_shader = Some(word(rng));
     }
     if rng.chance(4) {
-        def.depth_func = Some(text(rng));
+        def.depth_func = Some(word(rng));
     }
     if rng.chance(4) {
         def.depth_bias = Some(float(rng));
@@ -423,25 +408,25 @@ fn built(rng: &mut Rng, depth: usize) -> MaterialDef {
     }
     if rng.chance(4) {
         def.front_face = Some(StencilFace {
-            stencil_func: rng.chance(2).then(|| text(rng)),
+            stencil_func: rng.chance(2).then(|| word(rng)),
             ..StencilFace::default()
         });
     }
     if rng.chance(4) {
         def.sampler_states.add = Some(vec![SamplerState {
             sampler_index: rng.chance(2).then(|| [0, 7, 8][rng.below(3)]),
-            texture_filter: rng.chance(2).then(|| text(rng)),
+            texture_filter: rng.chance(2).then(|| word(rng)),
             ..SamplerState::default()
         }]);
     }
     if rng.chance(4) {
         def.vertex_fields = Some(vec![VertexField {
-            field: rng.chance(2).then(|| text(rng)),
+            field: rng.chance(2).then(|| word(rng)),
             ..VertexField::default()
         }]);
     }
     if rng.chance(5) {
-        def.render_target_formats = Some(vec![vec![text(rng)], vec![]]);
+        def.render_target_formats = Some(vec![vec![word(rng)], vec![]]);
     }
     if rng.chance(5) {
         let value = ["true", "null", "{}", "5"][rng.below(4)];
@@ -458,6 +443,31 @@ fn built(rng: &mut Rng, depth: usize) -> MaterialDef {
             facet_json::from_str::<Value>(value).unwrap(),
         );
     }
+}
+
+/// A random built definition, with the things a reader would never produce among them.
+fn built(rng: &mut Rng, depth: usize) -> MaterialDef {
+    let strings = |rng: &mut Rng| -> Option<Vec<String>> {
+        rng.chance(3).then(|| {
+            (0..rng.below(3))
+                .map(|_| {
+                    rng.pick(&["Blending", "A", "PolygonOffset", "x"])
+                        .to_owned()
+                })
+                .collect()
+        })
+    };
+    let listed = |rng: &mut Rng| Listed {
+        replace: strings(rng),
+        add: strings(rng),
+        sub: strings(rng),
+    };
+    let mut def = MaterialDef {
+        states: listed(rng),
+        defines: listed(rng),
+        ..MaterialDef::default()
+    };
+    sprinkle(rng, &mut def);
     if depth < 2 && rng.chance(3) {
         let bodies = (0..rng.below(3))
             .map(|_| {
@@ -509,7 +519,7 @@ fn every_built_value_is_written_as_text_that_reads_back_equal_or_is_refused() {
         let mut value = MaterialFile {
             form,
             materials,
-            extra: Default::default(),
+            extra: Extra::default(),
         };
         if let MaterialFileForm::Single { .. } = value.form
             && rng.chance(2)

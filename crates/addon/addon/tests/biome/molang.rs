@@ -31,7 +31,9 @@ fn range_of(document: &bedrock_addon::families::biome::Biome) -> [Molang; 2] {
 
 /// The raw version of an expression.
 fn version(value: &Molang) -> Option<RawVersion> {
-    value.source().and_then(|s| s.raw_version())
+    value
+        .source()
+        .and_then(bedrock_addon::molang::MolangSource::raw_version)
 }
 
 /// The forms of `b21`, as read: the variants and the version 1 of every expression.
@@ -220,7 +222,7 @@ mod compiled {
             compile_source(&MolangSource::string(text, version), &options)
                 .diagnostics()
                 .iter()
-                .map(|d| d.code())
+                .map(bedrock_addon::molang::MolangDiagnostic::code)
                 .collect()
         };
         assert!(!codes(MolangVersion::V1).contains(&DiagCode::StringMisuse));

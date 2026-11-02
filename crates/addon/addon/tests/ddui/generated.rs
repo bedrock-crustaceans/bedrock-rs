@@ -29,7 +29,7 @@ impl Rng {
     }
 
     fn below(&mut self, n: usize) -> usize {
-        (self.next() % n as u64) as usize
+        usize::try_from(self.next() % n as u64).expect("a remainder below `n`, a `usize`")
     }
 
     fn one_in(&mut self, n: usize) -> bool {
@@ -131,6 +131,59 @@ fn object(mut members: Vec<(String, String)>, drop_one_in: usize, rng: &mut Rng)
     format!("{{ {} }}", written.join(", "))
 }
 
+/// Whether `name` is a control that mostly has no children.
+fn is_leaf(name: &str) -> bool {
+    matches!(
+        name,
+        "Panel.Text"
+            | "Panel.Decoration"
+            | "Panel.Spacing"
+            | "Panel.CloseButton"
+            | "ExtensionPoint"
+            | "Form.Button"
+            | "Form.Divider"
+            | "Form.Dropdown"
+            | "Form.Slider"
+            | "Form.Switch"
+            | "Form.TextField"
+            | "Form.Image"
+            | "Container.Item"
+            | "Container.Slot"
+            | "Container.TextField"
+    )
+}
+
+/// The names a child of `name` is mostly drawn from.
+fn controls_below(name: &str) -> &'static [&'static str] {
+    match name {
+        "Context" | "Container.Layout" => &["Panel", "Context", "Container.Layout"],
+        "Context.List" | "ScrollableGridLayout" => &[
+            "Container.Item",
+            "Container.Slot",
+            "Form.Button",
+            "Panel.Text",
+            "Context.List",
+            "Visibility",
+            "Form.Image",
+        ],
+        "Container.FixedGridLayout" => &["Container.Item", "Container.Slot", "Context.List"],
+        _ => &[
+            "Form.Button",
+            "Form.Divider",
+            "Panel.Text",
+            "Panel.Spacing",
+            "ExtensionPoint",
+            "Visibility",
+            "Form.ScrollView",
+            "Context.List",
+            "Container.FixedGridLayout",
+            "ScrollableGridLayout",
+            "Form.Image",
+            "Panel.CloseButton",
+        ],
+    }
+}
+
 /// A control tree: mostly what `likely` (the names that fit the place) offers, sometimes any
 /// name, a name of no catalogue, or no object at all.
 fn control(rng: &mut Rng, likely: &[&str], depth: usize) -> String {
@@ -162,24 +215,7 @@ fn control(rng: &mut Rng, likely: &[&str], depth: usize) -> String {
             format!(r#""{name}""#)
         },
     )];
-    let leaf = matches!(
-        name,
-        "Panel.Text"
-            | "Panel.Decoration"
-            | "Panel.Spacing"
-            | "Panel.CloseButton"
-            | "ExtensionPoint"
-            | "Form.Button"
-            | "Form.Divider"
-            | "Form.Dropdown"
-            | "Form.Slider"
-            | "Form.Switch"
-            | "Form.TextField"
-            | "Form.Image"
-            | "Container.Item"
-            | "Container.Slot"
-            | "Container.TextField"
-    );
+    let leaf = is_leaf(name);
     let no_attribs = matches!(
         name,
         "Panel.Decoration" | "Panel.Spacing" | "Form.Divider" | "Container.Layout"
@@ -205,33 +241,7 @@ fn control(rng: &mut Rng, likely: &[&str], depth: usize) -> String {
         !rng.one_in(20)
     };
     if children {
-        let below: &[&str] = match name {
-            "Context" | "Container.Layout" => &["Panel", "Context", "Container.Layout"],
-            "Context.List" | "ScrollableGridLayout" => &[
-                "Container.Item",
-                "Container.Slot",
-                "Form.Button",
-                "Panel.Text",
-                "Context.List",
-                "Visibility",
-                "Form.Image",
-            ],
-            "Container.FixedGridLayout" => &["Container.Item", "Container.Slot", "Context.List"],
-            _ => &[
-                "Form.Button",
-                "Form.Divider",
-                "Panel.Text",
-                "Panel.Spacing",
-                "ExtensionPoint",
-                "Visibility",
-                "Form.ScrollView",
-                "Context.List",
-                "Container.FixedGridLayout",
-                "ScrollableGridLayout",
-                "Form.Image",
-                "Panel.CloseButton",
-            ],
-        };
+        let below = controls_below(name);
         let value = if rng.one_in(40) {
             rng.pick(&VALUES).to_owned()
         } else {

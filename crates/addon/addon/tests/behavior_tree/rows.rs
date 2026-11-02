@@ -96,7 +96,7 @@ fn bt07_a_format_version_member_is_ignored() {
         tree.root_extra
             .get("format_version")
             .and_then(|version| version.as_string())
-            .map(|version| version.as_str()),
+            .map(facet_value::VString::as_str),
         Some("1.99.0")
     );
     assert!(tree.extra.is_empty());
@@ -136,7 +136,11 @@ fn bt08_a_syntax_error_skips_the_file_with_vanillas_text() {
     assert_eq!(finding.code.to_string(), format!("parse error:\n{message}"));
     assert_eq!(finding.phase, Phase::Parse);
     assert_eq!(
-        finding.location.pack.as_ref().and_then(|p| p.index()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
 }
@@ -427,6 +431,8 @@ fn bt19_position_arrays() {
 
 #[test]
 fn bt28_both_fly_literals_are_one_value() {
+    const THROW: &str = "should_throw_event_if_no_state_change_necessary";
+
     let stack = check("bt28_fly_literal_alias");
     let fly = |name: &str| {
         let (
@@ -446,7 +452,6 @@ fn bt28_both_fly_literals_are_one_value() {
             findings,
         )
     };
-    const THROW: &str = "should_throw_event_if_no_state_change_necessary";
     // the throw literal, read last, replaces the flying literal
     let (flying, throw, findings) = fly("both");
     assert_eq!((flying, throw), (param(false, ""), param(false, "")));
@@ -490,7 +495,7 @@ fn bt23_an_unknown_body_key_is_reported_and_kept() {
         extra
             .get("ticks")
             .and_then(|v| v.as_number())
-            .and_then(|n| n.to_i64()),
+            .and_then(facet_value::VNumber::to_i64),
         Some(3)
     );
     assert_eq!(extra.iter().count(), 1);
@@ -665,7 +670,11 @@ fn bt03_the_higher_pack_wins_and_the_lower_tree_is_shadowed() {
     assert_eq!(notices[0].severity, Severity::Info);
     // at the replaced tree: p1's
     assert_eq!(
-        notices[0].location.pack.as_ref().and_then(|p| p.index()),
+        notices[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(1)
     );
 }
@@ -686,7 +695,11 @@ fn bt04_the_last_path_of_a_pack_wins_deviation() {
     ));
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
-        notices[0].location.path.as_ref().map(|p| p.as_str()),
+        notices[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("behavior_trees/a.json")
     );
 }
@@ -703,11 +716,19 @@ fn bt05_a_built_in_tree_replaces_a_pack_tree_of_its_name() {
     assert_eq!(notices[0].code, DiagnosticCode::ShadowedByBuiltin);
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
-        notices[0].location.path.as_ref().map(|p| p.as_str()),
+        notices[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("behavior_trees/move.json")
     );
     assert_eq!(
-        notices[0].location.pack.as_ref().and_then(|p| p.index()),
+        notices[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     // the built-in trees keep their place: still nine trees, in their order
@@ -732,7 +753,11 @@ fn bt25_a_file_that_is_not_json_is_ignored_deviation() {
     ));
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
-        notices[0].location.path.as_ref().map(|p| p.as_str()),
+        notices[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("behavior_trees/notes.txt")
     );
 }

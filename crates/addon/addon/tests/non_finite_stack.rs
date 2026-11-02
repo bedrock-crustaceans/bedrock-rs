@@ -913,7 +913,7 @@ fn control_entities() {
     let load = |lower: &[(&str, &str)], higher: &[(&str, &str)]| {
         let (stack, low, high) = behavior_stack(lower, higher);
         let mut out = Yielded::default();
-        for (id, document) in stack.entities().iter() {
+        for (id, document) in stack.entities() {
             out.write(&format!("{id:?}"), "entities/x.json", document.value());
         }
         out.findings = findings(&stack);
@@ -953,7 +953,7 @@ fn control_loot_tables() {
     let load = |lower: &[(&str, &str)], higher: &[(&str, &str)]| {
         let (stack, low, high) = behavior_stack(lower, higher);
         let mut out = Yielded::default();
-        for (path, document) in stack.loot_tables().iter() {
+        for (path, document) in stack.loot_tables() {
             out.write(path.as_str(), path.as_str(), document.value());
         }
         out.findings = findings(&stack);
@@ -1030,7 +1030,7 @@ fn control_ui_texture_infos() {
     let load = |lower: &[(&str, &str)], higher: &[(&str, &str)]| {
         let (stack, low, high) = resource_stack(lower, higher);
         let mut out = Yielded::default();
-        for (path, document) in stack.ui_texture_infos().iter() {
+        for (path, document) in stack.ui_texture_infos() {
             out.write(path.as_str(), path.as_str(), document.value());
         }
         out.findings = findings(&stack);

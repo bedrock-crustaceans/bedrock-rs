@@ -31,7 +31,7 @@ fn trades(wants: &str, gives: &str) -> String {
 fn linked(
     behavior: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> bedrock_addon::diagnostic::Diagnostics {
     let set = stacks(behavior, &[], load);
     assert_eq!(
@@ -44,7 +44,7 @@ fn linked(
             .map(ToString::to_string)
             .collect::<Vec<_>>()
     );
-    set.link_with(options)
+    set.link_with(&options)
 }
 
 #[cfg(feature = "item")]
@@ -64,12 +64,12 @@ mod item {
         let found = linked(
             &[(FILE, &table), gem],
             LoadOptions::default(),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), [], "{found:#?}");
         let host = hosted(&[("item", "host:coin")]);
         let table = trades(r#"[{"item": "host:coin"}]"#, r#"[{"item": "host:coin:1"}]"#);
-        let found = linked(&[(FILE, &table)], host, &LinkOptions::default());
+        let found = linked(&[(FILE, &table)], host, LinkOptions::default());
         assert_eq!(said(&found, &KINDS), []);
     }
 
@@ -83,7 +83,7 @@ mod item {
             r#"[{"item": "minecraft:wheat"}]"#,
             r#"[{"item": "minecraft:EmptyMap"}, {"item": "minecraft:WOOD"}, {"item": "minecraft:Wheat"}, {"item": "demo:emptymap"}]"#,
         );
-        let found = linked(&[(FILE, &table)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(&[(FILE, &table)], LoadOptions::default(), NO_LINTS);
         let named: Vec<_> = said(&found, &KINDS)
             .into_iter()
             .map(|said| said.5)
@@ -96,7 +96,7 @@ mod item {
     #[test]
     fn t1_a_table_of_the_older_layout_is_told_at_the_member_the_file_has() {
         let flat = r#"{"tiers": [{"trades": [{"wants": [{"item": "minecraft:wheat", "quantity": 1}], "gives": [{"item": "minecraft:not_an_item"}]}]}]}"#;
-        let found = linked(&[(FILE, flat)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(&[(FILE, flat)], LoadOptions::default(), NO_LINTS);
         let paths: Vec<_> = said(&found, &KINDS)
             .into_iter()
             .map(|said| said.3)
@@ -105,7 +105,7 @@ mod item {
         // Groups, the first of them without a trade (the upgrade does not keep it): the
         // group's own index in the file.
         let grouped = r#"{"tiers": [{"groups": [{"trades": []}, {"num_to_select": 1, "trades": [{"wants": [{"item": "minecraft:not_an_item", "quantity": 1}], "gives": [{"item": "minecraft:emerald"}]}]}]}]}"#;
-        let found = linked(&[(FILE, grouped)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(&[(FILE, grouped)], LoadOptions::default(), NO_LINTS);
         let paths: Vec<_> = said(&found, &KINDS)
             .into_iter()
             .map(|said| said.3)
@@ -121,7 +121,7 @@ mod item {
     #[test]
     fn t1_an_item_behind_what_the_older_reader_leaves_out_is_at_the_index_of_the_file() {
         let paths = |table: &str| -> Vec<String> {
-            let found = linked(&[(FILE, table)], LoadOptions::default(), &NO_LINTS);
+            let found = linked(&[(FILE, table)], LoadOptions::default(), NO_LINTS);
             said(&found, &KINDS)
                 .into_iter()
                 .map(|said| said.3)
@@ -163,7 +163,7 @@ mod item {
                 {"item": "minecraft:boat", "functions": [{"function": "trader_material_type"}]},
                 {"item": "demo:none"}]}]
         }]}]}"#;
-        let found = linked(&[(FILE, table)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(&[(FILE, table)], LoadOptions::default(), NO_LINTS);
         let told: Vec<_> = said(&found, &KINDS)
             .into_iter()
             .map(|said| (said.3, said.5))
@@ -186,12 +186,13 @@ mod item {
     #[cfg(feature = "block")]
     #[test]
     fn t1_an_item_nothing_defines_is_an_error_at_the_member_that_names_it() {
+        const TRADE: &str = "tiers/0/groups/0/trades/0";
+
         let table = trades(
             r#"[{"item": "demo:none_a"}, {"choice": [{"item": "minecraft:wheat"}, {"item": "demo:none_b:3"}]}]"#,
             r#"[{"item": "demo:none_c"}]"#,
         );
-        let found = linked(&[(FILE, &table)], LoadOptions::default(), &NO_LINTS);
-        const TRADE: &str = "tiers/0/groups/0/trades/0";
+        let found = linked(&[(FILE, &table)], LoadOptions::default(), NO_LINTS);
         let expected: Vec<_> = [
             ("wants/0/item", "demo:none_a"),
             ("wants/1/choice/1/item", "demo:none_b:3"),
@@ -215,7 +216,11 @@ mod item {
             .find(|finding| said_of(finding).4 == "item")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         // the root.

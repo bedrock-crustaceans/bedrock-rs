@@ -275,6 +275,48 @@ fn item(rng: &mut Rng) -> J {
     }
 }
 
+/// The `animation_controllers` member, when the file has one.
+fn animation_controllers(rng: &mut Rng, shape: Shape) -> Option<J> {
+    if !(rng.chance(40) && (shape == Shape::V1_8 || rng.chance(3))) {
+        return None;
+    }
+    let controllers: Vec<J> = (0..rng.below(3))
+        .map(|_| {
+            if rng.chance(25) {
+                J::obj(&[
+                    ("b", J::str("controller.animation.ghost.b")),
+                    ("a", J::str("controller.animation.ghost.a")),
+                ])
+            } else {
+                J::obj(&[(
+                    *rng.pick(&["move", "Look"]),
+                    J::str("controller.animation.ghost.move"),
+                )])
+            }
+        })
+        .collect();
+    Some(J::Arr(controllers))
+}
+
+/// The `render_controllers` member, when the file has one.
+fn render_controllers(rng: &mut Rng, newer: bool) -> Option<J> {
+    if !rng.chance(65) {
+        return None;
+    }
+    let names = ["controller.render.ghost", "Controller.Render.Ghost"];
+    let controllers: Vec<J> = (0..rng.below(4))
+        .map(|_| {
+            let object = if newer { 30 } else { 2 };
+            if rng.chance(object) {
+                conditional(rng, &names)
+            } else {
+                J::str(rng.pick(&names))
+            }
+        })
+        .collect();
+    Some(J::Arr(controllers))
+}
+
 /// One attachable document for `shape`, as text.
 fn document(rng: &mut Rng, shape: Shape) -> String {
     let newer = shape != Shape::V1_8;
@@ -333,38 +375,8 @@ fn document(rng: &mut Rng, shape: Shape) -> String {
         "other",
     ];
     add("animations", string_map(rng, 35, &animations));
-    if rng.chance(40) && (shape == Shape::V1_8 || rng.chance(3)) {
-        let controllers = (0..rng.below(3))
-            .map(|_| {
-                if rng.chance(25) {
-                    J::obj(&[
-                        ("b", J::str("controller.animation.ghost.b")),
-                        ("a", J::str("controller.animation.ghost.a")),
-                    ])
-                } else {
-                    J::obj(&[(
-                        *rng.pick(&["move", "Look"]),
-                        J::str("controller.animation.ghost.move"),
-                    )])
-                }
-            })
-            .collect();
-        add("animation_controllers", Some(J::Arr(controllers)));
-    }
-    if rng.chance(65) {
-        let names = ["controller.render.ghost", "Controller.Render.Ghost"];
-        let controllers = (0..rng.below(4))
-            .map(|_| {
-                let object = if newer { 30 } else { 2 };
-                if rng.chance(object) {
-                    conditional(rng, &names)
-                } else {
-                    J::str(rng.pick(&names))
-                }
-            })
-            .collect();
-        add("render_controllers", Some(J::Arr(controllers)));
-    }
+    add("animation_controllers", animation_controllers(rng, shape));
+    add("render_controllers", render_controllers(rng, newer));
     let sounds = ["mob.ghost.say", "Mob.Ghost.Hurt"];
     add("sound_effects", string_map(rng, 60, &sounds));
     for name in [
@@ -714,6 +726,10 @@ struct Constants {
 /// the nearest `f32`, as an integer when it is integral and below 2^24 in magnitude,
 /// else as the shortest real that reads back to it. A number beyond `f32` is the largest
 /// finite float of its sign. Each difference from the authored token is counted.
+#[expect(
+    clippy::float_cmp,
+    reason = "the float is the exact double the document spelled"
+)]
 fn as_constant(member: &mut Canon, constants: &mut Constants) {
     #[allow(
         clippy::cast_precision_loss,

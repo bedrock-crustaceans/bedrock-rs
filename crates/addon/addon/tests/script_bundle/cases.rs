@@ -280,7 +280,11 @@ fn no_import_crosses_packs_in_a_stack_of_three() {
         DiagnosticCode::ScriptImportNotFound { specifier, hint: None } if specifier == "lib.js"
     ));
     assert_eq!(
-        finding.location.pack.as_ref().map(|p| p.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("middle")
     );
 }

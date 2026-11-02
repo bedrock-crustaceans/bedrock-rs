@@ -102,7 +102,11 @@ fn a_lower_pack_never_replaces_a_higher_one() {
     assert_eq!(notices(&stack), [("ShadowedDefinition", Severity::Info)]);
     let finding = trees.diagnostics().next().unwrap();
     assert_eq!(
-        finding.location.pack.as_ref().and_then(|p| p.index()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(2)
     );
 }
@@ -255,7 +259,11 @@ fn a_stack_load_asks_for_the_json_files_only() {
             .filter(|f| f.code.name() == "IgnoredFile")
             .map(|f| {
                 assert_eq!(f.severity, Severity::Info);
-                let pack = f.location.pack.as_ref().and_then(|pack| pack.index());
+                let pack = f
+                    .location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index);
                 (pack, f.location.path.as_ref().unwrap().as_str())
             })
             .collect();

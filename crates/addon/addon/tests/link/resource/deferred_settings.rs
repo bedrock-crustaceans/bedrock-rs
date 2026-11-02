@@ -272,7 +272,7 @@ mod local_lights {
         // With a host, the host does: yes for a block only it knows, no for one it lacks.
         let host = || hosted(&[("block", "demo:hosted")]);
         let both = lights(&["demo:hosted", "minecraft:torch"]);
-        let found = link_with(&[], &[(LIGHTS, &both)], host(), &LinkOptions::default());
+        let found = link_with(&[], &[(LIGHTS, &both)], host(), LinkOptions::default());
         assert_eq!(at(&found, LIGHTS), [error("minecraft:torch")]);
     }
 
@@ -317,7 +317,11 @@ fn render_r50_the_default_identifiers_are_no_link_finding() {
     );
     let settings = set.resource.deferred_settings();
     assert_eq!(
-        settings.defaults.lighting.as_ref().map(|id| id.as_str()),
+        settings
+            .defaults
+            .lighting
+            .as_ref()
+            .map(bedrock_addon::id::Id::as_str),
         Some("demo:dusk")
     );
     assert_eq!(settings.defaults.water, None);

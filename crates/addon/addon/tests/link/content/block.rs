@@ -40,7 +40,7 @@ fn linked(
     behavior: &[(&'static str, &str)],
     resource: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> bedrock_addon::diagnostic::Diagnostics {
     // The terrain atlas of these worlds is a pack the game ships: B9 is tested at
     // its own severity. `tests/link/view.rs` has the other views.
@@ -55,7 +55,7 @@ fn linked(
             .map(ToString::to_string)
             .collect::<Vec<_>>()
     );
-    set.link_with(options)
+    set.link_with(&options)
 }
 
 /// [`linked`] with one block, no host and every rule.
@@ -72,7 +72,7 @@ fn link(
         behavior,
         resource,
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     )
 }
 
@@ -81,7 +81,7 @@ fn link_with(
     behavior: &[(&'static str, &str)],
     resource: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> bedrock_addon::diagnostic::Diagnostics {
     let blocks = behavior
         .iter()
@@ -134,13 +134,13 @@ mod geometry {
             let found = link(&[(FILE, &file)], &[]);
             assert_eq!(said(&found, &KINDS), [], "{name}");
             // A host that knows no geometry is not asked about the two the row names.
-            let found = link_with(&[(FILE, &file)], &[], hosted(&[]), &LinkOptions::default());
+            let found = link_with(&[(FILE, &file)], &[], hosted(&[]), LinkOptions::default());
             assert_eq!(said(&found, &KINDS), [], "{name} hosted");
         }
         // What the host says the game has is the game's.
         let file = lamp(r#""geometry.host_only""#);
         let host = hosted(&[("geometry", "geometry.host_only")]);
-        let found = link_with(&[(FILE, &file)], &[], host, &LinkOptions::default());
+        let found = link_with(&[(FILE, &file)], &[], host, LinkOptions::default());
         assert_eq!(said(&found, &KINDS), []);
     }
 
@@ -163,7 +163,11 @@ mod geometry {
             .find(|finding| said_of(finding).4 == "geometry")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(text(finding), None);
@@ -186,7 +190,7 @@ mod geometry {
     #[test]
     fn b5_is_a_lint_and_is_left_out_without_the_lints() {
         let file = lamp(r#""geometry.none""#);
-        let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), &NO_LINTS);
+        let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), NO_LINTS);
         assert_eq!(said(&found, &KINDS), []);
     }
 
@@ -220,7 +224,7 @@ mod geometry {
     }
 
     /// The client's bone-visibility check logs
-    /// "Geometry Component bone_visibilities bone %s is invalid, in block %s" at level 3
+    /// "Geometry Component `bone_visibilities` bone %s is invalid, in block %s" at level 3
     /// and goes on with the expression: a kept error.
     #[test]
     fn b6_a_bone_the_geometry_does_not_have_is_a_kept_error() {
@@ -249,7 +253,7 @@ mod geometry {
             &[(FILE, &file)],
             &[LAMP_GEOMETRY],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(said(&found, &KINDS).len(), 1);
     }
@@ -265,7 +269,7 @@ mod geometry {
         // Nor are those of a geometry the host says the game has.
         let file = lamp(r#"{"identifier": "geometry.host", "bone_visibility": {"tail": false}}"#);
         let host = hosted(&[("geometry", "geometry.host")]);
-        let found = link_with(&[(FILE, &file)], &[], host, &LinkOptions::default());
+        let found = link_with(&[(FILE, &file)], &[], host, LinkOptions::default());
         assert_eq!(said(&found, &KINDS), []);
     }
 }
@@ -308,7 +312,7 @@ fn b7_a_shape_of_the_stack_and_the_two_of_the_game_are_no_finding() {
             &[(FILE, &culled(shape)), SLAB],
             &[],
             hosted(&[]),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &["voxel shape"]), [], "{shape} hosted");
     }
@@ -317,7 +321,7 @@ fn b7_a_shape_of_the_stack_and_the_two_of_the_game_are_no_finding() {
         &[(FILE, &culled("host:shape"))],
         &[],
         host,
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["voxel shape"]), []);
 }
@@ -331,7 +335,7 @@ fn b7_a_shape_nothing_defines_is_vanillas_kept_error() {
         &[(FILE, &culled("demo:slabs")), SLAB],
         &[],
         LoadOptions::default(),
-        &NO_LINTS,
+        NO_LINTS,
     );
     assert_eq!(
         said(&found, &["voxel shape"]),
@@ -356,7 +360,11 @@ fn b7_a_shape_nothing_defines_is_vanillas_kept_error() {
         )
     );
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("bp 1")
     );
 }
@@ -391,7 +399,7 @@ mod texture {
             &[(FILE, &textured("stone"))],
             &[],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), []);
         // The crate has no list of the game's tiles: without a host, and without the game's
@@ -427,7 +435,7 @@ mod texture {
         assert_eq!(tiles(&link(&[(FILE, &file)], &[TERRAIN])), told);
         // A host answers for the kind: its no is believed.
         let host = hosted(&[("atlas key", "stone")]);
-        let found = link_with(&[(FILE, &file)], &[], host, &LinkOptions::default());
+        let found = link_with(&[(FILE, &file)], &[], host, LinkOptions::default());
         assert_eq!(tiles(&found), told);
     }
 
@@ -437,7 +445,7 @@ mod texture {
             &[(FILE, &textured("demo_lamps"))],
             &[TERRAIN],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(
             said(&found, &KINDS),
@@ -465,7 +473,11 @@ mod texture {
             .find(|finding| said_of(finding).4 == "atlas key")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(
@@ -550,7 +562,7 @@ mod loot {
             &[(FILE, &dropping("loot_tables/blocks/stone.json"))],
             &[],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), []);
     }
@@ -576,7 +588,11 @@ mod loot {
             .find(|finding| said_of(finding).4 == "loot table")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(
@@ -586,7 +602,7 @@ mod loot {
             )
         );
         // No lint: told with the lints off too.
-        let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), &NO_LINTS);
+        let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), NO_LINTS);
         assert_eq!(said(&found, &KINDS).len(), 1);
     }
 }
@@ -645,7 +661,7 @@ mod lang {
     fn b11_a_key_the_host_says_the_game_has_is_no_finding() {
         let file = named("tile.stone.name", "tile.stone.name");
         let host = hosted(&[("lang key", "tile.stone.name")]);
-        let found = link_with(&[(FILE, &file)], &[], host, &LinkOptions::default());
+        let found = link_with(&[(FILE, &file)], &[], host, LinkOptions::default());
         assert_eq!(said(&found, &KINDS), []);
     }
 
@@ -679,11 +695,15 @@ mod lang {
             .find(|finding| said_of(finding).4 == "lang key")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         // A lint.
-        let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), &NO_LINTS);
+        let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), NO_LINTS);
         assert_eq!(said(&found, &KINDS), []);
     }
 
@@ -736,17 +756,18 @@ fn b12_a_block_of_the_stack_or_of_the_game_is_no_finding() {
         &[(FILE, &placed_on(r#""host:block""#))],
         &[],
         host,
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &BLOCK_KINDS), []);
 }
 
 #[test]
 fn b12_a_block_nothing_defines_is_an_error_at_the_member_that_names_it() {
-    let file = placed_on(r#""demo:none", {"name": "demo:nothing"}"#);
-    let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), &NO_LINTS);
     const FILTER: &str =
         "minecraft:block/components/minecraft:placement_filter/conditions/0/block_filter";
+
+    let file = placed_on(r#""demo:none", {"name": "demo:nothing"}"#);
+    let found = link_with(&[(FILE, &file)], &[], LoadOptions::default(), NO_LINTS);
     assert_eq!(
         said(&found, &BLOCK_KINDS),
         [
@@ -773,7 +794,11 @@ fn b12_a_block_nothing_defines_is_an_error_at_the_member_that_names_it() {
         .find(|finding| said_of(finding).4 == "block")
         .unwrap();
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("bp 1")
     );
     // The game's link pass holds the descriptor: its line.
@@ -789,12 +814,13 @@ fn b12_a_block_nothing_defines_is_an_error_at_the_member_that_names_it() {
 /// internal assertions for them, no content-log line: informations.
 #[test]
 fn b12_a_state_the_block_does_not_have_and_a_value_it_cannot_take_are_informations() {
+    const FILTER: &str =
+        "minecraft:block/components/minecraft:placement_filter/conditions/0/block_filter";
+
     let file = placed_on(
         r#"{"name": "demo:base", "states": {"demo:dim": true}}, {"name": "demo:base", "states": {"demo:lit": 3}}"#,
     );
     let found = link(&[(FILE, &file), BASE], &[]);
-    const FILTER: &str =
-        "minecraft:block/components/minecraft:placement_filter/conditions/0/block_filter";
     assert_eq!(
         said(&found, &BLOCK_KINDS),
         [
@@ -1025,6 +1051,8 @@ fn paths(found: &bedrock_addon::diagnostic::Diagnostics, kinds: &[&str]) -> Vec<
 /// at.
 #[test]
 fn a_finding_in_a_permutation_behind_a_skipped_one_is_at_the_index_of_the_file() {
+    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
+
     // A legacy file: no component is gated in a cereal one.
     let file = r#"{"format_version": "1.21.60", "minecraft:block": {
         "description": {"identifier": "demo:lamp", "states": {"demo:lit": [false, true]}},
@@ -1054,7 +1082,6 @@ fn a_finding_in_a_permutation_behind_a_skipped_one_is_at_the_index_of_the_file()
         .1;
     assert_eq!(block.permutations.len(), 2, "{:#?}", block.diagnostics());
     let found = set.link_with(&NO_LINTS);
-    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
     assert_eq!(
         paths(&found, &BLOCK_KINDS),
         [
@@ -1071,6 +1098,8 @@ fn a_finding_in_a_permutation_behind_a_skipped_one_is_at_the_index_of_the_file()
 /// block.
 #[test]
 fn a_finding_in_a_permutation_of_an_older_file_behind_a_skipped_one_is_at_the_index_of_the_file() {
+    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
+
     for skipped in [
         r#"{"condition": "q.block_state('demo:lit') == false", "components": {"minecraft:breathability": "air"}}"#,
         r#"{"condition": "q.block_state('demo:lit') == false", "components": {"minecraft:breathability": "solid"}}"#,
@@ -1110,7 +1139,6 @@ fn a_finding_in_a_permutation_of_an_older_file_behind_a_skipped_one_is_at_the_in
             block.diagnostics()
         );
         let found = set.link_with(&NO_LINTS);
-        const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
         assert_eq!(
             paths(&found, &BLOCK_KINDS),
             [
@@ -1126,6 +1154,8 @@ fn a_finding_in_a_permutation_of_an_older_file_behind_a_skipped_one_is_at_the_in
 /// pass names the last by the index the file has it at.
 #[test]
 fn a_finding_behind_permutations_a_step_and_a_rule_skip_is_at_the_index_of_the_file() {
+    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
+
     let file = r#"{"format_version": "1.21.60", "minecraft:block": {
         "description": {"identifier": "demo:lamp", "states": {"demo:lit": [false, true]}},
         "components": {},
@@ -1156,7 +1186,6 @@ fn a_finding_behind_permutations_a_step_and_a_rule_skip_is_at_the_index_of_the_f
         .1;
     assert_eq!(block.permutations.len(), 2, "{:#?}", block.diagnostics());
     let found = set.link_with(&NO_LINTS);
-    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
     assert_eq!(
         paths(&found, &BLOCK_KINDS),
         [
@@ -1195,6 +1224,12 @@ fn a_number_no_double_holds_refuses_the_block_before_any_permutation_is_checked(
 #[test]
 fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_the_path_of_the_file()
  {
+    const AT: &str = "minecraft:block/permutations";
+
+    const TICKING: &str = "components/minecraft:queued_ticking";
+
+    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
+
     use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon::document::Content;
     use bedrock_addon::families::block::{Block, history};
@@ -1242,8 +1277,6 @@ fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_
         told.dedup();
         told
     };
-    const AT: &str = "minecraft:block/permutations";
-    const TICKING: &str = "components/minecraft:queued_ticking";
     let mut expected = vec![
         format!("DroppedField {AT}/0"),
         format!("DroppedField {AT}/2"),
@@ -1297,7 +1330,6 @@ fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_
     let pack = super::super::common::behavior_pack(ALLOW_LISTED, &[(FILE, &file)]);
     let set = super::super::common::stacks_of(vec![pack], Vec::new(), LoadOptions::default());
     let found = set.link_with(&NO_LINTS);
-    const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
     assert_eq!(
         paths(&found, &BLOCK_KINDS),
         [format!("{AT}/1/{FILTER}"), format!("{AT}/3/{FILTER}")],

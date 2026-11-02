@@ -134,7 +134,11 @@ fn s01_top_pack_wins_with_a_shadow_info_deviation() {
     let shadowed = found(registry, "ShadowedDefinition", Severity::Info);
     assert_eq!(shadowed.len(), 1, "{:?}", all(registry));
     assert_eq!(
-        shadowed[0].location.pack.as_ref().and_then(|p| p.index()),
+        shadowed[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(1)
     );
 }
@@ -359,7 +363,10 @@ fn s01_three_files_of_one_pack_and_a_lower_pack() {
             .iter()
             .map(|f| {
                 (
-                    f.location.pack.as_ref().and_then(|p| p.index()),
+                    f.location
+                        .pack
+                        .as_ref()
+                        .and_then(bedrock_addon::pack::PackRef::index),
                     f.location.path.as_ref().unwrap().as_str().to_owned(),
                 )
             })

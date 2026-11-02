@@ -10,17 +10,17 @@ use super::{FILE, entity_with, kept_unresolved, said_of, unresolved};
 
 const SPARK: &str = r#"{"format_version": "1.10.0", "particle_effect": {"description": {"identifier": "demo:spark", "basic_render_parameters": {"material": "particles_alpha", "texture": "textures/particle/particles"}}, "components": {"minecraft:emitter_lifetime_once": {}, "minecraft:emitter_rate_instant": {"num_particles": 1}}}}"#;
 
-fn pet(a: &str, b: &str, c: &str, d: &str, e: &str) -> String {
+fn pet(explode: &str, projectile: &str, on_hit: &str, interact: &str, event: &str) -> String {
     entity_with(
         "1.26.50",
         "demo:pet",
         &format!(
-            r#""minecraft:explode": {{"particle_effect": "{a}"}},
-            "minecraft:projectile": {{"particle": "{b}", "on_hit": {{"particle_on_hit": {{"particle_type": "{c}"}}}}}},
-            "minecraft:interact": {{"interactions": [{{"particle_on_start": {{"particle_type": "{d}"}}}}]}}"#
+            r#""minecraft:explode": {{"particle_effect": "{explode}"}},
+            "minecraft:projectile": {{"particle": "{projectile}", "on_hit": {{"particle_on_hit": {{"particle_type": "{on_hit}"}}}}}},
+            "minecraft:interact": {{"interactions": [{{"particle_on_start": {{"particle_type": "{interact}"}}}}]}}"#
         ),
         &format!(
-            r#", "events": {{"demo:puff": {{"sequence": [{{"emit_particle": {{"particle": "{e}"}}}}]}}}}"#
+            r#", "events": {{"demo:puff": {{"sequence": [{{"emit_particle": {{"particle": "{event}"}}}}]}}}}"#
         ),
     )
 }
@@ -112,7 +112,7 @@ fn e17_a_host_answers_for_the_games_particle_effects() {
         &files,
         &[],
         hosted(&[("particle", "minecraft:basic_flame_particle")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(said_of(&found, "particle").is_empty(), "{found:?}");
 }

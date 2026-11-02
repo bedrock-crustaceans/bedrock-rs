@@ -447,6 +447,7 @@ fn color_of(members: &str) -> bedrock_addon::document::Document<FogSettings> {
     loaded(parse(&latest(&air(members)), &pack()))
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// TOML `vanilla = "clamped silently by colorFromIntArray3"`.
 #[test]
 fn c10_colour_255_deviation() {
@@ -495,6 +496,7 @@ fn c10_colour_255_deviation() {
     }
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn c10b_coeff_clamp() {
     let media = r##""volumetric": {"media_coefficients": {"air": {"scattering": [1.5, -0.2, 0.5], "absorption": "#FF8000"}}}"##;
@@ -572,6 +574,7 @@ fn c12_transition_on_air() {
     round_trip(&document, |t| parse(t, &pack()));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn c13_partial_setting_zero_fill() {
     let document = color_of(r##""fog_color": "#FF0000""##);

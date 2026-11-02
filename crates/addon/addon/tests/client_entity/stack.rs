@@ -119,6 +119,7 @@ fn p01_merge_details() {
     assert!(!ghost_of(&set).unwrap().hide_armor());
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn p01_a_later_scale_at_or_below_zero_keeps_the_earlier_one() {
     let low = ghost("1.26.0", r#""held_item_scale": 2.0"#);
@@ -390,6 +391,13 @@ fn an_attachables_file_that_is_no_client_entity_is_left_to_the_attachables() {
 
 #[test]
 fn a_2_000_identifier_stack_merges_and_ignores_by_min_engine_version() {
+    fn borrowed(files: &[(String, String)]) -> Vec<(&str, &str)> {
+        files
+            .iter()
+            .map(|(path, text)| (path.as_str(), text.as_str()))
+            .collect()
+    }
+
     // 3 000 files in two packs: the lower pack defines 2 000 identifiers; the upper pack
     // defines the first 1 000 again, alternately with the same `min_engine_version` (merged
     // into the lower definition) and with a lower one (ignored, with a
@@ -413,12 +421,6 @@ fn a_2_000_identifier_stack_merges_and_ignores_by_min_engine_version() {
     let upper: Vec<(String, String)> = (0..IDENTIFIERS / 2)
         .map(|i| file(i, if i % 2 == 0 { "1.20.0" } else { "1.10.0" }, "upper"))
         .collect();
-    fn borrowed(files: &[(String, String)]) -> Vec<(&str, &str)> {
-        files
-            .iter()
-            .map(|(path, text)| (path.as_str(), text.as_str()))
-            .collect()
-    }
     let (upper, lower) = (borrowed(&upper), borrowed(&lower));
     let set = stack(&[pack(&upper), pack(&lower)]);
     let registry = entities(&set);
@@ -466,13 +468,6 @@ fn a_2_000_identifier_stack_merges_and_ignores_by_min_engine_version() {
 #[cfg(feature = "item")]
 #[test]
 fn an_unreadable_entity_file_is_reported_once_by_the_stack() {
-    use bedrock_addon::diagnostic::Diagnostic;
-
-    let files = [("entity/ghost.json", "{}"), ("entity/other.json", "{}")];
-    let set = stack_with_unread(
-        &[pack(&files), pack(&files)],
-        &["p1/entity/ghost.json", "p2/entity/ghost.json"],
-    );
     fn unread<'a>(findings: impl Iterator<Item = &'a Diagnostic>) -> Vec<(String, Severity)> {
         let mut found: Vec<(String, Severity)> = findings
             .filter(|f| f.code.name() == "ReadError")
@@ -490,6 +485,14 @@ fn an_unreadable_entity_file_is_reported_once_by_the_stack() {
         found.sort_by(|a, b| a.0.cmp(&b.0));
         found
     }
+
+    use bedrock_addon::diagnostic::Diagnostic;
+
+    let files = [("entity/ghost.json", "{}"), ("entity/other.json", "{}")];
+    let set = stack_with_unread(
+        &[pack(&files), pack(&files)],
+        &["p1/entity/ghost.json", "p2/entity/ghost.json"],
+    );
     let once = [
         ("pack 1/entity/ghost.json".to_owned(), Severity::Error),
         ("pack 2/entity/ghost.json".to_owned(), Severity::Error),

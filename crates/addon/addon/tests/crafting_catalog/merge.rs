@@ -106,7 +106,11 @@ fn m05_a_duplicate_is_dropped_with_vanilla_s_error_and_the_first_placement_wins(
         DiagnosticCode::IdentifierCollision { .. }
     ));
     assert_eq!(
-        finding.location.path.as_ref().map(|p| p.as_str()),
+        finding
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some(PATH)
     );
     assert_eq!(

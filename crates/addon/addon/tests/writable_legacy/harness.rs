@@ -10,9 +10,7 @@ use bedrock_addon::pack::PackType;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::vanilla::ActorType;
 use bedrock_addon::version::{FormatVersion, FormatVersionInput, MinEngineVersion};
-use bedrock_addon::versioning::testing::{
-    Checks, Run, step_output,
-};
+use bedrock_addon::versioning::testing::{Checks, Run, step_output};
 use bedrock_addon::versioning::{Upgrade, VersionStruct, Versioned};
 
 use document_types::{client, pack};
@@ -137,8 +135,18 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // components the steps make again on reading it; the judge counts what it no longer
     // finds beside the member against it: (a) the scalars of the seeded copy of the payload
     // that the replacement stands for, (b) the synthesised components of the newest text.
-    ("block", "minecraft:block/minecraft:block", "true", "legacy block written at its own version"),
-    ("block", "/menu_category/zz", "(present)", "legacy block written at its own version"),
+    (
+        "block",
+        "minecraft:block/minecraft:block",
+        "true",
+        "legacy block written at its own version",
+    ),
+    (
+        "block",
+        "/menu_category/zz",
+        "(present)",
+        "legacy block written at its own version",
+    ),
     // entity: places where the written text is right and nothing is to tell, and the
     // judge's rules have no outcome for it.
     //
@@ -147,7 +155,12 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // member, which gets the step's default at the member's new place, and counts the
     // default's members as the author's ("collateral"; at the place itself it knows them to
     // be the member's own).
-    ("entity", "minecraft:interact/*/on_interact", "{}", "value converted or moved by the upgrade"),
+    (
+        "entity",
+        "minecraft:interact/*/on_interact",
+        "{}",
+        "value converted or moved by the upgrade",
+    ),
     (
         "entity",
         "minecraft:behavior.follow_target_captain/leader_filters",
@@ -169,11 +182,36 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
         "4294967296",
         "value converted or moved by the upgrade",
     ),
-    ("entity", "/equip_item_slot", "4294967296", "value converted or moved by the upgrade"),
-    ("entity", "/drop_item_slot", "7", "value converted or moved by the upgrade"),
-    ("entity", "/drop_item_slot", "4294967296", "value converted or moved by the upgrade"),
-    ("entity", "/drop_item_slot", "123457", "value converted or moved by the upgrade"),
-    ("entity", "/equip_item_slot", "123457", "value converted or moved by the upgrade"),
+    (
+        "entity",
+        "/equip_item_slot",
+        "4294967296",
+        "value converted or moved by the upgrade",
+    ),
+    (
+        "entity",
+        "/drop_item_slot",
+        "7",
+        "value converted or moved by the upgrade",
+    ),
+    (
+        "entity",
+        "/drop_item_slot",
+        "4294967296",
+        "value converted or moved by the upgrade",
+    ),
+    (
+        "entity",
+        "/drop_item_slot",
+        "123457",
+        "value converted or moved by the upgrade",
+    ),
+    (
+        "entity",
+        "/equip_item_slot",
+        "123457",
+        "value converted or moved by the upgrade",
+    ),
     (
         "entity",
         "minecraft:projectile/should_bounce",
@@ -183,27 +221,102 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // (c) A component taken out that a step SPLITS into others, whose written form held a
     // default (the `false` of `pushable_by_entity`) equal to a scalar the author wrote in a
     // member the upgrade carries by its absence: nothing of the author's is lost.
-    ("entity", "/minecraft:pushable", "(removed)", "value converted or moved by the upgrade"),
+    (
+        "entity",
+        "/minecraft:pushable",
+        "(removed)",
+        "value converted or moved by the upgrade",
+    ),
     // The same for a `hurt_when_wet: true` taken out, or replaced by a value that makes no
     // rain entry: the entry the 1.12.0 step made of the `true` goes, and
     // its `damage_per_tick: 1`, the step's constant, is the one scalar the judge counts as
     // lost beside the component, which is told `DroppedComponent`. The constant is no value
     // of the author's. A row for each such replacement and no other: `true`, `false` and what is BELOW the
     // component are judged.
-    ("entity", "/minecraft:hurt_when_wet", "(removed)", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "7", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "\"x\"", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "null", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "[]", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "{}", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "[7]", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "{\"a\": 1}", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "1e39", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "-1e999", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "0.5", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "4294967296", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "\"zz:bogus\"", "taken-out component leaves a step constant"),
-    ("entity", "/minecraft:hurt_when_wet", "123457", "taken-out component leaves a step constant"),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "(removed)",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "7",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "\"x\"",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "null",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "[]",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "{}",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "[7]",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "{\"a\": 1}",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "1e39",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "-1e999",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "0.5",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "4294967296",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "\"zz:bogus\"",
+        "taken-out component leaves a step constant",
+    ),
+    (
+        "entity",
+        "/minecraft:hurt_when_wet",
+        "123457",
+        "taken-out component leaves a step constant",
+    ),
     // entity: `true` put where the written text has `true` already, so that the
     // judge has no scalar to see it by. ((a) of that entry, a member read as its default
     // `true` when the file's is of another type, is an outcome of the judge:
@@ -211,7 +324,12 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // What stays of (a): the two members of `pushable`, read as `true` when they are of
     // another type (told there) and written as the PRESENCE of `pushable_by_entity` /
     // `pushable_by_block` so that the text holds no `true` to see it by.
-    ("entity", "minecraft:pushable/is_pushable", "true", "no scalar left to see the value by"),
+    (
+        "entity",
+        "minecraft:pushable/is_pushable",
+        "true",
+        "no scalar left to see the value by",
+    ),
     (
         "entity",
         "minecraft:pushable/is_pushable_by_piston",
@@ -220,12 +338,32 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     ),
     // (b) A component of no typed version yet that is held as written, `true` included,
     // beside a `true` the step's own entries hold elsewhere.
-    ("entity", "/minecraft:hurt_on_condition", "true", "no scalar left to see the value by"),
-    ("entity", "/minecraft:despawn", "true", "no scalar left to see the value by"),
-    ("entity", "minecraft:despawn/filters", "true", "no scalar left to see the value by"),
+    (
+        "entity",
+        "/minecraft:hurt_on_condition",
+        "true",
+        "no scalar left to see the value by",
+    ),
+    (
+        "entity",
+        "/minecraft:despawn",
+        "true",
+        "no scalar left to see the value by",
+    ),
+    (
+        "entity",
+        "minecraft:despawn/filters",
+        "true",
+        "no scalar left to see the value by",
+    ),
     // (c) A bool `deals_damage` as its name (`true` → `"yes"`): a
     // conversion of the folder, as class (b) above.
-    ("entity", "/deals_damage", "true", "no scalar left to see the value by"),
+    (
+        "entity",
+        "/deals_damage",
+        "true",
+        "no scalar left to see the value by",
+    ),
     // (d) A member whose presence moves a sibling INTO its place (`attack_interval_min`
     // becomes `attack_interval.range_min`), which the judge then counts as gone
     // from beside it; and the one element of `on_death_array` that becomes an EMPTY
@@ -284,14 +422,39 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // trade table. A `true` at an integer member is read as vanilla's integer read reads
     // it, 1, and told at the member (`InvalidType`) in the words that tell of any
     // value of another type; the judge takes the same words for no word of the 1.
-    ("trade_table", "/total_exp_required", "true", "trade table upgrade"),
-    ("trade_table", "/num_to_select", "true", "trade table upgrade"),
+    (
+        "trade_table",
+        "/total_exp_required",
+        "true",
+        "trade table upgrade",
+    ),
+    (
+        "trade_table",
+        "/num_to_select",
+        "true",
+        "trade table upgrade",
+    ),
     // An item with the `trader_material_type` function below 1.18.20 is its five choices
     // `<item>:<n>`: the item's name is carried in each, and the function
     // goes into them; nothing of the author's is lost with the function there.
-    ("trade_table", "/functions", "(present)", "trade table upgrade"),
-    ("trade_table", "/functions/*", "(present)", "trade table upgrade"),
-    ("trade_table", "/functions/*/function", "(present)", "trade table upgrade"),
+    (
+        "trade_table",
+        "/functions",
+        "(present)",
+        "trade table upgrade",
+    ),
+    (
+        "trade_table",
+        "/functions/*",
+        "(present)",
+        "trade table upgrade",
+    ),
+    (
+        "trade_table",
+        "/functions/*/function",
+        "(present)",
+        "trade table upgrade",
+    ),
     // geometry: places where the written text is right and the judge counts a value
     // by its place. `preserve_model_pose` holds a file below 1.8 in its era's shape:
     // without it the file is written in the newest format, with the pivot the upgrade gives
@@ -328,7 +491,12 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // (`3` → `"3"`, `null` → `""`), with `InvalidType` at the entry: the same finding
     // whatever the value, so the judge, whose base is the generated `"zz": 3`, sees no new
     // word for the next value.
-    ("item", "minecraft:icon/textures/zz", "*", "component dropped or read as the default"),
+    (
+        "item",
+        "minecraft:icon/textures/zz",
+        "*",
+        "component dropped or read as the default",
+    ),
     // (b) The same of a `null` where the generated base holds a value of another type: the
     // base's component is dropped for that value (told at the member and at the
     // component), a `null` is read as the member's default with the same finding at the
@@ -340,7 +508,12 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
         "null",
         "component dropped or read as the default",
     ),
-    ("item", "minecraft:storage_item/max_slots", "null", "component dropped or read as the default"),
+    (
+        "item",
+        "minecraft:storage_item/max_slots",
+        "null",
+        "component dropped or read as the default",
+    ),
     (
         "item",
         "minecraft:storage_item/allow_nested_storage_items",
@@ -352,7 +525,12 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
     // name the side-car then holds (`custom_components_v1`) is the scalar the judge misses
     // in the document WITHOUT the keyed component, where the list's entry becomes the
     // keyed one and no list is written.
-    ("item", "components/demo:shake", "(removed)", "component dropped or read as the default"),
+    (
+        "item",
+        "components/demo:shake",
+        "(removed)",
+        "component dropped or read as the default",
+    ),
 ];
 
 /// Starting versions of a step whose document has no JSON text to compare: the family,
@@ -798,7 +976,7 @@ include!("more.rs");
 /// Every scalar of `value` as a text that is equal for equal values, and every key (`k:`).
 fn leaves(value: &Value, out: &mut Vec<String>) {
     if let Some(object) = value.as_object() {
-        for (key, member) in object.iter() {
+        for (key, member) in object {
             out.push(format!("k:{}", key.as_str()));
             leaves(member, out);
         }
@@ -819,7 +997,7 @@ fn leaves_outside(value: &Value, path: &[String], out: &mut Vec<String>) -> bool
     };
     let mut found = false;
     if let Some(object) = value.as_object() {
-        for (key, member) in object.iter() {
+        for (key, member) in object {
             out.push(format!("k:{}", key.as_str()));
             if key.as_str() == first && !found {
                 found = leaves_outside(member, rest, out);
@@ -865,9 +1043,10 @@ fn leaves_of_members_kept<'a>(
         None => (None, None),
     };
     if let Some(object) = value.as_object() {
-        for (key, member) in object.iter() {
+        for (key, member) in object {
             let key = key.as_str();
-            let of = |other: Option<&'a Value>| -> Option<&'a Value> { other?.as_object()?.get(key) };
+            let of =
+                |other: Option<&'a Value>| -> Option<&'a Value> { other?.as_object()?.get(key) };
             let (file, ours, bare) = (of(file), of(ours), of(bare));
             if file.is_none() && ours.is_none() && bare.is_some() {
                 continue;
@@ -895,7 +1074,7 @@ fn leaves_of_members_kept<'a>(
 /// The path of every member and element of `value`, indices as `*`.
 fn members(value: &Value, at: &str, out: &mut BTreeSet<String>) {
     if let Some(object) = value.as_object() {
-        for (key, member) in object.iter() {
+        for (key, member) in object {
             let path = format!("{at}/{}", key.as_str());
             members(member, &path, out);
             out.insert(path);
@@ -936,13 +1115,15 @@ impl Read {
         self.findings
             .iter()
             .zip(&self.at)
-            .filter(|(text, _)| match left.iter().position(|known| known == *text) {
-                Some(index) => {
-                    left.swap_remove(index);
-                    false
-                }
-                None => true,
-            })
+            .filter(
+                |(text, _)| match left.iter().position(|known| known == *text) {
+                    Some(index) => {
+                        left.swap_remove(index);
+                        false
+                    }
+                    None => true,
+                },
+            )
             .map(|(_, at)| at)
             .collect()
     }
@@ -1012,9 +1193,13 @@ fn fresh(base: &[String], ours: &[String]) -> Vec<String> {
 }
 
 /// Whether the number leaf `leaf` is the `f32` nearest to the number `token` spells.
-#[allow(
+#[expect(
     clippy::cast_possible_truncation,
     reason = "the nearest f32 is the question"
+)]
+#[expect(
+    clippy::float_cmp,
+    reason = "the two are the nearest f32 of a number: equal when they are the same f32"
 )]
 fn near(leaf: &str, token: &str) -> bool {
     let (Some(held), Ok(spelled)) = (
@@ -1052,6 +1237,37 @@ fn carried_in(class: Class) -> &'static [&'static str] {
         Class::Integer | Class::Fraction | Class::Wide | Class::OtherInt => &["n:"],
         Class::String | Class::OtherString => &["s:", "k:"],
         _ => &[],
+    }
+}
+
+/// The read of the document without the member at a node, once judged.
+enum Without {
+    /// Not asked for yet.
+    Unknown,
+    /// Refused, or not written.
+    Unread,
+    /// Loaded and written.
+    Read(Read),
+}
+
+impl Without {
+    /// The read, when the document without the member at `node` loads and is written; the
+    /// document is read the first time this is asked.
+    fn get(
+        &mut self,
+        read: &dyn Fn(&str) -> Outcome,
+        base: &Base<'_>,
+        node: &Node,
+    ) -> Option<&Read> {
+        if matches!(self, Without::Unknown) {
+            *self = without(base.text, node)
+                .and_then(|text| read_text(read, &text).ok())
+                .map_or(Without::Unread, |read| Without::Read(read.0));
+        }
+        match self {
+            Without::Read(read) => Some(read),
+            Without::Unknown | Without::Unread => None,
+        }
     }
 }
 
@@ -1272,36 +1488,35 @@ fn moved_to(base: &Base<'_>, node: &Node, at: &[String]) -> bool {
     })
 }
 
-/// What became of the document with `replacement` at `node`: the outcome, or the fault's kind
-/// and detail.
-fn judge(
-    read: &dyn Fn(&str) -> Outcome,
-    base: &Base<'_>,
-    node: &Node,
-    (replacement, twin, class): (&str, &str, Class),
-    removed: &mut Option<Option<Read>>,
-) -> Result<&'static str, (&'static str, String)> {
-    let with = |value: &str| {
-        format!(
-            "{}{value}{}",
-            &base.text[..node.start],
-            &base.text[node.end..]
-        )
-    };
-    let (ours, outcome) = match read_text(read, &with(replacement)) {
-        Ok(read) => (Some(read.0), read.1),
-        Err(None) => return Ok("refused"),
-        Err(Some(outcome)) => (None, outcome),
-    };
-    let known = &base.read.findings;
-    let mut left = known.clone();
-    // The new findings at another place than the replaced one, and whether one of them is
-    // at the member the value moved to.
-    let mut told = Vec::new();
-    let mut elsewhere: Vec<Vec<String>> = Vec::new();
-    let mut moved = false;
-    // A new finding at the place or below it, and one at an enclosing member.
-    let (mut said_here, mut said_above) = (false, false);
+/// The text of the unchanged document with `value` at `node`.
+fn replaced(base: &Base<'_>, node: &Node, value: &str) -> String {
+    format!(
+        "{}{value}{}",
+        &base.text[..node.start],
+        &base.text[node.end..]
+    )
+}
+
+/// The new findings of the load of the changed document, by where they are.
+#[derive(Default)]
+struct Newly {
+    /// The ones at another place than the replaced one, as `code at path`.
+    told: Vec<String>,
+    /// The paths of those.
+    elsewhere: Vec<Vec<String>>,
+    /// Whether one of them is at the member the value moved to.
+    moved: bool,
+    /// One is at the place or below it.
+    said_here: bool,
+    /// One is at an enclosing member.
+    said_above: bool,
+}
+
+/// The findings of the load of the document with `replacement` at `node` that the unchanged
+/// document does not have.
+fn new_findings(base: &Base<'_>, node: &Node, replacement: &str, outcome: &Outcome) -> Newly {
+    let mut left = base.read.findings.clone();
+    let mut newly = Newly::default();
     for finding in &outcome.findings {
         let text = finding_text(finding);
         if let Some(index) = left.iter().position(|known| *known == text) {
@@ -1310,16 +1525,16 @@ fn judge(
         }
         let at = path_of(finding);
         if at.starts_with(&node.path) {
-            said_here = true;
+            newly.said_here = true;
             continue;
         }
         if !at.is_empty() && node.path.starts_with(&at) {
-            said_above = true;
+            newly.said_above = true;
             continue;
         }
-        elsewhere.push(at.clone());
+        newly.elsewhere.push(at.clone());
         if moved_to(base, node, &at) {
-            moved = true;
+            newly.moved = true;
             println!(
                 "legacy-elsewhere: {} | {} | {replacement} | {} at `{}`",
                 base.family,
@@ -1328,108 +1543,76 @@ fn judge(
                 finding.location.json_path
             );
         }
-        told.push(format!(
+        newly.told.push(format!(
             "{} at `{}`",
             code(finding),
             finding.location.json_path
         ));
     }
-    if said_above {
-        return Ok("said");
-    }
-    if said_here {
-        // Told at the member alone: what the written text loses BESIDE the member (a
-        // component that goes whole for one member of another type) is told above the
-        // member or at what is lost, or it is a fault.
-        if let Some(ours) = &ours {
-            // A finding the unchanged document has too, at the member that holds a lost
-            // scalar, tells of the loss as well (see `judge_removed`).
-            let told_at: Vec<Vec<String>> = elsewhere
-                .iter()
-                .cloned()
-                .chain(outcome.findings.iter().map(path_of))
-                .collect();
-            let lost = lost_beside(base, node, ours, &told_at);
-            if !lost.is_empty() {
-                return Err((
-                    "collateral",
-                    format!(
-                        "told at the member alone, and the written text loses {lost:?} beside it; new findings elsewhere: {told:?}"
-                    ),
-                ));
-            }
-        }
-        return Ok("said");
-    }
-    if moved {
-        // A finding the unchanged document does not have, at the member a step moved the
-        // value to. A new finding at any OTHER place says nothing of this one.
-        return Ok("said elsewhere");
-    }
-    let Some(ours) = ours else {
-        return Err((
-            "not-written",
-            format!(
-                "{}; new findings elsewhere: {told:?}",
-                outcome.written.err().unwrap_or_default()
-            ),
-        ));
-    };
-    let new = fresh(&base.read.leaves, &ours.leaves);
-    if holds(base.family, &new, replacement) || read_non_strict(base, node, replacement, &new, &ours.leaves) {
-        return Ok("held");
-    }
-    // The document without the member: what a `null` there is read as, and what of `W` is
-    // owed to the member.
-    let removed = removed.get_or_insert_with(|| {
-        let text = without(base.text, node)?;
-        read_text(read, &text).ok().map(|read| read.0)
-    });
-    // Held where the replaced value held the same scalar (`true` for `{"value": true}`, or
-    // for a `"true"` the legacy reader takes as the bool): the written text has it and the
-    // document without the member does not.
-    if let Some(removed) = removed.as_ref()
-        && holds(
-            base.family,
-            &fresh(&removed.leaves, &ours.leaves),
-            replacement,
-        )
-    {
-        return Ok("held");
-    }
-    let nothing = matches!(class, Class::Null | Class::EmptyArray | Class::EmptyObject);
-    // The document without the member, but for the order of its members (a step that
-    // inserts an absent member puts it last).
-    if nothing
-        && let Some(removed) = removed.as_ref()
-        && same_but_order(removed, &ours)
-    {
-        return Ok("absent");
-    }
-    // A number no double holds is written as the largest finite double of its sign. Each
-    // number has ONE finding (`one_finding_per_number.rs`): where the place is told of
-    // already, by a finding the unchanged document has in the same words (a definition
-    // that is no object, whatever it is), that finding stands for the clamp too.
-    if replacement == "-1e999"
-        && new.iter().any(|leaf| leaf == "n:-1.7976931348623157e308")
-        && outcome.findings.iter().any(|finding| {
-            let at = path_of(finding);
-            !at.is_empty() && node.path.starts_with(&at)
-        })
-    {
-        return Ok("said");
-    }
-    let detail = |what: &str| {
-        let gone = fresh(&ours.leaves, &base.read.leaves);
+    newly
+}
+
+/// Whether a leaf is the largest finite double of the negative sign.
+fn clamped_low(leaves: &[String]) -> bool {
+    leaves
+        .iter()
+        .any(|leaf| leaf == "n:-1.7976931348623157e308")
+}
+
+/// Whether a finding is at a member above `node`.
+fn told_above(node: &Node, outcome: &Outcome) -> bool {
+    outcome.findings.iter().any(|finding| {
+        let at = path_of(finding);
+        !at.is_empty() && node.path.starts_with(&at)
+    })
+}
+
+/// A fault of a replacement: its kind and detail.
+type Fault = (&'static str, String);
+
+/// What `judge` knows of the changed document while it decides.
+struct Changed<'a, 'b> {
+    base: &'a Base<'b>,
+    node: &'a Node,
+    /// The load of the changed document.
+    outcome: &'a Outcome,
+    /// What the changed document is written as.
+    ours: &'a Read,
+    class: Class,
+    replacement: &'a str,
+    /// A second value of the replacement's class.
+    twin: &'a str,
+    /// The leaves the written text has and the unchanged document's does not.
+    new: Vec<String>,
+    /// The new findings at another place, as `code at path`.
+    told: Vec<String>,
+}
+
+impl Changed<'_, '_> {
+    /// The fault text: `what`, with what the written text lost and gained.
+    fn detail(&self, what: &str) -> String {
+        let gone = fresh(&self.ours.leaves, &self.base.read.leaves);
         format!(
-            "{what}; written without {:?}, with {:?}; new findings elsewhere: {told:?}",
+            "{what}; written without {:?}, with {:?}; new findings elsewhere: {:?}",
             gone.iter().take(6).collect::<Vec<_>>(),
-            new.iter().take(6).collect::<Vec<_>>()
+            self.new.iter().take(6).collect::<Vec<_>>(),
+            self.told
         )
-    };
-    if ours.written == base.read.written {
+    }
+
+    /// Whether the number class is of the ones a bound can clamp.
+    fn is_number(&self) -> bool {
+        matches!(
+            self.class,
+            Class::Integer | Class::Fraction | Class::Wide | Class::Huge | Class::OtherInt
+        )
+    }
+
+    /// The verdict when the written text is the unchanged document's own.
+    fn written_as_before(&self, read: &dyn Fn(&str) -> Outcome) -> Result<&'static str, Fault> {
+        let (base, node, outcome) = (self.base, self.node, self.outcome);
         // A member the load says it does not read, whatever its value.
-        if not_read(read, base, node, &outcome) {
+        if not_read(read, base, node, outcome) {
             return Ok("told as not read");
         }
         // Both loads say the enclosing component is rewritten as a whole (a legacy reader
@@ -1449,20 +1632,16 @@ fn judge(
         }
         // The same value in another form (a short form for the long one the document has):
         // a second value of the replacement's class is written as another text.
-        if !carried_in(class).is_empty()
-            && let Ok((other, _)) = read_text(read, &with(twin))
-            && other.written != ours.written
+        if !carried_in(self.class).is_empty()
+            && let Ok((other, _)) = read_text(read, &replaced(base, node, self.twin))
+            && other.written != self.ours.written
         {
             return Ok("carried");
         }
-        if matches!(
-            class,
-            Class::Integer | Class::Fraction | Class::Wide | Class::Huge | Class::OtherInt
-        ) && clamped_at(node, &outcome)
-        {
+        if self.is_number() && clamped_at(node, outcome) {
             return Ok("said");
         }
-        if rewritten_at(node, &outcome) {
+        if rewritten_at(node, outcome) {
             return Ok("said");
         }
         // The UNCHANGED document was told at the place that its value is not read (a
@@ -1482,19 +1661,25 @@ fn judge(
                         .iter()
                         .any(|finding| finding_text(finding) == *text)
             });
-        if told_before && holds(base.family, &base.read.leaves, replacement) {
+        if told_before && holds(base.family, &base.read.leaves, self.replacement) {
             return Ok("held");
         }
-        return Err((
+        Err((
             "no-effect",
-            detail("the written text is the unchanged document's"),
-        ));
+            self.detail("the written text is the unchanged document's"),
+        ))
     }
-    if let Some(removed) = removed.as_ref() {
+
+    /// The members of the unchanged document's written text that the replacement loses and
+    /// the document without the member (`removed`) keeps, other than what is the replaced
+    /// member's own or what the load says it drops.
+    fn lost_members(&self, removed: &Read) -> Vec<&String> {
+        let (base, node) = (self.base, self.node);
         let own = format!("/{}", node.starred().join("/"));
         // The places the load says it drops or replaces, indices as `*`; a finding at the
         // payload key or above says nothing of a member.
-        let dropped: Vec<String> = outcome
+        let dropped: Vec<String> = self
+            .outcome
             .findings
             .iter()
             .filter(|finding| NOT_READ.contains(&code(finding).as_str()))
@@ -1514,11 +1699,12 @@ fn judge(
                 format!("/{}", starred.join("/"))
             })
             .collect();
-        let lost: Vec<&String> = base
-            .read
+        base.read
             .members
             .iter()
-            .filter(|member| !ours.members.contains(*member) && removed.members.contains(*member))
+            .filter(|member| {
+                !self.ours.members.contains(*member) && removed.members.contains(*member)
+            })
             // What is below the replaced place is the replaced member's own, also where
             // the document without the member gets a default there (a step that inserts
             // the member when it is absent).
@@ -1537,11 +1723,195 @@ fn judge(
                         .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
                 })
             })
-            .collect();
+            .collect()
+    }
+
+    /// Whether a float member holds the replacement as the nearest `f32`, or the value is
+    /// carried as another: told from an integer member saturating at a bound (the same
+    /// `f32`) by the second number, which a float holds as another.
+    fn carried_by_the_twin(&self, read: &dyn Fn(&str) -> Outcome) -> Option<&'static str> {
+        let base = self.base;
+        let prefixes = carried_in(self.class);
+        if prefixes.is_empty() {
+            return None;
+        }
+        let (other, _) = read_text(read, &replaced(base, self.node, self.twin)).ok()?;
+        let other_new = fresh(&base.read.leaves, &other.leaves);
+        let of_type = |leaves: &[String]| -> Vec<String> {
+            leaves
+                .iter()
+                .filter(|leaf| prefixes.iter().any(|prefix| leaf.starts_with(prefix)))
+                .cloned()
+                .collect()
+        };
+        if self.class == Class::Wide {
+            (self.new.iter().any(|leaf| near(leaf, self.replacement))
+                && other_new
+                    .iter()
+                    .any(|leaf| near(leaf, self.twin) && !near(leaf, self.replacement)))
+            .then_some("held")
+        } else {
+            (of_type(&self.new) != of_type(&other_new)).then_some("carried")
+        }
+    }
+
+    /// Whether the unchanged document was told at an enclosing member that its value is
+    /// rewritten as a whole (a legacy reader whose failed validation keeps the component's
+    /// defaults), this one is not: the replacement makes the component read, and what
+    /// changes beside it is what that finding said.
+    fn component_restored(&self) -> bool {
+        let (base, node) = (self.base, self.node);
+        base.read
+            .findings
+            .iter()
+            .zip(&base.read.at)
+            .any(|(text, at)| {
+                component_level(at)
+                    && *at != node.path
+                    && node.path.starts_with(at)
+                    && text.starts_with("ValueRewritten")
+                    && !self
+                        .outcome
+                        .findings
+                        .iter()
+                        .any(|finding| finding_text(finding) == *text)
+            })
+    }
+}
+
+/// Whether the written text of a replacement told at the member alone loses nothing beside
+/// it that no finding tells of.
+fn told_alone(
+    base: &Base<'_>,
+    node: &Node,
+    ours: &Read,
+    elsewhere: &[Vec<String>],
+    outcome: &Outcome,
+    told: &[String],
+) -> Result<(), Fault> {
+    // A finding the unchanged document has too, at the member that holds a lost
+    // scalar, tells of the loss as well (see `judge_removed`).
+    let told_at: Vec<Vec<String>> = elsewhere
+        .iter()
+        .cloned()
+        .chain(outcome.findings.iter().map(path_of))
+        .collect();
+    let lost = lost_beside(base, node, ours, &told_at);
+    if !lost.is_empty() {
+        return Err((
+            "collateral",
+            format!(
+                "told at the member alone, and the written text loses {lost:?} beside it; new findings elsewhere: {told:?}"
+            ),
+        ));
+    }
+    Ok(())
+}
+
+/// What became of the document with `replacement` at `node`: the outcome, or the fault's kind
+/// and detail.
+fn judge(
+    read: &dyn Fn(&str) -> Outcome,
+    base: &Base<'_>,
+    node: &Node,
+    (replacement, twin, class): (&str, &str, Class),
+    removed: &mut Without,
+) -> Result<&'static str, Fault> {
+    let (ours, outcome) = match read_text(read, &replaced(base, node, replacement)) {
+        Ok(read) => (Some(read.0), read.1),
+        Err(None) => return Ok("refused"),
+        Err(Some(outcome)) => (None, outcome),
+    };
+    let Newly {
+        told,
+        elsewhere,
+        moved,
+        said_here,
+        said_above,
+    } = new_findings(base, node, replacement, &outcome);
+    if said_above {
+        return Ok("said");
+    }
+    if said_here {
+        // Told at the member alone: what the written text loses BESIDE the member (a
+        // component that goes whole for one member of another type) is told above the
+        // member or at what is lost, or it is a fault.
+        if let Some(ours) = &ours {
+            told_alone(base, node, ours, &elsewhere, &outcome, &told)?;
+        }
+        return Ok("said");
+    }
+    if moved {
+        // A finding the unchanged document does not have, at the member a step moved the
+        // value to. A new finding at any OTHER place says nothing of this one.
+        return Ok("said elsewhere");
+    }
+    let Some(ours) = ours else {
+        return Err((
+            "not-written",
+            format!(
+                "{}; new findings elsewhere: {told:?}",
+                outcome.written.err().unwrap_or_default()
+            ),
+        ));
+    };
+    let new = fresh(&base.read.leaves, &ours.leaves);
+    if holds(base.family, &new, replacement)
+        || read_non_strict(base, node, replacement, &new, &ours.leaves)
+    {
+        return Ok("held");
+    }
+    // The document without the member: what a `null` there is read as, and what of `W` is
+    // owed to the member.
+    let removed = removed.get(read, base, node);
+    // Held where the replaced value held the same scalar (`true` for `{"value": true}`, or
+    // for a `"true"` the legacy reader takes as the bool): the written text has it and the
+    // document without the member does not.
+    if let Some(removed) = removed
+        && holds(
+            base.family,
+            &fresh(&removed.leaves, &ours.leaves),
+            replacement,
+        )
+    {
+        return Ok("held");
+    }
+    let nothing = matches!(class, Class::Null | Class::EmptyArray | Class::EmptyObject);
+    // The document without the member, but for the order of its members (a step that
+    // inserts an absent member puts it last).
+    if nothing
+        && let Some(removed) = removed
+        && same_but_order(removed, &ours)
+    {
+        return Ok("absent");
+    }
+    // A number no double holds is written as the largest finite double of its sign. Each
+    // number has ONE finding (`one_finding_per_number.rs`): where the place is told of
+    // already, by a finding the unchanged document has in the same words (a definition
+    // that is no object, whatever it is), that finding stands for the clamp too.
+    if replacement == "-1e999" && clamped_low(&new) && told_above(node, &outcome) {
+        return Ok("said");
+    }
+    let changed = Changed {
+        base,
+        node,
+        outcome: &outcome,
+        ours: &ours,
+        class,
+        replacement,
+        twin,
+        new,
+        told,
+    };
+    if ours.written == base.read.written {
+        return changed.written_as_before(read);
+    }
+    if let Some(removed) = removed {
+        let lost = changed.lost_members(removed);
         if !lost.is_empty() {
             return Err((
                 "collateral",
-                detail(&format!(
+                changed.detail(&format!(
                     "members the replaced one does not own are gone: {:?}",
                     lost.iter().take(6).collect::<Vec<_>>()
                 )),
@@ -1553,65 +1923,18 @@ fn judge(
     }
     // A float member holds the nearest `f32`; told from an integer member saturating at a
     // bound (the same `f32`) by the second number, which a float holds as another.
-    let prefixes = carried_in(class);
-    if !prefixes.is_empty()
-        && let Ok((other, _)) = read_text(read, &with(twin))
-    {
-        let other_new = fresh(&base.read.leaves, &other.leaves);
-        let of_type = |leaves: &[String]| -> Vec<String> {
-            leaves
-                .iter()
-                .filter(|leaf| prefixes.iter().any(|prefix| leaf.starts_with(prefix)))
-                .cloned()
-                .collect()
-        };
-        if class == Class::Wide {
-            if new.iter().any(|leaf| near(leaf, replacement))
-                && other_new
-                    .iter()
-                    .any(|leaf| near(leaf, twin) && !near(leaf, replacement))
-            {
-                return Ok("held");
-            }
-        } else if of_type(&new) != of_type(&other_new) {
-            return Ok("carried");
-        }
+    if let Some(verdict) = changed.carried_by_the_twin(read) {
+        return Ok(verdict);
     }
     // A number the load holds at a bound of its range, and says so where it is: the same
     // words whatever number stood there, so also where the unchanged document was told so.
-    if matches!(
-        class,
-        Class::Integer | Class::Fraction | Class::Wide | Class::Huge | Class::OtherInt
-    ) && clamped_at(node, &outcome)
-    {
+    if changed.is_number() && clamped_at(node, &outcome) {
         return Ok("said");
     }
-    if rewritten_at(node, &outcome) {
+    if rewritten_at(node, &outcome) || changed.component_restored() {
         return Ok("said");
     }
-    // The unchanged document was told at an enclosing member that its value is rewritten as a
-    // whole (a legacy reader whose failed validation keeps the component's defaults),
-    // this one is not: the replacement makes the component read, and what changes
-    // beside it is what that finding said.
-    let restored = base
-        .read
-        .findings
-        .iter()
-        .zip(&base.read.at)
-        .any(|(text, at)| {
-            component_level(at)
-                && *at != node.path
-                && node.path.starts_with(at)
-                && text.starts_with("ValueRewritten")
-                && !outcome
-                    .findings
-                    .iter()
-                    .any(|finding| finding_text(finding) == *text)
-        });
-    if restored {
-        return Ok("said");
-    }
-    Err(("changed", detail("neither held nor carried")))
+    Err(("changed", changed.detail("neither held nor carried")))
 }
 
 /// The scalars of `value` in the order of the text, keys left out.
@@ -1786,7 +2109,7 @@ fn judge_removed(
     read: &dyn Fn(&str) -> Outcome,
     base: &Base<'_>,
     node: &Node,
-    removed: &mut Option<Option<Read>>,
+    removed: &mut Without,
 ) -> Result<&'static str, (&'static str, String)> {
     let Some(text) = without(base.text, node) else {
         return Ok("no member");
@@ -1794,11 +2117,11 @@ fn judge_removed(
     let (ours, outcome) = match read_text(read, &text) {
         Ok(read) => read,
         Err(None) => {
-            *removed = Some(None);
+            *removed = Without::Unread;
             return Ok("refused");
         }
         Err(Some(outcome)) => {
-            *removed = Some(None);
+            *removed = Without::Unread;
             let found: Vec<String> = outcome.findings.iter().map(finding_text).collect();
             if fresh(&base.read.findings, &found).is_empty() {
                 return Err(("not-written", outcome.written.err().unwrap_or_default()));
@@ -1863,7 +2186,7 @@ fn judge_removed(
         .filter(|leaf| count(&ours.leaves, leaf) < count(&outside, leaf).min(count(held, leaf)))
         .collect();
     lost.dedup();
-    *removed = Some(Some(ours));
+    *removed = Without::Read(ours);
     if lost.is_empty() {
         return Ok("removed");
     }
@@ -1880,9 +2203,8 @@ fn judge_removed(
     // `controlling_seat` 1 and `seat_count` 1, is the same scalar to the judge).
     let at_the_lost = outcome.findings.iter().map(path_of).any(|at| {
         !at.is_empty()
-            && places::lookup(&base.value, &at).is_some_and(|member| {
-                scalars_of(member).iter().any(|leaf| lost.contains(leaf))
-            })
+            && places::lookup(&base.value, &at)
+                .is_some_and(|member| scalars_of(member).iter().any(|leaf| lost.contains(leaf)))
     });
     let says = at_the_lost
         || told.iter().any(|at| {
@@ -2024,6 +2346,239 @@ fn probe(family: &Family, legacy: &Legacy, tally: &mut Tally) {
     }
 }
 
+/// The unchanged document read; `Err` with whether the document counts as probed when it
+/// is not read: a load that panics is a fault noted, one that is refused is not probed.
+fn read_unchanged(
+    family: &Family,
+    name: &str,
+    read: &dyn Fn(&str) -> Outcome,
+    legacy: &Legacy,
+    tally: &mut Tally,
+) -> Result<Read, bool> {
+    match read_text(read, &legacy.text) {
+        Ok((base, _)) => Ok(base),
+        Err(Some(outcome))
+            if outcome
+                .written
+                .as_ref()
+                .is_err_and(|e| e.starts_with(PANICKED)) =>
+        {
+            tally.faults.push(format!(
+                "{} | {} | {} | (as it is) | not-written | {} | in {} ({name})",
+                family.name,
+                legacy.version,
+                legacy
+                    .only
+                    .as_ref()
+                    .map(|only| only.join("/"))
+                    .unwrap_or_default(),
+                outcome.written.err().unwrap_or_default(),
+                legacy.from
+            ));
+            Err(true)
+        }
+        Err(_) => Err(false),
+    }
+}
+
+/// Notes a fault when the text the unchanged document is written as does not load again and
+/// is written the same.
+fn note_unstable(
+    family: &Family,
+    name: &str,
+    read: &dyn Fn(&str) -> Outcome,
+    legacy: &Legacy,
+    base: &Read,
+    tally: &mut Tally,
+) {
+    // The text a document is written as loads again and is written the same, for
+    // every document as it is and every generated input: a step that carries a value the
+    // newest format's reader does not take is a fault. But for an item written
+    // without a component of the game's: that text reads as a legacy item (recorded
+    // and not changed).
+    let as_legacy_item = family.name == "item"
+        && base
+            .value
+            .as_object()
+            .and_then(|root| root.get("minecraft:item"))
+            .and_then(Value::as_object)
+            .and_then(|item| item.get("components"))
+            .and_then(Value::as_object)
+            .is_some_and(|components| {
+                !components
+                    .iter()
+                    .any(|(key, _)| key.as_str().starts_with("minecraft:"))
+            });
+    let stable =
+        read_text(read, &base.written).is_ok_and(|(again, _)| again.written == base.written);
+    if !stable && !as_legacy_item {
+        tally.faults.push(format!(
+            "{} | {} | {} | (as it is) | not-reread | the written text is not what its own reading writes: {} | in {} ({name})",
+            family.name,
+            legacy.version,
+            legacy.only.as_ref().map(|only| only.join("/")).unwrap_or_default(),
+            base.written.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(300).collect::<String>(),
+            legacy.from
+        ));
+    }
+}
+
+/// Probes the document at one of its members: the document without it, and with each
+/// replacement of another class.
+fn probe_node(
+    family: &Family,
+    name: &str,
+    read: &dyn Fn(&str) -> Outcome,
+    legacy: &Legacy,
+    base: &Base<'_>,
+    node: &Node,
+    tally: &mut Tally,
+) {
+    let class = class_of(&legacy.text, node);
+    let mut removed = Without::Unknown;
+    let fault = |replacement: &str, kind: &str, detail: &str| -> String {
+        let detail: String = detail.replace('\n', " ").chars().take(420).collect();
+        format!(
+            "{} | {} | {} | {replacement} | {kind} | {detail} | in {} ({name})",
+            family.name,
+            legacy.version,
+            node.shown(),
+            legacy.from
+        )
+    };
+    if exempt(family.name, node, "(removed)") {
+        *tally.outcomes.entry("exempt").or_default() += 1;
+    } else if tally.texts < BUDGET {
+        tally.texts += 1;
+        match judge_removed(read, base, node, &mut removed) {
+            Ok(outcome) => *tally.outcomes.entry(outcome).or_default() += 1,
+            Err((kind, detail)) => {
+                *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
+                tally.faults.push(fault("(removed)", kind, &detail));
+            }
+        }
+        // What the member's presence costs the author elsewhere (the version the file
+        // names is no member of the kind: without it the file is another document).
+        if let Without::Read(without) = &removed
+            && node.path != ["format_version"]
+            && !exempt(family.name, node, "(present)")
+            && let Err(detail) = judge_displaced(base, node, without)
+        {
+            *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
+            tally.faults.push(fault("(present)", "displaced", &detail));
+        }
+    }
+    // A `null`, `[]` or `{}` that is written as the unchanged document is no fault
+    // where the member is read (another replacement of it is told, held or refused):
+    // the document had the defaults there.
+    let mut nothing: Vec<String> = Vec::new();
+    let mut read_at_all = false;
+    for replacement in REPLACEMENTS {
+        if replacement.2 == class {
+            continue;
+        }
+        if exempt(family.name, node, replacement.0) {
+            *tally.outcomes.entry("exempt").or_default() += 1;
+            continue;
+        }
+        // `true` where the number 1 stands is the same value in a family that
+        // writes a Molang `true` as 1: no replacement.
+        if replacement.0 == "true"
+            && BOOL_AS_NUMBER.iter().any(|(of, _)| *of == family.name)
+            && legacy.text[node.start..node.end].parse::<f64>() == Ok(1.0)
+        {
+            continue;
+        }
+        if tally.texts >= BUDGET {
+            tally.capped += 1;
+            continue;
+        }
+        tally.texts += 1;
+        match judge(read, base, node, *replacement, &mut removed) {
+            Ok(outcome) => {
+                read_at_all |= !matches!(outcome, "absent" | "empty");
+                *tally.outcomes.entry(outcome).or_default() += 1;
+            }
+            Err((kind, detail)) => {
+                let fault = fault(replacement.0, kind, &detail);
+                let empty = matches!(
+                    replacement.2,
+                    Class::Null | Class::EmptyArray | Class::EmptyObject
+                );
+                if kind == "no-effect" && empty {
+                    nothing.push(fault);
+                } else {
+                    *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
+                    tally.faults.push(fault);
+                }
+            }
+        }
+    }
+    if read_at_all {
+        *tally.outcomes.entry("empty").or_default() += nothing.len();
+    } else {
+        *tally.by_version.entry(legacy.version.clone()).or_default() += nothing.len();
+        tally.faults.append(&mut nothing);
+    }
+}
+
+/// The members no document has: an unknown member in every object, one more element in
+/// every list. Each is a document of its own, probed at that member.
+fn probe_made_members(
+    family: &Family,
+    name: &str,
+    read: &dyn Fn(&str) -> Outcome,
+    legacy: &Legacy,
+    base: &Base<'_>,
+    all: &[Node],
+    tally: &mut Tally,
+) {
+    for node in all {
+        let (mark, member, given) = match node.kind {
+            Kind::Object => (UNKNOWN, "zz".to_owned(), Value::from(3)),
+            Kind::Array => {
+                let Some(last) = places::lookup(&base.value, &node.path)
+                    .and_then(Value::as_array)
+                    .and_then(|list| list.as_slice().last().map(|last| (list.len(), last)))
+                else {
+                    continue;
+                };
+                // An element that names itself is one more element under another
+                // name: two elements of one name are ONE element to a family that keys
+                // the list by name (a geometry's bones), and the copy would be probed
+                // as that merge, not as one more element.
+                let mut more = last.1.clone();
+                if let Some(name) = more
+                    .as_object()
+                    .and_then(|element| element.get("name"))
+                    .and_then(Value::as_string)
+                    .map(|name| format!("{}_more", name.as_str()))
+                    && let Some(element) = more.as_object_mut()
+                {
+                    element.insert("name", name);
+                }
+                (EXTRA, last.0.to_string(), more)
+            }
+            _ => continue,
+        };
+        let mut path = node.path.clone();
+        path.push(member);
+        let Some(text) = plain(&set_at(&base.value, &path, given)) else {
+            continue;
+        };
+        let added = Legacy {
+            version: legacy.version.clone(),
+            from: format!("{} {mark} `{}`", legacy.from, path.join("/")),
+            text,
+            only: Some(path),
+        };
+        let (start, texts) = (std::time::Instant::now(), tally.texts);
+        add(family, name, read, &base.read, &added, tally);
+        tally.seconds[2] += start.elapsed().as_secs_f64();
+        tally.added_texts += tally.texts - texts;
+    }
+}
+
 /// Probes one document with one reader; returns whether the reader loads and writes it.
 fn probe_with(
     family: &Family,
@@ -2050,51 +2605,11 @@ fn probe_with(
             return false;
         }
     }
-    let base = match read_text(read, &legacy.text) {
-        Ok((base, _)) => base,
-        Err(Some(outcome)) if outcome.written.as_ref().is_err_and(|e| e.starts_with(PANICKED)) => {
-            tally.faults.push(format!(
-                "{} | {} | {} | (as it is) | not-written | {} | in {} ({name})",
-                family.name,
-                legacy.version,
-                legacy.only.as_ref().map(|only| only.join("/")).unwrap_or_default(),
-                outcome.written.err().unwrap_or_default(),
-                legacy.from
-            ));
-            return true;
-        }
-        Err(_) => return false,
+    let base = match read_unchanged(family, name, read, legacy, tally) {
+        Ok(base) => base,
+        Err(probed) => return probed,
     };
-    // The text a document is written as loads again and is written the same, for
-    // every document as it is and every generated input: a step that carries a value the
-    // newest format's reader does not take is a fault. But for an item written
-    // without a component of the game's: that text reads as a legacy item (recorded
-    // and not changed).
-    let as_legacy_item = family.name == "item"
-        && base
-            .value
-            .as_object()
-            .and_then(|root| root.get("minecraft:item"))
-            .and_then(Value::as_object)
-            .and_then(|item| item.get("components"))
-            .and_then(Value::as_object)
-            .is_some_and(|components| {
-                !components
-                    .iter()
-                    .any(|(key, _)| key.as_str().starts_with("minecraft:"))
-            });
-    let stable = read_text(read, &base.written)
-        .is_ok_and(|(again, _)| again.written == base.written);
-    if !stable && !as_legacy_item {
-        tally.faults.push(format!(
-            "{} | {} | {} | (as it is) | not-reread | the written text is not what its own reading writes: {} | in {} ({name})",
-            family.name,
-            legacy.version,
-            legacy.only.as_ref().map(|only| only.join("/")).unwrap_or_default(),
-            base.written.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(300).collect::<String>(),
-            legacy.from
-        ));
-    }
+    note_unstable(family, name, read, legacy, &base, tally);
     let base = base_of(family.name, &legacy.text, value, &all, base, read);
     let mut counted = false;
     for node in &all {
@@ -2127,140 +2642,10 @@ fn probe_with(
             }
             *tally.versions.entry(legacy.version.clone()).or_default() += 1;
         }
-        let class = class_of(&legacy.text, node);
-        let mut removed = None;
-        let fault = |replacement: &str, kind: &str, detail: &str| -> String {
-            let detail: String = detail.replace('\n', " ").chars().take(420).collect();
-            format!(
-                "{} | {} | {} | {replacement} | {kind} | {detail} | in {} ({name})",
-                family.name,
-                legacy.version,
-                node.shown(),
-                legacy.from
-            )
-        };
-        if exempt(family.name, node, "(removed)") {
-            *tally.outcomes.entry("exempt").or_default() += 1;
-        } else if tally.texts < BUDGET {
-            tally.texts += 1;
-            match judge_removed(read, &base, node, &mut removed) {
-                Ok(outcome) => *tally.outcomes.entry(outcome).or_default() += 1,
-                Err((kind, detail)) => {
-                    *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
-                    tally.faults.push(fault("(removed)", kind, &detail));
-                }
-            }
-            // What the member's presence costs the author elsewhere (the version the file
-            // names is no member of the kind: without it the file is another document).
-            if let Some(Some(without)) = &removed
-                && node.path != ["format_version"]
-                && !exempt(family.name, node, "(present)")
-                && let Err(detail) = judge_displaced(&base, node, without)
-            {
-                *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
-                tally.faults.push(fault("(present)", "displaced", &detail));
-            }
-        }
-        // A `null`, `[]` or `{}` that is written as the unchanged document is no fault
-        // where the member is read (another replacement of it is told, held or refused):
-        // the document had the defaults there.
-        let mut nothing: Vec<String> = Vec::new();
-        let mut read_at_all = false;
-        for replacement in REPLACEMENTS {
-            if replacement.2 == class {
-                continue;
-            }
-            if exempt(family.name, node, replacement.0) {
-                *tally.outcomes.entry("exempt").or_default() += 1;
-                continue;
-            }
-            // `true` where the number 1 stands is the same value in a family that
-            // writes a Molang `true` as 1: no replacement.
-            if replacement.0 == "true"
-                && BOOL_AS_NUMBER.iter().any(|(of, _)| *of == family.name)
-                && legacy.text[node.start..node.end].parse::<f64>() == Ok(1.0)
-            {
-                continue;
-            }
-            if tally.texts >= BUDGET {
-                tally.capped += 1;
-                continue;
-            }
-            tally.texts += 1;
-            match judge(read, &base, node, *replacement, &mut removed) {
-                Ok(outcome) => {
-                    read_at_all |= !matches!(outcome, "absent" | "empty");
-                    *tally.outcomes.entry(outcome).or_default() += 1;
-                }
-                Err((kind, detail)) => {
-                    let fault = fault(replacement.0, kind, &detail);
-                    let empty = matches!(
-                        replacement.2,
-                        Class::Null | Class::EmptyArray | Class::EmptyObject
-                    );
-                    if kind == "no-effect" && empty {
-                        nothing.push(fault);
-                    } else {
-                        *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
-                        tally.faults.push(fault);
-                    }
-                }
-            }
-        }
-        if read_at_all {
-            *tally.outcomes.entry("empty").or_default() += nothing.len();
-        } else {
-            *tally.by_version.entry(legacy.version.clone()).or_default() += nothing.len();
-            tally.faults.append(&mut nothing);
-        }
+        probe_node(family, name, read, legacy, &base, node, tally);
     }
-    // The members no document has: an unknown member in every object, one more element in
-    // every list. Each is a document of its own, probed at that member.
     if legacy.only.is_none() {
-        for node in &all {
-            let (mark, member, given) = match node.kind {
-                Kind::Object => (UNKNOWN, "zz".to_owned(), Value::from(3)),
-                Kind::Array => {
-                    let Some(last) = places::lookup(&base.value, &node.path)
-                        .and_then(Value::as_array)
-                        .and_then(|list| list.as_slice().last().map(|last| (list.len(), last)))
-                    else {
-                        continue;
-                    };
-                    // An element that names itself is one more element under another
-                    // name: two elements of one name are ONE element to a family that keys
-                    // the list by name (a geometry's bones), and the copy would be probed
-                    // as that merge, not as one more element.
-                    let mut more = last.1.clone();
-                    if let Some(name) = more
-                        .as_object()
-                        .and_then(|element| element.get("name"))
-                        .and_then(Value::as_string)
-                        .map(|name| format!("{}_more", name.as_str()))
-                        && let Some(element) = more.as_object_mut()
-                    {
-                        element.insert("name", name);
-                    }
-                    (EXTRA, last.0.to_string(), more)
-                }
-                _ => continue,
-            };
-            let mut path = node.path.clone();
-            path.push(member);
-            let Some(text) = plain(&set_at(&base.value, &path, given)) else {
-                continue;
-            };
-            let added = Legacy {
-                version: legacy.version.clone(),
-                from: format!("{} {mark} `{}`", legacy.from, path.join("/")),
-                text,
-                only: Some(path),
-            };
-            let (start, texts) = (std::time::Instant::now(), tally.texts);
-            add(family, name, read, &base.read, &added, tally);
-            tally.seconds[2] += start.elapsed().as_secs_f64();
-            tally.added_texts += tally.texts - texts;
-        }
+        probe_made_members(family, name, read, legacy, &base, &all, tally);
     }
     true
 }
@@ -2334,7 +2719,7 @@ fn added_members(
     out: &mut Vec<(Vec<String>, Value)>,
 ) {
     if let (Some(before), Some(after)) = (before.as_object(), after.as_object()) {
-        for (key, member) in after.iter() {
+        for (key, member) in after {
             at.push(key.as_str().to_owned());
             match before.get(key.as_str()) {
                 Some(had) => added_members(had, member, at, out),
@@ -2421,97 +2806,33 @@ fn seeded(family: &Family, legacy: &Legacy, out: &mut Vec<Legacy>) {
     }
 }
 
-/// The probe of one family.
-fn audit(family: &Family) {
-    let mut sources = Vec::new();
-    for (version, text) in more(family.name) {
-        let value = parse(text).unwrap_or_else(|| panic!("{}: no JSON: {text}", family.name));
-        sources.push(Source {
-            version: (*version).to_owned(),
-            from: "more".to_owned(),
-            texts: vec![plain(&value).expect("plain JSON")],
-            only: None,
-        });
-    }
-    test_documents(family, &mut sources);
-    // The newest version of the chain: a document at or above it is no legacy document.
-    let newest = family.runs.iter().map(|run| run.to).max();
-    // A family every step of which starts from a real version reads no file without one.
-    let versioned = family.runs.iter().all(|run| run.from >= (1, 1, 0));
+/// The versions the steps of a family start from, as they are and as the files spell them.
+fn starting_versions(family: &Family) -> (Vec<Triple>, Vec<String>) {
     let mut starts: Vec<Triple> = Vec::new();
     for run in &family.runs {
         if !starts.contains(&run.from) {
             starts.push(run.from);
         }
     }
-    let versions: Vec<String> = starts
+    let versions = starts
         .iter()
         .map(|(major, minor, patch)| format!("{major}.{minor}.{patch}"))
         .collect();
-    let mut tally = Tally::default();
-    for Source {
-        version,
-        from,
-        texts,
-        only,
-    } in sources
-    {
-        if versioned && version == "none" {
-            continue;
-        }
-        let legacy_version = match (version_of(&version), newest) {
-            (Some(version), Some(newest)) => {
-                version < newest || starts.contains(&version)
-            }
-            _ => true,
-        };
-        if !legacy_version {
-            continue;
-        }
-        // The first candidate a reader loads and writes.
-        let Some(text) = texts.into_iter().find(|text| {
-            family
-                .readers
-                .iter()
-                .any(|(_, read)| read_text(read.as_ref(), text).is_ok())
-        }) else {
-            continue;
-        };
-        if family.band.is_some_and(|(from, below)| {
-            version_of(&version).is_none_or(|version| version < from || version >= below)
-        }) {
-            continue;
-        }
-        // The member of the payload a source is probed at, as the text has it: below one
-        // of the family's keys, or at the root.
-        let only = only.and_then(|only| {
-            nodes(&text)
-                .into_iter()
-                .map(|node| node.path)
-                .find(|path| {
-                    *path == only
-                        || path.split_first().is_some_and(|(key, rest)| {
-                            rest == only.as_slice() && family.keys.contains(&key.as_str())
-                        })
-                })
-        });
-        let legacy = Legacy {
-            version,
-            from,
-            text,
-            only,
-        };
-        let start = std::time::Instant::now();
-        probe(family, &legacy, &mut tally);
-        tally.seconds[0] += start.elapsed().as_secs_f64();
-        let start = std::time::Instant::now();
-        let mut inputs = Vec::new();
-        seeded(family, &legacy, &mut inputs);
-        for input in &inputs {
-            probe(family, input, &mut tally);
-        }
-        tally.seconds[1] += start.elapsed().as_secs_f64();
-    }
+    (starts, versions)
+}
+
+/// The path of the member `only` of a source in `text`, as the text has it.
+fn member_in_text(family: &Family, text: &str, only: &[String]) -> Option<Vec<String>> {
+    nodes(text).into_iter().map(|node| node.path).find(|path| {
+        *path == only
+            || path
+                .split_first()
+                .is_some_and(|(key, rest)| rest == only && family.keys.contains(&key.as_str()))
+    })
+}
+
+/// Prints what a family's probe counted.
+fn report(family: &Family, tally: &Tally) {
     let outcomes: Vec<String> = tally
         .outcomes
         .iter()
@@ -2554,6 +2875,79 @@ fn audit(family: &Family) {
     for fault in tally.faults.iter().take(2000) {
         println!("legacy-at: {fault}");
     }
+}
+
+/// The probe of one family.
+fn audit(family: &Family) {
+    let mut sources = Vec::new();
+    for (version, text) in more(family.name) {
+        let value = parse(text).unwrap_or_else(|| panic!("{}: no JSON: {text}", family.name));
+        sources.push(Source {
+            version: (*version).to_owned(),
+            from: "more".to_owned(),
+            texts: vec![plain(&value).expect("plain JSON")],
+            only: None,
+        });
+    }
+    test_documents(family, &mut sources);
+    // The newest version of the chain: a document at or above it is no legacy document.
+    let newest = family.runs.iter().map(|run| run.to).max();
+    // A family every step of which starts from a real version reads no file without one.
+    let versioned = family.runs.iter().all(|run| run.from >= (1, 1, 0));
+    let (starts, versions) = starting_versions(family);
+    let mut tally = Tally::default();
+    for Source {
+        version,
+        from,
+        texts,
+        only,
+    } in sources
+    {
+        if versioned && version == "none" {
+            continue;
+        }
+        let legacy_version = match (version_of(&version), newest) {
+            (Some(version), Some(newest)) => version < newest || starts.contains(&version),
+            _ => true,
+        };
+        if !legacy_version {
+            continue;
+        }
+        // The first candidate a reader loads and writes.
+        let Some(text) = texts.into_iter().find(|text| {
+            family
+                .readers
+                .iter()
+                .any(|(_, read)| read_text(read.as_ref(), text).is_ok())
+        }) else {
+            continue;
+        };
+        if family.band.is_some_and(|(from, below)| {
+            version_of(&version).is_none_or(|version| version < from || version >= below)
+        }) {
+            continue;
+        }
+        // The member of the payload a source is probed at, as the text has it: below one
+        // of the family's keys, or at the root.
+        let only = only.and_then(|only| member_in_text(family, &text, &only));
+        let legacy = Legacy {
+            version,
+            from,
+            text,
+            only,
+        };
+        let start = std::time::Instant::now();
+        probe(family, &legacy, &mut tally);
+        tally.seconds[0] += start.elapsed().as_secs_f64();
+        let start = std::time::Instant::now();
+        let mut inputs = Vec::new();
+        seeded(family, &legacy, &mut inputs);
+        for input in &inputs {
+            probe(family, input, &mut tally);
+        }
+        tally.seconds[1] += start.elapsed().as_secs_f64();
+    }
+    report(family, &tally);
     let missing: Vec<&String> = versions
         .iter()
         .filter(|version| !tally.versions.contains_key(*version))
@@ -2583,4 +2977,3 @@ fn audit(family: &Family) {
         shown.join("\n")
     );
 }
-

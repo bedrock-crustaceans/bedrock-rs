@@ -31,7 +31,7 @@ fn sky_of(stack: &PackStack<Resource>, identifier: &str) -> Option<String> {
     let biome = biomes.get(&BiomeId::parse(identifier))?;
     match &biome.components.get::<SkyColor>()?.sky_color {
         bedrock_addon::families::client_biome::Color255Rgb::Hex(text) => Some(text.clone()),
-        other => panic!("{other:?}"),
+        other @ bedrock_addon::families::client_biome::Color255Rgb::Array(_) => panic!("{other:?}"),
     }
 }
 

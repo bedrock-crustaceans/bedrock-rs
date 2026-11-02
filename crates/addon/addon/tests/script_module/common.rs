@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::families::script::{
     CatalogModule, CatalogVersion, Discovery, ModuleCatalog, ScriptContext, ScriptDiscovery,
-    ScriptFiles, ScriptModule, ScriptVersion,
+    ScriptFiles, ScriptModule, ScriptPlugin, ScriptVersion,
 };
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -335,13 +335,9 @@ pub fn run(name: &str) -> (Outcome, Vec<Table>) {
     (outcome, expected)
 }
 
-/// Runs the case `name` and requires what its `expected.toml` states: the scope, every
-/// finding in order (code, severity, path, and the text where one is given), and the
-/// plugin's main file, capability and resolved dependencies.
-pub fn check(name: &str) {
-    let (outcome, expected) = run(name);
-    let root = &expected[0];
-    let stated: Vec<Finding> = expected[1..]
+/// The findings an `expected.toml` states, one per table after the root.
+fn stated_findings(name: &str, expected: &[Table]) -> Vec<Finding> {
+    expected[1..]
         .iter()
         .map(|table| {
             assert_eq!(
@@ -356,16 +352,11 @@ pub fn check(name: &str) {
                 text: table.text("text").map(str::to_owned),
             }
         })
-        .collect();
-    let with_text: Vec<bool> = stated.iter().map(|f| f.text.is_some()).collect();
-    assert_eq!(
-        findings(&outcome.diagnostics, &with_text),
-        stated,
-        "{name}: findings"
-    );
+        .collect()
+}
 
-    let scope = root.text("scope").expect("scope");
-    let plugin = outcome.discovery.as_ref().and_then(Discovery::plugin);
+/// Requires what the `scope` of an `expected.toml` says about the outcome.
+fn check_scope(name: &str, scope: &str, outcome: &Outcome, plugin: Option<&ScriptPlugin>) {
     match scope {
         "pack" => {
             assert!(outcome.rejected, "{name}: the manifest must be refused");
@@ -393,6 +384,25 @@ pub fn check(name: &str) {
         }
         other => panic!("{name}: scope = {other:?}"),
     }
+}
+
+/// Runs the case `name` and requires what its `expected.toml` states: the scope, every
+/// finding in order (code, severity, path, and the text where one is given), and the
+/// plugin's main file, capability and resolved dependencies.
+pub fn check(name: &str) {
+    let (outcome, expected) = run(name);
+    let root = &expected[0];
+    let stated = stated_findings(name, &expected);
+    let with_text: Vec<bool> = stated.iter().map(|f| f.text.is_some()).collect();
+    assert_eq!(
+        findings(&outcome.diagnostics, &with_text),
+        stated,
+        "{name}: findings"
+    );
+
+    let scope = root.text("scope").expect("scope");
+    let plugin = outcome.discovery.as_ref().and_then(Discovery::plugin);
+    check_scope(name, scope, &outcome, plugin);
 
     let Some(plugin) = plugin else {
         for key in ["resolved", "requested", "optional", "main", "script_eval"] {

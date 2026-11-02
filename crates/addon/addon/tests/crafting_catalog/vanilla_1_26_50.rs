@@ -6,6 +6,7 @@
 
 use bedrock_addon::document::Content;
 use bedrock_addon::families::crafting_catalog::CategoryName;
+use bedrock_addon::load::LoadOptions;
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
@@ -100,7 +101,7 @@ fn the_mcb_originals_load_on_a_vanilla_stack_without_a_finding() {
         } else {
             packs.push(vanilla("vanilla").file(PATH, bytes));
         }
-        let stack = stack_of(&packs, Default::default());
+        let stack = stack_of(&packs, LoadOptions::default());
         let merged = stack.crafting_catalog();
         let layers = merged.layers();
         assert_eq!(layers.len(), packs.len(), "{name}");

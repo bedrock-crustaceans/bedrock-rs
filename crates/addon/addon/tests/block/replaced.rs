@@ -758,7 +758,7 @@ fn an_end_of_an_interval_range_the_side_car_refuses_is_told_at_the_end() {
     };
     // `interval_range[0]` and `[1]` become the side-car's `min_ticks` and
     // `max_ticks`. What the side-car's reader tells of them names the element of the file.
-    let (found, _) = told_in(
+    let (found, ()) = told_in(
         "1.19.10",
         r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:queued_ticking": {"interval_range": [3, -5], "on_tick": {"event": "e"}}}, "events": {"e": {}}}"#,
         &allow_listed(),
@@ -773,7 +773,7 @@ fn an_end_of_an_interval_range_the_side_car_refuses_is_told_at_the_end() {
         "a member the file does not have: {found:#?}"
     );
     // A 1.18.0 `ticking.range` whose ends the step sorted: the end of the file's index.
-    let (found, _) = told_in(
+    let (found, ()) = told_in(
         "1.18.0",
         r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:ticking": {"range": [1e12, 1], "on_tick": {"event": "e"}}}, "events": {"e": {}}}"#,
         &allow_listed(),

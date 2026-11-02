@@ -53,7 +53,11 @@ fn rc22_stack_override_the_highest_pack_wins_with_a_shadow_info_deviation() {
     let shadowed = found(registry, "RenderControllerShadowed", Severity::Info);
     assert_eq!(shadowed.len(), 1, "{:?}", all(registry));
     assert_eq!(
-        shadowed[0].location.pack.as_ref().and_then(|p| p.index()),
+        shadowed[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(1)
     );
     assert!(found(registry, "RenderControllerFallback", Severity::Info).is_empty());
@@ -89,7 +93,11 @@ fn rc23_stack_fallback_a_failed_override_keeps_the_lower_definition_deviation() 
     let fallback = found(registry, "RenderControllerFallback", Severity::Info);
     assert_eq!(fallback.len(), 1, "{:?}", all(registry));
     assert_eq!(
-        fallback[0].location.pack.as_ref().and_then(|p| p.index()),
+        fallback[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     assert!(found(registry, "RenderControllerShadowed", Severity::Info).is_empty());
@@ -125,6 +133,7 @@ fn rc24_stack_file_failure_removes_nothing() {
 
 #[test]
 fn rc04_no_textures_from_the_registry() {
+    const TEXT: &str = "Render controller must contain textures.";
     let p0 = file(&format!(
         r#""controller.render.test": {{"geometry": "Geometry.default"}}, {OK}"#
     ));
@@ -138,7 +147,6 @@ fn rc04_no_textures_from_the_registry() {
         Some("controller.render.test")
     );
     // The dropped controller's rejection holds its error; its sibling's document does not.
-    const TEXT: &str = "Render controller must contain textures.";
     let rejected: Vec<String> = registry.rejected()[0]
         .diagnostics
         .iter()
@@ -342,7 +350,11 @@ fn a_stack_load_asks_for_the_json_files_only() {
         let ignored: Vec<(Option<usize>, &str)> = found(registry, "IgnoredFile", Severity::Info)
             .iter()
             .map(|f| {
-                let pack = f.location.pack.as_ref().and_then(|pack| pack.index());
+                let pack = f
+                    .location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index);
                 (pack, f.location.path.as_ref().unwrap().as_str())
             })
             .collect();

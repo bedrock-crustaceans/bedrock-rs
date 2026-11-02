@@ -659,6 +659,8 @@ fn g15_uv_rotation() {
 
 #[test]
 fn g16_poly_mesh_counts() {
+    const AT: &str = "Error InvalidValue minecraft:geometry/0/bones/0/poly_mesh";
+
     let mesh = |positions: usize, normals: usize, uvs: usize, polys: &str| {
         let list = |n: usize, item: &str| vec![item; n].join(", ");
         with_bone(
@@ -688,7 +690,6 @@ fn g16_poly_mesh_counts() {
             .collect::<Vec<_>>()
     };
     // Rules 18 and 19 are the game's content-log errors at the mesh, kept.
-    const AT: &str = "Error InvalidValue minecraft:geometry/0/bones/0/poly_mesh";
     assert_eq!(
         warnings(&mesh(4, 4, 4, "tri_list")),
         [format!(
@@ -1255,6 +1256,7 @@ fn a_coercion_of_a_keyed_file_is_told_at_the_member_of_the_file() {
     assert_eq!(x.bones()[0].cubes()[0].uv, Some(CubeUv::Box([2.0, 3.0])));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn g28_parse_coercions() {
     let text = r#"{"format_version": "1.21.0", "minecraft:geometry": [{
@@ -1307,6 +1309,7 @@ fn g28_parse_coercions() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn bounds_inside_the_range_are_kept_and_absent_ones_default_to_one() {
     let bounds = |members: &str| {
@@ -1349,6 +1352,7 @@ fn bounds_inside_the_range_are_kept_and_absent_ones_default_to_one() {
     assert_eq!(d.visible_bounds_offset(), [0.0, 1.0, 0.0]);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn g29_texture_mesh_defaults() {
     let geometry = first(&with_bone(
@@ -1372,6 +1376,7 @@ fn g29_texture_mesh_defaults() {
     assert!(!u.use_pixel_depth());
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_cube_takes_inflate_and_mirror_from_its_bone() {
     let geometry = first(&with_bone(

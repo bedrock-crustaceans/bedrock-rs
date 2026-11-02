@@ -3,7 +3,7 @@
 //! round trip.
 
 use bedrock_addon::diagnostic::{DiagnosticCode as Code, Severity};
-use bedrock_addon::document::{Content, Placed};
+use bedrock_addon::document::{Content, Extra, Placed};
 use bedrock_addon::families::client_biome::component::{
     AmbientSounds, ClientBiomeComponent, FoliageAppearance, FoliageColor, FoliageColorMap,
     GrassColorMap, SkyColor, SoundAddition,
@@ -212,7 +212,7 @@ fn the_dry_foliage_map_is_an_enum_error_below_1_21_70() {
         loaded.components.get::<FoliageAppearance>().unwrap().color,
         Some(FoliageColor::Map {
             color_map: FoliageColorMap::DryFoliage,
-            extra: Default::default(),
+            extra: Extra::default(),
         })
     );
     // The five older maps are read by the first struct.
@@ -299,7 +299,7 @@ fn a_colour_of_another_form_is_vanillas_error() {
         for bad in [
             r##""#FFFFFFFF""##,
             r##""#FFFFF""##,
-            r##""FFFFFF""##,
+            r#""FFFFFF""#,
             r##""#GGGGGG""##,
             "[1, 2]",
             "[1, 2, 3, 4]",
@@ -585,7 +585,7 @@ fn a_built_document_writes_and_loads() {
 
 /// V1.2a: the game's document input takes the first `"format_version"` key of the text,
 /// here the payload's 1.21.40, so the legacy parser reads the document and finds no version at
-/// its root: "{}: No format_version string found" (the legacy parser's version check), and the
+/// its root: "{}: No `format_version` string found" (the legacy parser's version check), and the
 /// document is refused.
 #[test]
 fn a_nested_format_version_selects_the_legacy_parser_which_finds_none_at_the_root() {

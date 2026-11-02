@@ -65,8 +65,8 @@ fn source<T>(document: Option<&Document<T>>) -> Option<Source> {
 }
 
 /// The effective definition is the one of the pack at `position`, in `path`.
-fn from_pack(position: usize, path: &str) -> Option<Source> {
-    Some((Some(position), path.to_owned()))
+fn from_pack(position: usize, path: &str) -> Source {
+    (Some(position), path.to_owned())
 }
 
 /// The sources of the rejected files.
@@ -81,7 +81,13 @@ fn refused<'a>(rejected: impl IntoIterator<Item = &'a Rejected>) -> Vec<Source> 
 fn errors_at_top<'a>(findings: impl Iterator<Item = &'a Diagnostic>, path: &str) -> Vec<String> {
     findings
         .filter(|d| d.severity == Severity::Error)
-        .filter(|d| d.location.pack.as_ref().and_then(|p| p.index()) == Some(0))
+        .filter(|d| {
+            d.location
+                .pack
+                .as_ref()
+                .and_then(bedrock_addon::pack::PackRef::index)
+                == Some(0)
+        })
         .filter(|d| d.location.path.as_ref().map(PackPath::as_str) == Some(path))
         .map(|d| {
             format!("{:?}", d.code)
@@ -113,7 +119,7 @@ fn blocks_two_packs_a_refused_top_block_leaves_the_lower_block_effective() {
     let blocks = stack.blocks();
     assert_eq!(
         source(blocks.get(&Id::parse("demo:b"))),
-        from_pack(1, "blocks/l.json")
+        Some(from_pack(1, "blocks/l.json"))
     );
     assert_eq!(
         refused(blocks.rejected()),
@@ -135,7 +141,7 @@ fn blocks_three_packs_a_refused_top_block_leaves_the_middle_block_effective() {
     let blocks = stack.blocks();
     assert_eq!(
         source(blocks.get(&Id::parse("demo:b"))),
-        from_pack(1, "blocks/m.json")
+        Some(from_pack(1, "blocks/m.json"))
     );
     assert_eq!(
         refused(blocks.rejected()),
@@ -166,7 +172,7 @@ fn items_two_packs_a_refused_top_item_leaves_the_lower_item_effective() {
     let items = stack.items();
     assert_eq!(
         source(items.get(&Id::parse("demo:i"))),
-        from_pack(1, "items/l.json")
+        Some(from_pack(1, "items/l.json"))
     );
     assert_eq!(
         refused(items.rejected()),
@@ -188,7 +194,7 @@ fn items_three_packs_a_refused_top_item_leaves_the_middle_item_effective() {
     let items = stack.items();
     assert_eq!(
         source(items.get(&Id::parse("demo:i"))),
-        from_pack(1, "items/m.json")
+        Some(from_pack(1, "items/m.json"))
     );
     assert_eq!(
         refused(items.rejected()),
@@ -223,7 +229,7 @@ fn items_two_packs_a_gated_top_override_leaves_the_base_game_item_effective() {
     let items = stack.items();
     assert_eq!(
         source(items.get(&Id::parse("minecraft:apple"))),
-        from_pack(1, "items/l.json")
+        Some(from_pack(1, "items/l.json"))
     );
     assert_eq!(
         refused(items.rejected()),
@@ -245,7 +251,7 @@ fn items_three_packs_a_gated_top_override_leaves_the_middle_override_effective()
     let items = stack.items();
     assert_eq!(
         source(items.get(&Id::parse("minecraft:apple"))),
-        from_pack(1, "items/m.json")
+        Some(from_pack(1, "items/m.json"))
     );
     assert_eq!(
         refused(items.rejected()),
@@ -277,7 +283,7 @@ fn entities_two_packs_a_refused_top_entity_leaves_the_lower_entity_effective() {
     let entities = stack.entities();
     assert_eq!(
         source(entities.get(&Id::parse("demo:e"))),
-        from_pack(1, "entities/l.json")
+        Some(from_pack(1, "entities/l.json"))
     );
     assert_eq!(
         refused(entities.rejected()),
@@ -299,7 +305,7 @@ fn entities_three_packs_a_refused_top_entity_leaves_the_middle_entity_effective(
     let entities = stack.entities();
     assert_eq!(
         source(entities.get(&Id::parse("demo:e"))),
-        from_pack(1, "entities/m.json")
+        Some(from_pack(1, "entities/m.json"))
     );
     assert_eq!(
         refused(entities.rejected()),
@@ -333,7 +339,7 @@ fn spawn_rules_two_packs_a_refused_top_file_leaves_the_lower_rule_effective() {
     let rules = stack.spawn_rules();
     assert_eq!(
         source(rules.get(&Id::parse("x:pig"))),
-        from_pack(1, "spawn_rules/l.json")
+        Some(from_pack(1, "spawn_rules/l.json"))
     );
     assert_eq!(
         refused(rules.rejected()),
@@ -355,7 +361,7 @@ fn spawn_rules_three_packs_a_refused_top_file_leaves_the_middle_rule_effective()
     let rules = stack.spawn_rules();
     assert_eq!(
         source(rules.get(&Id::parse("x:pig"))),
-        from_pack(1, "spawn_rules/m.json")
+        Some(from_pack(1, "spawn_rules/m.json"))
     );
     assert_eq!(
         refused(rules.rejected()),
@@ -386,7 +392,7 @@ fn feature_rules_two_packs_a_refused_top_rule_leaves_the_lower_rule_effective() 
     let rules = stack.feature_rules();
     assert_eq!(
         source(rules.get(PlacementPass::Surface, &Id::parse("demo:r"))),
-        from_pack(1, "feature_rules/l.json")
+        Some(from_pack(1, "feature_rules/l.json"))
     );
     assert_eq!(
         refused(rules.rejected()),
@@ -408,7 +414,7 @@ fn feature_rules_three_packs_a_refused_top_rule_leaves_the_middle_rule_effective
     let rules = stack.feature_rules();
     assert_eq!(
         source(rules.get(PlacementPass::Surface, &Id::parse("demo:r"))),
-        from_pack(1, "feature_rules/m.json")
+        Some(from_pack(1, "feature_rules/m.json"))
     );
     assert_eq!(
         refused(rules.rejected()),
@@ -487,7 +493,7 @@ fn features_two_packs_an_unparsable_top_feature_leaves_the_lower_feature_effecti
     let features = stack.features();
     assert_eq!(
         source(features.get(&Id::parse("demo:vein"))),
-        from_pack(1, "features/l.json")
+        Some(from_pack(1, "features/l.json"))
     );
     assert_eq!(
         refused(features.rejected()),
@@ -509,7 +515,7 @@ fn features_three_packs_an_unparsable_top_feature_leaves_the_middle_feature_effe
     let features = stack.features();
     assert_eq!(
         source(features.get(&Id::parse("demo:vein"))),
-        from_pack(1, "features/m.json")
+        Some(from_pack(1, "features/m.json"))
     );
     assert_eq!(
         refused(features.rejected()),
@@ -541,7 +547,7 @@ fn biomes_two_packs_a_refused_top_biome_leaves_the_lower_biome_effective() {
     let biomes = stack.biomes();
     assert_eq!(
         source(biomes.get(&Id::parse("test:biome"))),
-        from_pack(1, "biomes/l.json")
+        Some(from_pack(1, "biomes/l.json"))
     );
     assert_eq!(
         refused(biomes.rejected()),
@@ -563,7 +569,7 @@ fn biomes_three_packs_a_refused_top_biome_leaves_the_middle_biome_effective() {
     let biomes = stack.biomes();
     assert_eq!(
         source(biomes.get(&Id::parse("test:biome"))),
-        from_pack(1, "biomes/m.json")
+        Some(from_pack(1, "biomes/m.json"))
     );
     assert_eq!(
         refused(biomes.rejected()),
@@ -596,7 +602,7 @@ fn recipes_two_packs_a_refused_top_recipe_leaves_the_lower_recipe_effective() {
     let recipes = stack.recipes();
     assert_eq!(
         source(recipes.get(RecipeNamespace::Crafting, &Id::parse("x:y"))),
-        from_pack(1, "recipes/l.json")
+        Some(from_pack(1, "recipes/l.json"))
     );
     assert_eq!(
         refused(recipes.rejected()),
@@ -618,7 +624,7 @@ fn recipes_three_packs_a_refused_top_recipe_leaves_the_middle_recipe_effective()
     let recipes = stack.recipes();
     assert_eq!(
         source(recipes.get(RecipeNamespace::Crafting, &Id::parse("x:y"))),
-        from_pack(1, "recipes/m.json")
+        Some(from_pack(1, "recipes/m.json"))
     );
     assert_eq!(
         refused(recipes.rejected()),

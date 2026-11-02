@@ -1060,10 +1060,10 @@ fn documents(member: &str) -> (usize, usize) {
     let text = without_findings(member);
     let (mut of_packs, mut of_app_data) = (0, 0);
     for entry in text.split(ENTRY).skip(1) {
-        let origin = entry
-            .rfind(ORIGIN)
-            .map(|at| &entry[at + ORIGIN.len()..])
-            .unwrap_or_else(|| panic!("an entry without an origin: {entry}"));
+        let origin = entry.rfind(ORIGIN).map_or_else(
+            || panic!("an entry without an origin: {entry}"),
+            |at| &entry[at + ORIGIN.len()..],
+        );
         if origin.starts_with("Some(") {
             of_packs += 1;
         } else {
@@ -1201,11 +1201,22 @@ fn without_findings(debug: &str) -> String {
     }
 }
 
+/// The text of a registry of `Debug` text, holding `inside`.
+fn registry(inside: &str) -> String {
+    format!("Registry {{ {inside} .. }}")
+}
+
+/// The text of a `Merged` holding `value`, with `findings` as its diagnostics.
+fn merged(value: &str, findings: &str) -> String {
+    format!(
+        "Merged {{ value: {value}, origins: {{}}, layers: [], diagnostics: Diagnostics([{findings}]) }}"
+    )
+}
+
 /// The measures of [`holds_loaded_content`] and the cut of [`members`], on texts written by
 /// hand.
 #[test]
 fn loaded_content_is_a_document_or_a_value_and_never_a_finding() {
-    let registry = |inside: &str| format!("Registry {{ {inside} .. }}");
     let empty = registry("entries: {}, rejected: [], diagnostics: Diagnostics([]),");
     let refused = registry(
         r#"entries: {}, rejected: [Rejected { path: "a [1].json" }], diagnostics: Diagnostics([Diagnostic { code: X }]),"#,
@@ -1241,7 +1252,7 @@ fn loaded_content_is_a_document_or_a_value_and_never_a_finding() {
     assert!(holds_loaded_content(&loaded, &empty, None), "a document");
     // A file that holds no document is refused with a code that has the word in it.
     let no_document = registry(
-        r#"entries: {}, rejected: [Rejected { diagnostics: Diagnostics([Diagnostic { code: EmptyDocument { text: None } }]) }], diagnostics: Diagnostics([Diagnostic { code: EmptyDocument { text: None } }]),"#,
+        r"entries: {}, rejected: [Rejected { diagnostics: Diagnostics([Diagnostic { code: EmptyDocument { text: None } }]) }], diagnostics: Diagnostics([Diagnostic { code: EmptyDocument { text: None } }]),",
     );
     assert!(
         !holds_loaded_content(&no_document, &empty, None),
@@ -1257,12 +1268,10 @@ fn loaded_content_is_a_document_or_a_value_and_never_a_finding() {
     );
     // A built-in document is in both: one more is needed.
     assert!(!holds_loaded_content(&loaded, &loaded, None));
+}
 
-    let merged = |value: &str, findings: &str| {
-        format!(
-            "Merged {{ value: {value}, origins: {{}}, layers: [], diagnostics: Diagnostics([{findings}]) }}"
-        )
-    };
+#[test]
+fn a_merged_value_holds_content_only_by_its_proof() {
     let bare = merged("V { names: [] }", "");
     let told = merged(
         "V { names: [] }",
@@ -1286,6 +1295,10 @@ fn loaded_content_is_a_document_or_a_value_and_never_a_finding() {
     // A file kept and read as nothing changes the text and gives no proof.
     let kept = merged("V { names: [], written: Some(7) }", "");
     assert!(!holds_loaded_content(&kept, &bare, proof), "kept, not read");
+}
+
+#[test]
+fn a_member_of_findings_alone_shows_a_finding() {
     // A member of findings alone shows a finding.
     let finding = Some(Proof::Finding("MissingPayload", "a.json"));
     let rejected = |code: &str, path: &str| {
@@ -1321,7 +1334,12 @@ fn loaded_content_is_a_document_or_a_value_and_never_a_finding() {
         without_findings("S { rejected: [R { p: \"]\" }], x: 1, d: Diagnostics([D(2)]), y: [3] }"),
         "S { rejected: , x: 1, d: Diagnostics, y: [3] }"
     );
+}
 
+#[test]
+fn a_group_is_its_fields_and_the_rest_one_member() {
+    let empty = registry("entries: {}, rejected: [], diagnostics: Diagnostics([]),");
+    let bare = merged("V { names: [] }", "");
     // A group is its fields; a registry, a path map, a `Merged` and a list are one member.
     assert_eq!(
         members(
@@ -1492,11 +1510,16 @@ fn named(line: &str) -> &str {
 /// place of every JSON document of every fragment.
 fn covered_with_every_json_as(document: &[u8]) -> (Vec<String>, Vec<String>) {
     let (stack, options) = rewritten_fixture(&|path, bytes| {
-        Some(if path.ends_with(".json") {
-            document.to_vec()
-        } else {
-            bytes
-        })
+        Some(
+            if std::path::Path::new(path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
+            {
+                document.to_vec()
+            } else {
+                bytes
+            },
+        )
     });
     let uncovered = collections_without_a_fragment_with(&stack, &options);
     let covered = every_collection()
@@ -2212,7 +2235,7 @@ fn assert_beta_documents_are_compared(
         "the Debug does not show the beta document"
     );
     assert!(
-        one_text.contains(r#"beta: Some([Id<"#) && one_text.contains(r#"(\"demo:beta\")])"#),
+        one_text.contains(r"beta: Some([Id<") && one_text.contains(r#"(\"demo:beta\")])"#),
         "the beta registry holds the document: {one_text}"
     );
     assert_told_apart_at(
@@ -2562,19 +2585,6 @@ fn a_document_of_the_app_data_is_no_coverage_of_a_pack_fragment() {
 ))]
 #[test]
 fn an_entry_that_holds_nothing_is_no_content() {
-    assert_eq!(
-        uncovered_with_folders(&["behavior_pack/loot_tables/"], b"{}"),
-        [
-            "Collection::LootTables of the behavior stack: no determinism fragment reaches its accessor"
-        ]
-    );
-    assert_eq!(
-        uncovered_with_folders(&["resource_pack/textures/ui/"], b"{}"),
-        [
-            "Collection::UiTextureInfos of the resource stack: no determinism fragment reaches its accessor"
-        ]
-    );
-    // A block document where `blocks.json` is read: its one key becomes a block's name.
     const BLOCK: &[u8] = br#"{ "format_version": "1.26.20", "minecraft:block": {
         "description": { "identifier": "demo:misplaced" }, "components": {} } }"#;
     assert_eq!(
@@ -2626,6 +2636,20 @@ fn the_app_data_fragments_are_required_beside_the_packs() {
             }
         }
     }
+
+    assert_eq!(
+        uncovered_with_folders(&["behavior_pack/loot_tables/"], b"{}"),
+        [
+            "Collection::LootTables of the behavior stack: no determinism fragment reaches its accessor"
+        ]
+    );
+    assert_eq!(
+        uncovered_with_folders(&["resource_pack/textures/ui/"], b"{}"),
+        [
+            "Collection::UiTextureInfos of the resource stack: no determinism fragment reaches its accessor"
+        ]
+    );
+    // A block document where `blocks.json` is read: its one key becomes a block's name.
     let listed: Vec<(String, String)> = APP_DATA_FED
         .iter()
         .map(|(collection, member)| ((*collection).to_owned(), (*member).to_owned()))

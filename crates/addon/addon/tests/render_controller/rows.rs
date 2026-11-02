@@ -5,7 +5,7 @@
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::render_controller::{
-    BonePattern, RenderController, RenderControllerFile,
+    BonePattern, RenderController, RenderControllerArrays, RenderControllerFile,
 };
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::molang::{Molang, RawVersion};
@@ -272,7 +272,7 @@ fn rc08_prerelease_is_an_ordinary_version() {
 #[test]
 fn rc10_unknown_member_skips_the_whole_file_deviation() {
     let text = file(&format!(
-        r#"{OK}, {}"#,
+        r"{OK}, {}",
         test_controller(r#""is_invisible_color": {}"#)
     ));
     let d = rejected(parse(&text, &rp(1, 21, 100)));
@@ -604,12 +604,12 @@ fn rc28_comments_and_the_vanilla_apostrophe() {
 #[test]
 fn rc17_color_partial() {
     let document = loaded(parse(&with(r#""color": {"r": 0.5}"#), &rp(1, 21, 100)));
-    let c = test_of(&document);
-    let written = c.color.as_ref().unwrap();
+    let controller = test_of(&document);
+    let written = controller.color.as_ref().unwrap();
     assert_eq!(written.r, Some(Molang::Const(0.5)));
     assert_eq!((&written.g, &written.b, &written.a), (&None, &None, &None));
     // The channels the object leaves out are `this`, not the member's default.
-    let [r, g, b, a] = c.color();
+    let [r, g, b, a] = controller.color();
     assert_eq!(r, Molang::Const(0.5));
     for channel in [g, b, a] {
         let source = channel.source().unwrap();
@@ -640,33 +640,44 @@ fn rc17_color_partial() {
 #[test]
 fn rc18_defaults() {
     let document = loaded(parse(&file(OK), &rp(1, 21, 100)));
-    let c = &document.render_controllers["controller.render.ok"];
-    assert!(c.materials.is_empty() && c.part_visibility.is_empty());
+    let controller = &document.render_controllers["controller.render.ok"];
+    assert!(controller.materials.is_empty() && controller.part_visibility.is_empty());
     assert_eq!(
         (
-            &c.arrays,
-            &c.color,
-            &c.overlay_color,
-            &c.on_fire_color,
-            &c.is_hurt_color
+            &controller.arrays,
+            &controller.color,
+            &controller.overlay_color,
+            &controller.on_fire_color,
+            &controller.is_hurt_color
         ),
         (&None, &None, &None, &None, &None)
     );
     assert_eq!(
-        (&c.uv_anim, &c.light_color_multiplier, c.ignore_lighting),
+        (
+            &controller.uv_anim,
+            &controller.light_color_multiplier,
+            controller.ignore_lighting
+        ),
         (&None, &None, None)
     );
     assert_eq!(
-        (c.filter_lighting, c.rebuild_animation_matrices),
+        (
+            controller.filter_lighting,
+            controller.rebuild_animation_matrices
+        ),
         (None, None)
     );
 
-    for channel in c.color().into_iter().chain(c.overlay_color()) {
+    for channel in controller
+        .color()
+        .into_iter()
+        .chain(controller.overlay_color())
+    {
         let source = channel.source().unwrap();
         assert_eq!(source.as_str(), "this");
         assert_eq!(source.raw_version(), Some(RawVersion(13)));
     }
-    let [r, g, b, a] = c.on_fire_color();
+    let [r, g, b, a] = controller.on_fire_color();
     assert_eq!((r, b), (Molang::Const(0.8), Molang::Const(0.0)));
     assert_eq!(
         expr(&g),
@@ -677,10 +688,17 @@ fn rc18_defaults() {
         "math.hermite_blend(math.clamp((query.is_on_fire ? query.on_fire_time : (((query.on_fire_time < 5.0f) ? (5.0f - query.on_fire_time) : 0.0f))) / 5.0f, 0.0f, 1.0f)) * 0.7"
     );
     assert_eq!(g.source().unwrap().raw_version(), Some(RawVersion(13)));
-    assert_eq!(c.is_hurt_color(), [1.0, 0.0, 0.0, 0.25].map(Molang::Const));
-    assert_eq!(c.light_color_multiplier(), Molang::Const(1.0));
-    assert!(!c.ignore_lighting() && !c.filter_lighting() && !c.rebuild_animation_matrices());
-    let uv = c.uv_anim();
+    assert_eq!(
+        controller.is_hurt_color(),
+        [1.0, 0.0, 0.0, 0.25].map(Molang::Const)
+    );
+    assert_eq!(controller.light_color_multiplier(), Molang::Const(1.0));
+    assert!(
+        !controller.ignore_lighting()
+            && !controller.filter_lighting()
+            && !controller.rebuild_animation_matrices()
+    );
+    let uv = controller.uv_anim();
     assert_eq!(uv.offset, [0.0, 0.0].map(Molang::Const));
     assert_eq!(uv.scale, [1.0, 1.0].map(Molang::Const));
     // Nothing of that is written back.
@@ -711,7 +729,7 @@ fn rc18_written_scalars_are_kept() {
     assert_eq!(c.rebuild_animation_matrices, Some(true));
     assert!(c.rebuild_animation_matrices());
     assert_eq!(c.light_color_multiplier(), Molang::Const(0.5));
-    assert_eq!(c.arrays, Some(Default::default()));
+    assert_eq!(c.arrays, Some(RenderControllerArrays::default()));
     let text = document.to_json().unwrap();
     assert!(text.contains(r#""ignore_lighting": false"#), "{text}");
     assert!(text.contains(r#""arrays": {}"#), "{text}");

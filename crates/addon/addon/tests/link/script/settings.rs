@@ -45,7 +45,7 @@ fn told(found: &bedrock_addon::diagnostic::Diagnostics) -> Vec<(String, String, 
                 f.location
                     .pack
                     .as_ref()
-                    .is_some_and(|pack| pack.is_app_data())
+                    .is_some_and(bedrock_addon::pack::PackRef::is_app_data)
             );
             let Some(DiagnosticDetail::Reference { kind, id, hint }) = f.detail.as_deref() else {
                 panic!("{f}");

@@ -2,13 +2,14 @@
 //! becomes the blocks its entry applies to.
 
 use super::common::{E, Found, I, file, file_at, load_one, ours, six, vanilla};
+use std::fmt::Write as _;
 
 /// The legacy-name warning for the lower-cased legacy name `name` with its post-split `blocks`.
 fn old_name(key: &str, name: &str, blocks: &[&str]) -> Found {
-    let names: String = blocks
-        .iter()
-        .map(|block| format!("\n - minecraft:{block}"))
-        .collect();
+    let names: String = blocks.iter().fold(String::new(), |mut out, block| {
+        write!(out, "\n - minecraft:{block}").unwrap();
+        out
+    });
     vanilla(
         "DeprecatedMember",
         E,

@@ -217,6 +217,7 @@ fn a_member_written_at_its_default_is_written_back() {
     }
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// The defaults vanilla applies to an absent member are the accessors'.
 #[test]
 fn an_absent_member_reads_as_its_default_through_the_accessor() {

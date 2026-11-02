@@ -32,7 +32,7 @@ fn wisp_with(
         &[],
         &resource,
         load,
-        &LinkOptions {
+        LinkOptions {
             lints,
             ..Default::default()
         },
@@ -290,7 +290,7 @@ mod controllers {
             &[],
             &[(WISP, &text), (FILE, controllers)],
             LoadOptions::default(),
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             },

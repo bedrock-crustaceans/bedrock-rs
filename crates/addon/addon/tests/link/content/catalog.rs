@@ -50,7 +50,7 @@ fn item(id: &str, menu: Option<&str>) -> String {
 fn link(
     files: &[(&'static str, &str)],
     resource: &[(&'static str, &str)],
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> Diagnostics {
     let mut base = bp(9).file(FILE, leak(EMPTY));
     base.uuid = VANILLA;
@@ -79,7 +79,7 @@ fn link(
         .map(ToString::to_string)
         .collect();
     assert_eq!(loud, [] as [String; 0]);
-    set.link_with(options)
+    set.link_with(&options)
 }
 
 /// (code, severity, JSON path, vanilla text or the reference's name) of the findings in the
@@ -108,21 +108,21 @@ mod group_name {
         let files = [(FILE, &*catalog(r#"{"name": "Demo:Gems"}"#, ""))];
         // Keys compare without case.
         let lang = ("texts/en_US.lang", "demo:gems=Gems\n");
-        let found = link(&files, &[LANGUAGES, lang], &LinkOptions::default());
+        let found = link(&files, &[LANGUAGES, lang], LinkOptions::default());
         assert_eq!(told(&found), []);
         // A group of the `minecraft` namespace is the game's: not looked up.
         let files = [(
             FILE,
             &*catalog(r#"{"name": "minecraft:itemGroup.name.no_such"}"#, ""),
         )];
-        let found = link(&files, &[], &LinkOptions::default());
+        let found = link(&files, &[], LinkOptions::default());
         assert_eq!(told(&found), []);
     }
 
     #[test]
     fn m2_a_group_name_no_lang_file_defines_is_an_information_at_the_name() {
         let files = [(FILE, &*catalog(r#"{"name": "demo:gems"}"#, ""))];
-        let found = link(&files, &[], &LinkOptions::default());
+        let found = link(&files, &[], LinkOptions::default());
         assert_eq!(
             told(&found),
             [(
@@ -135,11 +135,15 @@ mod group_name {
         let finding = found.iter().next().unwrap();
         assert_eq!(said_of(finding).4, "lang key");
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         // A lint.
-        assert_eq!(told(&link(&files, &[], &NO_LINTS)), []);
+        assert_eq!(told(&link(&files, &[], NO_LINTS)), []);
     }
 }
 
@@ -163,7 +167,7 @@ fn m3_an_item_placed_where_its_definition_says_or_without_a_category_is_no_findi
             (FILE, &*catalog(r#"{"name": "demo:gems"}"#, r#""demo:gem""#)),
             ("items/gem.json", &*item("demo:gem", menu)),
         ];
-        let found = link(&files, &[], &NO_LINTS);
+        let found = link(&files, &[], NO_LINTS);
         assert_eq!(told(&found), [], "{menu:?}");
     }
 }
@@ -181,7 +185,7 @@ fn m3_an_item_placed_outside_its_own_category_and_group_is_vanillas_two_warnings
         ),
     ];
     // Warnings: told without the lints too.
-    let found = link(&files, &[], &NO_LINTS);
+    let found = link(&files, &[], NO_LINTS);
     assert_eq!(
         told(&found),
         [
@@ -201,7 +205,11 @@ fn m3_an_item_placed_outside_its_own_category_and_group_is_vanillas_two_warnings
     );
     let finding = found.iter().next().unwrap();
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("bp 1")
     );
 }

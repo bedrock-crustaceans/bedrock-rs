@@ -16,8 +16,8 @@ use bedrock_addon::version::{FormatVersion, FormatVersionInput};
 use document_types::{beta, client, ddui, pack, poi};
 
 use places::{
-    Kind, Node, Outcome, code, content_in, kinds, leaves, lookup, nodes, non_strict_readings, number,
-    outcome, parse, path_of, same_float, scalar, without,
+    Kind, Node, Outcome, code, content_in, kinds, leaves, lookup, nodes, non_strict_readings,
+    number, outcome, parse, path_of, same_float, scalar, without,
 };
 
 /// The corpus files a family takes at most.
@@ -62,7 +62,13 @@ const EXEMPT: &[(&str, &str, &str, &str, &str)] = &[
     // A legacy quantity written as a text is a range (`"2-4"`, `"7"`), which the upgrade to
     // the newest format writes as `{"min": 7, "max": 7}`: the same quantity in the form
     // the newest format has.
-    ("trade_table", "*", "/quantity", "\"7\"", "quantity written as a range"),
+    (
+        "trade_table",
+        "*",
+        "/quantity",
+        "\"7\"",
+        "quantity written as a range",
+    ),
     // A legacy group without `num_to_select` (a `null` is none) selects every trade, -1; the
     // newest format's default is 0, so the upgrade writes the -1.
     (
@@ -94,14 +100,62 @@ const EXEMPT: &[(&str, &str, &str, &str, &str)] = &[
     // middle of the cube (`origin + size / 2`): a number beyond a float in `origin` or `size`
     // is held as the largest finite float and told at its element, and the pivot that then
     // moves is the cube's own, no value of the author's beside the member.
-    ("geometry", "*", "cubes/*/origin/*", "1e39", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/origin/*", "-1e39", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/origin/*", "1e999", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/origin/*", "-1e999", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/size/*", "1e39", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/size/*", "-1e39", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/size/*", "1e999", "pivot given by the upgrade"),
-    ("geometry", "*", "cubes/*/size/*", "-1e999", "pivot given by the upgrade"),
+    (
+        "geometry",
+        "*",
+        "cubes/*/origin/*",
+        "1e39",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/origin/*",
+        "-1e39",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/origin/*",
+        "1e999",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/origin/*",
+        "-1e999",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/size/*",
+        "1e39",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/size/*",
+        "-1e39",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/size/*",
+        "1e999",
+        "pivot given by the upgrade",
+    ),
+    (
+        "geometry",
+        "*",
+        "cubes/*/size/*",
+        "-1e999",
+        "pivot given by the upgrade",
+    ),
 ];
 
 /// The families whose loaded document may hold entries the load refused with an ERROR and
@@ -187,7 +241,6 @@ const BOOL_AS_NUMBER: &[(&str, &str)] = &[("particle", "bool written as number")
 /// (bool, unsigned and float reads); no log on a conversion.
 const NON_STRICT_BELOW: &[(&str, FormatVersion)] = &[("block", FormatVersion::new(1, 26, 20))];
 
-
 // --- the judgement ---------------------------------------------------------------------------
 
 /// The unchanged document: what its load found and the scalars of what it writes.
@@ -208,7 +261,7 @@ fn leaves_beside(value: &Value, path: &[String]) -> Option<Vec<String>> {
         };
         let mut found = false;
         if let Some(object) = value.as_object() {
-            for (key, member) in object.iter() {
+            for (key, member) in object {
                 if key.as_str() == first && !found {
                     found = walk(member, rest, out);
                 } else {
@@ -303,8 +356,7 @@ fn written(
                                         if text.starts_with(note)
                                 )
                                 && finding.phase == *phase
-                                && error
-                                    .contains(&format!("at: {:?},", finding.location.json_path))
+                                && error.contains(&format!("at: {:?},", finding.location.json_path))
                         })
                     })
             {
@@ -393,31 +445,29 @@ fn difference(one: &str, other: &str) -> String {
     format!("`{}` then `{}`", part(one), part(other))
 }
 
-/// What became of `text`, which has `replacement` at `node`.
-fn judge(
+/// Whether the written text holds the replacement at the place: as it is, as the `1` a
+/// number family gives a `true`, as a reading below a family's strict version, or as the
+/// nearest `f32` of a float member.
+fn held_at_the_place(
     family: &str,
     read: &dyn Fn(&str) -> Outcome,
-    base: &Base,
     template: (&str, &str),
     node: &Node,
     replacement: &str,
-) -> Result<&'static str, String> {
+    value: &Value,
+) -> bool {
     let text = format!("{}{replacement}{}", template.0, template.1);
-    let (ours, value) = match written(family, read, &text) {
-        Ok(read) => read,
-        Err(done) => return done,
-    };
+    let at = lookup(value, &node.path);
     let expected = parse(replacement).and_then(|value| scalar(&value));
     let expected = expected.expect("a replacement is a scalar");
-    let at = lookup(&value, &node.path);
     if at.and_then(scalar).as_ref() == Some(&expected) {
-        return Ok("held");
+        return true;
     }
     if replacement == "true"
         && BOOL_AS_NUMBER.iter().any(|(of, _)| *of == family)
         && at.and_then(number) == Some(1.0)
     {
-        return Ok("held");
+        return true;
     }
     if let Some((_, below)) = NON_STRICT_BELOW.iter().find(|(of, _)| *of == family)
         && parse(&text)
@@ -430,7 +480,7 @@ fn judge(
         && let Some(held) = at.and_then(number)
         && non_strict_readings(replacement).contains(&held)
     {
-        return Ok("held");
+        return true;
     }
     // A float member holds the nearest `f32` and writes its shortest spelling
     // (`4294967300.0` for `4294967296`). That is told from an integer member saturating at
@@ -445,29 +495,20 @@ fn judge(
         && same_float(other, twin)
         && !same_float(other, replacement)
     {
-        return Ok("held");
+        return true;
     }
-    let null_is_absent = replacement == "null" && NULL_IS_ABSENT.contains(&family);
-    if null_is_absent
-        && node.index.last() == Some(&false)
-        && at.is_none()
-        && lookup(&value, &node.path[..node.path.len() - 1]).is_some_and(Value::is_object)
-    {
-        // Absent by the member, not by the family: the `null` is read as the
-        // document WITHOUT the member is read. A member whose `null` is written as
-        // another text than its absence (a component dropped whole for it, a default put
-        // elsewhere) is no absent member, and falls through to the other outcomes.
-        let null_at = Node {
-            end: node.start + replacement.len(),
-            ..node.clone()
-        };
-        let as_absent = without(&text, &null_at)
-            .and_then(|absent| written(family, read, &absent).ok())
-            .is_some_and(|(_, absent)| absent == value);
-        if as_absent {
-            return Ok("absent");
-        }
-    }
+    false
+}
+
+/// Whether the findings of a load of the written text tell of the replacement: at the place,
+/// at a member above it, or at one the load drops whole. `Err` when they tell of it at the
+/// member alone and the written text loses what stood beside it.
+fn told_by_findings(
+    base: &Base,
+    node: &Node,
+    ours: &Outcome,
+    value: &Value,
+) -> Result<Option<&'static str>, String> {
     // A finding at the place; or one the unchanged document does not have at an enclosing
     // member.
     let mut known = base.findings.clone();
@@ -499,19 +540,19 @@ fn judge(
         }
     }
     if said_above {
-        return Ok("said");
+        return Ok(Some("said"));
     }
     if said_here {
         // Told at the member alone: what the written text loses BESIDE the member (a
         // component that goes whole for one member of another type) must be told above it.
-        let lost = lost_beside(base, node, &value);
+        let lost = lost_beside(base, node, value);
         if !lost.is_empty() {
             return Err(format!(
                 "told at the member alone, and the written text loses {lost:?} beside it; findings: {:?}",
                 kinds(&ours.findings)
             ));
         }
-        return Ok("said");
+        return Ok(Some("said"));
     }
     // Dropped with an enclosing member the load says it drops: a finding at a member above
     // the place that the written text does not have (a loot condition the game does not
@@ -521,9 +562,56 @@ fn judge(
         !at.is_empty()
             && at.len() < node.path.len()
             && node.path.starts_with(&at)
-            && lookup(&value, &at).is_none()
+            && lookup(value, &at).is_none()
     }) {
-        return Ok("said");
+        return Ok(Some("said"));
+    }
+    Ok(None)
+}
+
+/// What became of `text`, which has `replacement` at `node`.
+fn judge(
+    family: &str,
+    read: &dyn Fn(&str) -> Outcome,
+    base: &Base,
+    template: (&str, &str),
+    node: &Node,
+    replacement: &str,
+) -> Result<&'static str, String> {
+    let text = format!("{}{replacement}{}", template.0, template.1);
+    let (ours, value) = match written(family, read, &text) {
+        Ok(read) => read,
+        Err(done) => return done,
+    };
+    let expected = parse(replacement).and_then(|value| scalar(&value));
+    let expected = expected.expect("a replacement is a scalar");
+    let at = lookup(&value, &node.path);
+    if held_at_the_place(family, read, template, node, replacement, &value) {
+        return Ok("held");
+    }
+    let null_is_absent = replacement == "null" && NULL_IS_ABSENT.contains(&family);
+    if null_is_absent
+        && node.index.last() == Some(&false)
+        && at.is_none()
+        && lookup(&value, &node.path[..node.path.len() - 1]).is_some_and(Value::is_object)
+    {
+        // Absent by the member, not by the family: the `null` is read as the
+        // document WITHOUT the member is read. A member whose `null` is written as
+        // another text than its absence (a component dropped whole for it, a default put
+        // elsewhere) is no absent member, and falls through to the other outcomes.
+        let null_at = Node {
+            end: node.start + replacement.len(),
+            ..node.clone()
+        };
+        let as_absent = without(&text, &null_at)
+            .and_then(|absent| written(family, read, &absent).ok())
+            .is_some_and(|(_, absent)| absent == value);
+        if as_absent {
+            return Ok("absent");
+        }
+    }
+    if let Some(told) = told_by_findings(base, node, &ours, &value)? {
+        return Ok(told);
     }
     // Held at another place: a scalar the unchanged document's written text has not.
     let mut ours_leaves = Vec::new();
@@ -629,6 +717,61 @@ struct Tally {
     vanilla: BTreeMap<String, usize>,
 }
 
+/// The unchanged document written once; `None`, with the fault noted, when that fails. Warnings
+/// and errors of a corpus file (`capped`) are counted by code.
+fn base_of(
+    family: &str,
+    file: &str,
+    read: &dyn Fn(&str) -> Outcome,
+    document: &str,
+    capped: bool,
+    tally: &mut Tally,
+) -> Option<Base> {
+    match written(family, read, document) {
+        Ok((ours, value)) => {
+            if capped {
+                for finding in &ours.findings {
+                    if finding.severity >= Severity::Warning {
+                        let first =
+                            tally.vanilla.is_empty() || !tally.vanilla.contains_key(&code(finding));
+                        *tally.vanilla.entry(code(finding)).or_default() += 1;
+                        if first {
+                            println!(
+                                "writable-vanilla: {family} | the first {} | {file} | {}",
+                                code(finding),
+                                finding.location.json_path
+                            );
+                        }
+                    }
+                }
+            }
+            let mut all = Vec::new();
+            leaves(&value, &mut all);
+            Some(Base {
+                findings: kinds(&ours.findings),
+                texts: ours.findings.iter().map(finding_text).collect(),
+                leaves: all,
+                value,
+            })
+        }
+        Err(done) => {
+            tally.faults.push(format!(
+                "{family} | {file} | (the unchanged document) | {}",
+                done.err()
+                    .unwrap_or_default()
+                    .chars()
+                    .take(400)
+                    .collect::<String>()
+            ));
+            *tally
+                .kinds
+                .entry("(the unchanged document)".to_owned())
+                .or_default() += 1;
+            None
+        }
+    }
+}
+
 /// Probes one document; `capped` for a corpus file.
 fn probe(
     family: &str,
@@ -654,48 +797,8 @@ fn probe(
         tally.unread += 1;
         return;
     }
-    let base = match written(family, read, document) {
-        Ok((ours, value)) => {
-            if capped {
-                for finding in &ours.findings {
-                    if finding.severity >= Severity::Warning {
-                        let first =
-                            tally.vanilla.is_empty() || !tally.vanilla.contains_key(&code(finding));
-                        *tally.vanilla.entry(code(finding)).or_default() += 1;
-                        if first {
-                            println!(
-                                "writable-vanilla: {family} | the first {} | {file} | {}",
-                                code(finding),
-                                finding.location.json_path
-                            );
-                        }
-                    }
-                }
-            }
-            let mut all = Vec::new();
-            leaves(&value, &mut all);
-            Base {
-                findings: kinds(&ours.findings),
-                texts: ours.findings.iter().map(finding_text).collect(),
-                leaves: all,
-                value,
-            }
-        }
-        Err(done) => {
-            tally.faults.push(format!(
-                "{family} | {file} | (the unchanged document) | {}",
-                done.err()
-                    .unwrap_or_default()
-                    .chars()
-                    .take(400)
-                    .collect::<String>()
-            ));
-            *tally
-                .kinds
-                .entry("(the unchanged document)".to_owned())
-                .or_default() += 1;
-            return;
-        }
+    let Some(base) = base_of(family, file, read, document, capped, tally) else {
+        return;
     };
     let mut numbers = 0;
     for node in nodes(document) {
@@ -826,6 +929,10 @@ fn more(family: &str) -> &'static [&'static str] {
 
 /// Where a family's vanilla files are, below the corpus root: a directory (every `.json` and
 /// `.material` file below it) or a file, each with the pack root its paths are relative to.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one match over the table of the vanilla files of each family: no seam to split at"
+)]
 fn sources(family: &str) -> &'static [(&'static str, &'static str)] {
     const BP: &str = "bedrock-samples/behavior_pack";
     const RP: &str = "bedrock-samples/resource_pack";
@@ -908,14 +1015,26 @@ fn sources(family: &str) -> &'static [(&'static str, &'static str)] {
             (PERSONA, "pieces/alex_pants/alex_pants.meta.json"),
             (PERSONA, "pieces/ari_pants/ari_pants.meta.json"),
             (PERSONA, "pieces/body/medium/medium.meta.json"),
-            (PERSONA, "pieces/body/medium_skeleton/medium_skeleton.meta.json"),
+            (
+                PERSONA,
+                "pieces/body/medium_skeleton/medium_skeleton.meta.json",
+            ),
             (PERSONA, "pieces/body/small/small.meta.json"),
             (PERSONA, "pieces/body/smaller/smaller.meta.json"),
-            (PERSONA, "pieces/body/smaller_skeleton/smaller_skeleton.meta.json"),
+            (
+                PERSONA,
+                "pieces/body/smaller_skeleton/smaller_skeleton.meta.json",
+            ),
             (PERSONA, "pieces/efe_hair/efe_hair.meta.json"),
             (PERSONA, "pieces/efe_skin/efe_skin.meta.json"),
-            (PERSONA, "pieces/emote_followMe/communication_follow_me.meta.json"),
-            (PERSONA, "pieces/emote_overThere/communication_point.meta.json"),
+            (
+                PERSONA,
+                "pieces/emote_followMe/communication_follow_me.meta.json",
+            ),
+            (
+                PERSONA,
+                "pieces/emote_overThere/communication_point.meta.json",
+            ),
             (PERSONA, "pieces/emote_simpleClap/basic_clap.meta.json"),
             (PERSONA, "pieces/kai_shoes/kai_shoes.meta.json"),
             (PERSONA, "pieces/makena_shoes/makena_shoes.meta.json"),
@@ -931,7 +1050,10 @@ fn sources(family: &str) -> &'static [(&'static str, &'static str)] {
             (PERSONA, "pieces/alex_hair/alex_hair.store_info.json"),
             (PERSONA, "pieces/ari_pants/ari_pants.store_info.json"),
             (PERSONA, "pieces/efe_hair/efe_hair.store_info.json"),
-            (PERSONA, "pieces/emote_followMe/communication_follow_me.store_info.json"),
+            (
+                PERSONA,
+                "pieces/emote_followMe/communication_follow_me.store_info.json",
+            ),
             (PERSONA, "pieces/kai_jacket/kai_jacket.store_info.json"),
             (PERSONA, "pieces/makena_shoes/makena_shoes.store_info.json"),
             (PERSONA, "pieces/noor_shoes/noor_shoes.store_info.json"),
@@ -1109,7 +1231,6 @@ macro_rules! families {
 
 document_types!(families);
 
-
 /// The game line of a kept error, by which the written text's load and the read are matched:
 /// only a finding that carries a game text (`DiagnosticCode::game_text`) has
 /// one; a kept error without it renders only its kind's word and pairs with nothing.
@@ -1152,9 +1273,16 @@ mod kept_line_tests {
     #[test]
     fn two_kept_errors_with_one_game_text_pair() {
         use bedrock_addon::diagnostic::VanillaText;
-        let text = || Some(VanillaText::Fixed("There must be an \"entries\" array inside the loot table pool."));
+        let text = || {
+            Some(VanillaText::Fixed(
+                "There must be an \"entries\" array inside the loot table pool.",
+            ))
+        };
         let a = kept_at(DiagnosticCode::InvalidType { text: text() }, "entries");
-        let b = kept_at(DiagnosticCode::MissingRequiredField { text: text() }, "pool");
+        let b = kept_at(
+            DiagnosticCode::MissingRequiredField { text: text() },
+            "pool",
+        );
         assert!(kept_line(&a).is_some());
         assert_eq!(kept_line(&a), kept_line(&b));
     }

@@ -57,8 +57,7 @@ fn folder(name: &str, files: Vec<(String, Vec<u8>)>, dropped: &[&str]) -> Case {
     let manifest = files
         .iter()
         .find(|(at, _)| at == "manifest.json")
-        .map(|(_, bytes)| parsed(bytes))
-        .unwrap_or_else(|| panic!("{name}: no manifest"));
+        .map_or_else(|| panic!("{name}: no manifest"), |(_, bytes)| parsed(bytes));
     let mut files: Vec<(String, Vec<u8>)> = files
         .into_iter()
         .filter(|(at, _)| at != "manifest.json" && !dropped.contains(&at.as_str()))

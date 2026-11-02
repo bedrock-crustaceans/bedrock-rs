@@ -124,7 +124,11 @@ fn d14_a_custom_dimension_the_world_could_not_create_is_a_warning_for_the_host()
         "Dimension 'test:void' from pack id '00000000-0000-0000-0000-000000000001' was invalid and could not be created!"
     );
     assert_eq!(
-        finding.location.path.as_ref().map(|p| p.as_str()),
+        finding
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon_core::pack_identity::PackPath::as_str),
         Some("dimensions/test_void.json")
     );
     assert_eq!(

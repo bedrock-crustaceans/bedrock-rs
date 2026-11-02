@@ -34,7 +34,7 @@ fn w8_a_feature_a_pack_defines_or_a_host_has_resolves() {
         &[(RULE, text.as_str())],
         &[],
         hosted(&[("feature", "minecraft:oak_tree_feature")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["feature"]), []);
 }
@@ -88,7 +88,7 @@ fn w8_a_feature_nothing_defines_is_an_information_and_a_lint() {
         &files,
         &[],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },

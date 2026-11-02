@@ -40,7 +40,7 @@ fn w15_a_default_biome_a_pack_defines_or_the_game_has_resolves() {
         &[(OVERWORLD, text.as_str())],
         &[],
         hosted(&[("dimension", "minecraft:overworld")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["biome"]), []);
     let text = default_biome("demo:far");
@@ -48,7 +48,7 @@ fn w15_a_default_biome_a_pack_defines_or_the_game_has_resolves() {
         &[(OVERWORLD, text.as_str())],
         &[],
         hosted(&[("biome", "demo:far")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &["biome"]), []);
 }
@@ -74,7 +74,7 @@ fn w15_a_default_biome_nothing_defines_is_an_information_and_a_lint() {
         &files,
         &[],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },

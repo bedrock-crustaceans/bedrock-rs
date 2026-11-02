@@ -6,6 +6,7 @@
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
@@ -220,19 +221,19 @@ pub fn names<'a>(
 
 /// The findings, one per line: severity, code, file, JSON path, text.
 pub fn describe<'a>(findings: impl IntoIterator<Item = &'a Diagnostic>) -> String {
-    findings
-        .into_iter()
-        .map(|f| {
-            format!(
-                "\n  {} {} {:?} {} {}",
-                f.severity,
-                f.code.name(),
-                f.location.path.as_ref().map(PackPath::as_str),
-                f.location.json_path,
-                f.code
-            )
-        })
-        .collect()
+    findings.into_iter().fold(String::new(), |mut out, f| {
+        write!(
+            out,
+            "\n  {} {} {:?} {} {}",
+            f.severity,
+            f.code.name(),
+            f.location.path.as_ref().map(PackPath::as_str),
+            f.location.json_path,
+            f.code
+        )
+        .unwrap();
+        out
+    })
 }
 
 /// A `minecraft:poi_block` document of `version` with `payload`.

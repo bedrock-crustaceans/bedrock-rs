@@ -55,7 +55,7 @@ fn place(diagnostic: &Diagnostic) -> (Option<usize>, String, String) {
             .location
             .pack
             .as_ref()
-            .and_then(|pack| pack.index()),
+            .and_then(bedrock_addon::pack::PackRef::index),
         diagnostic
             .location
             .path

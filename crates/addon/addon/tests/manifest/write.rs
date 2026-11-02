@@ -264,7 +264,7 @@ fn legacy_unknown_members_are_kept_after_the_known_ones() {
             .extra
             .get("author")
             .and_then(|v| v.as_string())
-            .map(|s| s.as_str()),
+            .map(facet_value::VString::as_str),
         Some("me")
     );
     let written = manifest.to_json().unwrap();

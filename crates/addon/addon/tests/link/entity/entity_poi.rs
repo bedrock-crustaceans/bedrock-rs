@@ -57,7 +57,7 @@ fn e21_a_poi_name_that_is_no_type_and_no_tag_is_an_information() {
         ],
         &[],
         options(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let at = "components/minecraft:memory_sensor.find_nearest_poi/sensor_entries";
     assert_eq!(
@@ -80,7 +80,7 @@ fn e21_a_host_answers_for_the_games_poi_types_and_tags() {
         "minecraft:none",
     ]);
     let files = [(FILE, &*text)];
-    let found = link_with(&files, &[], options(), &LinkOptions::default());
+    let found = link_with(&files, &[], options(), LinkOptions::default());
     assert_eq!(said_of(&found, "poi type").len(), 3, "{found:?}");
     let host = LoadOptions {
         built_ins: hosted(&[
@@ -90,7 +90,7 @@ fn e21_a_host_answers_for_the_games_poi_types_and_tags() {
         .built_ins,
         ..options()
     };
-    let found = link_with(&files, &[], host, &LinkOptions::default());
+    let found = link_with(&files, &[], host, LinkOptions::default());
     let at = "components/minecraft:memory_sensor.find_nearest_poi/sensor_entries";
     assert_eq!(
         said_of(&found, "poi type"),

@@ -5,8 +5,8 @@
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::persona::{
-    ArmSize, BodySize, FaceFlag, HexColor, Named, PersonaPiece, PersonaPieces, PieceMetadata,
-    PieceSide, PieceSource, PieceType, TintColor, TintColorOrString, Written, Zones,
+    ArmSize, BodySize, FaceFlag, GeometrySource, HexColor, Named, PersonaPiece, PersonaPieces,
+    PieceMetadata, PieceSide, PieceSource, PieceType, TintColor, TintColorOrString, Written, Zones,
 };
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::pack::PackIdVersion;
@@ -546,7 +546,7 @@ fn pm11_a_document_with_the_envelope_is_read_from_its_payload() {
         meta.envelope
             .as_ref()
             .and_then(|v| v.as_string())
-            .map(|v| v.as_str()),
+            .map(facet_value::VString::as_str),
         Some("1.26.40")
     );
     assert_eq!(only(&pieces).name_key(), "persona.hat.title");
@@ -1128,7 +1128,7 @@ fn pg05_g4_the_arm_size_of_a_geometry_source() {
     );
     assert_eq!(found(&pieces), Vec::<String>::new());
     let sources = value(&pieces).geometry_sources.as_ref().unwrap();
-    let read: Vec<Option<ArmSize>> = sources.iter().map(|source| source.arm_size()).collect();
+    let read: Vec<Option<ArmSize>> = sources.iter().map(GeometrySource::arm_size).collect();
     assert_eq!(read, [None, Some(ArmSize::Slim), Some(ArmSize::Wide), None]);
     assert_eq!(
         sources[0].arm_size,
@@ -1155,7 +1155,7 @@ fn the_body_size_of_a_geometry_source() {
     // medium.
     assert_eq!(found(&pieces), Vec::<String>::new());
     let sources = value(&pieces).geometry_sources.as_ref().unwrap();
-    let read: Vec<Option<BodySize>> = sources.iter().map(|source| source.body_size()).collect();
+    let read: Vec<Option<BodySize>> = sources.iter().map(GeometrySource::body_size).collect();
     assert_eq!(read, [None, Some(BodySize::Medium), Some(BodySize::Tall)]);
     let huge = hat_with(r#""geometry_sources": [{ "geometry": "g", "body_size": "huge" }]"#);
     assert_eq!(
@@ -1283,7 +1283,7 @@ fn pg07_g6_is_face_is_a_string() {
     );
     assert_eq!(found(&pieces), Vec::<String>::new());
     let sources = value(&pieces).geometry_sources.as_ref().unwrap();
-    let read: Vec<Option<bool>> = sources.iter().map(|source| source.is_face()).collect();
+    let read: Vec<Option<bool>> = sources.iter().map(GeometrySource::is_face).collect();
     assert_eq!(read, [Some(true), Some(false), None, Some(false)]);
     assert_eq!(sources[0].is_face, Some(FaceFlag::Text("true".to_owned())));
     for flag in ["true", "false"] {

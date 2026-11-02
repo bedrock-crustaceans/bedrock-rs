@@ -72,7 +72,7 @@ pub struct Payload {
     pub materials: Vec<PayloadMaterial>,
 }
 
-/// One entry of the payload's "TrimPattern List".
+/// One entry of the payload's "`TrimPattern` List".
 #[derive(Debug, Facet)]
 pub struct PayloadPattern {
     #[facet(rename = "itemName")]
@@ -81,7 +81,7 @@ pub struct PayloadPattern {
     pub pattern_id: String,
 }
 
-/// One entry of the payload's "TrimMaterial List".
+/// One entry of the payload's "`TrimMaterial` List".
 #[derive(Debug, Facet)]
 pub struct PayloadMaterial {
     #[facet(rename = "materialId")]

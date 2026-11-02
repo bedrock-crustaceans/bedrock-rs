@@ -50,14 +50,14 @@ fn unknown_with(
     declared: &[&str],
     defined: &[&str],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> Vec<Diagnostic> {
     let set = stacks_of(
         vec![behavior_pack(1, &[(PATH, &server(declared))])],
         vec![resource_pack(2, &[(PATH, &client(defined))])],
         load,
     );
-    let found = set.link_with(options);
+    let found = set.link_with(&options);
     found
         .iter()
         .filter(|finding| finding.code.name() == "UnknownSound")
@@ -66,7 +66,7 @@ fn unknown_with(
 }
 
 fn unknown(declared: &[&str], defined: &[&str]) -> Vec<Diagnostic> {
-    unknown_with(declared, defined, beta(None), &LinkOptions::default())
+    unknown_with(declared, defined, beta(None), LinkOptions::default())
 }
 
 /// The JSON path and the name of each finding.
@@ -107,9 +107,17 @@ fn r44_a_name_no_resource_pack_defines_is_an_unknown_sound_information() {
     for finding in &found {
         assert_eq!(finding.severity, Severity::Info);
         assert_eq!(finding.phase, Phase::Link);
-        let pack = finding.location.pack.as_ref().map(|pack| pack.name());
+        let pack = finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name);
         assert_eq!(pack, Some("bp 1"));
-        let path = finding.location.path.as_ref().map(|path| path.as_str());
+        let path = finding
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str);
         assert_eq!(path, Some(PATH));
         // Ours: vanilla checks nothing, so the finding has no text of its.
         assert_eq!(finding.code.to_string(), "unknown sound event");
@@ -130,10 +138,10 @@ fn r44_a_sound_of_the_game_resolves_with_a_host_that_has_it_and_not_without_one(
     assert_eq!(named(&found), [at(0, "game:click")]);
     let options = LinkOptions::default();
     let host = beta(Some(&[("sound event", "game:click")]));
-    assert!(unknown_with(&["game:click"], &[], host, &options).is_empty());
+    assert!(unknown_with(&["game:click"], &[], host, options).is_empty());
     // A host is believed when it says no; the resource pack's own definition still resolves.
     let other = beta(Some(&[("sound event", "game:pop")]));
-    let found = unknown_with(&["game:click", "demo:a"], &["demo:a"], other, &options);
+    let found = unknown_with(&["game:click", "demo:a"], &["demo:a"], other, options);
     assert_eq!(named(&found), [at(0, "game:click")]);
 }
 
@@ -143,7 +151,7 @@ fn r44_without_the_lints_nothing_is_told() {
         lints: false,
         ..Default::default()
     };
-    assert!(unknown_with(&["demo:missing"], &[], beta(None), &quiet).is_empty());
+    assert!(unknown_with(&["demo:missing"], &[], beta(None), quiet).is_empty());
 }
 
 /// The index is the definition's place in its file, also after a definition the server

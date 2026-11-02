@@ -1,4 +1,4 @@
-//! The fixtures of families/script_config: a small server root per row (`config/…`,
+//! The fixtures of `families/script_config`: a small server root per row (`config/…`,
 //! `server.properties`), `expected.toml` with every finding (code, severity, phase, file, path
 //! and, where the server has one, its text) and, for the rows that need a stack, `stack.toml`.
 

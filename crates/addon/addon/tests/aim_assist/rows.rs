@@ -20,13 +20,11 @@ fn at_category(path: &str) -> String {
     format!("minecraft:aim_assist_categories/categories/{path}")
 }
 
-fn strings(values: &[&str]) -> Option<Vec<StrictString>> {
-    Some(
-        values
-            .iter()
-            .map(|v| StrictString((*v).to_owned()))
-            .collect(),
-    )
+fn strings(values: &[&str]) -> Vec<StrictString> {
+    values
+        .iter()
+        .map(|v| StrictString((*v).to_owned()))
+        .collect()
 }
 
 #[test]
@@ -119,8 +117,8 @@ fn aa02_a_1_21_120_preset_is_read_as_written() {
     expected.exclusion_settings = Some(ExclusionSettings {
         blocks: Some(vec![BlockId::parse("minecraft:stone")]),
         entities: Some(vec![EntityId::parse("minecraft:pig")]),
-        block_tags: strings(&["wood"]),
-        entity_type_families: strings(&["monster", "undead"]),
+        block_tags: Some(strings(&["wood"])),
+        entity_type_families: Some(strings(&["monster", "undead"])),
     });
     expected.hand_settings = Some(AimAssistCategoryId::parse("test:empty_hand"));
     assert_eq!(document.value(), &expected);
@@ -913,8 +911,8 @@ fn every_member_of_both_documents_reads_into_its_field() {
     expected.exclusion_settings = Some(ExclusionSettings {
         blocks: Some(vec![BlockId::parse("minecraft:stone")]),
         entities: Some(vec![EntityId::parse("minecraft:pig")]),
-        block_tags: strings(&["wood"]),
-        entity_type_families: strings(&["monster"]),
+        block_tags: Some(strings(&["wood"])),
+        entity_type_families: Some(strings(&["monster"])),
     });
     expected.liquid_targeting_list = Some(vec![ItemId::parse("minecraft:bucket")]);
     expected.item_settings = Some(

@@ -135,11 +135,11 @@ fn claim(location: &str, stack_index: usize) -> (String, usize) {
     (location.to_owned(), stack_index)
 }
 
-fn image(stack_index: usize, file: &str) -> Option<TextureSource> {
-    Some(TextureSource::Image {
+fn image(stack_index: usize, file: &str) -> TextureSource {
+    TextureSource::Image {
         stack_index,
         file: file.to_owned(),
-    })
+    }
 }
 
 // `textures/texture_list.json` of the vanilla resource pack, copied unchanged, with a 1x1
@@ -276,7 +276,7 @@ fn tl09_an_entry_with_an_extension_is_wasted_and_not_stale_deviation() {
     assert_eq!(found(&stack), [entry(0), whole()]);
     assert_eq!(
         stack.texture_files().source("textures/blocks/a.png"),
-        image(0, "textures/blocks/a.png")
+        Some(image(0, "textures/blocks/a.png"))
     );
 }
 
@@ -313,7 +313,7 @@ fn tl11_an_entry_outside_textures_is_an_info_deviation() {
     assert_eq!(found(&stack), [at("InvalidValue", Info, "0")]);
     assert_eq!(
         stack.texture_files().source("ui/foo"),
-        image(0, "ui/foo.png")
+        Some(image(0, "ui/foo.png"))
     );
 }
 
@@ -453,7 +453,7 @@ fn tl19_the_first_claim_wins_and_the_texture_loads_through_the_stack() {
     assert_eq!(claims(&stack), [claim("textures/x", 0)]);
     assert_eq!(
         stack.texture_files().source("textures/x"),
-        image(1, "textures/x.png")
+        Some(image(1, "textures/x.png"))
     );
     assert_eq!(found(&stack), [stale(0)]);
 }
@@ -466,7 +466,7 @@ fn tl20_a_higher_pack_s_override_is_what_is_loaded() {
     assert!(claims.contains(&claim("textures/x", 1)), "{claims:?}");
     assert_eq!(
         stack.texture_files().source("textures/x"),
-        image(0, "textures/x.png")
+        Some(image(0, "textures/x.png"))
     );
     // V9 on the top pack, V8 on the lower one (it lists what it does not have).
     let findings: Vec<_> = stack.texture_lists().diagnostics().collect();
@@ -592,7 +592,7 @@ fn tl28_shipped_entries_with_an_extension() {
     assert_eq!(found(&stack), [entry(0), entry(1), stale(1), whole()]);
     assert_eq!(
         stack.texture_files().source("textures/ui/RTX_Label.png"),
-        image(0, "textures/ui/RTX_Label.png")
+        Some(image(0, "textures/ui/RTX_Label.png"))
     );
 }
 
@@ -613,7 +613,7 @@ fn a_higher_image_wins_over_a_lower_texture_set() {
     let stack = common::stack_of_files(&[top, bottom]);
     assert_eq!(
         stack.texture_files().source("textures/s"),
-        image(0, "textures/s.png")
+        Some(image(0, "textures/s.png"))
     );
     let stack = common::stack_of_files(&[bottom, top]);
     assert_eq!(

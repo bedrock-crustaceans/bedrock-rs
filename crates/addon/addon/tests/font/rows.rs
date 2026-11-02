@@ -5,8 +5,8 @@
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Severity};
 use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::font::{
-    EmoticonList, FontFormat, FontMetadata, GlyphPage, GlyphRemapping, PageSpec, RemapEntry,
-    SMOOTH_PREFIX, check_glyph_sheet, png_size, remapping_path,
+    EmoticonList, FontEntry, FontFormat, FontMetadata, GlyphPage, GlyphRemapping, PageSpec,
+    RemapEntry, SMOOTH_PREFIX, check_glyph_sheet, png_size, remapping_path,
 };
 use bedrock_addon::json::last_wins;
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -273,11 +273,7 @@ fn fo04_a_bitmap_and_a_ttf_font() {
         (fonts[0].format(), fonts[1].format()),
         (Some(FontFormat::Bitmap), Some(FontFormat::Ttf))
     );
-    assert!(
-        fonts
-            .iter()
-            .all(|font| font.is_low_performance_compatible())
-    );
+    assert!(fonts.iter().all(FontEntry::is_low_performance_compatible));
     assert_eq!(fonts[1].low_performance_compatible, None);
     assert_eq!(doc.font("T").unwrap().font_file.as_deref(), Some("font/t"));
 }
@@ -987,46 +983,48 @@ fn font_files_are_placed_below_font() {
     assert_eq!(EmoticonList::default().to_json().unwrap().trim(), "[]");
 }
 
+/// Values a generated member takes, as JSON text.
+const GENERATED_VALUES: [&str; 16] = [
+    "1",
+    "1.5",
+    "2.0",
+    "-3",
+    "\"s\"",
+    "\"\"",
+    "true",
+    "false",
+    "null",
+    "[]",
+    "{}",
+    "[1, {\"first_page\": 1, \"last_page\": 3, \"k\": 0}, \"x\", {\"first_page\": 4, \"last_page\": 2}]",
+    "[{\"first\": 1, \"last\": 2}]",
+    "[{\"first\": 1}]",
+    "1e39",
+    "1e999",
+];
+const GENERATED_FONT_MEMBERS: [&str; 8] = [
+    "lowPerformanceCompatible",
+    "generate_pages_on_start",
+    "ascii_font_file",
+    "unicode_file_prefix",
+    "font_file",
+    "version",
+    "target_font_render_size",
+    "other",
+];
+const GENERATED_ALIAS_MEMBERS: [&str; 6] = [
+    "font_scale_factor_override",
+    "font_language_code",
+    "font_ranges",
+    "font_scale",
+    "font_reference",
+    "other",
+];
+
 /// A few thousand generated font lists: each that loads writes text that loads back to an
 /// equal list with the same findings, and writes the same text again.
 #[test]
 fn generated_font_lists_round_trip() {
-    let values = [
-        "1",
-        "1.5",
-        "2.0",
-        "-3",
-        "\"s\"",
-        "\"\"",
-        "true",
-        "false",
-        "null",
-        "[]",
-        "{}",
-        "[1, {\"first_page\": 1, \"last_page\": 3, \"k\": 0}, \"x\", {\"first_page\": 4, \"last_page\": 2}]",
-        "[{\"first\": 1, \"last\": 2}]",
-        "[{\"first\": 1}]",
-        "1e39",
-        "1e999",
-    ];
-    let font_members = [
-        "lowPerformanceCompatible",
-        "generate_pages_on_start",
-        "ascii_font_file",
-        "unicode_file_prefix",
-        "font_file",
-        "version",
-        "target_font_render_size",
-        "other",
-    ];
-    let alias_members = [
-        "font_scale_factor_override",
-        "font_language_code",
-        "font_ranges",
-        "font_scale",
-        "font_reference",
-        "other",
-    ];
     let (mut count, mut rewritten, mut clamped, mut repeated) = (0, 0, 0, 0);
     let mut check = |text: String| {
         count += 1;
@@ -1086,9 +1084,13 @@ fn generated_font_lists_round_trip() {
         assert_eq!(second.to_json().unwrap(), written, "{text}");
     };
     for format in ["bitmap", "ttf", "ttfmsdf", "msdf", "x"] {
-        for member in font_members {
-            for value in values {
-                for second in values.iter().take(5).chain(&values[14..]) {
+        for member in GENERATED_FONT_MEMBERS {
+            for value in GENERATED_VALUES {
+                for second in GENERATED_VALUES
+                    .iter()
+                    .take(5)
+                    .chain(&GENERATED_VALUES[14..])
+                {
                     check(format!(
                         r#"{{ "version": 1, "fonts": [{{ "font_format": "{format}", "font_name": "n", "{member}": {value}, "font_file": {second} }}] }}"#
                     ));
@@ -1096,9 +1098,9 @@ fn generated_font_lists_round_trip() {
             }
         }
     }
-    for member in alias_members {
-        for value in values {
-            for second in values {
+    for member in GENERATED_ALIAS_MEMBERS {
+        for value in GENERATED_VALUES {
+            for second in GENERATED_VALUES {
                 check(format!(
                     r#"{{ "version": 1, "fonts": [{TTF}], "font_aliases": [{{ "alias": "a", "{member}": {value}, "fonts": [{{ "font_reference": "T", "{member}": {second} }}] }}] }}"#
                 ));
@@ -1332,6 +1334,7 @@ fn fo13_a_header_that_is_not_zero() {
     }
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn fo14_a_short_file_leaves_the_missing_advances_at_zero_deviation() {
     let (page, diagnostics) = GlyphPage::from_bytes(&fontdata(0, &[0.5; 128])).expect("header 0");
@@ -1363,6 +1366,7 @@ fn f24_bytes_after_the_last_advance_are_ignored() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn fo26_f25_an_advance_that_is_not_positive() {
     let mut advances = [0.5_f32; 256];
@@ -1662,8 +1666,8 @@ fn f27_smooth_pages_the_client_does_not_draw_deviation() {
     assert!(stack.fonts().msdf_pages(SMOOTH_PREFIX).is_empty());
 }
 
-#[test]
-fn fo18_f21_a_true_type_file_no_pack_has() {
+/// A stack whose list names six true-type files, four of which no pack has.
+fn true_type_files_no_pack_has() -> PackStack<Resource> {
     let list = font_list(
         r#"{ "font_format": "ttf", "font_name": "A", "font_file": "font/x.ttf" },
            { "font_format": "ttf", "font_name": "B", "font_file": "font/absent" },
@@ -1672,13 +1676,18 @@ fn fo18_f21_a_true_type_file_no_pack_has() {
            { "font_format": "ttfmsdf", "font_name": "E", "font_file": "font/collection" },
            { "font_format": "ttfmsdf", "font_name": "F", "font_file": "font/c.otc" }"#,
     );
-    let stack = stack_of(&[&[
+    stack_of(&[&[
         ("font/font_metadata.json", &list),
         ("font/x.ttf", ""),
         ("font/x.ttf.ttf", ""),
         ("font/c.otf", ""),
         ("font/collection.ttc", ""),
-    ]]);
+    ]])
+}
+
+#[test]
+fn fo18_f21_a_true_type_file_no_pack_has() {
+    let stack = true_type_files_no_pack_has();
     let found: Vec<(&str, Severity, String)> = located(stack.fonts().diagnostics());
     assert_eq!(
         found,
@@ -1714,6 +1723,11 @@ fn fo18_f21_a_true_type_file_no_pack_has() {
             .filter(|d| d.code.name() == "FontFileMissing")
             .all(|d| d.code.to_string() == "Failed to load font from resource pack")
     );
+}
+
+#[test]
+fn fo18_f21_the_paths_the_game_tries_for_a_missing_true_type_file() {
+    let stack = true_type_files_no_pack_has();
     // Each names the paths the game tries, in its order: `font_file` and one extension more,
     // also where `font_file` carries one already.
     let tried: Vec<String> = stack

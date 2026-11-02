@@ -34,20 +34,33 @@ fn all_loaded(set: &StackSet, files: usize) {
 
 // ---- W1 --------------------------------------------------------------------------------------
 
+/// A row of [`naming`]: the file, the document, the JSON path of the member, and whether
+/// only the game's own packs may use the type.
+type NamingRow = (&'static str, String, &'static str, bool);
+
 /// One document per member of the row, each naming the feature `target`: the file, the
 /// document, the JSON path of the member, and whether the type is one only the game's own
 /// packs may use.
-fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
-    let f = |version: &str, kind: &str, members: String| {
-        feature(version, kind, &format!("demo:{kind}"), &members)
-    };
+fn naming(target: &str) -> Vec<NamingRow> {
+    let mut rows = naming_of_lists_and_places(target);
+    rows.extend(naming_of_layouts_and_trees(target));
+    rows
+}
+
+/// A feature document of `kind`, called `demo:<kind>`.
+fn f(version: &str, kind: &str, members: &str) -> String {
+    feature(version, kind, &format!("demo:{kind}"), members)
+}
+
+/// The first rows of [`naming`]: the lists, and the members that place one feature.
+fn naming_of_lists_and_places(target: &str) -> Vec<NamingRow> {
     vec![
         (
             "features/aggregate.json",
             f(
                 "1.13.0",
                 "aggregate_feature",
-                format!(r#", "features": ["demo:vein", "{target}"]"#),
+                &format!(r#", "features": ["demo:vein", "{target}"]"#),
             ),
             "minecraft:aggregate_feature/features/1",
             false,
@@ -57,7 +70,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "sequence_feature",
-                format!(r#", "features": ["{target}"]"#),
+                &format!(r#", "features": ["{target}"]"#),
             ),
             "minecraft:sequence_feature/features/0",
             false,
@@ -67,7 +80,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.21.10",
                 "scatter_feature",
-                format!(
+                &format!(
                     r#", "places_feature": "{target}", "distribution": {{"iterations": 1, "x": 0, "y": 0, "z": 0}}"#
                 ),
             ),
@@ -79,7 +92,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.26.50",
                 "snap_to_surface_feature",
-                format!(r#", "feature_to_snap": "{target}", "search_range": 4"#),
+                &format!(r#", "feature_to_snap": "{target}", "search_range": 4"#),
             ),
             "minecraft:snap_to_surface_feature/feature_to_snap",
             false,
@@ -89,7 +102,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "search_feature",
-                format!(
+                &format!(
                     r#", "places_feature": "{target}", "search_volume": {{"min": [0, 0, 0], "max": [1, 1, 1]}}, "search_axis": "-y""#
                 ),
             ),
@@ -101,7 +114,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "rect_layout",
-                format!(
+                &format!(
                     r#", "feature_areas": [{{"feature": "{target}", "area_dimensions": [1, 1]}}]"#
                 ),
             ),
@@ -113,7 +126,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "scan_surface",
-                format!(r#", "scan_surface_feature": "{target}""#),
+                &format!(r#", "scan_surface_feature": "{target}""#),
             ),
             "minecraft:scan_surface/scan_surface_feature",
             true,
@@ -123,17 +136,23 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "weighted_random_feature",
-                format!(r#", "features": [["demo:vein", 1], ["{target}", 2]]"#),
+                &format!(r#", "features": [["demo:vein", 1], ["{target}", 2]]"#),
             ),
             "minecraft:weighted_random_feature/features/1/0",
             false,
         ),
+    ]
+}
+
+/// The last rows of [`naming`]: the layouts, the patch and the trees.
+fn naming_of_layouts_and_trees(target: &str) -> Vec<NamingRow> {
+    vec![
         (
             "features/conditional.json",
             f(
                 "1.13.0",
                 "conditional_list",
-                format!(
+                &format!(
                     r#", "conditional_features": [{{"places_feature": "{target}", "condition": "1"}}]"#
                 ),
             ),
@@ -145,7 +164,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "surface_relative_threshold_feature",
-                format!(r#", "feature_to_place": "{target}""#),
+                &format!(r#", "feature_to_place": "{target}""#),
             ),
             "minecraft:surface_relative_threshold_feature/feature_to_place",
             false,
@@ -155,7 +174,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "beards_and_shavers",
-                format!(
+                &format!(
                     r#", "places_feature": "{target}", "bounding_box_min": [0, 0, 0], "bounding_box_max": [1, 1, 1], "y_delta": 1.0, "surface_block_type": "minecraft:grass_block", "subsurface_block_type": "minecraft:dirt""#
                 ),
             ),
@@ -167,7 +186,7 @@ fn naming(target: &str) -> Vec<(&'static str, String, &'static str, bool)> {
             f(
                 "1.13.0",
                 "vegetation_patch_feature",
-                format!(
+                &format!(
                     r#", "replaceable_blocks": ["minecraft:stone"], "ground_block": "minecraft:moss_block", "vegetation_feature": "{target}", "depth": 1, "vertical_range": 5, "horizontal_radius": 2"#
                 ),
             ),
@@ -576,6 +595,8 @@ fn w3_without_the_block_module_no_block_of_a_feature_is_reported() {
 #[cfg(feature = "block")]
 #[test]
 fn w4_a_block_single_block_places_that_nothing_defines_is_a_kept_error_with_vanillas_text() {
+    const TEXT: &str = "Failed to resolve block for 'places_block' property.";
+
     let single = |places: &str| {
         feature(
             "1.21.40",
@@ -586,7 +607,6 @@ fn w4_a_block_single_block_places_that_nothing_defines_is_a_kept_error_with_vani
             ),
         )
     };
-    const TEXT: &str = "Failed to resolve block for 'places_block' property.";
     for (places, expected) in [
         (r#""demo:lamp""#, vec![("", "demo:lamp")]),
         (r#"{"name": "demo:lamp"}"#, vec![("/name", "demo:lamp")]),

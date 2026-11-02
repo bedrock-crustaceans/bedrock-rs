@@ -1,4 +1,4 @@
-//! families/pack_settings fixtures.md "Document" rows about the version: `ps05`–`ps08b` and
+//! `families/pack_settings` fixtures.md "Document" rows about the version: `ps05`–`ps08b` and
 //! `ps16` (validation.md D2–D4b).
 
 use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};

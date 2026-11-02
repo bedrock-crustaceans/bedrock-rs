@@ -195,7 +195,10 @@ pub fn located<'a>(
         .map(|f| {
             (
                 f.code.name(),
-                f.location.pack.as_ref().and_then(|pack| pack.index()),
+                f.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
                 f.location
                     .path
                     .as_ref()

@@ -246,7 +246,11 @@ fn poi10_unknown_payload_is_a_missing_payload_error() {
         DiagnosticCode::MissingPayload { .. }
     ));
     assert_eq!(
-        errors[0].location.path.as_ref().map(|p| p.as_str()),
+        errors[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("poi/blocks/forge.json")
     );
 }

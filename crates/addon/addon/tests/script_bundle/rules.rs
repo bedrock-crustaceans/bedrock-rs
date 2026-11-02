@@ -2,6 +2,8 @@
 //! sides of the ones a fixture shows one side of: severities by reachability, the hints, the
 //! native-module answers of a host, `ScriptBundle::scan` outside a stack.
 
+use std::fmt::Write as _;
+
 use bedrock_addon::diagnostic::{DiagnosticCode, NotFoundHint, Severity};
 use bedrock_addon::families::script::{
     ImportKind, NativeModuleAccess, Resolution, ScanOptions, ScriptBundle, ScriptHost, ScriptPath,
@@ -32,7 +34,7 @@ impl Default for Host {
 }
 
 impl ScriptHost for Host {
-    fn plugin(&self) -> &str {
+    fn plugin(&self) -> &'static str {
         "probe - 1.0.0"
     }
     fn entry(&self) -> Option<&str> {
@@ -763,7 +765,7 @@ fn every_hint_and_the_file_it_points_at() {
     ];
     let mut source = String::new();
     for (spec, _, _) in specs {
-        source.push_str(&format!("import(\"{spec}\");\n"));
+        writeln!(source, "import(\"{spec}\");").unwrap();
     }
     let bundle = scan(&[
         ("scripts/main.js", source.as_bytes()),
@@ -979,9 +981,11 @@ fn building_a_bundle_is_linear_in_its_files() {
 fn many_imports(n: usize) -> Vec<(PackPath, Vec<u8>)> {
     let mut source = String::new();
     for index in 0..n {
-        source.push_str(&format!(
-            "import \"./lib/f{index}.js\"; import(\"./LIB/F{index}.js\"); import(\"./gone{index}\"); import(\"pkg{index}\"); export * from \"./dir{index}\";\n"
-        ));
+        writeln!(
+            source,
+            "import \"./lib/f{index}.js\"; import(\"./LIB/F{index}.js\"); import(\"./gone{index}\"); import(\"pkg{index}\"); export * from \"./dir{index}\";"
+        )
+        .unwrap();
     }
     let mut files = vec![(
         PackPath::new("scripts/main.js").unwrap(),

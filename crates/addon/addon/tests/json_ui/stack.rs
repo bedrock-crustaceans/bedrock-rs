@@ -1,6 +1,8 @@
 //! `rp.ui()` on a stack: the list, merge, modification, reference and global-variable rows
 //! of the fixtures (rules L1–L22).
 
+use std::fmt::Write as _;
+
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::families::json_ui::{COLOR_VARIABLES, ROOT_NAMESPACE, UiPackErrorKind};
 
@@ -1266,8 +1268,8 @@ fn chained(count: usize, first: &str, next: impl Fn(usize) -> Option<usize>) -> 
     let mut text = String::from("{ \"namespace\": \"a\"");
     for index in 0..count {
         match next(index) {
-            Some(base) => text.push_str(&format!(", \"d{index}@d{base}\": {{}}")),
-            None => text.push_str(&format!(", \"d{index}\": {first}")),
+            Some(base) => write!(text, ", \"d{index}@d{base}\": {{}}").unwrap(),
+            None => write!(text, ", \"d{index}\": {first}").unwrap(),
         }
     }
     text.push_str(" }");
@@ -1333,10 +1335,12 @@ fn growing_chain(count: usize) -> String {
     let mut text =
         String::from("{ \"namespace\": \"a\", \"d0\": { \"type\": \"panel\", \"$m0\": 0 }");
     for index in 1..count {
-        text.push_str(&format!(
+        write!(
+            text,
             ", \"d{index}@d{}\": {{ \"$m{index}\": {index} }}",
             index - 1
-        ));
+        )
+        .unwrap();
     }
     text.push_str(" }");
     text
@@ -1392,10 +1396,12 @@ fn a_cycle_where_every_definition_adds_a_member_loads_in_linear_time() {
         // d<i>@d<i+1>, the last one naming the first: each inherits around the cycle once
         let mut text = String::from("{ \"namespace\": \"a\"");
         for index in 0..count {
-            text.push_str(&format!(
+            write!(
+                text,
                 ", \"d{index}@d{}\": {{ \"$m{index}\": {index} }}",
                 (index + 1) % count
-            ));
+            )
+            .unwrap();
         }
         text.push_str(" }");
         let (stack, took) = timed_load(&text);
@@ -1418,24 +1424,28 @@ fn children_naming_the_definitions_of_a_long_chain_are_checked_in_linear_time() 
         );
         for index in 1..count {
             let base = index - 1;
-            text.push_str(&format!(
+            write!(text,
                 ", \"d{index}@d{base}\": {{ \"$m{index}\": 1, \"controls\": [{{ \"c@a.d{base}\": {{ \"layer\": 1 }} }}] }}"
-            ));
+            ).unwrap();
         }
         // an animation at the near end of a chain of its own: its endpoints are inherited
         text.push_str(
             ", \"s0\": { \"anim_type\": \"size\", \"from\": [0, 0], \"to\": [\"100%\", 0] }",
         );
         for index in 1..count {
-            text.push_str(&format!(
+            write!(
+                text,
                 ", \"s{index}@s{}\": {{ \"duration\": {index} }}",
                 index - 1
-            ));
+            )
+            .unwrap();
         }
-        text.push_str(&format!(
+        write!(
+            text,
             ", \"bad@s{}\": {{ \"to\": [\"100% + 1px\", 0] }}",
             count - 1
-        ));
+        )
+        .unwrap();
         text.push_str(" }");
         let (stack, took) = timed_load(&text);
         assert_eq!(stack.ui().controls().count(), 2 * count + 1);
@@ -1477,7 +1487,7 @@ fn a_definition_names_its_base_and_never_prints_or_compares_the_chain() {
             let table = format!("{:?}", ui.namespaces);
             assert!(table.len() < count * 600, "{}", table.len());
             let copy = ui.namespaces.clone();
-            assert!(copy == ui.namespaces);
+            assert_eq!(copy, ui.namespaces);
         },
     );
     // a copy of one definition keeps the chain alive by itself, and letting go of it at the
@@ -1509,8 +1519,8 @@ fn definitions_written_alike_with_different_bases_are_not_equal() {
     assert_eq!(k(&on_x).get("layer"), Some(&json("1")));
     assert_eq!(k(&on_y).get("layer"), Some(&json("2")));
     assert_eq!(k(&on_x).raw, k(&on_y).raw);
-    assert!(k(&on_x) == k(&again));
-    assert!(k(&on_x) != k(&on_y));
+    assert_eq!(k(&on_x), k(&again));
+    assert_ne!(k(&on_x), k(&on_y));
 }
 
 #[test]

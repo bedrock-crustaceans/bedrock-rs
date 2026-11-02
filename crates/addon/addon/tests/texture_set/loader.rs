@@ -361,7 +361,11 @@ fn load_packs(packs: &[WorldPack]) -> StackSet {
 fn lints(set: &StackSet) -> Vec<(&'static str, Option<usize>)> {
     crate::group(&set.resource)
         .map(|f| {
-            let pack = f.location.pack.as_ref().and_then(|pack| pack.index());
+            let pack = f
+                .location
+                .pack
+                .as_ref()
+                .and_then(bedrock_addon::pack::PackRef::index);
             (f.code.name(), pack)
         })
         .collect()

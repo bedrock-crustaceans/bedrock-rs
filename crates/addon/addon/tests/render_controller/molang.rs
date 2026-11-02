@@ -59,7 +59,7 @@ mod checked {
     #[test]
     fn rc20_molang_compile_error_schema_time_skips_the_file_deviation() {
         let text = file(&format!(
-            r#"{}, {OK}"#,
+            r"{}, {OK}",
             super::super::rows::test_controller(r#""light_color_multiplier": "1 +""#)
         ));
         let d = rejected(parse(&text, &rp(1, 21, 100)));

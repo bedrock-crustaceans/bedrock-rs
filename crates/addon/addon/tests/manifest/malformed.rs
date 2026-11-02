@@ -281,7 +281,7 @@ fn an_empty_format_3_name_is_an_information() {
 }
 
 /// R1: a format-0 manifest logs "Pack Manifest version 0 is deprecated, please
-/// include format_version 2 in your manifest.json." at content-log level 2.
+/// include `format_version` 2 in your manifest.json." at content-log level 2.
 #[test]
 fn a_format_0_manifest_is_told_deprecated_at_level_2() {
     let document = parse(&fixture("malformed/name_empty_fv0.json")).unwrap();

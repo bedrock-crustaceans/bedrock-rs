@@ -196,12 +196,11 @@ fn blanked(source: &str, literals: bool) -> String {
                 let width = source[i + 1..].chars().next().map_or(1, char::len_utf8);
                 (rest.get(1 + width) == Some(&b'\'')).then_some(width + 2)
             };
-            match close {
-                Some(len) => i + len,
-                None => {
-                    i += 1;
-                    continue;
-                }
+            if let Some(len) = close {
+                i + len
+            } else {
+                i += 1;
+                continue;
             }
         } else {
             i += 1;
@@ -487,6 +486,7 @@ const JSON_PATH: &str = "json_path";
 /// argument of `ToString::to_string`; and `ToString::to_string` passed on in a statement
 /// that names a path (`.map(|f| &f.json_path).map(ToString::to_string)`).
 fn path_text_reads(text: &str) -> Vec<usize> {
+    const PASSED: &str = "ToString::to_string";
     let code = code_of(text);
     let line_of = |at: usize| text[..at].matches('\n').count() + 1;
     let mut names = declared_paths(&code);
@@ -518,7 +518,6 @@ fn path_text_reads(text: &str) -> Vec<usize> {
         }
     }
     // `ToString::to_string` passed on, in a statement that names a path.
-    const PASSED: &str = "ToString::to_string";
     let mut from = 0;
     while let Some(at) = code[from..].find(PASSED) {
         let start = from + at;

@@ -591,7 +591,7 @@ fn generated_copies_round_trip() {
                     };
                     match conditional {
                         Some(v) if *v == "[]" => {
-                            members.push(format!("\"conditional\": [{entry}]"))
+                            members.push(format!("\"conditional\": [{entry}]"));
                         }
                         Some(v) => members.push(format!("\"conditional\": {v}")),
                         None => {}

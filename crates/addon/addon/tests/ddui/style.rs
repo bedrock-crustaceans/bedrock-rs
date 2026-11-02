@@ -367,7 +367,7 @@ fn s08_a_colour_is_rgba_or_rgb_as_integers_or_hex() {
         ("[256, 0, 0]", RGB),
         (r##""#12345""##, RGBA),
         (r##""#GGGGGG""##, RGB),
-        (r##""FFFFFFFF""##, RGBA),
+        (r#""FFFFFFFF""#, RGBA),
         (r#""""#, RGBA),
     ] {
         assert_eq!(

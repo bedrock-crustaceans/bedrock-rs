@@ -9,6 +9,7 @@ use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::vanilla;
 use bedrock_addon::version::MinEngineVersion;
+use std::fmt::Write as _;
 
 use super::common::{commands, fixture_dir, fixture_stack, function};
 
@@ -92,7 +93,10 @@ fn the_unknown_command_check_reads_the_core_command_table() {
     assert_eq!(vanilla::commands().len(), 84);
     assert!(names.len() > 84, "the aliases are run too");
     assert!(names.contains(&"tp") && names.contains(&"?"));
-    let text: String = names.iter().map(|name| format!("{name} x\n")).collect();
+    let text = names.iter().fold(String::new(), |mut out, name| {
+        writeln!(out, "{name} x").unwrap();
+        out
+    });
     let path = PackPath::new("functions/every.mcfunction").unwrap();
     let mut old = LoadContext::detached();
     old.min_engine_version = Some(MinEngineVersion::new(1, 15, 0));

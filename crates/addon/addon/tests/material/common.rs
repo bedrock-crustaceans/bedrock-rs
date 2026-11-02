@@ -4,6 +4,7 @@
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 
+use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
@@ -185,7 +186,7 @@ pub fn canonical(text: &str) -> String {
             members.sort_by(|a, b| a.0.as_str().cmp(b.0.as_str()));
             out.push('{');
             for (key, member) in members {
-                out.push_str(&format!("{:?}:", key.as_str()));
+                write!(out, "{:?}:", key.as_str()).unwrap();
                 walk(member, out);
                 out.push(',');
             }
@@ -198,9 +199,9 @@ pub fn canonical(text: &str) -> String {
             }
             out.push(']');
         } else if let Some(number) = value.as_number() {
-            out.push_str(&format!("{}", number.to_f64_lossy()));
+            write!(out, "{}", number.to_f64_lossy()).unwrap();
         } else if let Some(text) = value.as_string() {
-            out.push_str(&format!("{:?}", text.as_str()));
+            write!(out, "{:?}", text.as_str()).unwrap();
         } else if let Some(flag) = value.as_bool() {
             out.push_str(&flag.to_string());
         } else {
@@ -323,7 +324,9 @@ pub fn rewrites_at(input: &str, written: &str) -> Result<(Rewrites, Vec<String>)
                 reason = "the float the client reads"
             )]
             let same_float = a as f32 == b as f32;
-            if a == b {
+            #[expect(clippy::float_cmp, reason = "the same double is the same number")]
+            let equal = a == b;
+            if equal {
             } else if !a.is_finite() || a.abs() > f64::from(f32::MAX) {
                 out.counts.clamped += 1;
             } else if same_float {

@@ -23,7 +23,7 @@ impl PieceSource for OfPack<'_> {
         self.0.id()
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "the pack"
     }
 
@@ -44,7 +44,7 @@ impl PieceSource for Reversed<'_> {
         self.0.id()
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "the pack"
     }
 
@@ -158,7 +158,7 @@ pub fn line(found: &Diagnostic) -> String {
         Severity::Error => "error",
         Severity::Warning => "warning",
         Severity::Info => "info",
-        _ => "other",
+        Severity::Debug => "other",
     };
     let file = found
         .location

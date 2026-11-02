@@ -129,6 +129,8 @@ fn game() -> LoadOptions {
 
 #[test]
 fn every_expected_text_of_the_missing_references_suite_is_one_finding() {
+    const COPY: &str = "spawn_rules/legacy_version_spawn_rules_with_references copy.json";
+
     let found = linked(&["UsesReferencesBP"], &["UsesReferencesRP"], game());
     let texts: Vec<String> = found.iter().map(|f| f.code.to_string()).collect();
     let expected = expected();
@@ -143,7 +145,6 @@ fn every_expected_text_of_the_missing_references_suite_is_one_finding() {
     // effective definition (the legacy copy, read last); the game's validator holds the
     // references of every file it loaded. The shadowed file's text is one finding in a world
     // without the copy.
-    const COPY: &str = "spawn_rules/legacy_version_spawn_rules_with_references copy.json";
     let alone = linked_packs(
         vec![pack_without("UsesReferencesBP", &[COPY])],
         vec![pack("UsesReferencesRP")],

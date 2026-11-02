@@ -4,7 +4,7 @@
 
 use std::fmt::Debug;
 
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, Extra};
 use bedrock_addon::families::jigsaw::{
     GenerationStep, HeightProvider, JigsawStructure, ProcessorList, StructureSet, TemplatePool,
     VerticalAnchor,
@@ -113,7 +113,7 @@ fn members_left_out_are_not_written() {
         3,
         HeightProvider::Constant {
             value: VerticalAnchor::AboveBottom(StrictInt(5)),
-            extra: Default::default(),
+            extra: Extra::default(),
         },
     );
     assert_eq!(
@@ -153,7 +153,7 @@ fn a_built_document_validates_through_the_loader() {
         21,
         HeightProvider::Constant {
             value: VerticalAnchor::Absolute(StrictInt(0)),
-            extra: Default::default(),
+            extra: Extra::default(),
         },
     );
     let d = structure.validate(&super::common::context());

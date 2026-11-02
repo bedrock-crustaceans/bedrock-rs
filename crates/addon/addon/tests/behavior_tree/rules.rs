@@ -1,6 +1,7 @@
 //! The validation rules and the schema beyond what the fixture rows show: both sides of
 //! every condition, on single files.
 
+use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
@@ -96,7 +97,7 @@ fn nested(depth: usize, leaf_body: &str) -> String {
     for _ in 0..depth {
         root.push_str(r#"{"minecraft:inverter": {"child": "#);
     }
-    root.push_str(&format!(r#"{{"minecraft:consume_item": {leaf_body}}}"#));
+    write!(root, r#"{{"minecraft:consume_item": {leaf_body}}}"#).unwrap();
     for _ in 0..depth {
         root.push_str("}}");
     }
@@ -424,6 +425,10 @@ fn an_element_of_a_position_of_numbers() {
 
 #[test]
 fn the_fly_alias_is_reported_once_and_only_when_both_literals_are_read() {
+    const FLYING: &str = "should_be_flying_bool";
+    const THROW: &str = "should_throw_event_if_no_state_change_necessary_bool";
+    const THROW_KEY: &str = "should_throw_event_if_no_state_change_necessary";
+
     let fly = |body: &str| {
         let (
             Node::Fly {
@@ -443,9 +448,6 @@ fn the_fly_alias_is_reported_once_and_only_when_both_literals_are_read() {
         assert!(findings.iter().all(|d| d.code.name() == "LiteralIgnored"));
         (should_be_flying.clone(), throw_if_no_change.clone(), found)
     };
-    const FLYING: &str = "should_be_flying_bool";
-    const THROW: &str = "should_throw_event_if_no_state_change_necessary_bool";
-    const THROW_KEY: &str = "should_throw_event_if_no_state_change_necessary";
     let at = |key: &str| format!("{ROOT}/minecraft:fly/{key}");
     // both read, the same value: the flying literal is still the overwritten one
     assert_eq!(

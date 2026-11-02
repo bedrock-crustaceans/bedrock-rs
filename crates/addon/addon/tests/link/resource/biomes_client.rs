@@ -1,6 +1,6 @@
 //! 20 R45 to R49: what a client biome and `biomes_client.json` name outside their own files
 //! (the biome, a fog, the deferred-rendering settings, the ambient sounds), what a claim the
-//! pass refuses costs the packs below it, and biomes_client V6.10.
+//! pass refuses costs the packs below it, and `biomes_client` V6.10.
 
 use bedrock_addon::diagnostic::{
     Diagnostic, DiagnosticDetail, Diagnostics, Phase, ReferenceHint, Severity,
@@ -151,10 +151,10 @@ fn biome_r45_a_client_biome_of_a_biome_of_the_game_is_no_finding() {
         &[],
         &[(FILE, &client("1.21.130", "demo:hosted", ""))],
         host(),
-        &options,
+        options,
     );
     assert_eq!(of_biomes(&found), []);
-    let found = link_with(&[], &[(FILE, &plains(""))], host(), &options);
+    let found = link_with(&[], &[(FILE, &plains(""))], host(), options);
     assert_eq!(
         of_biomes(&found)
             .iter()
@@ -473,7 +473,7 @@ mod render {
             ("fog", "minecraft:fog_plains"),
             ("biome", "minecraft:plains"),
         ]);
-        let found = link_with(&[], &[(FILE, &file)], host, &LinkOptions::default());
+        let found = link_with(&[], &[(FILE, &file)], host, LinkOptions::default());
         assert_eq!(of_biomes(&found), []);
         // The crate has no list of the game's fogs: without a host and without the game's
         // packs on the stack the name is missing.
@@ -612,7 +612,7 @@ mod render {
                 (kind, "minecraft:of_the_game"),
                 ("biome", "minecraft:plains"),
             ]));
-            let found = link_with(&[], &[(FILE, &file)], hosted(list), &LinkOptions::default());
+            let found = link_with(&[], &[(FILE, &file)], hosted(list), LinkOptions::default());
             assert_eq!(of_biomes(&found), [], "{member}");
             let found = link(&[], &[(FILE, &file)]);
             assert_eq!(of_biomes(&found).len(), 1, "{member}");
@@ -828,7 +828,7 @@ mod render {
     fn biome_r49_the_fogs_to_merge_are_compared_as_written_and_an_old_fogs_name_gets_minecraft() {
         let host = || hosted(&[("fog", "minecraft:mist"), ("biome", "minecraft:plains")]);
         let unresolved = |text: &str| {
-            let found = link_with(&[], &[(LEGACY, text)], host(), &LinkOptions::default());
+            let found = link_with(&[], &[(LEGACY, text)], host(), LinkOptions::default());
             of_biomes(&found)
                 .into_iter()
                 .filter(|told| told.0 == "UnresolvedReference")
@@ -1217,7 +1217,7 @@ fn biome_the_rules_are_no_lints() {
         &[],
         &[(FILE, &file)],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },

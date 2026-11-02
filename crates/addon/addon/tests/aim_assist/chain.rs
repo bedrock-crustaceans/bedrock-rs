@@ -108,6 +108,8 @@ fn the_step_moves_the_exclusion_list_into_blocks_and_copies_it_to_entities() {
 
 #[test]
 fn the_chains_are_the_plans() {
+    const HAS_BETA: bool = <Any as VersionChain<PresetFamily>>::HAS_BETA;
+
     check_chain::<PresetFamily>().expect("presets");
     check_chain::<CategoriesFamily>().expect("categories");
     assert_eq!(
@@ -140,7 +142,6 @@ fn the_chains_are_the_plans() {
         assert_eq!(envelope, EnvelopeCheck::Never);
         assert_eq!(missing, MissingVersion::Reject);
     }
-    const HAS_BETA: bool = <Any as VersionChain<PresetFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
 }
@@ -249,7 +250,7 @@ fn vanillas_aim_assist_files_are_written_back_member_for_member() {
     );
     let (a, b) = (a.as_object().unwrap(), b.as_object().unwrap());
     assert_eq!(a.len(), b.len());
-    for (key, value) in b.iter() {
+    for (key, value) in b {
         assert_eq!(a.get(key.as_str()), Some(value), "{key:?}");
     }
 

@@ -1,5 +1,5 @@
 //! 20 R27, R28 and R29: what `blocks.json` says of blocks, of the terrain atlas and of the
-//! block sound types; and the rules of the blocks_json folder that need both stacks: an
+//! block sound types; and the rules of the `blocks_json` folder that need both stacks: an
 //! `ambient_occlusion_exponent` beside `minecraft:material_instances` (V11) and the
 //! tessellation fallback of Upcoming Creator Features (V12, V13, L13).
 
@@ -122,11 +122,11 @@ fn r27_a_key_of_a_block_of_the_game_is_no_finding_with_a_host_and_without() {
         &[],
         &files,
         hosted(&[("block", "minecraft:dirt")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
     // And it is believed when it says no.
-    let found = link_with(&[], &files, hosted(&[]), &LinkOptions::default());
+    let found = link_with(&[], &files, hosted(&[]), LinkOptions::default());
     let missing = of(&found, "UnresolvedReference");
     assert_eq!(missing.len(), 1, "{found:#?}");
     assert_eq!(missing[0].code.to_string(), no_such_block("dirt"));
@@ -160,7 +160,7 @@ fn r27_a_key_nothing_defines_is_a_warning_at_the_key() {
         &[],
         &[(BLOCKS, &file(r#""demo:ghost": {}"#))],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -223,7 +223,7 @@ fn r27_a_name_the_client_still_answers_to_is_a_block_with_any_host() {
         &[],
         &[(BLOCKS, &entries)],
         hosted(&[]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
     // The name is the game's alone.
@@ -487,7 +487,7 @@ mod textures {
             vec![(BLOCKS, entries.as_str()), (ATLAS, TERRAIN)],
             vec![(BLOCKS, entries.as_str())],
         ] {
-            let found = link_with(&behavior, &resource, host(), &LinkOptions::default());
+            let found = link_with(&behavior, &resource, host(), LinkOptions::default());
             assert!(tiles(&found).is_empty(), "{found:#?}");
         }
         // A host that lacks it is believed.
@@ -495,7 +495,7 @@ mod textures {
             &behavior,
             &[(BLOCKS, &entries)],
             hosted(&[]),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(tiles(&found).len(), 1, "{found:#?}");
         // Without a host the stack's atlas is all there is: the tile misses.
@@ -603,7 +603,7 @@ mod sounds {
         ] {
             let found = link(&[], &resource);
             assert!(of(&found, "UnknownSound").is_empty(), "{found:#?}");
-            let found = link_with(&[], &resource, hosted(&[]), &LinkOptions::default());
+            let found = link_with(&[], &resource, hosted(&[]), LinkOptions::default());
             assert!(of(&found, "UnknownSound").is_empty(), "{found:#?}");
         }
         // The game's sound types are in its own `sounds.json`: with a table on the stack a
@@ -612,7 +612,7 @@ mod sounds {
             &[],
             &[(BLOCKS, &entries), ("sounds.json", SOUNDS)],
             hosted(&[("block sound", "squeaky")]),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(of(&found, "UnknownSound").len(), 1, "{found:#?}");
     }
@@ -944,7 +944,7 @@ fn v12_each_of_the_four_drawing_members_counts_and_no_other() {
             &[("blocks/lamp.json", &lamp)],
             &[(BLOCKS, &file(&format!(r#""demo:lamp": {entry}"#)))],
             creator_features(),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         found
             .iter()
@@ -991,7 +991,7 @@ fn v12_only_a_block_drawn_from_its_geometry_is_told() {
         )],
         &[(BLOCKS, &file(r#""demo:lamp": {"textures": "lamp"}"#))],
         creator_features(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(
         found

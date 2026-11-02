@@ -19,6 +19,7 @@
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
@@ -271,19 +272,19 @@ pub fn check_expected(name: &str, jigsaw: &Jigsaw, expected: &Value) {
 
 /// The findings, one per line.
 pub fn describe(findings: &[&Diagnostic]) -> String {
-    findings
-        .iter()
-        .map(|f| {
-            format!(
-                "\n  {} {} {:?} {} {}",
-                f.severity,
-                f.code.name(),
-                f.location.path.as_ref().map(PackPath::as_str),
-                f.location.json_path,
-                f.code
-            )
-        })
-        .collect()
+    findings.iter().fold(String::new(), |mut out, f| {
+        write!(
+            out,
+            "\n  {} {} {:?} {} {}",
+            f.severity,
+            f.code.name(),
+            f.location.path.as_ref().map(PackPath::as_str),
+            f.location.json_path,
+            f.code
+        )
+        .unwrap();
+        out
+    })
 }
 
 /// A behaviour-pack context at the engine version, no toggles.

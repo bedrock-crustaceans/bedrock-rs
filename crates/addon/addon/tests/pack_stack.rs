@@ -134,14 +134,17 @@ fn icon_lints(
             (
                 f.code.name(),
                 f.severity,
-                f.location.pack.as_ref().and_then(|pack| pack.index()),
+                f.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
                 f.location.path.as_ref().unwrap().as_str().to_owned(),
             )
         })
         .collect()
 }
 
-/// families/rp_misc validation P1 to P3 run on the packs of a stack: the stack's own
+/// `families/rp_misc` validation P1 to P3 run on the packs of a stack: the stack's own
 /// findings hold each pack's icon lints, lowest pack first, each with its pack; a pack with a
 /// square icon adds nothing. They are found on either side.
 #[test]

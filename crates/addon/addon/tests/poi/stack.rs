@@ -45,7 +45,11 @@ fn found<'a>(poi: &'a Poi, code: &str) -> Vec<&'a Diagnostic> {
 
 /// The file of a finding.
 fn file(finding: &Diagnostic) -> Option<&str> {
-    finding.location.path.as_ref().map(|p| p.as_str())
+    finding
+        .location
+        .path
+        .as_ref()
+        .map(bedrock_addon::storage::PackPath::as_str)
 }
 
 /// The name a finding's reference detail carries.
@@ -99,7 +103,11 @@ fn poi11_no_experiment_parses_nothing_and_says_so_once() {
     assert_eq!(all[0].severity, Severity::Info);
     assert_eq!(file(all[0]), Some("poi/blocks/forge.json"));
     assert_eq!(
-        all[0].location.pack.as_ref().and_then(|p| p.index()),
+        all[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
 }
@@ -129,7 +137,15 @@ fn the_gate_reports_once_per_pack_at_its_first_file() {
     );
     let mut places: Vec<(Option<usize>, Option<&str>)> = infos
         .iter()
-        .map(|d| (d.location.pack.as_ref().and_then(|p| p.index()), file(d)))
+        .map(|d| {
+            (
+                d.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
+                file(d),
+            )
+        })
         .collect();
     places.sort();
     assert_eq!(
@@ -509,7 +525,11 @@ fn poi34_tag_cycle_keeps_the_tags_and_ignores_the_cycle() {
             format!("test:{own} was a part of a cycle")
         );
         assert_eq!(
-            cycle.location.pack.as_ref().and_then(|p| p.index()),
+            cycle
+                .location
+                .pack
+                .as_ref()
+                .and_then(bedrock_addon::pack::PackRef::index),
             Some(0)
         );
     }
@@ -666,7 +686,11 @@ fn poi36_shadowed_type_the_higher_pack_wins() {
     ));
     assert_eq!(all[0].severity, Severity::Info);
     assert_eq!(
-        all[0].location.pack.as_ref().and_then(|p| p.index()),
+        all[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(1),
         "at the definition that lost"
     );
@@ -739,7 +763,11 @@ fn poi37_block_claimed_twice_the_later_type_takes_it() {
     // It names both types: it is at the one that took the block and carries the other.
     assert_eq!(file(all[0]), Some("poi/blocks/b.json"));
     assert_eq!(
-        all[0].location.pack.as_ref().and_then(|p| p.index()),
+        all[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     assert_eq!(
@@ -796,7 +824,11 @@ fn an_overriding_definition_claims_its_blocks_when_it_is_loaded() {
     let claimed = found(poi, "PoiBlockClaimedTwice");
     assert_eq!(claimed.len(), 1, "{}", describe(poi.diagnostics()));
     assert_eq!(
-        claimed[0].location.pack.as_ref().and_then(|p| p.index()),
+        claimed[0]
+            .location
+            .pack
+            .as_ref()
+            .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
     assert_eq!(referenced(claimed[0]), Some(("poi type", "test:b")));

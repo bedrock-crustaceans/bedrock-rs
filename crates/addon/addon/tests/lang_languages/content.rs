@@ -73,6 +73,10 @@ fn the_trait_writer_writes_the_lang_text() {
 }
 
 #[test]
+#[expect(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "the suffix is the exact `.lang` the writer appends, and `Path::extension` sees no extension in `.lang`"
+)]
 fn a_lang_file_is_placed_at_texts_code_lang() {
     let file = LangFile::new(Language::new("de_DE"));
     assert_eq!(file.default_path().as_str(), "texts/de_DE.lang");

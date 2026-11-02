@@ -1707,7 +1707,7 @@ fn two_groups_whose_variants_arrive_at_different_steps_are_not_equal() {
         r#""P": {}, "C:P": {}"#,
         r#""+P": {"+variants": [{"v": {}}]}"#,
     );
-    assert!(*late == again.materials().common);
+    assert_eq!(*late, again.materials().common);
 }
 
 #[test]
@@ -1729,13 +1729,13 @@ fn two_groups_whose_step_was_read_under_other_key_rules_are_not_equal() {
     assert_eq!(defines(versioned), ["X"]);
     assert_eq!(defines(legacy), ["BASE", "X"]);
     // The same material as a link: its name, file, final key rules and place.
-    assert!(versioned.common.get("P") == legacy.common.get("P"));
+    assert_eq!(versioned.common.get("P"), legacy.common.get("P"));
     assert!(
         versioned.common != legacy.common,
         "groups whose first step was read under other key rules compare equal"
     );
     // The same load twice is equal.
-    assert!(versioned.common == load(&wrapped(members)).materials().common);
+    assert_eq!(versioned.common, load(&wrapped(members)).materials().common);
 }
 
 #[test]

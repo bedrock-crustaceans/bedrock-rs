@@ -70,6 +70,8 @@ fn the_preset_step_copies_every_member_and_sets_the_apply_inherited_flag() {
 
 #[test]
 fn the_chains_are_the_plans() {
+    const HAS_BETA: bool = <Any as VersionChain<PresetFamily>>::HAS_BETA;
+
     check_chain::<PresetFamily>().expect("presets");
     check_chain::<ListFamily>().expect("lists");
     check_chain::<SplineFamily>().expect("splines");
@@ -109,7 +111,6 @@ fn the_chains_are_the_plans() {
     assert_eq!(ListFamily::MISSING_VERSION, MissingVersion::Reject);
     assert_eq!(SplineFamily::MISSING_VERSION, MissingVersion::Reject);
     assert_eq!(EntityFamily::MISSING_VERSION, MissingVersion::Reject);
-    const HAS_BETA: bool = <Any as VersionChain<PresetFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
 }

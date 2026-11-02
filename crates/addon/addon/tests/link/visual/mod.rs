@@ -48,7 +48,11 @@ pub fn told(findings: &Diagnostics, pack: &str, path: &str) -> Vec<Told> {
         .into_iter()
         .map(|finding| {
             assert_eq!(finding.phase, Phase::Link, "{finding:?}");
-            let from = finding.location.pack.as_ref().map(|pack| pack.name());
+            let from = finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name);
             assert_eq!(from, Some(pack), "{finding:?}");
             told_of(finding)
         })

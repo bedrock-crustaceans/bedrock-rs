@@ -50,6 +50,7 @@ fn v03_below_floor() {
     assert_eq!(document.version().parsed_as, V1_16_100);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v04_floor_the_vanilla_default_fog() {
     let text = fixture(FAMILY, "default_fog_setting.json");
@@ -120,6 +121,7 @@ fn lush_caves() -> String {
     fixture(FAMILY, "lush_caves_fog_setting.json")
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v06_1_21_90_henyey_greenstein() {
     let document = loaded(parse(&lush_caves(), &base_game()));
@@ -256,6 +258,7 @@ fn v10_beta_literal_deviation() {
     assert_eq!(d.len(), 1, "{:?}", lines(&d));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn v11_partial_version() {
     let weather =
@@ -378,7 +381,7 @@ fn the_identifier_is_read_before_the_version() {
         r#"{"minecraft:fog_settings": {"description": {}}}"#.to_owned(),
         r#"{"format_version": "1.26.20", "minecraft:fog_settings": {}}"#.to_owned(),
         r#"{"format_version": "1.26.20", "other": {}}"#.to_owned(),
-        r#"[1]"#.to_owned(),
+        r"[1]".to_owned(),
         doc("1.26.20", "").replace("\"demo:fog\"", "\"\""),
         doc("1.26.20", "").replace("\"demo:fog\"", "null"),
         doc("1.26.20", "").replace("\"demo:fog\"", "7"),

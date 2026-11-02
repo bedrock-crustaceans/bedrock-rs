@@ -466,8 +466,8 @@ const DOCUMENT_INPUT: &[&str] = &[
     "voxel shape",
 ];
 
-/// Vanilla's JsonCpp reader never looks past the root value: with anything after
-/// it the file loads as it loads without, in every family that reads JsonCpp, and what follows
+/// Vanilla's `JsonCpp` reader never looks past the root value: with anything after
+/// it the file loads as it loads without, in every family that reads `JsonCpp`, and what follows
 /// never reaches facet. A `MinecraftDocumentInput` refuses it, still without
 /// reaching facet.
 #[test]
@@ -546,7 +546,7 @@ fn content_after_the_root_value_changes_nothing_that_is_loaded() {
 }
 
 /// Who tells the author: core's versioned load, for every family it reads from
-/// JsonCpp, with a span on the content, an information of ours; a
+/// `JsonCpp`, with a span on the content, an information of ours; a
 /// `MinecraftDocumentInput` family refuses the file instead. (The texture files' stack loaders report it themselves: terrain
 /// texture rule 1a, `texture_set` ts13.) A family's own reader of a single file is as silent as
 /// vanilla until its owner calls `json::trailing_content_finding`; it then moves to the list.

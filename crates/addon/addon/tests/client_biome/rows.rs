@@ -9,6 +9,7 @@ use bedrock_addon::families::client_biome::{Beta, ClientBiome};
 use bedrock_addon::load::{BiomeRenderIdentifiers, LoadContext};
 use bedrock_addon::version::{BaseGameVersion, ENGINE_VERSION};
 use indexmap::IndexMap;
+use std::fmt::Write as _;
 use std::sync::Arc;
 
 use super::common::{
@@ -52,6 +53,7 @@ const RENDER_IDS: [&str; 4] = [
 
 // ---- F.1 -----------------------------------------------------------------------------------
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `cb01_plains_1_21_40_oracle`: vanilla's 1.21.40 plains file upgrades to the payload of
 /// vanilla's current one. The inserted `ambient_sounds.addition` reads as the constructor's
 /// default through its accessor and is not written.
@@ -1002,6 +1004,7 @@ fn cb17_all_vanilla_samples() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `cb18_all_vanilla_1_21_80`: vanilla's first client biomes (1.21.40, identifiers without a
 /// namespace), here from retail's `vanilla_1.21.40` slice, load through the whole chain.
 #[test]
@@ -1122,6 +1125,7 @@ const BETA: &str = r##"{"description": {"identifier": "myns:glade"},
     "components": {"minecraft:sky_color": {"sky_color": "#102030"}},
     "environment_attributes": {"minecraft:experimental_float_attr_1": {"operation": "add", "value": 1.0}}}"##;
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `cb23_beta_literal` (ours follows retail 1.26.45; vanilla 1.26.20 has no beta parser).
 #[test]
 fn cb23_beta_literal_deviation() {
@@ -1225,7 +1229,10 @@ fn cb23a_beta_attr_invalid() {
     );
     let float =
         failure(r#""minecraft:experimental_float_attr_1": {"value": 0.5, "operation": "xor"}"#);
-    assert!(count(&float, |c| matches!(c, Code::InvalidEnumValue { .. })) == 1);
+    assert_eq!(
+        count(&float, |c| matches!(c, Code::InvalidEnumValue { .. })),
+        1
+    );
     // `minimum` is a float operation and `xor` a bool one.
     load_beta(
         &with(
@@ -1988,21 +1995,25 @@ fn cb18_golden_output() {
     for (name, text) in fixtures("client_biome/cb18_all_vanilla_1_21_40") {
         let loaded = loads(&text, &base_game());
         let written = loaded.version().written.unwrap();
-        lines.push_str(&format!(
-            "{name} {written} -> {}\n",
+        writeln!(
+            lines,
+            "{name} {written} -> {}",
             loaded.description.identifier.as_str()
-        ));
+        )
+        .unwrap();
         for entry in loaded.components.iter() {
             if let ComponentRef::Typed {
                 name, synthesized, ..
             } = entry
             {
                 let json = component(&loaded, name).unwrap();
-                lines.push_str(&format!(
-                    "  {}{name} {}\n",
+                writeln!(
+                    lines,
+                    "  {}{name} {}",
                     if synthesized { "+" } else { " " },
                     facet_json::to_string(&json).unwrap()
-                ));
+                )
+                .unwrap();
             }
         }
     }

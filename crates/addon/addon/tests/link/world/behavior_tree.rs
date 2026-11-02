@@ -65,7 +65,7 @@ fn m5_a_subtree_nothing_defines_is_a_warning_at_the_node() {
         &files,
         &[],
         LoadOptions::default(),
-        &LinkOptions {
+        LinkOptions {
             lints: false,
             ..Default::default()
         },
@@ -85,7 +85,7 @@ fn m5_a_host_answers_for_a_tree_of_the_game() {
         ],
         &[],
         hosted(&[("behavior tree", "hosted_tree")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said(&found, &[KIND]),

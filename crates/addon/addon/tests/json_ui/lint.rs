@@ -419,7 +419,7 @@ fn a_factory_needs_a_name_and_variable_names() {
             "k/factory/name",
         );
     }
-    for variables in [r#"[ "$a", "b" ]"#, r#"[ 5 ]"#, r#""$a""#] {
+    for variables in [r#"[ "$a", "b" ]"#, r"[ 5 ]", r#""$a""#] {
         expect(
             &factory(&format!(r#""name": "f", "factory_variables": {variables}"#)),
             "InvalidValue",

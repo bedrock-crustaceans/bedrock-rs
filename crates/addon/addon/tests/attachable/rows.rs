@@ -92,6 +92,7 @@ fn a03_vanilla_partial_version() {
     assert_eq!(document.identifier().as_str(), "minecraft:trident");
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a04_1_26_0_latest() {
     let text = fixture(FAMILY, "a04_1_26_0_latest.json");
@@ -639,6 +640,7 @@ fn a19_every_item_member_takes_the_pack_s_version() {
     }
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a30_unknown_member_rejected() {
     let members = r#""held_item_scale": 0.5"#;

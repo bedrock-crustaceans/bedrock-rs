@@ -331,6 +331,7 @@ fn m4_a_skipped_piece_keeps_the_findings_of_its_file() {
 
 #[test]
 fn every_finding_of_a_piece_names_the_pack() {
+    use bedrock_addon::document::Content;
     // A piece's findings, a skipped file's, and those of the files beside a meta file.
     let pack = piece_pack(&[
         (
@@ -362,7 +363,6 @@ fn every_finding_of_a_piece_names_the_pack() {
         assert_eq!(named.name(), "the pack");
     }
     // A file read on its own is of no pack.
-    use bedrock_addon::document::Content;
     let alone = bedrock_addon::families::persona::PieceMetadata::parse(
         &bedrock_addon::storage::PackPath::from_static("pieces/a/a.meta.json"),
         meta(r#""tint_color": "red""#).as_bytes(),
@@ -384,7 +384,7 @@ fn every_finding_of_the_pack_names_the_pack() {
 
     // Every finding of `pieces.diagnostics` names the pack `uuid`; their lines.
     let of_pack = |pieces: &PersonaPieces, uuid: Uuid| -> Vec<String> {
-        for found in pieces.diagnostics.iter() {
+        for found in &pieces.diagnostics {
             let named = found.location.pack.as_ref().unwrap_or_else(|| {
                 panic!("no pack on {}", crate::common::line(found));
             });
@@ -612,7 +612,11 @@ fn pp07_p1_a_piece_pack_is_never_on_a_resource_stack() {
     // Adding to the stack has no kind check and no line: an information.
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(
-        found[0].location.path.as_ref().map(|path| path.as_str()),
+        found[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str),
         Some("world_resource_packs.json")
     );
     assert_eq!(found[0].location.json_path.to_string(), "0/pack_id");

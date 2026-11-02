@@ -250,7 +250,7 @@ fn the_stored_text_of_an_object_has_its_members_in_key_order() {
         .as_object()
         .unwrap()
         .keys()
-        .map(|k| k.as_str())
+        .map(facet_value::VString::as_str)
         .collect();
     assert_eq!(keys, ["with", "translate", "nested"]);
 }
@@ -321,9 +321,9 @@ fn a_non_string_command_drops_the_whole_button() {
 #[test]
 fn a_button_name_that_is_absent_or_null_is_missing_and_another_type_invalid() {
     for (button, missing) in [
-        (r#"{}"#, true),
+        (r"{}", true),
         (r#"{"name": null}"#, true),
-        (r#"5"#, true),
+        (r"5", true),
         (r#"{"name": true}"#, false),
         (r#"{"name": 1.5}"#, false),
         (r#"{"name": ["a"]}"#, false),
@@ -638,7 +638,10 @@ fn three_packs_with_one_tag_keep_the_bottom_one_and_report_the_two_above() {
         .map(|d| {
             (
                 d.code.name(),
-                d.location.pack.as_ref().and_then(|p| p.index()),
+                d.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
             )
         })
         .collect();
@@ -855,8 +858,8 @@ fn the_floor_is_1_14_0_inclusive_and_there_is_no_ceiling() {
         (r#""2.0.0+x""#, "2.0.0+x"),
         (r#""65535.65535.65535""#, "65535.65535.65535"),
         (r#""10000.0.0""#, "10000.0.0"),
-        (r#"[1, 14, 0]"#, "1.14.0"),
-        (r#"[65535, 0, 0]"#, "65535.0.0"),
+        (r"[1, 14, 0]", "1.14.0"),
+        (r"[65535, 0, 0]", "65535.0.0"),
     ] {
         assert_eq!(
             version_outcome(written),
@@ -872,8 +875,8 @@ fn the_floor_is_1_14_0_inclusive_and_there_is_no_ceiling() {
         r#""0.14.0""#,
         r#""0.0.0""#,
         r#""1.14.0-beta""#,
-        r#"[1, 13, 9]"#,
-        r#"[0, 99, 0]"#,
+        r"[1, 13, 9]",
+        r"[0, 99, 0]",
     ] {
         assert_eq!(
             version_outcome(written),
@@ -999,7 +1002,11 @@ fn documents_say_where_they_came_from_and_what_version_they_were_written_in() {
     assert!(!version.beta && !version.upgraded);
     for finding in document.diagnostics() {
         assert_eq!(
-            finding.location.path.as_ref().map(|p| p.as_str()),
+            finding
+                .location
+                .path
+                .as_ref()
+                .map(bedrock_addon::storage::PackPath::as_str),
             Some("dialogue/a.json")
         );
         assert!(finding.location.pack.is_some());
@@ -1017,11 +1024,19 @@ fn documents_say_where_they_came_from_and_what_version_they_were_written_in() {
     assert_eq!(a.diagnostics().len(), 2);
     for finding in registry.diagnostics() {
         assert_eq!(
-            finding.location.path.as_ref().map(|p| p.as_str()),
+            finding
+                .location
+                .path
+                .as_ref()
+                .map(bedrock_addon::storage::PackPath::as_str),
             Some("dialogue/sub/a.json")
         );
         assert_eq!(
-            finding.location.pack.as_ref().and_then(|p| p.index()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .and_then(bedrock_addon::pack::PackRef::index),
             Some(0)
         );
     }
@@ -1223,7 +1238,7 @@ fn version_array_elements_convert_to_unsigned_as_jsoncpp_does() {
 
 // ---- the JSON dialect -----------------------------------------------------------
 
-///parse error"`)":
+/// Deviation (parse error `)`):
 /// every pack file is read by the one jsonc reader, so a dialogue file with trailing commas
 /// loads without a finding where vanilla's `Json::Reader` skips the file.
 #[test]

@@ -415,174 +415,175 @@ fn a_block_name_whose_key_is_empty_reads_back_equal() {
     }
 }
 
+// (node type, literal member, a literal of its type, key member)
+const PAIRS: [(&str, &str, &str, &str); 27] = [
+    (
+        "minecraft:repeat_until_success",
+        "desired_max_number_of_attempts",
+        "4",
+        "max_number_of_attempts_id",
+    ),
+    (
+        "minecraft:activate_tool",
+        "block_pos",
+        "[1, -2, 3]",
+        "block_pos_id",
+    ),
+    ("minecraft:attack", "num_of_ticks", "7", "num_of_ticks_id"),
+    (
+        "minecraft:break_block",
+        "block_pos",
+        "[1, -2, 3]",
+        "block_pos_id",
+    ),
+    (
+        "minecraft:break_block",
+        "num_of_ticks",
+        "7",
+        "num_of_ticks_id",
+    ),
+    (
+        "minecraft:find_block",
+        "block_name",
+        "\"log\"",
+        "block_name_id",
+    ),
+    (
+        "minecraft:find_block",
+        "search_radius",
+        "5",
+        "search_radius_id",
+    ),
+    (
+        "minecraft:find_entity",
+        "entity_name",
+        "\"item\"",
+        "entity_type",
+    ),
+    (
+        "minecraft:find_entity",
+        "search_radius",
+        "5",
+        "search_radius_id",
+    ),
+    (
+        "minecraft:fly",
+        "should_be_flying_bool",
+        "true",
+        "should_be_flying_id",
+    ),
+    (
+        "minecraft:fly",
+        "should_throw_event_if_no_state_change_necessary_bool",
+        "true",
+        "should_throw_event_if_no_state_change_necessary_id",
+    ),
+    (
+        "minecraft:get_interaction_position_for_block",
+        "target_block_pos",
+        "[1, -2, 3]",
+        "target_block_pos_id",
+    ),
+    (
+        "minecraft:get_interaction_position_for_block",
+        "anchor_block_pos",
+        "[4, 5, 6]",
+        "anchor_block_pos_id",
+    ),
+    (
+        "minecraft:get_interaction_position_for_block",
+        "facing_string",
+        "\"north\"",
+        "facing_string_id",
+    ),
+    (
+        "minecraft:get_interaction_position_for_block",
+        "max_search_distance",
+        "9",
+        "max_search_distance_id",
+    ),
+    ("minecraft:interact", "num_of_ticks", "7", "num_of_ticks_id"),
+    (
+        "minecraft:look_at",
+        "block_pos",
+        "[1, -2, 3]",
+        "block_pos_id",
+    ),
+    (
+        "minecraft:look_at_entity",
+        "entity_name",
+        "\"item\"",
+        "entity_type",
+    ),
+    (
+        "minecraft:look_at_entity",
+        "search_radius",
+        "5",
+        "search_radius_id",
+    ),
+    (
+        "minecraft:move",
+        "desired_direction",
+        "\"forward\"",
+        "direction_id",
+    ),
+    (
+        "minecraft:move",
+        "desired_second_direction",
+        "\"left\"",
+        "second_direction_id",
+    ),
+    (
+        "minecraft:move",
+        "max_number_of_ticks",
+        "100",
+        "number_of_ticks_id",
+    ),
+    (
+        "minecraft:move_to",
+        "block_pos",
+        "[0.5, -4, 2.25]",
+        "block_pos_id",
+    ),
+    (
+        "minecraft:move_to",
+        "distance_epsilon",
+        "1.5",
+        "distance_epsilon_id",
+    ),
+    (
+        "minecraft:shoot_bow",
+        "num_of_shots",
+        "3",
+        "num_of_shots_id",
+    ),
+    ("minecraft:wait", "wait_duration", "3", "wait_duration"),
+    (
+        "minecraft:wait_ticks",
+        "num_of_ticks",
+        "7",
+        "num_of_ticks_id",
+    ),
+];
+// a value no literal type takes, and every form of a key member
+const NO_LITERAL: &str = r#"{"no": "literal"}"#;
+const KEYS: [&str; 9] = [
+    "\"elsewhere\"",
+    "\"\"",
+    "5",
+    "1.5",
+    "true",
+    "false",
+    "null",
+    "[\"k\"]",
+    "{}",
+];
+
 /// Every literal / key pair of every node type, in every state a file can leave it in: the
 /// key member absent, a string, empty, the default key, and of each wrong type, with the
 /// literal absent, read, and of a wrong type.
 #[test]
 fn every_state_of_every_pair_reads_back_equal() {
-    // (node type, literal member, a literal of its type, key member)
-    const PAIRS: [(&str, &str, &str, &str); 27] = [
-        (
-            "minecraft:repeat_until_success",
-            "desired_max_number_of_attempts",
-            "4",
-            "max_number_of_attempts_id",
-        ),
-        (
-            "minecraft:activate_tool",
-            "block_pos",
-            "[1, -2, 3]",
-            "block_pos_id",
-        ),
-        ("minecraft:attack", "num_of_ticks", "7", "num_of_ticks_id"),
-        (
-            "minecraft:break_block",
-            "block_pos",
-            "[1, -2, 3]",
-            "block_pos_id",
-        ),
-        (
-            "minecraft:break_block",
-            "num_of_ticks",
-            "7",
-            "num_of_ticks_id",
-        ),
-        (
-            "minecraft:find_block",
-            "block_name",
-            "\"log\"",
-            "block_name_id",
-        ),
-        (
-            "minecraft:find_block",
-            "search_radius",
-            "5",
-            "search_radius_id",
-        ),
-        (
-            "minecraft:find_entity",
-            "entity_name",
-            "\"item\"",
-            "entity_type",
-        ),
-        (
-            "minecraft:find_entity",
-            "search_radius",
-            "5",
-            "search_radius_id",
-        ),
-        (
-            "minecraft:fly",
-            "should_be_flying_bool",
-            "true",
-            "should_be_flying_id",
-        ),
-        (
-            "minecraft:fly",
-            "should_throw_event_if_no_state_change_necessary_bool",
-            "true",
-            "should_throw_event_if_no_state_change_necessary_id",
-        ),
-        (
-            "minecraft:get_interaction_position_for_block",
-            "target_block_pos",
-            "[1, -2, 3]",
-            "target_block_pos_id",
-        ),
-        (
-            "minecraft:get_interaction_position_for_block",
-            "anchor_block_pos",
-            "[4, 5, 6]",
-            "anchor_block_pos_id",
-        ),
-        (
-            "minecraft:get_interaction_position_for_block",
-            "facing_string",
-            "\"north\"",
-            "facing_string_id",
-        ),
-        (
-            "minecraft:get_interaction_position_for_block",
-            "max_search_distance",
-            "9",
-            "max_search_distance_id",
-        ),
-        ("minecraft:interact", "num_of_ticks", "7", "num_of_ticks_id"),
-        (
-            "minecraft:look_at",
-            "block_pos",
-            "[1, -2, 3]",
-            "block_pos_id",
-        ),
-        (
-            "minecraft:look_at_entity",
-            "entity_name",
-            "\"item\"",
-            "entity_type",
-        ),
-        (
-            "minecraft:look_at_entity",
-            "search_radius",
-            "5",
-            "search_radius_id",
-        ),
-        (
-            "minecraft:move",
-            "desired_direction",
-            "\"forward\"",
-            "direction_id",
-        ),
-        (
-            "minecraft:move",
-            "desired_second_direction",
-            "\"left\"",
-            "second_direction_id",
-        ),
-        (
-            "minecraft:move",
-            "max_number_of_ticks",
-            "100",
-            "number_of_ticks_id",
-        ),
-        (
-            "minecraft:move_to",
-            "block_pos",
-            "[0.5, -4, 2.25]",
-            "block_pos_id",
-        ),
-        (
-            "minecraft:move_to",
-            "distance_epsilon",
-            "1.5",
-            "distance_epsilon_id",
-        ),
-        (
-            "minecraft:shoot_bow",
-            "num_of_shots",
-            "3",
-            "num_of_shots_id",
-        ),
-        ("minecraft:wait", "wait_duration", "3", "wait_duration"),
-        (
-            "minecraft:wait_ticks",
-            "num_of_ticks",
-            "7",
-            "num_of_ticks_id",
-        ),
-    ];
-    // a value no literal type takes, and every form of a key member
-    const NO_LITERAL: &str = r#"{"no": "literal"}"#;
-    const KEYS: [&str; 9] = [
-        "\"elsewhere\"",
-        "\"\"",
-        "5",
-        "1.5",
-        "true",
-        "false",
-        "null",
-        "[\"k\"]",
-        "{}",
-    ];
     let mut states = 0;
     for (kind, literal_key, literal, id_key) in PAIRS {
         let mut bodies = vec![
@@ -653,29 +654,21 @@ fn read_back(node: &Node) -> Node {
     root_of(&written(node.clone())).0
 }
 
-/// A parameter built in memory reads back equal. `Param::literal`
-/// and `Param::default` do for every pair but `find_block`'s block name, whose read literal
-/// has the key `Node::BLOCK_NAME_KEY`; `Param::key` does where the literal a failed read
-/// leaves is the type's default, and `Param::key_with` carries the two that are not
-/// (`Node::FAILED_SEARCH_RADIUS`, `Node::INTERACT_DEFAULT_TICKS`).
-#[test]
-fn a_parameter_built_in_memory_reads_back_equal() {
-    assert_eq!(Node::FAILED_SEARCH_RADIUS, 32);
-    assert_eq!(Node::INTERACT_DEFAULT_TICKS, 1);
-    assert_eq!(Node::BLOCK_NAME_KEY, "block_name");
-    assert_eq!(
-        Param::key_with("k", 32),
-        Param {
-            literal: 32,
-            key: "k".to_owned()
-        }
-    );
+/// A node for each state of a parameter that is built rather than read.
+fn nodes_built_in_memory() -> Vec<Node> {
+    let mut nodes = nodes_built_for_the_repeat_and_the_finds();
+    nodes.extend(nodes_built_for_the_actions());
+    nodes
+}
+
+/// The first nodes of [`nodes_built_in_memory`]: repeat, activate, attack, break and the finds.
+fn nodes_built_for_the_repeat_and_the_finds() -> Vec<Node> {
     let radius = |key: &str| Param::key_with(key, Node::FAILED_SEARCH_RADIUS);
     let block_name = |name: &str| Param {
         literal: name.to_owned(),
         key: Node::BLOCK_NAME_KEY.to_owned(),
     };
-    let built = [
+    vec![
         Node::RepeatUntilSuccess {
             child: None,
             max_attempts: Param::key("tries"),
@@ -728,6 +721,13 @@ fn a_parameter_built_in_memory_reads_back_equal() {
             search_radius: Param::default(),
             extra: none(),
         },
+    ]
+}
+
+/// The last nodes of [`nodes_built_in_memory`]: fly, interact, look, move, shoot and wait.
+fn nodes_built_for_the_actions() -> Vec<Node> {
+    let radius = |key: &str| Param::key_with(key, Node::FAILED_SEARCH_RADIUS);
+    vec![
         Node::Fly {
             should_be_flying: Param::literal(true),
             throw_if_no_change: Param::key_with("t", true),
@@ -794,7 +794,27 @@ fn a_parameter_built_in_memory_reads_back_equal() {
             ticks: Param::key("t"),
             extra: none(),
         },
-    ];
+    ]
+}
+
+/// A parameter built in memory reads back equal. `Param::literal`
+/// and `Param::default` do for every pair but `find_block`'s block name, whose read literal
+/// has the key `Node::BLOCK_NAME_KEY`; `Param::key` does where the literal a failed read
+/// leaves is the type's default, and `Param::key_with` carries the two that are not
+/// (`Node::FAILED_SEARCH_RADIUS`, `Node::INTERACT_DEFAULT_TICKS`).
+#[test]
+fn a_parameter_built_in_memory_reads_back_equal() {
+    assert_eq!(Node::FAILED_SEARCH_RADIUS, 32);
+    assert_eq!(Node::INTERACT_DEFAULT_TICKS, 1);
+    assert_eq!(Node::BLOCK_NAME_KEY, "block_name");
+    assert_eq!(
+        Param::key_with("k", 32),
+        Param {
+            literal: 32,
+            key: "k".to_owned()
+        }
+    );
+    let built = nodes_built_in_memory();
     for node in &built {
         assert_eq!(
             &read_back(node),

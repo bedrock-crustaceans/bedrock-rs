@@ -37,7 +37,9 @@ fn at<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {
 }
 
 fn text_at<'v>(value: &'v Value, path: &str) -> Option<&'v str> {
-    at(value, path)?.as_string().map(|s| s.as_str())
+    at(value, path)?
+        .as_string()
+        .map(facet_value::VString::as_str)
 }
 
 const DESCRIPTION: &str = "minecraft:client_entity/description";
@@ -169,7 +171,7 @@ fn the_1_10_step_keeps_the_string_elements_of_the_script_lists_and_drops_the_res
             .count()
             == 2,
         "each dropped element is reported",
-    )
+    );
 }
 
 const SCRIPTS: &str = r#""animations": {"Walk": "animation.x.walk"}, "render_controllers": [{"controller.render.X": "Query.Is_Baby"}], "scripts": {"variables": {"variable.Foo": "public"}, "initialize": ["Variable.A = 'Foo';"], "pre_animation": ["Variable.Foo = Query.Is_Baby;"], "scale": "Query.Scale", "scaleX": "Q.X", "parent_setup": "Variable.P = 1;", "should_update_effects_offscreen": "Query.Is_Baby", "animate": [{"Walk": "Query.Is_Baby"}]}"#;
@@ -218,13 +220,17 @@ fn the_1_10_step_lower_cases_the_named_scripts_below_1_18_20() {
             && script(&at_gate, "initialize/0").as_deref() == Some("Variable.A = 'Foo';")
             && script(&at_gate, "scale").as_deref() == Some("Query.Scale"),
         "from 1.18.20 the scripts stay as written",
-    )
+    );
 }
 
 // ---- the chain ----
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_0() {
+    use bedrock_addon::versioning::Family;
+
+    const HAS_BETA: bool = <Any as VersionChain<ClientEntityFamily>>::HAS_BETA;
+
     check_chain::<ClientEntityFamily>().expect("the chain is well formed");
     assert_eq!(
         <Any as VersionChain<ClientEntityFamily>>::VERSIONS,
@@ -234,10 +240,8 @@ fn the_chain_is_contiguous_and_ends_at_1_26_0() {
             FormatVersion::new(1, 26, 0)
         ]
     );
-    const HAS_BETA: bool = <Any as VersionChain<ClientEntityFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
-    use bedrock_addon::versioning::Family;
     assert_eq!(ClientEntityFamily::RANGE_MODEL, RangeModel::ClosedToEngine);
     assert_eq!(ClientEntityFamily::FLOOR, FormatVersion::new(1, 8, 0));
 }

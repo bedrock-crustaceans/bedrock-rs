@@ -591,6 +591,7 @@ fn effect_cereal_billboard(size: &str) -> String {
 /// Ours (the settings precedent): a number beyond `f32` is read as the largest finite float
 /// of its sign with a warning, in a Molang member and in a plain float, in both eras; it is
 /// never infinity, and the document writes back.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
     for version in [LEGACY, CEREAL] {
@@ -644,6 +645,7 @@ fn a_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
 
 /// An integer literal too long for 64 bits is the float it spells, in a plain float member as
 /// in a Molang one and as `1e20` is, in both eras: one rule for every number of the family.
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn an_integer_literal_beyond_64_bits_is_read_as_the_float_it_is() {
     for (literal, value) in [
@@ -842,7 +844,10 @@ fn a_long_run_of_digits_in_a_string_a_key_or_a_comment_is_not_a_number() {
         };
         // A Molang string of the digits, not a constant.
         assert_eq!(
-            curve.input.source().map(|source| source.as_str()),
+            curve
+                .input
+                .source()
+                .map(bedrock_addon::molang::MolangSource::as_str),
             Some(DIGITS),
             "{version}"
         );
@@ -868,6 +873,7 @@ fn a_long_run_of_digits_in_a_string_a_key_or_a_comment_is_not_a_number() {
 
 // ---- rule 7 is fixture p11; rule 8: the collision radius -------------------------------------
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn rule_8_the_collision_radius_is_0_to_one_half() {
     let collision = |version: &str, radius: &str| {
@@ -1012,8 +1018,8 @@ fn the_legacy_collision_reader_logs_its_lines_and_keeps_the_defaults() {
 
 // ---- rule 10: the members the 1.20.80 reader requires ----------------------------------------
 
-#[test]
-fn rule_10_every_required_member_of_the_1_20_80_reader() {
+/// Every component member the 1.20.80 reader requires is refused when it is missing.
+fn required_components_are_refused() {
     let billboard = |rest: &str| {
         format!(r#""minecraft:particle_appearance_billboard": {{"size": [1, 1], {rest}}}"#)
     };
@@ -1043,6 +1049,11 @@ fn rule_10_every_required_member_of_the_1_20_80_reader() {
             "{components}"
         );
     }
+}
+
+/// Every member of a curve or an event the 1.20.80 reader requires is refused when it is
+/// missing.
+fn required_members_of_curves_and_events_are_refused() {
     let members: Vec<(&str, &str)> = vec![
         (
             r#""curves": {"variable.c": {"input": 0, "nodes": [0]}}"#,
@@ -1100,6 +1111,12 @@ fn rule_10_every_required_member_of_the_1_20_80_reader() {
             "{members}"
         );
     }
+}
+
+#[test]
+fn rule_10_every_required_member_of_the_1_20_80_reader() {
+    required_components_are_refused();
+    required_members_of_curves_and_events_are_refused();
     // The payload's own two.
     assert_eq!(
         refusal(r#"{"format_version": "1.26.10", "particle_effect": {"components": {}}}"#),
@@ -1120,9 +1137,9 @@ fn rule_10_every_required_member_of_the_1_20_80_reader() {
     );
 }
 
-#[test]
-fn the_1_20_80_reader_refuses_a_value_of_the_wrong_type_at_its_path() {
-    for (components, at, code) in [
+/// A component member of the wrong type or value is refused at its path.
+fn components_of_the_wrong_type_are_refused_at_their_path() {
+    refused_at_their_paths(&[
         (
             r#""minecraft:emitter_local_space": {"position": 1}"#,
             "minecraft:emitter_local_space/position",
@@ -1163,6 +1180,12 @@ fn the_1_20_80_reader_refuses_a_value_of_the_wrong_type_at_its_path() {
             "minecraft:emitter_shape_sphere/surface_only",
             "InvalidType: wrong JSON type",
         ),
+    ]);
+}
+
+/// The same, for the members of the particle components.
+fn particle_components_of_the_wrong_type_are_refused_at_their_path() {
+    refused_at_their_paths(&[
         (
             r#""minecraft:particle_kill_plane": [0, 1, 0]"#,
             "minecraft:particle_kill_plane",
@@ -1238,13 +1261,24 @@ fn the_1_20_80_reader_refuses_a_value_of_the_wrong_type_at_its_path() {
             "minecraft:particle_appearance_tinting/color",
             "InvalidType: wrong JSON type",
         ),
-    ] {
+    ]);
+}
+
+/// Each `(components, path, finding)` is refused with the finding at the path.
+fn refused_at_their_paths(cases: &[(&str, &str, &str)]) {
+    for &(components, at, code) in cases {
         assert_eq!(
             refusal(&effect(CEREAL, components)),
             format!("Error {COMPONENTS}/{at} {code}"),
             "{components}"
         );
     }
+}
+
+#[test]
+fn the_1_20_80_reader_refuses_a_value_of_the_wrong_type_at_its_path() {
+    components_of_the_wrong_type_are_refused_at_their_path();
+    particle_components_of_the_wrong_type_are_refused_at_their_path();
     // A distance of exactly 0 is inside the constraint.
     let zero = r#""minecraft:emitter_lifetime_events": {"looping_travel_distance_events": [{"distance": 0, "effects": "e"}]}"#;
     assert_eq!(found(&effect(CEREAL, zero)), [] as [&str; 0]);
@@ -1534,17 +1568,9 @@ fn the_legacy_curve_reader_logs_its_lines_and_leaves_the_curve_out() {
     );
 }
 
-#[test]
-fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
-    let events = |entries: &str| effect_with(LEGACY, &format!(r#""events": {entries}"#));
-    let at = "particle_effect/events";
-    assert_eq!(
-        found(&events("[]")),
-        [format!(
-            "Error {at} InvalidValue: No events found in events section!"
-        )]
-    );
-    for (entries, expected) in [
+/// The legacy event sections that log a line, each with the line.
+fn legacy_event_cases(at: &str) -> Vec<(&'static str, String)> {
+    vec![
         (
             r#"{"": {}}"#,
             format!("{at}/ InvalidValue: Attempting to extract an event with an empty name!"),
@@ -1599,7 +1625,20 @@ fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
                 "{at}/e/sound_effect/event_name InvalidValue: sound_effect.event_name should be a string"
             ),
         ),
-    ] {
+    ]
+}
+
+#[test]
+fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
+    let events = |entries: &str| effect_with(LEGACY, &format!(r#""events": {entries}"#));
+    let at = "particle_effect/events";
+    assert_eq!(
+        found(&events("[]")),
+        [format!(
+            "Error {at} InvalidValue: No events found in events section!"
+        )]
+    );
+    for (entries, expected) in legacy_event_cases(at) {
         let effect = loaded(&events(entries));
         // The parser's line, and the note of a section that is an object and goes whole.
         let mut lines = vec![format!("Error {expected}")];
@@ -1680,8 +1719,8 @@ fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
     assert_eq!(events["f"].expression(), number(0.0));
 }
 
-#[test]
-fn the_legacy_component_readers_log_their_lines_and_keep_the_defaults() {
+/// A component that is no object, and the ones that say nothing in the game.
+fn components_without_data_keep_their_defaults() {
     // A component whose value is no object: one line, every member at its default.
     let effect = loaded(&effect(
         LEGACY,
@@ -1728,6 +1767,10 @@ fn the_legacy_component_readers_log_their_lines_and_keep_the_defaults() {
         r#""minecraft:emitter_local_space": {}, "minecraft:particle_appearance_lighting": {}"#,
     );
     assert_eq!(found(&quiet), [] as [&str; 0]);
+}
+
+/// The block lists and the shapes of the legacy reader.
+fn block_lists_and_shapes_log_their_lines() {
     // Block lists.
     let blocks = loaded(&effect_legacy(
         r#""minecraft:particle_expire_if_in_blocks": ["a", 1, "b"], "minecraft:particle_expire_if_not_in_blocks": 1"#,
@@ -1766,6 +1809,10 @@ fn the_legacy_component_readers_log_their_lines_and_keep_the_defaults() {
             ),
         ]
     );
+}
+
+/// The lifetime events of the legacy reader.
+fn lifetime_events_log_their_lines() {
     // Lifetime events.
     let at = format!("{COMPONENTS}/minecraft:emitter_lifetime_events");
     let events = loaded(&effect_legacy(
@@ -1816,6 +1863,13 @@ fn the_legacy_component_readers_log_their_lines_and_keep_the_defaults() {
             "Error {at}/looping_travel_distance_events InvalidValue: Error reading looping_travel_distance_events"
         )]
     );
+}
+
+#[test]
+fn the_legacy_component_readers_log_their_lines_and_keep_the_defaults() {
+    components_without_data_keep_their_defaults();
+    block_lists_and_shapes_log_their_lines();
+    lifetime_events_log_their_lines();
 }
 
 fn effect_legacy(components: &str) -> String {

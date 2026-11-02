@@ -35,7 +35,9 @@ fn at<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {
 }
 
 fn text_at<'v>(value: &'v Value, path: &str) -> Option<&'v str> {
-    at(value, path)?.as_string().map(|s| s.as_str())
+    at(value, path)?
+        .as_string()
+        .map(facet_value::VString::as_str)
 }
 
 const DESCRIPTION: &str = "minecraft:attachable/description";
@@ -228,6 +230,10 @@ fn the_1_8_step_stamps_the_version_and_reports_nothing_without_a_controller_list
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_0() {
+    use bedrock_addon::versioning::Family;
+
+    const HAS_BETA: bool = <Any as VersionChain<AttachableFamily>>::HAS_BETA;
+
     check_chain::<AttachableFamily>().expect("the chain is well formed");
     assert_eq!(
         <Any as VersionChain<AttachableFamily>>::VERSIONS,
@@ -237,10 +243,8 @@ fn the_chain_is_contiguous_and_ends_at_1_26_0() {
             FormatVersion::new(1, 26, 0)
         ]
     );
-    const HAS_BETA: bool = <Any as VersionChain<AttachableFamily>>::HAS_BETA;
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
-    use bedrock_addon::versioning::Family;
     assert_eq!(AttachableFamily::RANGE_MODEL, RangeModel::ClosedToEngine);
     assert_eq!(AttachableFamily::FLOOR, FormatVersion::new(1, 8, 0));
 }

@@ -6,7 +6,7 @@
 )]
 #![cfg(feature = "full")]
 //! The probe of `writable.rs` for part of the twelve document types of the most texts (geometry,
-//! material_file, ui_file): a test binary of its own, since a test binary runs under a limit of CPU
+//! `material_file`, `ui_file`): a test binary of its own, since a test binary runs under a limit of CPU
 //! seconds. The rest of the twelve are probed by `writable_2.rs` and `writable_3.rs`. The harness
 //! and its rules are `writable.rs`'s, whose
 //! `the_binaries_of_the_probe_share_out_every_document_type` holds the four lists against each

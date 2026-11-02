@@ -98,14 +98,14 @@ fn loaded(set: &StackSet) -> Vec<Told> {
         assert_ne!(finding.phase, Phase::Link, "{finding}");
     }
     assert_eq!(
-        about_scripts(set, &LinkOptions::default()),
+        about_scripts(set, LinkOptions::default()),
         [],
         "the link pass repeats no load rule"
     );
     assert_eq!(
         about_scripts(
             set,
-            &LinkOptions {
+            LinkOptions {
                 lints: false,
                 ..Default::default()
             }
@@ -117,14 +117,15 @@ fn loaded(set: &StackSet) -> Vec<Told> {
 
 /// What a link pass tells about a manifest or a script file: nothing, since every rule of
 /// scripting is a rule of the load.
-fn about_scripts(set: &StackSet, options: &LinkOptions) -> Vec<Told> {
-    let linked = set.link_with(options);
+fn about_scripts(set: &StackSet, options: LinkOptions) -> Vec<Told> {
+    let linked = set.link_with(&options);
     told_of(linked.iter().filter(|finding| {
-        finding
-            .location
-            .path
-            .as_ref()
-            .is_some_and(|path| path.as_str() == "manifest.json" || path.as_str().ends_with(".js"))
+        finding.location.path.as_ref().is_some_and(|path| {
+            path.as_str() == "manifest.json"
+                || std::path::Path::new(path.as_str())
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("js"))
+        })
     }))
 }
 

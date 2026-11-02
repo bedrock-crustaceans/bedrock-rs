@@ -1,4 +1,4 @@
-//! texture_set V12 and V13: the image of each image layer of each loaded texture set, checked
+//! `texture_set` V12 and V13: the image of each image layer of each loaded texture set, checked
 //! from the bytes the stack holds (the load reads no image).
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Phase, Severity};

@@ -224,7 +224,11 @@ pub fn linked_copies(path: &str, texts: &[&str]) -> Diagnostics {
 
 /// The pack index (0 = top) a finding is located in.
 pub fn pack_of(finding: &Diagnostic) -> Option<usize> {
-    finding.location.pack.as_ref().and_then(|pack| pack.index())
+    finding
+        .location
+        .pack
+        .as_ref()
+        .and_then(bedrock_addon::pack::PackRef::index)
 }
 
 /// The vanilla excerpt the merge fixtures start from (bedrock-samples v1.26.50.4

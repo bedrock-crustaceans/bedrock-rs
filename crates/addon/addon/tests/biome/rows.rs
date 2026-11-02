@@ -9,6 +9,7 @@ use bedrock_addon::families::biome::component::{
 use bedrock_addon::families::biome::{Beta, Biome, history};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::version::{BaseGameVersion, FormatVersion, SemVersion};
+use std::fmt::Write as _;
 
 use super::common::{
     base_game, beta_apis, biome, context, document, errors, fixture, fixtures, has, load,
@@ -343,9 +344,11 @@ pub fn replacing(version: &str, dimension: &str, builder: &str) -> String {
         r#""minecraft:replace_biomes": {{"replacements": [{{"dimension": "{dimension}", "targets": ["crimson_forest"], "amount": 0.5, "noise_frequency_scale": 1.0}}]}}"#
     );
     if !builder.is_empty() {
-        components.push_str(&format!(
+        write!(
+            components,
             r#", "minecraft:surface_builder": {{"builder": {builder}}}"#
-        ));
+        )
+        .unwrap();
     }
     biome(version, "test:replacer", &components)
 }
@@ -609,6 +612,7 @@ fn b14_1_26_30_noise_gradient() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `b15_beta_environment_attributes`: a beta biome with an environment attribute loads from a
 /// base-game pack and is refused elsewhere without Beta APIs.
 #[test]

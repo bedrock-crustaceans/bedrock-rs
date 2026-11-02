@@ -127,7 +127,7 @@ fn e14_the_games_entities_resolve_with_a_host_and_without_one() {
             ("entity", "minecraft:zombie"),
             ("entity", "minecraft:player"),
         ]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(
         said_of(&found, "entity"),
@@ -172,7 +172,7 @@ const SOUNDS: &str = r#"
 "#;
 
 /// The game answers a name it lacks without a line; the
-/// level-3 "Event name '%s' is not a valid LevelSoundEvent" of the game's sound-event lookup
+/// level-3 "Event name '%s' is not a valid `LevelSoundEvent`" of the game's sound-event lookup
 /// is reached from the sound definitions and the particle events alone, not from
 /// an entity: an information of ours.
 #[test]
@@ -255,7 +255,7 @@ fn e16_the_games_sound_events_resolve_with_a_host_and_without_one() {
         &files,
         &[],
         hosted(&[("level sound event", "ambient.tame")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     let told = said_of(&found, "level sound event");
     assert_eq!(told.len(), 1, "{found:?}");
@@ -330,6 +330,6 @@ fn e14_an_entity_name_of_the_games_own_files_resolves() {
         ),
     ];
     assert_eq!(said_of(&link(&files, &[]), "entity"), expected);
-    let found = link_with(&files, &[], hosted(&[]), &LinkOptions::default());
+    let found = link_with(&files, &[], hosted(&[]), LinkOptions::default());
     assert_eq!(said_of(&found, "entity"), expected);
 }

@@ -78,7 +78,7 @@ fn e8_a_name_without_a_prefix_is_not_checked_and_a_host_answers_for_the_games() 
         &files,
         &[],
         hosted(&[("animation", "animation.game.sit")]),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(said_of(&found, "animation").is_empty(), "{found:?}");
 }

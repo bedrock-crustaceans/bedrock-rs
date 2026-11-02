@@ -105,6 +105,8 @@ impl bedrock_addon::load::BuiltIns for Registered {
 
 #[test]
 fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
+    const BROKEN: &[u8] = br#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:void"}, "components": {}}}"#;
+
     // 1.26.60 `DimensionManager::serverInitialize(…)::$_0`: an identifier the
     // script group has is replaced by the pack's definition (`tryReplaceDimensionDefinition`),
     // then a warning (level 2) names both.
@@ -144,7 +146,11 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
         "minecraft:dimension/description/identifier"
     );
     assert_eq!(
-        found[0].location.path.as_ref().map(|p| p.as_str()),
+        found[0]
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon_core::pack_identity::PackPath::as_str),
         Some("dimensions/test_void.json")
     );
 
@@ -170,7 +176,6 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
 
     // A pack file that fails to load reaches no registration: rejected as any file, and the
     // script's dimension stays.
-    const BROKEN: &[u8] = br#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:void"}, "components": {}}}"#;
     let pack = bp(1).file("dimensions/test_void.json", BROKEN).open();
     let stack = PackStack::<Behavior>::of([pack], options()).unwrap();
     assert_eq!(stack.dimensions().rejected().len(), 1);

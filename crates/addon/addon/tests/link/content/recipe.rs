@@ -25,7 +25,7 @@ fn linked(
     recipes: usize,
     behavior: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> Diagnostics {
     let set = stacks(behavior, &[], load);
     let loaded = set.behavior.recipes();
@@ -38,7 +38,7 @@ fn linked(
             .map(ToString::to_string)
             .collect::<Vec<_>>()
     );
-    set.link_with(options)
+    set.link_with(&options)
 }
 
 fn link(behavior: &[(&'static str, &str)]) -> Diagnostics {
@@ -50,7 +50,7 @@ fn link(behavior: &[(&'static str, &str)]) -> Diagnostics {
         recipes,
         behavior,
         LoadOptions::default(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     )
 }
 
@@ -154,7 +154,7 @@ mod item {
         }
         let host = hosted(&[("item", "host:coin"), ("item", "minecraft:torch")]);
         let file = shaped(r#""host:coin""#, r#"{"item": "minecraft:torch"}"#);
-        let found = linked(1, &[(FILE, &file)], host, &LinkOptions::default());
+        let found = linked(1, &[(FILE, &file)], host, LinkOptions::default());
         assert_eq!(told(&found), []);
     }
 
@@ -176,7 +176,7 @@ mod item {
                 &format!(r#"{{"item": "{name}"}}"#),
                 r#"{"item": "minecraft:torch"}"#,
             );
-            let found = linked(1, &[(FILE, &file)], LoadOptions::default(), &NO_LINTS);
+            let found = linked(1, &[(FILE, &file)], LoadOptions::default(), NO_LINTS);
             let items: Vec<_> = told(&found)
                 .into_iter()
                 .filter(|told| told.4 == "item")
@@ -195,7 +195,7 @@ mod item {
     #[test]
     fn rc1_an_ingredient_nothing_defines_is_vanillas_error_and_the_sites() {
         let file = shaped(r#"{"item": "Demo:None"}"#, r#"{"item": "minecraft:torch"}"#);
-        let found = linked(1, &[(FILE, &file)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(1, &[(FILE, &file)], LoadOptions::default(), NO_LINTS);
         assert_eq!(
             told(&found),
             [
@@ -220,7 +220,11 @@ mod item {
             .find(|finding| said_of(finding).4 == "item")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         // The recipe is as the load left it: the pass changes no registry.
@@ -434,7 +438,7 @@ mod item {
             1,
             &[(FILE, &tagged("host:tag", 1))],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(told(&found), []);
         // The tags of the game's own recipes stand with any host, as the legacy item names do.
@@ -443,7 +447,7 @@ mod item {
             1,
             &[(FILE, &tagged("minecraft:planks", 1))],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(told(&found), []);
     }
@@ -466,14 +470,14 @@ mod item {
             assert_eq!(told(&found), expected, "{tag}");
             // A host that answers for no item tag changes nothing.
             let host = hosted(&[("item", "minecraft:torch")]);
-            let found = linked(1, &[(FILE, &tagged(tag, 1))], host, &LinkOptions::default());
+            let found = linked(1, &[(FILE, &tagged(tag, 1))], host, LinkOptions::default());
             assert_eq!(told(&found), expected, "{tag} hosted");
             // A lint.
             let found = linked(
                 1,
                 &[(FILE, &tagged(tag, 1))],
                 LoadOptions::default(),
-                &NO_LINTS,
+                NO_LINTS,
             );
             assert_eq!(told(&found), [], "{tag} without the lints");
         }
@@ -486,7 +490,7 @@ mod item {
             1,
             &[(FILE, &tagged("minecraft:is_axe", 1))],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(told(&found), []);
     }
@@ -499,7 +503,7 @@ mod item {
             1,
             &[(FILE, &tagged("demo:nothing", 1)), GEM],
             hosted(&[("item", "minecraft:torch")]),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(told(&found).len(), 2);
         for tag in ["demo:nothing", "demo:Gems"] {
@@ -507,7 +511,7 @@ mod item {
                 1,
                 &[(FILE, &tagged(tag, 1)), GEM],
                 LoadOptions::default(),
-                &NO_LINTS,
+                NO_LINTS,
             );
             assert_eq!(
                 told(&found),
@@ -607,7 +611,7 @@ mod item {
                 1,
                 &[(FILE, &transform(addition)), GEM],
                 LoadOptions::default(),
-                &NO_LINTS,
+                NO_LINTS,
             );
             assert_eq!(
                 told(&found),
@@ -659,7 +663,7 @@ mod item {
             r#""minecraft:stick""#,
             r#"{"item": "minecraft:diamond_axe"}"#,
         );
-        let found = linked(1, &[(FILE, &file)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(1, &[(FILE, &file)], LoadOptions::default(), NO_LINTS);
         assert_eq!(
             told(&found),
             [
@@ -776,7 +780,7 @@ mod station {
             1,
             &[(FILE, &offered_at(r#"["host_bench"]"#))],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(stations(&found), []);
     }
@@ -822,7 +826,11 @@ mod station {
             .find(|finding| said_of(finding).4 == "crafting tag")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         // A lint.
@@ -830,7 +838,7 @@ mod station {
             1,
             &[(FILE, &offered_at(r#""demo_none""#))],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(stations(&found), []);
     }
@@ -890,7 +898,7 @@ fn rc1_a_result_behind_null_entries_is_at_the_index_of_the_file() {
         (SHAPED, shaped(r#""stick""#, result)),
         (SHAPELESS, shapeless(r#"["stick"]"#, result)),
     ] {
-        let found = linked(1, &[(FILE, &file)], LoadOptions::default(), &NO_LINTS);
+        let found = linked(1, &[(FILE, &file)], LoadOptions::default(), NO_LINTS);
         let items: Vec<(String, String)> = told(&found)
             .into_iter()
             .filter(|told| told.4 == "item")

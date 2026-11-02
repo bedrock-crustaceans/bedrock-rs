@@ -52,6 +52,7 @@ fn the_determinism_slice_loads() {
     assert!(parse::<UiTextureInfo>("textures/ui/d.json", &text).is_ok());
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_vanilla_nine_slice_file_round_trips() {
     let text = vanilla("book_pageedge_left.json");
@@ -70,6 +71,7 @@ fn a_vanilla_nine_slice_file_round_trips() {
     assert_eq!(json(&written), json(&text));
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn a_vanilla_aseprite_sheet_round_trips() {
     let text = vanilla("jump-mouse.json");

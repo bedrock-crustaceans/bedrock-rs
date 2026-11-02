@@ -25,7 +25,7 @@ const FILE: &str = "loot_tables/refs.json";
 fn linked(
     behavior: &[(&'static str, &str)],
     load: LoadOptions,
-    options: &LinkOptions,
+    options: LinkOptions,
 ) -> bedrock_addon::diagnostic::Diagnostics {
     let set = stacks(behavior, &[], load);
     let tables = behavior
@@ -33,11 +33,11 @@ fn linked(
         .filter(|(path, _)| path.starts_with("loot_tables/"))
         .count();
     assert_eq!(set.behavior.loot_tables().iter().count(), tables);
-    set.link_with(options)
+    set.link_with(&options)
 }
 
 fn link(behavior: &[(&'static str, &str)]) -> bedrock_addon::diagnostic::Diagnostics {
-    linked(behavior, LoadOptions::default(), &LinkOptions::default())
+    linked(behavior, LoadOptions::default(), LinkOptions::default())
 }
 
 /// A table of one pool with the JSON `entries`.
@@ -81,7 +81,7 @@ fn l2_a_table_the_host_says_the_game_has_is_no_finding() {
             &referring("minecraft:loot_tables/chests/Vanilla.json"),
         )],
         host,
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert_eq!(said(&found, &TABLE_KINDS), []);
 }
@@ -116,12 +116,16 @@ fn l2_a_table_nothing_defines_is_an_information_at_each_member_that_names_it() {
         .find(|finding| said_of(finding).4 == "loot table")
         .unwrap();
     assert_eq!(
-        finding.location.pack.as_ref().map(|pack| pack.name()),
+        finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name),
         Some("bp 1")
     );
     assert_eq!(text(finding), None);
     // A lint.
-    let found = linked(&[(FILE, &file)], LoadOptions::default(), &NO_LINTS);
+    let found = linked(&[(FILE, &file)], LoadOptions::default(), NO_LINTS);
     assert_eq!(said(&found, &TABLE_KINDS), []);
 }
 
@@ -175,7 +179,7 @@ mod item {
         let found = linked(
             &[(FILE, &giving("host:item"))],
             host,
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(said(&found, &KINDS), []);
     }
@@ -226,7 +230,11 @@ mod item {
             .unwrap();
         assert!(finding.kept, "{finding:?}");
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(
@@ -359,7 +367,7 @@ mod item {
         let found = linked(
             &[(FILE, &matching("demo:no_tool"))],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(said(&found, &KINDS), []);
     }
@@ -406,7 +414,7 @@ mod item {
         let found = linked(
             &[(FILE, &file)],
             LoadOptions::default(),
-            &LinkOptions::default(),
+            LinkOptions::default(),
         );
         assert_eq!(
             said(&found, &TRIM_KINDS),
@@ -443,7 +451,11 @@ mod item {
             .find(|finding| said_of(finding).4 == "trim pattern")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(text(finding), None);
@@ -484,7 +496,7 @@ mod item {
             let found = linked(
                 &[(FILE, &trimmed(members))],
                 LoadOptions::default(),
-                &LinkOptions::default(),
+                LinkOptions::default(),
             );
             let told: Vec<_> = found
                 .iter()
@@ -535,7 +547,7 @@ mod item {
     #[test]
     fn t7_below_1_20_a_trim_function_has_no_effect_and_its_names_are_not_looked_up() {
         let file = trimmed(r#", "pattern": "spiral""#);
-        let found = linked(&[(FILE, &file)], world(1, 19, 80), &LinkOptions::default());
+        let found = linked(&[(FILE, &file)], world(1, 19, 80), LinkOptions::default());
         let told: Vec<_> = found
             .iter()
             .map(said_of)
@@ -544,10 +556,10 @@ mod item {
             .collect();
         assert_eq!(told, [("NoEffect", Severity::Info, FUNCTION.to_owned())]);
         // A lint.
-        let found = linked(&[(FILE, &file)], world(1, 19, 80), &NO_LINTS);
+        let found = linked(&[(FILE, &file)], world(1, 19, 80), NO_LINTS);
         assert_eq!(found.iter().filter(|f| said_of(f).2 == FILE).count(), 0);
         // From 1.20.0 the names are looked up.
-        let found = linked(&[(FILE, &file)], world(1, 20, 0), &LinkOptions::default());
+        let found = linked(&[(FILE, &file)], world(1, 20, 0), LinkOptions::default());
         let told: Vec<_> = found
             .iter()
             .map(said_of)
@@ -600,11 +612,7 @@ mod entity {
             assert_eq!(said(&found, &KINDS), [], "{name}");
         }
         let host = hosted(&[("entity", "host:mob")]);
-        let found = linked(
-            &[(FILE, &naming("host:mob"))],
-            host,
-            &LinkOptions::default(),
-        );
+        let found = linked(&[(FILE, &naming("host:mob"))], host, LinkOptions::default());
         assert_eq!(said(&found, &KINDS), []);
     }
 
@@ -649,7 +657,11 @@ mod entity {
             .find(|finding| said_of(finding).4 == "entity")
             .unwrap();
         assert_eq!(
-            finding.location.pack.as_ref().map(|pack| pack.name()),
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(bedrock_addon::pack::PackRef::name),
             Some("bp 1")
         );
         assert_eq!(text(finding), None);
@@ -657,7 +669,7 @@ mod entity {
         let found = linked(
             &[(FILE, &naming("demo:nobody"))],
             LoadOptions::default(),
-            &NO_LINTS,
+            NO_LINTS,
         );
         assert_eq!(said(&found, &KINDS), []);
     }

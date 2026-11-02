@@ -141,6 +141,7 @@ fn every_payload_is_read_from_its_folder() {
     assert_eq!(settings.defaults.water, None);
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn c10_the_higher_pack_wins_per_identifier_deviation() {
     // vanilla = "silent" about the hidden definitions.
@@ -317,6 +318,7 @@ fn c13_the_default_identifier_is_the_top_loadable_default_files() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 #[test]
 fn the_top_packs_default_file_decides_when_it_loads() {
     let stack = stack(&[
@@ -576,7 +578,10 @@ fn t02_local_lights_merge_per_block_deviation() {
             (
                 f.code.name(),
                 f.severity,
-                f.location.pack.as_ref().and_then(|p| p.index()),
+                f.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon::pack::PackRef::index),
                 f.location.json_path.to_string(),
             )
         })
@@ -992,7 +997,7 @@ fn hinted(packs: Vec<bedrock_addon::pack::Pack>) -> Vec<Option<usize>> {
                 f.code.to_string(),
                 "render configuration files are only used when Vibrant Visuals is available; add the \"pbr\" capability"
             );
-            f.location.pack.as_ref().and_then(|pack| pack.index())
+            f.location.pack.as_ref().and_then(bedrock_addon::pack::PackRef::index)
         })
         .collect()
 }

@@ -231,8 +231,16 @@ fn s01_full() {
         visuals.animation("idle").unwrap().as_str(),
         "animation.wisp.idle"
     );
-    assert_eq!(d.particle_effects.as_ref().map(|m| m.len()), Some(0));
-    assert_eq!(d.sound_effects.as_ref().map(|m| m.len()), Some(0));
+    assert_eq!(
+        d.particle_effects
+            .as_ref()
+            .map(indexmap::map::IndexMap::len),
+        Some(0)
+    );
+    assert_eq!(
+        d.sound_effects.as_ref().map(indexmap::map::IndexMap::len),
+        Some(0)
+    );
     let scripts = d.scripts.as_ref().unwrap();
     assert_eq!(scripts.initialize.as_deref(), Some(&[][..]));
     assert_eq!(scripts.animate.as_ref().unwrap()[0].0, "idle");
@@ -1069,6 +1077,7 @@ fn a02_companion_block_avoidance_reads_its_offsets_and_defaults() {
     );
 }
 
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 /// `minecraft:companion_block_clipping` and `CompanionVisibilityBoundary`: every member may be left out, with the constructor's defaults.
 #[test]
 fn a03_companion_block_clipping_defaults() {

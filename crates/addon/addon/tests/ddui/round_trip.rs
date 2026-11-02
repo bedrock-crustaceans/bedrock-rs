@@ -295,8 +295,9 @@ fn valid_root() -> UiRoot {
 /// with the path of the member.
 #[test]
 fn the_writer_refuses_what_the_reader_refuses_with_its_path() {
-    valid_root().to_json().expect("the base value writes");
     type Edit = Box<dyn Fn(&mut UiRoot)>;
+
+    valid_root().to_json().expect("the base value writes");
     let cases: Vec<(&str, Edit, &str)> = vec![
         (
             "an identifier without a namespace",

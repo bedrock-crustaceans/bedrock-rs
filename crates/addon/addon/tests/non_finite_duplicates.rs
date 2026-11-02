@@ -2,7 +2,7 @@
 #![cfg(all(feature = "block", feature = "spawn_rules", feature = "spawn_groups"))]
 //! A number no double holds in a member written twice: every copy's number is
 //! clamped in the text the family reads, and the information is given for the copy the family
-//! keeps: the LAST everywhere a JsonCpp reader reads. A block refuses the file
+//! keeps: the LAST everywhere a `JsonCpp` reader reads. A block refuses the file
 //! instead.
 
 use bedrock_addon::diagnostic::Diagnostic;

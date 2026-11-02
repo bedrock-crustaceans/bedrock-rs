@@ -44,7 +44,7 @@ fn payload_keys(text: &str, key: &str) -> Vec<String> {
     assert_eq!(
         root.get("format_version")
             .and_then(Value::as_string)
-            .map(|s| s.as_str()),
+            .map(std::ops::Deref::deref),
         Some("1.26.40")
     );
     root.get(key)
