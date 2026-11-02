@@ -1,7 +1,8 @@
 name: Contributors
 
 # Draws everyone in the history of `main` into `.github/assets/contributors.svg` once a day,
-# which the README shows, and commits it to `main` when it changed.
+# which the README shows, and commits it to `main` when it changed. It pushes with the deploy key
+# in `CONTRIBUTORS_DEPLOY_KEY`, which the ruleset on `main` lets bypass its pull request rule.
 
 on:
   schedule:
@@ -9,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: contributors
@@ -23,6 +24,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          ssh-key: ${{ secrets.CONTRIBUTORS_DEPLOY_KEY }}
 
       - uses: actions/setup-node@v7
         with:
@@ -42,5 +44,5 @@ jobs:
           git add .github/assets/contributors.svg
           git -c user.name="github-actions[bot]" \
             -c user.email="41898273+github-actions[bot]@users.noreply.github.com" \
-            commit -q -m "chore: draw contributors"
+            commit -q -m "chore: draw contributors [skip ci]"
           git push -q origin HEAD:main
