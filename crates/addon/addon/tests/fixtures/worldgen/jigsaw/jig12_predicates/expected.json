@@ -1,0 +1,44 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [
+      "demo:predicates"
+    ],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/processors/a_predicates.json",
+      "json_path": "minecraft:processor_list/processors/0/rules/8/block_entity_modifier/loot_table",
+      "text": "Empty loot table"
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/processors/b_probability.json",
+      "json_path": "minecraft:processor_list/processors/0/rules/0/input_predicate/probability"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/processors/b_probability.json",
+      "text": "Failed to parse jigsaw structure processor list 'worldgen/processors/b_probability.json'."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/processors/c_min_chance.json",
+      "json_path": "minecraft:processor_list/processors/0/rules/0/position_predicate/min_chance"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/processors/c_min_chance.json",
+      "text": "Failed to parse jigsaw structure processor list 'worldgen/processors/c_min_chance.json'."
+    }
+  ]
+}

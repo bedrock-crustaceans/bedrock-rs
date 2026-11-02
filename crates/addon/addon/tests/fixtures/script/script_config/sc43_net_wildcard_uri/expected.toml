@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sc43_net_wildcard_uri (probe F netwild).
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "module_permissions/@minecraft~1server-net/allowed_uris/0"

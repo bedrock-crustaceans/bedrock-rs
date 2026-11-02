@@ -1,0 +1,20 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_material_reduction": {
+    "description": {
+      "identifier": "demo:determinism_material_reduction"
+    },
+    "tags": "material_reducer",
+    "input": "minecraft:stone",
+    "output": [
+      {
+        "item": "minecraft:element_14",
+        "count": 33
+      },
+      {
+        "item": "minecraft:element_8",
+        "count": 67
+      }
+    ]
+  }
+}

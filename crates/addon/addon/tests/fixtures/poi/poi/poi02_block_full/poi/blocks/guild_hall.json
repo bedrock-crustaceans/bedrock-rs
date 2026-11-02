@@ -1,0 +1,17 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:poi_block": {
+    "description": {
+      "identifier": "test:guild_hall"
+    },
+    "tickets": 3,
+    "usable_distance": 4,
+    "blocks": [
+      "minecraft:lectern",
+      "minecraft:bell"
+    ],
+    "tags": [
+      "test:civic"
+    ]
+  }
+}

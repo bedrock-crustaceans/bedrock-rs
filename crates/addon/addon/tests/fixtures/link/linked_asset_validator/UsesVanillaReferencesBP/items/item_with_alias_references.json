@@ -1,0 +1,52 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:item": {
+    "description": {
+	    "identifier": "test:item_with_alias_references"
+    },
+    "components": {
+	    "minecraft:icon": "cake",
+	    "minecraft:block_placer": {
+		    "block": "dirt"
+	    },
+		"minecraft:digger": {
+		  "use_efficiency": true,
+		  "destroy_speeds": [
+			{
+			  "block": "coal_ore",
+			  "speed": 2
+			}
+		  ]
+		},
+		"minecraft:entity_placer": {
+		  "entity": "spider",
+		  "dispense_on": [ "web" ],
+		  "use_on": [ "web" ]
+		},
+		"minecraft:food": {
+		  "using_converts_to": "bucket"
+		},
+    "minecraft:projectile": {
+      "projectile_entity": "arrow",
+      "minimum_critical_power": 4.2
+    },
+		"minecraft:repairable": {
+		  "repair_items": [
+			{
+			  "items": [ "torch" ]
+			}
+		  ]
+		},
+		"minecraft:shooter": {
+		  "ammunition": [
+			{
+			  "item": "egg"
+			}
+		  ]
+		},
+		"minecraft:use_modifiers": {
+		  "use_duration": 1.0
+		}
+    }
+  }
+}

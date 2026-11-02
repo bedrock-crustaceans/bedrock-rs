@@ -1,0 +1,40 @@
+{
+  "format_version": "1.20.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:pick"
+    },
+    "components": {
+      "minecraft:use_modifiers": {
+        "use_duration": 1.6,
+        "movement_modifier": 0.35
+      },
+      "minecraft:digger": {
+        "__deprecated_on_dig": {
+          "event": "demo:dug"
+        },
+        "destroy_speeds": [
+          {
+            "block": "minecraft:dirt",
+            "speed": 6,
+            "__deprecated_on_dig": {
+              "event": "demo:dirt"
+            }
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "demo:blunt"
+        ]
+      }
+    },
+    "__deprecated_components": {
+      "on_complete_trigger": {
+        "on_complete": {
+          "event": "demo:charged"
+        }
+      }
+    }
+  }
+}

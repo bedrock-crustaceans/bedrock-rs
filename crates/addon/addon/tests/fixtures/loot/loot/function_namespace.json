@@ -1,0 +1,20 @@
+// fixtures.md row 7: function names lose everything up to the last ':'
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:stick",
+          "functions": [
+            {"function": "set_count", "count": 2},
+            {"function": "minecraft:set_count", "count": 2},
+            {"function": "foo:bar:set_count", "count": 2},
+            {"function": "set_counts", "count": 2}
+          ]
+        }
+      ]
+    }
+  ]
+}

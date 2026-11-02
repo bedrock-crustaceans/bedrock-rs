@@ -1,0 +1,20 @@
+# Validation rule 10: 1.0 is not an integer; the bools are read.
+
+[[diagnostic]]
+kind = "LiteralIgnored"
+severity = "info"
+file = "behavior_trees/real_int.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:wait_ticks/num_of_ticks"
+
+# Ours: a bool read as a number is told.
+[[diagnostic]]
+kind = "InvalidType"
+severity = "info"
+file = "behavior_trees/bool_int.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:wait_ticks/num_of_ticks"
+
+[[diagnostic]]
+kind = "InvalidType"
+severity = "info"
+file = "behavior_trees/bool_float.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:move_to/distance_epsilon"

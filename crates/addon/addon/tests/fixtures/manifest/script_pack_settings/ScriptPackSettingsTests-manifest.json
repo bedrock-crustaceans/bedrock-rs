@@ -1,0 +1,35 @@
+
+			{{
+				"format_version": 3,
+				"header": {{
+					"name": "test",
+					"description": "test",
+					"uuid": "{}",
+					"version": "1.0.0",
+					"min_engine_version": "1.14.0"
+				}},
+				"modules": [
+					{{
+						"description": "test script module",
+						"type": "script",
+						"uuid": "{}",
+						"version": "1.0.0",
+						"language": "javascript",
+						"entry": "scripts/main.js"
+					}}
+				],
+				"dependencies": [
+					{{
+						"module_name": "Test",
+						"version": "1.0.0",
+					}},
+					{{
+						"module_name": "@minecraft/server",
+						"version": "{}",
+					}}
+				],
+				"settings": [
+					{}
+				]
+			}}
+			

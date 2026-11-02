@@ -1,0 +1,14 @@
+# Probe: Q32. Vanilla prints the trace of both alternatives of the element, not one sentence
+# about the member:
+#   -> dependencies[0] -> uuid: missing required field
+#   -> version: invalid string
+#   -> version: This value is bound to 'VersionSelectType' and expects one of the following
+#      strings: 'alpha', 'beta', 'internal'
+#   -> version: invalid string
+# ours: one `InvalidType` at the member, without that text.
+scope = "pack"
+
+[[diagnostic]]
+code = "InvalidType"
+severity = "error"
+path = "dependencies/0/version"

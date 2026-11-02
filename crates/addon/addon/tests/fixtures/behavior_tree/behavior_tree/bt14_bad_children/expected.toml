@@ -1,0 +1,19 @@
+# Validation rules 7 and 8.
+
+[[diagnostic]]
+kind = "InvalidType"
+severity = "info"
+file = "behavior_trees/object_children.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:sequence/children"
+
+[[diagnostic]]
+kind = "InvalidNode"
+severity = "info"
+file = "behavior_trees/mixed_children.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:selector/children/0"
+
+[[diagnostic]]
+kind = "InvalidNode"
+severity = "info"
+file = "behavior_trees/mixed_children.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:selector/children/1"

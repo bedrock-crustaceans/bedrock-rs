@@ -1,0 +1,5 @@
+error: a `from_only` enum gets no `MolangFields` impl, so no `molang`: implement `MolangFields` for it by hand
+ --> tests/ui/from_only_molang.rs:8:5
+  |
+8 |     #[component(molang)]
+  |     ^^^^^^^^^^^^^^^^^^^^

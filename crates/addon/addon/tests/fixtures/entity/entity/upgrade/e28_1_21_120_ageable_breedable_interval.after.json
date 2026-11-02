@@ -1,0 +1,44 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:ageable": {
+        "feed_items": [
+          {
+            "item": "wheat",
+            "result_item": "bucket"
+          },
+          {
+            "item": "carrot",
+            "growth": 0.1,
+            "result_item": "bucket"
+          }
+        ]
+      },
+      "minecraft:breedable": {
+        "breed_items": [
+          {
+            "item": "wheat",
+            "result_item": "bowl"
+          }
+        ]
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "attack_interval": {
+          "range_min": 2,
+          "range_max": 10
+        }
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "attack_interval": 10
+        }
+      }
+    }
+  }
+}

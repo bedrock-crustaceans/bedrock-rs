@@ -1,0 +1,30 @@
+{
+  "defs": {
+    "a.k": {
+      "layer": 1
+    },
+    "a.t": {
+      "type": "panel"
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "UnresolvedReference",
+      "severity": "info",
+      "text": "unresolved reference",
+      "at": "k@a.nope"
+    },
+    {
+      "code": "UnresolvedReference",
+      "severity": "info",
+      "text": "unresolved reference",
+      "at": "t@a.nope"
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "info",
+      "text": "Type not specified (or @-base not found) for control: k",
+      "at": "k@a.nope"
+    }
+  ]
+}

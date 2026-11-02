@@ -1,0 +1,18 @@
+{
+  "format_version": "1.19.20",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x",
+      "menu_category": {
+        "category": "nature"
+      }
+    },
+    "components": {},
+    "permutations": [
+      {
+        "condition": "q.block_state('demo:a') == 1",
+        "components": {}
+      }
+    ]
+  }
+}

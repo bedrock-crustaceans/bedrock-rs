@@ -1,0 +1,6 @@
+# fixtures.md `format/ut_reverse` (LocalizationUnitTests): `%%N` in an id is `%N`.
+
+[[case]]
+id = "String with %%2 and %%1"
+params = ["param1", "param2"]
+expected = "String with param2 and param1"

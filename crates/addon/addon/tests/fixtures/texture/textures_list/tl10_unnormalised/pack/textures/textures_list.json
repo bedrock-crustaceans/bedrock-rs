@@ -1,0 +1,6 @@
+[
+  "textures\\blocks\\a",
+  "./textures/blocks/a",
+  "/textures/blocks/a",
+  " textures/blocks/a"
+]

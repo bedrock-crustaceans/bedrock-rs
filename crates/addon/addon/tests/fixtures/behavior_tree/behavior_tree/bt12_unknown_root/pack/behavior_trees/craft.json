@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "craft",
+    "minecraft:root": { "minecraft:craft_item": {} }
+  }
+}

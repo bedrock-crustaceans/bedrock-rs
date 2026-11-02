@@ -1,0 +1,4 @@
+# fixtures.md `a=b ## c`: `##` ends the value; the space before it is kept.
+
+[entries]
+"a" = "b "

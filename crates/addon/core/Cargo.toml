@@ -1,0 +1,43 @@
+[package]
+name = "bedrock_addon_core"
+description = "The shared vocabulary of the bedrock_addon crate family: identifiers, versions, diagnostics, documents, load context, JSON helpers, Molang re-exports and the version-chain machinery; no I/O"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license = "Apache-2.0"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+# The load-time Molang compile check.
+molang = ["molangx/compiler", "molangx/stdlib", "molangx/cache"]
+
+[dependencies]
+thiserror = { workspace = true }
+facet = { workspace = true, features = ["reflect"] } # the writer walks values with `Peek`
+facet-json = { workspace = true }
+facet-format = { workspace = true } # facet-json does not re-export its error kind, `DeserializeErrorKind`; the writer is a `FormatSerializer`
+facet-value = { workspace = true }
+facet-path = { workspace = true } # `parse_at` maps facet's path to JSON names
+indexmap = { workspace = true }
+bytes = { workspace = true }
+uuid = { workspace = true }
+# Always built with `facet` only: `version`, `json`, `hash`, `catalog`, `ops`.
+molangx = { workspace = true, features = ["facet"] }
+
+# No thread of WebAssembly has a stack to grow from within: there the stack is the embedder's
+# to size (`json::MAX_JSON_DEPTH`).
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+stacker = { workspace = true } # facet reads a typed target by a call of itself for each level; this gives that read the stack the text's depth can take, on the thread that reads (no `Send` bound, no thread)
+
+[dev-dependencies]
+# The version-chain tests derive a toy family's component enum (a dev-only cycle: the derive's
+# tests depend on core).
+bedrock_addon_derive = { path = "../derive" }
+
+[lints]
+workspace = true

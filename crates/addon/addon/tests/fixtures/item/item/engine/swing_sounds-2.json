@@ -1,0 +1,15 @@
+{
+						"format_version": "1.21.130",
+						"minecraft:item": {
+							"description": {
+								"identifier": "test:custom_item"
+							},
+							"components": {
+								"minecraft:swing_sounds": {
+									"attack_miss": "<LevelSoundEvent 615>",
+									"attack_hit": "<LevelSoundEvent 3>",
+									"attack_critical_hit": "<LevelSoundEvent 4>"
+								}
+							}
+						}
+					}

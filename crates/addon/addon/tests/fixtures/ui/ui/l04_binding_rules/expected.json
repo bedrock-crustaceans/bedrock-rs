@@ -1,0 +1,40 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "info",
+      "text": "JSON UI parse failure: Must define bindings as an array.",
+      "at": "b1/bindings"
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "info",
+      "text": "JSON UI parse failure: Must define a binding name!",
+      "at": "b2/bindings/0/binding_name"
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "info",
+      "text": "JSON UI parse failure: Must define a collection name for the binding!",
+      "at": "b3/bindings/0/binding_collection_name"
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "info",
+      "text": "JSON UI parse failure: Must define a source property name in the binding!",
+      "at": "b4/bindings/0/source_property_name"
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "info",
+      "text": "JSON UI parse failure: Must define a target property name in the binding!",
+      "at": "b5/bindings/0/target_property_name"
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "info",
+      "text": "JSON UI parse failure: resolve_ancestor_scope and resolve_sibling_scope cannot both be set!",
+      "at": "b6/bindings/0"
+    }
+  ]
+}

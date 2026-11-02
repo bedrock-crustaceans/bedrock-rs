@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "demo:determinism_furnace"
+    },
+    "tags": [
+      "furnace"
+    ],
+    "input": "minecraft:beef",
+    "output": "minecraft:cooked_beef"
+  }
+}

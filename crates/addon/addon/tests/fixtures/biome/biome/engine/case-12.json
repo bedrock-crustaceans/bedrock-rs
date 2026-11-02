@@ -1,0 +1,18 @@
+{
+			"format_version": "1.26.0",
+			"minecraft:biome": {
+				"description": {
+					"identifier": "minecraft:desert"
+				},
+				"components": {
+					"minecraft:village_type": {
+						"type": "ice"
+					},
+					"minecraft:tags": {
+						"tags": [
+							"overworld"
+						]
+					}
+				}
+			}
+			}

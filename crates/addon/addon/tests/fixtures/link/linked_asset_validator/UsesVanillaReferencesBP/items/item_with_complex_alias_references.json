@@ -1,0 +1,20 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:item": {
+    "description": {
+	    "identifier": "test:item_with_complex_alias_references"
+    },
+    "components": {
+	    "minecraft:icon": "cake",
+	    "minecraft:block_placer": {
+		    "block": "light_block"
+	    },
+	    "minecraft:food": {
+		    "using_converts_to": "minecraft:yellow_wool"
+	    },
+	    "minecraft:use_modifiers":{
+		    "use_duration": 1.0
+	    }
+    }
+  }
+}

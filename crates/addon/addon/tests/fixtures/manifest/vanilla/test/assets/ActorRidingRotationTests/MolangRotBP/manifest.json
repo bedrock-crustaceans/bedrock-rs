@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Actor Riding Rotation Functional Tests Asset Behavior Pack",
+    "name": "Actor Riding Rotation Functional Tests Asset Behavior Pack",
+    "uuid": "e7be2771-4051-4859-8283-dc5bda21ec7a",
+    "version": [ 1, 0, 0],
+    "min_engine_version": [ 1, 16, 0]
+  },
+  "modules": [
+    {
+      "description": "Actor Riding Rotation Functional Tests Asset Behavior Pack",
+      "type": "data",
+      "uuid": "a85ca3cd-4bb6-45fa-9cee-f04bc2e01af3",
+      "version": [ 1, 0, 0 ]
+    }
+  ]
+}

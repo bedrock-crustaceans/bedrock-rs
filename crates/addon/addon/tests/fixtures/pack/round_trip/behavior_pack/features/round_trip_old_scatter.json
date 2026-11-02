@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.0",
+  "minecraft:scatter_feature": {
+    "description": { "identifier": "round_trip:old_scatter" },
+    "places_feature": "demo:determinism_ore",
+    "iterations": 2,
+    "x": 0,
+    "y": 0,
+    "z": 0
+  }
+}

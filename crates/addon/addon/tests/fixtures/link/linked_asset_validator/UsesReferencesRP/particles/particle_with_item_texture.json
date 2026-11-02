@@ -1,0 +1,20 @@
+{
+  "format_version": "1.20.80",
+  "particle_effect": {
+    "description": {
+      "identifier": "test:particle_with_item_texture",
+      "basic_render_parameters": {
+        "material": "particles_alpha",
+        "texture": "textures/items/test_icon"
+      }
+    },
+    "components": {
+      "minecraft:particle_expire_if_in_blocks": [
+        "test:block"
+      ],
+      "minecraft:particle_expire_if_not_in_blocks": [
+        "test:block"
+      ]
+    }
+  }
+}

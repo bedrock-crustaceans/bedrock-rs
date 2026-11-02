@@ -1,0 +1,14 @@
+{
+  "format_version": "1.17.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:rideable": {
+        "seat_count": 2,
+        "controlling_seat": 1
+      }
+    }
+  }
+}

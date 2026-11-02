@@ -1,0 +1,14 @@
+{
+				"format_version": "1.26.60",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:neighbor_changed_block_down"
+					},
+					"components": {
+						"minecraft:neighbor_change": {
+							"neighbor_directions": ["down"]
+						},
+						"test:neighbor_changed_component": {}
+					}
+				}
+			}

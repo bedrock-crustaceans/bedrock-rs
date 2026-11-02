@@ -1,0 +1,32 @@
+{
+  "format_version": "1.19.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:golem"
+    },
+    "components": {
+      "minecraft:behavior.take_flower": {
+        "priority": 9
+      },
+      "minecraft:behavior.offer_flower": {
+        "filters": {
+          "all_of": [
+            {
+              "test": "is_family",
+              "value": "x"
+            }
+          ]
+        }
+      },
+      "minecraft:input_ground_controlled": {}
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:input_ground_controlled": {},
+        "minecraft:variable_max_auto_step": {
+          "base_value": 2.0
+        }
+      }
+    }
+  }
+}

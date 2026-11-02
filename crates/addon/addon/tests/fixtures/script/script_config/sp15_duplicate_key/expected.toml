@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sp15_duplicate_key (review Pe).
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "script-debugger-auto-attach"
+text = "Unkown script debugger auto attach mode bogusD, expected one of [ 'connect', 'listen', 'disabled' ]"

@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "press",
+    "minecraft:root": { "minecraft:interact": {} }
+  }
+}

@@ -1,0 +1,40 @@
+[package]
+name = "bedrock_addon_std"
+description = "The std driver of bedrock_addon: answers the sans-IO loaders with std::fs, runs jobs sequentially or on rayon, reads the server-side files around packs and writes packs to disk"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license = "Apache-2.0"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["rayon", "zip", "encrypted", "script"]
+rayon = ["dep:rayon"]                    # Strategy::Rayon: jobs and reads on a rayon pool with RECOMMENDED_JOB_STACK
+zip = ["bedrock_addon/zip"]              # load_archive, write_archive
+encrypted = ["bedrock_addon/encrypted"]  # key sidecars
+script = ["bedrock_addon/script"]
+
+[dependencies]
+# Content-module features are the user's choice on `bedrock_addon` and unify.
+bedrock_addon = { path = "../addon", default-features = false }
+bytes = { workspace = true }
+thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+uuid = { workspace = true }
+bedrock_addon = { path = "../addon", default-features = false, features = ["aim_assist", "animation", "animation_controller", "atomic_client_entity", "attachable", "behavior_tree", "biome", "biomes_client", "block", "block_culling", "blocks_json", "camera", "client_biome", "client_entity", "crafting_catalog", "credits", "ddui", "deferred_settings", "dialogue", "dimension", "entity", "feature", "feature_rules", "flipbooks", "fog", "font", "function", "geometry", "item", "jigsaw", "json_ui", "lang", "languages", "legacy_path_mapping", "loading_messages", "loot", "material", "molang", "music", "particle", "persona", "poi", "recipe", "render_controller", "script", "server_sound_definitions", "skin", "sound_definitions", "sound_file", "sounds_json", "spawn_groups", "spawn_rules", "splashes", "structure", "texture_atlas", "texture_file", "texture_list", "texture_set", "trade", "ui_texture_info", "voxel_shape"] }
+facet-json = { workspace = true }
+
+[[example]]
+name = "rayon_driver"
+required-features = ["rayon"]
+
+[lints]
+workspace = true

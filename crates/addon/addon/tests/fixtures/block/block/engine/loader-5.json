@@ -1,0 +1,14 @@
+{
+			"format_version": "1.21.130",
+			"minecraft:block": {
+				"description": {
+					"identifier": "minecraft:test_redstone_consumer_block"
+				},
+				"components": {
+					"minecraft:redstone_consumer": {
+						"min_power": 5,
+						"propagates_power": true
+					}
+				}
+			}
+		}

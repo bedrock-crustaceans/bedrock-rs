@@ -1,0 +1,32 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [],
+    "structure_sets": [
+      "demo:ok"
+    ],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/structure_sets/a_trail_ruins.json",
+      "json_path": "minecraft:structure_set/placement",
+      "text": "Invalid spacing and separation combination for structure set 'minecraft:trail_ruins'. Value 'separation' must be less than half of 'spacing'."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/structure_sets/c_zero.json",
+      "json_path": "minecraft:structure_set/placement/spacing"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/structure_sets/c_zero.json",
+      "text": "Failed to parse structure set definition 'worldgen/structure_sets/c_zero.json'."
+    }
+  ]
+}

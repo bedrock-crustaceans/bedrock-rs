@@ -1,0 +1,11 @@
+# entry_absent: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] Plugin [SB_entry_absent - 1.0.0] - entry [] not supported for runtime [JavaScript].
+members = ["main.js"]
+others = []
+
+# ours: the module starts no plugin, so main.js is listed and not read (no import site)
+[[diagnostics]]
+code = "MissingRequiredField"
+severity = "error"
+text = "Plugin [SB_entry_absent - 1.0.0] - entry [] not supported for runtime [JavaScript]."
+file = "manifest.json"

@@ -1,0 +1,16 @@
+BlockTextureSetTest/
+BlockTextureSetTest/contents.json
+BlockTextureSetTest/lighting/
+BlockTextureSetTest/lighting/global.json
+BlockTextureSetTest/manifest.json
+BlockTextureSetTest/textures/
+BlockTextureSetTest/textures/blocks/
+BlockTextureSetTest/textures/blocks/height_img.png
+BlockTextureSetTest/textures/blocks/normal_img.png
+BlockTextureSetTest/textures/blocks/set_no_mer.texture_set.json
+BlockTextureSetTest/textures/blocks/set_with_mer.texture_set.json
+BlockTextureSetTest/textures/blocks/stacking1.texture_set.json
+BlockTextureSetTest/textures/blocks/stacking2.texture_set.json
+BlockTextureSetTest/textures/blocks/stacking6.texture_set.json
+BlockTextureSetTest/textures/blocks/stacking7.texture_set.json
+BlockTextureSetTest/textures/terrain_texture.json

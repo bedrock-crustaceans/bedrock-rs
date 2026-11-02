@@ -1,0 +1,14 @@
+# Validation rules 11 and 12.
+
+[[diagnostic]]
+kind = "InvalidType"
+severity = "error"
+file = "behavior_trees/bad_element.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:look_at/block_pos/1"
+message = "Expected Integral Number."
+
+[[diagnostic]]
+kind = "LiteralIgnored"
+severity = "info"
+file = "behavior_trees/short.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:look_at/block_pos"

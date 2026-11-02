@@ -1,0 +1,8 @@
+# Probe: P13
+scope = "pack"
+
+[[diagnostic]]
+code = "InvalidProperty"
+severity = "error"
+path = "modules/0/type"
+text = "Provided '/modules/0/type' element has an invalid value in pack manifest."

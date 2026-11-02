@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sp04_leading_space (P1).
+
+[[diagnostic]]
+code = "NoEffect"
+severity = "info"
+phase = "parse"
+file = "server.properties"
+path = "transport"

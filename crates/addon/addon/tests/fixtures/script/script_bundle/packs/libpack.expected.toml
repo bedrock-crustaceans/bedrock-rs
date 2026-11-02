@@ -1,0 +1,9 @@
+# libpack: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# a data-only pack: its scripts/ is never run and cannot be imported
+members = ["libx.js"]
+others = []
+
+[[diagnostics]]
+code = "ScriptFileNotLoadable"
+severity = "info"
+text = "script file can never be loaded"

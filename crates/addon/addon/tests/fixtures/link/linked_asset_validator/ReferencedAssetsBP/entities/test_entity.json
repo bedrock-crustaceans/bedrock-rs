@@ -1,0 +1,14 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:entity": {
+    "description": {
+      "identifier": "test:entity",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "components": {},
+    "events": {
+      "test:event": {}
+    }
+  }
+}

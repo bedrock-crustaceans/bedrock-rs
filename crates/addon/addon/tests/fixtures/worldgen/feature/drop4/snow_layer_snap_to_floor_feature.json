@@ -1,0 +1,1 @@
+{"format_version":"1.26.50","minecraft:snap_to_surface_feature":{"description":{"identifier":"minecraft:snow_layer_snap_to_floor_feature"},"feature_to_snap":"minecraft:snow_layer_feature","search_range":32,"surface":"floor"}}

@@ -1,0 +1,15 @@
+{
+  "diagnostics": [
+    {
+      "code": "UnsupportedOperator",
+      "severity": "info",
+      "text": "`<=`, `>=` and `%` are not operators",
+      "at": "k/bindings/0/binding_name"
+    },
+    {
+      "code": "UnsupportedOperator",
+      "severity": "info",
+      "at": "k/bindings/1/binding_name"
+    }
+  ]
+}

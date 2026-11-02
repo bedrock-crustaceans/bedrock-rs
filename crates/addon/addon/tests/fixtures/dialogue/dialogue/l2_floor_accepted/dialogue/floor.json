@@ -1,0 +1,8 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "floor", "text": "Loaded at the floor." }
+    ]
+  }
+}

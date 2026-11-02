@@ -1,0 +1,125 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:damage_sensor": {
+        "cause": "fall",
+        "deals_damage": false,
+        "filters": {
+          "test": "has_tag",
+          "value": "a"
+        },
+        "event": "x:e"
+      },
+      "minecraft:fall_damage": {
+        "value": 0.5
+      },
+      "minecraft:hurt_when_wet": true,
+      "minecraft:interact": {
+        "cooldown": 2.5,
+        "use_item": true,
+        "event": "x:sheared",
+        "target": "self"
+      },
+      "minecraft:type_family": {
+        "family": [
+          "demo"
+        ]
+      }
+    },
+    "component_groups": {
+      "g1": {
+        "minecraft:damage_sensor": [
+          {
+            "cause": "fire",
+            "deals_damage": false
+          }
+        ],
+        "minecraft:hurt_when_wet": false,
+        "minecraft:fall_damage": {
+          "value": 0
+        },
+        "minecraft:environment_sensor": {
+          "on_environment": {
+            "filters": {
+              "test": "is_underwater"
+            },
+            "event": "x:wet"
+          }
+        },
+        "minecraft:giveable": {
+          "items": [
+            "minecraft:stick"
+          ],
+          "on_give": "x:given"
+        },
+        "minecraft:interact": [
+          {
+            "on_interact": {
+              "event": "x:keep"
+            },
+            "event": "x:lost"
+          }
+        ],
+        "minecraft:scheduler": {
+          "scheduled_events": [
+            {
+              "scheduled_event": {
+                "event": "x:s"
+              }
+            },
+            {
+              "other": 1
+            }
+          ]
+        },
+        "minecraft:spawn_entity": {
+          "min_wait_time": 300,
+          "filters": {
+            "test": "is_daytime"
+          }
+        },
+        "minecraft:type_family": {
+          "family": "single"
+        }
+      },
+      "g2": {
+        "minecraft:damage_sensor": {
+          "triggers": {
+            "cause": "x",
+            "filters": {
+              "test": "a"
+            },
+            "event": "x:b"
+          }
+        },
+        "minecraft:environment_sensor": [
+          {
+            "on_environment": {
+              "event": "x:one"
+            }
+          },
+          {
+            "event": "x:two"
+          }
+        ],
+        "minecraft:spawn_entity": [
+          {
+            "spawn_item": "egg"
+          },
+          {
+            "spawn_item": "x",
+            "filters": [
+              {
+                "test": "b"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

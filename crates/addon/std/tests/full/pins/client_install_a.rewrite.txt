@@ -1,0 +1,96 @@
+# client_install_a: every typed document through PackWriter::put, by document type
+  18600  (no document type) files
+      1  aim_assist_categories written
+      1  aim_assist_preset written
+    217  animation written
+    129  animation_controller written
+     17  atmosphere written
+     17  atmosphere written at a newer version than read
+     95  attachable written
+     95  attachable written at a newer version than read
+     22  behavior_tree read back unequal and written as the same text, in {raw}                                                                                                          # `raw` is the text of the file read, and the tree is written from its nodes
+     22  behavior_tree written
+     10  biome read back unequal and written as the same text, in {synthesized}                                                                                                          # `synthesized` marks a component the load added for an older file; the written file has the component, so its read marks nothing
+      1  biome rejected, kept as their bytes
+    127  biome written
+    127  biome written at a newer version than read
+      6  biomes_client written
+     32  block_culling read back unequal and written as the same text, in {source_format_version}                                                                                        # the format version of the file read is recorded and the file is written at the newest
+     32  block_culling written
+     32  block_culling written at a newer version than read
+     33  blocks_json written
+      7  camera_preset written
+      7  camera_preset written at a newer version than read
+    249  client_biome read back unequal and written as the same text, in {synthesized}                                                                                                   # `synthesized` marks a component the load added for an older file; the written file has the component, so its read marks nothing
+    342  client_biome written
+    341  client_biome written at a newer version than read
+    408  client_entity written
+    396  client_entity written at a newer version than read
+     14  color_grading written
+     23  crafting_catalog written
+     23  crafting_catalog written at a newer version than read
+      6  ddui_root rejected, kept as their bytes
+      2  ddui_root written
+      1  emoticons written
+     18  entity read back unequal and written as the same text, in {abort_navigation_on_stop}                                                                                            # the fixer that brings older documents to 1.26.50 writes `false` into every older `behavior.follow_mob` and the typed goal keeps it, while the 1.26.50 binding deprecates the name: no newest-format document can hold the value, so the reread holds `None` (parrot, happy_ghast)
+     16  entity read back unequal and written as the same text, in {converted}                                                                                                           # `converted` marks that the load converted the legacy conditions of the sheep's eat-block goal; the written newest form needs no conversion (a mark of the load)
+     13  entity rejected, kept as their bytes
+   1166  entity written
+   1166  entity written at a newer version than read
+    389  feature written
+     64  feature written at a newer version than read
+    301  feature_rule written
+      7  flipbook_textures written
+    246  fog written
+    246  fog written at a newer version than read
+      1  font_metadata written
+    240  geometry read back unequal and written as the same text, in {format_version}                                                                                                    # the format version of the file read is recorded and the file is written at the newest
+    310  geometry written
+    310  geometry written at a newer version than read
+      1  item read back unequal and written as the same text, in {category, shared/minecraft:icon, shared/minecraft:use_animation, shared/minecraft:use_modifiers}                       # A VALUE NOT CARRIED, AND TOLD: the top-level `description.category` of a 1.20.20 to 1.20.50 item has no place in the newest format and is not written; the load says so with a `DroppedField` information; `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+      3  item read back unequal and written as the same text, in {category, shared/minecraft:icon}                                                                                       # A VALUE NOT CARRIED, AND TOLD: the top-level `description.category` of a 1.20.20 to 1.20.50 item has no place in the newest format and is not written; the load says so with a `DroppedField` information; `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+     13  item read back unequal and written as the same text, in {menu_category/category, shared/minecraft:enchantable, shared/minecraft:max_stack_size, shared/minecraft:use_modifiers} # A VALUE CHANGE THE LOAD TELLS: an item read at 1.21.60 to 1.21.109 without a category holds `Undefined`, which has no JSON spelling; it is written `"menu_category": {"category": "none"}` and reads back `ItemCommandOnly`; the upgrade says so with a `ValueRewritten` warning at `description/menu_category`; `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+     17  item read back unequal and written as the same text, in {menu_category/category, shared/minecraft:max_stack_size}                                                               # A VALUE CHANGE THE LOAD TELLS: an item read at 1.21.60 to 1.21.109 without a category holds `Undefined`, which has no JSON spelling; it is written `"menu_category": {"category": "none"}` and reads back `ItemCommandOnly`; the upgrade says so with a `ValueRewritten` warning at `description/menu_category`; `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+      1  item read back unequal and written as the same text, in {shared/minecraft:hand_equipped, shared/minecraft:icon}                                                                 # `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+     17  item read back unequal and written as the same text, in {shared/minecraft:max_stack_size}                                                                                       # `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+    111  item written
+    111  item written at a newer version than read
+      1  jigsaw_structure written
+    407  lang written
+      4  language_names written
+      4  languages written
+      1  lighting written
+      1  lighting written at a newer version than read
+      2  loading_messages written
+      1  local_light written
+    337  loot_table written
+     19  material_file written
+      8  material_list written
+      8  music_definitions written
+    207  particle written
+      9  particle written at a newer version than read
+      1  pbr_fallback written
+      3  processor_list written
+   3705  recipe written
+    212  render_controller written
+      1  shadows written
+     43  sound_definitions written
+     43  sound_definitions written at a newer version than read
+     44  sounds written
+    212  spawn_rules written
+      2  splashes written
+     15  structure written
+      1  structure_set written
+      7  template_pool written
+     54  terrain_texture written
+   3057  texture_set written
+     26  textures_list written
+     73  trade_table written
+     51  trade_table written at a newer version than read
+      3  ui_defs written
+    216  ui_file written
+      1  ui_global_variables written
+    393  ui_texture_info written
+     28  voxel_shape written
+      2  water written
+      2  water written at a newer version than read

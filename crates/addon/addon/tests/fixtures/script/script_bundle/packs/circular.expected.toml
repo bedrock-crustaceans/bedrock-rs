@@ -1,0 +1,28 @@
+# circular: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] [circular] a+b
+members = ["a.js", "b.js", "main.js"]
+others = []
+main = "main.js"
+reachable_static = ["a.js", "b.js", "main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "a.js"
+kind = "static"
+raw = "./b.js"
+normalized = "b.js"
+resolution = "file"
+
+[[imports]]
+file = "b.js"
+kind = "static"
+raw = "./a.js"
+normalized = "a.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "./a.js"
+normalized = "a.js"
+resolution = "file"

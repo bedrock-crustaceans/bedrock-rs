@@ -1,0 +1,9 @@
+# `lang/equals_first`: `=` as the first non-blank byte is a key character;
+# ours: information (L3).
+
+[entries]
+"=a" = "b"
+
+[[diagnostics]]
+code = "InvalidValue"
+severity = "info"

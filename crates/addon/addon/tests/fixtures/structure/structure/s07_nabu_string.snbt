@@ -1,0 +1,17 @@
+// neighbor_aware_block_upgrade_version as a String.
+{
+  format_version: 1,
+  neighbor_aware_block_upgrade_version: "1",
+  size: [1, 1, 1],
+  structure: {
+    block_indices: [[0], [-1]],
+    palette: {
+      default: {
+        block_palette: [{name: "minecraft:stone", states: {}, version: 18168865}],
+        block_position_data: {}
+      }
+    },
+    entities: []
+  },
+  structure_world_origin: [0, 0, 0]
+}

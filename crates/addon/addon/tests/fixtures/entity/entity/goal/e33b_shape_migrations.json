@@ -1,0 +1,34 @@
+{
+  // fixtures.md e33b: the 1.26.40 shape migrations of goals typed at 1.26.40, in a 1.26.30
+  // document (lenient) and the same shapes in a 1.26.40 document (strict).
+  "ranged_attack_pair": {
+    "priority": 2,
+    "attack_interval_min": 1,
+    "attack_interval_max": 3
+  },
+  "ranged_attack_max_only": {
+    "priority": 2,
+    "attack_interval_max": 4
+  },
+  "ranged_attack_scalar": {
+    "priority": 2,
+    "attack_interval": 2.5
+  },
+  "ranged_attack_pair_and_scalar": {
+    "priority": 2,
+    "attack_interval": 2.5,
+    "attack_interval_min": 1,
+    "attack_interval_max": 3
+  },
+  "beg": {
+    "priority": 9,
+    "look_distance": 6,
+    "look_time": [2, 4],
+    "items": ["minecraft:bone"]
+  },
+  "float_wander": {
+    "priority": 2,
+    "xz_dist": 10,
+    "float_duration": [0.1, 0.35]
+  }
+}

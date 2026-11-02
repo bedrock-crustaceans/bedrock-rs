@@ -1,0 +1,4 @@
+# schema.md rule 4: `##` as the first non-blank bytes starts a comment line.
+
+[entries]
+"x" = "y"

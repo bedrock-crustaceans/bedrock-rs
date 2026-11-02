@@ -1,0 +1,15 @@
+{
+  "scenes": [
+    "both"
+  ],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "dialogue/both.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/0",
+      "text": "JSON: both.json has an error: \n Each button supports either a 'commands' array or a URL to give it functionality, not both. Skipping button..."
+    }
+  ]
+}

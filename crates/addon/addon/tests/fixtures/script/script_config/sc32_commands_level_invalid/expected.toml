@@ -1,0 +1,15 @@
+# families/script_config fixtures.md, row sc32_commands_level_invalid (probe E).
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "info"
+phase = "parse"
+file = "config/l_bogus/permissions.json"
+path = "commands_permission_level"
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "info"
+phase = "parse"
+file = "config/l_num/permissions.json"
+path = "commands_permission_level"

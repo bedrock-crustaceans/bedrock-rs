@@ -1,0 +1,15 @@
+{
+  "scenes": [
+    "open"
+  ],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/open.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/on_open_commands/1",
+      "text": "JSON: open.json has an error: \n Each command needs to be a string type. Skipping this on_open_command command..."
+    }
+  ]
+}

@@ -1,0 +1,263 @@
+{
+			"format_version": "1.21.130",
+			"minecraft:block": {
+				"description": {
+					"identifier": "minecraft:test_block",
+					"menu_category": {
+						"category": "equipment",
+						"group": "minecraft:name.group",
+						"is_hidden_in_commands": true
+					},
+					"traits": {
+						"minecraft:placement_direction": {
+							"enabled_states": [
+								"minecraft:cardinal_direction",
+								"minecraft:facing_direction",
+								"minecraft:corner_and_cardinal_direction"
+							],
+							"y_rotation_offset": 90.0,
+							"blocks_to_corner_with": [
+								"minecraft:stone",
+								{ "name": "minecraft:oak_stairs", "states": { "weirdo_direction": 0 } }
+							]
+						},
+						"minecraft:placement_position": {
+							"enabled_states": [
+								"minecraft:block_face",
+								"minecraft:vertical_half"
+							]
+						},
+						"minecraft:connection": {
+							"enabled_states": [
+								"minecraft:cardinal_connections"
+							]
+						}
+					},
+					"states": {
+						"wiki:string_state_in_values_example": {
+							"values": ["red", "green", "blue"]
+						},
+						"wiki:string_state_example": ["red", "green", "blue"],
+						"wiki:boolean_state_example": [false, true],
+						"wiki:integer_state_example": [1, 2, 3],
+						"wiki:integer_range_state_example": {
+							"values": { "min": 0, "max": 5 }
+						}
+					}
+				},
+				"permutations": [
+					{
+						"condition": "q.block_state('wiki:boolean_state_example')",
+						"components": {
+							"minecraft:display_name": "tile.wiki:wiki_block.name",
+							"tag:minecraft:crop": {},
+							"tag:custom:permutation_tag": {}
+						}
+					},
+					{
+						"condition": "q.block_state('wiki:boolean_state_example')",
+						"components": {
+							"custom:componentV2": {
+								"boolVal": false,
+								"intVal": 9,
+								"stringVal": "thequickbrownfoxjumpsoverthelazydog",
+								"arrayVal": [42, "string"]
+							}
+						}
+					}
+				],
+				"components": {
+					"custom:componentV2": {
+						"boolVal": true,
+						"intVal": 42,
+						"stringVal": "thequickbrownfoxjumpsoverthelazydog",
+						"arrayVal": [42, "string"]
+					},
+					"minecraft:chest_obstruction": {
+						"obstruction_rule": "shape"
+					},
+					"minecraft:collision_box": {
+						"origin": [-1,0,-1], "size": [2,8,2]
+					},
+					"minecraft:connection_rule": {
+						"accepts_connections_from": "only_fences",
+						"enabled_directions": ["north", "south", "east"]
+					},
+					"minecraft:crafting_table": {
+						"table_name": "tile.custom:custom_crafting_table.name",
+						"crafting_tags": ["crafting_table", "wiki:workbench"]
+					},
+					"minecraft:destructible_by_explosion": {
+						"explosion_resistance": 5
+					},
+					"minecraft:destructible_by_mining": {
+						"seconds_to_destroy": 2,
+						"item_specific_speeds": [
+							{
+								"item": "sword",
+								"destroy_speed": -1
+							}
+						]
+					},
+					"minecraft:destruction_particles": {
+						"texture": "some_texture",
+						"tint_method": "evergreen_foliage",
+						"particle_count": 10
+					},
+					"minecraft:display_name": "tile.custom:custom_block.name",
+					"minecraft:entity_fall_on": {
+						"min_fall_distance": 2.5
+					},
+					"minecraft:flammable": {
+						"catch_chance_modifier": 10,
+						"destroy_chance_modifier": 50
+					},
+					"minecraft:flower_pottable": {},
+					"minecraft:friction": 0.6,
+					"minecraft:geometry": {
+						"identifier": "dummy:geometry.full_block",
+						"culling": "block_pipeline:custom_basic_default",
+						"culling_layer": "dummy:culling_layer.leaves",
+						"culling_shape": "minecraft:unit_cube",
+						"bone_visibility": {
+							"main": "geometry.visible_main",
+							"top": "geometry.visible_top",
+							"base": "geometry.visible_base"
+						},
+						"uv_lock": [
+							"main",
+							"top"
+						]
+					},
+					"minecraft:leashable": {
+						"offset": [-1.5,0.0,5.0]
+					},
+					"minecraft:light_dampening": 5,
+					"minecraft:light_emission": 10,
+					"minecraft:liquid_detection": {
+						"detection_rules": [
+							{
+								"liquid_type": "water",
+								"can_contain_liquid": true,
+								"on_liquid_touches": "no_reaction",
+								"stops_liquid_flowing_from_direction": ["west", "east"],
+								"use_liquid_clipping": true
+							}
+						]
+					},
+					"minecraft:loot": "loot_tables/blocks/test_block.json",
+					"minecraft:map_color": {
+						"color": [120, 9, 250],
+						"tint_method": "water"
+					},
+					"minecraft:material_instances": {
+						"*": {
+							"texture": "dummy:some_texture",
+							"ambient_occlusion": 0.5,
+							"render_method": "opaque",
+							"tint_method": "grass",
+							"face_dimming": false,
+							"isotropic": true,
+							"alpha_masked_tint": true
+						},
+						"reference_texture": "*"
+					},
+					"minecraft:movable": {
+						"movement_type": "popped",
+						"sticky": "same"
+					},
+					"minecraft:placement_filter": {
+						"conditions": [
+							{
+								"allowed_faces": ["up", "west"],
+								"block_filter": ["farmland", "cactus"]
+							}
+						]
+					},
+					"minecraft:precipitation_interactions": {
+						"precipitation_behavior": "obstruct_rain_accumulate_snow"
+					},
+					"minecraft:random_offset": {
+						"x": {
+							"range": {
+								"min": -7,
+								"max": 7
+							},
+							"steps": 4
+						},
+						"y": {
+							"range": {
+								"min": 0,
+								"max": 8
+							},
+							"steps": 16
+						},
+						"z": {
+							"range": {
+								"min": -7,
+								"max": 7
+							},
+							"steps": 4
+						}
+					},
+					"minecraft:redstone_conductivity": {
+						"redstone_conductor": true,
+						"allows_wire_to_step_down": true
+					},
+					"minecraft:redstone_producer": {
+						"power": 12,
+						"strongly_powered_face": "up",
+						"connected_faces": ["up", "east"],
+						"transform_relative": true
+					},
+					"minecraft:replaceable": {},
+					"minecraft:selection_box": {
+						"origin": [-2,0,-2], "size": [4,6,4]
+					},
+					"minecraft:support": {
+						"shape": "fence"
+					},
+					"tag:minecraft:crop": {},
+					"tag:custom:custom_tag": {},
+					"minecraft:tick": {
+						"looping": false,
+						"interval_range": [ 11, 36]
+					},
+					"minecraft:transformation": {
+						"translation": [1.5,4.7,-5],
+						"scale": [2,-2,2.5],
+						"scale_pivot": [1.5,-1.5,1.5],
+						"rotation": [90,-90,180],
+						"rotation_pivot": [-2.3,1,3.7]
+					},
+					"minecraft:embedded_visual": {
+						"geometry": "dummy:geometry.full_block",
+						"material_instances": {
+							"*": {
+								"texture": "dummy:some_texture"
+							}
+						}
+					},
+					"minecraft:item_visual": {
+						"geometry": "dummy:geometry.full_block",
+						"material_instances": {
+							"*": {
+								"texture": "dummy:some_texture"
+							}
+						}
+					}
+				},
+				"events": {
+					"dummy:place_rotate": {
+						"set_block_state": {
+							"dummy:rotation": "math.floor(query.cardinal_facing_2d)"
+						}
+					},
+					"dummy:cycle_rotation": {
+						"set_block_state": {
+							"dummy:rotation": "(query.block_state('dummy:rotation')<5?query.block_state('dummy:rotation')+1:2)"
+						}
+					}
+				}
+			}
+		}

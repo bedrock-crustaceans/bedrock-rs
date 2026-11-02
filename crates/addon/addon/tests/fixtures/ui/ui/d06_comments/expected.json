@@ -1,0 +1,15 @@
+{
+  "files": {
+    "ui/a.json": {
+      "namespace": "a",
+      "one": {
+        "type": "panel"
+      }
+    }
+  },
+  "defs": {
+    "a.one": {
+      "type": "panel"
+    }
+  }
+}

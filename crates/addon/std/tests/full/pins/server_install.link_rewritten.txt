@@ -1,0 +1,15 @@
+     63  E UnresolvedReference [atlas key] @ items
+     23  I TextureNotFound [-] @ textures
+     14  I UnknownSound [sound event] @ sounds.json
+     49  I UnresolvedReference [animation] @ definitions
+      1  I UnresolvedReference [animation] @ entity
+    609  I UnresolvedReference [atlas key] @ blocks.json
+     23  I UnresolvedReference [atlas key] @ textures
+      1  I UnresolvedReference [block] @ aim_assist
+     63  I UnresolvedReference [geometry] @ definitions
+      1  I UnresolvedReference [geometry] @ entity
+     12  I UnresolvedReference [item] @ entities
+      3  I UnresolvedReference [loot table] @ entities
+     55  I UnresolvedReference [render controller] @ definitions
+      1  I UnresolvedReference [render controller] @ entity
+      2  I UnresolvedReference [sound file] @ sounds

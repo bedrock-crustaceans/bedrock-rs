@@ -1,0 +1,15 @@
+{
+  "namespace": "a",
+  "a": {
+    "type": "panel",
+    "debug": "black"
+  },
+  "b": {
+    "type": "panel",
+    "debug": "white"
+  },
+  "c": {
+    "type": "panel",
+    "debug": "grey"
+  }
+}

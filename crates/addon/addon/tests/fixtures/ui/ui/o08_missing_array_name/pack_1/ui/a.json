@@ -1,0 +1,13 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "where": {
+          "binding_name": "#a"
+        },
+        "operation": "remove"
+      }
+    ],
+    "layer": 5
+  }
+}

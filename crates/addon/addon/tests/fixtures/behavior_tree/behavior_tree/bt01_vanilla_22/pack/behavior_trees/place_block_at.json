@@ -1,0 +1,19 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "place_block_at",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:look_at": {
+            }
+          },
+          {
+            "minecraft:place_block": {
+            }
+          }
+        ]
+      }
+    }
+  }
+}

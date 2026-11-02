@@ -1,0 +1,13 @@
+# Probe: P34 (without a pack type the format-3 reader also ignores min_engine_version)
+scope = "pack"
+
+[[diagnostic]]
+code = "InvalidProperty"
+severity = "error"
+path = "modules/0/type"
+text = "Provided 'modules/type' element has an invalid value in pack manifest."
+
+[[diagnostic]]
+code = "IgnoredProperty"
+severity = "warning"
+path = "header/min_engine_version"

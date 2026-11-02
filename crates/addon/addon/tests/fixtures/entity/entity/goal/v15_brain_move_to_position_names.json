@@ -1,0 +1,19 @@
+{
+  // fixtures.md v15: the members of `memory_behavior.move_to_position.<name>`; the earlier
+  // drafts' `speed_mod` / `interval_seconds` spellings are unknown members.
+  "minecraft:memory_behavior.move_to_position.x": {
+    "priority": 1,
+    "speed_modifier": 1.5,
+    "goal_radius": 3,
+    "maximum_range": 16,
+    "interval": { "min": 2, "max": 4 },
+    "memory": "demo:nearest_gold_block",
+    "on_reach": [{ "event": "demo:reached_gold", "target": "self" }],
+    "chance_to_start": 0.5
+  },
+  "draft_spellings": {
+    "priority": 1,
+    "speed_mod": 1.5,
+    "interval_seconds": 4
+  }
+}

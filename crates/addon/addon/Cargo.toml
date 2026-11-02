@@ -1,0 +1,249 @@
+[package]
+name = "bedrock_addon"
+description = "Minecraft Bedrock Edition behaviour and resource packs as typed Rust data: manifests, containers, pack stacks, every content family, diagnostics and write-back; sans-IO"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license = "Apache-2.0"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["zip", "encrypted", "molang", "nbt", "full"]
+# infrastructure
+zip = ["dep:zip"]                        # in-memory decoding and encoding of .mcpack/.zip/.mcaddon/.mctemplate
+encrypted = ["zip", "dep:aes", "dep:cfb8", "dep:ctr"]   # marketplace content keys
+molang = ["bedrock_addon_core/molang", "bedrock_addon_support/molang", "bedrock_addon_family_attachable?/molang", "bedrock_addon_family_biome?/molang", "bedrock_addon_family_block?/molang", "bedrock_addon_family_client_entity?/molang", "bedrock_addon_family_entity?/molang", "bedrock_addon_family_feature?/molang", "bedrock_addon_family_feature_rules?/molang", "bedrock_addon_family_geometry?/molang", "bedrock_addon_family_item?/molang", "bedrock_addon_family_particle?/molang", "bedrock_addon_family_recipe?/molang", "bedrock_addon_family_render_controller?/molang", "bedrock_addon_family_sounds_json?/molang"]   # load-time Molang compile check
+nbt = ["dep:nbtx", "bedrock_addon_family_block?/nbt", "bedrock_addon_family_entity?/nbt", "bedrock_addon_family_item?/nbt"]                       # Block::to_network_nbt, Item::network_properties, …
+
+# families: one feature per game document family, the module `families::<name>`
+# behaviour pack
+aim_assist = ["dep:bedrock_addon_family_aim_assist"]
+behavior_tree = ["dep:bedrock_addon_family_behavior_tree"]
+biome = ["dep:bedrock_addon_family_biome"]
+block = ["dep:bedrock_addon_family_block"]
+camera = ["dep:bedrock_addon_family_camera"]
+crafting_catalog = ["dep:bedrock_addon_family_crafting_catalog"]
+dialogue = ["dep:bedrock_addon_family_dialogue"]
+dimension = ["dep:bedrock_addon_family_dimension"]
+entity = ["dep:bedrock_addon_family_entity"]
+feature = ["dep:bedrock_addon_family_feature"]
+feature_rules = ["dep:bedrock_addon_family_feature_rules"]
+function = ["dep:bedrock_addon_family_function"]
+item = ["dep:bedrock_addon_family_item"]
+jigsaw = ["dep:bedrock_addon_family_jigsaw"]
+loot = ["dep:bedrock_addon_family_loot"]
+poi = ["dep:bedrock_addon_family_poi"]
+recipe = ["dep:bedrock_addon_family_recipe"]
+script = ["dep:bedrock_addon_family_script"]
+server_sound_definitions = ["dep:bedrock_addon_family_server_sound_definitions"]
+spawn_groups = ["dep:bedrock_addon_family_spawn_groups"]
+spawn_rules = ["dep:bedrock_addon_family_spawn_rules"]
+structure = ["dep:bedrock_addon_family_structure", "dep:nbtx"]  # structure palettes are NBT compounds (pack/link/world/structure_block.rs)
+trade = ["dep:bedrock_addon_family_trade"]
+voxel_shape = ["dep:bedrock_addon_family_voxel_shape"]
+# resource pack
+animation = ["dep:bedrock_addon_family_animation"]
+animation_controller = ["dep:bedrock_addon_family_animation_controller"]
+atomic_client_entity = ["dep:bedrock_addon_family_atomic_client_entity"]
+attachable = ["dep:bedrock_addon_family_attachable"]
+biomes_client = ["dep:bedrock_addon_family_biomes_client"]
+block_culling = ["dep:bedrock_addon_family_block_culling"]
+blocks_json = ["dep:bedrock_addon_family_blocks_json"]
+client_biome = ["dep:bedrock_addon_family_client_biome"]
+client_entity = ["dep:bedrock_addon_family_client_entity"]
+credits = ["dep:bedrock_addon_family_credits"]
+ddui = ["dep:bedrock_addon_family_ddui"]
+deferred_settings = ["dep:bedrock_addon_family_deferred_settings"]
+flipbooks = ["dep:bedrock_addon_family_flipbooks"]
+fog = ["dep:bedrock_addon_family_fog"]
+font = ["dep:bedrock_addon_family_font"]
+geometry = ["dep:bedrock_addon_family_geometry"]
+json_ui = ["dep:bedrock_addon_family_json_ui"]
+lang = ["dep:bedrock_addon_family_lang"]
+languages = ["dep:bedrock_addon_family_languages"]
+legacy_path_mapping = ["dep:bedrock_addon_family_legacy_path_mapping"]
+loading_messages = ["dep:bedrock_addon_family_loading_messages"]
+material = ["dep:bedrock_addon_family_material"]
+music = ["dep:bedrock_addon_family_music"]
+particle = ["dep:bedrock_addon_family_particle"]
+persona = ["dep:bedrock_addon_family_persona"]
+render_controller = ["dep:bedrock_addon_family_render_controller"]
+skin = ["dep:bedrock_addon_family_skin"]
+sound_definitions = ["dep:bedrock_addon_family_sound_definitions"]
+sound_file = ["dep:bedrock_addon_family_sound_file"]
+sounds_json = ["dep:bedrock_addon_family_sounds_json"]
+splashes = ["dep:bedrock_addon_family_splashes"]
+texture_atlas = ["dep:bedrock_addon_family_texture_atlas"]
+texture_file = ["dep:bedrock_addon_family_texture_file"]
+texture_list = ["dep:bedrock_addon_family_texture_list"]
+texture_set = ["dep:bedrock_addon_family_texture_set"]
+ui_texture_info = ["dep:bedrock_addon_family_ui_texture_info"]
+
+full = [
+    # behaviour pack
+    "aim_assist",
+    "behavior_tree",
+    "biome",
+    "block",
+    "camera",
+    "crafting_catalog",
+    "dialogue",
+    "dimension",
+    "entity",
+    "feature",
+    "feature_rules",
+    "function",
+    "item",
+    "jigsaw",
+    "loot",
+    "poi",
+    "recipe",
+    "script",
+    "server_sound_definitions",
+    "spawn_groups",
+    "spawn_rules",
+    "structure",
+    "trade",
+    "voxel_shape",
+    # resource pack
+    "animation",
+    "animation_controller",
+    "atomic_client_entity",
+    "attachable",
+    "biomes_client",
+    "block_culling",
+    "blocks_json",
+    "client_biome",
+    "client_entity",
+    "credits",
+    "ddui",
+    "deferred_settings",
+    "flipbooks",
+    "fog",
+    "font",
+    "geometry",
+    "json_ui",
+    "lang",
+    "languages",
+    "legacy_path_mapping",
+    "loading_messages",
+    "material",
+    "music",
+    "particle",
+    "persona",
+    "render_controller",
+    "skin",
+    "sound_definitions",
+    "sound_file",
+    "sounds_json",
+    "splashes",
+    "texture_atlas",
+    "texture_file",
+    "texture_list",
+    "texture_set",
+    "ui_texture_info",
+]
+# optional checks, off by default (not in `default`, not in `full`)
+script-syntax = ["script", "bedrock_addon_family_script?/script-syntax"]   # full JS syntax check of script files
+
+[dependencies]
+bedrock_addon_core = { path = "../core" }
+bedrock_addon_support = { path = "../support" }
+bedrock_addon_derive = { path = "../derive" }
+bedrock_addon_family_aim_assist = { path = "../families/aim_assist", optional = true }
+bedrock_addon_family_animation = { path = "../families/animation", optional = true }
+bedrock_addon_family_animation_controller = { path = "../families/animation_controller", optional = true }
+bedrock_addon_family_atomic_client_entity = { path = "../families/atomic_client_entity", optional = true }
+bedrock_addon_family_attachable = { path = "../families/attachable", optional = true }
+bedrock_addon_family_behavior_tree = { path = "../families/behavior_tree", optional = true }
+bedrock_addon_family_biome = { path = "../families/biome", optional = true }
+bedrock_addon_family_biomes_client = { path = "../families/biomes_client", optional = true }
+bedrock_addon_family_block = { path = "../families/block", optional = true }
+bedrock_addon_family_block_culling = { path = "../families/block_culling", optional = true }
+bedrock_addon_family_blocks_json = { path = "../families/blocks_json", optional = true }
+bedrock_addon_family_camera = { path = "../families/camera", optional = true }
+bedrock_addon_family_client_biome = { path = "../families/client_biome", optional = true }
+bedrock_addon_family_client_entity = { path = "../families/client_entity", optional = true }
+bedrock_addon_family_crafting_catalog = { path = "../families/crafting_catalog", optional = true }
+bedrock_addon_family_credits = { path = "../families/credits", optional = true }
+bedrock_addon_family_ddui = { path = "../families/ddui", optional = true }
+bedrock_addon_family_deferred_settings = { path = "../families/deferred_settings", optional = true }
+bedrock_addon_family_dialogue = { path = "../families/dialogue", optional = true }
+bedrock_addon_family_dimension = { path = "../families/dimension", optional = true }
+bedrock_addon_family_entity = { path = "../families/entity", optional = true }
+bedrock_addon_family_feature = { path = "../families/feature", optional = true }
+bedrock_addon_family_feature_rules = { path = "../families/feature_rules", optional = true }
+bedrock_addon_family_flipbooks = { path = "../families/flipbooks", optional = true }
+bedrock_addon_family_fog = { path = "../families/fog", optional = true }
+bedrock_addon_family_font = { path = "../families/font", optional = true }
+bedrock_addon_family_function = { path = "../families/function", optional = true }
+bedrock_addon_family_geometry = { path = "../families/geometry", optional = true }
+bedrock_addon_family_item = { path = "../families/item", optional = true }
+bedrock_addon_family_jigsaw = { path = "../families/jigsaw", optional = true }
+bedrock_addon_family_json_ui = { path = "../families/json_ui", optional = true }
+bedrock_addon_family_lang = { path = "../families/lang", optional = true }
+bedrock_addon_family_languages = { path = "../families/languages", optional = true }
+bedrock_addon_family_legacy_path_mapping = { path = "../families/legacy_path_mapping", optional = true }
+bedrock_addon_family_loading_messages = { path = "../families/loading_messages", optional = true }
+bedrock_addon_family_loot = { path = "../families/loot", optional = true }
+bedrock_addon_family_material = { path = "../families/material", optional = true }
+bedrock_addon_family_music = { path = "../families/music", optional = true }
+bedrock_addon_family_particle = { path = "../families/particle", optional = true }
+bedrock_addon_family_persona = { path = "../families/persona", optional = true }
+bedrock_addon_family_poi = { path = "../families/poi", optional = true }
+bedrock_addon_family_recipe = { path = "../families/recipe", optional = true }
+bedrock_addon_family_render_controller = { path = "../families/render_controller", optional = true }
+bedrock_addon_family_script = { path = "../families/script", optional = true }
+bedrock_addon_family_server_sound_definitions = { path = "../families/server_sound_definitions", optional = true }
+bedrock_addon_family_skin = { path = "../families/skin", optional = true }
+bedrock_addon_family_sound_definitions = { path = "../families/sound_definitions", optional = true }
+bedrock_addon_family_sound_file = { path = "../families/sound_file", optional = true }
+bedrock_addon_family_sounds_json = { path = "../families/sounds_json", optional = true }
+bedrock_addon_family_spawn_groups = { path = "../families/spawn_groups", optional = true }
+bedrock_addon_family_spawn_rules = { path = "../families/spawn_rules", optional = true }
+bedrock_addon_family_splashes = { path = "../families/splashes", optional = true }
+bedrock_addon_family_structure = { path = "../families/structure", optional = true }
+bedrock_addon_family_texture_atlas = { path = "../families/texture_atlas", optional = true }
+bedrock_addon_family_texture_file = { path = "../families/texture_file", optional = true }
+bedrock_addon_family_texture_list = { path = "../families/texture_list", optional = true }
+bedrock_addon_family_texture_set = { path = "../families/texture_set", optional = true }
+bedrock_addon_family_trade = { path = "../families/trade", optional = true }
+bedrock_addon_family_ui_texture_info = { path = "../families/ui_texture_info", optional = true }
+bedrock_addon_family_voxel_shape = { path = "../families/voxel_shape", optional = true }
+thiserror = { workspace = true }
+facet = { workspace = true }
+facet-json = { workspace = true }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+bytes = { workspace = true }
+uuid = { workspace = true }
+brarchive = { workspace = true }
+zip = { workspace = true, optional = true }
+aes = { workspace = true, optional = true }
+cfb8 = { workspace = true, optional = true }
+ctr = { workspace = true, optional = true }
+nbtx = { workspace = true, optional = true }
+
+[[example]]
+name = "in_memory_pack"
+required-features = ["block"]
+
+[[example]]
+name = "entity_components"
+required-features = ["entity"]
+
+[[example]]
+name = "client_visuals"
+required-features = ["client_entity", "entity", "geometry", "texture_file", "texture_set"]
+
+[[example]]
+name = "diagnostics_gate"
+required-features = ["block", "entity", "loot"]
+
+[lints]
+workspace = true

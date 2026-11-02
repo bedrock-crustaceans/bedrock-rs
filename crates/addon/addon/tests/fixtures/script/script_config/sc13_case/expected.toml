@@ -1,0 +1,16 @@
+# families/script_config fixtures.md, row sc13_case (probe B).
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "allowed_modules/0"
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [casediff - 1.0.0] - requesting dependency on module [@minecraft/server] but it is not configured to use it."

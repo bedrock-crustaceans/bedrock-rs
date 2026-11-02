@@ -1,0 +1,43 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.ranged_attack": {
+        "attack_interval": {
+          "min": 1,
+          "max": 3
+        }
+      },
+      "minecraft:behavior.beg": {
+        "look_time": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "minecraft:behavior.float_wander": {
+        "float_duration": {
+          "min": 0.1,
+          "max": 0.35
+        }
+      }
+    },
+    "component_groups": {
+      "a": {
+        "minecraft:behavior.ranged_attack": {
+          "attack_interval": {
+            "min": 0,
+            "max": 5
+          }
+        }
+      },
+      "b": {
+        "minecraft:behavior.ranged_attack": {
+          "attack_interval": 2.5
+        }
+      }
+    }
+  }
+}

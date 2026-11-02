@@ -1,0 +1,9 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "flowing_water": {
+      "quad": 1,
+      "textures": "w"
+    }
+  }
+}

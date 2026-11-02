@@ -1,0 +1,111 @@
+# Root types of `bedrock_addon`: every type a stack collection or a parse hands out inside
+# `Document<T>`, whose methods `Document`'s must not hide.
+# One name per line; `#` starts a comment. A family adds its root types here.
+
+# behaviour packs
+Block
+VoxelShape
+Item
+CraftingCatalog
+Entity
+SpawnRules
+SpawnGroup
+Biome
+Feature
+FeatureRule
+JigsawStructure
+TemplatePool
+StructureSet
+ProcessorList
+JigsawMetadata
+Dimension
+Structure
+CameraPreset
+CameraList
+CameraSpline
+CameraEntity
+AimAssistPreset
+AimAssistCategories
+AimAssistCategory
+Animation
+AnimationFile
+AnimationController
+AnimationControllerFile
+LootTable
+Recipe
+TradeTable
+DialogueScene
+DialogueFile
+Translations
+LangFile
+Languages
+LanguageNames
+Function
+TickList
+BehaviorTree
+PoiType
+PoiTag
+SoundMetadata
+SoundMetadataFile
+ParticleEffect
+ScriptModule
+ScriptBundle
+
+# resource packs
+ClientBlock
+CullingRules
+Attachable
+ClientEntity
+AtomicClientEntity
+ClientBiome
+LegacyClientBiomes
+Geometry
+GeometryFile
+RenderController
+RenderControllerFile
+Material
+MaterialFile
+MaterialList
+FogSettings
+LightingSettings
+WaterSettings
+AtmosphereSettings
+ColorGradingSettings
+CubemapSettings
+ShadowSettings
+PbrFallbackSettings
+LocalLightSettings
+TextureAtlas
+Flipbooks
+TextureList
+TextureSet
+SoundDefinitions
+SoundBindings
+MusicDefinitions
+SoundFiles
+UiDefinitions
+UiFile
+UiRoot
+UiComposition
+Splashes
+LoadingMessages
+Credits
+Font
+FontMetadata
+EmoticonList
+UiTextureInfo
+LegacyPathMapping
+SkinPack
+PersonaPiece
+
+# manifests (`Manifest::parse` returns `Document<Manifest>`)
+Manifest
+
+# beta structs beside Latest (`block::Beta`, `item::Beta`, `entity::Beta`,
+# `biome::Beta`, the client-biome beta, …; one name in every module, so one line covers them),
+# held in `Registry::beta()` documents
+Beta
+
+# `history::Any`, held in `Document` by `parse_as_written`; its version accessor
+# is `parsed_version`, not `version`, so it does not hide `Document`'s
+Any

@@ -1,0 +1,10 @@
+# Probe: B15
+scope = "none"
+resolved = ["@minecraft/server 2.9.0-beta", "@minecraft/server 2.9.0-beta"]
+beta_apis = true
+
+[[diagnostic]]
+code = "ScriptModulePromoted"
+severity = "info"
+path = "dependencies/1"
+text = "Plugin [sm47] - promoted [@minecraft/server] from [2.0.0] to [2.9.0-beta] requested by [sm47 - 3.2.1]."

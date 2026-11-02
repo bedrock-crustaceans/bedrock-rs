@@ -1,0 +1,12 @@
+# fixtures.md `lang/ut_multiline_error` (LocalizationUnitTests): the line number counts
+# line feeds; `key.3` is still registered.
+
+[entries]
+"key.1" = "Value 1"
+"key.2" = "Value 1"
+"key.3" = "Value 3"
+
+[[diagnostics]]
+code = "MalformedInput"
+severity = "warning"
+text = "Line: 6 - Invalid lang file format. New line character was found while parsing key: 'error'."

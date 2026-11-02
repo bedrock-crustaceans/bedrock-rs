@@ -1,0 +1,11 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:typed"
+    },
+    "components": {
+      "minecraft:hand_equipped": true
+    }
+  }
+}

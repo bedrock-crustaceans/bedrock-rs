@@ -1,0 +1,21 @@
+// t04: every quantity form the legacy parser reads (`JsonUtil::parseRange`), one per `wants` entry.
+{
+  "tiers": [
+    {
+      "trades": [
+        {
+          "wants": [
+            { "item": "minecraft:wheat", "quantity": 3 },
+            { "item": "minecraft:potato", "quantity": "2-4" },
+            { "item": "minecraft:carrot", "quantity": [5, 2] },
+            { "item": "minecraft:beetroot", "quantity": { "min": 5, "max": 2 } },
+            { "item": "minecraft:pumpkin", "quantity": -3 },
+            { "item": "minecraft:melon", "quantity": 0 },
+            { "item": "minecraft:apple" }
+          ],
+          "gives": [{ "item": "minecraft:emerald" }]
+        }
+      ]
+    }
+  ]
+}

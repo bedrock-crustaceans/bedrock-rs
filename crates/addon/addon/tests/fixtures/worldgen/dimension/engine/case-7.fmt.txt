@@ -1,0 +1,13 @@
+{{
+			  "format_version": "{}",
+			  "minecraft:dimension": {{
+				"description": {{
+				  "identifier": "{}"
+				}},
+				"components": {{
+				  "minecraft:generation": {{
+					"generator_type": "{}"
+				  }}
+				}}
+			  }}
+			}}

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:spider"
+    },
+    "components": {
+      "minecraft:renders_when_invisible": {}
+    }
+  }
+}

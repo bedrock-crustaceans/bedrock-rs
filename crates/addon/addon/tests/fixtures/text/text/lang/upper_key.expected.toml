@@ -1,0 +1,5 @@
+# fixtures.md `lang/upper_key`: ASCII `A`-`Z` of a key are lower-cased; the value is not.
+may_contain_identifier = false
+
+[entries]
+"key.name" = "Value"

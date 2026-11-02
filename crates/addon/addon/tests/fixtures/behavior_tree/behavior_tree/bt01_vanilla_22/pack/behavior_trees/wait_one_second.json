@@ -1,0 +1,16 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "wait_one_second",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:wait": { 
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+					"items": [{
+						"item": "minecraft:apple",
+						"heal_amount": 3,
+						"effects": [{
+							"name": "regeneration",
+							"duration": "infinite",
+							"amplifier": 2,
+							"chance": 0.25
+						}]
+					}],
+					"force_use": true
+				}

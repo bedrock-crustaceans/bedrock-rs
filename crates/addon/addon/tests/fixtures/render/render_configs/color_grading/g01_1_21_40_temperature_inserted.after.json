@@ -1,0 +1,34 @@
+// fixtures.md g01: temperature inserted switched off
+{
+  "format_version": "1.21.90",
+  "minecraft:color_grading_settings": {
+    "description": {
+      "identifier": "test:g01"
+    },
+    "color_grading": {
+      "midtones": {
+        "contrast": [
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "highlights": {
+        "enabled": true,
+        "highlightsMin": 2.0
+      },
+      "shadows": {
+        "enabled": true,
+        "shadowsMax": 0.5
+      },
+      "temperature": {
+        "enabled": false,
+        "temperature": 6500.0,
+        "type": "white_balance"
+      }
+    },
+    "tone_mapping": {
+      "operator": "aces"
+    }
+  }
+}

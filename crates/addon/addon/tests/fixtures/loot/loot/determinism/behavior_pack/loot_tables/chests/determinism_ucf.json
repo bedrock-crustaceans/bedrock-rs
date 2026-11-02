@@ -1,0 +1,14 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:chest",
+          "functions": [{"function": "carry_over_block_entity_data", "dynamic_properties": true}]
+        }
+      ]
+    }
+  ]
+}

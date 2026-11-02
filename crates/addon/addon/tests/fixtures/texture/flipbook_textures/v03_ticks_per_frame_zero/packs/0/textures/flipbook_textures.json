@@ -1,0 +1,10 @@
+[
+  {
+    "atlas_tile": "x",
+    "ticks_per_frame": 0
+  },
+  {
+    "atlas_tile": "y",
+    "ticks_per_frame": -4
+  }
+]

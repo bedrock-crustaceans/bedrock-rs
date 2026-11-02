@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:cow",
+      "spawn_category": "creature"
+    },
+    "components": {
+      "minecraft:interact": {
+        "interactions": [
+          {
+            "equip_item_slot": "2",
+            "drop_item_slot": "1"
+          }
+        ]
+      }
+    }
+  }
+}

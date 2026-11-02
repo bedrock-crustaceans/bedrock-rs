@@ -1,0 +1,27 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:ender_pearl",
+      "is_spawnable": false,
+      "is_summonable": false,
+      "is_experimental": false
+    },
+    "components": {
+      "minecraft:collision_box": { "width": 0.25, "height": 0.25 },
+      "minecraft:projectile": {
+        "on_hit": { "teleport_owner": true, "remove_on_hit": {} },
+        "power": 1.5,
+        "gravity": 0.025,
+        "angle_offset": 0.0,
+        "inertia": 1,
+        "liquid_inertia": 1,
+        "anchor": 1,
+        "offset": [ 0, -0.1, 0 ],
+        "should_bounce": false
+      },
+      "minecraft:physics": {},
+      "minecraft:damage_sensor": { "triggers": { "deals_damage": false } }
+    }
+  }
+}

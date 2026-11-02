@@ -1,0 +1,13 @@
+{
+	"format_version": "beta",
+	"minecraft:entity": {
+		"description": {
+			"identifier": "{}"
+		},
+		"components": {
+			"{}": {
+				"flag": {}
+			}
+		}
+	}
+}

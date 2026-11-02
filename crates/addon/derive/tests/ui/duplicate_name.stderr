@@ -1,0 +1,5 @@
+error: duplicate component name `minecraft:glint`
+  --> tests/ui/duplicate_name.rs:14:24
+   |
+14 |     #[component(name = "minecraft:glint", parse = parse)]
+   |                        ^^^^^^^^^^^^^^^^^

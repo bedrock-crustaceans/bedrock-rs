@@ -1,0 +1,16 @@
+{
+				"format_version": "1.10.0",
+				"particle_effect": {
+					"description": {
+						"identifier": "test:unbound_position_test",
+						"basic_render_parameters": {
+							"material": "particles_alpha",
+							"texture": "textures/particle/particles"
+						}
+					},
+					"components": {
+						"minecraft:emitter_rate_instant": { "num_particles": 1 },
+						"minecraft:emitter_lifetime_once": { "active_time": 5.0 }
+					}
+				}
+			}

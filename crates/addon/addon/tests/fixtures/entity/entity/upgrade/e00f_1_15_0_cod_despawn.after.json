@@ -1,0 +1,27 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:cod"
+    },
+    "components": {
+      "minecraft:despawn": {
+        "filters": [
+          {
+            "all_of": [
+              {
+                "test": "is_persistent",
+                "value": false
+              },
+              {
+                "test": "distance_to_nearest_player",
+                "operator": ">",
+                "value": 40
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

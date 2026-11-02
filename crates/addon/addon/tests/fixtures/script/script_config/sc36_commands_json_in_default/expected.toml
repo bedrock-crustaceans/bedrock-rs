@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sc36_commands_json_in_default (probe D cmd_default_dir).
+
+[[diagnostic]]
+code = "IgnoredFile"
+severity = "info"
+phase = "parse"
+file = "config/default/commands.json"
+path = ""

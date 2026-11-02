@@ -1,0 +1,11 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "sub",
+    "minecraft:root": {
+      "minecraft:subtree": {
+        "subtree_id": "move",
+        "data_items": ["a", { "from": "b", "to": "c" }, { "from": "d" }, 7]
+      }
+    }
+  }
+}

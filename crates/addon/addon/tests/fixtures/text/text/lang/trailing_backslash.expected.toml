@@ -1,0 +1,4 @@
+# schema.md rule 6: a backslash that is the last byte of the file is kept.
+
+[entries]
+"a" = "x\\"

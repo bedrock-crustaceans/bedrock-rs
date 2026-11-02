@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Block Culling Group Test RP",
+    "description": "Block Group Test RP",
+    "uuid": "7E29BE8D-77F2-4E89-99E8-6BD0055C1634",
+    "version": [0, 0, 1],
+    "min_engine_version": [	1, 16, 0 ]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "resources",
+      "uuid": "67233F1C-A1AE-4CDE-83CA-689E1C9B04FD",
+      "version": [0, 0, 1]
+    }
+  ]
+}

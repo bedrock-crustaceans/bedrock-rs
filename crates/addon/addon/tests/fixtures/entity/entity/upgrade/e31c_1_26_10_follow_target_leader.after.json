@@ -1,0 +1,20 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.follow_target_leader": {
+        "priority": 5,
+        "search_cooldown": 1,
+        "leader_filters": {
+          "test": "has_component",
+          "subject": "other",
+          "value": "minecraft:is_illager_captain"
+        }
+      },
+      "minecraft:uses_legacy_friction": {}
+    }
+  }
+}

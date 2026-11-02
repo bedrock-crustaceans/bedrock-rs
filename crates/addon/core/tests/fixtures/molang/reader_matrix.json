@@ -1,0 +1,1874 @@
+{
+ "about": "The reader matrix and facet cases of molangx tests/serialised_forms.rs (commit ffa4a42) as rows: a JSON text (null where JSON cannot hold the value), the JsonScalar a caller builds from it, the context version, and the result per reader (strict = StrictVersioned, lenient = LenientVersioned, biome = BiomeHeightRange, list = ScalarOrArray, schema = SchemaValidated). Results: [const, x] | [bool, b] | [string, text, raw version] | [object, text, raw version] | [no_expression] | [expression_array] | [unsupported, json type] | [out_of_range]. facet = narrower marks rows that facet-json rejects although the reader accepts them (a number not finite as an f32).",
+ "rows": [
+  {
+   "case": "a number is a constant under every reader",
+   "json": "2.5",
+   "scalar": [
+    "number",
+    2.5
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "const",
+     2.5
+    ],
+    "lenient": [
+     "const",
+     2.5
+    ],
+    "biome": [
+     "const",
+     2.5
+    ],
+    "list": [
+     "const",
+     2.5
+    ],
+    "schema": [
+     "const",
+     2.5
+    ]
+   }
+  },
+  {
+   "case": "negative zero keeps its sign",
+   "json": "-0.0",
+   "scalar": [
+    "number",
+    "-0.0"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "const",
+     "-0.0"
+    ],
+    "lenient": [
+     "const",
+     "-0.0"
+    ],
+    "biome": [
+     "const",
+     "-0.0"
+    ],
+    "list": [
+     "const",
+     "-0.0"
+    ],
+    "schema": [
+     "const",
+     "-0.0"
+    ]
+   }
+  },
+  {
+   "case": "an integer token is a constant",
+   "json": "7",
+   "scalar": [
+    "number",
+    7
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "const",
+     7
+    ],
+    "lenient": [
+     "const",
+     7
+    ],
+    "biome": [
+     "const",
+     7
+    ],
+    "list": [
+     "const",
+     7
+    ],
+    "schema": [
+     "const",
+     7
+    ]
+   }
+  },
+  {
+   "case": "a negative integer token is a constant",
+   "json": "-3",
+   "scalar": [
+    "number",
+    -3
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "const",
+     -3
+    ],
+    "lenient": [
+     "const",
+     -3
+    ],
+    "biome": [
+     "const",
+     -3
+    ],
+    "list": [
+     "const",
+     -3
+    ],
+    "schema": [
+     "const",
+     -3
+    ]
+   }
+  },
+  {
+   "case": "a real integral token is a constant",
+   "json": "1.0",
+   "scalar": [
+    "number",
+    1.0
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "const",
+     1
+    ],
+    "lenient": [
+     "const",
+     1
+    ],
+    "biome": [
+     "const",
+     1
+    ],
+    "list": [
+     "const",
+     1
+    ],
+    "schema": [
+     "const",
+     1
+    ]
+   }
+  },
+  {
+   "case": "0.1 is stored as the nearest f32",
+   "json": "0.1",
+   "scalar": [
+    "number",
+    0.1
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "const",
+     0.1
+    ],
+    "lenient": [
+     "const",
+     0.1
+    ],
+    "biome": [
+     "const",
+     0.1
+    ],
+    "list": [
+     "const",
+     0.1
+    ],
+    "schema": [
+     "const",
+     0.1
+    ]
+   }
+  },
+  {
+   "case": "1e19 is a constant",
+   "json": "1e19",
+   "scalar": [
+    "number",
+    1e+19
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "const",
+     1e+19
+    ],
+    "lenient": [
+     "const",
+     1e+19
+    ],
+    "biome": [
+     "const",
+     1e+19
+    ],
+    "list": [
+     "const",
+     1e+19
+    ],
+    "schema": [
+     "const",
+     1e+19
+    ]
+   }
+  },
+  {
+   "case": "f32::MAX fits",
+   "json": "3.4028234663852886e38",
+   "scalar": [
+    "number",
+    3.4028234663852886e+38
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "const",
+     "f32::MAX"
+    ],
+    "lenient": [
+     "const",
+     "f32::MAX"
+    ],
+    "biome": [
+     "const",
+     "f32::MAX"
+    ],
+    "list": [
+     "const",
+     "f32::MAX"
+    ],
+    "schema": [
+     "const",
+     "f32::MAX"
+    ]
+   }
+  },
+  {
+   "case": "f32::MIN fits",
+   "json": "-3.4028234663852886e38",
+   "scalar": [
+    "number",
+    -3.4028234663852886e+38
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "const",
+     "f32::MIN"
+    ],
+    "lenient": [
+     "const",
+     "f32::MIN"
+    ],
+    "biome": [
+     "const",
+     "f32::MIN"
+    ],
+    "list": [
+     "const",
+     "f32::MIN"
+    ],
+    "schema": [
+     "const",
+     "f32::MIN"
+    ]
+   }
+  },
+  {
+   "case": "1e39 is out of range for the strict reader only",
+   "json": "1e39",
+   "scalar": [
+    "number",
+    1e+39
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "out_of_range"
+    ],
+    "lenient": [
+     "const",
+     "inf"
+    ],
+    "biome": [
+     "const",
+     "inf"
+    ],
+    "list": [
+     "const",
+     "inf"
+    ],
+    "schema": [
+     "const",
+     "inf"
+    ]
+   },
+   "facet": "narrower"
+  },
+  {
+   "case": "-1e39 is out of range for the strict reader only",
+   "json": "-1e39",
+   "scalar": [
+    "number",
+    -1e+39
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "out_of_range"
+    ],
+    "lenient": [
+     "const",
+     "-inf"
+    ],
+    "biome": [
+     "const",
+     "-inf"
+    ],
+    "list": [
+     "const",
+     "-inf"
+    ],
+    "schema": [
+     "const",
+     "-inf"
+    ]
+   },
+   "facet": "narrower"
+  },
+  {
+   "case": "1e300 is out of range for the strict reader only",
+   "json": "1e300",
+   "scalar": [
+    "number",
+    1e+300
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "out_of_range"
+    ],
+    "lenient": [
+     "const",
+     "inf"
+    ],
+    "biome": [
+     "const",
+     "inf"
+    ],
+    "list": [
+     "const",
+     "inf"
+    ],
+    "schema": [
+     "const",
+     "inf"
+    ]
+   },
+   "facet": "narrower"
+  },
+  {
+   "case": "NaN is out of range for the strict reader only",
+   "json": null,
+   "scalar": [
+    "number",
+    "NaN"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "out_of_range"
+    ],
+    "lenient": [
+     "const",
+     "NaN"
+    ],
+    "biome": [
+     "const",
+     "NaN"
+    ],
+    "list": [
+     "const",
+     "NaN"
+    ],
+    "schema": [
+     "const",
+     "NaN"
+    ]
+   }
+  },
+  {
+   "case": "true is refused only by the strict reader",
+   "json": "true",
+   "scalar": [
+    "bool",
+    true
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "bool"
+    ],
+    "lenient": [
+     "bool",
+     true
+    ],
+    "biome": [
+     "bool",
+     true
+    ],
+    "list": [
+     "bool",
+     true
+    ],
+    "schema": [
+     "bool",
+     true
+    ]
+   }
+  },
+  {
+   "case": "false is refused only by the strict reader",
+   "json": "false",
+   "scalar": [
+    "bool",
+    false
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "bool"
+    ],
+    "lenient": [
+     "bool",
+     false
+    ],
+    "biome": [
+     "bool",
+     false
+    ],
+    "list": [
+     "bool",
+     false
+    ],
+    "schema": [
+     "bool",
+     false
+    ]
+   }
+  },
+  {
+   "case": "a string takes the context version -1",
+   "json": "\"v.x\"",
+   "scalar": [
+    "string",
+    "v.x"
+   ],
+   "context": -1,
+   "expect": {
+    "strict": [
+     "string",
+     "v.x",
+     -1
+    ],
+    "lenient": [
+     "string",
+     "v.x",
+     -1
+    ],
+    "biome": [
+     "string",
+     "v.x",
+     -1
+    ],
+    "list": [
+     "string",
+     "v.x",
+     -1
+    ],
+    "schema": [
+     "string",
+     "v.x",
+     -1
+    ]
+   }
+  },
+  {
+   "case": "a string takes the context version 0",
+   "json": "\"v.x\"",
+   "scalar": [
+    "string",
+    "v.x"
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "string",
+     "v.x",
+     0
+    ],
+    "lenient": [
+     "string",
+     "v.x",
+     0
+    ],
+    "biome": [
+     "string",
+     "v.x",
+     0
+    ],
+    "list": [
+     "string",
+     "v.x",
+     0
+    ],
+    "schema": [
+     "string",
+     "v.x",
+     0
+    ]
+   }
+  },
+  {
+   "case": "a string takes the context version 6",
+   "json": "\"v.x\"",
+   "scalar": [
+    "string",
+    "v.x"
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "string",
+     "v.x",
+     6
+    ],
+    "lenient": [
+     "string",
+     "v.x",
+     6
+    ],
+    "biome": [
+     "string",
+     "v.x",
+     6
+    ],
+    "list": [
+     "string",
+     "v.x",
+     6
+    ],
+    "schema": [
+     "string",
+     "v.x",
+     6
+    ]
+   }
+  },
+  {
+   "case": "a string takes the context version 13",
+   "json": "\"v.x\"",
+   "scalar": [
+    "string",
+    "v.x"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "string",
+     "v.x",
+     13
+    ],
+    "lenient": [
+     "string",
+     "v.x",
+     13
+    ],
+    "biome": [
+     "string",
+     "v.x",
+     13
+    ],
+    "list": [
+     "string",
+     "v.x",
+     13
+    ],
+    "schema": [
+     "string",
+     "v.x",
+     13
+    ]
+   }
+  },
+  {
+   "case": "a string takes the context version 99",
+   "json": "\"v.x\"",
+   "scalar": [
+    "string",
+    "v.x"
+   ],
+   "context": 99,
+   "expect": {
+    "strict": [
+     "string",
+     "v.x",
+     99
+    ],
+    "lenient": [
+     "string",
+     "v.x",
+     99
+    ],
+    "biome": [
+     "string",
+     "v.x",
+     99
+    ],
+    "list": [
+     "string",
+     "v.x",
+     99
+    ],
+    "schema": [
+     "string",
+     "v.x",
+     99
+    ]
+   }
+  },
+  {
+   "case": "a string expression",
+   "json": "\"q.is_baby ? 1 : 2\"",
+   "scalar": [
+    "string",
+    "q.is_baby ? 1 : 2"
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "string",
+     "q.is_baby ? 1 : 2",
+     6
+    ],
+    "lenient": [
+     "string",
+     "q.is_baby ? 1 : 2",
+     6
+    ],
+    "biome": [
+     "string",
+     "q.is_baby ? 1 : 2",
+     6
+    ],
+    "list": [
+     "string",
+     "q.is_baby ? 1 : 2",
+     6
+    ],
+    "schema": [
+     "string",
+     "q.is_baby ? 1 : 2",
+     6
+    ]
+   }
+  },
+  {
+   "case": "a numeric string is an expression",
+   "json": "\"1\"",
+   "scalar": [
+    "string",
+    "1"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "string",
+     "1",
+     13
+    ],
+    "lenient": [
+     "string",
+     "1",
+     13
+    ],
+    "biome": [
+     "string",
+     "1",
+     13
+    ],
+    "list": [
+     "string",
+     "1",
+     13
+    ],
+    "schema": [
+     "string",
+     "1",
+     13
+    ]
+   }
+  },
+  {
+   "case": "a bool string is an expression",
+   "json": "\"true\"",
+   "scalar": [
+    "string",
+    "true"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "string",
+     "true",
+     13
+    ],
+    "lenient": [
+     "string",
+     "true",
+     13
+    ],
+    "biome": [
+     "string",
+     "true",
+     13
+    ],
+    "list": [
+     "string",
+     "true",
+     13
+    ],
+    "schema": [
+     "string",
+     "true",
+     13
+    ]
+   }
+  },
+  {
+   "case": "an empty string reads",
+   "json": "\"\"",
+   "scalar": [
+    "string",
+    ""
+   ],
+   "context": 4,
+   "expect": {
+    "strict": [
+     "string",
+     "",
+     4
+    ],
+    "lenient": [
+     "string",
+     "",
+     4
+    ],
+    "biome": [
+     "string",
+     "",
+     4
+    ],
+    "list": [
+     "string",
+     "",
+     4
+    ],
+    "schema": [
+     "string",
+     "",
+     4
+    ]
+   }
+  },
+  {
+   "case": "an invalid expression still reads",
+   "json": "\"1 +* ((\"",
+   "scalar": [
+    "string",
+    "1 +* (("
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "string",
+     "1 +* ((",
+     13
+    ],
+    "lenient": [
+     "string",
+     "1 +* ((",
+     13
+    ],
+    "biome": [
+     "string",
+     "1 +* ((",
+     13
+    ],
+    "list": [
+     "string",
+     "1 +* ((",
+     13
+    ],
+    "schema": [
+     "string",
+     "1 +* ((",
+     13
+    ]
+   }
+  },
+  {
+   "case": "case and escapes are kept",
+   "json": "\"Query.Is_Baby ? \\\"a\\\" : 0\"",
+   "scalar": [
+    "string",
+    "Query.Is_Baby ? \"a\" : 0"
+   ],
+   "context": 8,
+   "expect": {
+    "strict": [
+     "string",
+     "Query.Is_Baby ? \"a\" : 0",
+     8
+    ],
+    "lenient": [
+     "string",
+     "Query.Is_Baby ? \"a\" : 0",
+     8
+    ],
+    "biome": [
+     "string",
+     "Query.Is_Baby ? \"a\" : 0",
+     8
+    ],
+    "list": [
+     "string",
+     "Query.Is_Baby ? \"a\" : 0",
+     8
+    ],
+    "schema": [
+     "string",
+     "Query.Is_Baby ? \"a\" : 0",
+     8
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 42",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 42}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    42
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     42
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     42
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version -1",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": -1}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    -1
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     -1
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     -1
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 0",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 0}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    0
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     0
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     0
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 3",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 3}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    3
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     3
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     3
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 13",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 13}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    13
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     13
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     13
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 14",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 14}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    14
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     14
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     14
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 300",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 300}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    300
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     300
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     300
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 1000",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 1000}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    1000
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     1000
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     1000
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version -32768",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": -32768}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    -32768
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     -32768
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     -32768
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version 32767",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": 32767}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    32767
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     32767
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     32767
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form keeps its own version -2",
+   "json": "{\"expression\": \"q.is_baby\", \"version\": -2}",
+   "scalar": [
+    "object",
+    "q.is_baby",
+    -2
+   ],
+   "context": 6,
+   "expect": {
+    "strict": [
+     "object",
+     "q.is_baby",
+     -2
+    ],
+    "lenient": [
+     "object",
+     "q.is_baby",
+     -2
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "the object form ignores other members",
+   "json": "{\"expression\": \"1 + 2\", \"version\": 12, \"comment\": \"x\", \"extra\": [1]}",
+   "scalar": [
+    "object",
+    "1 + 2",
+    12
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "object",
+     "1 + 2",
+     12
+    ],
+    "lenient": [
+     "object",
+     "1 + 2",
+     12
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "an empty object-form expression reads",
+   "json": "{\"expression\": \"\", \"version\": 7}",
+   "scalar": [
+    "object",
+    "",
+    7
+   ],
+   "context": 0,
+   "expect": {
+    "strict": [
+     "object",
+     "",
+     7
+    ],
+    "lenient": [
+     "object",
+     "",
+     7
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "null is no expression only for the list reader",
+   "json": "null",
+   "scalar": [
+    "null"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "null"
+    ],
+    "lenient": [
+     "unsupported",
+     "null"
+    ],
+    "biome": [
+     "unsupported",
+     "null"
+    ],
+    "list": [
+     "no_expression"
+    ],
+    "schema": [
+     "unsupported",
+     "null"
+    ]
+   }
+  },
+  {
+   "case": "an array is an expression array only for the list reader",
+   "json": "[0, 0, 0]",
+   "scalar": [
+    "array"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "array"
+    ],
+    "lenient": [
+     "unsupported",
+     "array"
+    ],
+    "biome": [
+     "unsupported",
+     "array"
+    ],
+    "list": [
+     "expression_array"
+    ],
+    "schema": [
+     "unsupported",
+     "array"
+    ]
+   }
+  },
+  {
+   "case": "an empty array",
+   "json": "[]",
+   "scalar": [
+    "array"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "array"
+    ],
+    "lenient": [
+     "unsupported",
+     "array"
+    ],
+    "biome": [
+     "unsupported",
+     "array"
+    ],
+    "list": [
+     "expression_array"
+    ],
+    "schema": [
+     "unsupported",
+     "array"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {}",
+   "json": "{}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"a\": 1}",
+   "json": "{\"a\": 1}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\"}",
+   "json": "{\"expression\": \"1\"}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"version\": 1}",
+   "json": "{\"version\": 1}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": 70000}",
+   "json": "{\"expression\": \"1\", \"version\": 70000}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": 5, \"version\": 1}",
+   "json": "{\"expression\": 5, \"version\": 1}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": true, \"version\": 1}",
+   "json": "{\"expression\": true, \"version\": 1}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": null, \"version\": 1}",
+   "json": "{\"expression\": null, \"version\": 1}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": \"1\"}",
+   "json": "{\"expression\": \"1\", \"version\": \"1\"}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": 1.0}",
+   "json": "{\"expression\": \"1\", \"version\": 1.0}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": 1.5}",
+   "json": "{\"expression\": \"1\", \"version\": 1.5}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": null}",
+   "json": "{\"expression\": \"1\", \"version\": null}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": true}",
+   "json": "{\"expression\": \"1\", \"version\": true}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": [1]}",
+   "json": "{\"expression\": \"1\", \"version\": [1]}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": -32769}",
+   "json": "{\"expression\": \"1\", \"version\": -32769}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  },
+  {
+   "case": "not the object form: {\"expression\": \"1\", \"version\": 32768}",
+   "json": "{\"expression\": \"1\", \"version\": 32768}",
+   "scalar": [
+    "other_object"
+   ],
+   "context": 13,
+   "expect": {
+    "strict": [
+     "unsupported",
+     "object"
+    ],
+    "lenient": [
+     "unsupported",
+     "object"
+    ],
+    "biome": [
+     "unsupported",
+     "object"
+    ],
+    "list": [
+     "unsupported",
+     "object"
+    ],
+    "schema": [
+     "unsupported",
+     "object"
+    ]
+   }
+  }
+ ]
+}

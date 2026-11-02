@@ -1,0 +1,11 @@
+{
+  "files": {},
+  "defs": {},
+  "diagnostics": [
+    {
+      "code": "MalformedInput",
+      "severity": "error",
+      "pack": 0
+    }
+  ]
+}

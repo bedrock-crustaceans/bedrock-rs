@@ -1,0 +1,33 @@
+{
+  "format_version": "1.26.10",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "minecraft:sulfur_caves_before_surface_sulfur_spring_trail_to_surface_feature_rules",
+      "places_feature": "minecraft:sulfur_spring_trail_to_surface_snap_to_ceiling_feature"
+    },
+    "conditions": {
+      "placement_pass": "before_surface_pass",
+      "minecraft:biome_filter": [
+        {
+          "test": "has_biome_tag",
+          "value": "sulfur_caves"
+        }
+      ]
+    },
+    "distribution": {
+      "iterations": "Math.Random(1, 2)",
+      "x": {
+        "distribution": "uniform",
+        "extent": [ 0, 16 ]
+      },
+      "y": {
+        "distribution": "uniform",
+        "extent": [ -64, 256 ]
+      },
+      "z": {
+        "distribution": "uniform",
+        "extent": [ 0, 16 ]
+      }
+    }
+  }
+}

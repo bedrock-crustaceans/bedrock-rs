@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Experimental resource pack for LWEs",
+    "name": "Experimental LWE Resource Pack",
+    "uuid": "bfafc2fc-55fa-4da0-9cb1-3ee6435d1879",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      20
+    ]
+  },
+  "modules": [
+    {
+      "description": "Experimental resource pack for LWEs",
+      "type": "resources",
+      "uuid": "890beca3-7a59-4954-a1bf-eef198e865ad",
+      "version": [
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "format_version": "99.0.0",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:future"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    },
+    "unlock": [
+      {
+        "item": "minecraft:stick"
+      }
+    ]
+  }
+}

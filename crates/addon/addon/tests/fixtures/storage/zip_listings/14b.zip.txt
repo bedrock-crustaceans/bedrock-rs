@@ -1,0 +1,7 @@
+manifest.json
+texts/
+texts/en_US.lang
+texts/languages.json
+Ender_Glitch_Arms.geometry.json
+Ender_Glitch_Arms.meta.json
+ender_glitch_arms.png

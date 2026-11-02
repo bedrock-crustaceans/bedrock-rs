@@ -1,0 +1,9 @@
+# Probe: P24
+scope = "dep"
+resolved = []
+main = "main.js"
+
+[[diagnostic]]
+code = "DroppedField"
+severity = "info"
+path = "dependencies/0"

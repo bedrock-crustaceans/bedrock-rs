@@ -1,0 +1,23 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:free_camera_controlled": {},
+      "minecraft:dash_action": {
+        "cooldown_time": 2,
+        "direction": "entity"
+      },
+      "minecraft:vertical_movement_action": {}
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:dash_action": {
+          "direction": "passenger"
+        }
+      }
+    }
+  }
+}

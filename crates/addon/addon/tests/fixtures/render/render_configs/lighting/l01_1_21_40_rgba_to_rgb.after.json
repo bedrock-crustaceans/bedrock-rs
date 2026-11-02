@@ -1,0 +1,60 @@
+// fixtures.md l01: alpha dropped, then every later step
+{
+  "format_version": "1.26.0",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "test:l01"
+    },
+    "directional_lights": {
+      "orbital": {
+        "sun": {
+          "illuminance": {
+            "0.0": 100.0,
+            "1.0": 100.0
+          },
+          "color": {
+            "0.0": [
+              255,
+              200,
+              100
+            ],
+            "1.0": [
+              255,
+              255,
+              255
+            ]
+          }
+        },
+        "moon": {
+          "illuminance": 0.27,
+          "color": [
+            10,
+            20,
+            30
+          ]
+        },
+        "orbital_offset_degrees": 15.0
+      }
+    },
+    "emissive": {
+      "desaturation": 0.5
+    },
+    "ambient": {
+      "color": {
+        "0.0": [
+          1,
+          2,
+          3
+        ]
+      },
+      "illuminance": {
+        "0.0": 0.02
+      }
+    },
+    "sky": {
+      "intensity": {
+        "0.0": 1.0
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:color_grading_settings": {
+    "description": {
+      "identifier": "test:color_grading"
+    }
+  }
+}

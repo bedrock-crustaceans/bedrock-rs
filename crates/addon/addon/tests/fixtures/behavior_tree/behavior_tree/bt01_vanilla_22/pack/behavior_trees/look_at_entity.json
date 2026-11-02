@@ -1,0 +1,15 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "look_at_entity",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:look_at_entity": {
+            }
+          }
+        ]
+      }
+    }
+  }
+}

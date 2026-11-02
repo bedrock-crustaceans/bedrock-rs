@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "wait_key",
+    "minecraft:root": { "minecraft:wait": { "wait_duration": "secs" } }
+  }
+}

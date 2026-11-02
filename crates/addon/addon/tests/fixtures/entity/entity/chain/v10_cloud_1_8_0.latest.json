@@ -1,0 +1,25 @@
+{
+  "format_version": "1.26.60",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:area_effect_cloud",
+      "is_spawnable": false,
+      "is_summonable": false,
+      "spawn_category": "misc",
+      "is_experimental": false
+    },
+    "components": {
+      "minecraft:collision_box": {
+        "height": 0.5,
+        "width": 6.0
+      },
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": true,
+        "push_towards_closest_space": false
+      },
+      "minecraft:uses_legacy_friction": {},
+      "minecraft:uses_legacy_ambient_sounds": {}
+    }
+  }
+}

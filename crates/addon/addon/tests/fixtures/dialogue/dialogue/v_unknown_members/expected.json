@@ -1,0 +1,36 @@
+{
+  "scenes": ["a"],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "UnrecognizedField",
+      "severity": "info",
+      "path": "dialogue/unknown.json",
+      "json_path": "extra"
+    },
+    {
+      "code": "UnrecognizedField",
+      "severity": "info",
+      "path": "dialogue/unknown.json",
+      "json_path": "author"
+    },
+    {
+      "code": "UnrecognizedField",
+      "severity": "info",
+      "path": "dialogue/unknown.json",
+      "json_path": "minecraft:npc_dialogue/notes"
+    },
+    {
+      "code": "UnrecognizedField",
+      "severity": "info",
+      "path": "dialogue/unknown.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/0/icon"
+    },
+    {
+      "code": "UnrecognizedField",
+      "severity": "info",
+      "path": "dialogue/unknown.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/custom"
+    }
+  ]
+}

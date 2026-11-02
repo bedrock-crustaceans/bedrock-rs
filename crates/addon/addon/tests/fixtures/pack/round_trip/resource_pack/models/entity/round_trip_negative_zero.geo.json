@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:geometry": [
+    {
+      "description": { "identifier": "geometry.round_trip.negative_zero", "texture_width": 16, "texture_height": 16 },
+      "bones": [
+        { "name": "leaf", "pivot": [ -0.0, 8, 0 ], "rotation": [ 0, -0.0, 22.5 ] }
+      ]
+    }
+  ]
+}

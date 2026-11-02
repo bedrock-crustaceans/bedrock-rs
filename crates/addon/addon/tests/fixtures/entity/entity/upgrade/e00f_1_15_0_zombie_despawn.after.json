@@ -1,0 +1,57 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:zombie"
+    },
+    "components": {
+      "minecraft:despawn": {
+        "filters": [
+          {
+            "all_of": [
+              {
+                "test": "is_persistent",
+                "value": false
+              },
+              {
+                "test": "light_level",
+                "operator": ">=",
+                "value": 8
+              },
+              {
+                "test": "is_daytime",
+                "value": true
+              },
+              {
+                "test": "inactivity_timer",
+                "subject": "self",
+                "value": 600
+              },
+              {
+                "test": "random_chance",
+                "value": 50
+              },
+              {
+                "test": "distance_to_nearest_player",
+                "operator": ">",
+                "value": 54
+              },
+              {
+                "test": "surface_mob",
+                "value": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.melee_attack": {
+          "priority": 3,
+          "set_persistent": true
+        }
+      }
+    }
+  }
+}

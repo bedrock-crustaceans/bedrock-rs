@@ -1,0 +1,18 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "resourcePack.vanilla_server.poi.description",
+        "name": "resourcePack.vanilla_server.poi.name",
+        "uuid": "32DD7CC5-E6FB-46F3-ACE9-15AA250989A6",
+        "version": [ 0, 0, 1 ],
+        "min_engine_version": [ 1, 21, 130 ]
+    },
+    "modules": [
+        {
+            "description": "resourcePack.vanilla_server.poi.description",
+            "type": "data",
+            "uuid": "4a0bba2c-0a1d-4765-a64a-1fde28c6b110",
+            "version": [ 0, 0, 1 ]
+        }
+    ]
+}

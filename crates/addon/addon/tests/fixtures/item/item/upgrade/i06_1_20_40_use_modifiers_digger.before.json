@@ -1,0 +1,32 @@
+{
+  "format_version": "1.20.40",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:pick"
+    },
+    "components": {
+      "minecraft:use_duration": 1.6,
+      "minecraft:chargeable": {
+        "movement_modifier": 0.35,
+        "on_complete": {
+          "event": "demo:charged"
+        }
+      },
+      "minecraft:digger": {
+        "on_dig": {
+          "event": "demo:dug"
+        },
+        "destroy_speeds": [
+          {
+            "block": "minecraft:dirt",
+            "speed": 6,
+            "on_dig": {
+              "event": "demo:dirt"
+            }
+          }
+        ]
+      },
+      "tag:demo:blunt": {}
+    }
+  }
+}

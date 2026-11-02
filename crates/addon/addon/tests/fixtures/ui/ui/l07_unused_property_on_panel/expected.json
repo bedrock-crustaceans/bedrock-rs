@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "code": "UnusedProperty",
+      "severity": "info",
+      "text": "property not read by this control type",
+      "at": "k/button_mappings"
+    }
+  ]
+}

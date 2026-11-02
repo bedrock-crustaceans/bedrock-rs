@@ -1,0 +1,17 @@
+{
+				"description": {
+				  "identifier": "test:jigsaw"
+				},
+				"step": "underground_ores",
+				"terrain_adaptation": "beard_box",
+				"start_pool": "minecraft:trail_ruins/tower",
+				"max_depth": 21,
+				"start_height": {
+					"type": "constant",
+					"value": {
+						"absolute": -15
+					}
+				},
+				"heightmap_projection": "ocean_floor",
+				"liquid_settings": "ignore_waterlogging"
+			}

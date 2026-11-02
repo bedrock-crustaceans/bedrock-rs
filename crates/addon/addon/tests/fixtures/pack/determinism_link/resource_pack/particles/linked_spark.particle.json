@@ -1,0 +1,1 @@
+{"format_version": "1.10.0", "particle_effect": {"description": {"identifier": "linked:spark", "basic_render_parameters": {"material": "linked_no_particle_material", "texture": "textures/particle/linked_no_spark"}}, "components": {}}}

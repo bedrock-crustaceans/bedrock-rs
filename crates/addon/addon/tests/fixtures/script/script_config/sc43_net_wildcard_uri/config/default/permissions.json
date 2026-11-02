@@ -1,0 +1,13 @@
+{
+  "allowed_modules": [
+    "@minecraft/server",
+    "@minecraft/server-net"
+  ],
+  "module_permissions": {
+    "@minecraft/server-net": {
+      "allowed_uris": [
+        "http://127.0.0.1:9/*"
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{{
+				  "format_version": "1.26.50",
+				  "minecraft:dimension": {{
+					"description": {{
+					  "identifier": "{}"
+					}},
+					"components": {{
+					  "minecraft:dimension_height": {{
+						"min_y": {},
+						"height_range": {}
+					  }},
+					  "minecraft:generation": {{
+						"generator_type": "void"
+					  }}
+					}}
+				  }}
+				}}

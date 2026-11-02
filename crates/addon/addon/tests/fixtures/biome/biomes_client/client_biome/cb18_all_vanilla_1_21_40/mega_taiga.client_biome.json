@@ -1,0 +1,20 @@
+// source: retail 1.26.45 resource_packs/vanilla_1.21.40/biomes/mega_taiga.client_biome.json
+{
+  "format_version": "1.21.70",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "mega_taiga"
+    },
+    "components": {
+      "minecraft:fog_appearance": {
+        "fog_identifier": "minecraft:fog_mega_taiga"
+      },
+      "minecraft:water_appearance": {
+        "surface_color": "#2d6d77"
+      },
+      "minecraft:biome_music": {
+        "music_definition": "mega_taiga"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:poi_tag": {
+    "description": {
+      "identifier": "minecraft:acquirable_job_site"
+    },
+    "parents": [
+      "minecraft:village"
+    ]
+  }
+}

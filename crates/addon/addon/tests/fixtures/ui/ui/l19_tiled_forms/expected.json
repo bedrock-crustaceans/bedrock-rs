@@ -1,0 +1,16 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidEnumValue",
+      "severity": "info",
+      "text": "invalid enum value",
+      "at": "t4/tiled"
+    },
+    {
+      "code": "InvalidEnumValue",
+      "severity": "info",
+      "text": "invalid enum value",
+      "at": "t5/tiled"
+    }
+  ]
+}

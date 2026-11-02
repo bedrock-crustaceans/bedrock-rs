@@ -1,0 +1,15 @@
+{
+  "scenes": [
+    "urls"
+  ],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/urls.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/1/url",
+      "text": "JSON: urls.json has an error: \n The URL needs to be a string type. Skipping button..."
+    }
+  ]
+}

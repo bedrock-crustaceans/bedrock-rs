@@ -1,0 +1,22 @@
+{
+				"format_version": "1.26.20",
+				"minecraft:block": {
+					"description": {
+						"identifier": "minecraft:test_block",
+						"internal_vanilla_data": {
+							"block_id": 500,
+							"material": "solid",
+							"block_archetype": {
+								"pumpkin_block": {
+									"is_carved": true,
+									"is_lit": false
+								},
+								"test_archetype": {
+									"value": true
+								}
+							}
+						}
+					},
+					"components": {}
+				}
+			}

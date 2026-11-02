@@ -1,0 +1,4 @@
+# Probe: Q22 (the first engine with the relaxed form)
+scope = "none"
+resolved = ["@minecraft/server 2.8.0"]
+engine = "1.26.30"

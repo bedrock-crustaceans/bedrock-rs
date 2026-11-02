@@ -1,0 +1,43 @@
+<template, built at runtime by the game's projectile component test; each <...> is a runtime value, the text between is verbatim>
+
+				{
+					"format_version": "<format_version>",
+					"minecraft:entity": {
+						"description": {
+							"identifier": "<identifier>",
+							"is_spawnable": true,
+							"is_summonable": true,
+							"is_experimental": false,
+							"runtime_identifier":  "<runtime_identifier>"
+						},
+						"components": {
+							"minecraft:collision_box": {
+								"width": 0.25,
+								"height": 0.25
+							},
+							"minecraft:projectile": {
+								"isolated_physics": <isolated_physics>,
+								"on_hit": {<on_hit subcomponent JSON, each: "\n\t\t\t\t\t\t\t\t\t\"" name "\": " body, then optionally ",\n\t\t\t\t\t\t\t\t\t\"arrow_effect\": {}">
+								},
+								"reflect_on_hurt": <reflect_on_hurt>,
+								"destroy_on_hurt": <destroy_on_hurt>,
+								"power": <power>,
+								"gravity": <gravity>,
+								"potion_effect": <potion_effect>,
+								"anchor": 1,
+								"multiple_targets": false,
+								"angle_offset": <angle_offset>,
+								"offset": [ <offset x>, <offset y>, <offset z> ]
+							},
+							"minecraft:physics": { }<optional: ,
+							"minecraft:on_ignite": {
+								"target": "self",
+								"event": "<on_ignite event>"
+							}>
+						}<optional: ,
+						"events": {
+							"<event name>": {}
+						}>
+					}
+				}
+			

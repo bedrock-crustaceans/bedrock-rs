@@ -1,0 +1,8 @@
+# Probe: P07
+scope = "module"
+
+[[diagnostic]]
+code = "UnresolvedReference"
+severity = "error"
+path = "modules/0/entry"
+text = "Plugin [sm24 - 3.2.1] - does not contain main file [missing.js]."

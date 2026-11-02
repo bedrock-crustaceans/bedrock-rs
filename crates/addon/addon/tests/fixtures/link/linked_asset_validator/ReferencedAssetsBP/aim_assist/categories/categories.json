@@ -1,0 +1,20 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:aim_assist_categories": {
+    "categories": [
+      {
+        "name": "test:camera_aim_assist_category",
+        "priorities": {
+          "entity_default": 30,
+          "block_default": 30,
+          "blocks": {
+            "test:block": 60
+          },
+          "entities": {
+            "test:entity": 40
+          }
+        }
+      }
+    ]
+  }
+}

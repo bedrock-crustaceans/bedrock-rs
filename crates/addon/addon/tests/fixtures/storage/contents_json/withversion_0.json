@@ -1,0 +1,44 @@
+{
+   "content" : [
+      {
+         "path" : "blocks/custom_basic_block.json"
+      },
+      {
+         "path" : "blocks/custom_basic_block_flipbook_variations.json"
+      },
+      {
+         "path" : "blocks/custom_basic_block_variations.json"
+      },
+      {
+         "path" : "blocks/custom_full_block_variations.json"
+      },
+      {
+         "path" : "blocks/glass_clone_block.json"
+      },
+      {
+         "path": "blocks/glowstone_fullblock.json"
+      },
+      {
+         "path" : "blocks/leaves_clone_block.json"
+      },
+      {
+         "path" : "blocks/simple_block.json"
+      },
+      {
+         "path" : "blocks/simple_block_flipbook.json"
+      },
+      {
+         "path" : "blocks/simple_block_variations.json"
+      },
+      {
+         "path" : "blocks/unit_cube.json"
+      },
+      {
+         "path" : "contents.json"
+      },
+      {
+         "path" : "manifest.json"
+      }
+   ],
+   "version" : 1
+}

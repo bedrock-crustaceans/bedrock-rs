@@ -1,0 +1,23 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:despawn": {},
+      "minecraft:breathable": {},
+      "minecraft:behavior.panic": {
+        "speed_multiplier": 1.25
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:despawn": {
+          "remove_child_entities": true
+        },
+        "minecraft:behavior.melee_attack": {}
+      }
+    }
+  }
+}

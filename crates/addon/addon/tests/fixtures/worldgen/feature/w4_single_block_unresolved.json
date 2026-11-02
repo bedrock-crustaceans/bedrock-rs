@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:single_block_feature": {
+    "description": {
+      "identifier": "demo:place_missing"
+    },
+    "places_block": "demo:missing",
+    "enforce_placement_rules": true,
+    "enforce_survivability_rules": true
+  }
+}

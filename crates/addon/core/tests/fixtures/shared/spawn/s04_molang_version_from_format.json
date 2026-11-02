@@ -1,0 +1,1 @@
+{ "minecraft:spawns_on_block_filter": { "tags": "q.any_tag('dirt')" } }

@@ -1,0 +1,20 @@
+{{
+			"format_version": "{}",
+			"minecraft:block": {{
+				"description": {{
+				  "identifier": "test:custom_block"
+				}},
+				"components": {{
+					"minecraft:collision_box": [
+						{{
+							"origin": [{:.2f}, {:.2f}, {:.2f}],
+							"size": [{:.2f}, {:.2f}, {:.2f}]
+						}},
+						{{
+							"origin": [-8.0, 0.0, -8.0],
+							"size": [16.0, 16.0, 16.0]
+						}}
+					]
+				}}
+			}}
+		}}

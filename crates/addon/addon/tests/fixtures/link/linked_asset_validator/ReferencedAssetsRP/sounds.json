@@ -1,0 +1,11 @@
+{
+  "individual_named_sounds": {
+    "sounds": {
+      "test_sound": {
+        "sound": "test_sound",
+        "volume": 0.7,
+        "pitch": [ 0.8, 1.0 ]
+      }
+    }
+  }
+}

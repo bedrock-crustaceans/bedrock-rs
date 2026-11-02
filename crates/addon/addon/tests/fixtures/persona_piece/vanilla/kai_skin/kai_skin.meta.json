@@ -1,0 +1,1 @@
+{"piece_id":"aa8d3c95-f189-cf08-0ae3-5cc1e090343b","piece_name":"kai_skin","piece_type":"persona_skin","tint_base_color":{"r_color":"#ff7f4a"},"texture_sources":[{"texture":"kai_skin_head.png","tint_map":"kai_skin_head_tintmap.tga","use_face_uv":true},{"texture":"kai_skin_body.png","tint_map":"kai_skin_body_tintmap.tga"}]}

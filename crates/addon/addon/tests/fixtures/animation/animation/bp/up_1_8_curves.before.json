@@ -1,0 +1,4 @@
+{ "format_version": "1.8.0",
+  "animation_controllers": { "controller.animation.x": { "initial_state": "default", "states": { "default": {
+    "parameters": ["query.x"],
+    "animations": [ { "a": [ { "0.0": 0, "1.0": 1 } ] } ] } } } } }

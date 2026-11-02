@@ -1,0 +1,14 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "invalid"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:protected_blocks",
+        "value": "minecraft:features_cannot_replace"
+      }
+    ]
+  }
+}

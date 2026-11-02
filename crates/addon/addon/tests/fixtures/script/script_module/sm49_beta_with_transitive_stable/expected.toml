@@ -1,0 +1,10 @@
+# Probe: B08
+scope = "none"
+resolved = ["@minecraft/server 2.9.0-beta", "@minecraft/server-ui 2.1.0"]
+beta_apis = true
+
+[[diagnostic]]
+code = "ScriptModulePromoted"
+severity = "info"
+path = "modules/0"
+text = "Plugin [sm49] - promoted [@minecraft/server] from [2.0.0] to [2.9.0-beta] requested by [sm49 - 3.2.1]."

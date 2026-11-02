@@ -1,0 +1,38 @@
+{
+  "format_version": "1.18.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:block_collision": {
+        "origin": [
+          -8,
+          0,
+          -8
+        ],
+        "size": [
+          16,
+          8,
+          16
+        ]
+      },
+      "minecraft:aim_collision": true,
+      "minecraft:crafting_table": {
+        "custom_description": "tile.table",
+        "crafting_tags": [
+          "demo"
+        ]
+      },
+      "minecraft:block_light_filter": 7
+    },
+    "permutations": [
+      {
+        "condition": "q.block_property('demo:p') == 1",
+        "components": {
+          "minecraft:block_light_filter": 15
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# entry_dotslash: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] Plugin [SB_entry_dotslash - 1.0.0] - does not contain main file [./scripts/main.js].
+members = ["main.js"]
+others = []
+main = "./scripts/main.js"
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "not_checked"
+
+[[diagnostics]]
+code = "UnresolvedReference"
+severity = "error"
+text = "Plugin [SB_entry_dotslash - 1.0.0] - does not contain main file [./scripts/main.js]."
+file = "manifest.json"

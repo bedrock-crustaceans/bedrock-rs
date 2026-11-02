@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "object_children",
+    "minecraft:root": { "minecraft:sequence": { "children": {} } }
+  }
+}

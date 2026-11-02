@@ -1,0 +1,21 @@
+# crash_static: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run review run 7] no script output, then the same termination
+# never put this pack in a shared BDS run
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "side_effect"
+raw = "./"
+normalized = ""
+resolution = "crash"
+
+[[diagnostics]]
+code = "ScriptImportCrashesEngine"
+severity = "error"
+text = "this import specifier terminates the server"
+file = "scripts/main.js"

@@ -1,0 +1,19 @@
+# fail_with_function: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] Plugin [SB_fail_with_function - 1.0.0] - does not contain main file [missing.js].
+# [bds-run 2] function sbprobe_fn: Successfully executed 1 function entries.
+members = ["main.js"]
+others = []
+main = "missing.js"
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "not_checked"
+
+[[diagnostics]]
+code = "UnresolvedReference"
+severity = "error"
+text = "Plugin [SB_fail_with_function - 1.0.0] - does not contain main file [missing.js]."
+file = "manifest.json"

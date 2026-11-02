@@ -1,0 +1,17 @@
+error: missing `#[component(name = "minecraft:…", parse = …)]`: every variant other than the `custom`, `unknown` and `dynamic` ones is a typed component
+  --> tests/ui/several_errors.rs:14:5
+   |
+14 |     Friction(Friction),
+   |     ^^^^^^^^
+
+error: `one` is not a version: expected `major.minor.patch`, e.g. "1.21.60"
+  --> tests/ui/several_errors.rs:15:54
+   |
+15 |     #[component(name = "minecraft:glint", released = "one", parse = parse)]
+   |                                                      ^^^^^
+
+error: missing `parse`: the component's parse function, `parse = path::to::fn`
+  --> tests/ui/several_errors.rs:17:5
+   |
+17 |     #[component(name = "minecraft:health")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

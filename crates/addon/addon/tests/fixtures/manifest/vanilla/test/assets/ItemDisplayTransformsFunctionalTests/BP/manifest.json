@@ -1,0 +1,24 @@
+{
+	"format_version": 2,
+	"header": {
+		"name": "ItemDisplayTransforms TestPack",
+		"description": "ItemDisplayTransforms BehaviorPack",
+		"uuid": "f16e2239-aebf-43ac-8f19-54ac366082f6",
+		"version": [1, 0, 0],
+		"min_engine_version": [1, 21, 0]
+	},
+	"modules": [
+		{
+			"description": "Behavior",
+			"version": [1, 0, 0],
+			"uuid": "67a5adf7-f3a1-4653-b237-0562502f80e9",
+			"type": "data"
+		}
+	],
+	"dependencies": [
+		{
+			"uuid": "2bc91d56-b90a-48df-b282-9cb524ffc725",
+			"version": [1, 0, 0]
+		}
+	]
+}

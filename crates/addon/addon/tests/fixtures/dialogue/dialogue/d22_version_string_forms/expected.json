@@ -1,0 +1,42 @@
+{
+  "scenes": [
+    "beta"
+  ],
+  "rejected": 4,
+  "diagnostics": [
+    {
+      "code": "MalformedFormatVersion",
+      "severity": "error",
+      "path": "dialogue/abc.json",
+      "json_path": "format_version",
+      "text": "JSON: abc.json has an error: \n Couldn't find 'format_version' property."
+    },
+    {
+      "code": "MalformedFormatVersion",
+      "severity": "error",
+      "path": "dialogue/any.json",
+      "json_path": "format_version",
+      "text": "JSON: any.json has an error: \n Couldn't find 'format_version' property."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "info",
+      "path": "dialogue/beta.json",
+      "json_path": "format_version"
+    },
+    {
+      "code": "UnsupportedVersion",
+      "severity": "error",
+      "path": "dialogue/one.json",
+      "json_path": "format_version",
+      "text": "JSON: one.json has an error: \n 'format_version' was out of range of expected values. Must be greater than 1.14.0"
+    },
+    {
+      "code": "MalformedFormatVersion",
+      "severity": "error",
+      "path": "dialogue/zero.json",
+      "json_path": "format_version",
+      "text": "JSON: zero.json has an error: \n Couldn't find 'format_version' property."
+    }
+  ]
+}

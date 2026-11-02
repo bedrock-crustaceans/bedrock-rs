@@ -1,0 +1,15 @@
+# syntax_entry: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_syntax_entry] SyntaxError: unexpected token in expression: ';'    at main.js:2
+# a general syntax error needs the parser of the script-syntax feature
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[diagnostics]]
+code = "ScriptSyntaxError"
+severity = "error"
+text = "syntax error in a script file"
+file = "scripts/main.js"
+only = "script-syntax"

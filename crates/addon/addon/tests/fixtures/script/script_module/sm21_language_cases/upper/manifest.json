@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm21",
+    "description": "families/script_module fixture sm21_language_cases",
+    "uuid": "007b1fb6-3d8a-5a23-a350-e4cf9ffc1277",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "b1aaee7e-8e3a-5452-9eab-5829b2201b96",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "JAVASCRIPT",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

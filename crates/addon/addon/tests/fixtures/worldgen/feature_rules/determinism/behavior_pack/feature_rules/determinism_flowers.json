@@ -1,0 +1,22 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "demo:determinism_flowers",
+      "places_feature": "demo:determinism_flower_feature"
+    },
+    "conditions": {
+      "placement_pass": "surface_pass",
+      "minecraft:biome_filter": [
+        { "test": "has_biome_tag", "value": "overworld" }
+      ]
+    },
+    "distribution": {
+      "iterations": "math.random(1, 2)",
+      "scatter_chance": { "numerator": 1, "denominator": 4 },
+      "x": { "distribution": "uniform", "extent": [0, 15] },
+      "y": "query.heightmap(variable.worldx, variable.worldz)",
+      "z": { "distribution": "uniform", "extent": [0, 15] }
+    }
+  }
+}

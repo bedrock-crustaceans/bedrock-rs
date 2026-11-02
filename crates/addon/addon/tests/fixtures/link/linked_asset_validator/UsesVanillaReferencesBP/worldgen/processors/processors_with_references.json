@@ -1,0 +1,28 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "test:processors_with_references"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:rule",
+        "rules": [
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:block_match",
+              "block": "minecraft:dirt"
+            },
+            "output_state": {
+              "name": "minecraft:dirt"
+            },
+            "block_entity_modifier": {
+              "type": "minecraft:append_loot",
+              "loot_table": "loot_tables/entities/fish.json"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

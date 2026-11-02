@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": 5,
+    "minecraft:root": { "minecraft:wait": {} }
+  }
+}

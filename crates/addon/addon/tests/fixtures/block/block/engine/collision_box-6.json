@@ -1,0 +1,55 @@
+{
+			"format_version": "1.26.20",
+			"minecraft:block": {
+				"description": {
+				  "identifier": "test:rotation_and_collision_permutations",
+				  "states": {
+					"custom:facing_direction": [0, 1, 2, 3]
+				  }
+				},
+				"components": {
+					"minecraft:transformation": {
+						"rotation": [-90.0, 0.0, 0.0]
+					},
+					"minecraft:collision_box": {
+						"origin": [-8, 0, -8],
+						"size": [16, 1, 16]
+					}
+				},
+				"permutations": [
+					{
+						"condition": "query.block_state('custom:facing_direction') == 0",
+						"components": {}
+					},
+					{
+						"condition": "query.block_state('custom:facing_direction') == 1",
+						"components": {
+							"minecraft:transformation": {
+								"rotation": [0.0, 0.0, 90.0]
+							}
+						}
+					},
+					{
+						"condition": "query.block_state('custom:facing_direction') == 2",
+						"components": {
+							"minecraft:collision_box": {
+								"origin": [-4, 8, -4],
+								"size": [8, 1, 8]
+							}
+						}
+					},
+					{
+						"condition": "query.block_state('custom:facing_direction') == 3",
+						"components": {
+							"minecraft:transformation": {
+								"rotation": [90.0, 0.0, 0.0]
+							},
+							"minecraft:collision_box": {
+								"origin": [0, 7, 0],
+								"size": [4, 2, 4]
+							}
+						}
+					}
+				]
+			}
+		}

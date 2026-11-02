@@ -1,0 +1,46 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "textures": [
+        {
+          "path": "a",
+          "tint_color": "#ff8000"
+        },
+        {
+          "path": "a",
+          "tint_color": [
+            255,
+            128,
+            0
+          ]
+        },
+        {
+          "path": "a",
+          "tint_color": [
+            255,
+            128,
+            0,
+            64
+          ]
+        },
+        {
+          "path": "a",
+          "tint_color": [
+            1.5,
+            0,
+            0
+          ]
+        },
+        {
+          "path": "a",
+          "tint_color": "red"
+        },
+        {
+          "path": "a",
+          "tint_color": {}
+        }
+      ]
+    }
+  }
+}

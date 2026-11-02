@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Scripting StructureManager Functional Tests Excluded BP",
+        "name": "ScriptStructureManagerFunctionalTestsExcludedBP",
+        "uuid": "be0f3e42-b688-480a-b18b-17048b0c268b",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "Scripting StructureManager Functional Tests Excluded BP",
+            "type": "data",
+            "uuid": "7a174034-e309-450b-b8b3-843a31493ea8",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

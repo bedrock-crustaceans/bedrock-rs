@@ -1,0 +1,11 @@
+# fixtures.md `lang/nul_mid_file`: a NUL ends the line like a line feed but does not
+# advance the line counter, so the warning for `e` says line 2.
+
+[entries]
+"a" = "b"
+"c" = "d"
+
+[[diagnostics]]
+code = "MalformedInput"
+severity = "warning"
+text = "Line: 2 - Invalid lang file format. Null character was found while parsing key: 'e'."

@@ -1,0 +1,17 @@
+{
+  // fixtures.md e33: a melee goal of a document below its typed version, converted leniently;
+  // `on_kill` replaces `on_attack` (the pre-1.26.40 binding). One case per member.
+  "on_kill_only": {
+    "priority": 3,
+    "on_kill": { "event": "x:killed" }
+  },
+  "both": {
+    "priority": 3,
+    "on_attack": { "event": "x:hit" },
+    "on_kill": { "event": "x:killed" }
+  },
+  "on_attack_only": {
+    "priority": 3,
+    "on_attack": { "event": "x:hit" }
+  }
+}

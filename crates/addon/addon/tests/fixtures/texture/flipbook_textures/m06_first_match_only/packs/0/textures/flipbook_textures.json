@@ -1,0 +1,10 @@
+[
+  {
+    "atlas_tile": "x",
+    "ticks_per_frame": 3
+  },
+  {
+    "atlas_tile": "x",
+    "replicate": 2
+  }
+]

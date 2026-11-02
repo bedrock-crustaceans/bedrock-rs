@@ -48,6 +48,11 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 - [`bedrock::form`](crates/form)  
   - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
 
+- [`bedrock::addon`](crates/addon/addon) (`bedrock_addon`) and [`bedrock::addon_std`](crates/addon/std) (`bedrock_addon_std`)
+  - Behaviour and resource packs as typed Rust data: manifests, containers, pack stacks, every content family the game loads, diagnostics shaped like the game's content log, and write-back.
+  - `bedrock_addon` is sans-IO; `bedrock_addon_std` is the driver that answers its loaders with the file system and, optionally, a thread pool. Enabled through the `addon` and `addon-std` features.
+  - Built from `bedrock_addon_core` (shared vocabulary), `bedrock_addon_derive` (the component derive), `bedrock_addon_support` (helpers shared by families) and one crate per content family under `crates/addon/families/`.
+
 - [`bedrock::level`](crates/level)  
   - Data structures for managing Minecraft Bedrock levels.  
   - Implementation of Bedrock's level format on top of a pure-Rust LevelDB implementation
@@ -97,7 +102,7 @@ Want to join this incredible group? Check out our Contributing Guide and make yo
 We welcome contributions of all kinds, including bug fixes, new features, docs updates, and improvements across crates.  
 Please read the full contribution guide here: **[CONTRIBUTING.md](CONTRIBUTING.md)**  
 It covers setup, where things live, the test-first workflow, the checks CI runs, and how protocol versions are added.
-[CLAUDE.md](CLAUDE.md) is the step-by-step working method used by coding agents on this repo.  
+[CLAUDE.md](CLAUDE.md) is the step-by-step working method for changes to this repo.  
 
 For guidance or collaboration, connect with the community on Discord.  
 

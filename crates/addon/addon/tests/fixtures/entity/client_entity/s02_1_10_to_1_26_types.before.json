@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "demo:ghost",
+      "min_engine_version": "1.16.0",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/entity/ghost" },
+      "geometry": { "default": "geometry.ghost" },
+      "queryable_geometry": "default",
+      "spawn_egg": { "texture": "spawn_egg", "texture_index": 3 },
+      "scripts": {
+        "variables": { "variable.glow": "public" },
+        "initialize": ["variable.glow = 0;"],
+        "pre_animation": ["variable.t = query.life_time;", "variable.glow = Math.sin(variable.t);"],
+        "scale": "0.9375",
+        "scaleX": 1.5,
+        "should_update_effects_offscreen": "query.is_baby",
+        "animate": ["float", { "glow": "variable.glow > 0" }]
+      },
+      "particle_effects": { "smoke": "demo:smoke" },
+      "particle_emitters": { "old": "demo:old" },
+      "animations": { "float": "animation.ghost.float", "glow": "controller.animation.ghost.glow" },
+      "render_controllers": ["controller.render.ghost", { "controller.render.ghost_glow": "variable.glow > 0" }],
+      "sound_effects": { "moan": "mob.ghost.moan" },
+      "enable_attachables": true,
+      "held_item_ignores_lighting": false,
+      "hide_armor": true
+    }
+  }
+}

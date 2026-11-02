@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:crafting_items_catalog": {
+    "categories": [
+      {
+        "category_name": "equipment",
+        "groups": [
+          {
+            "group_identifier": {
+              "name": "custom:g",
+              "icon": "custom:my_icon:1"
+            },
+            "items": [
+              "custom:item1"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

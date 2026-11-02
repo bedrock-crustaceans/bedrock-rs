@@ -1,0 +1,6 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": "textures/blocks/x"
+  }
+}

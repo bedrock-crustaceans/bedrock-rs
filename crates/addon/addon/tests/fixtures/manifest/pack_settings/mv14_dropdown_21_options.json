@@ -1,0 +1,111 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "Banana",
+    "description": "pack settings",
+    "uuid": "8f4e6e3c-5b2a-4c1d-9e7f-0a1b2c3d4e5f",
+    "version": "1.0.0",
+    "min_engine_version": "1.26.20"
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "1a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d",
+      "version": "1.0.0"
+    }
+  ],
+  "settings": [
+    {
+      "type": "dropdown",
+      "name": "banana:dropdown",
+      "text": "Dropdown",
+      "options": [
+        {
+          "name": "o0",
+          "text": "O0"
+        },
+        {
+          "name": "o1",
+          "text": "O1"
+        },
+        {
+          "name": "o2",
+          "text": "O2"
+        },
+        {
+          "name": "o3",
+          "text": "O3"
+        },
+        {
+          "name": "o4",
+          "text": "O4"
+        },
+        {
+          "name": "o5",
+          "text": "O5"
+        },
+        {
+          "name": "o6",
+          "text": "O6"
+        },
+        {
+          "name": "o7",
+          "text": "O7"
+        },
+        {
+          "name": "o8",
+          "text": "O8"
+        },
+        {
+          "name": "o9",
+          "text": "O9"
+        },
+        {
+          "name": "o10",
+          "text": "O10"
+        },
+        {
+          "name": "o11",
+          "text": "O11"
+        },
+        {
+          "name": "o12",
+          "text": "O12"
+        },
+        {
+          "name": "o13",
+          "text": "O13"
+        },
+        {
+          "name": "o14",
+          "text": "O14"
+        },
+        {
+          "name": "o15",
+          "text": "O15"
+        },
+        {
+          "name": "o16",
+          "text": "O16"
+        },
+        {
+          "name": "o17",
+          "text": "O17"
+        },
+        {
+          "name": "o18",
+          "text": "O18"
+        },
+        {
+          "name": "o19",
+          "text": "O19"
+        },
+        {
+          "name": "o20",
+          "text": "O20"
+        }
+      ],
+      "default": "o0"
+    }
+  ]
+}

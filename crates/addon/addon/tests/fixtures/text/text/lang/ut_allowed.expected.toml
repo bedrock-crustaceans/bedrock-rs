@@ -1,0 +1,6 @@
+# fixtures.md `lang/ut_allowed` (LocalizationUnitTests): only the allowed keys.
+allowed = ["key.2", "key.3"]
+
+[entries]
+"key.2" = "value.2"
+"key.3" = "value.3"

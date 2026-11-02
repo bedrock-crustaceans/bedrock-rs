@@ -1,0 +1,494 @@
+//! Reading the jigsaw documents: each struct typed from its slice of the text, then the bind
+//! constraints the game's parse checks.
+//!
+//! Every finding here is a parse finding: an error fails the file, as a parse error of the game does, and the
+//! loader then adds the family's "Failed to parse …" line.
+
+use facet::Facet;
+use facet_json::RawJson;
+use indexmap::IndexMap;
+
+use super::history::v1_21_50;
+use super::{
+    BlockEntityModifier, BlockPredicate, CappedDelegate, IntProvider, IntProviderType,
+    JigsawStructure, MaxDistanceFromCenter, MetadataRegistry, PoolElement, PositionPredicate,
+    Processor, ProcessorList, ProcessorRule, StructureSet, TemplatePool,
+};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    code_for_deserialize_error_kind,
+};
+use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::{
+    EncodeError, JsonSlice, NullRule, StrictFloat, Value, keep_unknown_members, parse_at,
+    reject_nulls,
+};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    ParseCx, VersionStruct, Versioned, parse_payload, write_payload,
+};
+
+/// The version of the four JSON documents' only struct.
+pub(crate) const V1_21_20: FormatVersion = FormatVersion::new(1, 21, 20);
+/// The version of the newest metadata registry.
+pub(crate) const V1_21_80: FormatVersion = FormatVersion::new(1, 21, 80);
+
+/// The longest `FileReference`.
+const MAX_FILE_REFERENCE: usize = 256;
+
+/// The text facet gives an internally tagged enum whose tag names no variant.
+const UNKNOWN_TAG: &str = "No variant found";
+
+/// Parses `T` from `payload`: the typed parse, its unknown members kept in the `extra` of the
+/// struct they belong to (each an `UnrecognizedField` warning), and a failed parse as one error.
+/// An internally tagged enum's unknown tag is `InvalidEnumValue`, as vanilla's enum binds
+/// report it (facet calls it a type mismatch). `check` sees the JSON before the typed parse and
+/// returns `false` to refuse it (the type pre-check of an untagged member).
+fn parse_typed<'a, T: Facet<'a>>(
+    payload: JsonSlice<'a>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+    check: impl FnOnce(&Value, &mut Diagnostics) -> bool,
+) -> Option<T> {
+    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
+    if let Some(json) = &json
+        && !check(json, d)
+    {
+        return None;
+    }
+    match parse_at::<T>(payload) {
+        // A `null` where the struct reads a value is an
+        // `InvalidType` error that rejects the document.
+        Ok(value)
+            if cx.load.null_rule == Some(NullRule::Rejected)
+                && reject_nulls(&value, payload, &cx.at, d) =>
+        {
+            None
+        }
+        Ok(mut value) => {
+            if let Some(json) = &json {
+                for (path, _) in keep_unknown_members(&mut value, json) {
+                    // The game logs an unknown member at the content log's warning level and goes on.
+                    d.push(finding(
+                        DiagnosticCode::UnrecognizedField { text: None },
+                        Severity::Warning,
+                        join(&cx.at, &path),
+                    ));
+                }
+            }
+            Some(value)
+        }
+        Err(error) => {
+            let blank = payload.text.trim().is_empty();
+            let kind = &error.error.kind;
+            let mut code = code_for_deserialize_error_kind(kind, !error.path.is_empty(), blank);
+            if matches!(code, DiagnosticCode::InvalidType { .. })
+                && kind.to_string().contains(UNKNOWN_TAG)
+            {
+                code = DiagnosticCode::InvalidEnumValue { text: None };
+            }
+            d.push(Diagnostic::new(
+                code,
+                Severity::Error,
+                Phase::Parse,
+                Location::new(None, None, join(&cx.at, &error.path), Some(error.span)),
+            ));
+            None
+        }
+    }
+}
+
+/// `base` followed by `relative`.
+fn join(base: &JsonPath, relative: &JsonPath) -> JsonPath {
+    let mut path = base.clone();
+    path.append(relative);
+    path
+}
+
+/// `base` followed by the member `key`.
+fn child(base: &JsonPath, key: &str) -> JsonPath {
+    let mut path = base.clone();
+    path.push(key);
+    path
+}
+
+/// `base` followed by the element `index`.
+fn index(base: &JsonPath, index: usize) -> JsonPath {
+    let mut path = base.clone();
+    path.push_index(index);
+    path
+}
+
+/// A parse finding at `path`.
+fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
+    Diagnostic::new(
+        code,
+        severity,
+        Phase::Parse,
+        Location::new(None, None, path, None),
+    )
+}
+
+/// A bind constraint that failed: a member outside its bound, which fails the file as the game's parse does.
+fn violation(path: JsonPath, d: &mut Diagnostics) {
+    d.push(finding(
+        DiagnosticCode::InvalidValue { text: None },
+        Severity::Error,
+        path,
+    ));
+}
+
+/// The member `key` of an object.
+fn member<'v>(object: &'v Value, key: &str) -> Option<&'v Value> {
+    object.as_object()?.get(key)
+}
+
+/// A member bound as `integer | object` must be one of the two: the untagged scalar arm is a
+/// plain integer, which facet would also fill from a string or a real.
+fn integer_or_object(value: Option<&Value>, at: JsonPath, d: &mut Diagnostics) -> bool {
+    let Some(value) = value else {
+        return true;
+    };
+    let integer = value
+        .as_number()
+        .is_some_and(facet_value::VNumber::is_integer);
+    if integer || value.is_object() {
+        return true;
+    }
+    d.push(finding(
+        DiagnosticCode::InvalidType { text: None },
+        Severity::Error,
+        at,
+    ));
+    false
+}
+
+/// `v` is in `[min, max]`.
+fn within(v: f64, min: f64, max: f64) -> bool {
+    (min..=max).contains(&v)
+}
+
+// ---- minecraft:jigsaw ---------------------------------------------------------------------
+
+impl Versioned for JigsawStructure {
+    const VERSION: FormatVersion = V1_21_20;
+}
+
+impl VersionStruct for JigsawStructure {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let structure: Self = parse_typed(payload, cx, d, |json, d| {
+            let padding = integer_or_object(
+                member(json, "dimension_padding"),
+                child(&cx.at, "dimension_padding"),
+                d,
+            );
+            let distance = integer_or_object(
+                member(json, "max_distance_from_center"),
+                child(&cx.at, "max_distance_from_center"),
+                d,
+            );
+            padding && distance
+        })?;
+        structure.check(&cx.at, d);
+        Some(structure)
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl JigsawStructure {
+    /// The bind constraints and the filter's findings.
+    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
+        // `max_depth` is bound to 0 to 20.
+        if self.max_depth.0 > 20 {
+            violation(child(at, "max_depth"), d);
+        }
+        // `horizontal` is bound to 1 to 128 and `vertical` to 1 or more.
+        let distance = child(at, "max_distance_from_center");
+        match &self.max_distance_from_center {
+            Some(MaxDistanceFromCenter::Horizontal(h)) if !(1..=128).contains(h) => {
+                violation(distance, d);
+            }
+            Some(MaxDistanceFromCenter::Object {
+                horizontal,
+                vertical,
+                ..
+            }) => {
+                if !(1..=128).contains(&horizontal.0) {
+                    violation(child(&distance, "horizontal"), d);
+                }
+                if vertical.is_some_and(|v| v.0 < 1) {
+                    violation(child(&distance, "vertical"), d);
+                }
+            }
+            _ => {}
+        }
+        if let Some(filter) = &self.biome_filters {
+            d.extend(filter.check(&child(at, "biome_filters")));
+        }
+    }
+}
+
+// ---- minecraft:template_pool --------------------------------------------------------------
+
+impl Versioned for TemplatePool {
+    const VERSION: FormatVersion = V1_21_20;
+}
+
+impl VersionStruct for TemplatePool {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let pool: Self = parse_typed(payload, cx, d, |_, _| true)?;
+        pool.check(&cx.at, d);
+        Some(pool)
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl TemplatePool {
+    /// The bind constraints.
+    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
+        let elements = child(at, "elements");
+        for (i, entry) in self.elements.iter().enumerate() {
+            let at = index(&elements, i);
+            // `weight` is bound to 1 to 200.
+            if entry.weight.is_some_and(|w| !(1..=200).contains(&w.0)) {
+                violation(child(&at, "weight"), d);
+            }
+            if let PoolElement::Single { location, .. } = &entry.element
+                && location.as_str().len() > MAX_FILE_REFERENCE
+            {
+                violation(child(&child(&at, "element"), "location"), d);
+            }
+        }
+    }
+}
+
+// ---- minecraft:structure_set --------------------------------------------------------------
+
+impl Versioned for StructureSet {
+    const VERSION: FormatVersion = V1_21_20;
+}
+
+impl VersionStruct for StructureSet {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let set: Self = parse_typed(payload, cx, d, |_, _| true)?;
+        set.check(&cx.at, d);
+        Some(set)
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl StructureSet {
+    /// The bind constraints: `spacing` at least 1, each weight 1 to 200.
+    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
+        // `spacing` is bound to 1 or more.
+        if self.placement.spacing.0 < 1 {
+            violation(child(&child(at, "placement"), "spacing"), d);
+        }
+        let structures = child(at, "structures");
+        for (i, entry) in self.structures.iter().enumerate() {
+            if !(1..=200).contains(&entry.weight.0) {
+                violation(child(&index(&structures, i), "weight"), d);
+            }
+        }
+    }
+}
+
+// ---- minecraft:processor_list -------------------------------------------------------------
+
+impl Versioned for ProcessorList {
+    const VERSION: FormatVersion = V1_21_20;
+}
+
+impl VersionStruct for ProcessorList {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let list: Self = parse_typed(payload, cx, d, |json, d| {
+            let mut ok = true;
+            let processors = member(json, "processors").and_then(Value::as_array);
+            for (i, processor) in processors.into_iter().flatten().enumerate() {
+                let at = child(&index(&child(&cx.at, "processors"), i), "limit");
+                ok &= integer_or_object(member(processor, "limit"), at, d);
+            }
+            ok
+        })?;
+        list.check(&cx.at, d);
+        Some(list)
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl ProcessorList {
+    /// The bind constraints of every rule, and the block specifiers' findings.
+    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
+        let processors = child(at, "processors");
+        for (i, processor) in self.processors.iter().enumerate() {
+            let at = index(&processors, i);
+            match processor {
+                Processor::Rule { rules, .. } => check_rules(rules, &child(&at, "rules"), d),
+                Processor::Capped {
+                    delegate, limit, ..
+                } => {
+                    check_limit(limit, &child(&at, "limit"), d);
+                    if let CappedDelegate::Rule { rules, .. } = delegate {
+                        check_rules(rules, &child(&child(&at, "delegate"), "rules"), d);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+/// An object `limit` whose `type` names the other form: vanilla's variant bind picks the form
+/// by `type`, so the members of the one written are missing (`InvalidEnumValue` here, at
+/// `type`).
+fn check_limit(limit: &IntProvider, at: &JsonPath, d: &mut Diagnostics) {
+    let mismatch = match limit {
+        IntProvider::Constant { provider_type, .. } => *provider_type != IntProviderType::Constant,
+        IntProvider::Uniform { provider_type, .. } => *provider_type != IntProviderType::Uniform,
+        IntProvider::Value(_) => false,
+    };
+    if mismatch {
+        d.push(finding(
+            DiagnosticCode::InvalidEnumValue { text: None },
+            Severity::Error,
+            child(at, "type"),
+        ));
+    }
+}
+
+/// The constraints of each rule of a `minecraft:rule` processor at `at`.
+fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
+    for (i, rule) in rules.iter().enumerate() {
+        let at = index(at, i);
+        for (key, predicate) in [
+            ("input_predicate", &rule.input_predicate),
+            ("location_predicate", &rule.location_predicate),
+        ] {
+            if let Some(predicate) = predicate {
+                check_block_predicate(predicate, &child(&at, key), d);
+            }
+        }
+        if let Some(PositionPredicate::AxisAlignedLinearPos {
+            min_chance,
+            max_chance,
+            min_dist,
+            max_dist,
+            ..
+        }) = &rule.position_predicate
+        {
+            let at = child(&at, "position_predicate");
+            // The chances are bound to `[0, 1)` and the distances to 0 or more.
+            for (key, chance) in [("min_chance", min_chance), ("max_chance", max_chance)] {
+                if chance.is_some_and(|c| !(0.0..1.0).contains(&c.0)) {
+                    violation(child(&at, key), d);
+                }
+            }
+            for (key, distance) in [("min_dist", min_dist), ("max_dist", max_dist)] {
+                if distance.is_some_and(|v| v.0 < 0) {
+                    violation(child(&at, key), d);
+                }
+            }
+        }
+        if let Some(BlockEntityModifier::AppendLoot { loot_table, .. }) =
+            &rule.block_entity_modifier
+            && loot_table.as_str().len() > MAX_FILE_REFERENCE
+        {
+            violation(child(&child(&at, "block_entity_modifier"), "loot_table"), d);
+        }
+        d.extend(rule.output_state.check(&child(&at, "output_state")));
+    }
+}
+
+/// The constraints of a block predicate at `at`: `probability` in `[0, 1]`.
+fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diagnostics) {
+    let probability = |p: &StrictFloat<f32>, d: &mut Diagnostics| {
+        // The probability is bound to `[0, 1]`.
+        if !within(f64::from(p.0), 0.0, 1.0) {
+            violation(child(at, "probability"), d);
+        }
+    };
+    match predicate {
+        BlockPredicate::RandomBlockMatch { probability: p, .. } => probability(p, d),
+        BlockPredicate::BlockstateMatch { block_state, .. } => {
+            d.extend(block_state.check(&child(at, "block_state")));
+        }
+        BlockPredicate::RandomBlockstateMatch {
+            block_state,
+            probability: p,
+            ..
+        } => {
+            probability(p, d);
+            d.extend(block_state.check(&child(at, "block_state")));
+        }
+        _ => {}
+    }
+}
+
+// ---- the metadata registry (the typed model of the `.dat` body) ---------------------------
+
+/// What a registry payload is read into: its entries as raw slices, each parsed from its own
+/// slice so that the unknown members inside an entry are kept.
+#[derive(Facet)]
+struct RegistryShell<'a> {
+    metadata: IndexMap<String, RawJson<'a>>,
+    #[facet(skip, rename = "\u{0}extra")]
+    extra: Extra,
+}
+
+/// The entries and the payload's unknown members of a registry at `payload`.
+fn parse_registry<T: for<'f> Facet<'f>>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+) -> Option<(IndexMap<String, T>, Extra)> {
+    let shell: RegistryShell<'_> = parse_payload(payload, cx, d)?;
+    let mut entries = IndexMap::with_capacity(shell.metadata.len());
+    for (key, raw) in &shell.metadata {
+        let slice = payload.nested(raw)?;
+        let entry_cx = ParseCx {
+            at: child(&child(&cx.at, "metadata"), key),
+            ..cx.clone()
+        };
+        let entry: T = parse_typed(slice, &entry_cx, d, |_, _| true)?;
+        entries.insert(key.clone(), entry);
+    }
+    Some((entries, shell.extra))
+}
+
+impl Versioned for MetadataRegistry {
+    const VERSION: FormatVersion = V1_21_80;
+}
+
+impl VersionStruct for MetadataRegistry {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let (metadata, extra) = parse_registry(payload, cx, d)?;
+        Some(Self { metadata, extra })
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl VersionStruct for v1_21_50::MetadataRegistry {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let (metadata, extra) = parse_registry(payload, cx, d)?;
+        Some(Self { metadata, extra })
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}

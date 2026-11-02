@@ -1,0 +1,25 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "sm10",
+    "description": "families/script_module fixture sm10_version_relaxed_v3",
+    "uuid": "7295233b-9fc9-5a90-83d6-c45b22cd90c0",
+    "version": "1.0.0",
+    "min_engine_version": "1.26.20"
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "25011fe0-50cb-5af5-8438-907f53ced6b7",
+      "version": "3.2.1",
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0"
+    }
+  ]
+}

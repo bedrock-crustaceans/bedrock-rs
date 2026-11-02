@@ -1,0 +1,9 @@
+# fixtures.md duplicate key: the last definition wins; ours: info (L13).
+
+[entries]
+"a" = "3"
+"b" = "2"
+
+[[diagnostics]]
+code = "DuplicateIdentifier"
+severity = "info"

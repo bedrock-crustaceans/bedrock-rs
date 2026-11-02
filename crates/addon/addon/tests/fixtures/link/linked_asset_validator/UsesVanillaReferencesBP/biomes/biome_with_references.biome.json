@@ -1,0 +1,66 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "test:biome_with_references"
+    },
+    "components": {
+      "minecraft:surface_builder": {
+        "builder": {
+          "type":  "minecraft:mesa",
+          "bryce_pillars": false,
+          "has_forest": false,
+          "sea_floor_depth": 7,
+          "clay_material": "minecraft:sand",
+          "hard_clay_material": "minecraft:sand",
+          "sea_floor_material": "minecraft:sand",
+          "foundation_material": "minecraft:sand",
+          "mid_material": "minecraft:sand",
+          "top_material": "minecraft:sand",
+          "sea_material": "minecraft:sand"
+        }
+      },
+      "minecraft:mountain_parameters": {
+        "steep_material_adjustment": {
+          "material": "minecraft:sand",
+          "north_slopes": true,
+          "east_slopes": true
+        }
+      },
+      "minecraft:overworld_generation_rules": {
+        "hills_transformation": [
+          [ "minecraft:bamboo_jungle_hills", 9 ],
+          "minecraft:birch_forest_hills"
+        ],
+        "mutate_transformation": "minecraft:bamboo_jungle_hills",
+        "river_transformation": "minecraft:bamboo_jungle_hills",
+        "shore_transformation": "minecraft:bamboo_jungle_hills"
+      },
+      "minecraft:replace_biomes": {
+        "replacements": [
+          {
+            "amount": 0.6,
+            "dimension": "minecraft:overworld",
+            "noise_frequency_scale": 42.0,
+            "targets": [ "minecraft:bamboo_jungle_hills", "minecraft:birch_forest_hills" ]
+          }
+        ]
+      },
+      "minecraft:surface_material_adjustments": {
+        "adjustments": [
+          {
+            "materials": {
+              "sea_floor_material": "minecraft:sand",
+              "foundation_material": "minecraft:sand",
+              "mid_material": "minecraft:sand",
+              "top_material": "minecraft:sand",
+              "sea_material": "minecraft:sand"
+            },
+            "noise_frequency_scale": 0.0625,
+            "noise_range": [ 0.121, 1.0 ]
+          }
+        ]
+      }
+    }
+  }
+}

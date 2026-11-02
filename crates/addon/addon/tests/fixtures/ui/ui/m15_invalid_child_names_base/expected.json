@@ -1,0 +1,63 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "text": "We have invalid names in the resource files. Make sure all your control children have unique names that aren't empty!\n\nControls:\nx\nFile name:ui/a.json",
+      "pack": 0
+    }
+  ],
+  "files": {
+    "ui/a.json": {
+      "namespace": "a",
+      "root@a.base": {
+        "type": "panel",
+        "controls": [
+          {
+            "x@a.leaf": {}
+          },
+          {
+            "x@a.leaf": {}
+          }
+        ]
+      },
+      "base": {
+        "size": [
+          10,
+          10
+        ]
+      },
+      "leaf": {
+        "type": "label",
+        "text": "hi"
+      }
+    }
+  },
+  "defs": {
+    "a.base": {
+      "size": [
+        10,
+        10
+      ]
+    },
+    "a.leaf": {
+      "type": "label",
+      "text": "hi"
+    },
+    "a.root": {
+      "type": "panel",
+      "controls": [
+        {
+          "x@a.leaf": {}
+        },
+        {
+          "x@a.leaf": {}
+        }
+      ],
+      "size": [
+        10,
+        10
+      ]
+    }
+  }
+}

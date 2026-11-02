@@ -1,0 +1,7 @@
+[
+  {
+    "code": "InvalidValue",
+    "severity": "error",
+    "text": "string must be prefixed with a namespace (eg. namespace:value)"
+  }
+]

@@ -1,0 +1,9 @@
+# Probe: Q22 (ours: the pack also claims an engine that refuses the form)
+scope = "none"
+resolved = ["@minecraft/server 2.8.0"]
+engine = "1.26.36"
+
+[[diagnostic]]
+code = "FieldSinceEngine"
+severity = "info"
+path = "dependencies/0/version"

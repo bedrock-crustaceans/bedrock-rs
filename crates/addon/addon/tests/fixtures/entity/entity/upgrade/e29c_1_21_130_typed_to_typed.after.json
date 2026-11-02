@@ -1,0 +1,30 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:experience_reward": {
+        "on_death": "7",
+        "on_bred": "1",
+        "on_bred_array": [
+          "2"
+        ]
+      },
+      "minecraft:behavior.aquatic_charge_attack": {
+        "charge_speed": 1.5
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:experience_reward": {
+          "on_death_array": [
+            "1",
+            "2"
+          ]
+        }
+      }
+    }
+  }
+}

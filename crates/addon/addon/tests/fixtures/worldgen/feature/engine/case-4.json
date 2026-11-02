@@ -1,0 +1,12 @@
+
+				{
+					"places_feature": "feature_0",
+					"distribution": {
+						"extra_field": true,
+						"x": { "extent": [ 0, 1 ], "distribution": "uniform" },
+						"y": { "extent": [ -8, 5 ], "distribution": "uniform" },
+						"z": { "extent": [ 2, 6 ], "distribution": "gaussian" },
+						"iterations": 3,
+						"scatter_chance": { "numerator": 1, "denominator": 1 }
+					}
+				}

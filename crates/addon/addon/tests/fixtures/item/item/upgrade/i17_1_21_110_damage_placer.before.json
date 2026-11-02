@@ -1,0 +1,14 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:item": {
+    "description": {
+      "identifier": "demo:club"
+    },
+    "components": {
+      "minecraft:damage": 300,
+      "minecraft:block_placer": {
+        "block": "minecraft:stone"
+      }
+    }
+  }
+}

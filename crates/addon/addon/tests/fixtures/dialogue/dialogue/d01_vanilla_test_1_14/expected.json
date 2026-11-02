@@ -1,0 +1,5 @@
+{
+  "scenes": ["test_scene", "no_button_test", "give_emerald_scene"],
+  "rejected": 0,
+  "diagnostics": []
+}

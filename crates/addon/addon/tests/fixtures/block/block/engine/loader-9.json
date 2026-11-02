@@ -1,0 +1,22 @@
+{
+				"format_version": "1.26.20",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:block_with_support_in_permutation",
+						"states": {
+							"test:my_state": [false, true]
+						}
+					},
+					"components": {},
+					"permutations": [
+						{
+							"condition": "q.block_state('test:my_state')",
+							"components": {
+								"minecraft:support": {
+									"shape": "fence"
+								}
+							}
+						}
+					]
+				}
+			}

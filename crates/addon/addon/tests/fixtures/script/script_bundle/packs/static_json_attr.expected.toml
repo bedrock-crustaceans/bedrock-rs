@@ -1,0 +1,28 @@
+# static_json_attr: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_static_json_attr] SyntaxError: expecting ';'    at main.js:1 (ours: L12)
+# ours also names the import the attributes hang on, which could not load either
+members = ["main.js"]
+others = ["scripts/data.json"]
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "./data.json"
+normalized = "data.json.js"
+resolution = "not_found"
+hint = "ImportedAsJson"
+
+[[diagnostics]]
+code = "ScriptSyntaxError"
+severity = "error"
+text = "SyntaxError: expecting ';'    at main.js:1"
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "error"
+text = "ReferenceError: Import [data.json.js] not found."
+file = "scripts/main.js"

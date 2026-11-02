@@ -1,0 +1,15 @@
+{
+  "scenes": [
+    "typed"
+  ],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/typed.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/0/commands/1",
+      "text": "JSON: typed.json has an error: \n Each command needs to be a string type. Skipping button..."
+    }
+  ]
+}

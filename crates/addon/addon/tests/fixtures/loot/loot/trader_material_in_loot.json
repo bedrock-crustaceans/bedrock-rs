@@ -1,0 +1,11 @@
+// fixtures.md row 21: trader_material_type is a trade-table function, not a loot function
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {"type": "item", "name": "minecraft:emerald", "functions": [{"function": "trader_material_type"}]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "x": {
+    "root": {
+      "type": "minecraft:use_entity"
+    },
+    "raw": "{\n  \"minecraft:behavior_tree\": {\n    \"minecraft:name\": \"x\",\n    \"minecraft:root\": { \"minecraft:use_entity\": {} }\n  }\n}\n"
+  },
+  "activate_tool": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:activate_tool",
+        "block_pos": {
+          "literal": [
+            0,
+            0,
+            0
+          ],
+          "key": "target_block_pos"
+        }
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"activate_tool\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:activate_tool\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  },
+  "break_block": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:break_block",
+        "block_pos": {
+          "literal": [
+            0,
+            0,
+            0
+          ],
+          "key": "target_block_pos"
+        },
+        "ticks": {
+          "literal": 0,
+          "key": "target_num_of_ticks"
+        }
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"break_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:break_block\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  },
+  "find_block": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:find_block",
+        "block_name": {
+          "literal": "",
+          "key": "block_name"
+        },
+        "search_radius": {
+          "literal": 32,
+          "key": "target_search_radius"
+        }
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"find_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:find_block\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  },
+  "fly": {
+    "root": {
+      "type": "minecraft:fly",
+      "should_be_flying": {
+        "literal": false,
+        "key": "should_be_flying"
+      },
+      "throw_if_no_change": {
+        "literal": false,
+        "key": "should_throw_event_if_no_state_change_necessary"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"fly\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:fly\": {}\n\t\t}\n\t}\n}"
+  },
+  "get_interaction_position_for_block": {
+    "root": {
+      "type": "minecraft:get_interaction_position_for_block",
+      "target": {
+        "literal": [
+          0,
+          0,
+          0
+        ],
+        "key": "target_block_pos"
+      },
+      "anchor": {
+        "literal": [
+          0,
+          0,
+          0
+        ],
+        "key": "anchor_block_pos"
+      },
+      "facing": {
+        "literal": "",
+        "key": "facing_string"
+      },
+      "max_search_distance": {
+        "literal": 0,
+        "key": "max_search_distance"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"get_interaction_position_for_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:get_interaction_position_for_block\": {}\n\t\t}\n\t}\n}"
+  },
+  "look_at": {
+    "root": {
+      "type": "minecraft:look_at",
+      "block_pos": {
+        "literal": [
+          0,
+          0,
+          0
+        ],
+        "key": "target_block_pos"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"look_at\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:look_at\": {}\n\t\t}\n\t}\n}"
+  },
+  "move": {
+    "root": {
+      "type": "minecraft:move",
+      "direction": {
+        "literal": "",
+        "key": "direction"
+      },
+      "second_direction": {
+        "literal": "",
+        "key": "second_direction"
+      },
+      "ticks": {
+        "literal": 0,
+        "key": "number_of_ticks"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"move\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:move\": {}\n\t\t}\n\t}\n}"
+  },
+  "move_to": {
+    "root": {
+      "type": "minecraft:move_to",
+      "pos": {
+        "literal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "key": "target_block_pos"
+      },
+      "distance_epsilon": {
+        "literal": 0.0,
+        "key": "target_distance_epsilon"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"move_to\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:move_to\": {}\n\t\t}\n\t}\n}"
+  },
+  "place_block": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:place_block"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"place_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:place_block\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  }
+}

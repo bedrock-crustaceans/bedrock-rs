@@ -1,0 +1,16 @@
+# families/script_config fixtures.md, row sp13_long_line (rule from [bds-dis]).
+
+[[diagnostic]]
+code = "MalformedInput"
+severity = "error"
+phase = "parse"
+file = "server.properties"
+path = ""
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "content-log-level"
+text = "content-log-level was set to invalid value 'bogus'.  Accepted values are verbose, info, warning, and error.  Defaulting to info"

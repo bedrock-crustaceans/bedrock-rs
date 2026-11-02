@@ -1,0 +1,7 @@
+[
+  {
+    "code": "MissingRequiredField",
+    "severity": "error",
+    "text": "The crafting item catalog needs to have an object minecraft:crafting_items_catalog"
+  }
+]

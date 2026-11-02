@@ -1,0 +1,20 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:structure_set": {
+    "description": {
+      "identifier": "demo:zero"
+    },
+    "placement": {
+      "type": "minecraft:random_spread",
+      "salt": 1,
+      "separation": 0,
+      "spacing": 0
+    },
+    "structures": [
+      {
+        "structure": "demo:ruin",
+        "weight": 1
+      }
+    ]
+  }
+}

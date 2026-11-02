@@ -1,0 +1,71 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "on_attack": {
+          "event": "x:hit"
+        },
+        "on_kill": {
+          "event": "x:killed"
+        }
+      },
+      "minecraft:behavior.delayed_attack": {
+        "on_kill": {
+          "event": "x:k"
+        }
+      },
+      "minecraft:behavior.stomp_attack": {
+        "on_attack": {
+          "event": "x:a"
+        }
+      },
+      "minecraft:pushable_by_entity": {
+        "presets": [
+          {
+            "push_mode": "default"
+          }
+        ]
+      },
+      "minecraft:projectile": {
+        "should_bounce": true,
+        "on_hit": {
+          "impact_damage": {
+            "damage": [
+              1,
+              4
+            ],
+            "knockback": true,
+            "semi_random_diff_damage": false,
+            "should_bounce": true
+          }
+        }
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:pushable_by_entity": {
+          "presets": []
+        },
+        "minecraft:projectile": {
+          "should_bounce": "bogus",
+          "on_hit": {
+            "impact_damage": {
+              "power_multiplier": 1.0,
+              "semi_random_diff_damage": true
+            }
+          }
+        }
+      },
+      "h": {
+        "minecraft:projectile": {
+          "should_bounce": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{ "format_version": "1.8.0",
+  "animation_controllers": { "controller.animation.pig.move": {
+    "initial_state": "default",
+    "states": { "default": {
+      "parameters": [ "query.modified_move_speed", "query.is_baby" ],
+      "animations": [ { "walk": [ { "0.0": 0.0, "1.0": 1.0 }, { "0.0": 1.0, "1.0": 0.5 } ] } ],
+      "transitions": [ { "idle": "!query.is_moving" } ] },
+      "idle": { "animations": [ { "look": [] } ] } } } } }

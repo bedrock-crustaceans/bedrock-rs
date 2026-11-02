@@ -1,0 +1,1 @@
+{ "compiles": { "tags": "query.any_tag('stone')" }, "outside_the_query_set": { "tags": "query.is_baby" } }

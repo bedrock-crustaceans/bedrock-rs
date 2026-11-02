@@ -1,0 +1,13 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:polar_bear"
+    },
+    "components": {
+      "minecraft:water_movement": {
+        "drag_factor": 0.9800000190734863
+      }
+    }
+  }
+}

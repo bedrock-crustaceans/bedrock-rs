@@ -8,3 +8,5 @@ proc-macro2 = "1.0.106"
 quote = "1.0.45"
 syn = { version = "3.0.6", features = ["full"] }
 prettyplease = "0.3.0"
+# `script-meta` parses the game's metadata files with the strict model.
+bedrock_addon = { path = "../crates/addon/addon", default-features = false, features = ["script"] }

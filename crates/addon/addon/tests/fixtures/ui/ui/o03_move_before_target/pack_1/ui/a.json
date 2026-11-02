@@ -1,0 +1,11 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "y",
+        "operation": "move_before",
+        "target_control": "x"
+      }
+    ]
+  }
+}

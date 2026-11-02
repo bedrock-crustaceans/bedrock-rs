@@ -1,0 +1,27 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:item": {
+    "description": {
+      "identifier": "demo:drill"
+    },
+    "components": {
+      "minecraft:use_modifiers": {
+        "use_duration": 1.0
+      },
+      "minecraft:digger": {
+        "destroy_speeds": [
+          {
+            "block": "minecraft:dirt",
+            "speed": 6,
+            "__deprecated_on_dig": {
+              "event": "demo:dirt"
+            }
+          }
+        ]
+      },
+      "demo:spin": {
+        "speed": 2
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.10",
+  "minecraft:scatter_feature": {
+    "description": {
+      "identifier": "demo:determinism_scatter"
+    },
+    "places_feature": "demo:determinism_ore",
+    "distribution": {
+      "iterations": 4,
+      "x": 0,
+      "y": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      },
+      "z": 0
+    }
+  }
+}

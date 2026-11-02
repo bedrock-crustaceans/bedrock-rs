@@ -1,0 +1,34 @@
+{
+  "scenes": [],
+  "rejected": 4,
+  "diagnostics": [
+    {
+      "code": "MissingRequiredField",
+      "severity": "error",
+      "path": "dialogue/absent.json",
+      "json_path": "minecraft:npc_dialogue/scenes",
+      "text": "JSON: absent.json has an error: \n Couldn't find 'scenes' array."
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "error",
+      "path": "dialogue/null.json",
+      "json_path": "minecraft:npc_dialogue/scenes",
+      "text": "JSON: null.json has an error: \n Couldn't find 'scenes' array."
+    },
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/object.json",
+      "json_path": "minecraft:npc_dialogue/scenes",
+      "text": "JSON: object.json has an error: \n Couldn't find 'scenes' array."
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "error",
+      "path": "dialogue/payload_number.json",
+      "json_path": "minecraft:npc_dialogue/scenes",
+      "text": "JSON: payload_number.json has an error: \n Couldn't find 'scenes' array."
+    }
+  ]
+}

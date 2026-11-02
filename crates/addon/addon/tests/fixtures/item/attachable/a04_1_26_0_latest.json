@@ -1,0 +1,22 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:attachable": {
+    "description": {
+      "identifier": "example:wand",
+      "materials": { "default": "entity_alphatest", "enchanted": "entity_alphatest_glint" },
+      "textures": { "default": "textures/items/wand", "enchanted": "textures/misc/enchanted_item_glint" },
+      "geometry": { "default": "geometry.wand" },
+      "scripts": {
+        "initialize": ["variable.charge = 0;", "variable.glow = 1;"],
+        "pre_animation": ["variable.charge = query.is_using_item;"],
+        "parent_setup": "variable.wand_visible = 1.0;",
+        "animate": ["hold", { "glow": "variable.glow" }]
+      },
+      "animations": { "hold": "animation.wand.hold", "glow": "animation.wand.glow" },
+      "render_controllers": ["controller.render.item_default"],
+      "sound_effects": {},
+      "held_item_scale": 0.5,
+      "item": "example:wand"
+    }
+  }
+}

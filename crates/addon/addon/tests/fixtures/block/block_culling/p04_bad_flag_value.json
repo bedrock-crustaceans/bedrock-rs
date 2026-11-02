@@ -1,0 +1,21 @@
+
+			{
+				"format_version": "1.21.80",
+				"minecraft:block_culling_rules": {
+					"description": {
+						"identifier": "test:culling_parsing"
+					},
+					"rules": [ 
+						{
+						   "geometry_part": {
+								"bone": "root_bone",
+								"cube": 0,
+								"face": "north"},
+							"direction": "north",
+							"condition": "same_block",
+							"cull_against_full_and_opaque": "test_invalid"
+						}
+					]
+				}
+			}
+		

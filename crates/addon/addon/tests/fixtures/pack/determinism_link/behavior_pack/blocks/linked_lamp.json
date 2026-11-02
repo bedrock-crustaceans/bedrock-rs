@@ -1,0 +1,4 @@
+{"format_version": "1.26.20", "minecraft:block": {"description": {"identifier": "linked:lamp"}, "components": {
+    "minecraft:geometry": "minecraft:geometry.full_block",
+    "minecraft:material_instances": {"*": {"texture": "demo_stone"}, "up": {"texture": "linked_no_tile"}},
+    "minecraft:loot": "loot_tables/linked_drop.json"}}}

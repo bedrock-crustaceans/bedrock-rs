@@ -1,0 +1,22 @@
+{
+  "format_version": "1.17.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:ravagerish"
+    },
+    "components": {
+      "minecraft:behavior.knockback_roar": {
+        "priority": 1,
+        "knockback_strength": 2
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.knockback_roar": {
+          "knockback_horizontal_strength": 3,
+          "knockback_vertical_strength": 1
+        }
+      }
+    }
+  }
+}

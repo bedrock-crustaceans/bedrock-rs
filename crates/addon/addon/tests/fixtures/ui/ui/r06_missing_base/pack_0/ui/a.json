@@ -1,0 +1,9 @@
+{
+  "namespace": "a",
+  "k@a.nope": {
+    "layer": 1
+  },
+  "t@a.nope": {
+    "type": "panel"
+  }
+}

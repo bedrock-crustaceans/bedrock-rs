@@ -1,0 +1,22 @@
+# families/script_config fixtures.md, row sp11_int_forms (P8-P12).
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "script-watchdog-spike-threshold"
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "script-watchdog-spike-threshold"
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "script-watchdog-spike-threshold"

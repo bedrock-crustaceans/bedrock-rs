@@ -1,0 +1,63 @@
+{
+  "format_version": "1.21.100",
+  "minecraft:pack_settings": {
+    "settings": [
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000001",
+        "last_used": 100,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000002",
+        "last_used": 200,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000003",
+        "last_used": 300,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000004",
+        "last_used": 400,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000005",
+        "last_used": 500,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000006",
+        "last_used": 600,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000007",
+        "last_used": 700,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000008",
+        "last_used": 800,
+        "values": {
+          "banana:slider": 2
+        }
+      }
+    ]
+  }
+}

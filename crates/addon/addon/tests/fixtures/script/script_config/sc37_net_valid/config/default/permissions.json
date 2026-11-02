@@ -1,0 +1,20 @@
+{
+  "allowed_modules": [
+    "@minecraft/server",
+    "@minecraft/server-net"
+  ],
+  "module_permissions": {
+    "@minecraft/server-net": {
+      "allowed_uris": [
+        "https://example.com/api"
+      ],
+      "force_tls": true,
+      "max_body_bytes": 1000,
+      "max_concurrent_requests": 4,
+      "session_headers": {
+        "x-a": "b"
+      },
+      "max_websocket_connections": 2
+    }
+  }
+}

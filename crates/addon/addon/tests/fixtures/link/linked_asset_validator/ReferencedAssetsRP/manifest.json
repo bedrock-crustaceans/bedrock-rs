@@ -1,0 +1,18 @@
+{
+  "format_version": 1,
+  "header": {
+    "description": "Test resource pack with referenced assets",
+    "name": "Test resource pack with referenced assets",
+    "uuid": "9aa9d80c-4ef1-4e4a-87f6-f9ce2deb4954",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "description": "",
+      "type": "resources",
+      "uuid": "f7fcbd50-ea4f-4081-b670-de4f808d0ecb",
+      "version": [1, 0, 0]
+    }
+  ]
+}

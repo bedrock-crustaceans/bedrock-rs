@@ -1,0 +1,2 @@
+setblock ~ ~ ~
+say

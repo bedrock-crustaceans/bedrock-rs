@@ -1,0 +1,6 @@
+{
+					"damage": { "min": 4, "max": 4 },
+					"effect_name": "poison",
+					"effect_duration": 2.5,
+					"effect_amplifier": 3
+				}

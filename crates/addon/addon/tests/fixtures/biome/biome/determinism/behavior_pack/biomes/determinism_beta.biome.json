@@ -1,0 +1,13 @@
+{
+  "format_version": "beta",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "demo:determinism_beta"
+    },
+    "components": {
+      "minecraft:climate": {
+        "downfall": 0.6
+      }
+    }
+  }
+}

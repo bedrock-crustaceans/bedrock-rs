@@ -1,0 +1,8 @@
+# Probe: P08
+scope = "module"
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "error"
+path = "modules/0/entry"
+text = "Plugin [sm23 - 3.2.1] - entry [scripts/main.ts] not supported for runtime [JavaScript]."

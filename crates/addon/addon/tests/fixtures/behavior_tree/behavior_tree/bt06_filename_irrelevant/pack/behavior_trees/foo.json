@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "bar",
+    "minecraft:root": { "minecraft:consume_item": {} }
+  }
+}

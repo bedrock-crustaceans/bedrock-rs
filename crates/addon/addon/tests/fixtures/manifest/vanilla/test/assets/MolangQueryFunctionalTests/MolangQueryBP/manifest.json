@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Molang Query Test Behavior Pack",
+    "name": "Molang Query Test Behavior Pack",
+    "uuid": "f33e67f5-316a-4da0-9a4f-3902dc5695b1",
+    "version": [1,0,0],
+    "min_engine_version": [1,16,0]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "f04068c8-9026-402a-8c4e-437f465418a9",
+      "version": [1,0,0]
+    }
+  ]
+}

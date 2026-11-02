@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:color_grading_settings": {
+    "description": {
+      "identifier": "determinism:grading"
+    },
+    "tone_mapping": {
+      "operator": "aces"
+    }
+  }
+}

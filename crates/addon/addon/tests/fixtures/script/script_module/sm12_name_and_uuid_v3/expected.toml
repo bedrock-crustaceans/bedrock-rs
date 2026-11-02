@@ -1,0 +1,7 @@
+# Probe: Q36
+scope = "pack"
+
+[[diagnostic]]
+code = "UnrecognizedField"
+severity = "error"
+path = "dependencies/0/uuid"

@@ -1,0 +1,8 @@
+
+				{
+					"places_feature": "feature_0",
+					"x": { "extent": [ 0, 1 ], "distribution": "uniform" },
+					"y": { "extent": [ -8, 5 ], "distribution": "uniform" },
+					"z": { "extent": [ 2, 6 ], "distribution": "gaussian" },
+					"iterations": 1
+				}

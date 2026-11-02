@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Scripting StructureManager Functional Tests BP",
+        "name": "ScriptStructureManagerFunctionalTestsBP",
+        "uuid": "90eb5a8b-c05b-4d5b-88a9-c767fe035b4a",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "Scripting StructureManager Functional Tests BP",
+            "type": "data",
+            "uuid": "bb474ce8-26cf-4882-a237-0f0326d484db",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

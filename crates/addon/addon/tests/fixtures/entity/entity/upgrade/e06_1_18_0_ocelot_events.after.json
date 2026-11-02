@@ -1,0 +1,40 @@
+{
+  "format_version": "1.18.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:ocelot"
+    },
+    "components": {},
+    "component_groups": {
+      "minecraft:wild_child_ocelot_spawn": {
+        "minecraft:spawn_entity": {
+          "entities": {
+            "min_wait_time": 0,
+            "max_wait_time": 0,
+            "num_to_spawn": 2,
+            "single_use": true,
+            "spawn_entity": "minecraft:ocelot",
+            "spawn_event": "minecraft:entity_born",
+            "spawn_method": "born",
+            "spawn_sound": "",
+            "filters": [
+              {
+                "test": "random_chance",
+                "value": 7
+              }
+            ]
+          }
+        }
+      }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "minecraft:wild_child_ocelot_spawn"
+          ]
+        }
+      }
+    }
+  }
+}

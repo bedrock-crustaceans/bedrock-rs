@@ -1,0 +1,37 @@
+console.warn("[dyn] import.meta.url=" + import.meta.url + " meta keys=" + Object.keys(import.meta));
+const answer = await Promise.resolve(42);
+console.warn("[dyn] top-level await ok " + answer);
+const specs = [
+  ["./upper.js", () => import("./upper.js")],
+  ["./m.mjs", () => import("./m.mjs")],
+  ["./m", () => import("./m")],
+  ["../escape.js", () => import("../escape.js")],
+  ["/lib/b.js", () => import("/lib/b.js")],
+  ["./lib/../lib/b.js", () => import("./lib/../lib/b.js")],
+  ["./lib/./b.js", () => import("./lib/./b.js")],
+  ["./x.JS", () => import("./x.JS")],
+  ["./lib/b.js?q=1", () => import("./lib/b.js?q=1")],
+  ["@minecraft/unknown", () => import("@minecraft/unknown")],
+  ["unknown-pkg", () => import("unknown-pkg")],
+  ["@minecraft/server-bindings", () => import("@minecraft/server-bindings")],
+  ["./noext", () => import("./noext")],
+  ["./sub/deep/d.js", () => import("./sub/deep/d.js")],
+  [".//lib/b.js", () => import(".//lib/b.js")],
+  ["./scripts/lib/b.js", () => import("./scripts/lib/b.js")],
+  ["scripts/lib/b.js", () => import("scripts/lib/b.js")],
+  ["./ts.ts", () => import("./ts.ts")],
+  ["./lib/b.js", () => import("./lib/b.js")],
+  ["./lib/c", () => import("./lib/c")],
+  ["./lib", () => import("./lib")],
+  ["./lib/", () => import("./lib/")],
+  ["./Upper.js", () => import("./Upper.js")],
+  ["./data.json", () => import("./data.json")],
+  ["lib/b.js", () => import("lib/b.js")],
+  ["@minecraft/common", () => import("@minecraft/common")],
+  ["@minecraft/server", () => import("@minecraft/server")],
+  ["./bom.js", () => import("./bom.js")],
+  ["./lib/nested.js", () => import("./lib/nested.js")],
+  ["./lib\\b.js", () => import("./lib\\b.js")],
+  ["./main.js", () => import("./main.js")],
+];
+for (const [spec, load] of specs) load().then((m) => console.warn("[dyn] OK " + spec + " -> " + Object.keys(m)), (e) => console.warn("[dyn] FAIL " + spec + " -> " + e));

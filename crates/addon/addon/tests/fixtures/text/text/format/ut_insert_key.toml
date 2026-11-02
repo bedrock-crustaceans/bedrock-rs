@@ -1,0 +1,10 @@
+# fixtures.md `format/ut_insert_key` (LocalizationUnitTests): `%key` in an id is that key's translation.
+
+[keys]
+"key.1" = "Value 1"
+"key.2" = "Value 2"
+
+[[case]]
+id = "String with %key.1 and %key.2"
+params = []
+expected = "String with Value 1 and Value 2"

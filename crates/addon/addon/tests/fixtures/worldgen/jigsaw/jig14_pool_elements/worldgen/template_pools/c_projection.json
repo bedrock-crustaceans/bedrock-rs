@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:template_pool": {
+    "description": {
+      "identifier": "demo:projection"
+    },
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "demo/house",
+          "projection": "minecraft:terrain_matching"
+        }
+      }
+    ]
+  }
+}

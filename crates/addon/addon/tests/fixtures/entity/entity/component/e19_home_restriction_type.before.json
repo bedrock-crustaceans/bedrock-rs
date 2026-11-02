@@ -1,0 +1,6 @@
+{
+  "radius_without_type": { "restriction_radius": 16, "home_block_list": [ "minecraft:bee_nest" ] },
+  "type_kept": { "restriction_radius": 16, "restriction_type": "all_movement" },
+  "no_radius": { "home_block_list": [ "minecraft:bee_nest" ] },
+  "zero_radius": { "restriction_radius": 0 }
+}

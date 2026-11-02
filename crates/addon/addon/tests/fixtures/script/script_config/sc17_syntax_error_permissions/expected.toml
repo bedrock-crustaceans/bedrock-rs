@@ -1,0 +1,17 @@
+# families/script_config fixtures.md, row sc17_syntax_error_permissions (probe C).
+
+[[diagnostic]]
+code = "MalformedInput"
+severity = "error"
+phase = "parse"
+file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"
+path = ""
+text = "Failed to parse JSON in file 'config/a0000000-0000-4000-8000-000000000001/permissions.json'"
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"
+path = ""
+text = "Plugin [permsyntax - 1.0.0] - requesting dependency on module [@minecraft/server] but it is not configured to use it."

@@ -1,0 +1,21 @@
+{
+  "format_version": "1.8.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "minecraft:pig",
+      "animations": {
+        "setup": "animation.pig.setup",
+        "walk": "animation.quadruped.walk"
+      },
+      "animation_controllers": [
+        { "setup": "controller.animation.pig.setup" },
+        { "move": "controller.animation.pig.move" }
+      ],
+      "scripts": {
+        "pre_animation": [
+          "variable.tcos0 = Math.cos(query.modified_distance_moved * 38.17) * query.modified_move_speed / 1.0 * 57.3;"
+        ]
+      }
+    }
+  }
+}

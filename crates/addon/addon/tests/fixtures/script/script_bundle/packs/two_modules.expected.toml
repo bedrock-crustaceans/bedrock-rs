@@ -1,0 +1,28 @@
+# two_modules: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] WARN Plugin [SB_two_modules - 1.0.0] - skipped, only one script module allowed per pack.
+# [bds-run 1] [two_modules] main ran
+members = ["main.js", "second.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"
+
+[[imports]]
+file = "second.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "not_checked"
+
+[[diagnostics]]
+code = "MultipleScriptModules"
+severity = "warning"
+text = "Plugin [SB_two_modules - 1.0.0] - skipped, only one script module allowed per pack."
+file = "manifest.json"

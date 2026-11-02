@@ -1,0 +1,9 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "nested", "text": "Loaded from a sub-folder." },
+      { "text": "No tag." }
+    ]
+  }
+}

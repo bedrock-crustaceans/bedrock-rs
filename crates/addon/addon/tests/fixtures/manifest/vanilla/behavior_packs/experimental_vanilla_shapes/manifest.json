@@ -1,0 +1,18 @@
+{
+	"format_version": 2,
+	"header": {
+		"name": "Vanilla Voxel Shapes",
+		"description": "Experimental Vanilla Voxel Shapes",
+		"uuid": "0ffb286d-6ee3-4243-a640-b46898344a8e",
+		"version": [ 0, 0, 1 ],
+		"min_engine_version": [ 1, 21, 0 ]
+	},
+	"modules": [
+		{
+			"description": "Experimental behavior pack for vanilla voxel shapes",
+			"type": "data",
+			"uuid": "ec09a551-d515-4e99-bf23-a1a3024d8c4d",
+			"version": [ 0, 0, 1 ]
+		}
+	]
+}

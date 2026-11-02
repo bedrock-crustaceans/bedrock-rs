@@ -1,0 +1,10 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "custom",
+    "renderer": "paper_doll_renderer",
+    "rotate_speed": 1,
+    "always_rotate": true,
+    "use_uuid": true
+  }
+}

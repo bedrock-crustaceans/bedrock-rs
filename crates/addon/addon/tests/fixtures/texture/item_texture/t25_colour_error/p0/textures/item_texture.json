@@ -1,0 +1,9 @@
+{
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "a": {
+      "textures": "textures/items/a",
+      "mip_fade_color": {}
+    }
+  }
+}

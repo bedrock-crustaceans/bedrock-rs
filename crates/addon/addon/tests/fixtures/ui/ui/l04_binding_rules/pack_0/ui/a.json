@@ -1,0 +1,52 @@
+{
+  "namespace": "a",
+  "b1": {
+    "type": "panel",
+    "bindings": {}
+  },
+  "b2": {
+    "type": "panel",
+    "bindings": [
+      {}
+    ]
+  },
+  "b3": {
+    "type": "panel",
+    "bindings": [
+      {
+        "binding_type": "collection",
+        "binding_name": "#n"
+      }
+    ]
+  },
+  "b4": {
+    "type": "panel",
+    "bindings": [
+      {
+        "binding_type": "view",
+        "target_property_name": "#t"
+      }
+    ]
+  },
+  "b5": {
+    "type": "panel",
+    "bindings": [
+      {
+        "binding_type": "view",
+        "source_property_name": "#s"
+      }
+    ]
+  },
+  "b6": {
+    "type": "panel",
+    "bindings": [
+      {
+        "binding_type": "view",
+        "source_property_name": "#s",
+        "target_property_name": "#t",
+        "resolve_ancestor_scope": true,
+        "resolve_sibling_scope": true
+      }
+    ]
+  }
+}

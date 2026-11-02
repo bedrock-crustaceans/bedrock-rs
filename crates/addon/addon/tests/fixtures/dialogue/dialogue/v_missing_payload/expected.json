@@ -1,0 +1,20 @@
+{
+  "scenes": [],
+  "rejected": 2,
+  "diagnostics": [
+    {
+      "code": "MissingPayload",
+      "severity": "error",
+      "path": "dialogue/absent.json",
+      "json_path": "minecraft:npc_dialogue",
+      "text": "JSON: absent.json has an error: \n Couldn't find 'minecraft:npc_dialogue' object."
+    },
+    {
+      "code": "MissingPayload",
+      "severity": "error",
+      "path": "dialogue/null.json",
+      "json_path": "minecraft:npc_dialogue",
+      "text": "JSON: null.json has an error: \n Couldn't find 'minecraft:npc_dialogue' object."
+    }
+  ]
+}

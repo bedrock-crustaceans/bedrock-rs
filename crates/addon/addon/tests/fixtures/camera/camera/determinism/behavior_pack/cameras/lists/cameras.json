@@ -1,0 +1,7 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:camera_list": {
+    "identifier": "determinism:cameras",
+    "cameras": ["determinism:orbit", "minecraft:free"]
+  }
+}

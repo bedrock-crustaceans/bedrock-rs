@@ -1,0 +1,225 @@
+// Copied from Minecraft Bedrock retail 1.26.45 (GDK), data/behavior_packs/vanilla/trading/cleric_trades.json.
+{
+  "format_version": "1.26.10",
+  "tiers": [
+    {
+      "groups": [
+        {
+          "num_to_select": -1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 36,
+                        "max": 40
+                      },
+                      "item": "minecraft:rotten_flesh",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 8,
+                        "max": 10
+                      },
+                      "item": "minecraft:gold_ingot",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 0
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": -1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "max": 4
+                      },
+                      "item": "minecraft:redstone",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "max": 2
+                      },
+                      "item": "minecraft:dye:4",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 1
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": -1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "max": 3
+                      },
+                      "item": "minecraft:glowstone",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 4,
+                        "max": 7
+                      },
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:ender_pearl",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 2
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": -1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 3,
+                        "max": 11
+                      },
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:experience_bottle",
+                      "functions": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 3
+    }
+  ]
+}

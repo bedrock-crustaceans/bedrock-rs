@@ -1,0 +1,13 @@
+{
+  "format_version": "beta",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "demo:determinism_beta"
+    },
+    "components": {
+      "minecraft:sky_color": {
+        "sky_color": "#112233"
+      }
+    }
+  }
+}

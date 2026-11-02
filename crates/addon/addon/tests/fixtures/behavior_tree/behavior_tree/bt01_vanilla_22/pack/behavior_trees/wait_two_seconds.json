@@ -1,0 +1,16 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "wait_two_seconds",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:wait": { 
+              "wait_duration": 2
+            }
+          }
+        ]
+      }
+    }
+  }
+}

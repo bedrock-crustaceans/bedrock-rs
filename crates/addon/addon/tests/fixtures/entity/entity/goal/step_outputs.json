@@ -1,0 +1,81 @@
+{
+  // The goals as the entity chain's A/B steps leave them (steps.md §D.2), each read by the typed
+  // goal's lenient conversion with no finding: the goal side of the step rows of fixtures.md.
+  // Keys are `<row> <goal key>`.
+  "e00e minecraft:behavior.circle_around_anchor": {
+    "priority": 1, "radius_adjustment_chance": 0.25, "height_adjustment_chance": 1.0
+  },
+  "e00e minecraft:behavior.swim_wander": {
+    "priority": 4, "interval": 0.05, "look_ahead": 2, "speed_multiplier": 1, "wander_time": 5
+  },
+  "e00e minecraft:behavior.melee_attack": {
+    "priority": 3, "track_target": true
+  },
+  "e00f minecraft:behavior.melee_attack": {
+    "priority": 3, "set_persistent": true
+  },
+  "e01 minecraft:behavior.move_towards_dwelling_restriction": {
+    "priority": 4, "speed_multiplier": 1.0
+  },
+  "e01 minecraft:behavior.move_towards_home_restriction": {
+    "priority": 4, "speed_multiplier": 1.0
+  },
+  "e02 minecraft:behavior.knockback_roar": {
+    "priority": 1, "knockback_horizontal_strength": 2, "knockback_vertical_strength": 1
+  },
+  "e04 minecraft:behavior.knockback_roar": {
+    "priority": 1, "knockback_horizontal_strength": 2, "knockback_vertical_strength": 2
+  },
+  "e07 minecraft:behavior.go_home": {
+    "priority": 4, "on_home": [{ "event": "x:home" }], "on_failed": [{ "event": "x:failed" }]
+  },
+  "e09 minecraft:behavior.sleep": {
+    "priority": 3, "can_sleep_while_riding": true
+  },
+  "e10 minecraft:behavior.take_flower": {
+    "priority": 9, "filters": { "all_of": [{ "test": "is_daytime", "value": true }] }
+  },
+  "e10 minecraft:behavior.offer_flower": {
+    "priority": 7, "filters": { "all_of": [{ "test": "is_daytime", "value": true }] }
+  },
+  "e11 minecraft:behavior.trade_with_player": {
+    "priority": 1,
+    "filters": {
+      "all_of": [
+        { "test": "in_water", "value": false },
+        { "any_of": [{ "test": "on_ground", "value": true }, { "test": "is_sleeping", "value": true }] }
+      ]
+    }
+  },
+  "e11b minecraft:behavior.drink_potion": {
+    "priority": 1,
+    "speed_modifier": -0.25,
+    "potions": [
+      { "id": 19, "chance": 0.15, "filters": { "test": "is_underwater", "subject": "self", "value": true } },
+      {
+        "id": 12, "chance": 0.15,
+        "filters": { "any_of": [{ "test": "on_fire", "subject": "self", "value": true }, { "test": "on_hot_block", "subject": "self", "value": true }] }
+      },
+      { "id": 21, "chance": 0.05, "filters": { "test": "is_missing_health", "subject": "self", "value": true } },
+      {
+        "id": 14, "chance": 0.25,
+        "filters": { "all_of": [{ "test": "has_target", "subject": "self", "value": true }, { "test": "target_distance", "subject": "self", "operator": ">=", "value": 11 }] }
+      }
+    ]
+  },
+  "e18 minecraft:behavior.follow_owner": {
+    "priority": 6, "speed_multiplier": 1, "post_teleport_distance": 1
+  },
+  "e18 minecraft:behavior.swim_up_for_breath": {
+    "priority": 1
+  },
+  "e21 minecraft:behavior.float_wander": {
+    "priority": 2, "use_home_position_restriction": false, "float_wander_has_move_control": false
+  },
+  "e28 minecraft:behavior.nearest_attackable_target": {
+    "priority": 2, "attack_interval": { "range_min": 2, "range_max": 10 }
+  },
+  "e28 lone minecraft:behavior.nearest_attackable_target": {
+    "priority": 2, "attack_interval": 10
+  }
+}

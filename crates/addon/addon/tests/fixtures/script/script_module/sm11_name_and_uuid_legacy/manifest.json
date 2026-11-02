@@ -1,0 +1,38 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm11",
+    "description": "families/script_module fixture sm11_name_and_uuid_legacy",
+    "uuid": "2ef26dd1-7990-5dc5-8232-301a4c053134",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "e9c0b128-cd67-5b32-a38f-d84c3cd5d32b",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0",
+      "uuid": "b26a4d4c-afdf-4690-88f8-931846312678"
+    }
+  ]
+}

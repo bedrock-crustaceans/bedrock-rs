@@ -1,0 +1,20 @@
+{
+  // fixtures.md e34 (the goal part): `attack_radius_min` / `attack_radius` become
+  // `attack_range`, and `in_range_movement_mode` is `hold_position`; an explicit mode is kept.
+  "radius": {
+    "priority": 2,
+    "attack_radius": 15,
+    "attack_radius_min": 4,
+    "attack_interval": { "min": 1, "max": 3 }
+  },
+  "follow": {
+    "priority": 2,
+    "attack_radius": 10,
+    "in_range_movement_mode": "follow_target"
+  },
+  "new_shape": {
+    "priority": 2,
+    "attack_range": { "min": 4, "max": 15 },
+    "in_range_movement_mode": "follow_target"
+  }
+}

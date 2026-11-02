@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Spawn Egg Trade Table Test Behavior Pack",
+    "name": "Spawn Egg Trade Table Test Behavior Pack",
+    "uuid": "64a7eb81-3007-447b-888c-6b8fcce2e57e",
+    "version": [1,0,0],
+    "min_engine_version": [1,19,20]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "4a13e510-3479-41e6-9e1a-bca312002fa3",
+      "version": [1,0,0]
+    }
+  ]
+}

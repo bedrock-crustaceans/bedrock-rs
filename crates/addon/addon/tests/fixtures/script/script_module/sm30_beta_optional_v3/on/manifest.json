@@ -1,0 +1,26 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "sm30",
+    "description": "families/script_module fixture sm30_beta_optional_v3",
+    "uuid": "afe4e151-b8dd-5d3a-8227-0c7e6ae85fec",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "36851f44-407e-53f5-ad14-aa96878c61fe",
+      "version": "3.2.1",
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "beta",
+      "optional": true
+    }
+  ]
+}

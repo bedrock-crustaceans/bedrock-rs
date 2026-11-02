@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with item creative group in item description",
+    "name": "Item Menu Category Pack",
+    "uuid":"cad4fe0a-a7bd-4454-b3fc-0f50b6d29651",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 17, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "My First Add-On!",
+          "type": "data",
+          "uuid": "95fe1b14-5e94-42c2-82d7-abf76bba6355",
+          "version": [1, 0, 0]
+      }
+    ]
+}

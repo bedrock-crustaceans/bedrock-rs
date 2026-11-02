@@ -1,0 +1,29 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "textures": [
+        {
+          "path": "a",
+          "weight": 0
+        },
+        {
+          "path": "b",
+          "weight": 0.01
+        },
+        {
+          "path": "c",
+          "weight": "heavy"
+        },
+        {
+          "path": "d",
+          "weight": 2000000.0
+        },
+        {
+          "path": "e",
+          "weight": 70
+        }
+      ]
+    }
+  }
+}

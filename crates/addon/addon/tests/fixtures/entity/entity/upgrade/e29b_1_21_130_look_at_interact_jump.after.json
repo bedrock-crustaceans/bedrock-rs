@@ -1,0 +1,58 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.look_at_player": {
+        "look_distance": 6,
+        "look_time": {
+          "min": 1,
+          "max": 4
+        }
+      },
+      "minecraft:interact": {
+        "interactions": [
+          {
+            "use_item": true,
+            "swing": false
+          },
+          {
+            "swing": true
+          }
+        ]
+      },
+      "minecraft:jump.dynamic": {
+        "regular_skip_data": {
+          "distance_scale": 0.8,
+          "height": 0.1,
+          "jump_delay": 20,
+          "animation_duration": 3
+        },
+        "fast_skip_data": {
+          "distance_scale": 1.75,
+          "height": 0.15,
+          "jump_delay": 1,
+          "animation_duration": 1
+        }
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.look_at_target": {
+          "look_time": {
+            "min": 3,
+            "max": 5
+          }
+        },
+        "minecraft:interact": {
+          "interactions": {
+            "cooldown": 1,
+            "swing": false
+          }
+        }
+      }
+    }
+  }
+}

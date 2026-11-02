@@ -1,0 +1,20 @@
+# static_at_unknown: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_static_at_unknown] ReferenceError: Module [@minecraft/unknown] is unrecognized. ...
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/unknown"
+normalized = "@minecraft/unknown"
+resolution = "unrecognized"
+
+[[diagnostics]]
+code = "ScriptModuleUnrecognized"
+severity = "error"
+text = "Module [@minecraft/unknown] is unrecognized. If this is a Native module, did you remember to add it to your manifest.json?"
+file = "scripts/main.js"

@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sp02_value_trailing_space (P1).
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "script-debugger-auto-attach"
+text = "Unkown script debugger auto attach mode bogus2, expected one of [ 'connect', 'listen', 'disabled' ]"

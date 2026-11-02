@@ -1,0 +1,8 @@
+# Probe: P20
+scope = "module"
+
+[[diagnostic]]
+code = "MissingRequiredField"
+severity = "error"
+path = "modules/0"
+text = "Plugin [sm23 - 3.2.1] - entry [] not supported for runtime [JavaScript]."

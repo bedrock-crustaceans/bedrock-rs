@@ -1,0 +1,5 @@
+error: unsupported component attribute `colour`; expected one of `name`, `released`, `deprecated_since`, `deprecated_message`, `supersedes`, `requires`, `area`, `fields`, `parse`, `molang`
+  --> tests/ui/unsupported_attribute.rs:12:46
+   |
+12 |     #[component(name = "minecraft:friction", colour = "red", parse = parse)]
+   |                                              ^^^^^^

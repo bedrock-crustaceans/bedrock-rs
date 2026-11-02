@@ -1,0 +1,15 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "demo:determinism_refused",
+      "places_feature": "demo:determinism_flower_feature"
+    },
+    "distribution": {
+      "iterations": 1,
+      "x": 0,
+      "y": 64,
+      "z": 0
+    }
+  }
+}

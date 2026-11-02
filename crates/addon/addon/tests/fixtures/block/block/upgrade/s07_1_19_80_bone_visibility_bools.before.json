@@ -1,0 +1,18 @@
+{
+  "format_version": "1.19.80",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:geometry": {
+        "identifier": "geometry.demo",
+        "bone_visibility": {
+          "lid": "q.block_state('demo:open') == 1",
+          "hinge": 1,
+          "body": true
+        }
+      }
+    }
+  }
+}

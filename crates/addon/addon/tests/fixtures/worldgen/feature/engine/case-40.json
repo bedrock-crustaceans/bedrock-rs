@@ -1,0 +1,9 @@
+
+				{
+					"places_feature": "example:apple_feature",
+					"search_volume": {
+						"min": [ -3, -3, -3 ],
+						"max": { }
+					},
+					"search_axis": "-y"
+				}

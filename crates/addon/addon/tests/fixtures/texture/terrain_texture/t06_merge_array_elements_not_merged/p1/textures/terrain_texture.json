@@ -1,0 +1,13 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "textures": [
+        {
+          "path": "a",
+          "overlay_color": "#df6827"
+        }
+      ]
+    }
+  }
+}

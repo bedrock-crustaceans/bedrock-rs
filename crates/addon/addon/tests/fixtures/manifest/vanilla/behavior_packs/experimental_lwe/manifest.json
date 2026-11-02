@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Experimental behavior pack for LWEs",
+    "name": "Experimental LWE Behavior Pack",
+    "uuid": "56c148f6-3933-4531-81a0-6e93021c3fd9",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      20
+    ]
+  },
+  "modules": [
+    {
+      "description": "Experimental behavior pack for LWEs",
+      "type": "data",
+      "uuid": "b5a948dd-06bf-4234-b83d-16944373bcc9",
+      "version": [
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

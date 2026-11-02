@@ -1,0 +1,14 @@
+{
+  "diagnostics": [
+    {
+      "code": "UnusedProperty",
+      "severity": "info",
+      "at": "k/fps"
+    },
+    {
+      "code": "UnusedProperty",
+      "severity": "info",
+      "at": "k/frame_count"
+    }
+  ]
+}

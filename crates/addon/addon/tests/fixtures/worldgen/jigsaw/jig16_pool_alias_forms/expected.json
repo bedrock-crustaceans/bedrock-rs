@@ -1,0 +1,32 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:untagged",
+      "demo:typed"
+    ],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "UnrecognizedField",
+      "severity": "warning",
+      "path": "worldgen/structures/b_typed.json",
+      "json_path": "minecraft:jigsaw/pool_aliases/0/type"
+    },
+    {
+      "code": "UnrecognizedField",
+      "severity": "warning",
+      "path": "worldgen/structures/b_typed.json",
+      "json_path": "minecraft:jigsaw/pool_aliases/1/type"
+    },
+    {
+      "code": "UnrecognizedField",
+      "severity": "warning",
+      "path": "worldgen/structures/b_typed.json",
+      "json_path": "minecraft:jigsaw/pool_aliases/2/type"
+    }
+  ]
+}

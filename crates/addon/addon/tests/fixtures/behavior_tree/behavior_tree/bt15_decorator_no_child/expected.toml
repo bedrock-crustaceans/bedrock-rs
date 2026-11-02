@@ -1,0 +1,7 @@
+# Validation rule 9.
+
+[[diagnostic]]
+kind = "InvalidNode"
+severity = "info"
+file = "behavior_trees/inverter.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:inverter/child"

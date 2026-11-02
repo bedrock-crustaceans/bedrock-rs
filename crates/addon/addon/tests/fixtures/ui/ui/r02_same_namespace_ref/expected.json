@@ -1,0 +1,11 @@
+{
+  "defs": {
+    "a.k": {
+      "layer": 1,
+      "type": "panel"
+    },
+    "a.base": {
+      "type": "panel"
+    }
+  }
+}

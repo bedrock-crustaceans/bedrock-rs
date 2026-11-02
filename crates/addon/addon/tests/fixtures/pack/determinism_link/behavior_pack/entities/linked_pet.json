@@ -1,0 +1,4 @@
+{"format_version": "1.26.50", "minecraft:entity": {"description": {"identifier": "linked:pet", "is_spawnable": true, "is_summonable": true}, "components": {
+    "minecraft:loot": {"table": "loot_tables/linked_drop.json"},
+    "minecraft:tameable": {"tame_items": ["linked:wand", "linked:no_treat"]},
+    "minecraft:transformation": {"into": "linked:no_grown"}}}}

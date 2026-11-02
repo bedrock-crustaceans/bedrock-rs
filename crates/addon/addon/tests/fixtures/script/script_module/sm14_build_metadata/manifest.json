@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm14",
+    "description": "families/script_module fixture sm14_build_metadata",
+    "uuid": "59ecd034-b175-5ee2-98b4-571e3f79403d",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "fb7d9efc-6363-5ec2-b4bd-fb95e1037abb",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0+abc"
+    }
+  ]
+}

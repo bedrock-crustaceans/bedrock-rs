@@ -1,0 +1,4 @@
+{ "format_version": "1.10",
+  "animation_controllers": { "controller.animation.x": { "states": { "default": {
+    "variables": { "a_0": { "input": "q.x", "remap_curve": { "0.0": 0, "1.0": 1 } }, "a_1": { "input": "q.y", "remap_curve": { "0.0": 1, "1.0": 0.5 } } },
+    "animations": [ { "a": "variable.a_0+variable.a_1" } ] } } } } }

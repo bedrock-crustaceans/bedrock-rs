@@ -1,0 +1,12 @@
+{
+  "namespace": "a",
+  "k": {
+    "anim_type": "aseprite_flip_book",
+    "initial_uv": [
+      0,
+      0
+    ],
+    "fps": 10,
+    "frame_count": 4
+  }
+}

@@ -1,0 +1,3 @@
+{
+  "determinism": { "event_name": "music.determinism", "min_delay": 60, "max_delay": 180 }
+}

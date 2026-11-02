@@ -1,0 +1,22 @@
+[package]
+name = "bedrock_addon_family_recipe"
+description = "The `recipe` content family of bedrock_addon, re-exported as bedrock_addon::families::recipe; sans-IO"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+molang = ["bedrock_addon_core/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+
+[lints]
+workspace = true

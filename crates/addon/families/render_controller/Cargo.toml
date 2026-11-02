@@ -1,0 +1,23 @@
+[package]
+name = "bedrock_addon_family_render_controller"
+description = "The `render_controller` content family of bedrock_addon, re-exported as bedrock_addon::families::render_controller; sans-IO"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+molang = ["bedrock_addon_core/molang", "bedrock_addon_support/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_support = { path = "../../support" }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+
+[lints]
+workspace = true

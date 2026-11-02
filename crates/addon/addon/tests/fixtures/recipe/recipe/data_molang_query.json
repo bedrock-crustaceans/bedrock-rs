@@ -1,0 +1,23 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:data_query"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:wool",
+        "data": "q.is_baby"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

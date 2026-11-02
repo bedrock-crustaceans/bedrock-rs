@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Structure Versioning Test Behavior Pack for 1.19.4",
+    "name": "Structure Versioning Test Behavior Pack for 1.19.4",
+    "uuid": "d06d9ef1-3031-49fb-acc3-c21928437723",
+    "version": [1,19,40],
+    "min_engine_version": [1,19,40]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "c714a305-5973-4cb1-9337-5462cc7717c5",
+      "version": [1,0,0]
+    }
+  ]
+}

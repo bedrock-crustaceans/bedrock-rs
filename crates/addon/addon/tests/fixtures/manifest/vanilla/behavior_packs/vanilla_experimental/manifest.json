@@ -1,0 +1,18 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "resourcePack.vanilla_server.experimental.description",
+        "name": "resourcePack.vanilla_server.experimental.name",
+        "uuid": "47db1a44-55b4-4d4e-aa0f-d5de6206a0fd",
+        "version": [0, 0, 1],
+        "min_engine_version": [ 1, 14, 0 ]
+    },
+    "modules": [
+        {
+            "description": "resourcePack.vanilla_server.experimental.description",
+            "type": "data",
+			"uuid": "40CF6000-A0D1-4008-A9C8-62EF932CC324",
+            "version": [0, 0, 1]
+        }
+    ]
+}

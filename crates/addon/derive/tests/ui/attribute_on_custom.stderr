@@ -1,0 +1,5 @@
+error: the `custom` variant takes no `#[component]` attribute
+  --> tests/ui/attribute_on_custom.rs:14:5
+   |
+14 |     #[component(name = "minecraft:custom", parse = parse)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

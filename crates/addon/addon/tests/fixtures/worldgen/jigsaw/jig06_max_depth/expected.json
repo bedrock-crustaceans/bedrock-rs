@@ -1,0 +1,37 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:deep"
+    ],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/structures/deeper.json",
+      "json_path": "minecraft:jigsaw/max_depth"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/structures/deeper.json",
+      "text": "Failed to parse jigsaw structure definition 'worldgen/structures/deeper.json'."
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "error",
+      "path": "worldgen/structures/none.json",
+      "json_path": "minecraft:jigsaw/max_depth"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/structures/none.json",
+      "text": "Failed to parse jigsaw structure definition 'worldgen/structures/none.json'."
+    }
+  ]
+}

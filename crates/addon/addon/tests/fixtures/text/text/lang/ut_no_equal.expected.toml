@@ -1,0 +1,9 @@
+# fixtures.md `lang/ut_no_equal` (LocalizationUnitTests): the end of the file while a key
+# is read.
+
+[entries]
+
+[[diagnostics]]
+code = "MalformedInput"
+severity = "warning"
+text = "Line: 1 - Invalid lang file format. Null character was found while parsing key: 'key.no_equal'."

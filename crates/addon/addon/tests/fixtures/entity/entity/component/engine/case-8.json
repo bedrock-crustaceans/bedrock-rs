@@ -1,0 +1,15 @@
+{
+				"format_version": "1.21.90",
+				"minecraft:entity": {
+					"description": {
+						 "identifier": "test:mob"
+					},
+					"components": {
+						"minecraft:tick_world": {
+							"radius": 4,
+							"distance_to_players": 200,
+							"never_despawn": true
+						}
+					}
+				}
+			}

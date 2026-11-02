@@ -1,0 +1,15 @@
+{
+  "defs": {
+    "a.leaf": {
+      "type": "label",
+      "text": "first"
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "DuplicateIdentifier",
+      "severity": "info",
+      "at": "leaf"
+    }
+  ]
+}

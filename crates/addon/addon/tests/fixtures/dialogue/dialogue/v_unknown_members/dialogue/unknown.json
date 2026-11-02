@@ -1,0 +1,16 @@
+{
+  "format_version": "1.14.0",
+  "extra": 1,
+  "author": "someone",
+  "minecraft:npc_dialogue": {
+    "notes": ["a", "b"],
+    "scenes": [
+      {
+        "scene_tag": "a",
+        "text": "x",
+        "custom": { "nested": true },
+        "buttons": [ { "name": "b", "icon": "textures/ui/icon", "commands": [] } ]
+      }
+    ]
+  }
+}

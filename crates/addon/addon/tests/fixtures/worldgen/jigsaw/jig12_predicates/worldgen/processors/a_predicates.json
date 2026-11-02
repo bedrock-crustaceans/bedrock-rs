@@ -1,0 +1,120 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:predicates"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:rule",
+        "rules": [
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:always_true"
+            },
+            "location_predicate": {
+              "predicate_type": "minecraft:always_true"
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:block_match",
+              "block": "minecraft:stone"
+            },
+            "location_predicate": {
+              "predicate_type": "minecraft:block_match",
+              "block": "minecraft:stone"
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:random_block_match",
+              "block": "minecraft:stone",
+              "probability": 0.5
+            },
+            "location_predicate": {
+              "predicate_type": "minecraft:random_block_match",
+              "block": "minecraft:stone",
+              "probability": 0.5
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:tag_match",
+              "tag": "minecraft:logs"
+            },
+            "location_predicate": {
+              "predicate_type": "minecraft:tag_match",
+              "tag": "minecraft:logs"
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:blockstate_match",
+              "block_state": "minecraft:stone"
+            },
+            "location_predicate": {
+              "predicate_type": "minecraft:blockstate_match",
+              "block_state": "minecraft:stone"
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:random_blockstate_match",
+              "block_state": {
+                "name": "minecraft:oak_log",
+                "states": {
+                  "pillar_axis": "y"
+                }
+              },
+              "probability": 1
+            },
+            "location_predicate": {
+              "predicate_type": "minecraft:random_blockstate_match",
+              "block_state": {
+                "name": "minecraft:oak_log",
+                "states": {
+                  "pillar_axis": "y"
+                }
+              },
+              "probability": 1
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "position_predicate": {
+              "predicate_type": "minecraft:axis_aligned_linear_pos"
+            },
+            "output_state": "minecraft:dirt"
+          },
+          {
+            "position_predicate": {
+              "predicate_type": "minecraft:always_true"
+            },
+            "block_entity_modifier": {
+              "type": "minecraft:passthrough"
+            },
+            "output_state": {
+              "name": "minecraft:chest",
+              "states": {
+                "facing_direction": 2
+              }
+            }
+          },
+          {
+            "block_entity_modifier": {
+              "type": "minecraft:append_loot",
+              "loot_table": ""
+            },
+            "output_state": "minecraft:suspicious_sand"
+          }
+        ]
+      }
+    ]
+  }
+}

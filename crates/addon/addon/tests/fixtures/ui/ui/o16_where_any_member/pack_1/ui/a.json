@@ -1,0 +1,14 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "array_name": "bindings",
+        "operation": "remove",
+        "where": {
+          "binding_name": "#b",
+          "binding_type": "global"
+        }
+      }
+    ]
+  }
+}

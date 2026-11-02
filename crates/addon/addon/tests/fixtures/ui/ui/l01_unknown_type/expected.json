@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidEnumValue",
+      "severity": "info",
+      "text": "Type 'carousel_label' not recognized for control: k",
+      "at": "k/type"
+    }
+  ]
+}

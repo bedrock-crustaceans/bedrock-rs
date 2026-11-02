@@ -1,0 +1,17 @@
+{
+			  "format_version": "1.21.60",
+			  "minecraft:dimension": {
+				"description": {
+				  "identifier": "minecraft:overworld"
+				},
+				"components": {
+				  "minecraft:dimension_bounds": {
+					"min": 0,
+					"max": 16
+				  },
+				  "minecraft:generation": {
+					"generator_type": "void"
+				  }
+				}
+			  }
+			}

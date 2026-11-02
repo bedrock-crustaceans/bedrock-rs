@@ -1,0 +1,240 @@
+//! The registration checks that judge one document. The checks over several documents
+//! (element redefinition, pool names) run when the group combines (`load.rs`); the references
+//! are the link pass's (`link.rs`).
+
+use super::{
+    BlockEntityModifier, CappedDelegate, JigsawStructure, Processor, ProcessorList, ProcessorRule,
+    StructureSet, TemplatePool,
+};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+};
+
+/// What a family's identifier failure says after the identifier check's own reason.
+pub(crate) const STRUCTURE_REGISTER: &str =
+    "Identifier '{}' failed validation when registering jigsaw structure json";
+/// The template pool's.
+pub(crate) const POOL_REGISTER: &str =
+    "Identifier '{}' failed validation when registering jigsaw structure template pool json";
+/// The structure set's (also for a set entry).
+pub(crate) const SET_REGISTER: &str =
+    "Identifier '{}' failed validation when registering jigsaw structure set json";
+/// The processor list's.
+pub(crate) const PROCESSORS_REGISTER: &str =
+    "Identifier '{}' failed validation when registering jigsaw structure processor list json";
+
+/// Why the game's identifier check (which allows the `minecraft` namespace) rejects `id`, in
+/// the order it checks: `None` when it accepts it; the texts it logs
+/// otherwise (none for an empty identifier). Only space, tab, LF and CR are illegal characters;
+/// case, `.`, `/` and `-` pass.
+pub(crate) fn identifier_failure(id: &str) -> Option<&'static [&'static str]> {
+    let illegal = |s: &str| s.contains([' ', '\t', '\n', '\r']);
+    if id.is_empty() {
+        return Some(&[]);
+    }
+    let Some((namespace, name)) = id.split_once(':') else {
+        return Some(&["Identifier must have a namespace"]);
+    };
+    if namespace.is_empty() || name.is_empty() || name.contains(':') {
+        return Some(&["Invalid identifier"]);
+    }
+    if illegal(namespace) {
+        return Some(&[
+            "Identifier cannot have illegal characters",
+            "Namespace is invalid",
+        ]);
+    }
+    if illegal(name) {
+        return Some(&[
+            "Identifier cannot have illegal characters",
+            "Identifier name is invalid",
+        ]);
+    }
+    None
+}
+
+/// The findings of an identifier the check rejects: its reasons, then `register`
+/// naming the identifier; each `InvalidValue` at `severity`, at `at`.
+pub(crate) fn identifier_findings(
+    id: &str,
+    register: &'static str,
+    severity: Severity,
+    at: &JsonPath,
+) -> Option<Diagnostics> {
+    let reasons = identifier_failure(id)?;
+    let mut d = Diagnostics::default();
+    for reason in reasons {
+        d.push(finding(
+            DiagnosticCode::InvalidValue {
+                text: Some(VanillaText::Fixed(reason)),
+            },
+            severity,
+            at.clone(),
+        ));
+    }
+    d.push(finding(
+        DiagnosticCode::InvalidValue {
+            text: Some(VanillaText::Formatted {
+                template: register,
+                args: vec![id.to_owned()],
+            }),
+        },
+        severity,
+        at.clone(),
+    ));
+    Some(d)
+}
+
+/// A registration finding at `path`.
+fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
+    Diagnostic::new(
+        code,
+        severity,
+        Phase::Validate,
+        Location::new(None, None, path, None),
+    )
+}
+
+/// Whether `diagnostics` are those of a document that parsed and failed a registration check
+/// (a bad identifier or a bad spacing): the errors of this module are the only ones of the validation phase.
+pub(crate) fn failed_registration(diagnostics: &Diagnostics) -> bool {
+    diagnostics
+        .iter()
+        .any(|d| d.severity == Severity::Error && d.phase == Phase::Validate)
+}
+
+/// `base` followed by `keys`.
+fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
+    let mut path = base.clone();
+    for key in keys {
+        path.push(key);
+    }
+    path
+}
+
+/// Checks the document's own identifier; an error, the document is not registered.
+fn check_identifier(id: &str, register: &'static str, at: &JsonPath, d: &mut Diagnostics) {
+    let at = child(at, &["description", "identifier"]);
+    if let Some(found) = identifier_findings(id, register, Severity::Error, &at) {
+        d.extend(found);
+    }
+}
+
+/// The checks of a jigsaw structure: the identifier, and an empty `start_pool`.
+pub(crate) fn structure(value: &JigsawStructure, at: &JsonPath, d: &mut Diagnostics) {
+    check_identifier(
+        value.description.identifier.as_str(),
+        STRUCTURE_REGISTER,
+        at,
+        d,
+    );
+    // The game's text for an empty `start_pool` is logged only by the builder of the
+    // hard-coded structures, which the data path does not run, so the crate reports it as
+    // an information of its own. The document stays loaded, as in the game.
+    if value.start_pool.as_str().is_empty() {
+        d.push(finding(
+            DiagnosticCode::InvalidValue {
+                text: Some(VanillaText::Fixed(
+                    "[Jigsaw Structure Builder] start_pool is empty. Fill it in with a valid template pool e.g. minecraft:example/structure",
+                )),
+            },
+            Severity::Info,
+            child(at, &["start_pool"]),
+        ));
+    }
+}
+
+/// The checks of a template pool: the identifier.
+pub(crate) fn pool(value: &TemplatePool, at: &JsonPath, d: &mut Diagnostics) {
+    check_identifier(value.description.identifier.as_str(), POOL_REGISTER, at, d);
+}
+
+/// The checks of a structure set: the identifier, each entry's identifier (an entry the
+/// identifier check rejects is dropped with a kept error: the game logs it at the content
+/// log's error level and goes on, the set kept) and the spacing against the separation.
+pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) {
+    let id = value.description.identifier.as_str().to_owned();
+    check_identifier(&id, SET_REGISTER, at, d);
+    let mut kept = Vec::with_capacity(value.structures.len());
+    for (i, entry) in std::mem::take(&mut value.structures)
+        .into_iter()
+        .enumerate()
+    {
+        let mut path = child(at, &["structures"]);
+        path.push_index(i);
+        path.push("structure");
+        match identifier_findings(
+            entry.structure.as_str(),
+            SET_REGISTER,
+            Severity::Error,
+            &path,
+        ) {
+            Some(found) => d.extend(found.into_iter().map(Diagnostic::into_kept)),
+            None => kept.push(entry),
+        }
+    }
+    value.structures = kept;
+    // The spacing must be more than twice the separation.
+    let placement = &value.placement;
+    if u32::from(placement.spacing.0) <= 2 * u32::from(placement.separation.0) {
+        d.push(finding(
+            DiagnosticCode::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.",
+                    args: vec![id],
+                }),
+            },
+            Severity::Error,
+            child(at, &["placement"]),
+        ));
+    }
+}
+
+/// The checks of a processor list: the identifier, and each rule's `append_loot` modifier (one
+/// with an empty loot table is dropped with a kept error; the rule stays).
+pub(crate) fn processors(value: &mut ProcessorList, at: &JsonPath, d: &mut Diagnostics) {
+    check_identifier(
+        value.description.identifier.as_str(),
+        PROCESSORS_REGISTER,
+        at,
+        d,
+    );
+    for (i, processor) in value.processors.iter_mut().enumerate() {
+        let mut path = child(at, &["processors"]);
+        path.push_index(i);
+        match processor {
+            Processor::Rule { rules, .. } => empty_loot(rules, &child(&path, &["rules"]), d),
+            Processor::Capped {
+                delegate: CappedDelegate::Rule { rules, .. },
+                ..
+            } => empty_loot(rules, &child(&path, &["delegate", "rules"]), d),
+            _ => {}
+        }
+    }
+}
+
+/// An `append_loot` modifier with an empty loot table: the game logs "Empty loot table" and leaves the modifier unset.
+fn empty_loot(rules: &mut [ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
+    for (i, rule) in rules.iter_mut().enumerate() {
+        let empty = matches!(
+            &rule.block_entity_modifier,
+            Some(BlockEntityModifier::AppendLoot { loot_table, .. }) if loot_table.as_str().is_empty()
+        );
+        if empty {
+            let mut path = at.clone();
+            path.push_index(i);
+            path.push("block_entity_modifier");
+            path.push("loot_table");
+            // The game logs it at the content log's error level and carries on with the
+            // modifier cleared: a kept error.
+            d.push_kept_error(finding(
+                DiagnosticCode::InvalidValue {
+                    text: Some(VanillaText::Fixed("Empty loot table")),
+                },
+                Severity::Error,
+                path,
+            ));
+            rule.block_entity_modifier = None;
+        }
+    }
+}

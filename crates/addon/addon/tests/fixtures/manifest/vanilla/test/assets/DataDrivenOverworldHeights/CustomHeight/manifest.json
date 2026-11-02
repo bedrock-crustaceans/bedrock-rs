@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "JSON for datadriving overworld dimension",
+    "name": "DataDrivenDimensionTest",
+    "uuid":"287de929-24f2-4cd9-8647-4a00131e3c23",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 16, 0]
+  },
+  "modules": [
+    {
+      "description": "JSON for datadriving overworld dimension",
+      "type": "data",
+      "uuid": "b7f66726-2284-4d08-ad7b-aaf62696d894",
+      "version": [1, 0, 0]
+    }
+  ]
+}

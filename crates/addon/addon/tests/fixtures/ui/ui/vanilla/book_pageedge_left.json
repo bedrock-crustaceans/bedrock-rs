@@ -1,0 +1,14 @@
+// bedrock-samples v1.26.50.4 resource_pack/textures/ui/book_pageedge_left.json
+{
+  "nineslice_size": [
+	40,
+	40,
+	0,
+	40
+  ],
+  "tiled": true,
+  "base_size": [
+    40,
+    120
+  ]
+}

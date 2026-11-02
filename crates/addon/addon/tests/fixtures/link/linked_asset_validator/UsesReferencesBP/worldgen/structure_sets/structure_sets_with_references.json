@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:structure_set": {
+    "description": {
+      "identifier": "test:structure_sets_with_references"
+    },
+    "placement": {
+      "type": "minecraft:random_spread",
+      "salt": 83469867,
+      "separation": 8,
+      "spacing": 34,
+      "spread_type": "linear"
+    },
+    "structures": [
+      {
+        "structure": "test:jigsaw",
+        "weight": 1
+      }
+    ]
+  }
+}

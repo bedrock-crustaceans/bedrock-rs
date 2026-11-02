@@ -1,0 +1,20 @@
+[package]
+name = "bedrock_addon_family_texture_list"
+description = "The `texture_list` content family of bedrock_addon, re-exported as bedrock_addon::families::texture_list; sans-IO"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.98"
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_support = { path = "../../support" }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+
+[lints]
+workspace = true

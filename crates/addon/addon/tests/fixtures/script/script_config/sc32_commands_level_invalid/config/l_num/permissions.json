@@ -1,0 +1,6 @@
+{
+  "allowed_modules": [
+    "@minecraft/server"
+  ],
+  "commands_permission_level": 1
+}

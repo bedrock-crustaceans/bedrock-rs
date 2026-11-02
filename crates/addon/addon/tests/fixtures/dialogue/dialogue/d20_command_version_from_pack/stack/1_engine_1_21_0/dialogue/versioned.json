@@ -1,0 +1,8 @@
+{
+  "format_version": "1.17.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "versioned", "text": "Same file.", "buttons": [ { "name": "Go", "commands": [ "/say button" ] } ], "on_open_commands": [ "/say open" ], "on_close_commands": [ "/say close" ] }
+    ]
+  }
+}

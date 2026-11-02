@@ -1,0 +1,13 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:gravity"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:gravity"
+      }
+    ]
+  }
+}

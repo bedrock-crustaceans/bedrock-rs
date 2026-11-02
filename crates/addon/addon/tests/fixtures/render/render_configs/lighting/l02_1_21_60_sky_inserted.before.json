@@ -1,0 +1,13 @@
+// fixtures.md l02: a 1.21.60 file has no sky
+{
+  "format_version": "1.21.60",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "test:l02"
+    },
+    "ambient": {
+      "color": "#102030",
+      "illuminance": 1.5
+    }
+  }
+}

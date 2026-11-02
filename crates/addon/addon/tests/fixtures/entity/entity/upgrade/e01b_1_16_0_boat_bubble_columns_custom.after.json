@@ -1,0 +1,13 @@
+{
+  "format_version": "1.16.100",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:boat"
+    },
+    "components": {
+      "minecraft:rideable": {
+        "seat_count": 2
+      }
+    }
+  }
+}

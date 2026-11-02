@@ -1,0 +1,62 @@
+// Copied from the retail 1.26.45 pack vanilla_1.26.30/entity/sulfur_cube.entity.json: the one
+// vanilla file with scripts.hide_held_items (families/client_entity metadata.md).
+{
+  "format_version": "1.26.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "minecraft:sulfur_cube",
+      "materials": {
+        "default": "sulfur_cube",
+        "outer": "sulfur_cube_outer"
+      },
+      "textures": {
+        "default": "textures/entity/sulfur_cube/sulfur_cube_inner",
+        "small": "textures/entity/sulfur_cube/sulfur_cube_inner_small",
+        "tnt": "textures/entity/sulfur_cube/sulfur_cube_tnt",
+        "outer": "textures/entity/sulfur_cube/sulfur_cube_outer",
+        "outer_small": "textures/entity/sulfur_cube/sulfur_cube_outer_small"
+      },
+      "geometry": {
+        "default": "geometry.sulfur_cube",
+        "small": "geometry.sulfur_cube.small"
+      },
+      "scripts": {
+        "pre_animation": [
+          "variable.squish_factor = (query.previous_squish_value + (query.current_squish_value - query.previous_squish_value) * query.frame_alpha);",
+          "variable.bounce = 1 / ((variable.squish_factor / (query.variant * 0.5 + 1)) + 1);",
+          "variable.horizontal_scale_amount = variable.bounce;",
+          "variable.vertical_scale_amount = 1 / variable.bounce;",
+          "variable.has_absorbed_block = query.property('minecraft:sulfur_cube_archetype') != 'none';",
+          "variable.has_absorbed_tnt = query.is_item_name_any('slot.weapon.mainhand', 'minecraft:tnt');",
+          "variable.is_primed = query.fuse_time >= 0;",
+          "variable.fuse_time = query.fuse_time - query.frame_alpha + 1;",
+          "variable.swelling_scale = variable.is_primed ? (1 + math.pow(math.clamp(1 - (variable.fuse_time / 10), 0, 1), 4) * 0.3) : 1;",
+          "variable.is_flashing = variable.is_primed && math.mod(math.floor(query.fuse_time / 5), 2) == 0;",
+          "variable.y_offset = query.is_invisible ? -1.05 : 0.0;"
+        ],
+        "animate": [
+          "sulfur_cube_offset_controller",
+          "sulfur_cube_swelling_controller"
+        ],
+        "scaleX": "variable.horizontal_scale_amount",
+        "scaleY": "variable.vertical_scale_amount",
+        "scaleZ": "variable.horizontal_scale_amount",
+        "hide_held_items": "variable.has_absorbed_tnt"
+      },
+      "render_controllers": [
+        "controller.render.sulfur_cube",
+        "controller.render.sulfur_cube_outer"
+      ],
+      "animations": {
+        "sulfur_cube_offset": "animation.sulfur_cube.offset",
+        "sulfur_cube_offset_controller": "controller.animation.sulfur_cube.offset",
+        "sulfur_cube_swelling": "animation.sulfur_cube.swelling",
+        "sulfur_cube_swelling_controller": "controller.animation.sulfur_cube.swelling"
+      },
+      "spawn_egg": {
+        "texture": "spawn_egg_sulfur_cube"
+      },
+      "held_item_scale": 2.678
+    }
+  }
+}

@@ -1,0 +1,62 @@
+// steps.md lighting: 1.21.70 -> 1.21.80 (sun, moon under orbital; no flash) -> 1.26.0 (ambient wrapped, sky inserted at 1.0)
+{
+  "format_version": "1.26.0",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "minecraft:nether_lighting"
+    },
+    "directional_lights": {
+      "orbital": {
+        "sun": {
+          "illuminance": {
+            "0.000000": 100.0,
+            "1.000000": 100.0
+          },
+          "color": {
+            "0.000000": [
+              255,
+              255,
+              255
+            ],
+            "1.000000": [
+              255,
+              255,
+              255
+            ]
+          }
+        },
+        "moon": {
+          "illuminance": {
+            "0.000000": 100.0,
+            "1.000000": 100.0
+          },
+          "color": {
+            "0.000000": [
+              255,
+              255,
+              255
+            ],
+            "1.000000": [
+              255,
+              255,
+              255
+            ]
+          }
+        }
+      }
+    },
+    "ambient": {
+      "color": {
+        "0.0": "#FFFFFF"
+      },
+      "illuminance": {
+        "0.0": 0.5
+      }
+    },
+    "sky": {
+      "intensity": {
+        "0.0": 1.0
+      }
+    }
+  }
+}

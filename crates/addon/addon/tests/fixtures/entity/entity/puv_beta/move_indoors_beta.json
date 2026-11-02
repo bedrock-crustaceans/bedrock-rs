@@ -1,0 +1,16 @@
+
+			{
+				"format_version": "beta",
+				"minecraft:entity": {
+					"description": {
+						"identifier": "puv_beta_load_tests:test_actor"
+					},
+					"components": {
+						"minecraft:behavior.move_indoors": {
+							"priority": 5,
+							"timeout_cooldown": 1.0,
+							"speed_multiplier": 2.0
+						}
+					}
+				}
+			}

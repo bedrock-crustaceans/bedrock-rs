@@ -1,0 +1,7 @@
+# Validation rule 0: notes.txt is not parsed.
+
+[[diagnostic]]
+kind = "IgnoredFile"
+severity = "info"
+file = "behavior_trees/notes.txt"
+path = ""

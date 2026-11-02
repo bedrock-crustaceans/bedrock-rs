@@ -1,0 +1,67 @@
+{
+				"description": {
+				  "identifier": "test:jigsaw"
+				},
+				"biome_filters": [
+				  { "test": "has_biome_tag", "operator": "==", "value": "has_structure_trail_ruins" }
+				],
+				"step": "underground_structures",
+				"terrain_adaptation": "bury",
+				"start_pool": "test:trail_ruins/tower",
+				"start_jigsaw_name": "test_start_block",
+				"on_placed": "test:on_jigsaw_placed",
+				"max_depth": 7,
+				"start_height": {
+				  "type": "constant",
+				  "value": {
+				  	"absolute": -15
+				  }
+				},
+				"heightmap_projection": "world_surface",
+				"dimension_padding": {
+				  "top": 20,
+				  "bottom": 10
+				},
+				"max_distance_from_center": {
+					"horizontal": 116,
+					"vertical": 128
+				},
+				"pool_aliases": [
+				  {
+					"groups": [
+					  {
+						"data": [
+						  {
+							"alias": "test:trial_chambers/ranged",
+							"target": "test:trial_chambers/skeleton"
+						  },
+						  {
+						    "alias": "test:trial_chambers/slow_ranged",
+							"target": "test:trial_chambers/slow_ranged/skeleton"
+						  }
+						],
+						  "weight": 1
+					  },
+					  {
+						"data": [
+						  {
+							"alias": "test:trial_chambers/small_melee",
+							"targets": [
+							  {
+								"data": "test:trial_chambers/small_melee/slime",
+								"weight": 1
+							  },
+							  {
+								"data": "test:trial_chambers/small_melee/cave_spider",
+								"weight": 1
+							  }
+							]
+						  }
+					    ],
+					      "weight": 1
+					    }
+					  ]
+				    }
+				  ],
+				"liquid_settings": "apply_waterlogging"
+			}

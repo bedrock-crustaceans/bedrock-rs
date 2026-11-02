@@ -1,0 +1,14 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_brewing_container": {
+    "description": {
+      "identifier": "demo:determinism_brewing_container"
+    },
+    "tags": [
+      "brewing_stand"
+    ],
+    "input": "minecraft:potion",
+    "reagent": "minecraft:gunpowder",
+    "output": "minecraft:splash_potion"
+  }
+}

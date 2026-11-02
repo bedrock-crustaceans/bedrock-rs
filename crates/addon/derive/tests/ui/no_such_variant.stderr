@@ -1,0 +1,5 @@
+error: no variant `Custom` in this enum
+  --> tests/ui/no_such_variant.rs:10:36
+   |
+10 | #[component(family = Toy, custom = Custom)]
+   |                                    ^^^^^^

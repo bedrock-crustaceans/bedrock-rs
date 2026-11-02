@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.60",
+  "minecraft:server_sound_definitions": [
+    {
+      "sound_event_name": "determinism:theme",
+      "duration_info": { "mode": "game_time", "seconds": 2.5 },
+      "tags": { "determinism:area": ["one", "two"] }
+    },
+    { "sound_event_name": "determinism:theme" }
+  ]
+}

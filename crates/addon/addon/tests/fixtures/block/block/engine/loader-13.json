@@ -1,0 +1,13 @@
+{
+				"format_version": "1.26.20",
+				"minecraft:block": {
+					"description": {
+						"identifier": "minecraft:no_requires_correct_tool_block",
+						"internal_vanilla_data": {
+							"block_id": 412,
+							"material": "solid"
+						}
+					},
+					"components": {}
+				}
+			}

@@ -1,0 +1,805 @@
+{
+  "attack": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:attack",
+          "ticks": {
+            "literal": 0,
+            "key": "target_num_of_ticks"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"attack\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:attack\": { \r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "attack_mob_test": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              -1,
+              4,
+              0
+            ],
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:shoot_bow",
+          "shots": {
+            "literal": 0,
+            "key": "target_num_of_shots"
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"attack_mob_test\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n              \"block_pos\": [-1, 4, 0]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:shoot_bow\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "attack_mob_test2": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              -1,
+              4,
+              0
+            ],
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:attack",
+          "ticks": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"attack_mob_test2\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n              \"block_pos\": [-1, 4, 0]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:attack\": {\r\n              \"num_of_ticks\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "break_nearby_block": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:find_block",
+          "block_name": {
+            "literal": "",
+            "key": "block_name"
+          },
+          "search_radius": {
+            "literal": 32,
+            "key": "target_search_radius"
+          }
+        },
+        {
+          "type": "minecraft:break_block",
+          "block_pos": {
+            "literal": [
+              0,
+              0,
+              0
+            ],
+            "key": "target_block_pos"
+          },
+          "ticks": {
+            "literal": 0,
+            "key": "target_num_of_ticks"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"break_nearby_block\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:find_block\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:break_block\": {\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "chop_wood": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:find_block",
+          "block_name": {
+            "literal": "log",
+            "key": "block_name"
+          },
+          "search_radius": {
+            "literal": 32,
+            "key": "target_search_radius"
+          }
+        },
+        {
+          "type": "minecraft:break_block",
+          "block_pos": {
+            "literal": [
+              0,
+              0,
+              0
+            ],
+            "key": "target_block_pos"
+          },
+          "ticks": {
+            "literal": 0,
+            "key": "target_num_of_ticks"
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:find_entity",
+          "entity_name": {
+            "literal": "item",
+            "key": ""
+          },
+          "search_radius": {
+            "literal": 32,
+            "key": "target_search_radius"
+          }
+        },
+        {
+          "type": "minecraft:move_to",
+          "pos": {
+            "literal": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "key": "target_block_pos"
+          },
+          "distance_epsilon": {
+            "literal": 0.0,
+            "key": "target_distance_epsilon"
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"chop_wood\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:find_block\": {\r\n              \"block_name\": \"log\"\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:break_block\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:find_entity\": {\r\n              \"entity_name\": \"item\"\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:move_to\": {\r\n\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "collect_items": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:find_entity",
+          "entity_name": {
+            "literal": "item",
+            "key": ""
+          },
+          "search_radius": {
+            "literal": 32,
+            "key": "target_search_radius"
+          }
+        },
+        {
+          "type": "minecraft:move_to",
+          "pos": {
+            "literal": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "key": "target_pos"
+          },
+          "distance_epsilon": {
+            "literal": 1.5,
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"collect_items\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:find_entity\": {\r\n              \"entity_name\": \"item\"\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:move_to\": {\r\n              \"block_pos_id\": \"target_pos\",\r\n              \"distance_epsilon\": 1.5\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": {\r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}"
+  },
+  "consume_item": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:consume_item"
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"consume_item\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:consume_item\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": {\r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "cooked_chicken_test": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              1,
+              4,
+              1
+            ],
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:activate_tool",
+          "block_pos": {
+            "literal": [
+              1,
+              4,
+              1
+            ],
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:break_block",
+          "block_pos": {
+            "literal": [
+              1,
+              4,
+              1
+            ],
+            "key": ""
+          },
+          "ticks": {
+            "literal": 1,
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 10,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"cooked_chicken_test\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n              \"block_pos\": [1, 4, 1]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:activate_tool\": {\r\n              \"block_pos\": [1, 4, 1]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:break_block\": {\r\n              \"block_pos\": [1, 4, 1],\r\n              \"num_of_ticks\": 1\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 10\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "interact": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:interact",
+          "ticks": {
+            "literal": 1,
+            "key": "target_num_of_ticks"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"interact\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:interact\": {\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "interact_with_at": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              0,
+              0,
+              0
+            ],
+            "key": "target_block_pos"
+          }
+        },
+        {
+          "type": "minecraft:interact",
+          "ticks": {
+            "literal": 1,
+            "key": "target_num_of_ticks"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"interact_with_at\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:interact\": {\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "look_at_entity": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at_entity",
+          "entity_name": {
+            "literal": "",
+            "key": "entity_name"
+          },
+          "search_radius": {
+            "literal": 32,
+            "key": "target_search_radius"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"look_at_entity\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at_entity\": {\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "mine_block_at_origin": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              0,
+              4,
+              0
+            ],
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:break_block",
+          "block_pos": {
+            "literal": [
+              0,
+              4,
+              0
+            ],
+            "key": ""
+          },
+          "ticks": {
+            "literal": 0,
+            "key": "target_num_of_ticks"
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"mine_block_at_origin\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n              \"block_pos\": [0, 4, 0]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:break_block\": {\r\n              \"block_pos\": [0, 4, 0]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "pickup_nearby_item": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:find_entity",
+          "entity_name": {
+            "literal": "item",
+            "key": ""
+          },
+          "search_radius": {
+            "literal": 32,
+            "key": "target_search_radius"
+          }
+        },
+        {
+          "type": "minecraft:move_to",
+          "pos": {
+            "literal": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "key": "target_block_pos"
+          },
+          "distance_epsilon": {
+            "literal": 0.0,
+            "key": "target_distance_epsilon"
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"pickup_nearby_item\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:find_entity\": {\r\n              \"entity_name\": \"item\"\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:move_to\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": {\r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "place_block_at": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              0,
+              0,
+              0
+            ],
+            "key": "target_block_pos"
+          }
+        },
+        {
+          "type": "minecraft:place_block"
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"place_block_at\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:place_block\": {\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "silk_touch_test": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:look_at",
+          "block_pos": {
+            "literal": [
+              0,
+              4,
+              0
+            ],
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:break_block",
+          "block_pos": {
+            "literal": [
+              0,
+              4,
+              0
+            ],
+            "key": ""
+          },
+          "ticks": {
+            "literal": 0,
+            "key": "target_num_of_ticks"
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"silk_touch_test\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:look_at\": {\r\n              \"block_pos\": [0, 4, 0]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:break_block\": {\r\n              \"block_pos\": [0, 4, 0]\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "test_nether_portal": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 2,
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:move",
+          "direction": {
+            "literal": "forward",
+            "key": ""
+          },
+          "second_direction": {
+            "literal": "",
+            "key": "second_direction"
+          },
+          "ticks": {
+            "literal": 100,
+            "key": ""
+          }
+        },
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"test_nether_portal\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 2\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:move\": { \r\n              \"max_number_of_ticks\": 100,\r\n              \"desired_direction\": \"forward\"\r\n            }\r\n          },\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "use_entity": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:use_entity"
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"use_entity\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:use_entity\": {\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "wait_one_second": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 1,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"wait_one_second\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 1\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "wait_seconds": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 0,
+            "key": "duration"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"wait_seconds\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:wait\": { \r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "wait_ticks": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:wait_ticks",
+          "ticks": {
+            "literal": 0,
+            "key": "target_num_of_ticks"
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"wait_ticks\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:wait_ticks\": { \r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "wait_two_seconds": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:wait",
+          "seconds": {
+            "literal": 2,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"wait_two_seconds\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:wait\": { \r\n              \"wait_duration\": 2\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "walk_forward": {
+    "root": {
+      "type": "minecraft:sequence",
+      "children": [
+        {
+          "type": "minecraft:move",
+          "direction": {
+            "literal": "forward",
+            "key": ""
+          },
+          "second_direction": {
+            "literal": "",
+            "key": "second_direction"
+          },
+          "ticks": {
+            "literal": 30,
+            "key": ""
+          }
+        }
+      ]
+    },
+    "raw": "{\r\n  \"minecraft:behavior_tree\": {\r\n    \"minecraft:name\": \"walk_forward\",\r\n    \"minecraft:root\": {\r\n      \"minecraft:sequence\": {\r\n        \"children\": [\r\n          {\r\n            \"minecraft:move\": { \r\n              \"desired_direction\": \"forward\",\r\n              \"max_number_of_ticks\": 30\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  }\r\n}\r\n"
+  },
+  "activate_tool": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:activate_tool",
+        "block_pos": {
+          "literal": [
+            0,
+            0,
+            0
+          ],
+          "key": "target_block_pos"
+        }
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"activate_tool\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:activate_tool\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  },
+  "break_block": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:break_block",
+        "block_pos": {
+          "literal": [
+            0,
+            0,
+            0
+          ],
+          "key": "target_block_pos"
+        },
+        "ticks": {
+          "literal": 0,
+          "key": "target_num_of_ticks"
+        }
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"break_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:break_block\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  },
+  "find_block": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:find_block",
+        "block_name": {
+          "literal": "",
+          "key": "block_name"
+        },
+        "search_radius": {
+          "literal": 32,
+          "key": "target_search_radius"
+        }
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"find_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:find_block\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  },
+  "fly": {
+    "root": {
+      "type": "minecraft:fly",
+      "should_be_flying": {
+        "literal": false,
+        "key": "should_be_flying"
+      },
+      "throw_if_no_change": {
+        "literal": false,
+        "key": "should_throw_event_if_no_state_change_necessary"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"fly\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:fly\": {}\n\t\t}\n\t}\n}"
+  },
+  "get_interaction_position_for_block": {
+    "root": {
+      "type": "minecraft:get_interaction_position_for_block",
+      "target": {
+        "literal": [
+          0,
+          0,
+          0
+        ],
+        "key": "target_block_pos"
+      },
+      "anchor": {
+        "literal": [
+          0,
+          0,
+          0
+        ],
+        "key": "anchor_block_pos"
+      },
+      "facing": {
+        "literal": "",
+        "key": "facing_string"
+      },
+      "max_search_distance": {
+        "literal": 0,
+        "key": "max_search_distance"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"get_interaction_position_for_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:get_interaction_position_for_block\": {}\n\t\t}\n\t}\n}"
+  },
+  "look_at": {
+    "root": {
+      "type": "minecraft:look_at",
+      "block_pos": {
+        "literal": [
+          0,
+          0,
+          0
+        ],
+        "key": "target_block_pos"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"look_at\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:look_at\": {}\n\t\t}\n\t}\n}"
+  },
+  "move": {
+    "root": {
+      "type": "minecraft:move",
+      "direction": {
+        "literal": "",
+        "key": "direction"
+      },
+      "second_direction": {
+        "literal": "",
+        "key": "second_direction"
+      },
+      "ticks": {
+        "literal": 0,
+        "key": "number_of_ticks"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"move\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:move\": {}\n\t\t}\n\t}\n}"
+  },
+  "move_to": {
+    "root": {
+      "type": "minecraft:move_to",
+      "pos": {
+        "literal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "key": "target_block_pos"
+      },
+      "distance_epsilon": {
+        "literal": 0.0,
+        "key": "target_distance_epsilon"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"move_to\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:move_to\": {}\n\t\t}\n\t}\n}"
+  },
+  "place_block": {
+    "root": {
+      "type": "minecraft:repeat_until_success",
+      "max_attempts": {
+        "literal": 0,
+        "key": "max_number_of_attempts"
+      },
+      "child": {
+        "type": "minecraft:place_block"
+      }
+    },
+    "raw": "\n{\n\t\t\"minecraft:behavior_tree\" : \n\t{\n\t\t\"minecraft:name\": \"place_block\",\n\t\t\"minecraft:root\" : \n\t\t{\n\t\t\t\"minecraft:repeat_until_success\": {\n\t\t\t\t\"child\": {\n\t\t\t\t\t\"minecraft:place_block\": {}\n\t\t\t\t}\n            }\n\t\t}\n\t}\n}"
+  }
+}

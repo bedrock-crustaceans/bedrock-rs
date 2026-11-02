@@ -1,0 +1,9 @@
+{
+  "format_version": "1.20.20",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:helm"
+    },
+    "components": {}
+  }
+}

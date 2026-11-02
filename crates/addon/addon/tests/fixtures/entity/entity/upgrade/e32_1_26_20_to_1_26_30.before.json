@@ -1,0 +1,25 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.pickup_items": {
+        "priority": 2
+      },
+      "minecraft:pushable_by_entity": {},
+      "minecraft:apply_knockback_rules": {
+        "presets": [
+          {
+            "horizontal_power": 1
+          }
+        ]
+      },
+      "minecraft:leashable": {},
+      "minecraft:leashable_to": {
+        "unleash_on_removal": true
+      }
+    }
+  }
+}

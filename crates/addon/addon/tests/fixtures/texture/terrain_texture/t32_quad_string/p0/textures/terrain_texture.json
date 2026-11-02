@@ -1,0 +1,9 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "quad": "false",
+      "textures": "a"
+    }
+  }
+}

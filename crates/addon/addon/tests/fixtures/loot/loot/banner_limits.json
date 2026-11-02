@@ -1,0 +1,26 @@
+// fixtures.md row 17: set_banner_details limits
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:banner",
+          "functions": [
+            {
+              "function": "set_banner_details",
+              "patterns": [
+                {"pattern": "bo"}, {"pattern": "bri"}, {"pattern": "cre"}, {"pattern": "flo"},
+                {"pattern": "moj"}, {"pattern": "sku"}, {"pattern": "glb"}
+              ]
+            },
+            {"function": "set_banner_details", "type": "illager_captain", "patterns": [{"pattern": "bo"}]},
+            {"function": "set_banner_details", "base_color": "not_a_color"},
+            {"function": "set_banner_details", "patterns": [{"pattern": "nope"}, {"pattern": "bo", "color": "plaid"}]}
+          ]
+        }
+      ]
+    }
+  ]
+}

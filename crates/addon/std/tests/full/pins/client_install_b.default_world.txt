@@ -1,0 +1,9 @@
+# client_install_b: the default world (support::default_world): packs on the stacks and findings by severity at load and at link
+      0  link errors
+    231  link infos
+     12  link warnings
+      2  load errors
+   8056  load infos
+      0  load warnings
+     57  packs on the behaviour stack
+     61  packs on the resource stack

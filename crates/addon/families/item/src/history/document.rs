@@ -1,0 +1,1926 @@
+//! The component-format structs 1.16.100 … 1.26.0: one generic struct, [`ItemDocument`], whose
+//! version parameter selects what the format binds; and the parse and write both they and the
+//! newest struct use.
+
+use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::id::SoundEventName;
+use bedrock_addon_core::json::{EncodeError, JsonSlice, NullRule, Value, parse_at};
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    BETA_VERSION, ConvertMode, ParseCx, VersionStruct, Versioned, parse_component, parse_payload,
+    write_payload,
+};
+use facet::Facet;
+use facet_json::RawJson;
+use facet_value::VObject;
+use indexmap::IndexMap;
+
+use super::component::{
+    Armor, Chargeable, Component, Components, CustomComponentEntry, CustomComponentList,
+    CustomComponents, LegacyDigger, LegacyDurability, LegacyFoodComponent, LegacyIcon,
+    LegacyRepairable, LegacyStorageItem, OnUse, OnUseOn, RenderOffsets, UseDuration, Weapon,
+};
+use crate::component::{
+    AllowOffHand, BlockPlacer, BundleInteraction, CanDestroyInCreative, Compostable, Cooldown,
+    Damage, DamageAbsorption, Digger, DisplayName, Durability, DurabilitySensor, Dyeable,
+    Enchantable, EntityPlacer, FireResistant, Food, Fuel, Glint, HandEquipped, HoverTextColor,
+    Icon, InteractButton, ItemComponent, KineticWeapon, LiquidClipped, MaxStackSize,
+    PiercingWeapon, Projectile, Rarity, Record, Repairable, Shooter, ShouldDespawn, StackedByData,
+    StorageItem, StorageWeightLimit, StorageWeightModifier, SwingDuration, SwingSounds, Tags,
+    Throwable, UseAnimation, UseModifiers, ValueComponent, Wearable,
+};
+use crate::deprecated::ItemDeprecatedData;
+use crate::legacy::{LegacyItemData, is_legacy_read, read_legacy};
+use crate::load::gate;
+use crate::texts;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+};
+use bedrock_addon_core::load::LoadContext;
+
+/// A packed `major.minor.patch` (`major × 1 000 000 + minor × 1 000 + patch`), the version
+/// parameter of [`ItemDocument`].
+#[doc(hidden)]
+pub const fn pack(major: u32, minor: u32, patch: u32) -> u32 {
+    major * 1_000_000 + minor * 1_000 + patch
+}
+
+/// The version a packed number stands for.
+#[doc(hidden)]
+pub const fn unpack(packed: u32) -> FormatVersion {
+    #[allow(clippy::cast_possible_truncation, reason = "each part is below 1 000")]
+    FormatVersion::new(
+        (packed / 1_000_000) as u16,
+        ((packed / 1_000) % 1_000) as u16,
+        (packed % 1_000) as u16,
+    )
+}
+
+/// An item document of a component format older than the newest (1.16.100 … 1.26.0): the
+/// format version `V` (packed by [`pack`]) decides which components and members it binds.
+/// `history::v1_20_50::Item` and its siblings name the instances.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ItemDocument<const V: u32> {
+    /// JSON `description`.
+    pub description: Description,
+    /// JSON `components`, by key in file order.
+    pub components: Components,
+    /// JSON `__deprecated_components` (from 1.20.30).
+    pub deprecated: ItemDeprecatedData,
+    /// JSON `events`, as written.
+    pub events: Option<Value>,
+    /// What vanilla's legacy reader takes from the document; not written.
+    pub legacy: LegacyItemData,
+    /// Unknown members of the item object.
+    pub extra: Extra,
+}
+
+/// The `description` of an older item format: `identifier`, the 1.16.100–1.20.0 `category`
+/// and the 1.20.20 and later `menu_category`.
+#[derive(Clone, Debug, PartialEq, Facet)]
+pub struct Description {
+    /// JSON `identifier` (required).
+    pub identifier: String,
+    /// JSON `category` (up to 1.20.0): `construction`, `nature`, `equipment`, `items` or
+    /// `none`.
+    #[facet(default)]
+    pub category: Option<String>,
+    /// JSON `menu_category` (from 1.20.20).
+    #[facet(default)]
+    pub menu_category: Option<MenuCategory>,
+    /// Unknown members.
+    #[facet(skip, rename = "\u{0}extra")]
+    pub extra: Extra,
+}
+
+const V1_17_0: FormatVersion = FormatVersion::new(1, 17, 0);
+const V1_18_0: FormatVersion = FormatVersion::new(1, 18, 0);
+const V1_20_20: FormatVersion = FormatVersion::new(1, 20, 20);
+const V1_20_30: FormatVersion = FormatVersion::new(1, 20, 30);
+const V1_20_40: FormatVersion = FormatVersion::new(1, 20, 40);
+const V1_20_50: FormatVersion = FormatVersion::new(1, 20, 50);
+const V1_20_60: FormatVersion = FormatVersion::new(1, 20, 60);
+const V1_20_80: FormatVersion = FormatVersion::new(1, 20, 80);
+const V1_21_10: FormatVersion = FormatVersion::new(1, 21, 10);
+const V1_21_30: FormatVersion = FormatVersion::new(1, 21, 30);
+const V1_21_40: FormatVersion = FormatVersion::new(1, 21, 40);
+const V1_21_50: FormatVersion = FormatVersion::new(1, 21, 50);
+const V1_21_60: FormatVersion = FormatVersion::new(1, 21, 60);
+const V1_21_90: FormatVersion = FormatVersion::new(1, 21, 90);
+const V1_21_110: FormatVersion = FormatVersion::new(1, 21, 110);
+const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
+const V1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+
+/// From 1.20.60 vanilla reports unknown members and components (the full schema parse);
+/// below it they are kept silently.
+pub(crate) fn strict(original_version: FormatVersion) -> bool {
+    original_version >= V1_20_60
+}
+
+/// The parser of one component in a format.
+type Parser = fn(JsonSlice<'_>, &LoadContext, &mut Diagnostics) -> Option<Component>;
+
+/// A typed component from its slice. A failed read refuses the item in this chain as in the
+/// strict slices: the legacy chain's slices are read by the same schema reader as the
+/// modern ones, under which a member of another type and a missing required member are
+/// errors; the game then logs " Error Parsing Item" at the error level and drops the
+/// document.
+fn typed<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Option<Component>
+where
+    T: for<'a> Facet<'a> + Into<Component>,
+{
+    let mut strict = cx.clone();
+    strict.strict_components = true;
+    let component = parse_component::<T, Component>(slice, ConvertMode::Strict, &strict, d);
+    if component.is_some() {
+        // A range's extra member is a member the schema does not know: under this chain's
+        // error mask the game writes it as a warning-level line while the item loads.
+        // The strict slices (the context's own `strict_components`) refuse the item.
+        let severity = if cx.strict_components {
+            Severity::Error
+        } else {
+            Severity::Warning
+        };
+        crate::component::tell_range_members::<T>(slice, d, severity);
+    }
+    component
+}
+
+/// A one-value component from its object form or its bare value.
+fn value<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Option<Component>
+where
+    T: ValueComponent + Into<Component>,
+{
+    if crate::component::value_is_object(slice.text) {
+        return typed::<T>(slice, cx, d);
+    }
+    match parse_at::<T::Scalar>(slice) {
+        Ok(mut v) => {
+            crate::component::tell_misread(&mut v, slice, d);
+            Some(T::from_scalar(v).into())
+        }
+        Err(error) => {
+            // A scalar of another type is a type error: the item is refused (the chain's
+            // refusal is `typed`'s).
+            d.push(Diagnostic::new(
+                bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
+                    &error.error.kind,
+                    false,
+                    false,
+                ),
+                Severity::Error,
+                Phase::Parse,
+                Location::new(None, None, JsonPath::new(), Some(error.span)),
+            ));
+            None
+        }
+    }
+}
+
+/// `minecraft:allow_off_hand` of the beta struct: the stable component's binding, whose
+/// `value` defaults to true (it defaults to false in a stable document).
+fn beta_allow_off_hand(
+    slice: JsonSlice<'_>,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<Component> {
+    let mut component = value::<AllowOffHand>(slice, cx, d)?;
+    let written = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text)
+        .ok()
+        .and_then(|json| json.as_object().map(|object| object.contains_key("value")));
+    if let (Component::AllowOffHand(c), Some(false)) = (&mut component, written) {
+        c.value = true;
+    }
+    Some(component)
+}
+
+/// `minecraft:interact_button`: a bool or a string.
+fn interact_button(
+    slice: JsonSlice<'_>,
+    _: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<Component> {
+    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
+    if let Some(button) = json.as_ref().and_then(InteractButton::from_value) {
+        return Some(Component::InteractButton(button));
+    }
+    // Neither: a type error, the item refused (the chain's refusal is `typed`'s).
+    d.push(finding(
+        DiagnosticCode::InvalidType { text: None },
+        Severity::Error,
+        JsonPath::new(),
+    ));
+    None
+}
+
+/// `minecraft:render_offsets`, kept as written.
+fn render_offsets(slice: JsonSlice<'_>, _: &LoadContext, _: &mut Diagnostics) -> Option<Component> {
+    bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text)
+        .ok()
+        .map(|value| Component::RenderOffsets(RenderOffsets { value }))
+}
+
+/// `minecraft:custom_components` of 1.20.80–1.21.50: a list of names.
+fn custom_list(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) -> Option<Component> {
+    match parse_at::<Vec<String>>(slice) {
+        Ok(names) => {
+            // An element that is no string is the name facet makes of it (`7` is `"7"`), told
+            // at the element as an information of the crate's own; it is not known whether
+            // the game's non-strict reader coerces a number to a string or fails.
+            let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
+            for (index, element) in json
+                .iter()
+                .filter_map(Value::as_array)
+                .flatten()
+                .enumerate()
+            {
+                if !element.is_string() {
+                    let mut path = JsonPath::new();
+                    path.push_index(index);
+                    d.push(finding(
+                        DiagnosticCode::InvalidType { text: None },
+                        Severity::Info,
+                        path,
+                    ));
+                }
+            }
+            Some(Component::CustomComponentList(CustomComponentList {
+                names,
+            }))
+        }
+        Err(error) => {
+            // No list: a type error, the item refused.
+            d.push(Diagnostic::new(
+                bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
+                    &error.error.kind,
+                    true,
+                    false,
+                ),
+                Severity::Error,
+                Phase::Parse,
+                Location::new(None, None, error.path, Some(error.span)),
+            ));
+            None
+        }
+    }
+}
+
+/// `minecraft:custom_components` of 1.21.60–1.26.0: `[name]` or `[{name, data}]`.
+fn custom_entries(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) -> Option<Component> {
+    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
+    let Some(array) = json.as_ref().and_then(Value::as_array) else {
+        // No list: a type error, the item refused.
+        d.push(finding(
+            DiagnosticCode::InvalidType { text: None },
+            Severity::Error,
+            JsonPath::new(),
+        ));
+        return None;
+    };
+    let mut components = Vec::new();
+    // The file's index of each entry held: the check of the names counts the list held.
+    let mut kept = Vec::new();
+    for (i, entry) in array.iter().enumerate() {
+        let parsed = if let Some(name) = entry.as_string() {
+            Some(CustomComponentEntry {
+                name: name.as_str().to_owned(),
+                data: Value::from(VObject::new()),
+            })
+        } else {
+            entry.as_object().and_then(|object| {
+                let name = object.get("name")?.as_string()?.as_str().to_owned();
+                let data = object
+                    .get("data")
+                    .cloned()
+                    .unwrap_or_else(|| Value::from(VObject::new()));
+                // An entry holds its name and its data: any other member has no place
+                // in it, and is told where it is: a member the schema does not know, which
+                // this chain's error mask leaves a warning-level line while the item loads.
+                for (member, _) in object
+                    .iter()
+                    .filter(|(member, _)| !["name", "data"].contains(&member.as_str()))
+                {
+                    let mut path = JsonPath::new();
+                    path.push_index(i);
+                    path.push(member.as_str());
+                    d.push(finding(
+                        DiagnosticCode::MemberNotKept { text: None },
+                        Severity::Warning,
+                        path,
+                    ));
+                }
+                Some(CustomComponentEntry { name, data })
+            })
+        };
+        if let Some(entry) = parsed {
+            components.push(entry);
+            kept.push(i);
+        } else {
+            // Neither shape: a type error, the item refused.
+            let mut path = JsonPath::new();
+            path.push_index(i);
+            d.push(finding(
+                DiagnosticCode::InvalidType { text: None },
+                Severity::Error,
+                path,
+            ));
+        }
+    }
+    // `d` is the component's own list, whose paths are below the component: the list is its
+    // root. Its moves stay on it while the component is checked, and are not carried into
+    // the document's findings (each finding is moved below the component one by one), so a
+    // check of the names asks for the file's index itself.
+    d.left_out(&JsonPath::new(), &kept);
+    Some(Component::CustomComponents(CustomComponents { components }))
+}
+
+/// Whether a 1.16.100–1.20.20 struct (the dynamic map of every registered component) binds
+/// `key`, with its parser.
+fn legacy_map(version: FormatVersion, key: &str) -> Option<Parser> {
+    Some(match key {
+        "minecraft:armor" if version < V1_20_20 => typed::<Armor>,
+        "minecraft:chargeable" => typed::<Chargeable>,
+        "minecraft:on_use" => typed::<OnUse>,
+        "minecraft:on_use_on" => typed::<OnUseOn>,
+        "minecraft:render_offsets" => render_offsets,
+        "minecraft:weapon" => typed::<Weapon>,
+        "minecraft:use_duration" => value::<UseDuration>,
+        "minecraft:food" => typed::<LegacyFoodComponent>,
+        "minecraft:durability" if version < FormatVersion::new(1, 19, 83) => {
+            typed::<LegacyDurability>
+        }
+        "minecraft:repairable" if version < FormatVersion::new(1, 19, 83) => {
+            typed::<LegacyRepairable>
+        }
+        "minecraft:digger" => typed::<LegacyDigger>,
+        "minecraft:icon" => value::<LegacyIcon>,
+        "minecraft:storage_item" => typed::<LegacyStorageItem>,
+        "minecraft:use_modifiers" | "minecraft:custom_components" => return None,
+        other => return common(V1_21_90, other),
+    })
+}
+
+/// The binding of a component whose shape is the newest one, in a fixed set of `version`.
+fn common(version: FormatVersion, key: &str) -> Option<Parser> {
+    Some(match key {
+        "minecraft:allow_off_hand" if version >= BETA_VERSION => beta_allow_off_hand,
+        "minecraft:allow_off_hand" => value::<AllowOffHand>,
+        "minecraft:block_placer" => typed::<BlockPlacer>,
+        "minecraft:can_destroy_in_creative" => value::<CanDestroyInCreative>,
+        "minecraft:cooldown" => typed::<Cooldown>,
+        "minecraft:damage" => value::<Damage>,
+        "minecraft:digger" => typed::<Digger>,
+        "minecraft:display_name" => typed::<DisplayName>,
+        "minecraft:durability" => typed::<Durability>,
+        "minecraft:enchantable" => typed::<Enchantable>,
+        "minecraft:entity_placer" => typed::<EntityPlacer>,
+        "minecraft:food" => typed::<Food>,
+        "minecraft:fuel" => value::<Fuel>,
+        "minecraft:glint" => value::<Glint>,
+        "minecraft:hand_equipped" => value::<HandEquipped>,
+        "minecraft:hover_text_color" => value::<HoverTextColor>,
+        "minecraft:icon" => value::<Icon>,
+        "minecraft:interact_button" => interact_button,
+        "minecraft:liquid_clipped" => value::<LiquidClipped>,
+        "minecraft:max_stack_size" => value::<MaxStackSize>,
+        "minecraft:projectile" => typed::<Projectile>,
+        "minecraft:record" => typed::<Record>,
+        "minecraft:repairable" => typed::<Repairable>,
+        "minecraft:shooter" => typed::<Shooter>,
+        "minecraft:should_despawn" => value::<ShouldDespawn>,
+        "minecraft:stacked_by_data" => value::<StackedByData>,
+        "minecraft:tags" => typed::<Tags>,
+        "minecraft:throwable" => typed::<Throwable>,
+        "minecraft:use_animation" => value::<UseAnimation>,
+        "minecraft:use_modifiers" => typed::<UseModifiers>,
+        "minecraft:wearable" => typed::<Wearable>,
+        "minecraft:damage_absorption" if version >= V1_21_10 => typed::<DamageAbsorption>,
+        "minecraft:durability_sensor" if version >= V1_21_10 => typed::<DurabilitySensor>,
+        "minecraft:bundle_interaction" if version >= V1_21_30 => typed::<BundleInteraction>,
+        "minecraft:dyeable" if version >= V1_21_30 => typed::<Dyeable>,
+        "minecraft:rarity" if version >= V1_21_30 => value::<Rarity>,
+        "minecraft:storage_item" if version >= V1_21_60 => typed::<StorageItem>,
+        "minecraft:storage_item" if version >= V1_21_30 => typed::<LegacyStorageItem>,
+        "minecraft:compostable" if version >= V1_21_50 => typed::<Compostable>,
+        "minecraft:storage_weight_limit" if version >= V1_21_60 => typed::<StorageWeightLimit>,
+        "minecraft:storage_weight_modifier" if version >= V1_21_60 => {
+            typed::<StorageWeightModifier>
+        }
+        "minecraft:kinetic_weapon" if version >= V1_21_90 => typed::<KineticWeapon>,
+        "minecraft:piercing_weapon" if version >= V1_21_90 => typed::<PiercingWeapon>,
+        "minecraft:fire_resistant" if version >= V1_21_90 => typed::<FireResistant>,
+        "minecraft:swing_duration" if version >= V1_21_90 => value::<SwingDuration>,
+        "minecraft:swing_sounds" if version >= V1_21_90 => typed::<SwingSounds>,
+        "minecraft:custom_components" if version >= V1_26_30 => return None,
+        "minecraft:custom_components" if version >= V1_21_60 => custom_entries,
+        "minecraft:custom_components" if version >= V1_20_80 => custom_list,
+        _ => return None,
+    })
+}
+
+/// The component `key` the struct of `version` binds, with its parser; `None` for a key the
+/// format does not bind.
+pub(crate) fn binding(version: FormatVersion, key: &str) -> Option<Parser> {
+    if version < V1_20_30 {
+        return legacy_map(version, key);
+    }
+    let fixed_1_20_30 = |key: &str| -> Option<Parser> {
+        Some(match key {
+            "minecraft:chargeable" => typed::<Chargeable>,
+            "minecraft:use_duration" => value::<UseDuration>,
+            "minecraft:digger" => typed::<LegacyDigger>,
+            "minecraft:icon" => value::<LegacyIcon>,
+            "minecraft:on_use" if version < V1_20_40 => typed::<OnUse>,
+            "minecraft:on_use_on" if version < V1_20_40 => typed::<OnUseOn>,
+            "minecraft:render_offsets" if version < V1_20_40 => render_offsets,
+            "minecraft:weapon" if version < V1_20_40 => typed::<Weapon>,
+            "minecraft:allow_off_hand"
+            | "minecraft:block_placer"
+            | "minecraft:can_destroy_in_creative"
+            | "minecraft:cooldown"
+            | "minecraft:damage"
+            | "minecraft:display_name"
+            | "minecraft:durability"
+            | "minecraft:enchantable"
+            | "minecraft:entity_placer"
+            | "minecraft:food"
+            | "minecraft:fuel"
+            | "minecraft:glint"
+            | "minecraft:hand_equipped"
+            | "minecraft:hover_text_color"
+            | "minecraft:interact_button"
+            | "minecraft:liquid_clipped"
+            | "minecraft:max_stack_size"
+            | "minecraft:projectile"
+            | "minecraft:record"
+            | "minecraft:repairable"
+            | "minecraft:shooter"
+            | "minecraft:should_despawn"
+            | "minecraft:stacked_by_data"
+            | "minecraft:throwable"
+            | "minecraft:use_animation"
+            | "minecraft:wearable" => return common(version, key),
+            _ => return None,
+        })
+    };
+    if version < V1_20_50 {
+        return fixed_1_20_30(key);
+    }
+    if version < V1_20_60 && key == "minecraft:icon" {
+        return Some(value::<LegacyIcon>);
+    }
+    common(version, key)
+}
+
+/// A parse finding at `path`.
+pub(crate) fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
+    Diagnostic::new(
+        code,
+        severity,
+        Phase::Parse,
+        Location::new(None, None, path, None),
+    )
+}
+
+/// `base` followed by `key`.
+pub(crate) fn below(base: &JsonPath, key: &str) -> JsonPath {
+    let mut path = base.clone();
+    path.push(key);
+    path
+}
+
+/// What the parse shell reads of an item object.
+#[derive(Facet)]
+struct Shell<'a> {
+    description: Description,
+    #[facet(default)]
+    components: Option<IndexMap<String, RawJson<'a>>>,
+    #[facet(default, rename = "__deprecated_components")]
+    deprecated: Option<Value>,
+    #[facet(default)]
+    deprecated_component_data: Option<Value>,
+    #[facet(default)]
+    legacy_data: Option<Value>,
+    #[facet(default)]
+    events: Option<Value>,
+    #[facet(skip, rename = "\u{0}extra")]
+    extra: Extra,
+}
+
+/// One component-format struct as parsed: the parts every struct holds.
+pub(crate) struct Parts {
+    pub(crate) description: Description,
+    pub(crate) components: Components,
+    pub(crate) deprecated: ItemDeprecatedData,
+    pub(crate) events: Option<Value>,
+    pub(crate) legacy: LegacyItemData,
+    pub(crate) extra: Extra,
+}
+
+/// Parses a component-format item object as the struct of `version` binds it: the item-level
+/// and per-component gates, each bound component from its slice, the legacy read,
+/// the side-car and the era's unknown-member rule. `None` when the document is rejected.
+#[allow(
+    clippy::too_many_lines,
+    reason = "the gates, the components, the legacy read and the side-car in vanilla's order"
+)]
+pub(crate) fn parse_parts(
+    payload: JsonSlice<'_>,
+    version: FormatVersion,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+) -> Option<Parts> {
+    let original = cx.original_version;
+    let strict = strict(original);
+    let mut found = Diagnostics::default();
+    let Some(shell) = parse_payload::<Shell<'_>>(payload, cx, &mut found) else {
+        d.extend(found);
+        return None;
+    };
+    let mut extra = shell.extra;
+    let mut description = shell.description;
+    let at_components = below(&cx.at, "components");
+    if version >= V1_26_30 {
+        // The modern documents bind `components` as required, with at least one entry. A
+        // stable document without a registered component is routed to the legacy format
+        // before this; a beta document is not routed.
+        let missing = match &shell.components {
+            None => Some(DiagnosticCode::MissingRequiredField { text: None }),
+            Some(components) if components.is_empty() => Some(
+                bedrock_addon_core::diagnostic::cereal::too_few_components(1),
+            ),
+            Some(_) => None,
+        };
+        if let Some(code) = missing {
+            found.push(finding(code, Severity::Error, at_components.clone()));
+        }
+    }
+    let mut raw = shell.components.unwrap_or_default();
+    // A component written as `null`: the slice's null rule. The generic null rules read
+    // struct members; a component is an entry of the `components` map, so the item applies
+    // the rule here. The legacy chain reads its components as members of the item data
+    // through the jsoncpp reader, which takes `null` as absent, with no word. A modern
+    // slice's component storage reads the value, and `null` fails its type: an error that
+    // rejects the item.
+    let is_null = |json: &RawJson<'_>| {
+        bedrock_addon_core::json::from_str_jsonc::<Value>(json.as_str()).is_ok_and(|v| v.is_null())
+    };
+    match cx.load.null_rule {
+        Some(NullRule::Absent) => raw.retain(|_, json| !is_null(json)),
+        Some(NullRule::Rejected) => {
+            for key in raw.keys().filter(|key| is_null(&raw[*key])) {
+                found.push(finding(
+                    DiagnosticCode::InvalidType { text: None },
+                    Severity::Error,
+                    below(&at_components, key),
+                ));
+            }
+            raw.retain(|_, json| !is_null(json));
+        }
+        _ => {}
+    }
+    // The values, for the legacy read and the gates.
+    let values: IndexMap<String, Value> = raw
+        .iter()
+        .map(|(key, json)| {
+            let value = bedrock_addon_core::json::from_str_jsonc::<Value>(json.as_str())
+                .unwrap_or(Value::NULL);
+            (key.clone(), value)
+        })
+        .collect();
+    let identifier = description.identifier.clone();
+    let Some(dropped) = gate(
+        &values,
+        &identifier,
+        original,
+        cx.load,
+        &at_components,
+        &mut found,
+    ) else {
+        d.extend(found);
+        return None;
+    };
+    let mut components = Components::new();
+    for (key, json) in &raw {
+        if dropped.contains(key) {
+            continue;
+        }
+        let path = below(&at_components, key);
+        let slice = payload.nested(json).unwrap_or(JsonSlice {
+            text: json.as_str(),
+            offset: payload.offset,
+        });
+        if let Some(parser) = binding(version, key) {
+            // The component's own findings, below it. Iterated into `found` one by one, so
+            // that what it holds beside them (a reader's moves) stays here.
+            let mut own = Diagnostics::default();
+            let mut component = parser(slice, cx.load, &mut own);
+            if let Some(c) = component.as_mut() {
+                unbind_members(key, c, &values[key], version, cx.load, &mut own);
+                if check_component(key, c, version, original, cx.load, &mut own) {
+                    shared_checks(c, &mut own);
+                    level_sound_events(c, version, &mut own);
+                } else {
+                    component = None;
+                }
+            }
+            if component.is_none()
+                && !own.has_errors()
+                && !own.iter().any(|told| told.location.json_path.is_empty())
+            {
+                // Also where a member below the component is told (one the crate's own
+                // checks refuse): its finding does not say that the component goes whole.
+                // The game writes no line for the dropped component, so this summary is the
+                // crate's own information.
+                own.push(finding(
+                    DiagnosticCode::DroppedComponent { text: None },
+                    Severity::Info,
+                    JsonPath::new(),
+                ));
+            }
+            for mut diagnostic in own {
+                let mut full = path.clone();
+                full.append(&diagnostic.location.json_path);
+                diagnostic.location.json_path = full;
+                found.push(diagnostic);
+            }
+            if let Some(component) = component {
+                components.insert(key.clone(), component);
+            }
+        } else if is_legacy_read(key) {
+            // read by the legacy reader below; no component of this format
+        } else if is_custom_key(key) && original >= V1_21_90 && version >= V1_21_90 {
+            // The list form of `custom_components` is replaced by keyed custom components
+            // from 1.21.90; it is inferred that the game compares the file's own version.
+            components.insert(
+                key.clone(),
+                Component::Custom(bedrock_addon_core::document::CustomComponent {
+                    name: key.clone(),
+                    parameters: values[key].clone(),
+                    from_v1_list: false,
+                }),
+            );
+        } else {
+            components.insert(key.clone(), Component::Unknown(values[key].clone()));
+            // From 1.26.30 an unknown member is an error of the strict slice: the warning the
+            // versioning load raises to an error (`unknown_members_are_errors`). Below it a
+            // registered name this slice does not bind (a component of a later format) stays
+            // in the document and is a member the schema does not know, a warning-level line
+            // in the content log; a name no component ever had is removed first without a
+            // line, so the crate reports it as an information.
+            let registered = crate::component::ItemComponent::TABLE.get(key).is_some();
+            let severity = if version >= V1_26_30 || registered {
+                Severity::Warning
+            } else {
+                Severity::Info
+            };
+            found.push(finding(
+                DiagnosticCode::UnrecognizedComponent { text: None },
+                severity,
+                path,
+            ));
+        }
+    }
+    if version >= BETA_VERSION && components.is_empty() && !raw.is_empty() {
+        // A beta document whose every component the load dropped holds none, which the beta
+        // struct's minimum of one component refuses: the item is refused here rather than
+        // written as a document that does not load (in the game the strict slice refuses the
+        // failing component itself).
+        found.push(finding(
+            bedrock_addon_core::diagnostic::cereal::too_few_components(1),
+            Severity::Error,
+            at_components.clone(),
+        ));
+    }
+    let legacy_category = description.category.clone();
+    let mut legacy = read_legacy(
+        Some(&values),
+        legacy_category,
+        original,
+        cx.load,
+        &at_components,
+        &mut found,
+    );
+    // the legacy members' Molang (rule 24c, 24d): the kept components' triggers, the side-car a
+    // struct of 1.20.30–1.26.0 reads, and `events`
+    let kept: Vec<(&str, &Value)> = values
+        .iter()
+        .filter(|(key, _)| components.contains_key(*key))
+        .map(|(key, value)| (key.as_str(), value))
+        .collect();
+    let read_side_car = (V1_20_30..V1_26_30).contains(&version);
+    legacy.expressions = crate::expressions::Expressions::read(
+        shell.events.as_ref(),
+        &kept,
+        shell.deprecated.as_ref().filter(|_| read_side_car),
+        bedrock_addon_core::molang::format_molang_version(&cx.written),
+        &cx.at,
+        &mut found,
+    );
+    // A component the legacy reader takes and this struct binds nothing for is held in the
+    // legacy reading alone: marked, so that the writers carry it.
+    legacy.held_in_shared_alone = legacy
+        .shared
+        .keys()
+        .filter(|key| binding(version, key).is_none())
+        .cloned()
+        .collect();
+    if version >= V1_26_30 && shell.events.is_some() {
+        // The 1.26.30 format and the newer ones bind `description`, `components` and the
+        // two deprecated side-car names alone: `events` is an unknown member there, an error
+        // in the strict slice. Held, and written back. The warning is the marker
+        // `unknown_members_are_errors` raises to the error.
+        found.push(finding(
+            DiagnosticCode::UnrecognizedField { text: None },
+            Severity::Warning,
+            below(&cx.at, "events"),
+        ));
+    }
+    let deprecated = side_car(
+        shell.deprecated,
+        shell.deprecated_component_data,
+        shell.legacy_data,
+        version,
+        &cx.at,
+        &mut extra,
+        &mut found,
+    );
+    description_era(
+        &mut description,
+        version,
+        original,
+        &below(&cx.at, "description"),
+        &mut found,
+    );
+    if !strict {
+        found = found
+            .into_iter()
+            .filter(|f| {
+                !matches!(
+                    f.code,
+                    DiagnosticCode::UnrecognizedField { .. }
+                        | DiagnosticCode::UnrecognizedComponent { .. }
+                )
+            })
+            .collect();
+    }
+    d.extend(found);
+    Some(Parts {
+        description,
+        components,
+        deprecated,
+        events: shell.events,
+        legacy,
+        extra,
+    })
+}
+
+/// The sound members a struct binds as a `LevelSoundEvent` take only a level sound event's
+/// name (compared without case: it is not known whether the game folds case, so the lenient
+/// reading is taken); any other text is an enum error that rejects the item. Below 1.26.50
+/// these are `use_modifiers.start_sound`, the three `swing_sounds` and each
+/// `durability_sensor` threshold's `sound_event`; the stable `record.sound_event` is one at
+/// every stable version. The beta struct binds all five as sound names.
+fn level_sound_events(component: &Component, version: FormatVersion, d: &mut Diagnostics) {
+    let stable = version < BETA_VERSION;
+    let enum_before_1_26_50 = version < V1_26_50;
+    let mut check = |name: Option<&SoundEventName>, path: JsonPath| {
+        if let Some(name) = name
+            && crate::sounds::level_sound_event(name.as_str()).is_none()
+        {
+            d.push(finding(
+                DiagnosticCode::InvalidEnumValue { text: None },
+                Severity::Error,
+                path,
+            ));
+        }
+    };
+    let at = |members: &[&str]| {
+        let mut path = JsonPath::new();
+        for member in members {
+            path.push(member);
+        }
+        path
+    };
+    match component {
+        Component::Record(record) if stable => {
+            check(record.sound_event.as_ref(), at(&["sound_event"]));
+        }
+        Component::UseModifiers(modifiers) if enum_before_1_26_50 => {
+            check(modifiers.start_sound.as_ref(), at(&["start_sound"]));
+        }
+        Component::SwingSounds(swing) if enum_before_1_26_50 => {
+            for (key, name) in [
+                ("attack_miss", &swing.attack_miss),
+                ("attack_hit", &swing.attack_hit),
+                ("attack_critical_hit", &swing.attack_critical_hit),
+            ] {
+                check(name.as_ref(), at(&[key]));
+            }
+        }
+        Component::DurabilitySensor(sensor) if enum_before_1_26_50 => {
+            for (index, threshold) in sensor.durability_thresholds.iter().enumerate() {
+                let mut path = at(&["durability_thresholds"]);
+                path.push_index(index);
+                path.push("sound_event");
+                check(threshold.sound_event.as_ref(), path);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Whether `key` names a custom component: `ns:name` outside the `minecraft` namespace (a
+/// `tag:` key is the legacy tag form).
+pub(crate) fn is_custom_key(key: &str) -> bool {
+    match key.split_once(':') {
+        Some((namespace, name)) => {
+            !namespace.is_empty()
+                && !name.is_empty()
+                && namespace != "minecraft"
+                && namespace != "tag"
+        }
+        None => false,
+    }
+}
+
+/// The side-car members of the item object at `version`.
+fn side_car(
+    written: Option<Value>,
+    data: Option<Value>,
+    legacy_data: Option<Value>,
+    version: FormatVersion,
+    at: &JsonPath,
+    extra: &mut Extra,
+    d: &mut Diagnostics,
+) -> ItemDeprecatedData {
+    let mut out = ItemDeprecatedData::default();
+    if version >= V1_26_30 {
+        // The 1.26.30 format binds the side-car only as the deprecated names
+        // `deprecated_component_data` / `legacy_data`; the warning is the marker
+        // `unknown_members_are_errors` raises to the error.
+        if let Some(value) = written {
+            extra.insert("__deprecated_components".to_owned(), value);
+            d.push(finding(
+                DiagnosticCode::UnrecognizedField { text: None },
+                Severity::Warning,
+                below(at, "__deprecated_components"),
+            ));
+        }
+        for (key, value, text) in [
+            (
+                "deprecated_component_data",
+                data,
+                texts::DEPRECATED_COMPONENT_DATA_DEPRECATED,
+            ),
+            ("legacy_data", legacy_data, texts::LEGACY_DATA_DEPRECATED),
+        ] {
+            if value.is_some() {
+                // A deprecated member is an error under both error masks and rejects the
+                // item.
+                d.push(finding(
+                    DiagnosticCode::DeprecatedMember {
+                        text: Some(VanillaText::Fixed(text)),
+                    },
+                    Severity::Error,
+                    below(at, key),
+                ));
+            }
+        }
+        return out;
+    }
+    for (key, value) in [
+        ("deprecated_component_data", data),
+        ("legacy_data", legacy_data),
+    ] {
+        if let Some(value) = value {
+            // Bound by the 1.26.30 documents alone: here a member the schema does not
+            // know, a warning-level line in the content log while the item loads.
+            extra.insert(key.to_owned(), value);
+            d.push(finding(
+                DiagnosticCode::UnrecognizedField { text: None },
+                Severity::Warning,
+                below(at, key),
+            ));
+        }
+    }
+    if let Some(value) = written {
+        let path = below(at, "__deprecated_components");
+        if version >= V1_20_30 {
+            // The 1.20.30–1.26.0 roots bind the member as deprecated: the game logs
+            // "member \"{}\" is deprecated" when the member is in a JSON input. That
+            // deprecation line is an error under every error mask, so the item is refused
+            // and the finding is an error. The 1.26.30 names above are graded the same.
+            d.push(finding(
+                DiagnosticCode::DeprecatedMember {
+                    text: Some(VanillaText::Fixed(texts::DEPRECATED_COMPONENTS_DEPRECATED)),
+                },
+                Severity::Error,
+                path.clone(),
+            ));
+            out = ItemDeprecatedData::from_value(&value, &path, d);
+        } else {
+            // No struct below 1.20.30 binds the member: the game does not read it. The crate
+            // does not hold it either, since the written item has one member of this name,
+            // the one the steps fill; it is noted where it is.
+            let _ = value;
+            d.push(finding(
+                DiagnosticCode::DroppedField { text: None },
+                Severity::Info,
+                path,
+            ));
+        }
+    }
+    out
+}
+
+/// The description members `version` binds: `category` up to 1.20.0, `menu_category` from
+/// 1.20.20, with the creative category's default of the era.
+fn description_era(
+    description: &mut Description,
+    version: FormatVersion,
+    original: FormatVersion,
+    at: &JsonPath,
+    d: &mut Diagnostics,
+) {
+    // A description member of the other era is a member the schema does not know: a
+    // warning-level line in the content log under the legacy chain while the item loads;
+    // from 1.26.30 the marker `unknown_members_are_errors` raises it.
+    let unknown = |d: &mut Diagnostics, key: &str| {
+        d.push(finding(
+            DiagnosticCode::UnrecognizedField { text: None },
+            Severity::Warning,
+            below(at, key),
+        ));
+    };
+    if version < V1_20_20 {
+        if let Some(menu) = description.menu_category.take() {
+            if let Ok(value) = bedrock_addon_core::versioning::write_payload(&menu) {
+                description.extra.insert("menu_category".to_owned(), value);
+            }
+            unknown(d, "menu_category");
+        }
+        return;
+    }
+    if let Some(category) = description.category.take() {
+        description
+            .extra
+            .insert("category".to_owned(), Value::from(category.as_str()));
+        unknown(d, "category");
+    }
+    if let Some(menu) = description.menu_category.as_mut() {
+        if version >= V1_21_60 && version < V1_21_110 {
+            // The 1.21.60 menu category's default is Undefined, and "none" reads as it.
+            if matches!(
+                menu.category,
+                None | Some(CreativeCategory::ItemCommandOnly)
+            ) {
+                menu.category = Some(CreativeCategory::Undefined);
+            }
+        }
+        // From 1.21.110 an absent `category` stays absent here: the newest struct fills in
+        // `none` and records that the document did not write it.
+        if let Some(group) = &menu.group {
+            if group.chars().count() > 256 {
+                d.push(finding(
+                    DiagnosticCode::InvalidValue {
+                        text: Some(VanillaText::Fixed(texts::GROUP_LENGTH)),
+                    },
+                    Severity::Error,
+                    below(&below(at, "menu_category"), "group"),
+                ));
+            } else if version >= V1_21_60 && !has_namespace(group) {
+                // A group without a namespace fails to load from 1.21.60.
+                d.push(finding(
+                    DiagnosticCode::NamespaceRule {
+                        text: Some(VanillaText::Fixed(texts::GROUP_NAMESPACE)),
+                    },
+                    Severity::Error,
+                    below(&below(at, "menu_category"), "group"),
+                ));
+            }
+        }
+    }
+    let _ = original;
+}
+
+/// Whether `text` is `ns:value` with both parts non-empty.
+pub(crate) fn has_namespace(text: &str) -> bool {
+    text.split_once(':')
+        .is_some_and(|(ns, value)| !ns.is_empty() && !value.is_empty())
+}
+
+/// Members the struct of `version` does not bind yet (`replace_block_item` before 1.21.40,
+/// `aligned_placement` before 1.26.0, `hides_player_location` before 1.21.90, `start_using`
+/// before 1.26.30), and members whose engine version is above the load context's: reset and
+/// kept in the component's `extra` as unknown members.
+fn unbind_members(
+    key: &str,
+    component: &mut Component,
+    raw: &Value,
+    version: FormatVersion,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) {
+    let Some(object) = raw.as_object() else {
+        return;
+    };
+    let mut unbound: Vec<(&'static str, bool)> = Vec::new();
+    match component {
+        Component::BlockPlacer(c) => {
+            if version < V1_21_40 && object.contains_key("replace_block_item") {
+                c.replace_block_item = None;
+                unbound.push(("replace_block_item", false));
+            }
+            if object.contains_key("aligned_placement") {
+                if version < V1_26_0 {
+                    c.aligned_placement = None;
+                    unbound.push(("aligned_placement", false));
+                } else if cx.engine_version < FormatVersion::new(1, 26, 10) {
+                    c.aligned_placement = None;
+                    unbound.push(("aligned_placement", true));
+                }
+            }
+        }
+        Component::Wearable(c) => {
+            if version < V1_21_90 && object.contains_key("hides_player_location") {
+                c.hides_player_location = None;
+                unbound.push(("hides_player_location", false));
+            }
+        }
+        Component::UseModifiers(c) => {
+            if version < V1_26_30 && object.contains_key("start_using") {
+                c.start_using = crate::component::StartUsing::IfFirst;
+                unbound.push(("start_using", false));
+            }
+        }
+        Component::Cooldown(c)
+            if object.contains_key("type")
+                && cx.engine_version < FormatVersion::new(1, 21, 130) =>
+        {
+            c.kind = crate::component::CooldownType::Use;
+            unbound.push(("type", true));
+        }
+        _ => {}
+    }
+    let _ = key;
+    for (member, engine) in unbound {
+        if let Some(value) = object.get(member)
+            && let Some(extra) = extra_of(component)
+        {
+            extra.insert(member.to_owned(), value.clone());
+        }
+        let code = if engine {
+            DiagnosticCode::FieldSinceEngine {
+                since: if member == "type" {
+                    FormatVersion::new(1, 21, 130)
+                } else {
+                    FormatVersion::new(1, 26, 10)
+                },
+            }
+        } else {
+            DiagnosticCode::UnrecognizedField { text: None }
+        };
+        let mut path = JsonPath::new();
+        path.push(member);
+        // A member the struct of this version does not bind is a member the schema does not
+        // know: a warning-level line in the content log while the item loads.
+        // `FieldSinceEngine` is a gate on the engine version, not an unknown member: the
+        // current game binds every member predicted for an older engine, so that line is
+        // never written for it and the game is silent: the crate reports an information.
+        let severity = if engine {
+            Severity::Info
+        } else {
+            Severity::Warning
+        };
+        d.push(finding(code, severity, path));
+    }
+}
+
+/// The `extra` of a typed component, where it has one.
+fn extra_of(component: &mut Component) -> Option<&mut Extra> {
+    Some(match component {
+        Component::BlockPlacer(c) => &mut c.extra,
+        Component::Wearable(c) => &mut c.extra,
+        Component::UseModifiers(c) => &mut c.extra,
+        Component::Cooldown(c) => &mut c.extra,
+        _ => return None,
+    })
+}
+
+/// The binding constraints and value rules of one component (and the 1.18 shapes): `false`
+/// drops the component (its finding says why). A binding constraint that fails is an error
+/// under both error masks, after which the game logs " Error Parsing Item" and refuses the
+/// item: its finding is an error. The constraints the game binds are: fuel `duration` min,
+/// damage 0..32767, durability `max_durability` min and `damage_chance` range, enchantable
+/// `value` min and `slot` regex, `use_modifiers` `use_duration` min and `movement_modifier`
+/// range and `max_stack_size` `value` range (`v1_20_50`), wearable `protection` min,
+/// `swing_duration` `value` min, `storage_item` `max_slots` max, `storage_weight_limit` max
+/// and `storage_weight_modifier` min (`v1_21_60`). A check whose game constraint is not
+/// known (the legacy `use_duration`, kinetic speeds, compostable, the 1.21.30 `storage_item`,
+/// `bundle_interaction`, `damage_absorption`, `durability_sensor`, `block_placer` `use_on`)
+/// is a check of the crate's own: the component is dropped with an information.
+#[allow(clippy::too_many_lines, reason = "one arm per component rule")]
+fn check_component(
+    key: &str,
+    component: &mut Component,
+    version: FormatVersion,
+    original: FormatVersion,
+    _: &LoadContext,
+    d: &mut Diagnostics,
+) -> bool {
+    let told = |d: &mut Diagnostics, member: &str, severity: Severity| {
+        let mut path = JsonPath::new();
+        for part in member.split('/').filter(|p| !p.is_empty()) {
+            path.push(part);
+        }
+        d.push(finding(
+            DiagnosticCode::InvalidValue { text: None },
+            severity,
+            path,
+        ));
+        false
+    };
+    // A constraint the game binds: a failed constraint, the item refused.
+    let invalid = |d: &mut Diagnostics, member: &str| told(d, member, Severity::Error);
+    // A check of the crate's own whose game constraint is not known: dropped, an
+    // information.
+    let unverified = |d: &mut Diagnostics, member: &str| told(d, member, Severity::Info);
+    let _ = key;
+    match component {
+        Component::MaxStackSize(c) if !(1..=64).contains(&c.value) => invalid(d, "value"),
+        Component::Fuel(c) if c.duration < 0.05 => invalid(d, "duration"),
+        Component::Damage(c) if !(0..=32767).contains(&c.value) => invalid(d, "value"),
+        Component::Durability(c) => {
+            let chance = c
+                .damage_chance
+                .as_ref()
+                .is_some_and(|r| r.min < 0 || r.max > 100);
+            if c.max_durability < 0 {
+                invalid(d, "max_durability")
+            } else if chance {
+                invalid(d, "damage_chance")
+            } else {
+                true
+            }
+        }
+        Component::Enchantable(c) => {
+            if c.value < 0 {
+                return invalid(d, "value");
+            }
+            if !crate::component::ENCHANT_SLOTS.contains(&c.slot.as_str()) {
+                // The slot's regex constraint fails ("expected string to match the …
+                // regex"): the item is refused. The game's `none` text is reached only by a
+                // name the regex takes and the slot parser does not know; the text is kept as
+                // the finding's (the game's own constraint text is not known).
+                let slot = std::mem::replace(&mut c.slot, "none".to_owned());
+                let mut path = JsonPath::new();
+                path.push("slot");
+                d.push(finding(
+                    DiagnosticCode::InvalidValue {
+                        text: Some(VanillaText::ItemEnchantSlot { slot }),
+                    },
+                    Severity::Error,
+                    path,
+                ));
+                return false;
+            }
+            true
+        }
+        Component::UseModifiers(c) => {
+            if c.use_duration < 0.0 {
+                invalid(d, "use_duration")
+            } else if c
+                .movement_modifier
+                .is_some_and(|m| !(0.0..=1.0).contains(&m))
+            {
+                invalid(d, "movement_modifier")
+            } else {
+                true
+            }
+        }
+        Component::UseDuration(c) if c.value < 0.0 => unverified(d, "value"),
+        Component::Wearable(c) if c.protection < 0 => invalid(d, "protection"),
+        Component::SwingDuration(c) if c.value < 0.0 => invalid(d, "value"),
+        Component::KineticWeapon(c) => {
+            for (name, condition) in [
+                ("damage_conditions", &c.damage_conditions),
+                ("knockback_conditions", &c.knockback_conditions),
+                ("dismount_conditions", &c.dismount_conditions),
+            ] {
+                if let Some(condition) = condition
+                    && (condition.min_speed.is_some_and(|s| s < 0.0)
+                        || condition.min_relative_speed.is_some_and(|s| s < 0.0))
+                {
+                    return unverified(d, name);
+                }
+            }
+            true
+        }
+        Component::Compostable(c) if !(1..=100).contains(&c.composting_chance) => {
+            unverified(d, "composting_chance")
+        }
+        Component::StorageItem(c) if c.max_slots > 64 => invalid(d, "max_slots"),
+        Component::LegacyStorageItem(c) => {
+            if c.max_slots > 64 {
+                unverified(d, "max_slots")
+            } else if c.max_weight_limit > 64 {
+                unverified(d, "max_weight_limit")
+            } else if c.weight_in_storage_item < 0 {
+                unverified(d, "weight_in_storage_item")
+            } else {
+                true
+            }
+        }
+        Component::StorageWeightLimit(c) if c.max_weight_limit > 64 => {
+            invalid(d, "max_weight_limit")
+        }
+        Component::StorageWeightModifier(c) if c.weight_in_storage_item < 0 => {
+            invalid(d, "weight_in_storage_item")
+        }
+        Component::BundleInteraction(c) if !(1..=64).contains(&c.num_viewable_slots) => {
+            unverified(d, "num_viewable_slots")
+        }
+        Component::DamageAbsorption(c) if c.absorbable_causes.is_empty() => {
+            unverified(d, "absorbable_causes")
+        }
+        Component::DurabilitySensor(c) if c.durability_thresholds.is_empty() => {
+            unverified(d, "durability_thresholds")
+        }
+        Component::BlockPlacer(c) if version >= V1_26_0 => {
+            // From 1.26.0 `use_on` holds at most 256 entries, without duplicates.
+            let duplicate = c
+                .use_on
+                .iter()
+                .enumerate()
+                .any(|(i, a)| c.use_on[..i].contains(a));
+            if c.use_on.len() > 256 || duplicate {
+                unverified(d, "use_on")
+            } else {
+                true
+            }
+        }
+        Component::CustomComponentList(c) => {
+            drop_minecraft_names(&mut c.names, |n| n, d);
+            true
+        }
+        Component::CustomComponents(c) => {
+            drop_minecraft_names(&mut c.components, |e| &e.name, d);
+            true
+        }
+        Component::LegacyFood(c) if original >= V1_18_0 => {
+            if c.saturation_modifier.as_ref().is_some_and(Value::is_string) {
+                c.saturation_modifier = None;
+                let _ = invalid(d, "saturation_modifier");
+            }
+            true
+        }
+        Component::LegacyDurability(c) if original >= V1_18_0 => {
+            if c.max_damage.take().is_some() {
+                // The 1.18 slices bind `max_durability` alone: `max_damage` is a member the
+                // schema does not know, a warning-level line in the content log, and the
+                // item loads.
+                let mut path = JsonPath::new();
+                path.push("max_damage");
+                d.push(finding(
+                    DiagnosticCode::InvalidValue { text: None },
+                    Severity::Warning,
+                    path,
+                ));
+            }
+            if c.max_durability.is_none() {
+                // Required: a missing required member, the item refused.
+                let mut path = JsonPath::new();
+                path.push("max_durability");
+                d.push(finding(
+                    DiagnosticCode::MissingRequiredField { text: None },
+                    Severity::Error,
+                    path,
+                ));
+                return false;
+            }
+            true
+        }
+        Component::LegacyRepairable(c) if original >= V1_18_0 => {
+            if is_name_list(c.repair_items.as_ref()) {
+                // The game reads a bare name as the entry's `items`, in silence. The crate
+                // drops the list and tells it as an information of its own (whether to keep
+                // it instead is open).
+                c.repair_items = None;
+                let mut path = JsonPath::new();
+                path.push("repair_items");
+                d.push(finding(
+                    DiagnosticCode::InvalidValue { text: None },
+                    Severity::Info,
+                    path,
+                ));
+            }
+            true
+        }
+        _ => true,
+    }
+}
+
+/// A path of `parts` below a component (`"3"` and other digits are indexes).
+fn at(parts: &[&str]) -> JsonPath {
+    let mut path = JsonPath::new();
+    for part in parts {
+        match part.parse::<usize>() {
+            Ok(index) => path.push_index(index),
+            Err(_) => path.push(part),
+        }
+    }
+    path
+}
+
+/// The findings of the shared value types a component holds (each reports its own unknown
+/// members and shapes), at their paths below the component.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per component holding shared values"
+)]
+fn shared_checks(component: &Component, d: &mut Diagnostics) {
+    use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, ItemDescriptor};
+    let items = |list: &[ItemDescriptor], key: &str, d: &mut Diagnostics| {
+        for (i, item) in list.iter().enumerate() {
+            d.extend(item.check(&at(&[key, &i.to_string()])));
+        }
+    };
+    let blocks = |list: &[BlockDescriptor], key: &str, d: &mut Diagnostics| {
+        for (i, block) in list.iter().enumerate() {
+            d.extend(block.check(&at(&[key, &i.to_string()])));
+        }
+    };
+    let trigger = |trigger: Option<&EventTrigger>, path: &[&str], d: &mut Diagnostics| {
+        if let Some(trigger) = trigger {
+            d.extend(trigger.check(&at(path)));
+        }
+    };
+    match component {
+        Component::Digger(c) => {
+            for (i, speed) in c.destroy_speeds.iter().enumerate() {
+                let i = i.to_string();
+                d.extend(speed.block.check(&at(&["destroy_speeds", &i, "block"])));
+                trigger(
+                    speed.deprecated_on_dig.as_ref(),
+                    &["destroy_speeds", &i, "__deprecated_on_dig"],
+                    d,
+                );
+            }
+            trigger(c.deprecated_on_dig.as_ref(), &["__deprecated_on_dig"], d);
+        }
+        Component::LegacyDigger(c) => {
+            for (i, speed) in c.destroy_speeds.iter().enumerate() {
+                let i = i.to_string();
+                d.extend(speed.block.check(&at(&["destroy_speeds", &i, "block"])));
+                trigger(speed.on_dig.as_ref(), &["destroy_speeds", &i, "on_dig"], d);
+            }
+            trigger(c.on_dig.as_ref(), &["on_dig"], d);
+        }
+        Component::BlockPlacer(c) => {
+            d.extend(c.block.check(&at(&["block"])));
+            blocks(&c.use_on, "use_on", d);
+        }
+        Component::EntityPlacer(c) => {
+            blocks(&c.use_on, "use_on", d);
+            blocks(&c.dispense_on, "dispense_on", d);
+        }
+        Component::Repairable(c) => {
+            for (i, entry) in c.repair_items.iter().enumerate() {
+                for (j, item) in entry.items.iter().enumerate() {
+                    d.extend(item.check(&at(&[
+                        "repair_items",
+                        &i.to_string(),
+                        "items",
+                        &j.to_string(),
+                    ])));
+                }
+            }
+        }
+        Component::Shooter(c) => {
+            for (i, ammunition) in c.ammunition.iter().enumerate() {
+                d.extend(
+                    ammunition
+                        .item
+                        .check(&at(&["ammunition", &i.to_string(), "item"])),
+                );
+            }
+        }
+        Component::Food(c) => {
+            if let Some(item) = &c.using_converts_to {
+                d.extend(item.check(&at(&["using_converts_to"])));
+            }
+        }
+        Component::LegacyFood(c) => {
+            if let Some(item) = &c.using_converts_to {
+                d.extend(item.check(&at(&["using_converts_to"])));
+            }
+            trigger(c.on_consume.as_ref(), &["on_consume"], d);
+        }
+        Component::StorageItem(c) => {
+            items(&c.banned_items, "banned_items", d);
+            items(&c.allowed_items, "allowed_items", d);
+        }
+        Component::LegacyStorageItem(c) => {
+            items(&c.banned_items, "banned_items", d);
+            items(&c.allowed_items, "allowed_items", d);
+        }
+        Component::Durability(c) => {
+            if let Some(range) = &c.damage_chance {
+                d.extend(range.check(&at(&["damage_chance"])));
+            }
+        }
+        Component::KineticWeapon(c) => {
+            for (key, range) in [("reach", &c.reach), ("creative_reach", &c.creative_reach)] {
+                if let Some(range) = range {
+                    d.extend(range.check(&at(&[key])));
+                }
+            }
+        }
+        Component::PiercingWeapon(c) => {
+            for (key, range) in [("reach", &c.reach), ("creative_reach", &c.creative_reach)] {
+                if let Some(range) = range {
+                    d.extend(range.check(&at(&[key])));
+                }
+            }
+        }
+        Component::Chargeable(c) => trigger(c.on_complete.as_ref(), &["on_complete"], d),
+        Component::OnUse(c) => trigger(c.on_use.as_ref(), &["on_use"], d),
+        Component::OnUseOn(c) => trigger(c.on_use_on.as_ref(), &["on_use_on"], d),
+        Component::Weapon(c) => {
+            trigger(c.on_hurt_entity.as_ref(), &["on_hurt_entity"], d);
+            trigger(c.on_not_hurt_entity.as_ref(), &["on_not_hurt_entity"], d);
+            trigger(c.on_hit_block.as_ref(), &["on_hit_block"], d);
+        }
+        _ => {}
+    }
+}
+
+/// Whether `items` is a non-empty array whose first element is a string (the pre-1.18
+/// `repair_items` form).
+pub(crate) fn is_name_list(items: Option<&Value>) -> bool {
+    items
+        .and_then(Value::as_array)
+        .and_then(|a| a.iter().next())
+        .is_some_and(Value::is_string)
+}
+
+/// Drops the custom component entries in the `minecraft` namespace, each with an
+/// `InvalidValue` error at the index the file has the entry at. Both list formats (1.20.80
+/// and 1.21.60) bind the name with a constraint that disallows the `minecraft` namespace; a
+/// failed constraint logs "string has invalid namespace" and the item is refused. The reader
+/// of the list may have left entries out, and has then recorded where the others are.
+fn drop_minecraft_names<T>(list: &mut Vec<T>, name: fn(&T) -> &str, d: &mut Diagnostics) {
+    let mut i = 0;
+    let mut index = 0;
+    list.retain(|entry| {
+        let keep = !name(entry).starts_with("minecraft:");
+        if !keep {
+            let mut held = JsonPath::new();
+            held.push_index(index);
+            // The moves of the reader are still pending on the component's own list, and
+            // go no further than it: the finding is told at the file's index here.
+            let path = d.source_of(&held);
+            d.push(finding(
+                DiagnosticCode::InvalidValue {
+                    text: Some(VanillaText::Fixed(texts::CUSTOM_COMPONENT_NAMESPACE)),
+                },
+                Severity::Error,
+                path,
+            ));
+        }
+        index += 1;
+        i += usize::from(keep);
+        keep
+    });
+}
+
+/// One component as JSON.
+pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeError> {
+    Ok(match component {
+        Component::AllowOffHand(c) => write_payload(c)?,
+        Component::BlockPlacer(c) => write_payload(c)?,
+        Component::BundleInteraction(c) => write_payload(c)?,
+        Component::CanDestroyInCreative(c) => write_payload(c)?,
+        Component::Compostable(c) => write_payload(c)?,
+        Component::Cooldown(c) => write_payload(c)?,
+        Component::Damage(c) => write_payload(c)?,
+        Component::DamageAbsorption(c) => write_payload(c)?,
+        Component::Digger(c) => write_payload(c)?,
+        Component::DisplayName(c) => write_payload(c)?,
+        Component::Durability(c) => write_payload(c)?,
+        Component::DurabilitySensor(c) => write_payload(c)?,
+        Component::Dyeable(c) => write_payload(c)?,
+        Component::Enchantable(c) => write_payload(c)?,
+        Component::EntityPlacer(c) => write_payload(c)?,
+        Component::FireResistant(c) => write_payload(c)?,
+        Component::Food(c) => write_payload(c)?,
+        Component::Fuel(c) => write_payload(c)?,
+        Component::Glint(c) => write_payload(c)?,
+        Component::HandEquipped(c) => write_payload(c)?,
+        Component::HoverTextColor(c) => write_payload(c)?,
+        Component::Icon(c) => write_payload(c)?,
+        Component::InteractButton(c) => c.to_value(),
+        Component::KineticWeapon(c) => write_payload(c)?,
+        Component::LiquidClipped(c) => write_payload(c)?,
+        Component::MaxStackSize(c) => write_payload(c)?,
+        Component::PiercingWeapon(c) => write_payload(c)?,
+        Component::Projectile(c) => write_payload(c)?,
+        Component::Rarity(c) => write_payload(c)?,
+        Component::Record(c) => write_payload(c)?,
+        Component::Repairable(c) => write_payload(c)?,
+        Component::Shooter(c) => write_payload(c)?,
+        Component::ShouldDespawn(c) => write_payload(c)?,
+        Component::StackedByData(c) => write_payload(c)?,
+        Component::StorageItem(c) => write_payload(c)?,
+        Component::StorageWeightLimit(c) => write_payload(c)?,
+        Component::StorageWeightModifier(c) => write_payload(c)?,
+        Component::SwingDuration(c) => write_payload(c)?,
+        Component::SwingSounds(c) => write_payload(c)?,
+        Component::Tags(c) => write_payload(c)?,
+        Component::Throwable(c) => write_payload(c)?,
+        Component::UseAnimation(c) => write_payload(c)?,
+        Component::UseModifiers(c) => write_payload(c)?,
+        Component::Wearable(c) => write_payload(c)?,
+        Component::Armor(c) => write_payload(c)?,
+        Component::Chargeable(c) => write_payload(c)?,
+        Component::OnUse(c) => write_payload(c)?,
+        Component::OnUseOn(c) => write_payload(c)?,
+        Component::RenderOffsets(c) => c.value.clone(),
+        Component::Weapon(c) => write_payload(c)?,
+        Component::UseDuration(c) => write_payload(c)?,
+        Component::LegacyFood(c) => write_payload(c)?,
+        Component::LegacyDurability(c) => write_payload(c)?,
+        Component::LegacyRepairable(c) => write_payload(c)?,
+        Component::LegacyDigger(c) => write_payload(c)?,
+        Component::LegacyIcon(c) => write_payload(c)?,
+        Component::LegacyStorageItem(c) => write_payload(c)?,
+        Component::CustomComponentList(c) => {
+            let mut array = facet_value::VArray::new();
+            for name in &c.names {
+                array.push(Value::from(name.as_str()));
+            }
+            Value::from(array)
+        }
+        Component::CustomComponents(c) => c.to_value(),
+        Component::Custom(c) => c.parameters.clone(),
+        Component::Unknown(v) => v.clone(),
+    })
+}
+
+/// A component as the struct of the packed version `version` writes it: without a member
+/// that format does not have (`use_modifiers.start_using` below 1.26.30, which the typed
+/// component always holds), unless the file had it as an unknown member.
+fn as_read_component(version: u32, component: &Component) -> Result<Value, EncodeError> {
+    let mut written = write_component(component)?;
+    if let Component::UseModifiers(modifiers) = component
+        && unpack(version) < V1_26_30
+        && modifiers.extra.get("start_using").is_none()
+        && let Some(object) = written.as_object_mut()
+    {
+        object.remove("start_using");
+    }
+    Ok(written)
+}
+
+/// Where the side-car goes among the members of the written item.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SideCarPlace {
+    /// Before `events`: a format that binds `__deprecated_components` reads it back as the
+    /// side-car, and writes it here again.
+    BeforeEvents,
+    /// After `events`: 1.26.30 binds no `__deprecated_components` and reads it back as the
+    /// first unknown member, which is written behind the members it knows.
+    AfterEvents,
+}
+
+/// The item object of a component-format struct as JSON.
+pub(crate) fn write_parts(
+    description: Result<Value, EncodeError>,
+    components: impl Iterator<Item = (String, Result<Value, EncodeError>)>,
+    deprecated: (&ItemDeprecatedData, SideCarPlace),
+    events: Option<&Value>,
+    extra: &Extra,
+) -> Result<Value, EncodeError> {
+    let (deprecated, place) = deprecated;
+    let mut object = VObject::new();
+    object.insert("description", description?);
+    let mut map = VObject::new();
+    for (key, value) in components {
+        map.insert(key, value?);
+    }
+    object.insert("components", Value::from(map));
+    let side_car = if deprecated.is_empty() {
+        None
+    } else {
+        Some(deprecated.to_value()?)
+    };
+    // An unknown member of the side-car's name among the kept ones cannot be written beside
+    // it: one object has one member of a name. (Only a caller can build it: a file's member
+    // is read as the side-car or as the unknown member, never both.)
+    if side_car.is_some() && extra.get("__deprecated_components").is_some() {
+        let mut at = JsonPath::new();
+        at.push("minecraft:item");
+        at.push("__deprecated_components");
+        return Err(EncodeError::NotRepresentable {
+            at,
+            what: bedrock_addon_core::json::Unrepresentable::Unsupported,
+        });
+    }
+    let mut side_car = side_car.map(|value| ("__deprecated_components", value));
+    if place == SideCarPlace::BeforeEvents
+        && let Some((key, value)) = side_car.take()
+    {
+        object.insert(key, value);
+    }
+    if let Some(events) = events {
+        object.insert("events", events.clone());
+    }
+    if let Some((key, value)) = side_car {
+        object.insert(key, value);
+    }
+    for (key, value) in extra.iter() {
+        if !object.contains_key(key) {
+            object.insert(key, value.clone());
+        }
+    }
+    Ok(Value::from(object))
+}
+
+/// The description of an older struct as JSON.
+fn write_description(description: &Description) -> Result<Value, EncodeError> {
+    write_payload(description)
+}
+
+impl<const V: u32> Versioned for ItemDocument<V> {
+    const VERSION: FormatVersion = unpack(V);
+}
+
+impl<const V: u32> VersionStruct for ItemDocument<V> {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let parts = parse_parts(payload, Self::VERSION, cx, d)?;
+        Some(Self {
+            description: parts.description,
+            components: parts.components,
+            deprecated: parts.deprecated,
+            events: parts.events,
+            legacy: parts.legacy,
+            extra: parts.extra,
+        })
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_parts(
+            write_description(&self.description),
+            self.components
+                .iter()
+                .map(|(key, component)| (key.clone(), as_read_component(V, component)))
+                // What the legacy reader alone takes of a file of this format: the keys of
+                // every version, the `tag:` keys below 1.20.50, and each key of `shared`
+                // this struct binds no component for (`minecraft:use_duration` from
+                // 1.20.50, `minecraft:rarity` from 1.20.30 to 1.21.29).
+                .chain(
+                    self.legacy
+                        .written_keys()
+                        .into_iter()
+                        .map(|(key, value)| (key, Ok(value))),
+                )
+                .chain(
+                    self.legacy
+                        .written_keys_of(Self::VERSION)
+                        .into_iter()
+                        .map(|(key, value)| (key, Ok(value))),
+                )
+                .chain(
+                    self.legacy
+                        .tags
+                        .iter()
+                        .filter(|_| Self::VERSION < V1_20_50)
+                        .map(|tag| (format!("tag:{tag}"), Ok(Value::from(VObject::new())))),
+                )
+                .chain(
+                    self.legacy
+                        .held_in_shared_alone
+                        .iter()
+                        .filter(|key| !self.components.contains_key(key.as_str()))
+                        .filter_map(|key| {
+                            Some((key.clone(), Ok(self.legacy.shared.get(key)?.clone())))
+                        }),
+                ),
+            (&self.deprecated, SideCarPlace::BeforeEvents),
+            self.events.as_ref(),
+            &self.extra,
+        )
+    }
+}
+
+impl<const V: u32> MolangFields for ItemDocument<V> {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visitor.nested("components", &mut self.components);
+        self.legacy.expressions.visit_molang(visitor);
+    }
+}
+
+/// The newest struct's components from an older struct's: each typed component moves into
+/// [`ItemComponent`]; an old shape the steps left (none should remain) is kept as written.
+pub(crate) fn into_component_map(
+    components: Components,
+) -> bedrock_addon_core::document::ComponentMap<ItemComponent> {
+    let mut map = bedrock_addon_core::document::ComponentMap::new();
+    for (key, component) in components {
+        let typed: Option<ItemComponent> = match component {
+            Component::AllowOffHand(c) => Some(c.into()),
+            Component::BlockPlacer(c) => Some(c.into()),
+            Component::BundleInteraction(c) => Some(c.into()),
+            Component::CanDestroyInCreative(c) => Some(c.into()),
+            Component::Compostable(c) => Some(c.into()),
+            Component::Cooldown(c) => Some(c.into()),
+            Component::Damage(c) => Some(c.into()),
+            Component::DamageAbsorption(c) => Some(c.into()),
+            Component::Digger(c) => Some(c.into()),
+            Component::DisplayName(c) => Some(c.into()),
+            Component::Durability(c) => Some(c.into()),
+            Component::DurabilitySensor(c) => Some(c.into()),
+            Component::Dyeable(c) => Some(c.into()),
+            Component::Enchantable(c) => Some(c.into()),
+            Component::EntityPlacer(c) => Some(c.into()),
+            Component::FireResistant(c) => Some(c.into()),
+            Component::Food(c) => Some(c.into()),
+            Component::Fuel(c) => Some(c.into()),
+            Component::Glint(c) => Some(c.into()),
+            Component::HandEquipped(c) => Some(c.into()),
+            Component::HoverTextColor(c) => Some(c.into()),
+            Component::Icon(c) => Some(c.into()),
+            Component::InteractButton(c) => Some(c.into()),
+            Component::KineticWeapon(c) => Some(c.into()),
+            Component::LiquidClipped(c) => Some(c.into()),
+            Component::MaxStackSize(c) => Some(c.into()),
+            Component::PiercingWeapon(c) => Some(c.into()),
+            Component::Projectile(c) => Some(c.into()),
+            Component::Rarity(c) => Some(c.into()),
+            Component::Record(c) => Some(c.into()),
+            Component::Repairable(c) => Some(c.into()),
+            Component::Shooter(c) => Some(c.into()),
+            Component::ShouldDespawn(c) => Some(c.into()),
+            Component::StackedByData(c) => Some(c.into()),
+            Component::StorageItem(c) => Some(c.into()),
+            Component::StorageWeightLimit(c) => Some(c.into()),
+            Component::StorageWeightModifier(c) => Some(c.into()),
+            Component::SwingDuration(c) => Some(c.into()),
+            Component::SwingSounds(c) => Some(c.into()),
+            Component::Tags(c) => Some(c.into()),
+            Component::Throwable(c) => Some(c.into()),
+            Component::UseAnimation(c) => Some(c.into()),
+            Component::UseModifiers(c) => Some(c.into()),
+            Component::Wearable(c) => Some(c.into()),
+            Component::Custom(c) => {
+                map.insert_custom(c);
+                None
+            }
+            Component::Unknown(json) => {
+                map.insert_unknown(&key, json);
+                None
+            }
+            other => {
+                if let Ok(json) = write_component(&other) {
+                    map.insert_unknown(&key, json);
+                }
+                None
+            }
+        };
+        if let Some(typed) = typed {
+            map.insert_typed(typed, false);
+        }
+    }
+    map
+}
+
+/// An older struct's components from the newest struct's (for writing the newest struct with
+/// the same writer).
+pub(crate) fn from_component_map(
+    map: &bedrock_addon_core::document::ComponentMap<ItemComponent>,
+) -> Vec<(String, Component)> {
+    use bedrock_addon_core::document::ComponentRef;
+    let mut out = Vec::new();
+    for entry in map.iter() {
+        match entry {
+            ComponentRef::Typed { name, value, .. } => {
+                let component = match value.clone() {
+                    ItemComponent::AllowOffHand(c) => c.into(),
+                    ItemComponent::BlockPlacer(c) => c.into(),
+                    ItemComponent::BundleInteraction(c) => c.into(),
+                    ItemComponent::CanDestroyInCreative(c) => c.into(),
+                    ItemComponent::Compostable(c) => c.into(),
+                    ItemComponent::Cooldown(c) => c.into(),
+                    ItemComponent::Damage(c) => c.into(),
+                    ItemComponent::DamageAbsorption(c) => c.into(),
+                    ItemComponent::Digger(c) => c.into(),
+                    ItemComponent::DisplayName(c) => c.into(),
+                    ItemComponent::Durability(c) => c.into(),
+                    ItemComponent::DurabilitySensor(c) => c.into(),
+                    ItemComponent::Dyeable(c) => c.into(),
+                    ItemComponent::Enchantable(c) => c.into(),
+                    ItemComponent::EntityPlacer(c) => c.into(),
+                    ItemComponent::FireResistant(c) => c.into(),
+                    ItemComponent::Food(c) => c.into(),
+                    ItemComponent::Fuel(c) => c.into(),
+                    ItemComponent::Glint(c) => c.into(),
+                    ItemComponent::HandEquipped(c) => c.into(),
+                    ItemComponent::HoverTextColor(c) => c.into(),
+                    ItemComponent::Icon(c) => c.into(),
+                    ItemComponent::InteractButton(c) => c.into(),
+                    ItemComponent::KineticWeapon(c) => c.into(),
+                    ItemComponent::LiquidClipped(c) => c.into(),
+                    ItemComponent::MaxStackSize(c) => c.into(),
+                    ItemComponent::PiercingWeapon(c) => c.into(),
+                    ItemComponent::Projectile(c) => c.into(),
+                    ItemComponent::Rarity(c) => c.into(),
+                    ItemComponent::Record(c) => c.into(),
+                    ItemComponent::Repairable(c) => c.into(),
+                    ItemComponent::Shooter(c) => c.into(),
+                    ItemComponent::ShouldDespawn(c) => c.into(),
+                    ItemComponent::StackedByData(c) => c.into(),
+                    ItemComponent::StorageItem(c) => c.into(),
+                    ItemComponent::StorageWeightLimit(c) => c.into(),
+                    ItemComponent::StorageWeightModifier(c) => c.into(),
+                    ItemComponent::SwingDuration(c) => c.into(),
+                    ItemComponent::SwingSounds(c) => c.into(),
+                    ItemComponent::Tags(c) => c.into(),
+                    ItemComponent::Throwable(c) => c.into(),
+                    ItemComponent::UseAnimation(c) => c.into(),
+                    ItemComponent::UseModifiers(c) => c.into(),
+                    ItemComponent::Wearable(c) => c.into(),
+                    ItemComponent::Custom(c) => Component::Custom(c),
+                    ItemComponent::Unknown(v) => Component::Unknown(v),
+                };
+                out.push((name.to_owned(), component));
+            }
+            ComponentRef::Custom(c) => out.push((c.name.clone(), Component::Custom(c.clone()))),
+            ComponentRef::Dynamic { name, json } | ComponentRef::Unknown { name, json } => {
+                out.push((name.to_owned(), Component::Unknown(json.clone())));
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Members of a component-format struct a step writes as a fresh value: the typed text of a
+/// `Value` it built.
+pub(crate) fn retype<T: for<'a> Facet<'a>>(value: &Value) -> Option<T> {
+    // (A real negative zero keeps its sign where `T` reads the text with it.)
+    let text = bedrock_addon_support::signed_zero::text_for::<T>(value)?;
+    bedrock_addon_core::json::from_str_jsonc::<T>(&text).ok()
+}
+
+#[allow(dead_code, reason = "names the 1.17.0 threshold the routing uses")]
+const ROUTING_THRESHOLD: FormatVersion = V1_17_0;
+
+#[cfg(test)]
+#[allow(
+    clippy::disallowed_methods,
+    reason = "the test reads on a thread of a stack it chooses"
+)]
+mod tests {
+    use super::retype;
+    use crate::component::RepairItem;
+    use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value};
+
+    /// A repair entry with an unknown member of `levels - 1` arrays: `levels` deep in all.
+    fn entry(levels: usize) -> Value {
+        let mut deep = Value::from(0_i64);
+        for _ in 1..levels {
+            deep = Value::from(facet_value::VArray::from_iter([deep]));
+        }
+        let mut entry = facet_value::VObject::new();
+        entry.insert(
+            "items",
+            Value::from(facet_value::VArray::from_iter([Value::from(
+                "minecraft:stick",
+            )])),
+        );
+        entry.insert("zz", deep);
+        entry.into()
+    }
+
+    /// An upgrade step types a `Value` by writing it and reading the text: the value is
+    /// written to the limit and has no text past it, on a megabyte of stack (the writer is
+    /// facet-json's, a call for each level: it took the megabyte at some 80).
+    #[test]
+    fn a_value_nested_to_the_limit_is_retyped_on_a_megabyte_of_stack() {
+        let retyped = std::thread::Builder::new()
+            .stack_size(1024 * 1024)
+            .spawn(|| {
+                [MAX_JSON_DEPTH - 1, MAX_JSON_DEPTH, MAX_JSON_DEPTH + 1, 1000].map(|levels| {
+                    retype::<RepairItem>(&entry(levels)).map(|entry| entry.items.len())
+                })
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+        assert_eq!(retyped, [Some(1), Some(1), None, None]);
+    }
+}

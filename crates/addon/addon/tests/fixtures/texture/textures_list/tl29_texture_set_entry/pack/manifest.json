@@ -1,0 +1,7 @@
+{
+  "format_version": 2,
+  "header": { "name": "pack 1", "description": "", "uuid": "00000000-0000-0000-0000-000000000001",
+              "version": [1, 0, 0], "min_engine_version": [1, 21, 0] },
+  "modules": [{ "type": "resources", "uuid": "00000000-0000-ffff-0000-000000000001", "version": [1, 0, 0] }],
+  "capabilities": ["pbr"]
+}

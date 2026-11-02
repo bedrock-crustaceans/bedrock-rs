@@ -1,0 +1,9 @@
+# fixtures.md `noequals`: a line without `=` is dropped with vanilla's warning; the key in
+# the text is the lower-cased partial key.
+
+[entries]
+
+[[diagnostics]]
+code = "MalformedInput"
+severity = "warning"
+text = "Line: 1 - Invalid lang file format. New line character was found while parsing key: 'noequals'."

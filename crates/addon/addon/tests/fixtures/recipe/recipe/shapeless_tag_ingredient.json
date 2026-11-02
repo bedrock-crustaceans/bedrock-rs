@@ -1,0 +1,19 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "demo:tag_ingredient"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "ingredients": [
+      {
+        "tag": "minecraft:planks"
+      }
+    ],
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "scenes": [],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "UnsupportedVersion",
+      "severity": "error",
+      "path": "dialogue/old.json",
+      "json_path": "format_version",
+      "text": "JSON: old.json has an error: \n 'format_version' was out of range of expected values. Must be greater than 1.14.0"
+    }
+  ]
+}

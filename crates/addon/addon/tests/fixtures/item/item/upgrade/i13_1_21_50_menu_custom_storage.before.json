@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "demo:pouch",
+      "menu_category": {
+        "group": "itemGroup.name.bundles"
+      }
+    },
+    "components": {
+      "minecraft:max_stack_size": 1,
+      "minecraft:custom_components": [
+        "demo:shake"
+      ],
+      "minecraft:storage_item": {
+        "max_slots": 8,
+        "max_weight_limit": 32,
+        "weight_in_storage_item": 2
+      }
+    }
+  }
+}

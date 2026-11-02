@@ -12,6 +12,8 @@ bedrock_protocol = { path = "../crates/protocol", optional = true }
 bedrock_protocol_core = { path = "../crates/protocol_core", optional = true }
 bedrock_network = { path = "../crates/network", optional = true, default-features = false }
 bedrock_level = { path = "../crates/level", optional = true }
+bedrock_addon = { path = "../crates/addon/addon", optional = true }
+bedrock_addon_std = { path = "../crates/addon/std", optional = true }
 
 [dev-dependencies]
 tokio.workspace = true
@@ -33,6 +35,8 @@ network-nethernet-tokio = ["network-nethernet", "network-tokio", "bedrock_networ
 level = ["dep:bedrock_level"]
 full = ["level", "network-nethernet-tokio", "protocol", "auth"]
 form = ["dep:bedrock_form"]
+addon = ["dep:bedrock_addon"]
+addon-std = ["addon", "dep:bedrock_addon_std"]
 
 auth-ureq = ["auth", "bedrock_auth/ureq"]
 auth-reqwest = ["auth", "bedrock_auth/reqwest"]

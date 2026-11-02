@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sp01_key_trailing_space (P1).
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "content-log-level"
+text = "content-log-level was set to invalid value ' bogus1'.  Accepted values are verbose, info, warning, and error.  Defaulting to info"

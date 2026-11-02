@@ -1,0 +1,16 @@
+{
+  "format_version": "1.16.200",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:scaffolding_climber": {}
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:scaffolding_climber": {}
+      }
+    }
+  }
+}

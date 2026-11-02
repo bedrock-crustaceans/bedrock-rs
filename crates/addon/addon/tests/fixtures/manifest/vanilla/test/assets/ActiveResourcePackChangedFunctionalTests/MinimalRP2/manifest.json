@@ -1,0 +1,19 @@
+{
+  "format_version": 1,
+  "header": {
+    "description": "Minimal Resource Pack 2",
+    "name": "Minimal Resource Pack 2",
+    "uuid": "200121dd-8f8a-44d4-a491-6447dab8a35d",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0],    
+    "pack_optimization_version": [0, 1, 0]
+  },
+  "modules": [
+    {
+      "description": "",
+      "type": "resources",
+      "uuid": "99316123-93e2-4587-98e9-c1872e3a66ad",
+      "version": [1, 0, 0]
+    }
+  ]
+}

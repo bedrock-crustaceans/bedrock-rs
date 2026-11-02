@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:spawn_rules": {
+    "description": {
+      "identifier": "determinism:simplified_mob"
+    },
+    "placement": {
+      "type": "minecraft:on_ground",
+      "heightmap": "minecraft:world_surface",
+      "spawn_predicate": "minecraft:light_monster",
+      "spawn_obstruction_predicate": "minecraft:unobstructed"
+    },
+    "conditions": [
+      {
+        "weight": 99
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "scenes": [
+    "true",
+    "false",
+    "number",
+    "array"
+  ],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "info",
+      "path": "dialogue/coerced.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/text"
+    },
+    {
+      "code": "InvalidType",
+      "severity": "info",
+      "path": "dialogue/coerced.json",
+      "json_path": "minecraft:npc_dialogue/scenes/1/text"
+    },
+    {
+      "code": "InvalidType",
+      "severity": "info",
+      "path": "dialogue/coerced.json",
+      "json_path": "minecraft:npc_dialogue/scenes/2/text"
+    },
+    {
+      "code": "InvalidType",
+      "severity": "info",
+      "path": "dialogue/coerced.json",
+      "json_path": "minecraft:npc_dialogue/scenes/3/text"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "two",
+    "minecraft:root": { "minecraft:sequence": { "children": [] }, "minecraft:wait": {} }
+  }
+}

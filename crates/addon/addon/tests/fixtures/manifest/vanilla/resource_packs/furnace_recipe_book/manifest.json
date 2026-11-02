@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Furnace recipe book resource pack",
+    "name": "furnace recipe book",
+    "uuid": "dd26f013-a1c5-46b1-9905-94016ac6d1e9",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "description": "Furnace recipe book resource pack",
+      "type": "resources",
+      "uuid": "13bf9ede-af2d-47f3-a201-5b6b54b18335",
+      "version": [
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

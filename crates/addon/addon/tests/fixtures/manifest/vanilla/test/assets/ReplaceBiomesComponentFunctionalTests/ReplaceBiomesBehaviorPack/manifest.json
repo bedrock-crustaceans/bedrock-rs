@@ -1,0 +1,30 @@
+{
+	"format_version": 2,
+	"header": {
+		"description": "Replacement biomes component functional tests",
+		"name": "My Behavior Pack",
+		"uuid": "4da76749-1f5e-49ce-a8e4-a353d2dce201",
+		"version": [1, 0, 0],
+		"min_engine_version": [1, 21, 50]
+	},
+	"modules": [
+		{
+			"description": "Replacement biomes component functional tests",
+			"type": "data",
+			"uuid": "9bd06915-78d0-4629-9377-566a5c09b4b5",
+			"version": [1, 0, 0]
+		}
+	],
+	"dependencies": [
+		{
+			"uuid": "053bfa94-eeef-4299-b5d5-a46e699e1c74",
+			"version": [1, 0, 0]
+		}
+	],
+	"metadata": {
+		"generated_with": {
+			"blockbench_block_wizard": ["1.2.2", "1.3.0"],
+			"blockbench_item_wizard": ["1.1.0"]
+		}
+	}
+}

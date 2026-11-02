@@ -1,0 +1,14 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:bee"
+    },
+    "components": {
+      "minecraft:behavior.melee_attack": {
+        "priority": 2,
+        "speed_multiplier": 1.4
+      }
+    }
+  }
+}

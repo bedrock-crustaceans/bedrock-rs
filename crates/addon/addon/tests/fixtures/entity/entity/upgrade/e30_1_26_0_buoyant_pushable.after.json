@@ -1,0 +1,27 @@
+{
+  "format_version": "1.26.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:buoyant": {
+        "movement_type": "waves"
+      },
+      "minecraft:pushable_by_entity": {}
+    },
+    "component_groups": {
+      "a": {
+        "minecraft:pushable_by_entity": {},
+        "minecraft:pushable_by_block": {},
+        "minecraft:buoyant": {
+          "movement_type": "none"
+        }
+      },
+      "b": {
+        "minecraft:pushable_by_block": {}
+      },
+      "c": {}
+    }
+  }
+}

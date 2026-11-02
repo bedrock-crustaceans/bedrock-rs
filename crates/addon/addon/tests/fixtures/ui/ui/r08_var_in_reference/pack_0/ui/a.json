@@ -1,0 +1,10 @@
+{
+  "namespace": "a",
+  "k@$base_ref": {
+    "$base_ref": "a.leaf"
+  },
+  "leaf": {
+    "type": "label",
+    "text": "hi"
+  }
+}

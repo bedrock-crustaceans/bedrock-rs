@@ -1,0 +1,9 @@
+{
+  "materials": {
+    "version": "1.0.0",
+    "determinism_sad": {
+      "vertexShader": "shaders/entity.vertex",
+      "fragmentShader": "shaders/entity.fragment"
+    }
+  }
+}

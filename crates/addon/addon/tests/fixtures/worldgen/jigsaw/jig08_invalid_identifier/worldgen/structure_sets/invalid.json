@@ -1,0 +1,20 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:structure_set": {
+    "description": {
+      "identifier": "invalid"
+    },
+    "placement": {
+      "type": "minecraft:random_spread",
+      "salt": 1,
+      "separation": 4,
+      "spacing": 12
+    },
+    "structures": [
+      {
+        "structure": "demo:ruin",
+        "weight": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+# dots: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run review run 5] FAIL ../escape -> Import [../escape.js] not found.; FAIL ./lib/. -> Import [lib/..js] not found.; FAIL ... -> Import [....js] not found.
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "../escape"
+normalized = "../escape.js"
+resolution = "not_found"
+hint = "EscapesRoot"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/."
+normalized = "lib/..js"
+resolution = "not_found"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "..."
+normalized = "....js"
+resolution = "not_found"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [../escape.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [lib/..js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [....js] not found."
+file = "scripts/main.js"

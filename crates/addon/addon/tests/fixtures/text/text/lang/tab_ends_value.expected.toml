@@ -1,0 +1,8 @@
+# fixtures.md `a=b<TAB>c`: a tab ends the value; ours: info, the text after the tab is ignored (L4).
+
+[entries]
+"a" = "b"
+
+[[diagnostics]]
+code = "IgnoredMember"
+severity = "info"

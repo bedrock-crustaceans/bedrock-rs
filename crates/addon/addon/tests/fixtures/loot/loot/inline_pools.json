@@ -1,0 +1,18 @@
+// fixtures.md row 6: an item entry carrying a nested pools array
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:stick",
+          "weight": 2,
+          "pools": [
+            {"rolls": 1, "entries": [{"type": "item", "name": "minecraft:apple"}]}
+          ]
+        }
+      ]
+    }
+  ]
+}

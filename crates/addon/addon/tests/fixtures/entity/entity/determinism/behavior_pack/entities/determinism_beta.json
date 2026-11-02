@@ -1,0 +1,10 @@
+{
+  "format_version": "beta",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:determinism_beta",
+      "is_spawnable": true
+    },
+    "components": {}
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "tag:ore": {},
+      "minecraft:unit_cube": {},
+      "minecraft:on_step_on": {
+        "event": "hiss",
+        "target": "self"
+      },
+      "minecraft:breathability": "air"
+    },
+    "events": {
+      "hiss": {
+        "run_command": {
+          "command": [
+            "say hi"
+          ]
+        }
+      }
+    }
+  }
+}

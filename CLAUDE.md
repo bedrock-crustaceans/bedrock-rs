@@ -1,4 +1,4 @@
-# bedrock-rs agent notes
+# bedrock-rs working notes
 
 What the crates are: @README.md
 Setup, checks, commits, PRs: @CONTRIBUTING.md
@@ -13,8 +13,8 @@ Every change is one pass of red, green, refactor. The test is written before the
 and it goes **red** for the reason you are about to fix. A test that cannot fail proves nothing;
 a compile error is not red.
 
-1. **Locate the owner.** Each crate section below says where its logic lives and what data it is
-   measured against. Done when you can name the file and the item you will change.
+1. **Locate the file that owns the behaviour.** Each crate section below says where its logic lives and what data it is
+   checked against. Done when you can name the file and the item you will change.
 2. **Write the red test** in a `#[cfg(test)] mod tests` at the bottom of that file (or in the
    crate's `tests/` for anything that needs a fixture on disk), named for the behaviour:
    `manifest_without_dependencies_imports`, not `test_manifest`. Run only it:
@@ -123,6 +123,23 @@ numbers in the commit body.
 
 **`shared`**: plain data: newtyped IDs, vectors, world enums. Nothing here reads a disk or a
 socket; a unit test beside the type is enough.
+
+**`crates/addon/*`**: the add-on toolkit. `core` holds identifiers, versions, diagnostics and the
+version-chain machinery; each content family (`families/<name>`) owns the types and rules of one
+kind of game file; `addon` composes them into packs, stacks, the link pass and the writer, and
+`std` drives them over the file system. Oracle: the game's own files. Red tests are small JSON
+documents in the family's or `addon`'s `tests/`, asserting the typed value and the findings the
+game's content log would print; write the document back and require it to read the same.
+The tests that load whole trees of the game's packs (`full*` in `std/tests`) and the vanilla
+gate (`vanilla_gate`) need files that are not in the repository: they read
+`BEDROCK_ADDON_CORPUS` and `BEDROCK_ADDON_VANILLA_1_26_60` and skip without them, which is not a
+pass; report which ran. `bedrock_addon` is sans-IO: no file, thread or clock access outside
+`std`, and `cargo clippy` enforces the disallowed lists in `crates/addon/clippy.toml`. The tables
+under `core/src/vanilla/generated/`, `families/script/src/meta/generated/` and the entity
+schema tables are generator output (`cargo xtask script-meta`, `actor-types`,
+`entity-schemas`): change `xtask/` and regenerate, never edit by hand. The test that
+regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a release tag from
+`$BEDROCK_ADDON_CORPUS/bedrock-samples`.
 
 ## Facts no config confesses
 

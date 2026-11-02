@@ -1,0 +1,2 @@
+﻿// a line comment after the BOM
+{ /* a block comment */ "a": 1 }

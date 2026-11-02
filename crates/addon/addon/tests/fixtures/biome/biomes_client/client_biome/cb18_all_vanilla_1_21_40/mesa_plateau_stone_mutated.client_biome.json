@@ -1,0 +1,23 @@
+// source: retail 1.26.45 resource_packs/vanilla_1.21.40/biomes/mesa_plateau_stone_mutated.client_biome.json
+{
+  "format_version": "1.21.60",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "mesa_plateau_stone_mutated"
+    },
+    "components": {
+      "minecraft:fog_appearance": {
+        "fog_identifier": "minecraft:fog_default"
+      },
+      "minecraft:water_appearance": {
+        "surface_color": "#44AFF5"
+      },
+      "minecraft:foliage_appearance": {
+        "color": "#aea42a"
+      },
+      "minecraft:grass_appearance": {
+        "color": "#90814d"
+      }
+    }
+  }
+}
