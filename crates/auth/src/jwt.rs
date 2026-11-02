@@ -238,6 +238,7 @@ pub struct JwkSet {
 }
 
 impl JwkSet {
+    #[must_use]
     pub fn find(&self, kid: &str) -> Option<&Jwk> {
         self.keys.iter().find(|key| key.kid.as_deref() == Some(kid))
     }
@@ -255,6 +256,12 @@ pub struct Jwk {
 }
 
 impl Jwk {
+    /// Builds an RS256 verifying key from this JWK.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`JwtError::InvalidJwk`] when the key is not an RSA key with a modulus and exponent,
+    /// or a base64 error when either is not base64url.
     pub fn rs256_key(&self) -> Result<VerifyingKey, JwtError> {
         let (Some(n), Some(e)) = (&self.n, &self.e) else {
             return Err(JwtError::InvalidJwk);
@@ -285,6 +292,11 @@ pub(crate) fn encode(
     Ok(format!("{signed}.{signature}"))
 }
 
+/// Signs `claims` as an ES384 token with `key`.
+///
+/// # Errors
+///
+/// Returns [`JwtError`] when the header or claims cannot be serialized to JSON.
 pub fn encode_es384(
     header: &Header,
     claims: &impl Serialize,

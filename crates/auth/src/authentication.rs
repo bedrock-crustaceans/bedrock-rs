@@ -14,10 +14,21 @@ pub struct Identity {
 }
 
 impl Identity {
+    /// Parses the identity's public key.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::InvalidPublicKey`] when the key is not a base64 P-384 `SubjectPublicKeyInfo`.
     pub fn public_key(&self) -> Result<p384::PublicKey, AuthError> {
         parse_public_key(&self.public_key)
     }
 
+    /// Verifies a client data token against the identity's key and decodes its claims.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::InvalidPublicKey`] when the identity key cannot be parsed, or [`AuthError::Jwt`]
+    /// when the token is malformed, is not signed by that key, or its claims do not deserialize into `T`.
     pub fn verify_client_data<T: DeserializeOwned>(&self, token: &str) -> Result<T, AuthError> {
         let rules = Rules {
             expiry: Expiry::Ignored,
@@ -37,6 +48,7 @@ pub enum Authentication {
 }
 
 impl Authentication {
+    #[must_use]
     pub fn identity(&self) -> &Identity {
         match self {
             Self::Authenticated(identity)
@@ -45,6 +57,7 @@ impl Authentication {
         }
     }
 
+    #[must_use]
     pub fn into_identity(self) -> Identity {
         match self {
             Self::Authenticated(identity)
@@ -53,10 +66,12 @@ impl Authentication {
         }
     }
 
+    #[must_use]
     pub fn is_authenticated(&self) -> bool {
         matches!(self, Self::Authenticated(_) | Self::AuthenticatedGuest(_))
     }
 
+    #[must_use]
     pub fn is_guest(&self) -> bool {
         matches!(self, Self::AuthenticatedGuest(_))
     }

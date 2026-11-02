@@ -52,6 +52,12 @@ pub struct AuthData {
 }
 
 impl AuthData {
+    /// Reads the identity claimed by the payload without verifying any signature.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Jwt`] or [`AuthError::Json`] when a token in the payload cannot be parsed,
+    /// or a chain error when the certificate chain is malformed. Nothing is verified.
     pub fn unverified_identity(&self) -> Result<Identity, AuthError> {
         match &self.auth_payload {
             AuthPayload::Chain(chain) => unverified_identity(chain),
@@ -137,6 +143,7 @@ impl From<AuthDataClaims> for Identity {
     }
 }
 
+#[must_use]
 pub fn identity_from_xuid(xuid: &str) -> Uuid {
     let digest = Md5::new()
         .chain_update(b"pocket-auth-1-xuid:")
@@ -146,6 +153,12 @@ pub fn identity_from_xuid(xuid: &str) -> Uuid {
 }
 
 impl AuthData {
+    /// Like [`Self::validate`], refreshing the JWKS through `client` when the signing key is unknown.
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`Self::validate`], or [`AuthError::Http`] or [`AuthError::Json`]
+    /// when refreshing the JWKS fails.
     pub fn validate_refreshing(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -162,6 +175,12 @@ impl AuthData {
         }
     }
 
+    /// Async twin of [`Self::validate_refreshing`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`Self::validate`], or [`AuthError::Http`] or [`AuthError::Json`]
+    /// when refreshing the JWKS fails.
     pub async fn validate_refreshing_async(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -178,6 +197,12 @@ impl AuthData {
         }
     }
 
+    /// Verifies the payload and returns the authenticated identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::GuestLogin`] for a guest login, and otherwise any error from verifying the
+    /// certificate chain against `chain_root` or the token against the cached JWKS in `oidc`.
     pub fn validate(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -188,12 +213,17 @@ impl AuthData {
         }
         match &self.auth_payload {
             AuthPayload::Chain(chain) => verify_chain(chain, chain_root),
-            AuthPayload::Token(token) => Self::validate_token(token, &self.auth_type, oidc),
+            AuthPayload::Token(token) => Self::validate_token(token, self.auth_type, oidc),
         }
     }
 
     /// Like [`Self::validate`], but a guest (split-screen) login whose token verifies against
     /// the OIDC keys yields [`Authentication::AuthenticatedGuest`] instead of an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::GuestLogin`] when a guest token cannot be verified (no `oidc` or a payload that
+    /// is not a token), and otherwise the errors of [`Self::validate`].
     pub fn validate_allowing_guests(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -210,6 +240,12 @@ impl AuthData {
         }
     }
 
+    /// Like [`Self::validate_allowing_guests`], refreshing the JWKS through `client` when the signing key is unknown.
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`Self::validate_allowing_guests`], or [`AuthError::Http`] or
+    /// [`AuthError::Json`] when refreshing the JWKS fails.
     pub fn validate_allowing_guests_refreshing(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -226,6 +262,12 @@ impl AuthData {
         }
     }
 
+    /// Async twin of [`Self::validate_allowing_guests_refreshing`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`Self::validate_allowing_guests`], or [`AuthError::Http`] or
+    /// [`AuthError::Json`] when refreshing the JWKS fails.
     pub async fn validate_allowing_guests_refreshing_async(
         &self,
         oidc: Option<&AuthOIDC>,
@@ -244,22 +286,19 @@ impl AuthData {
 
     fn validate_token(
         token: &str,
-        auth_type: &AuthType,
+        auth_type: AuthType,
         oidc: Option<&AuthOIDC>,
     ) -> Result<Authentication, AuthError> {
-        match (oidc, auth_type) {
-            (Some(oidc), AuthType::Online) => {
-                let identity: Identity = Self::validate_online_token(token, oidc)?.into();
-                if identity.xuid.is_empty() {
-                    Ok(Authentication::Unauthenticated(identity))
-                } else {
-                    Ok(Authentication::Authenticated(identity))
-                }
+        if let (Some(oidc), AuthType::Online) = (oidc, auth_type) {
+            let identity: Identity = Self::validate_online_token(token, oidc)?.into();
+            if identity.xuid.is_empty() {
+                Ok(Authentication::Unauthenticated(identity))
+            } else {
+                Ok(Authentication::Authenticated(identity))
             }
-            _ => {
-                let claims = Self::decode_unverified_token(token)?;
-                Ok(Authentication::Unauthenticated(claims.into()))
-            }
+        } else {
+            let claims = Self::decode_unverified_token(token)?;
+            Ok(Authentication::Unauthenticated(claims.into()))
         }
     }
 
@@ -409,12 +448,12 @@ mod tests {
         assert_eq!(authentication.identity().xuid, "2535400000000001");
     }
 
-    fn identity_of_online_token(claims: serde_json::Value) -> Identity {
+    fn identity_of_online_token(claims: &serde_json::Value) -> Identity {
         let key = TestRsaKey::shared();
         let oidc = oidc_trusting(key.jwks("current"));
         let data = AuthData {
             auth_type: AuthType::Online,
-            auth_payload: AuthPayload::Token(key.sign(&claims)),
+            auth_payload: AuthPayload::Token(key.sign(claims)),
         };
         data.validate(Some(&oidc), &ChainRoot::default())
             .unwrap()
@@ -423,7 +462,7 @@ mod tests {
 
     #[test]
     fn online_token_identity_is_derived_from_the_xuid() {
-        let identity = identity_of_online_token(online_claims());
+        let identity = identity_of_online_token(&online_claims());
 
         assert_eq!(
             identity.identity.as_deref(),
@@ -436,7 +475,7 @@ mod tests {
         let mut claims = online_claims();
         claims["leguuid"] = json!("6a3f0c4e-1b2d-4e5f-8a9b-0c1d2e3f4a5b");
 
-        let identity = identity_of_online_token(claims);
+        let identity = identity_of_online_token(&claims);
 
         assert_eq!(
             identity.identity.as_deref(),
@@ -449,7 +488,7 @@ mod tests {
         let mut claims = online_claims();
         claims["xid"] = json!("");
 
-        assert_eq!(identity_of_online_token(claims).identity, None);
+        assert_eq!(identity_of_online_token(&claims).identity, None);
     }
 
     #[test]
@@ -458,7 +497,7 @@ mod tests {
         claims["tid"] = json!("20CA2");
 
         assert_eq!(
-            identity_of_online_token(claims).title_id.as_deref(),
+            identity_of_online_token(&claims).title_id.as_deref(),
             Some("20CA2")
         );
     }

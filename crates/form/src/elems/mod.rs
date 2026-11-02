@@ -1,4 +1,8 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "outside the add-on toolkit: facet-json is called directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "outside the add-on toolkit: facet-json is called directly"
+)]
 use crate::elems::dropdown::Dropdown;
 use crate::elems::input::Input;
 use crate::elems::label::Label;

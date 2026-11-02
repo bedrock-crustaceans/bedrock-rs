@@ -44,7 +44,7 @@ impl TestKey {
 
     pub fn sign_with_kid(&self, claims: &Value, kid: &str) -> String {
         self.sign_with_header(
-            Header {
+            &Header {
                 alg: "ES384".into(),
                 kid: Some(kid.into()),
                 x5u: None,
@@ -55,7 +55,7 @@ impl TestKey {
 
     pub fn sign(&self, claims: &Value) -> String {
         self.sign_with_header(
-            Header {
+            &Header {
                 alg: "ES384".into(),
                 kid: None,
                 x5u: Some(self.public_base64()),
@@ -64,8 +64,8 @@ impl TestKey {
         )
     }
 
-    fn sign_with_header(&self, header: Header, claims: &Value) -> String {
-        crate::jwt::encode_es384(&header, claims, &self.0).expect("token encodes")
+    fn sign_with_header(&self, header: &Header, claims: &Value) -> String {
+        crate::jwt::encode_es384(header, claims, &self.0).expect("token encodes")
     }
 }
 
@@ -107,10 +107,13 @@ impl TestRsaKey {
 }
 
 pub fn now() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("clock after epoch")
-        .as_secs() as i64
+    i64::try_from(
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock after epoch")
+            .as_secs(),
+    )
+    .expect("epoch seconds fit i64")
 }
 
 pub fn valid_window() -> Value {
@@ -118,8 +121,8 @@ pub fn valid_window() -> Value {
 }
 
 pub fn with_window(mut claims: Value, window: Value) -> Value {
-    if let (Some(claims), Some(window)) = (claims.as_object_mut(), window.as_object()) {
-        claims.extend(window.clone());
+    if let (Some(claims), Value::Object(window)) = (claims.as_object_mut(), window) {
+        claims.extend(window);
     }
     claims
 }
@@ -237,8 +240,8 @@ impl crate::http::HttpClient for FakeHttp {
 }
 
 impl crate::http::AsyncHttpClient for FakeHttp {
-    async fn get(&self, url: &str) -> Result<Vec<u8>, crate::http::HttpError> {
-        self.respond(url)
+    fn get(&self, url: &str) -> impl Future<Output = Result<Vec<u8>, crate::http::HttpError>> {
+        std::future::ready(self.respond(url))
     }
 }
 

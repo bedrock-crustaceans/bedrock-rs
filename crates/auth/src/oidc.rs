@@ -22,7 +22,7 @@ pub struct AuthOIDC {
 impl AuthOIDC {
     pub const DISCOVERY_URL: &str = "https://client.discovery.minecraft-services.net/api/v1.0/discovery/MinecraftPE/builds/1.0.0.0";
     pub const AUDIENCE: &str = "api://auth-minecraft-services/multiplayer";
-    pub const DEFAULT_REFRESH_INTERVAL: Duration = Duration::from_secs(5 * 60);
+    pub const DEFAULT_REFRESH_INTERVAL: Duration = Duration::from_mins(5);
 
     pub fn new(
         issuer: impl Into<String>,
@@ -68,6 +68,11 @@ impl AuthOIDC {
         true
     }
 
+    /// Discovers the OIDC configuration and downloads the JWKS.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Http`] when a request fails, [`AuthError::Json`] when a response is not the expected JSON, or [`AuthError::Missing`] when the discovery documents lack a field.
     pub fn fetch(client: &impl HttpClient) -> Result<Self, AuthError> {
         let discovery = client.get(Self::DISCOVERY_URL)?;
         let config = client.get(&openid_configuration_url(&discovery)?)?;
@@ -76,6 +81,11 @@ impl AuthOIDC {
         Ok(Self::new(issuer, Self::AUDIENCE, jwks_uri, jwks))
     }
 
+    /// Async twin of [`Self::fetch`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Http`] when a request fails, [`AuthError::Json`] when a response is not the expected JSON, or [`AuthError::Missing`] when the discovery documents lack a field.
     pub async fn fetch_async(client: &impl AsyncHttpClient) -> Result<Self, AuthError> {
         let discovery = client.get(Self::DISCOVERY_URL).await?;
         let config = client.get(&openid_configuration_url(&discovery)?).await?;
@@ -84,11 +94,21 @@ impl AuthOIDC {
         Ok(Self::new(issuer, Self::AUDIENCE, jwks_uri, jwks))
     }
 
+    /// Downloads the JWKS again and replaces the cached keys.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Http`] when the JWKS request fails or [`AuthError::Json`] when the response is not a JWKS.
     pub fn refresh(&self, client: &impl HttpClient) -> Result<(), AuthError> {
         self.replace_jwks(serde_json::from_slice(&client.get(&self.jwks_uri)?)?);
         Ok(())
     }
 
+    /// Async twin of [`Self::refresh`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Http`] when the JWKS request fails or [`AuthError::Json`] when the response is not a JWKS.
     pub async fn refresh_async(&self, client: &impl AsyncHttpClient) -> Result<(), AuthError> {
         self.replace_jwks(serde_json::from_slice(&client.get(&self.jwks_uri).await?)?);
         Ok(())

@@ -7,6 +7,10 @@ use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
 #[serde(default, rename_all = "PascalCase")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the client data JSON the game sends"
+)]
 pub struct ClientData {
     pub animated_image_data: Vec<SkinAnimation>,
     pub cape_data: String,
@@ -106,6 +110,12 @@ pub struct PersonaPieceTintColour {
 }
 
 impl ClientData {
+    #[must_use]
+    #[expect(
+        clippy::cast_possible_wrap,
+        clippy::cast_possible_truncation,
+        reason = "the random id is an opaque bit pattern and the skin side is the constant 64"
+    )]
     pub fn offline(game_version: &str, server_address: &str, display_name: &str) -> Self {
         let skin_pixels = DEFAULT_SKIN_PIXEL.repeat(DEFAULT_SKIN_SIDE * DEFAULT_SKIN_SIDE);
         let resource_patch = br#"{"geometry":{"default":"geometry.humanoid.custom"}}"#;
@@ -134,6 +144,11 @@ impl ClientData {
         }
     }
 
+    /// Checks the client data fields against the ranges the game accepts.
+    ///
+    /// # Errors
+    ///
+    /// Returns the [`ClientDataError`] variant naming the first field that the game would reject.
     pub fn validate(&self) -> Result<(), ClientDataError> {
         if !(1..=15).contains(&self.device_os) {
             return Err(ClientDataError::DeviceOs(self.device_os));

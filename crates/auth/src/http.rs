@@ -7,6 +7,11 @@ pub type HttpError = Box<dyn Error + Send + Sync>;
 pub const HTTP_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub trait HttpClient {
+    /// Fetches `url` and returns the response body.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`HttpError`] when the request fails or the response cannot be read.
     fn get(&self, url: &str) -> Result<Vec<u8>, HttpError>;
 }
 
@@ -14,6 +19,7 @@ pub trait AsyncHttpClient {
     fn get(&self, url: &str) -> impl Future<Output = Result<Vec<u8>, HttpError>>;
 }
 
+#[must_use]
 #[cfg(feature = "ureq")]
 pub fn ureq_agent() -> ureq::Agent {
     ureq::Agent::config_builder()
@@ -32,6 +38,11 @@ impl HttpClient for ureq::Agent {
     }
 }
 
+/// Builds a `reqwest` client with the crate's [`HTTP_TIMEOUT`].
+///
+/// # Errors
+///
+/// Returns the [`reqwest::Error`] when the client cannot be built.
 #[cfg(feature = "reqwest")]
 pub fn reqwest_client() -> Result<reqwest::Client, reqwest::Error> {
     reqwest::Client::builder().timeout(HTTP_TIMEOUT).build()

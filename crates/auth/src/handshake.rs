@@ -16,6 +16,11 @@ pub struct ServerHandshake {
     pub salt: Vec<u8>,
 }
 
+/// Signs the server handshake token that carries `salt`.
+///
+/// # Errors
+///
+/// Returns [`AuthError`] when the server key cannot be encoded or the token cannot be signed.
 pub fn sign_server_handshake(server_key: &SecretKey, salt: &[u8]) -> Result<String, AuthError> {
     let claims = HandshakeClaims {
         salt: SALT_BASE64.encode(salt),
@@ -23,6 +28,13 @@ pub fn sign_server_handshake(server_key: &SecretKey, salt: &[u8]) -> Result<Stri
     encode_es384_with_x5u(server_key, &claims)
 }
 
+/// Verifies a server handshake token and returns its public key and salt.
+///
+/// # Errors
+///
+/// Returns [`AuthError::Jwt`] when the token is malformed, is not ES384, or fails its signature check,
+/// [`AuthError::Missing`] when the `x5u` header is absent, [`AuthError::InvalidPublicKey`] when it is not a
+/// key, and [`AuthError::InvalidSalt`] when the salt is not standard base64.
 pub fn verify_server_handshake(token: &str) -> Result<ServerHandshake, AuthError> {
     let parsed = Token::parse(token)?;
     parsed.require_algorithm(Algorithm::ES384)?;
