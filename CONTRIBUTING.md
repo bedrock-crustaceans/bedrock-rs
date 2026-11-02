@@ -1,7 +1,7 @@
 # Contributing to bedrock-rs
 
 How to set up, change, check, and submit work on this workspace. `README.md` says what the crates
-are; `CLAUDE.md` is the step-by-step working method and reads as a good one for people too.
+are; `AGENTS.md` is the working method for agents and reads as a good one for people too.
 
 ## Before you start
 
@@ -41,7 +41,7 @@ it, watch it fail, make it pass with the smallest change, then clean up with the
 you. The bytes on the wire are the oracle for protocol work: a packet is right when it
 deserializes a capture from a real client and serializes back to the same bytes.
 
-`CLAUDE.md` walks through the loop step by step and has the test shapes to copy.
+`AGENTS.md` walks through the loop step by step and has the test shapes to copy.
 
 ## Checks
 

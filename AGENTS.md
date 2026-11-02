@@ -1,4 +1,4 @@
-# bedrock-rs working notes
+# bedrock-rs agent notes
 
 What the crates are: @README.md
 Setup, checks, commits, PRs: @CONTRIBUTING.md
