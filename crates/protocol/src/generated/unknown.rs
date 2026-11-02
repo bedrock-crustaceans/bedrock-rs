@@ -29,7 +29,7 @@ mod inner {
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RequestNetworkSettingsPacket),
@@ -37,15 +37,17 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
-                }
-                Unknown::Unknown(pk) => stream.write_all(pk.buf.as_ref()).map_err(|e| {
-                    bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
-                        packet_name: "Unknown",
-                        packet_id: header.packet_id,
-                        error: e.into(),
                     }
-                })?,
+                }
+                Unknown::Unknown(pk) => {
+                    stream
+                        .write_all(pk.buf.as_ref())
+                        .map_err(|e| bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
+                            packet_name: "Unknown",
+                            packet_id: header.packet_id,
+                            error: e.into(),
+                        })?
+                }
             };
             Ok(())
         }

@@ -313,7 +313,7 @@ mod inner {
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ActorEventPacket),
@@ -321,14 +321,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ActorPickRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ActorPickRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ActorPickRequestPacket),
@@ -336,14 +336,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AddActorPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AddActorPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AddActorPacket),
@@ -351,14 +351,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AddBehaviourTreePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AddBehaviourTreePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AddBehaviourTreePacket),
@@ -366,14 +366,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AddItemActorPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AddItemActorPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AddItemActorPacket),
@@ -381,14 +381,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AddPaintingPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AddPaintingPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AddPaintingPacket),
@@ -396,14 +396,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AddPlayerPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AddPlayerPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AddPlayerPacket),
@@ -411,14 +411,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AddVolumeEntityPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AddVolumeEntityPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AddVolumeEntityPacket),
@@ -426,14 +426,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AgentActionEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AgentActionEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AgentActionEventPacket),
@@ -441,14 +441,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AgentAnimationPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AgentAnimationPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AgentAnimationPacket),
@@ -456,14 +456,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AnimateEntityPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AnimateEntityPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AnimateEntityPacket),
@@ -471,14 +471,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AnimatePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AnimatePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AnimatePacket),
@@ -486,14 +486,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AnvilDamagePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AnvilDamagePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AnvilDamagePacket),
@@ -501,14 +501,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AutomationClientConnectPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AutomationClientConnectPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AutomationClientConnectPacket),
@@ -516,14 +516,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AvailableActorIdentifiersPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AvailableActorIdentifiersPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AvailableActorIdentifiersPacket),
@@ -531,14 +531,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AvailableCommandsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AvailableCommandsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AvailableCommandsPacket),
@@ -546,14 +546,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::AwardAchievementPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::AwardAchievementPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(AwardAchievementPacket),
@@ -561,14 +561,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::BiomeDefinitionListPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::BiomeDefinitionListPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(BiomeDefinitionListPacket),
@@ -576,14 +576,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::BlockActorDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::BlockActorDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(BlockActorDataPacket),
@@ -591,14 +591,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::BlockEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::BlockEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(BlockEventPacket),
@@ -606,14 +606,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::BlockPickRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::BlockPickRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(BlockPickRequestPacket),
@@ -621,14 +621,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::BookEditPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::BookEditPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(BookEditPacket),
@@ -636,14 +636,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::BossEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::BossEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(BossEventPacket),
@@ -651,14 +651,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraAimAssistInstructionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraAimAssistInstructionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraAimAssistInstructionPacket),
@@ -666,14 +666,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraAimAssistPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraAimAssistPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraAimAssistPacket),
@@ -681,14 +681,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraAimAssistPresetsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraAimAssistPresetsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraAimAssistPresetsPacket),
@@ -696,14 +696,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraInstructionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraInstructionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraInstructionPacket),
@@ -711,14 +711,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraPacket),
@@ -726,14 +726,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraPresetsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraPresetsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraPresetsPacket),
@@ -741,14 +741,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CameraShakePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CameraShakePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CameraShakePacket),
@@ -756,14 +756,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ChangeDimensionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ChangeDimensionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ChangeDimensionPacket),
@@ -771,14 +771,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ChangeMobPropertyPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ChangeMobPropertyPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ChangeMobPropertyPacket),
@@ -786,14 +786,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ChunkRadiusUpdatedPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ChunkRadiusUpdatedPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ChunkRadiusUpdatedPacket),
@@ -801,14 +801,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientBoundCloseFormPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientBoundCloseFormPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientBoundCloseFormPacket),
@@ -816,14 +816,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientBoundControlSchemeSetPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientBoundControlSchemeSetPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientBoundControlSchemeSetPacket),
@@ -831,14 +831,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientBoundDebugRendererPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientBoundDebugRendererPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientBoundDebugRendererPacket),
@@ -846,14 +846,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientBoundMapItemDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientBoundMapItemDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientBoundMapItemDataPacket),
@@ -861,14 +861,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientCacheBlobStatusPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientCacheBlobStatusPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientCacheBlobStatusPacket),
@@ -876,14 +876,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientCacheMissResponsePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientCacheMissResponsePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientCacheMissResponsePacket),
@@ -891,14 +891,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientCacheStatusPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientCacheStatusPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientCacheStatusPacket),
@@ -906,14 +906,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ClientToServerHandshakePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ClientToServerHandshakePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ClientToServerHandshakePacket),
@@ -921,14 +921,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CodeBuilderPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CodeBuilderPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CodeBuilderPacket),
@@ -936,14 +936,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CodeBuilderSourcePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CodeBuilderSourcePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CodeBuilderSourcePacket),
@@ -951,14 +951,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CommandBlockUpdatePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CommandBlockUpdatePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CommandBlockUpdatePacket),
@@ -966,14 +966,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CommandOutputPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CommandOutputPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CommandOutputPacket),
@@ -981,14 +981,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CommandRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CommandRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CommandRequestPacket),
@@ -996,14 +996,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CompletedUsingItemPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CompletedUsingItemPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CompletedUsingItemPacket),
@@ -1011,14 +1011,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ContainerClosePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ContainerClosePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ContainerClosePacket),
@@ -1026,14 +1026,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ContainerOpenPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ContainerOpenPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ContainerOpenPacket),
@@ -1041,14 +1041,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ContainerRegistryCleanupPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ContainerRegistryCleanupPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ContainerRegistryCleanupPacket),
@@ -1056,14 +1056,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ContainerSetDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ContainerSetDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ContainerSetDataPacket),
@@ -1071,14 +1071,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CorrectPlayerMovePredictionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CorrectPlayerMovePredictionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CorrectPlayerMovePredictionPacket),
@@ -1086,14 +1086,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CraftingDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CraftingDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CraftingDataPacket),
@@ -1101,14 +1101,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CreatePhotoPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CreatePhotoPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CreatePhotoPacket),
@@ -1116,14 +1116,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CreativeContentPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CreativeContentPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CreativeContentPacket),
@@ -1131,14 +1131,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::CurrentStructureFeaturePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::CurrentStructureFeaturePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(CurrentStructureFeaturePacket),
@@ -1146,14 +1146,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::DeathInfoPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::DeathInfoPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(DeathInfoPacket),
@@ -1161,14 +1161,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::DebugInfoPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::DebugInfoPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(DebugInfoPacket),
@@ -1176,14 +1176,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::DimensionDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::DimensionDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(DimensionDataPacket),
@@ -1191,14 +1191,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::DisconnectPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::DisconnectPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(DisconnectPacket),
@@ -1206,14 +1206,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::EditorNetworkPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::EditorNetworkPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(EditorNetworkPacket),
@@ -1221,14 +1221,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::EduUriResourcePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::EduUriResourcePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(EduUriResourcePacket),
@@ -1236,14 +1236,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::EducationSettingsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::EducationSettingsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(EducationSettingsPacket),
@@ -1251,14 +1251,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::EmoteListPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::EmoteListPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(EmoteListPacket),
@@ -1266,14 +1266,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::EmotePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::EmotePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(EmotePacket),
@@ -1281,14 +1281,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::FeatureRegistryPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::FeatureRegistryPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(FeatureRegistryPacket),
@@ -1296,14 +1296,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::GameRulesChangedPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::GameRulesChangedPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(GameRulesChangedPacket),
@@ -1311,14 +1311,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::GameTestRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::GameTestRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(GameTestRequestPacket),
@@ -1326,14 +1326,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::GameTestResultsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::GameTestResultsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(GameTestResultsPacket),
@@ -1341,14 +1341,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::GuiDataPickItemPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::GuiDataPickItemPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(GuiDataPickItemPacket),
@@ -1356,14 +1356,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::HurtArmorPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::HurtArmorPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(HurtArmorPacket),
@@ -1371,14 +1371,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::InteractPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::InteractPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(InteractPacket),
@@ -1386,14 +1386,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::InventoryContentPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::InventoryContentPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(InventoryContentPacket),
@@ -1401,14 +1401,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::InventorySlotPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::InventorySlotPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(InventorySlotPacket),
@@ -1416,14 +1416,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::InventoryTransactionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::InventoryTransactionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(InventoryTransactionPacket),
@@ -1431,14 +1431,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ItemComponentPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ItemComponentPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ItemComponentPacket),
@@ -1446,14 +1446,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ItemStackRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ItemStackRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ItemStackRequestPacket),
@@ -1461,14 +1461,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ItemStackResponsePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ItemStackResponsePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ItemStackResponsePacket),
@@ -1476,14 +1476,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::JigsawStructureDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::JigsawStructureDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(JigsawStructureDataPacket),
@@ -1491,14 +1491,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LabTablePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LabTablePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LabTablePacket),
@@ -1506,14 +1506,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LecternUpdatePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LecternUpdatePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LecternUpdatePacket),
@@ -1521,14 +1521,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LegacyTelemetryEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LegacyTelemetryEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LegacyTelemetryEventPacket),
@@ -1536,14 +1536,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LessonProgressPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LessonProgressPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LessonProgressPacket),
@@ -1551,14 +1551,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LevelChunkPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LevelChunkPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LevelChunkPacket),
@@ -1566,14 +1566,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LevelEventGenericPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LevelEventGenericPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LevelEventGenericPacket),
@@ -1581,14 +1581,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LevelEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LevelEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LevelEventPacket),
@@ -1596,14 +1596,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LevelSoundEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LevelSoundEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LevelSoundEventPacket),
@@ -1611,14 +1611,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::LoginPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::LoginPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(LoginPacket),
@@ -1626,14 +1626,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MapCreateLockedCopyPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MapCreateLockedCopyPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MapCreateLockedCopyPacket),
@@ -1641,14 +1641,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MapInfoRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MapInfoRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MapInfoRequestPacket),
@@ -1656,14 +1656,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MobArmorEquipmentPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MobArmorEquipmentPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MobArmorEquipmentPacket),
@@ -1671,14 +1671,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MobEffectPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MobEffectPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MobEffectPacket),
@@ -1686,14 +1686,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MobEquipmentPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MobEquipmentPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MobEquipmentPacket),
@@ -1701,14 +1701,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ModalFormRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ModalFormRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ModalFormRequestPacket),
@@ -1716,14 +1716,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ModalFormResponsePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ModalFormResponsePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ModalFormResponsePacket),
@@ -1731,14 +1731,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MotionPredictionHintsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MotionPredictionHintsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MotionPredictionHintsPacket),
@@ -1746,14 +1746,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MoveActorAbsolutePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MoveActorAbsolutePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MoveActorAbsolutePacket),
@@ -1761,14 +1761,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MoveActorDeltaPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MoveActorDeltaPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MoveActorDeltaPacket),
@@ -1776,14 +1776,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MovePlayerPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MovePlayerPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MovePlayerPacket),
@@ -1791,14 +1791,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MovementEffectPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MovementEffectPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MovementEffectPacket),
@@ -1806,14 +1806,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MovementPredictionSyncPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MovementPredictionSyncPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MovementPredictionSyncPacket),
@@ -1821,14 +1821,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::MultiplayerSettingsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::MultiplayerSettingsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(MultiplayerSettingsPacket),
@@ -1836,14 +1836,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::NetworkChunkPublisherUpdatePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::NetworkChunkPublisherUpdatePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(NetworkChunkPublisherUpdatePacket),
@@ -1851,14 +1851,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::NetworkSettingsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::NetworkSettingsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(NetworkSettingsPacket),
@@ -1866,14 +1866,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::NetworkStackLatencyPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::NetworkStackLatencyPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(NetworkStackLatencyPacket),
@@ -1881,14 +1881,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::NpcDialoguePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::NpcDialoguePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(NpcDialoguePacket),
@@ -1896,14 +1896,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::NpcRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::NpcRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(NpcRequestPacket),
@@ -1911,14 +1911,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::OnScreenTextureAnimationPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::OnScreenTextureAnimationPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(OnScreenTextureAnimationPacket),
@@ -1926,14 +1926,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::OpenSignPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::OpenSignPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(OpenSignPacket),
@@ -1941,14 +1941,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PacketViolationWarningPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PacketViolationWarningPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PacketViolationWarningPacket),
@@ -1956,14 +1956,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PhotoTransferPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PhotoTransferPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PhotoTransferPacket),
@@ -1971,14 +1971,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlaySoundPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlaySoundPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlaySoundPacket),
@@ -1986,14 +1986,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayStatusPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayStatusPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayStatusPacket),
@@ -2001,14 +2001,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerActionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerActionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerActionPacket),
@@ -2016,14 +2016,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerArmorDamagePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerArmorDamagePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerArmorDamagePacket),
@@ -2031,14 +2031,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerAuthInputPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerAuthInputPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerAuthInputPacket),
@@ -2046,14 +2046,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerEnchantOptionsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerEnchantOptionsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerEnchantOptionsPacket),
@@ -2061,14 +2061,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerFogPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerFogPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerFogPacket),
@@ -2076,14 +2076,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerHotbarPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerHotbarPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerHotbarPacket),
@@ -2091,14 +2091,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerListPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerListPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerListPacket),
@@ -2106,14 +2106,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerLocationPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerLocationPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerLocationPacket),
@@ -2121,14 +2121,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerSkinPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerSkinPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerSkinPacket),
@@ -2136,14 +2136,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerStartItemCooldownPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerStartItemCooldownPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerStartItemCooldownPacket),
@@ -2151,14 +2151,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerToggleCrafterSlotRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerToggleCrafterSlotRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(
@@ -2168,14 +2168,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerUpdateEntityOverridesPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerUpdateEntityOverridesPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerUpdateEntityOverridesPacket),
@@ -2183,14 +2183,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PlayerVideoCapturePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PlayerVideoCapturePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PlayerVideoCapturePacket),
@@ -2198,14 +2198,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PositionTrackingDBClientRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PositionTrackingDBClientRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(
@@ -2215,14 +2215,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PositionTrackingDBServerBroadcastPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PositionTrackingDBServerBroadcastPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(
@@ -2232,14 +2232,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::PurchaseReceiptPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::PurchaseReceiptPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(PurchaseReceiptPacket),
@@ -2247,14 +2247,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RefreshEntitlementsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RefreshEntitlementsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RefreshEntitlementsPacket),
@@ -2262,14 +2262,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RemoveActorPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RemoveActorPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RemoveActorPacket),
@@ -2277,14 +2277,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RemoveObjectivePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RemoveObjectivePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RemoveObjectivePacket),
@@ -2292,14 +2292,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RemoveVolumeEntityPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RemoveVolumeEntityPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RemoveVolumeEntityPacket),
@@ -2307,14 +2307,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RequestAbilityPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RequestAbilityPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RequestAbilityPacket),
@@ -2322,14 +2322,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RequestChunkRadiusPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RequestChunkRadiusPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RequestChunkRadiusPacket),
@@ -2337,14 +2337,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RequestNetworkSettingsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RequestNetworkSettingsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RequestNetworkSettingsPacket),
@@ -2352,14 +2352,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RequestPermissionsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RequestPermissionsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RequestPermissionsPacket),
@@ -2367,14 +2367,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ResourcePackChunkDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ResourcePackChunkDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ResourcePackChunkDataPacket),
@@ -2382,14 +2382,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ResourcePackChunkRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ResourcePackChunkRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ResourcePackChunkRequestPacket),
@@ -2397,14 +2397,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ResourcePackClientResponsePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ResourcePackClientResponsePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ResourcePackClientResponsePacket),
@@ -2412,14 +2412,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ResourcePackDataInfoPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ResourcePackDataInfoPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ResourcePackDataInfoPacket),
@@ -2427,14 +2427,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ResourcePackStackPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ResourcePackStackPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ResourcePackStackPacket),
@@ -2442,14 +2442,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ResourcePacksInfoPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ResourcePacksInfoPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ResourcePacksInfoPacket),
@@ -2457,14 +2457,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::RespawnPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::RespawnPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(RespawnPacket),
@@ -2472,14 +2472,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ScriptMessagePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ScriptMessagePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ScriptMessagePacket),
@@ -2487,14 +2487,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerBoundDiagnosticsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerBoundDiagnosticsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerBoundDiagnosticsPacket),
@@ -2502,14 +2502,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerBoundLoadingScreenPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerBoundLoadingScreenPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerBoundLoadingScreenPacket),
@@ -2517,14 +2517,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerPlayerPostMovePositionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerPlayerPostMovePositionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerPlayerPostMovePositionPacket),
@@ -2532,14 +2532,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerSettingsRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerSettingsRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerSettingsRequestPacket),
@@ -2547,14 +2547,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerSettingsResponsePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerSettingsResponsePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerSettingsResponsePacket),
@@ -2562,14 +2562,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerStatsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerStatsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerStatsPacket),
@@ -2577,14 +2577,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ServerToClientHandshakePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ServerToClientHandshakePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ServerToClientHandshakePacket),
@@ -2592,14 +2592,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetActorDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetActorDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetActorDataPacket),
@@ -2607,14 +2607,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetActorLinkPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetActorLinkPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetActorLinkPacket),
@@ -2622,14 +2622,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetActorMotionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetActorMotionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetActorMotionPacket),
@@ -2637,14 +2637,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetCommandsEnabledPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetCommandsEnabledPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetCommandsEnabledPacket),
@@ -2652,14 +2652,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetDefaultGameTypePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetDefaultGameTypePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetDefaultGameTypePacket),
@@ -2667,14 +2667,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetDifficultyPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetDifficultyPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetDifficultyPacket),
@@ -2682,14 +2682,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetDisplayObjectivePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetDisplayObjectivePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetDisplayObjectivePacket),
@@ -2697,14 +2697,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetHealthPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetHealthPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetHealthPacket),
@@ -2712,14 +2712,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetHudPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetHudPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetHudPacket),
@@ -2727,14 +2727,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetLastHurtByPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetLastHurtByPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetLastHurtByPacket),
@@ -2742,14 +2742,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetLocalPlayerAsInitializedPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetLocalPlayerAsInitializedPacket),
@@ -2757,14 +2757,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetMovementAuthorityPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetMovementAuthorityPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetMovementAuthorityPacket),
@@ -2772,14 +2772,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetPlayerGameTypePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetPlayerGameTypePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetPlayerGameTypePacket),
@@ -2787,14 +2787,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetPlayerInventoryOptionsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetPlayerInventoryOptionsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetPlayerInventoryOptionsPacket),
@@ -2802,14 +2802,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetScorePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetScorePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetScorePacket),
@@ -2817,14 +2817,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetScoreboardIdentityPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetScoreboardIdentityPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetScoreboardIdentityPacket),
@@ -2832,14 +2832,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetSpawnPositionPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetSpawnPositionPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetSpawnPositionPacket),
@@ -2847,14 +2847,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetTimePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetTimePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetTimePacket),
@@ -2862,14 +2862,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SetTitlePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SetTitlePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SetTitlePacket),
@@ -2877,14 +2877,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SettingsCommandPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SettingsCommandPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SettingsCommandPacket),
@@ -2892,14 +2892,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ShowCreditsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ShowCreditsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ShowCreditsPacket),
@@ -2907,14 +2907,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ShowProfilePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ShowProfilePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ShowProfilePacket),
@@ -2922,14 +2922,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ShowStoreOfferPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ShowStoreOfferPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ShowStoreOfferPacket),
@@ -2937,14 +2937,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SimpleEventPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SimpleEventPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SimpleEventPacket),
@@ -2952,14 +2952,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SimulationTypePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SimulationTypePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SimulationTypePacket),
@@ -2967,14 +2967,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SpawnExperienceOrbPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SpawnExperienceOrbPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SpawnExperienceOrbPacket),
@@ -2982,14 +2982,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SpawnParticleEffectPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SpawnParticleEffectPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SpawnParticleEffectPacket),
@@ -2997,14 +2997,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::StartGamePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::StartGamePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(StartGamePacket),
@@ -3012,14 +3012,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::StopSoundPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::StopSoundPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(StopSoundPacket),
@@ -3027,14 +3027,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::StructureBlockUpdatePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::StructureBlockUpdatePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(StructureBlockUpdatePacket),
@@ -3042,14 +3042,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::StructureDataRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::StructureDataRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(StructureDataRequestPacket),
@@ -3057,14 +3057,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::StructureDataResponsePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::StructureDataResponsePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(StructureDataResponsePacket),
@@ -3072,14 +3072,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SubChunkPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SubChunkPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SubChunkPacket),
@@ -3087,14 +3087,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SubChunkRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SubChunkRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SubChunkRequestPacket),
@@ -3102,14 +3102,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SubClientLoginPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SubClientLoginPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SubClientLoginPacket),
@@ -3117,14 +3117,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::SyncActorPropertyPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::SyncActorPropertyPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(SyncActorPropertyPacket),
@@ -3132,14 +3132,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::TakeItemActorPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::TakeItemActorPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(TakeItemActorPacket),
@@ -3147,14 +3147,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::TextPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::TextPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(TextPacket),
@@ -3162,14 +3162,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::TickingAreaLoadStatusPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::TickingAreaLoadStatusPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(TickingAreaLoadStatusPacket),
@@ -3177,14 +3177,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::ToastRequestPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::ToastRequestPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(ToastRequestPacket),
@@ -3192,14 +3192,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::TransferPlayerPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::TransferPlayerPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(TransferPlayerPacket),
@@ -3207,14 +3207,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::TrimDataPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::TrimDataPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(TrimDataPacket),
@@ -3222,14 +3222,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UnlockedRecipesPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UnlockedRecipesPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UnlockedRecipesPacket),
@@ -3237,14 +3237,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateAbilitiesPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateAbilitiesPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateAbilitiesPacket),
@@ -3252,14 +3252,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateAdventureSettingsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateAdventureSettingsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateAdventureSettingsPacket),
@@ -3267,14 +3267,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateAttributesPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateAttributesPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateAttributesPacket),
@@ -3282,14 +3282,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateBlockPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateBlockPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateBlockPacket),
@@ -3297,14 +3297,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateBlockSyncedPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateBlockSyncedPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateBlockSyncedPacket),
@@ -3312,14 +3312,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateClientInputLocksPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateClientInputLocksPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateClientInputLocksPacket),
@@ -3327,14 +3327,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateClientOptionsPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateClientOptionsPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateClientOptionsPacket),
@@ -3342,14 +3342,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateEquipPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateEquipPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateEquipPacket),
@@ -3357,14 +3357,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdatePlayerGameTypePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdatePlayerGameTypePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdatePlayerGameTypePacket),
@@ -3372,14 +3372,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateSoftEnumPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateSoftEnumPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateSoftEnumPacket),
@@ -3387,14 +3387,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateSubChunkBlocksPacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateSubChunkBlocksPacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateSubChunkBlocksPacket),
@@ -3402,14 +3402,14 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
+                    }
                 }
                 V800::UpdateTradePacket(pk) => {
                     match <<V800 as ProtoVersionPackets>::UpdateTradePacket as bedrock_protocol_core::ProtoCodec>::serialize(
                         pk.as_ref(),
                         stream,
                     ) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(err) => {
                             return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: stringify!(UpdateTradePacket),
@@ -3417,15 +3417,17 @@ mod inner {
                                 error: err,
                             });
                         }
-                    };
-                }
-                V800::Unknown(pk) => stream.write_all(pk.buf.as_ref()).map_err(|e| {
-                    bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
-                        packet_name: "Unknown",
-                        packet_id: header.packet_id,
-                        error: e.into(),
                     }
-                })?,
+                }
+                V800::Unknown(pk) => {
+                    stream
+                        .write_all(pk.buf.as_ref())
+                        .map_err(|e| bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
+                            packet_name: "Unknown",
+                            packet_id: header.packet_id,
+                            error: e.into(),
+                        })?
+                }
             };
             Ok(())
         }

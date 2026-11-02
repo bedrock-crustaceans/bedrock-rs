@@ -218,13 +218,13 @@ pub fn build(input: TokenStream, path: &std::path::Path) -> syn::Result<TokenStr
             quote! {
                 #struct_ident::#name(pk) => {
                     match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::serialize(pk.as_ref(), stream) {
-                        Ok(_) => {},
+                        Ok(()) => {},
                         Err(err) => return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
                             packet_name: stringify!(#name),
                             packet_id: <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID,
                             error: err
                         }),
-                    };
+                    }
                 },
             }
         });
