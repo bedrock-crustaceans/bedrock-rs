@@ -52,7 +52,7 @@ jobs:
 
   # The workspace is tested in groups, one job per group and OS. Each job builds only its group's
   # test binaries, which keeps every job inside the runner's disk and runs the groups in parallel.
-  # `rest` is every crate no other group names, so a new crate is tested without touching this.
+  # Every workspace member is in exactly one group; a new crate has to join one here.
   test:
     name: Test ${{ matrix.group.name }} (${{ matrix.os }})
     strategy:
@@ -60,24 +60,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         group:
-          - name: protocol
-            packages: -p bedrock_protocol -p bedrock_protocol_core -p bedrock_macros
-          # `--all-features` stands in for the `molang` and `nbt` features `bedrock_addon` turns on
-          # in a whole-workspace build, and adds the script family's `script-syntax`.
-          - name: addon-core
+          - name: protocol & network
+            key: protocol-network
             packages: >-
-              --all-features
-              -p bedrock_addon_core -p bedrock_addon_derive -p bedrock_addon_support
-              -p 'bedrock_addon_family_*'
+              -p bedrock_protocol -p bedrock_protocol_core -p bedrock_macros
+              -p bedrock_network -p bedrock
           - name: addon
-            packages: -p bedrock_addon
-          - name: addon-std
-            packages: -p bedrock_addon_std
-          - name: rest
-            packages: >-
-              --workspace
-              --exclude bedrock_protocol --exclude bedrock_protocol_core --exclude bedrock_macros
-              --exclude 'bedrock_addon*'
+            key: addon
+            packages: -p 'bedrock_addon*' -p xtask
+          - name: form
+            key: form
+            packages: -p bedrock_form
+          - name: auth
+            key: auth
+            packages: -p bedrock_auth
+          - name: level
+            key: level
+            packages: -p bedrock_level -p bedrock_shared
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -87,7 +86,7 @@ jobs:
           tool: cargo-nextest
       - uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.group.name }}
+          key: ${{ matrix.group.key }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Tests
         shell: bash

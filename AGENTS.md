@@ -145,7 +145,7 @@ regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a 
 
 - Tests run under `cargo nextest run` (`.config/nextest.toml`); each test is its own process.
   `cargo test` is only for doctests (`cargo test --doc`), which nextest does not run. CI tests
-  in crate groups, one job per group and OS; a new crate falls into the `rest` group by itself.
+  in crate groups, one job per group and OS; a new crate has to join a group in `ci.yml`.
 - `cargo nextest run --workspace` is red on a stale `Cargo.lock` because of `bedrock_network`.
   `CONTRIBUTING.md` has the workaround (`cargo update -p raknet-tokio`). Report what you
   excluded; never present an excluded crate as passing.
