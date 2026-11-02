@@ -1,0 +1,60 @@
+# Dependency updates, once a week. One entry per ecosystem, so no update is proposed twice.
+version: 2
+
+updates:
+  # Every manifest of the workspace. Most versions live in the root's `[workspace.dependencies]`;
+  # the rest are a member's own. `Cargo.lock` is not committed, so a pull request comes only when
+  # a release falls outside a requirement, and it raises the requirement.
+  - package-ecosystem: cargo
+    directories:
+      - "/"
+      - "/bedrock"
+      - "/crates/*"
+      - "/crates/addon/*"
+      - "/crates/addon/families/*"
+      - "/xtask"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    # Let a release sit before proposing it; a yanked or broken one rarely lasts that long.
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    open-pull-requests-limit: 10
+    labels: [C-Dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    # The first group a crate matches wins.
+    groups:
+      facet:
+        patterns: ["facet", "facet-*"]
+      rustcrypto:
+        patterns: ["aes", "cfb8", "ctr", "p384", "sha2"]
+      proc-macro:
+        patterns: ["syn", "quote", "proc-macro2", "prettyplease"]
+      strum:
+        patterns: ["strum", "strum_macros"]
+      # Any other crate: one pull request per crate, however many manifests name it.
+      per-crate:
+        group-by: dependency-name
+
+  # The actions of the workflows, all in one pull request.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 3
+    labels: [C-Dependencies]
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
