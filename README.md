@@ -58,3 +58,11 @@ Examples for loading and writing add-ons are in [`crates/addon/std/examples`](cr
 See [CONTRIBUTING.md](CONTRIBUTING.md), and come say hi on [Discord][discord_url].
 
 [![Contributors](https://contrib.rocks/image?repo=bedrock-crustaceans/bedrock-rs)](https://github.com/bedrock-crustaceans/bedrock-rs/graphs/contributors)
+
+## License
+
+bedrock-rs is licensed under the [Apache License, Version 2.0](LICENSE).
+
+Unless you explicitly state otherwise, any contribution you intentionally submit for inclusion
+in this project, as defined in the Apache-2.0 license, shall be licensed as above, without any
+additional terms or conditions.
