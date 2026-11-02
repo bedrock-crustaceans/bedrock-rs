@@ -184,8 +184,8 @@ impl GreedyArray {
     #[target_feature(enable = "avx2")]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m256i, _mm_cvtsi32_si128, _mm_loadu_epi32, _mm_set_epi32, _mm_set1_epi32,
-            _mm_storeu_epi16, _mm256_and_si256, _mm256_packus_epi32, _mm256_permutex_epi64,
+            __m128i, __m256i, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_set_epi32, _mm_set1_epi32,
+            _mm_storeu_si128, _mm256_and_si256, _mm256_packus_epi32, _mm256_permute4x64_epi64,
             _mm256_set_epi32, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32,
             _mm256_srlv_epi32,
         };
@@ -243,7 +243,7 @@ impl GreedyArray {
                         let vmasked = _mm256_and_si256(vword, vmask);
                         let vpack = _mm256_packus_epi32(vmasked, vmasked);
                         // Fix the ordering of the lanes.
-                        let vshorts = unsafe { _mm256_permutex_epi64(vpack, 0b11011000) };
+                        let vshorts = _mm256_permute4x64_epi64::<0b11011000>(vpack);
 
                         debug_assert!(offset <= 4080);
                         unsafe {
@@ -266,7 +266,7 @@ impl GreedyArray {
                     // Last set does not need a shift all at the end
                     let vmasked = _mm256_and_si256(vword, vmask);
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
-                    let vshorts = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
+                    let vshorts = _mm256_permute4x64_epi64::<0b11011000>(vpack);
 
                     debug_assert!(offset <= 4088);
                     unsafe {
@@ -316,7 +316,7 @@ impl GreedyArray {
                     let vmasked = _mm256_and_si256(vshifted, vmask);
 
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
-                    let vperm = unsafe { _mm256_permutex_epi64::<0b11011000>(vpack) };
+                    let vperm = _mm256_permute4x64_epi64::<0b11011000>(vpack);
 
                     debug_assert!(
                         indices.len() - offset >= 8,
@@ -349,17 +349,17 @@ impl GreedyArray {
                 for chunk in chunks {
                     // Safety: This is safe because `chunk` is valid and always has 4 words of data.
                     // This is an unaligned load so we do not care about alignment.
-                    let vwords = unsafe { _mm_loadu_epi32(chunk.as_ptr().cast::<i32>()) };
+                    let vwords = unsafe { _mm_loadu_si128(chunk.as_ptr().cast::<__m128i>()) };
 
                     // Then immediately write to the output array because the data is already in the correct other.
 
                     // Safety: This is safe because `chunks` contains the exact amount of chunks to reach 4096 shorts
                     // and does not leave the allocation.
-                    let arr_ptr = unsafe { indices.as_mut_ptr().add(offset).cast::<i16>() };
+                    let arr_ptr = unsafe { indices.as_mut_ptr().add(offset).cast::<__m128i>() };
 
                     // Safety: By the evaluation above we know that `arr_ptr` points to a valid array with enough
                     // range lef to write into. This is an unaligned store so we do not core about alignment.
-                    unsafe { _mm_storeu_epi16(arr_ptr, vwords) };
+                    unsafe { _mm_storeu_si128(arr_ptr, vwords) };
 
                     offset += 8;
                 }
