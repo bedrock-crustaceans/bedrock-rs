@@ -10,6 +10,10 @@ pub trait SeekExt {
     /// `stream_len_ext` to ensure it does not collide with the standard library method.
     ///
     /// [`stream_len`]: std::io::Seek::stream_len
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if querying or moving the stream position fails.
     fn stream_len_ext(&mut self) -> std::io::Result<u64>;
 }
 

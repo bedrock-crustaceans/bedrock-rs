@@ -18,8 +18,15 @@ pub struct GreedyArray {
 
 impl GreedyArray {
     /// Returns the item at the given index.
+    #[must_use]
     pub fn get(&self, index: usize) -> Option<u16> {
         self.array.get(index).copied()
+    }
+
+    /// Creates an iterator over the items of this array.
+    #[must_use]
+    pub fn iter(&self) -> GreedyArrayIter<'_> {
+        self.into_iter()
     }
 
     /// Sets the item at the given index.
@@ -35,13 +42,17 @@ impl GreedyArray {
     /// Packs the array into a given array of words using the given amount of bits per block.
     pub(crate) fn pack_into(&self, words: &mut [u32], bits: u8) {
         // Amount of indices that fit in a single 32-bit integer.
-        let per_word = (u32::BITS / bits as u32) as usize;
+        let per_word = (u32::BITS / u32::from(bits)) as usize;
         for (out, indices) in words.iter_mut().zip(self.array.chunks(per_word)) {
-            *out = Self::pack_word(indices, bits as u32);
+            *out = Self::pack_word(indices, u32::from(bits));
         }
     }
 
     /// Serializes the array to disk using the given amount of bits per block.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, bits: u32) -> Result<()>
     where
         Cursor<W>: Write,
@@ -54,19 +65,27 @@ impl GreedyArray {
         Ok(())
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "slot is below 32, the most indices that fit in one word"
+    )]
     fn pack_word(indices: &[u16], bits: u32) -> u32 {
         let mask = !(!0u32 << bits);
         indices.iter().enumerate().fold(0, |word, (slot, &index)| {
-            word | ((index as u32 & mask) << (slot as u32 * bits))
+            word | ((u32::from(index) & mask) << (slot as u32 * bits))
         })
     }
 
     /// Deserializers the packed array from disk.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the reader runs out of data or fails to read.
     pub fn from_disk<R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
     where
         Cursor<R>: Read,
     {
-        let per_word = u32::BITS / bits as u32;
+        let per_word = u32::BITS / u32::from(bits);
         let word_count = 4096u32.div_ceil(per_word);
 
         let mut words = vec![0; word_count as usize];
@@ -109,10 +128,9 @@ impl GreedyArray {
         match bits {
             1 => Self::unpack_oct::<1>(words, indices),
             2 => Self::unpack_oct::<2>(words, indices),
-            3 => Self::unpack_nonsimd(bits, words, indices), // TODO: Maybe accelerate with SIMD?
             4 => Self::unpack_oct::<4>(words, indices),
-            5 => Self::unpack_nonsimd(bits, words, indices), // TODO: Maybe accelerate with SIMD?
-            6 => Self::unpack_nonsimd(bits, words, indices), // TODO: Maybe accelerate with SIMD?
+            // TODO: Maybe accelerate with SIMD?
+            3 | 5 | 6 => Self::unpack_nonsimd(bits, words, indices),
             8 => Self::unpack_oct::<8>(words, indices),
             16 => Self::unpack_oct::<16>(words, indices),
             _ => unimplemented!(),
@@ -182,9 +200,13 @@ impl GreedyArray {
     #[cfg(target_arch = "x86_64")]
     #[inline]
     #[target_feature(enable = "avx2")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one straight-line SIMD kernel per bit size in a single match, with no seam to split at"
+    )]
     pub fn unpack_oct<const BITS: u8>(mut words: &[u32], indices: &mut [u16; 4096]) {
         use std::arch::x86_64::{
-            __m128i, __m256i, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_set_epi32, _mm_set1_epi32,
+            __m128i, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_set_epi32, _mm_set1_epi32,
             _mm_storeu_si128, _mm256_and_si256, _mm256_packus_epi32, _mm256_permute4x64_epi64,
             _mm256_set_epi32, _mm256_set_m128i, _mm256_set1_epi32, _mm256_srl_epi32,
             _mm256_srlv_epi32,
@@ -192,7 +214,7 @@ impl GreedyArray {
 
         const SIMD_LANES: u32 = 8;
 
-        let blocks_per_word = u32::BITS / BITS as u32;
+        let blocks_per_word = u32::BITS / u32::from(BITS);
         let sets_per_word = blocks_per_word / SIMD_LANES;
 
         // Limit words to max size for these bits
@@ -204,9 +226,9 @@ impl GreedyArray {
         match BITS {
             // These all just process at most one word at a time.
             1 | 2 | 4 => {
-                let bits = BITS as i32;
+                let bits = i32::from(BITS);
 
-                let vmask = _mm256_set1_epi32(!(!0u32 << bits) as i32);
+                let vmask = _mm256_set1_epi32((!(!0u32 << bits)).cast_signed());
 
                 // Shifts each of the 8 lanes to their respective location in the word
                 // This is in reverse because the first argument is for the last line, etc.
@@ -232,7 +254,7 @@ impl GreedyArray {
                 // or 2 sets of 8 for BITS = 2
                 // or 1 set of 8 for BITS = 4
                 while w < words.len() {
-                    let mut vword = _mm256_set1_epi32(words[w] as i32);
+                    let mut vword = _mm256_set1_epi32(words[w].cast_signed());
 
                     // Use variable shifts since each lane needs to be shifted by a different amount.
                     vword = _mm256_srlv_epi32(vword, vshift);
@@ -243,12 +265,12 @@ impl GreedyArray {
                         let vmasked = _mm256_and_si256(vword, vmask);
                         let vpack = _mm256_packus_epi32(vmasked, vmasked);
                         // Fix the ordering of the lanes.
-                        let vshorts = _mm256_permute4x64_epi64::<0b11011000>(vpack);
+                        let vshorts = _mm256_permute4x64_epi64::<0b1101_1000>(vpack);
 
                         debug_assert!(offset <= 4080);
                         unsafe {
                             std::ptr::copy_nonoverlapping(
-                                &vshorts as *const __m256i as *const u16,
+                                (&raw const vshorts).cast::<u16>(),
                                 indices.as_mut_ptr().add(offset),
                                 8,
                             );
@@ -266,12 +288,12 @@ impl GreedyArray {
                     // Last set does not need a shift all at the end
                     let vmasked = _mm256_and_si256(vword, vmask);
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
-                    let vshorts = _mm256_permute4x64_epi64::<0b11011000>(vpack);
+                    let vshorts = _mm256_permute4x64_epi64::<0b1101_1000>(vpack);
 
                     debug_assert!(offset <= 4088);
                     unsafe {
                         std::ptr::copy_nonoverlapping(
-                            &vshorts as *const __m256i as *const u16,
+                            (&raw const vshorts).cast::<u16>(),
                             indices.as_mut_ptr().add(offset),
                             8,
                         );
@@ -287,9 +309,9 @@ impl GreedyArray {
                 // Then we perform the regular unpack algorithm on both words at the same time, unpacking
                 // 8 blocks from 64 bits in a single operation.
 
-                let vmask = _mm256_set1_epi32(!(!0u32 << BITS as u32) as i32);
+                let vmask = _mm256_set1_epi32((!(!0u32 << u32::from(BITS))).cast_signed());
 
-                let bits = BITS as i32;
+                let bits = i32::from(BITS);
                 // Create a 128-bit vector with the correct shifts...
                 let vshift_half = _mm_set_epi32(3 * bits, 2 * bits, bits, 0);
                 // ... and then duplicate it.
@@ -305,9 +327,9 @@ impl GreedyArray {
                     let [a, b] = chunk;
 
                     // Broadcast the first word into 4 lanes
-                    let vlo = _mm_set1_epi32(*a as i32);
+                    let vlo = _mm_set1_epi32(a.cast_signed());
                     // Broadcast the second word into 4 lanes
-                    let vhi = _mm_set1_epi32(*b as i32);
+                    let vhi = _mm_set1_epi32(b.cast_signed());
 
                     // Then combine these two into one larger vector
                     let vwords = _mm256_set_m128i(vhi, vlo);
@@ -316,7 +338,7 @@ impl GreedyArray {
                     let vmasked = _mm256_and_si256(vshifted, vmask);
 
                     let vpack = _mm256_packus_epi32(vmasked, vmasked);
-                    let vperm = _mm256_permute4x64_epi64::<0b11011000>(vpack);
+                    let vperm = _mm256_permute4x64_epi64::<0b1101_1000>(vpack);
 
                     debug_assert!(
                         indices.len() - offset >= 8,
@@ -328,7 +350,7 @@ impl GreedyArray {
                     // left to write to.
                     unsafe {
                         std::ptr::copy_nonoverlapping(
-                            &vperm as *const __m256i as *const u16,
+                            (&raw const vperm).cast::<u16>(),
                             indices.as_mut_ptr().add(offset),
                             8,
                         );
@@ -349,12 +371,20 @@ impl GreedyArray {
                 for chunk in chunks {
                     // Safety: This is safe because `chunk` is valid and always has 4 words of data.
                     // This is an unaligned load so we do not care about alignment.
+                    #[expect(
+                        clippy::cast_ptr_alignment,
+                        reason = "`_mm_loadu_si128` is an unaligned load"
+                    )]
                     let vwords = unsafe { _mm_loadu_si128(chunk.as_ptr().cast::<__m128i>()) };
 
                     // Then immediately write to the output array because the data is already in the correct other.
 
                     // Safety: This is safe because `chunks` contains the exact amount of chunks to reach 4096 shorts
                     // and does not leave the allocation.
+                    #[expect(
+                        clippy::cast_ptr_alignment,
+                        reason = "`_mm_storeu_si128` is an unaligned store"
+                    )]
                     let arr_ptr = unsafe { indices.as_mut_ptr().add(offset).cast::<__m128i>() };
 
                     // Safety: By the evaluation above we know that `arr_ptr` points to a valid array with enough
@@ -370,7 +400,7 @@ impl GreedyArray {
 
     #[inline]
     pub fn unpack_nonsimd(bits: u8, mut words: &[u32], indices: &mut [u16]) {
-        let per_word = u32::BITS / bits as u32;
+        let per_word = u32::BITS / u32::from(bits);
         let max_len = 4096u32.div_ceil(per_word);
         words = &words[..max_len as usize];
 
@@ -383,7 +413,12 @@ impl GreedyArray {
                     break;
                 }
 
-                indices[offset] = (word & mask) as u16;
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "the mask keeps at most 16 bits, the largest valid bit size"
+                )]
+                let value = (word & mask) as u16;
+                indices[offset] = value;
                 word >>= bits;
                 offset += 1;
             }

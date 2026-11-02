@@ -17,6 +17,7 @@ pub struct BiomeArray {
 }
 
 impl BiomeArray {
+    #[must_use]
     pub fn palette(&self) -> &[u32] {
         &self.palette
     }
@@ -41,17 +42,24 @@ pub struct Biomes {
 impl Biomes {
     /// This chunk's heightmap.
     #[inline]
+    #[must_use]
     pub fn heightmap(&self) -> &[u16; 256] {
         &self.heightmap
     }
 
     // This roughly estimates the size of the output buffer. Chunks with many paletted fragments
     // will be larger than this estimate while chunks with many inherited biome fragments will be smaller.
+    #[must_use]
     pub fn size_hint(&self) -> usize {
         const HEIGHTMAP_SIZE: usize = 256 * 2;
         HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>()
     }
 
+    /// Serializes the heightmap and every fragment in disk format.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -74,7 +82,12 @@ impl Biomes {
                 }
                 BiomeEncoding::Palette(v) => {
                     v.array.to_disk(writer, v.palette.len())?;
-                    writer.write_u32::<LittleEndian>(v.palette.len() as u32)?;
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "a biome palette holds at most 4096 entries"
+                    )]
+                    let palette_len = v.palette.len() as u32;
+                    writer.write_u32::<LittleEndian>(palette_len)?;
 
                     for entry in &v.palette {
                         writer.write_u32::<LittleEndian>(*entry)?;
@@ -86,6 +99,12 @@ impl Biomes {
         Ok(())
     }
 
+    /// Deserializes the heightmap and every fragment until the reader is exhausted.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the heightmap or a fragment is truncated, if a fragment has an
+    /// invalid bit size, or if reading from `reader` fails.
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Biomes>
     where
         Cursor<R>: Read,
@@ -124,7 +143,7 @@ impl Biomes {
                 }
                 IndicesType::Empty => {
                     let single = reader.read_u32::<LittleEndian>()?;
-                    fragments.push(BiomeEncoding::Single(single))
+                    fragments.push(BiomeEncoding::Single(single));
                 }
                 IndicesType::Inherit => fragments.push(BiomeEncoding::Inherit),
             }

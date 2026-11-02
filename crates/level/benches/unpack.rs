@@ -3,7 +3,9 @@ use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_m
 
 fn unpack_regular(bits: u32, packed: &LazyArray) {
     let mut indices = [0; 4096];
-    GreedyArray::unpack_nonsimd(bits as u8, packed.words(), &mut indices);
+    #[expect(clippy::cast_possible_truncation, reason = "bits is 1, 2, 4 or 8")]
+    let bits = bits as u8;
+    GreedyArray::unpack_nonsimd(bits, packed.words(), &mut indices);
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -39,29 +41,29 @@ fn unpack_oct(bits: u32, packed: &LazyArray) {
 fn benchmark(c: &mut Criterion) {
     // Generate some fake data with a recognisable pattern.
     let mut words = vec![
-        0b10101010101010101010101010101010,
-        0b10000000000000000000000000000000,
-        0b11000000000000000000000000000000,
-        0b11100000000000000000000000000000,
-        0b11110000000000000000000000000000,
-        0b11111000000000000000000000000000,
-        0b11111100000000000000000000000000,
-        0b11111110000000000000000000000000,
-        0b11111111000000000000000000000000,
+        0b1010_1010_1010_1010_1010_1010_1010_1010,
+        0b1000_0000_0000_0000_0000_0000_0000_0000,
+        0b1100_0000_0000_0000_0000_0000_0000_0000,
+        0b1110_0000_0000_0000_0000_0000_0000_0000,
+        0b1111_0000_0000_0000_0000_0000_0000_0000,
+        0b1111_1000_0000_0000_0000_0000_0000_0000,
+        0b1111_1100_0000_0000_0000_0000_0000_0000,
+        0b1111_1110_0000_0000_0000_0000_0000_0000,
+        0b1111_1111_0000_0000_0000_0000_0000_0000,
     ];
 
-    words.resize(4096, 0b11111111000000000000000000000000);
+    words.resize(4096, 0b1111_1111_0000_0000_0000_0000_0000_0000);
 
     let array = LazyArray::new(1, words);
 
     let mut group = c.benchmark_group("unpack");
     for bits in [1, 2, 4, 8] {
         group.throughput(Throughput::ElementsAndBytes {
-            bytes: 4096 / (32 / bits as u64),
+            bytes: 4096 / (32 / u64::from(bits)),
             elements: 4096,
         });
         group.bench_with_input(BenchmarkId::new("nonvectorized", bits), &array, |b, i| {
-            b.iter(|| unpack_regular(bits, i))
+            b.iter(|| unpack_regular(bits, i));
         });
         #[cfg(target_arch = "x86_64")]
         group.bench_with_input(

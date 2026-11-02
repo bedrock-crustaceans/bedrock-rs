@@ -17,17 +17,19 @@ pub struct KvRef<'k, 'db> {
 
 impl KvRef<'_, '_> {
     /// Returns the key of this tuple.
+    #[must_use]
     pub fn key(&self) -> Buffer<'static> {
         Buffer::new(self.key.clone())
     }
 
     /// Returns the value in this tuple.
+    #[must_use]
     pub fn value(&self) -> Buffer<'static> {
         Buffer::new(self.value.clone())
     }
 }
 
-/// An iterator over keys in a LevelDB database.
+/// An iterator over keys in a `LevelDB` database.
 pub struct Keys<'db> {
     iter: DBIterator,
     /// Binds this struct to the `db` lifetime to ensure it does not outlive the database.
@@ -35,6 +37,11 @@ pub struct Keys<'db> {
 }
 
 impl<'db> Keys<'db> {
+    /// Creates an iterator over the keys of `db`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create an iterator.
     pub fn new(db: &'db Database) -> Result<Self> {
         Ok(Self {
             iter: db.new_iter()?,
