@@ -98,12 +98,6 @@ impl<T> OneOrMany<T> {
     }
 }
 
-impl<T> From<T> for OneOrMany<T> {
-    fn from(one: T) -> Self {
-        Self::One(one)
-    }
-}
-
 impl<T> From<Vec<T>> for OneOrMany<T> {
     fn from(many: Vec<T>) -> Self {
         Self::Many(many)
@@ -215,9 +209,8 @@ mod tests {
     use super::OneOrMany;
 
     #[test]
-    fn one_or_many_reads_as_a_slice_and_converts_from_a_value_or_a_vec() {
-        let one = OneOrMany::from(7);
-        assert_eq!(one, OneOrMany::One(7));
+    fn one_or_many_reads_as_a_slice_and_converts_from_a_vec() {
+        let one = OneOrMany::One(7);
         assert_eq!(one.as_slice(), [7]);
         let many = OneOrMany::from(vec![1, 2, 3]);
         assert_eq!(many, OneOrMany::Many(vec![1, 2, 3]));

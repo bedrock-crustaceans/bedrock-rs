@@ -57,13 +57,6 @@ impl<T> OneOrMany<T> {
     }
 }
 
-impl<T> From<T> for OneOrMany<T> {
-    /// A single value, written without an array.
-    fn from(value: T) -> Self {
-        Self::One(value)
-    }
-}
-
 impl<T> From<Vec<T>> for OneOrMany<T> {
     /// An array.
     fn from(values: Vec<T>) -> Self {
@@ -1189,8 +1182,7 @@ mod one_or_many_tests {
     use super::OneOrMany;
 
     #[test]
-    fn one_or_many_converts_from_a_value_and_from_a_vec() {
-        assert_eq!(OneOrMany::from(3), OneOrMany::One(3));
+    fn one_or_many_converts_from_a_vec() {
         assert_eq!(OneOrMany::from(vec![3, 4]), OneOrMany::Many(vec![3, 4]));
     }
 
