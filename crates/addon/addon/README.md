@@ -538,7 +538,7 @@ cargo run -p bedrock_addon_std --example ruby_pack
 
 ## Tests
 
-`cargo test -p bedrock_addon --all-features` runs the unit tests and the test binaries under `tests/`, most of them one family's. The binaries that check the crate as a whole:
+`cargo nextest run -p bedrock_addon --all-features` runs the unit tests and the test binaries under `tests/`, most of them one family's. The binaries that check the crate as a whole:
 
 | Binary (`--test <name>`) | What it holds |
 | --- | --- |
@@ -552,9 +552,9 @@ cargo run -p bedrock_addon_std --example ruby_pack
 
 The tests that read the game's own files run only with `BEDROCK_ADDON_CORPUS` set to a folder holding them, and skip without it; nothing of the game is in the repository.
 
-The game's own packs have a gate of their own: the `vanilla_gate` test of `bedrock_addon_std` (`cargo test -p bedrock_addon_std --test vanilla_gate -- --nocapture`). It reads the variable `BEDROCK_ADDON_VANILLA_1_26_60`, the root of a game install (the folder holding `behavior_packs/`, `resource_packs/`, `definitions/` and `test/`, every pack with its `manifest.json`). It loads every pack of both folders on stacks composed as the game composes them, with the install's app data, every experiment on and every Molang field compiled, links them, and requires no error and no warning, apart from the 14 pins of its `EXPECTED` list: the two vanilla loot tables `armor_stand.json` and `boat.json` (`MissingRequiredField`, each with the game's own content-log error) and twelve `TextureNotFound` warnings of the link pass. Informations are counted and printed, never asserted. A pin that does not occur exactly as often as pinned also fails the gate. Findings are printed per pack; the packs below `test/` are loaded alone and reported, never asserted. Without the variable the tests print `skipped:` and pass, which is no pass of the gate. `crates/addon/addon/tests/pack_vanilla.rs` reads the same variable for the experimental-pack rows that ship only in the newest game version.
+The game's own packs have a gate of their own: the `vanilla_gate` test of `bedrock_addon_std` (`cargo nextest run -p bedrock_addon_std --test vanilla_gate --no-capture`). It reads the variable `BEDROCK_ADDON_VANILLA_1_26_60`, the root of a game install (the folder holding `behavior_packs/`, `resource_packs/`, `definitions/` and `test/`, every pack with its `manifest.json`). It loads every pack of both folders on stacks composed as the game composes them, with the install's app data, every experiment on and every Molang field compiled, links them, and requires no error and no warning, apart from the 14 pins of its `EXPECTED` list: the two vanilla loot tables `armor_stand.json` and `boat.json` (`MissingRequiredField`, each with the game's own content-log error) and twelve `TextureNotFound` warnings of the link pass. Informations are counted and printed, never asserted. A pin that does not occur exactly as often as pinned also fails the gate. Findings are printed per pack; the packs below `test/` are loaded alone and reported, never asserted. Without the variable the tests print `skipped:` and pass, which is no pass of the gate. `crates/addon/addon/tests/pack_vanilla.rs` reads the same variable for the experimental-pack rows that ship only in the newest game version.
 
-The generator of the script-module metadata, of the vanilla identifier lists and of the command table is `cargo xtask script-meta --samples <dir>`, `<dir>` being a checkout of Mojang's `bedrock-samples` repository at a release tag; its tests run under `cargo test -p xtask`.
+The generator of the script-module metadata, of the vanilla identifier lists and of the command table is `cargo xtask script-meta --samples <dir>`, `<dir>` being a checkout of Mojang's `bedrock-samples` repository at a release tag; its tests run under `cargo nextest run -p xtask`.
 
 ## Contributing
 

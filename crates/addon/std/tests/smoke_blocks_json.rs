@@ -7,7 +7,7 @@
 //! resource packs: the world is the shared helper's, in the client's base-game resource order,
 //! and the numbers and the one order-dependent value below are pinned for it.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_blocks_json`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

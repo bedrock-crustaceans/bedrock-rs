@@ -6,7 +6,7 @@
 //! seven, without a finding. MCB documents (baked documents the loaders do not decode) are
 //! counted apart.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_spawn`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_spawn`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

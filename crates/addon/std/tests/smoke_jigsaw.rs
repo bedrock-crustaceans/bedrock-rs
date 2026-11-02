@@ -4,7 +4,7 @@
 //! loaders do not decode) are counted, not failed. The behaviour packs of client install B (the
 //! experimental pack's abandoned camps) are loaded too.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_jigsaw`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_jigsaw`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

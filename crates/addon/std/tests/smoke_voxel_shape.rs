@@ -6,7 +6,7 @@
 //! pack `experimental_vanilla_shapes`, which a world has only with the `voxel_shapes`
 //! experiment, so the stacks are composed with it.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_voxel_shape`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

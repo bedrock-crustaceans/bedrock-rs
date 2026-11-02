@@ -18,7 +18,7 @@
 //! `full_strategies_client_install_a.rs` and `full_strategies_client_install_b.rs` load one
 //! client install each (`common/strategies.rs` says why they are three targets).
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo nextest run -p bedrock_addon_std --test
 //! full_strategies -- --show-output`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

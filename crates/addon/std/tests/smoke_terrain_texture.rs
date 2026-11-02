@@ -2,7 +2,7 @@
 //! the client installs load through `Driver` into `rp.texture_atlases()`, the terrain atlas of
 //! each stack is built, and it has no error-level diagnostic.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_terrain_texture`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

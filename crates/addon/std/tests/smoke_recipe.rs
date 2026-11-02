@@ -3,7 +3,7 @@
 //! error-level diagnostics. MCB documents (baked documents the loaders do not decode) in the
 //! server install's brarchives are counted apart.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_recipe`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_recipe`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

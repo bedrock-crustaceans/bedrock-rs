@@ -6,7 +6,7 @@
 //! is checked a second time file by file, through `TradeTable::parse`, so every vanilla table is
 //! read whatever shadows it.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_trading`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

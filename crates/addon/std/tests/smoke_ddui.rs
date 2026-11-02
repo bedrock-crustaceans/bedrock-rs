@@ -15,7 +15,7 @@
 //! (1.26.20) that use `Container.Item` are refused, as a 1.26.45 client refuses them. Read with
 //! a 1.26.20 engine, every file of install A loads.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_ddui`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_ddui`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

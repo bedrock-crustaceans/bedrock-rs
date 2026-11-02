@@ -9,7 +9,7 @@
 //! the source's line with a count of 0 (`cubemaps/` is in no game tree; `shadows/`, `pbr/` and
 //! `local_lighting/` are not in the sample packs).
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_render_configs`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

@@ -14,6 +14,7 @@ are; `AGENTS.md` is the working method for agents and reads as a good one for pe
 ```sh
 rustup toolchain install stable
 rustup component add rustfmt clippy
+cargo install --locked cargo-nextest
 git clone https://github.com/bedrock-crustaceans/bedrock-rs.git
 cd bedrock-rs
 cargo build --workspace
@@ -45,19 +46,26 @@ deserializes a capture from a real client and serializes back to the same bytes.
 
 ## Checks
 
-Run before opening a PR. CI runs the same three jobs on every push and pull request.
+Run before opening a PR. CI runs the same checks on every push and pull request: formatting
+once, clippy and the tests on Linux, Windows and macOS.
 
 ```sh
 cargo fmt --all
 cargo clippy --workspace --all-targets --all-features   # CI sets RUSTFLAGS=-Dwarnings
-cargo test --workspace
+cargo nextest run --workspace
+cargo test --doc --workspace
 ```
+
+Tests run under [nextest](https://nexte.st), configured in `.config/nextest.toml`; plain
+`cargo test` is used only for doctests, which nextest does not run. CI splits the tests into
+groups by crate, one job per group and OS (`.github/workflows/ci.yml`), so no job has to build
+every test binary of the workspace.
 
 Narrow the loop while you work:
 
 ```sh
-cargo test -p bedrock_protocol <test_name>       # one test, default feature = newest version only
-cargo test -p bedrock_protocol --all-features    # every version; about five times the compile time
+cargo nextest run -p bedrock_protocol <test_name>       # one test, default feature = newest version only
+cargo nextest run -p bedrock_protocol --all-features    # every version; about five times the compile time
 cargo run --example server --features network-tokio,protocol-v2225,protocol-unknown
 ```
 
@@ -97,7 +105,7 @@ Before requesting review:
 
 - [ ] `cargo fmt --all` leaves no diff.
 - [ ] `cargo clippy --workspace --all-targets --all-features` is warning-free.
-- [ ] `cargo test --workspace` passes (state any excluded crate).
+- [ ] `cargo nextest run --workspace` and `cargo test --doc --workspace` pass (state any excluded crate).
 - [ ] A protocol change has a test that failed before it and passes after.
 - [ ] Docs and `bedrock/examples/server.rs` were updated if behaviour changed.
 

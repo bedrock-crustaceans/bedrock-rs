@@ -4,7 +4,7 @@
 //! file is written back as it was read, and the load asks for the bytes of no image. The sample
 //! packs and the server install ship no persona pack.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_persona_piece`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

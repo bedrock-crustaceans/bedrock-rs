@@ -5,7 +5,7 @@
 //! load. The sample packs have no `splashes.json`, `loading_messages.json`, `font/`,
 //! `skins.json` or `credits/`: those parts say so and are skipped there.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_rp_misc`; without the variable the tests skip.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

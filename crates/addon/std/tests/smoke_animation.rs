@@ -5,7 +5,7 @@
 //! documents the loaders do not decode, are counted apart from errors), and every
 //! animation occurrence of the Molang pairs file loads with its text and version.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_animation`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

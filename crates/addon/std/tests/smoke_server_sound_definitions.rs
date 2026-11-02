@@ -5,7 +5,7 @@
 //! the game files at hand, so a release that starts shipping the file is noticed, and skips with
 //! a message otherwise.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_server_sound_definitions`.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

@@ -3,7 +3,7 @@
 //! diagnostics. MCB documents (baked items in the server install's brarchives) are decoded and
 //! read like the JSON files.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_item`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_item`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

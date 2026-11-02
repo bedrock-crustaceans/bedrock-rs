@@ -147,7 +147,7 @@ The four examples of [`bedrock_addon`](../addon#examples) (`in_memory_pack`, `en
 
 ## Tests
 
-`cargo test -p bedrock_addon_std` runs the tests that need nothing outside the repository: they write their packs into a temporary directory. The groups below that read the game's own files skip without their variable, print a `skipped:` line and pass; such a pass says nothing about what the test checks.
+`cargo nextest run -p bedrock_addon_std` runs the tests that need nothing outside the repository: they write their packs into a temporary directory. The groups below that read the game's own files skip without their variable, print a `skipped:` line and pass; such a pass says nothing about what the test checks.
 
 | Tests (`--test <name>`) | What they hold | Variable |
 | --- | --- | --- |
@@ -157,7 +157,7 @@ The four examples of [`bedrock_addon`](../addon#examples) (`in_memory_pack`, `en
 | `full`, `full_<tree>`, `full_<tree>_link`, `full_<tree>_write`, `full_checks`, `full_strategies*` | whole trees of the game's packs (a server install, two client installs, the sample packs, the split client and server pack trees) loaded as a server loads its world, linked and written back, with the counts pinned; `Strategy::Sequential` against `Strategy::Rayon` | `BEDROCK_ADDON_CORPUS` |
 | `vanilla_gate` | the gate over the game's own packs: every pack of an install loads and links with no error and no warning, apart from the game's own content-log lines listed in its `EXPECTED` list; the packs below `test/` are reported, not asserted | `BEDROCK_ADDON_VANILLA_1_26_60` |
 
-`BEDROCK_ADDON_CORPUS` names a folder with one entry per kind of install (the layout is in `tests/common/game_files.rs`; nothing of the game is in the repository). `BEDROCK_ADDON_VANILLA_1_26_60` names the root of a game install: the folder holding `behavior_packs/`, `resource_packs/`, `definitions/` and `test/`, every pack with its `manifest.json` and its `__brarchive` folders as shipped; a root whose packs carry no manifest is no install, and the test fails and says so. `BEDROCK_ADDON_VANILLA_1_26_60_DUMP`, set to a folder, also writes every finding of the gate there as tab-separated files. Run the gate with `BEDROCK_ADDON_VANILLA_1_26_60=<root> cargo test -p bedrock_addon_std --test vanilla_gate -- --nocapture`.
+`BEDROCK_ADDON_CORPUS` names a folder with one entry per kind of install (the layout is in `tests/common/game_files.rs`; nothing of the game is in the repository). `BEDROCK_ADDON_VANILLA_1_26_60` names the root of a game install: the folder holding `behavior_packs/`, `resource_packs/`, `definitions/` and `test/`, every pack with its `manifest.json` and its `__brarchive` folders as shipped; a root whose packs carry no manifest is no install, and the test fails and says so. `BEDROCK_ADDON_VANILLA_1_26_60_DUMP`, set to a folder, also writes every finding of the gate there as tab-separated files. Run the gate with `BEDROCK_ADDON_VANILLA_1_26_60=<root> cargo nextest run -p bedrock_addon_std --test vanilla_gate --no-capture`.
 
 ## Contributing
 

@@ -9,8 +9,8 @@
 //! below `particles/` on its own, with the pack's load context: the JSON the archive entries
 //! were made from, so each vanilla document is read whether the install uses it or not.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
-//! smoke_particle -- --nocapture`; without the variable every test skips.
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
+//! smoke_particle --no-capture`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 

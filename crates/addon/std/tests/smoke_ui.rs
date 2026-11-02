@@ -5,7 +5,7 @@
 //! vanilla's own files are known to raise are pinned. The `textures/ui/*.json` side files are
 //! smoked with `rp_misc`.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_ui`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_ui`;
 //! without the variable the tests skip.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

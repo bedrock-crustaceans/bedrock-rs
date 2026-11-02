@@ -6,7 +6,7 @@
 //! the ones pinned below. With the `script-syntax` feature of `bedrock_addon` on, the files the
 //! parser reads have no syntax error either.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_script_bundle`, and once more with `--features bedrock_addon/script-syntax`; without
 //! the variable every test skips.
 

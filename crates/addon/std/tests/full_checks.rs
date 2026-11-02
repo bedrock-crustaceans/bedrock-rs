@@ -18,7 +18,7 @@
 //!   check is named, or is counted as unclaimed by its path prefix. The behaviour-pack
 //!   entities, which no smoke test checks, are checked here.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo nextest run -p bedrock_addon_std --test
 //! full_checks -- --show-output`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

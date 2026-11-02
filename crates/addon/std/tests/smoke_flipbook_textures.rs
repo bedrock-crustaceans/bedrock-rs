@@ -2,7 +2,7 @@
 //! of the client installs load through `Driver` into `rp.flipbooks()`, the flipbooks of each
 //! stack are merged, and they have no error-level diagnostic.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_flipbook_textures`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

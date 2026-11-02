@@ -3,7 +3,7 @@
 //! server install of the game.
 //!
 //! Run the smoke test with
-//! `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test script_config`; without
+//! `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test script_config`; without
 //! the variable it skips with a message.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

@@ -5,7 +5,7 @@
 //! folder the test fails, and the smoke proper is written against real files. Until then the
 //! family is covered by the fixtures of `crates/addon/addon/tests/atomic_client_entity`.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_atomic_client_entity`; without the variable the test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

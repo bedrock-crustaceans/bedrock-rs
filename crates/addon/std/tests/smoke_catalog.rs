@@ -4,7 +4,7 @@
 //! do not decode) are counted, not failed. The sample packs ship no `item_catalog/` in their
 //! `behavior_pack/`: they are loaded and must give four empty categories and no finding.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_catalog`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_catalog`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

@@ -26,8 +26,8 @@
 //! With `BEDROCK_ADDON_VANILLA_1_26_60_DUMP` naming a folder, every finding is also written
 //! there as tab-separated lines (`vanilla.tsv`, `vanilla_test_packs.tsv`).
 //!
-//! Run: `BEDROCK_ADDON_VANILLA_1_26_60=<root> cargo test -p bedrock_addon_std --test
-//! vanilla_gate -- --nocapture`.
+//! Run: `BEDROCK_ADDON_VANILLA_1_26_60=<root> cargo nextest run -p bedrock_addon_std --test
+//! vanilla_gate --no-capture`.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 

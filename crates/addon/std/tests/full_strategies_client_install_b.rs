@@ -4,7 +4,7 @@
 //! `full_strategies_client_install_b`) because loading both in one test binary needs more than
 //! the 600 s of CPU a test binary may use.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo nextest run -p bedrock_addon_std --test
 //! full_strategies_client_install_b -- --show-output`; without the variable the test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

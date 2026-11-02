@@ -4,7 +4,7 @@
 //! documents the loaders do not decode) are counted, not failed. The sample packs ship neither
 //! directory in their `behavior_pack/`: they are loaded and must give nothing at all.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_worldgen`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_worldgen`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

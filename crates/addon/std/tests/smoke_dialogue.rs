@@ -7,7 +7,7 @@
 //! written to a temporary directory load through the `Driver` from disk, the lower-priority
 //! pack's scene winning.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_dialogue`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_dialogue`;
 //! without the variable the game-file tests skip.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

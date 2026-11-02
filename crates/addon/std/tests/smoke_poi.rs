@@ -8,7 +8,7 @@
 //! manifest and `contents.json` only; the sample packs have no POI folder), so today every
 //! source reports zero documents; the tests keep the walk honest for the day one does.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_poi`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_poi`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

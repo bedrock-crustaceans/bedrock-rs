@@ -10,7 +10,7 @@
 //! pack of the tree is on the resource stack. Material files hold no Molang, so
 //! the Molang pairs file has no occurrence to check. The counts are pinned for the game's files.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_materials`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

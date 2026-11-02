@@ -18,7 +18,7 @@ a compile error is not red.
 2. **Write the red test** in a `#[cfg(test)] mod tests` at the bottom of that file (or in the
    crate's `tests/` for anything that needs a fixture on disk), named for the behaviour:
    `manifest_without_dependencies_imports`, not `test_manifest`. Run only it:
-   `cargo test -p <crate> <test_name>`. Done when it fails and the assertion message names the
+   `cargo nextest run -p <crate> <test_name>`. Done when it fails and the assertion message names the
    missing behaviour.
 3. **Go green** with the smallest change that passes. The neighbour you noticed gets its own
    test and its own commit.
@@ -143,7 +143,10 @@ regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a 
 
 ## Facts no config confesses
 
-- `cargo test --workspace` is red on a stale `Cargo.lock` because of `bedrock_network`.
+- Tests run under `cargo nextest run` (`.config/nextest.toml`); each test is its own process.
+  `cargo test` is only for doctests (`cargo test --doc`), which nextest does not run. CI tests
+  in crate groups, one job per group and OS; a new crate falls into the `rest` group by itself.
+- `cargo nextest run --workspace` is red on a stale `Cargo.lock` because of `bedrock_network`.
   `CONTRIBUTING.md` has the workaround (`cargo update -p raknet-tokio`). Report what you
   excluded; never present an excluded crate as passing.
 - `raknet-tokio` is an unpinned git dependency and the lock file is not committed. An API

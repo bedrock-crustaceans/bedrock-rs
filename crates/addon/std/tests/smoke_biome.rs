@@ -5,7 +5,7 @@
 //! (with the experimental packs' `"beta"` files) are loaded too and their findings printed, and
 //! the biome occurrences of the Molang pairs file load with their text and version.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_biome`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_biome`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

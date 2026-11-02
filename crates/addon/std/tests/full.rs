@@ -33,7 +33,7 @@
 //! `full_server_install_write`, and `full_<tree>`, `full_<tree>_link`, `full_<tree>_write` for
 //! the five other trees.
 //!
-//! Run each with `BEDROCK_ADDON_CORPUS=<folder> cargo test -p bedrock_addon_std --test
+//! Run each with `BEDROCK_ADDON_CORPUS=<folder> cargo nextest run -p bedrock_addon_std --test
 //! <binary> -- --show-output`; without the variable every test that needs the game's files
 //! prints `skipped:` and passes, which is no pass of the smoke. The pinned numbers are the
 //! files of `full/pins/`; `full/support.rs` says how they are taken again.

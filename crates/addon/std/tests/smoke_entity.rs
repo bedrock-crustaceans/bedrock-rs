@@ -4,7 +4,7 @@
 //! loaders do not decode, are counted apart), and the upgraded `sulfur_cube` presets equal the
 //! shipped ones.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_entity`; without the variable every test skips.
 //!
 //! Components and goals are typed, so the zero-error gate covers them too; the warnings are printed by code.

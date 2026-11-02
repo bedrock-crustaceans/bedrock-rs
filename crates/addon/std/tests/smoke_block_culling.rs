@@ -6,7 +6,7 @@
 //! Vanilla's files are `<name>.culling.json` at the top of the directory, named
 //! `minecraft:culling.<name>`, in base-game packs (the only packs that may use the namespace).
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_block_culling`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

@@ -10,7 +10,7 @@
 //! every file is read; a definition a higher pack shadows is counted by its
 //! `ShadowedDefinition` info. The counts are pinned for the game's files.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test smoke_fog`;
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_fog`;
 //! without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]

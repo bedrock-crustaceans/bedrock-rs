@@ -5,7 +5,7 @@
 //! install resolves to one definition per identifier by `description.min_engine_version`; and
 //! every client entity occurrence of the Molang pairs file reads to its text and version.
 //!
-//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo test -p bedrock_addon_std --test
+//! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_client_entity`; without the variable every test skips.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
