@@ -25,10 +25,14 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
       - name: Draw
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 .github/scripts/contributors.py --out "$RUNNER_TEMP/contributors.svg"
+        run: node .github/scripts/contributors.ts --out "$RUNNER_TEMP/contributors.svg"
 
       - name: Publish
         env:

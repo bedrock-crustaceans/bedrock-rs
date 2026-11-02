@@ -1,0 +1,5 @@
+{
+  "$comment": "Read by .github/scripts/contributors.ts. Fix names and emails git itself gets wrong in .mailmap. Here, `aliases` credits a commit email no GitHub account has verified to the login that owns it ({\"email\": \"login\"}), and `hide` removes people by GitHub login, commit name or commit email.",
+  "aliases": {},
+  "hide": []
+}
