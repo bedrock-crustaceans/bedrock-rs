@@ -31,3 +31,26 @@ impl From<Dimension> for i32 {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_dimension_round_trips_through_its_id() {
+        for dimension in [
+            Dimension::Overworld,
+            Dimension::Nether,
+            Dimension::End,
+            Dimension::Undefined,
+        ] {
+            assert_eq!(Dimension::from(i32::from(dimension)), dimension);
+        }
+    }
+
+    #[test]
+    fn an_unknown_dimension_id_is_undefined() {
+        assert_eq!(Dimension::from(4), Dimension::Undefined);
+        assert_eq!(Dimension::from(-1), Dimension::Undefined);
+    }
+}
