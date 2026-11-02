@@ -3,6 +3,9 @@ name = "bedrock_level"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [features]
 default = []
 

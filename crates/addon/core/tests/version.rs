@@ -2,6 +2,7 @@
 //! form the game accepts and its ordering, `FormatVersion` and what an envelope said about it,
 //! `VersionRange` containment under the four range models, and the manifest version types.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};

@@ -3,6 +3,7 @@
 //! because facet coerces scalars and cannot be told not to. Each wrapper against every JSON
 //! shape: `1`, `1.0`, `"-64"`, `true`, `null`, `3000000000` and a value out of range.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString};
 use facet::Facet;
 

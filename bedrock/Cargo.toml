@@ -3,6 +3,9 @@ name = "bedrock"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 bedrock_auth = { path = "../crates/auth", optional = true }
 bedrock_shared = { path = "../crates/shared" }

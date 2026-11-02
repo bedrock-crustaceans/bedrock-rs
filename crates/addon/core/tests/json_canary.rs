@@ -5,6 +5,7 @@
 //! them fails, facet has changed and the rule that every typed read goes through the text is
 //! open for review again.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::json::Value;
 use facet::Facet;
 use indexmap::IndexMap;

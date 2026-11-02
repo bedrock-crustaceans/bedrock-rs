@@ -1,3 +1,4 @@
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "outside the add-on toolkit: facet-json is called directly")]
 use crate::error::EncryptionError;
 use aes::Aes256;
 use ctr::cipher::{StreamCipher, StreamCipherSeek};

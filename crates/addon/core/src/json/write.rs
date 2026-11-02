@@ -6,6 +6,11 @@
 //! reads back to the same `f32` with a `.0` on integral values (jsoncpp's real tag survives), a
 //! `Value`'s numbers with their int/real tag, no `null` for an absent `Option`, and
 //! `EncodeError::NotRepresentable` instead of `null` for a non-finite number.
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "this module is the JSON door: the one caller of facet-json"
+)]
 
 use std::borrow::Cow;
 

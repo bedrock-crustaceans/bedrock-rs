@@ -30,6 +30,11 @@
 //! length that spells the same double (`respell`), so every offset, and with it every
 //! span and raw slice, is the one of the author's text; a text without such a token is read
 //! as it is, with no copy.
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "this module is the JSON door: the one caller of facet-json"
+)]
 
 use std::borrow::Cow;
 use std::collections::VecDeque;

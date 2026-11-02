@@ -5,6 +5,7 @@
 //! dropping a bad entry, family defaults and constraints) is the family's and is not tested
 //! here.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 #[path = "shared/common.rs"]
 mod common;
 

@@ -3,6 +3,9 @@ name = "bedrock_protocol_core"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 nbtx.workspace = true
 paste.workspace = true

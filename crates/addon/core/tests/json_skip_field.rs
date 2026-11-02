@@ -5,6 +5,7 @@
 //! field is then an unknown member like any other: reported by `unknown_members` (the family's
 //! `UnrecognizedField`), kept by `keep_unknown_members` and written back.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{Value, keep_unknown_members, to_json, unknown_members};
 use facet::Facet;

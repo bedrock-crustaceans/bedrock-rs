@@ -1,6 +1,7 @@
 //! `MenuCategory` and `CreativeCategory`: the object round trips; the five
 //! category spellings; and the per-family constraints are not the type's.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 #[path = "shared/common.rs"]
 mod common;
 

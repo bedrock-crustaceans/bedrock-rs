@@ -2,6 +2,7 @@
 //! sees them: the name-or-condition entries, `scripts`, `spawn_egg`, the `Visuals` view, and
 //! `EngineVersionMerge` over the client-entity and attachable fixture rows.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::id::{
     AnimationRef, GeometryId, MaterialId, ParticleId, RenderControllerId, SoundEventName,
     TexturePath,

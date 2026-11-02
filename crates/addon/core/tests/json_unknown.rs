@@ -5,6 +5,7 @@
 //!
 //! Each unknown member carries its JSON path (`description/color`, `events/1/target`).
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, StrictInt, Value, keep_unknown_members, to_json, too_deep_to_walk,

@@ -4,6 +4,7 @@
 //! `EncodeError::NotRepresentable`, and `WriteStyle` defaulting to two spaces and a trailing
 //! newline. `NotRepresentable` names the JSON path of the value it refused.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     EncodeError, Indent, StrictFloat, StrictInt, Unrepresentable, Value, WriteStyle,

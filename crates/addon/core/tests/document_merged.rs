@@ -1,6 +1,7 @@
 //! `Merged<T, L>`: a value folded from every pack's copy with the family's
 //! merge strategy, the winning origin per entry and the layers top-first.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,

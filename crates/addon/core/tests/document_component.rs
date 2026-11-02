@@ -1,6 +1,7 @@
 //! `ComponentMap<C>` over a toy component enum that implements `ComponentSet`
 //! and `Component` by hand, as `#[derive(Components)]` will.
 
+#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
 use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent,
 };
