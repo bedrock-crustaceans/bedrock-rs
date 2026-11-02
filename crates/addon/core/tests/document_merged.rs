@@ -1,7 +1,11 @@
 //! `Merged<T, L>`: a value folded from every pack's copy with the family's
 //! merge strategy, the winning origin per entry and the layers top-first.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
@@ -49,16 +53,16 @@ fn origin(pack_index: usize) -> Origin {
     )
 }
 
-fn layer(pack_index: usize, entries: &[(&str, &'static str)]) -> Result<Document<Lang>, Rejected> {
+fn layer(pack_index: usize, entries: &[(&str, &'static str)]) -> Document<Lang> {
     let v = FormatVersion::new(1, 0, 0);
-    Ok(Document::new(
+    Document::new(
         Lang {
             entries: entries.iter().map(|(k, v)| ((*k).to_owned(), *v)).collect(),
         },
         origin(pack_index),
         VersionInfo::new(None, false, v, v, false),
         Diagnostics::default(),
-    ))
+    )
 }
 
 fn failed(pack_index: usize) -> Result<Document<Lang>, Rejected> {
@@ -85,9 +89,9 @@ fn merge_lang(walk: Vec<Result<Document<Lang>, Rejected>>) -> Merged<Lang> {
 #[test]
 fn later_copies_override_and_each_entry_knows_its_winning_pack() {
     let merged = merge_lang(vec![
-        layer(2, &[("a", "2a"), ("b", "2b")]),
-        layer(1, &[("b", "1b"), ("c", "1c")]),
-        layer(0, &[("c", "0c")]),
+        Ok(layer(2, &[("a", "2a"), ("b", "2b")])),
+        Ok(layer(1, &[("b", "1b"), ("c", "1c")])),
+        Ok(layer(0, &[("c", "0c")])),
     ]);
     let entries: Vec<(&str, &str)> = merged
         .value()
@@ -115,7 +119,11 @@ fn later_copies_override_and_each_entry_knows_its_winning_pack() {
 
 #[test]
 fn layers_are_top_first() {
-    let merged = merge_lang(vec![layer(2, &[]), layer(0, &[]), layer(1, &[])]);
+    let merged = merge_lang(vec![
+        Ok(layer(2, &[])),
+        Ok(layer(0, &[])),
+        Ok(layer(1, &[])),
+    ]);
     let packs: Vec<Option<usize>> = merged
         .layers()
         .iter()
@@ -126,7 +134,7 @@ fn layers_are_top_first() {
 
 #[test]
 fn a_failed_copy_contributes_its_findings_only() {
-    let merged = merge_lang(vec![layer(1, &[("a", "1a")]), failed(0)]);
+    let merged = merge_lang(vec![Ok(layer(1, &[("a", "1a")])), failed(0)]);
     assert_eq!(merged.layers().len(), 1);
     assert_eq!(merged.entries.len(), 1);
     let codes: Vec<DiagnosticCode> = merged.diagnostics().map(|d| d.code.clone()).collect();
@@ -136,7 +144,7 @@ fn a_failed_copy_contributes_its_findings_only() {
 #[test]
 fn a_strategy_can_release_an_entry_and_report() {
     let merged = Merged::merge(
-        vec![layer(1, &[("a", "1a")]), layer(0, &[("a", "")])],
+        vec![Ok(layer(1, &[("a", "1a")])), Ok(layer(0, &[("a", "")]))],
         Lang::default(),
         |merged: &mut Lang, copy, cx| {
             for (key, value) in &copy.entries {

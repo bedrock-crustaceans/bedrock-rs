@@ -317,7 +317,10 @@ fn a_beta_struct_is_written_with_the_beta_literal() {
     let any = history::Any::Beta(ToyBeta::default());
     let written: Value = facet_json::from_str(&any.to_json().unwrap()).unwrap();
     let version = written.as_object().unwrap().get("format_version").unwrap();
-    assert_eq!(version.as_string().map(|s| s.as_str()), Some("beta"));
+    assert_eq!(
+        version.as_string().map(facet_value::VString::as_str),
+        Some("beta")
+    );
     assert_eq!(
         any.parsed_version(),
         bedrock_addon_core::versioning::BETA_VERSION

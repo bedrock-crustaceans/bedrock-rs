@@ -71,11 +71,6 @@
 //! compiled quick start and the examples table, and the examples there name these types by
 //! their `bedrock_addon` path. The doctests of this crate name its own paths.
 
-// `#[must_use]` goes on methods returning a changed copy and on values whose loss is a bug, not
-// on every pure getter.
-// The error enums' variants document each failure.
-// A panic here is a broken invariant of the crate, never an outcome a caller handles, so no
-// function carries a `# Panics` section.
 // Names such as `FormatVersion` in `version` stay descriptive.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

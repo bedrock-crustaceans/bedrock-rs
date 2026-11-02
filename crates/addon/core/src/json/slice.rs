@@ -25,6 +25,7 @@ pub struct JsonSlice<'a> {
 
 impl<'a> JsonSlice<'a> {
     /// A whole file's text, at offset 0.
+    #[must_use]
     pub fn new(text: &'a str) -> Self {
         Self { text, offset: 0 }
     }
@@ -32,6 +33,7 @@ impl<'a> JsonSlice<'a> {
     /// The slice a `RawJson` captured from this slice's text, with its file offset: the pointer
     /// difference between the two. `None` when `raw` does not borrow from this text (an owned
     /// `RawJson`, or one taken from another document).
+    #[must_use]
     pub fn nested(&self, raw: &RawJson<'a>) -> Option<JsonSlice<'a>> {
         let std::borrow::Cow::Borrowed(text) = raw.0 else {
             return None;
@@ -73,6 +75,10 @@ pub struct SliceError {
 /// whatever `T` is (one with an untyped member, or one that holds itself, included).
 /// `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target without a stack
 /// switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `SliceError` when `slice` does not read as `T`, with the file span and JSON path of the fault.
 pub fn parse_at<'a, T: Facet<'a>>(slice: JsonSlice<'a>) -> Result<T, SliceError> {
     parse_in(slice).map_err(|failure| {
         let (span, members, error) = *failure;
@@ -376,6 +382,7 @@ fn map_given_an_array(
 /// Each step reads one level of the text, so one call costs the levels on the path: for the
 /// spans of many values of one document, walk the text once instead
 /// ([`clamp_non_finite`](super::clamp_non_finite) does).
+#[must_use]
 pub fn span_at(slice: JsonSlice<'_>, path: &crate::diagnostic::JsonPath) -> Option<Span> {
     let mut members = MemberPath::default();
     for segment in path.segments() {

@@ -32,6 +32,7 @@ use crate::diagnostic::{
 /// thread is enough at any depth to `MAX_JSON_DEPTH` (`MAX_JSON_DEPTH` names what is outside
 /// that rule). A value nested deeper is no text a reader of the crate reads: nothing of it is
 /// walked, here and in the functions below.
+#[must_use]
 pub fn unknown_members(shape: &'static Shape, json: &Value) -> Vec<(JsonPath, Value)> {
     walk(shape, json, None)
         .into_iter()

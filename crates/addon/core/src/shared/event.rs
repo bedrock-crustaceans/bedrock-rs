@@ -48,6 +48,7 @@ impl EventTrigger {
 
     /// The findings of the trigger's `filters` (an unknown test name), located under
     /// `at/filters`.
+    #[must_use]
     pub fn check(&self, at: &JsonPath) -> Diagnostics {
         let mut out = Diagnostics::default();
         if let Some(filters) = &self.filters {

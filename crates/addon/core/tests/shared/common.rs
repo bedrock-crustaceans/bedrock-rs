@@ -1,7 +1,11 @@
 //! Helpers for the shared-type tests: read a value from JSON text the way a family reads a
 //! member (the jsonc entry point), write it back, and compare at the value level.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 #![allow(dead_code)] // each test file uses part of the helpers
 
 use bedrock_addon_core::json::{Indent, Value, WriteStyle, write_json};

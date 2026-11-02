@@ -279,6 +279,7 @@ impl Filter {
     /// path below it): a test name vanilla does not register is an `UnresolvedReference` kept
     /// error with vanilla's text (the test then evaluates false); each member kept in a test's
     /// or a group's `extra` is an `UnrecognizedField` warning (cereal's `0x4`, unstrict mask).
+    #[must_use]
     pub fn check(&self, at: &JsonPath) -> Diagnostics {
         let mut out = Diagnostics::default();
         let mut path = at.clone();
@@ -504,6 +505,7 @@ impl FilterGroup {
 
 impl FilterSubject {
     /// The JSON name (`"self"`, `"other"`, …).
+    #[must_use]
     pub fn name(self) -> &'static str {
         SUBJECTS
             .iter()

@@ -140,6 +140,7 @@ pub struct Walk {
 impl Walk {
     /// The index in [`directories`](Self::directories) of the directory `path` (a path in the
     /// pack, or in the app data) belongs to, if the walk reads it.
+    #[must_use]
     pub fn matches(&self, path: &PackPath) -> Option<usize> {
         if !(self.accept)(path) {
             return None;
@@ -151,6 +152,7 @@ impl Walk {
 
     /// The text of [`read_error`](Self::read_error) for the file at `path`, if the walk's
     /// family has one.
+    #[must_use]
     pub fn read_error_text(&self, path: &PackPath) -> Option<VanillaText> {
         self.read_error.map(|template| VanillaText::Formatted {
             template,
@@ -160,6 +162,7 @@ impl Walk {
 
     /// [`matches`](Self::matches) for a file of the pack loaded with `cx`: `None` also when
     /// [`in_pack`](Self::in_pack) leaves the file out of that pack's walk.
+    #[must_use]
     pub fn matches_in(&self, path: &PackPath, cx: &LoadContext) -> Option<usize> {
         let directory = self.matches(path)?;
         self.in_pack
@@ -171,6 +174,7 @@ impl Walk {
     /// the pack loaded with `cx` that the pack's active subpack shadows, if the walk reads it
     /// all the same: [`shadowed`](Self::shadowed) takes it and
     /// [`matches_in`](Self::matches_in) would read it.
+    #[must_use]
     pub fn matches_shadowed(&self, path: &PackPath, cx: &LoadContext) -> Option<usize> {
         let shadowed = self.shadowed?;
         let directory = self.matches_in(path, cx)?;
@@ -178,6 +182,7 @@ impl Walk {
     }
 
     /// Whether the walk reads the app-data file at `path`.
+    #[must_use]
     pub fn matches_app_data(&self, path: &PackPath) -> bool {
         (self.accept)(path)
             && self
@@ -275,21 +280,25 @@ impl Registered {
     }
 
     /// The kind's `Kind::NAME`.
+    #[must_use]
     pub fn kind(&self) -> &'static str {
         self.kind
     }
 
     /// How many identifiers.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// No identifier.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// The pack that registered `id`; `None` when no pack did, or when `K` is another kind.
+    #[must_use]
     pub fn by<K: Kind>(&self, id: &Id<K>) -> Option<&PackRef> {
         self.entry(id).map(|(_, pack)| pack)
     }
@@ -335,6 +344,7 @@ pub enum Registration<'a> {
 
 impl Registration<'_> {
     /// Whether a pack of the stack registered the identifier.
+    #[must_use]
     pub fn is_registered(&self) -> bool {
         matches!(self, Self::By { .. })
     }
@@ -357,6 +367,7 @@ pub struct StackCx<'a> {
 impl<'a> StackCx<'a> {
     /// The context of a stack loaded with `options` (built by `bedrock_addon`'s
     /// loaders), with no other collection in view.
+    #[must_use]
     pub fn new(options: &'a LoadOptions, packs: &'a [StackPack]) -> Self {
         Self {
             options,
@@ -378,6 +389,7 @@ impl<'a> StackCx<'a> {
     /// loaded collection of kind `K` (its effective definitions, stable or beta).
     /// [`Registration::NotInView`] unless the combining collection declared `K::NAME` in
     /// [`CollectionLoader::needs`] and a collection that registers the kind is compiled in.
+    #[must_use]
     pub fn registered<K: Kind>(&self, id: &Id<K>) -> Registration<'a> {
         match self.registered.iter().find(|r| r.kind() == K::NAME) {
             None => Registration::NotInView,
@@ -394,6 +406,7 @@ impl<'a> StackCx<'a> {
     // The maximum over the stack, the current game version for an empty stack. Vanilla filters
     // the packs by a per-pack flag that is not established; every pack with a version counts
     // here.
+    #[must_use]
     pub fn full_stack_min_engine_version(&self) -> SemVersion {
         self.packs
             .iter()
@@ -465,6 +478,7 @@ impl fmt::Debug for Listing {
 
 impl StackPack {
     /// A stack entry from its parts (built by `bedrock_addon`'s loaders).
+    #[must_use]
     pub fn new(pack: PackRef, origin: PackOrigin, context: LoadContext) -> Self {
         Self {
             pack,
@@ -499,6 +513,7 @@ impl StackPack {
     /// - **Order**: bytewise by key, each key once: the order a [`Walk`] visits a pack in.
     ///
     /// Empty when the loader gave no listing.
+    #[must_use]
     pub fn files(&self) -> &[ListedFile] {
         &self.files.0
     }
@@ -508,6 +523,7 @@ impl StackPack {
     /// learns of the files of its directory that its [`Walk`] does not read (a note, a
     /// picture, a file of another extension), to report them unread. Found by bisection: the
     /// cost is the files returned, not the pack's.
+    #[must_use]
     pub fn files_below(&self, directory: &str) -> &[ListedFile] {
         let files = self.files();
         if directory.is_empty() {
@@ -533,6 +549,7 @@ impl StackPack {
     /// [`files`](Self::files) and no walk reads them; a rule that combines the pack's copy
     /// with the subpack's (a texture list the subpack's list is appended to) learns here that
     /// the pack has one. Empty without an active subpack.
+    #[must_use]
     pub fn shadowed_files(&self) -> &[ListedFile] {
         &self.shadowed.0
     }

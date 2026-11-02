@@ -4,7 +4,11 @@
 //! `EncodeError::NotRepresentable`, and `WriteStyle` defaulting to two spaces and a trailing
 //! newline. `NotRepresentable` names the JSON path of the value it refused.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     EncodeError, Indent, StrictFloat, StrictInt, Unrepresentable, Value, WriteStyle,
@@ -283,11 +287,9 @@ fn nan_and_infinities_are_not_representable() {
 // A constant is written as the token an author writes, as a member, in a list and
 // inside an `Option`; the widened text still reads as the same constant.
 #[test]
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn a_molang_constant_is_written_as_its_shortest_token() {
     use molangx::json::MolangValueRepr as Molang;
-    assert_eq!(compact(&Molang::Const(0.1)), "0.1");
-    assert_eq!(compact(&Molang::Const(1.0)), "1");
-    assert_eq!(compact(&Molang::Const(-0.0)), "-0.0");
     #[derive(Facet)]
     struct Fields {
         member: Molang,
@@ -295,6 +297,9 @@ fn a_molang_constant_is_written_as_its_shortest_token() {
         maybe: Option<Molang>,
         flag: Molang,
     }
+    assert_eq!(compact(&Molang::Const(0.1)), "0.1");
+    assert_eq!(compact(&Molang::Const(1.0)), "1");
+    assert_eq!(compact(&Molang::Const(-0.0)), "-0.0");
     let fields = Fields {
         member: Molang::Const(16.0),
         list: vec![Molang::Const(0.0), Molang::Const(2.5)],

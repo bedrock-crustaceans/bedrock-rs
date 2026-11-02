@@ -74,6 +74,10 @@ pub trait VersionStruct: Versioned + MolangFields + Sized {
     /// Parses `payload`; `None` when the struct cannot be built (the reason is in `d`).
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self>;
     /// The struct as JSON, in its own version's shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` when the struct has no JSON form.
     fn write(&self) -> Result<Value, EncodeError>;
 }
 
@@ -344,6 +348,7 @@ pub enum InputKind {
 
 impl InputKind {
     /// Where the version is read from.
+    #[must_use]
     pub const fn version_input(self) -> VersionInput {
         match self {
             Self::FirstRun | Self::JsonCpp => VersionInput::Root,
@@ -353,6 +358,7 @@ impl InputKind {
 
     /// The default of `Family::null_rule`: the null rule of every slice of a family of this
     /// kind; `None` for `FirstRun`.
+    #[must_use]
     pub const fn null_rule(self) -> Option<crate::json::NullRule> {
         match self {
             Self::FirstRun => None,
@@ -396,6 +402,7 @@ pub trait Family: Sized + 'static {
     /// by the pack-version check) chooses here. Default
     /// [`BETA_PERMISSION`](Self::BETA_PERMISSION).
     #[allow(unused_variables)]
+    #[must_use]
     fn beta_permission(payload: JsonSlice<'_>, cx: &LoadContext) -> BetaPermission {
         Self::BETA_PERMISSION
     }
@@ -422,6 +429,7 @@ pub trait Family: Sized + 'static {
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {}
     /// The version gates compare against: the file's, or the family's default when absent.
     #[allow(unused_variables)]
+    #[must_use]
     fn effective_version(file: Option<FormatVersion>, cx: &LoadContext) -> FormatVersion {
         file.unwrap_or(Self::FLOOR)
     }
@@ -452,6 +460,7 @@ pub trait Family: Sized + 'static {
     /// the crate's own information where the family names no text of the game; a family with
     /// a text keeps a warning unless it says otherwise, because the game logs that line at
     /// level 2 (client entity, attachable, client item).
+    #[must_use]
     fn missing_version_severity() -> Severity {
         if Self::MISSING_VERSION_TEXT.is_some() {
             Severity::Warning
@@ -466,6 +475,7 @@ pub trait Family: Sized + 'static {
     /// legacy structs below 1.21.89, `Strict` from `Legacy::ActorDocumentCorrected` on and
     /// for the beta struct.
     #[allow(unused_variables)]
+    #[must_use]
     fn error_mask(index: StructIndex) -> ErrorMask {
         ErrorMask::Unstrict
     }
@@ -480,6 +490,7 @@ pub trait Family: Sized + 'static {
     /// for the legacy slice (a hand-written parser, the family's own), `Rejected` for the
     /// cereal slices.
     #[allow(unused_variables)]
+    #[must_use]
     fn null_rule(index: StructIndex) -> Option<crate::json::NullRule> {
         Self::INPUT.null_rule()
     }
@@ -489,6 +500,7 @@ pub trait Family: Sized + 'static {
     /// key): the caller routes with it before calling [`load`], reading the version with
     /// [`file_version`].
     #[allow(unused_variables)]
+    #[must_use]
     fn selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
         true
     }
@@ -509,6 +521,7 @@ pub trait Family: Sized + 'static {
     /// A content-sensitive routing hook: the index into `VERSIONS` of the struct that parses
     /// `payload`, for a version the range model accepts; `None` = version-only dispatch.
     #[allow(unused_variables)]
+    #[must_use]
     fn route(payload: JsonSlice<'_>, v: FormatVersionInput, cx: &LoadContext) -> Option<usize> {
         None
     }
@@ -516,16 +529,19 @@ pub trait Family: Sized + 'static {
     /// `format_version`, read with [`member_version`]); `None` by default. Consulted before
     /// `MISSING_VERSION`.
     #[allow(unused_variables)]
+    #[must_use]
     fn payload_version(payload: JsonSlice<'_>) -> Option<FormatVersionInput> {
         None
     }
     /// The payload's identity before parsing, for messages and `UpgradeCx::identifier`.
     /// Default: `description.identifier` and `description.runtime_identifier`.
+    #[must_use]
     fn identity(payload: JsonSlice<'_>) -> Identity {
         load::description_identity(payload)
     }
     /// `UpgradeCx::actor_type`; `Mob` by default (entity: `ActorType::for_entity`).
     #[allow(unused_variables)]
+    #[must_use]
     fn actor_type(identity: &Identity) -> ActorType {
         ActorType::Mob
     }
@@ -731,12 +747,14 @@ impl<F: Family> ComponentTable<F> {
     pub const EMPTY: Self = Self(&[]);
 
     /// The row named `name`.
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&ComponentMeta<F>> {
         let i = self.0.binary_search_by(|meta| meta.name.cmp(name)).ok()?;
         self.0.get(i)
     }
 
     /// Whether the rows are sorted by name and each name occurs once.
+    #[must_use]
     pub fn is_sorted(&self) -> bool {
         self.0.windows(2).all(|pair| pair[0].name < pair[1].name)
     }

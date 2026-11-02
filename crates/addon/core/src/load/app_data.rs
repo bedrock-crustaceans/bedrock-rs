@@ -50,6 +50,7 @@ impl AppData {
 
     /// The file at `path`, if present.
     #[doc(hidden)]
+    #[must_use]
     pub fn get(&self, path: &PackPath) -> Option<&Bytes> {
         self.files.get(path)
     }
@@ -76,12 +77,14 @@ impl AppData {
 
     /// How many files.
     #[doc(hidden)]
+    #[must_use]
     pub fn len(&self) -> usize {
         self.files.len()
     }
 
     /// No files.
     #[doc(hidden)]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.files.is_empty()
     }

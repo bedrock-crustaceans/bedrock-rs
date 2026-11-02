@@ -70,11 +70,13 @@ impl ModuleType {
     ];
 
     /// The module type spelled `name`, matched exactly; `None` for a name outside the table.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<ModuleType> {
         Self::ALL.into_iter().find(|ty| ty.name() == name)
     }
 
     /// The JSON spelling.
+    #[must_use]
     pub fn name(self) -> &'static str {
         match self {
             Self::Invalid => "invalid",
@@ -97,6 +99,7 @@ impl ModuleType {
     }
 
     /// The pack type the module declares.
+    #[must_use]
     pub fn pack_type(self) -> PackType {
         // Vanilla's table maps each module type to a pack type.
         match self {
@@ -117,6 +120,7 @@ impl ModuleType {
 
     /// The module type a new manifest of `pack_type` gets: `data`, `resources`, `skin_pack`,
     /// `world_template`, `persona_piece`, `addon`, else `invalid`.
+    #[must_use]
     pub fn for_pack_type(pack_type: PackType) -> ModuleType {
         match pack_type {
             PackType::Behavior => Self::Data,

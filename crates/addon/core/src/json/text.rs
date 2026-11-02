@@ -29,6 +29,7 @@ pub const MAX_JSON_DEPTH: usize = 128;
 
 /// `bytes` without one leading UTF-8 byte order mark: vanilla's reader skips it, facet-json
 /// rejects it.
+#[must_use]
 pub fn strip_bom(bytes: &[u8]) -> &[u8] {
     // jsoncpp skips a leading UTF-8 byte order mark.
     bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(bytes)
@@ -62,6 +63,10 @@ pub fn blank_bom(bytes: &[u8]) -> std::borrow::Cow<'_, [u8]> {
 /// The count ends where the root value does: vanilla's reader stops there, so what follows a
 /// root value is not the document's nesting (the file loads). A root that is no array
 /// or object has none.
+///
+/// # Errors
+///
+/// Returns `TooDeep` with the offset of the first bracket nested past `max`.
 pub fn check_depth(bytes: &[u8], max: usize) -> Result<(), TooDeep> {
     let mut depth = 0usize;
     let mut i = 0;

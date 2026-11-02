@@ -23,6 +23,7 @@ pub enum Selection {
 /// The first range starts at `floor`; inner ranges are `[V_i, V_{i+1})`; the last one ends at
 /// `ceiling` when given, else at the model's top (the engine, or `V_last` under
 /// `ClosedToLatest`). Under `ExactOnly` every range is `[V_i, V_i]`.
+#[must_use]
 pub fn ranges(
     versions: &[FormatVersion],
     floor: FormatVersion,
@@ -59,6 +60,7 @@ pub fn ranges(
 
 /// The struct of family `F` that a stable document version selects (the literal `"beta"`
 /// selects no stable struct and is `Unsupported` here).
+#[must_use]
 pub fn select<F: Family>(input: &FormatVersionInput) -> Selection {
     let versions = <F::Any as VersionChain<F>>::VERSIONS;
     select_versions(versions, F::FLOOR, F::RANGE_MODEL, F::CEILING, input)
@@ -139,6 +141,10 @@ pub enum ChainError {
 /// Checks family `F`'s chain: ascending versions ending at `Latest`, a floor at or below the
 /// first struct, contiguous non-overlapping ranges (except under `ExactOnly`), a sorted
 /// component table, and no `FieldMeta.since_engine` above `ENGINE_VERSION`.
+///
+/// # Errors
+///
+/// Returns the first `ChainError` found in the chain.
 pub fn check_chain<F: Family>() -> Result<(), ChainError> {
     let versions = <F::Any as VersionChain<F>>::VERSIONS;
     if let Some(pair) = versions.windows(2).find(|pair| pair[0] >= pair[1]) {

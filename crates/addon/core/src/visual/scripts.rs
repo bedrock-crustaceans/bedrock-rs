@@ -70,16 +70,19 @@ pub struct Scripts {
 
 impl Scripts {
     /// The x-scale script vanilla stores: `scalex` when it is an expression, else `scaleX`.
+    #[must_use]
     pub fn effective_scale_x(&self) -> Option<&MolangSource> {
         effective(self.scalex.as_ref(), self.scale_x.as_ref())
     }
 
     /// The y-scale script vanilla stores: `scaley` when it is an expression, else `scaleY`.
+    #[must_use]
     pub fn effective_scale_y(&self) -> Option<&MolangSource> {
         effective(self.scaley.as_ref(), self.scale_y.as_ref())
     }
 
     /// The z-scale script vanilla stores: `scalez` when it is an expression, else `scaleZ`.
+    #[must_use]
     pub fn effective_scale_z(&self) -> Option<&MolangSource> {
         effective(self.scalez.as_ref(), self.scale_z.as_ref())
     }

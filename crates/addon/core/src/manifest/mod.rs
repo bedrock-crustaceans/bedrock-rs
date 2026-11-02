@@ -86,6 +86,7 @@ pub enum ManifestFormat {
 
 impl ManifestFormat {
     /// The `format_version` number.
+    #[must_use]
     pub fn number(self) -> u8 {
         match self {
             Self::V0 => 0,
@@ -136,6 +137,7 @@ pub struct Header {
 impl Header {
     /// The name reports show: the header name, or `manifestvalidation.noname` when it is empty.
     #[doc(hidden)]
+    #[must_use]
     pub fn display_name(&self) -> &str {
         if self.name.is_empty() {
             legacy::NO_NAME
@@ -166,6 +168,7 @@ pub struct Module {
 
 impl Module {
     /// A module of `module_type` with `uuid` and `version` and nothing else.
+    #[must_use]
     pub fn new(module_type: ModuleType, uuid: Uuid, version: SemVersion) -> Module {
         Self {
             module_type,
@@ -251,6 +254,10 @@ impl Manifest {
     /// Capabilities are checked against `capabilities`. Fails when any finding is an error, as
     /// vanilla refuses a pack whose report has errors; the warnings of a manifest that loads
     /// are in its document's diagnostics.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Rejected` when the manifest cannot be read or any finding is an error.
     pub fn parse(
         path: &PackPath,
         bytes: &[u8],
@@ -262,11 +269,13 @@ impl Manifest {
 
     /// A format-2 manifest with fresh random UUIDs for the header and one module of
     /// `pack_type`, version 1.0.0 and `min_engine_version` = `ENGINE_VERSION`.
+    #[must_use]
     pub fn new(name: &str, pack_type: PackType) -> Manifest {
         Self::with_ids(name, pack_type, Uuid::new_v4(), Uuid::new_v4())
     }
 
     /// As [`Manifest::new`] with caller-chosen UUIDs: deterministic output for tests and generators.
+    #[must_use]
     pub fn with_ids(name: &str, pack_type: PackType, header: Uuid, module: Uuid) -> Manifest {
         let version = SemVersion::new(1, 0, 0);
         Self {
@@ -304,11 +313,13 @@ impl Manifest {
     }
 
     /// The pack type: the last module's, or [`PackType::Invalid`] without modules.
+    #[must_use]
     pub fn pack_type(&self) -> PackType {
         legacy::pack_type(&self.modules)
     }
 
     /// The pack's identity: the header's `uuid` and `version`, with the pack type.
+    #[must_use]
     pub fn identity(&self) -> PackIdVersion {
         PackIdVersion::new(
             self.header.uuid,
@@ -321,11 +332,19 @@ impl Manifest {
     /// format cannot hold the data (a setting other than a label, a dependency's `optional`, a
     /// pre-release `min_engine_version`) or a slider number is not finite. On failure nothing
     /// is appended.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::NotRepresentable` when the data has no form in the manifest's format version.
     pub fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write::write(self, out, style)
     }
 
     /// [`Manifest::write_json`] into a string, pretty-printed with two spaces.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` under the same conditions as [`Manifest::write_json`].
     pub fn to_json(&self) -> Result<String, EncodeError> {
         let mut out = Vec::new();
         self.write_json(&mut out, WriteStyle::default())?;

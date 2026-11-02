@@ -282,12 +282,12 @@ fn a_syntax_error_in_a_copy_that_loses_is_malformed_input() {
         (r#"{"description": {"identifier": tru}}"#, false),
         (r#"{"description": [1 2]}"#, false),
         (r#"{"description": {"identifier": }}"#, false),
-        (r#"[1,, 2]"#, false),
+        (r"[1,, 2]", false),
         (r#"{"a" 1}"#, false),
         // A member of the payload written twice.
         (r#"{"identifier": tru}"#, true),
         (r#"{"identifier": "demo:y" "x": 1}"#, true),
-        (r#"[1 2]"#, true),
+        (r"[1 2]", true),
     ] {
         let text = if inner {
             format!(
@@ -321,7 +321,7 @@ fn a_syntax_error_in_a_copy_that_loses_is_malformed_input() {
 
 #[test]
 fn a_root_that_is_not_an_object_is_malformed_input() {
-    for text in [r#"[1, 2]"#, r#""text""#, "3"] {
+    for text in [r"[1, 2]", r#""text""#, "3"] {
         let code = the_only_error(&load_toy(text));
         assert!(
             matches!(code, DiagnosticCode::MalformedInput { .. }),
@@ -856,7 +856,7 @@ fn comments_after_the_root_value_are_not_content() {
     );
 }
 
-/// A JsonCpp family reads content after the root as the toy does: one information.
+/// A `JsonCpp` family reads content after the root as the toy does: one information.
 #[test]
 fn content_after_the_root_value_of_a_json_cpp_family_is_an_information() {
     let outcome = load_with::<JsonCppToy>(&format!("{OK_1_2_0} x"), &LoadContext::detached());
@@ -870,7 +870,7 @@ fn content_after_the_root_value_of_a_json_cpp_family_is_an_information() {
     );
 }
 
-/// A Minecraft Document is parsed with RapidJSON (iterative, with comments and trailing commas,
+/// A Minecraft Document is parsed with `RapidJSON` (iterative, with comments and trailing commas,
 /// and without stopping once the root is done), so content after the root is a parse error
 /// and the document is refused with "Failed to parse the Minecraft Document JSON: The
 /// document root must not be followed by other values."
@@ -910,7 +910,7 @@ fn content_after_the_root_value_refuses_a_minecraft_document() {
     assert!(binary.value.is_some(), "{:?}", binary.diagnostics);
 }
 
-/// RapidJSON refuses a number no double holds, so a Minecraft Document holding one is
+/// `RapidJSON` refuses a number no double holds, so a Minecraft Document holding one is
 /// refused with "Failed to parse the Minecraft Document JSON: Number too big to be stored in
 /// double." on the number.
 #[test]
@@ -1450,7 +1450,7 @@ fn an_experimental_beta_field_loads_only_with_its_experiment() {
 
 // ---- the input kind's null rule ----
 
-/// A `MinecraftDocumentInput` family rejects a payload member written as `null` (N2); a JsonCpp
+/// A `MinecraftDocumentInput` family rejects a payload member written as `null` (N2); a `JsonCpp`
 /// family (N1) reads it as absent;
 /// the first run's kind keeps facet's reading (`None`, silently).
 #[test]
@@ -1512,7 +1512,7 @@ fn read_as_absent(diagnostics: &Diagnostics) -> Vec<String> {
 
 /// The same through `parse_component`: a `null` optional member of a component rejects the
 /// document of a `MinecraftDocumentInput` family; a bare member written as `null` is absent
-/// for a JsonCpp family (it takes the struct's default), where the first run's kind refuses
+/// for a `JsonCpp` family (it takes the struct's default), where the first run's kind refuses
 /// the `null` as a value of the wrong type.
 #[test]
 fn a_null_component_member_follows_the_family_s_input_kind() {
@@ -1698,7 +1698,7 @@ fn load_toy_with(text: &str, cx: &LoadContext) -> LoadOutcome<Toy> {
 }
 
 /// In a cereal slice of a `MinecraftDocumentInput` family a component whose typed read fails
-/// or whose required member is missing rejects the whole document under both masks; a JsonCpp
+/// or whose required member is missing rejects the whole document under both masks; a `JsonCpp`
 /// family does the same, as the game's JSON schema readers fail it the same way.
 #[test]
 fn a_component_that_fails_its_typed_read_rejects_a_document_input_under_both_masks() {

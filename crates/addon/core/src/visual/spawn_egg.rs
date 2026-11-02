@@ -40,6 +40,7 @@ impl SpawnEgg {
     /// The egg as vanilla reads it: absent members take their defaults (an empty texture,
     /// frame 0, both colours [`Color::NIL`]), and a colour that is not `#` followed by a
     /// hexadecimal number keeps its default silently.
+    #[must_use]
     pub fn resolved(&self) -> SpawnEggInfo<'_> {
         // The game fills the spawn egg info from zero and assigns it whole; `texture_index` is
         // read as an unsigned integer defaulting to 0, so a negative value reads as the default
@@ -100,6 +101,7 @@ impl Color {
     /// red, 8–15 green, 0–7 blue and 24–31 alpha, each divided by 255. So `"#RRGGBB"` has
     /// alpha 0. `None` without the `#`, without digits, with a non-hex digit, or above
     /// `0xFFFFFFFF`.
+    #[must_use]
     pub fn from_hex(text: &str) -> Option<Color> {
         // The game reads `#` and then a base-16 unsigned 32-bit integer. Rejecting a trailing
         // non-hex digit is the crate's own choice: whether the game's conversion stops there or

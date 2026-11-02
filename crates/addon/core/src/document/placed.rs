@@ -19,6 +19,7 @@ const MAX_SEGMENT_BYTES: usize = 255;
 /// keeps them as written) still gives a valid path: a `.` or `..` segment becomes `_`, and so
 /// does each `:` and ASCII control character.
 #[doc(hidden)]
+#[must_use]
 pub fn default_path<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
     let Parts {
         mut folders,
@@ -42,6 +43,7 @@ pub fn default_path<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
 /// paths writes one file over the other; the path is a default, and the caller that holds
 /// both gives one of them another.
 #[doc(hidden)]
+#[must_use]
 pub fn default_path_flat_for_vanilla<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
     let Parts {
         mut folders,
@@ -71,6 +73,7 @@ pub fn default_path_flat_for_vanilla<K: Kind>(directory: &str, id: &Id<K>) -> Pa
 /// paths writes one file over the other; the path is a default, and the caller that holds
 /// both gives one of them another.
 #[doc(hidden)]
+#[must_use]
 pub fn default_path_flat<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
     let Parts {
         mut folders,

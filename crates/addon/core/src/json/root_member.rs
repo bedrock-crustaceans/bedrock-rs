@@ -31,6 +31,7 @@ use indexmap::IndexMap;
 /// object or has no such member, or the reader refuses the text (a syntax fault, a
 /// byte-order mark in front, nesting past `MAX_JSON_DEPTH`). No doubled member is blanked
 /// then, and the fault is left for the reader that comes next to report.
+#[must_use]
 pub fn take_root_member<'a>(text: &'a str, key: &str) -> (Cow<'a, str>, Option<String>) {
     let cleaned = super::last_wins(text);
     match blanked(&cleaned, key) {

@@ -265,7 +265,7 @@ fn write_components(map: &ComponentMap<ToyComponent>) -> Result<Value, EncodeErr
 
 /// Inserts `json` at `key` of a written struct, unless it is an empty object.
 fn with_member(mut value: Value, key: &str, json: Value) -> Value {
-    let empty = json.as_object().is_some_and(|o| o.is_empty());
+    let empty = json.as_object().is_some_and(facet_value::VObject::is_empty);
     if let Some(object) = value.as_object_mut()
         && !empty
     {
@@ -528,7 +528,7 @@ pub mod v1_1_0 {
             super::Toy120 {
                 description: self.description,
                 movement: self.speed.map(|speed| Movement { speed }),
-                color: shout_color(self.color),
+                color: shout_color(&self.color),
                 legacy,
                 upgraded_as: Some((cx.identifier.to_owned(), cx.actor_type)),
                 marker,
@@ -543,7 +543,7 @@ pub mod v1_1_0 {
 }
 
 /// The callback of step 1.1.0 → 1.2.0.
-pub fn shout_color(color: String) -> String {
+pub fn shout_color(color: &str) -> String {
     color.to_uppercase()
 }
 

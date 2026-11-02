@@ -2,7 +2,11 @@
 //! sees them: the name-or-condition entries, `scripts`, `spawn_egg`, the `Visuals` view, and
 //! `EngineVersionMerge` over the client-entity and attachable fixture rows.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::id::{
     AnimationRef, GeometryId, MaterialId, ParticleId, RenderControllerId, SoundEventName,
     TexturePath,
@@ -168,6 +172,7 @@ mod controller_use {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
     fn m05_a_number_or_boolean_condition_is_kept_as_written() {
         let entry: ControllerUse = parse(r#"{ "controller.render.x": false }"#);
         assert!(matches!(entry.condition(), Some(Molang::Bool(false))));
@@ -228,6 +233,7 @@ mod animate_entry {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
     fn m05_numeric_and_boolean_conditions() {
         let list: Vec<AnimateEntry> = parse(r#"[{ "walk": 1 }, { "idle": true }]"#);
         assert!(matches!(list[0].condition(), Some(Molang::Const(c)) if *c == 1.0));
@@ -299,13 +305,17 @@ mod scripts {
             assert_eq!(expression(scripts.scale_x.as_ref()), Some("3.0"));
             assert_eq!(expression(scripts.scalex.as_ref()), Some("2.0"));
             assert_eq!(
-                scripts.effective_scale_x().map(|source| source.as_str()),
+                scripts
+                    .effective_scale_x()
+                    .map(bedrock_addon_core::molang::MolangSource::as_str),
                 Some("2.0")
             );
         }
         let scripts: Scripts = parse(r#"{ "scaleY": "3.0" }"#);
         assert_eq!(
-            scripts.effective_scale_y().map(|source| source.as_str()),
+            scripts
+                .effective_scale_y()
+                .map(bedrock_addon_core::molang::MolangSource::as_str),
             Some("3.0")
         );
         assert!(scripts.effective_scale_z().is_none());
@@ -316,13 +326,16 @@ mod scripts {
         let scripts: Scripts = parse(r#"{ "scalex": 0.9375, "scaleX": "2.0" }"#);
         assert!(matches!(scripts.scalex, Some(Molang::Const(_))));
         assert_eq!(
-            scripts.effective_scale_x().map(|source| source.as_str()),
+            scripts
+                .effective_scale_x()
+                .map(bedrock_addon_core::molang::MolangSource::as_str),
             Some("2.0"),
             "the number is skipped, so `scaleX` is the script"
         );
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
     fn version_1_10_elements_are_molang_values() {
         let scripts: history::v1_10_0::Scripts =
             parse(r#"{ "initialize": ["variable.a = 1;", 2, true], "animate": ["walk"] }"#);
@@ -391,6 +404,7 @@ mod spawn_egg {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
     fn aarrggbb_carries_alpha() {
         let color = Color::from_hex("#80ff8000").unwrap();
         assert_eq!(color.a, 128.0 / 255.0);
@@ -1005,6 +1019,7 @@ mod resolver {
     }
 
     #[test]
+    #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
     fn l04_a_held_item_scale_at_or_below_zero_is_not_stored() {
         let mut map = stack();
         offer(
@@ -1071,7 +1086,9 @@ mod resolver {
             "a number builds no script, so the earlier one stays"
         );
         assert_eq!(
-            scripts.effective_scale_x().map(|source| source.as_str()),
+            scripts
+                .effective_scale_x()
+                .map(bedrock_addon_core::molang::MolangSource::as_str),
             Some("3.0"),
             "`scalex` replaces the earlier `scaleX`: one script"
         );

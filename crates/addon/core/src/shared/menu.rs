@@ -33,6 +33,7 @@ pub struct MenuCategory {
 
 impl MenuCategory {
     /// The `construction` category with no group.
+    #[must_use]
     pub fn construction() -> MenuCategory {
         MenuCategory {
             category: Some(CreativeCategory::Construction),
@@ -79,6 +80,7 @@ const NAMES: [(&str, CreativeCategory); 5] = [
 
 impl CreativeCategory {
     /// The JSON spelling; `None` for [`CreativeCategory::All`].
+    #[must_use]
     pub fn name(self) -> Option<&'static str> {
         match self {
             Self::All => None,

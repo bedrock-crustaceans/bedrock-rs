@@ -22,6 +22,7 @@ pub struct Notice {
 
 impl Notice {
     /// `ShadowedDefinition` at info: a definition replaced, or one ignored.
+    #[must_use]
     pub fn shadowed() -> Self {
         Self {
             code: DiagnosticCode::ShadowedDefinition { text: None },
@@ -35,6 +36,7 @@ impl Notice {
     /// already registered" is only an assertion); a family whose game logs the duplicate
     /// raises its own finding (a recipe's "JSON: %s has duplicate identifier in same pack: %s"
     /// or a feature's "already exists").
+    #[must_use]
     pub fn duplicate() -> Self {
         Self {
             code: DiagnosticCode::DuplicateIdentifier { text: None },
@@ -134,11 +136,13 @@ pub enum CombineRule<T> {
 
 impl<T> CombineRule<T> {
     /// `TopWins` without a notice: the rule of most families.
+    #[must_use]
     pub fn top_wins() -> Self {
         Self::TopWins { shadowed: None }
     }
 
     /// `BottomWins` with [`Notice::shadowed`].
+    #[must_use]
     pub fn bottom_wins() -> Self {
         Self::BottomWins {
             shadowed: Some(Notice::shadowed()),
@@ -146,6 +150,7 @@ impl<T> CombineRule<T> {
     }
 
     /// `LastLoadedWins` with [`Notice::duplicate`].
+    #[must_use]
     pub fn last_loaded_wins() -> Self {
         Self::LastLoadedWins {
             replaced: Some(Notice::duplicate()),

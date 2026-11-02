@@ -19,6 +19,7 @@ pub struct RelaxedSemVersion {
 
 impl RelaxedSemVersion {
     /// `version` with no text of its own: written in full.
+    #[must_use]
     pub fn new(version: SemVersion) -> RelaxedSemVersion {
         Self {
             version,

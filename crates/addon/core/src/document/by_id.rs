@@ -35,11 +35,13 @@ pub struct Registry<T: Definition> {
 
 impl<T: Definition> Registry<T> {
     /// The effective definition of `id`, or `None` if no pack defines it.
+    #[must_use]
     pub fn get(&self, id: &Id<T::Kind>) -> Option<&Document<T>> {
         self.entries.get(id)?.effective.as_ref()
     }
 
     /// [`get`](Self::get), plus whether a missing id is a known built-in.
+    #[must_use]
     pub fn resolve(&self, id: &Id<T::Kind>) -> Resolution<'_, T> {
         match self.get(id) {
             Some(document) => Resolution::Defined(document),
@@ -55,22 +57,26 @@ impl<T: Definition> Registry<T> {
     }
 
     /// Whether a pack defines `id`.
+    #[must_use]
     pub fn contains(&self, id: &Id<T::Kind>) -> bool {
         self.get(id).is_some()
     }
 
     /// How many effective definitions.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// No effective definitions.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// `(id, effective document)` in load order. A named type ([`registry::Iter`]) because
     /// `IntoIterator for &Registry` needs one; `std::collections::hash_map` style.
+    #[must_use]
     pub fn iter(&self) -> registry::Iter<'_, T> {
         registry::Iter::new(self.entries.iter())
     }
@@ -81,6 +87,7 @@ impl<T: Definition> Registry<T> {
     /// A stable definition that a higher-priority beta definition of the same identifier
     /// replaces is listed here whatever `keep_shadowed` says, with no effective one before it:
     /// the beta definition is effective in [`beta`](Self::beta).
+    #[must_use]
     pub fn layers(&self, id: &Id<T::Kind>) -> registry::Layers<'_, T> {
         registry::Layers::new(self.entries.get(id))
     }
@@ -108,6 +115,7 @@ impl<T: Definition> Registry<T> {
     }
 
     /// Files that failed to load, with their diagnostics.
+    #[must_use]
     pub fn rejected(&self) -> &[Rejected] {
         &self.rejected
     }
@@ -127,6 +135,7 @@ impl<T: Definition> Registry<T> {
     /// Stored boxed (`Registry<T::Beta>` names `Registry<NoBeta>` one level down).
     ///
     /// `Some` when Beta APIs are on or a base-game pack provided beta documents.
+    #[must_use]
     pub fn beta(&self) -> Option<&Registry<T::Beta>> {
         self.beta.as_deref()?.downcast_ref()
     }
@@ -134,6 +143,7 @@ impl<T: Definition> Registry<T> {
     /// Every identifier with an effective definition, stable or beta, with the pack of that
     /// definition, in load order (stable first): what the `combine` of another collection sees
     /// of this one through `StackCx::registered`. A rejected file registers nothing.
+    #[must_use]
     pub fn registered(&self) -> Registered {
         let stable = self.entries.iter().filter_map(|(id, slot)| {
             let document = slot.effective.as_ref()?;
@@ -271,6 +281,7 @@ impl<T: Definition> fmt::Debug for RegistryBuilder<T> {
 impl<T: Definition> RegistryBuilder<T> {
     /// A builder applying `rule` to stable definitions and `beta_rule` to beta ones, with the
     /// stack's `keep_shadowed`, `beta_apis` and `built_ins`.
+    #[must_use]
     pub fn new(
         rule: CombineRule<T>,
         beta_rule: CombineRule<T::Beta>,
@@ -320,6 +331,7 @@ impl<T: Definition> RegistryBuilder<T> {
     }
 
     /// The registry.
+    #[must_use]
     pub fn finish(self) -> Registry<T> {
         let Self {
             mut stable,

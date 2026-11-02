@@ -109,6 +109,7 @@ pub enum UnsafeText {
 
 impl UnsafeText {
     /// Where in the scanned text.
+    #[must_use]
     pub fn span(&self) -> Span {
         let (offset, len) = match *self {
             Self::BadEscape { offset, len, .. }
@@ -181,6 +182,10 @@ impl From<UnsafeText> for DeserializeError {
 /// does without decoding anything.
 ///
 /// Linear in the text, one pass, no allocation beyond the open brackets.
+///
+/// # Errors
+///
+/// Returns `UnsafeText` for a string escape outside RFC 8259, nesting past the limit, or a `/*` comment that does not end before the root value.
 pub fn scan(bytes: &[u8], comments: bool) -> Result<Scanned, UnsafeText> {
     scan_tokens(bytes, comments, &mut Marks::default()).map_err(|refused| refused.found)
 }
@@ -713,6 +718,10 @@ fn checked(text: &str, comments: bool) -> Result<Checked<'_>, DeserializeError> 
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
     let checked = checked(text, false)?;
     read_owned(checked.root, checked.copy.as_deref(), false, checked.levels)
@@ -725,6 +734,10 @@ pub fn from_str<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str_jsonc<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
     let checked = checked(text, true)?;
     read_owned(checked.root, checked.copy.as_deref(), true, checked.levels)
@@ -738,6 +751,10 @@ pub fn from_str_jsonc<T: Facet<'static>>(text: &str) -> Result<T, DeserializeErr
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str_borrowed_jsonc<'input, 'facet, T>(text: &'input str) -> Result<T, DeserializeError>
 where
     T: Facet<'facet>,
@@ -1256,6 +1273,10 @@ impl<'input> FormatParser<'input> for Rehomed<'_, 'input> {
 /// whatever the target (a typed read that may need more runs on a stack made for it, on
 /// this thread). `MAX_JSON_DEPTH` names what is outside that rule: WebAssembly, a target
 /// without a stack switch, a host that cannot map the stack (a panic).
+///
+/// # Errors
+///
+/// Returns `DeserializeError` for bytes the scan refuses, a syntax error, or bytes that are not UTF-8 outside comments.
 pub fn from_slice_jsonc<T: Facet<'static>>(bytes: &[u8]) -> Result<T, DeserializeError> {
     if let Ok(text) = std::str::from_utf8(bytes) {
         return from_str_jsonc(text);
@@ -1322,6 +1343,7 @@ fn text_outside_comments(bytes: &[u8]) -> Result<String, DeserializeError> {
 /// byte to the end of the text, trailing white space left out. Vanilla's reader stops at the
 /// end of the root value and never looks at it, so the
 /// file loads; `None` when nothing follows, and when the text is not one facet is given.
+#[must_use]
 pub fn trailing_content(text: &str) -> Option<Span> {
     let start = scan(text.as_bytes(), true).ok()?.trailing?;
     let len = text.get(start..)?.trim_end().len();
@@ -1340,6 +1362,7 @@ pub fn trailing_content(text: &str) -> Option<Span> {
 /// told, as `RapidJSON` stops there: a rejecting `MalformedInput` error with the game's text, on
 /// the number or the content, at file offsets. `None` when the text has neither, and when facet
 /// does not read it (its syntax error is the reader's to tell).
+#[must_use]
 pub fn document_json_refusal(document: JsonSlice<'_>) -> Option<Diagnostic> {
     let number = super::first_beyond_double(document.text);
     let trailing = trailing_content(document.text);
@@ -1393,6 +1416,7 @@ pub const TRAILING_CONTENT: &str = "content after the JSON value is ignored";
 /// silence. The Minecraft Document reader refuses such a text instead (`RapidJSON`'s "root not
 /// singular" error; the versioned load's own check). One per file: the
 /// reader of the file's root raises it, not the readers of its slices.
+#[must_use]
 pub fn trailing_content_finding(document: JsonSlice<'_>) -> Option<Diagnostic> {
     let span = trailing_content(document.text)?;
     let offset = u32::try_from(document.offset).unwrap_or(u32::MAX);

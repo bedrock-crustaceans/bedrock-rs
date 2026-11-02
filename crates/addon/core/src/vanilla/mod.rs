@@ -13,6 +13,7 @@ pub use generated::actor_type::ActorType;
 
 impl ActorType {
     /// Vanilla's numeric value of the type (the game's `ActorType` enumeration).
+    #[must_use]
     pub const fn id(self) -> u32 {
         self as u32
     }
@@ -20,6 +21,7 @@ impl ActorType {
     /// The type a vanilla entity identifier names (as the game's entity-type lookup
     /// resolves it), or `None` when it names no vanilla entity. The `minecraft:` namespace may be
     /// left out (`"pig"` is `minecraft:pig`); the comparison is case-sensitive.
+    #[must_use]
     pub fn from_identifier(identifier: &str) -> Option<Self> {
         // The game adds the `minecraft:` namespace to a type's name only on request, so the name
         // table is bare and the namespace is optional here; any other namespace names no vanilla
@@ -35,6 +37,7 @@ impl ActorType {
     /// The type vanilla gives an entity document: its identifier's type; for a custom
     /// identifier, the type its `runtime_identifier` names; and `Mob` when neither names a
     /// vanilla entity, never "no type".
+    #[must_use]
     pub fn for_entity(identifier: &str, runtime_identifier: Option<&str>) -> Self {
         // The game looks the identifier up first, then the runtime identifier, and gives a custom
         // entity `Mob` (0x100).
@@ -44,6 +47,7 @@ impl ActorType {
     }
 
     /// The vanilla identifier of the type (`minecraft:pig`); `None` for `Mob`.
+    #[must_use]
     pub fn identifier(self) -> Option<&'static str> {
         self.vanilla_identifier()
     }
@@ -87,6 +91,7 @@ pub struct VanillaIds {
 }
 
 /// The vanilla identifier lists.
+#[must_use]
 pub fn ids() -> &'static VanillaIds {
     &generated::vanilla_ids::IDS
 }
@@ -139,11 +144,13 @@ pub struct CommandEnum {
 }
 
 /// Every vanilla command, sorted by name.
+#[must_use]
 pub fn commands() -> &'static [Command] {
     generated::commands::COMMANDS
 }
 
 /// The command typed as `name`: its name or one of its aliases, without `/`.
+#[must_use]
 pub fn command(name: &str) -> Option<&'static Command> {
     commands()
         .iter()
@@ -151,12 +158,14 @@ pub fn command(name: &str) -> Option<&'static Command> {
 }
 
 /// Every command enum, sorted by name.
+#[must_use]
 pub fn command_enums() -> &'static [CommandEnum] {
     generated::commands::ENUMS
 }
 
 /// The command enum called `name`, compared without ASCII case (a parameter's `type.name` is
 /// the enum's name upper-cased).
+#[must_use]
 pub fn command_enum(name: &str) -> Option<&'static CommandEnum> {
     command_enums()
         .iter()

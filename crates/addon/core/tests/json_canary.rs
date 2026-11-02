@@ -5,7 +5,11 @@
 //! them fails, facet has changed and the rule that every typed read goes through the text is
 //! open for review again.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::json::Value;
 use facet::Facet;
 use indexmap::IndexMap;
@@ -63,6 +67,7 @@ struct WithMolang {
 }
 
 #[test]
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn from_value_still_breaks_the_molang_proxy_canary() {
     let parsed: WithMolang = facet_value::from_value(value(r#"{ "m": 1.5 }"#)).unwrap();
     assert!(

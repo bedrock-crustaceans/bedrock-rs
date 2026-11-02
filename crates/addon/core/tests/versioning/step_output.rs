@@ -34,7 +34,9 @@ fn one_step_is_run_on_a_payload_and_gives_the_next_struct_s() {
     let output = step_output::<v1_1_0::Toy>(&second_base(), Run::default(), &checks()).unwrap();
     let color = member(&output.payload, "color");
     assert_eq!(
-        color.and_then(Value::as_string).map(|s| s.as_str()),
+        color
+            .and_then(Value::as_string)
+            .map(facet_value::VString::as_str),
         Some("BLUE")
     );
     assert!(member(&output.payload, "movement").is_some());

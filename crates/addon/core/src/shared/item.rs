@@ -72,6 +72,7 @@ const KEYS: [&str; 4] = ["item", "name", "tags", "item_tag"];
 
 impl ItemDescriptor {
     /// One item, written as a string.
+    #[must_use]
     pub fn item(id: ItemId) -> Self {
         Self::Item {
             id,
@@ -81,6 +82,7 @@ impl ItemDescriptor {
     }
 
     /// The items a tag expression matches.
+    #[must_use]
     pub fn tags(tags: MolangSource) -> Self {
         Self::Tags {
             tags,
@@ -107,6 +109,7 @@ impl ItemDescriptor {
     ///
     /// A wrong shape is a kept error: the game logs `"ItemDescriptor requires a string"` at error
     /// level and builds an empty descriptor, so the document loads on.
+    #[must_use]
     pub fn check(&self, at: &JsonPath) -> Diagnostics {
         let mut out = Diagnostics::default();
         let extra = match self {

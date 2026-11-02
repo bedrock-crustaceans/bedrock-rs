@@ -1,7 +1,11 @@
 //! `MolangList`, the value-or-array Molang field: `Option<MolangList>` reads `null`
 //! as no expression, a scalar as `One`, an array as `Many`, element by element.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, reason = "tests read fixtures and call facet-json directly")]
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "tests read fixtures and call facet-json directly"
+)]
 use bedrock_addon_core::molang::{Molang, MolangList, MolangSource};
 
 fn list(json: &str) -> Option<MolangList> {

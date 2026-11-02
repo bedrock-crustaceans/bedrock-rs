@@ -21,6 +21,7 @@ pub fn pack_molang_version(min_engine_version: Option<&MinEngineVersion>) -> Raw
 /// version as a minimum engine version): a pre-release tag sorts below its release, and the
 /// `"beta"` literal is the beta sentinel 9999.9999.9999-beta, so the newest version.
 #[doc(hidden)]
+#[must_use]
 pub fn format_molang_version(version: &FormatVersionInput) -> RawVersion {
     let Some(numbers) = version.version else {
         // The `"beta"` literal.
@@ -66,6 +67,7 @@ impl MolangContext {
     /// pack's version is `pack_version` when the caller has it (`LoadContext::molang_version`,
     /// the one source of truth for a loaded pack), else the mapping of `min_engine_version`.
     /// Nothing injected.
+    #[must_use]
     pub fn new(
         min_engine_version: Option<&MinEngineVersion>,
         experiments: ExperimentMask,
@@ -85,6 +87,7 @@ impl MolangContext {
     }
 
     /// A context outside any pack (`LoadContext::detached`): the newest version everywhere.
+    #[must_use]
     pub fn detached() -> Self {
         Self {
             pack: MolangVersion::LATEST.into(),
@@ -120,6 +123,7 @@ pub enum MolangVersionSource {
 
 impl MolangVersionSource {
     /// The raw version a string form takes in pass 1; an object form keeps its own.
+    #[must_use]
     pub fn resolve(self, cx: &MolangContext) -> RawVersion {
         match self {
             Self::ControllerBackCompat if cx.pack_before_controller_fix => cx.document,

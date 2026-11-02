@@ -163,6 +163,10 @@ pub fn remove_null_members(shape: &'static Shape, json: &mut Value) -> Vec<JsonP
 /// [`null_members`] finds is read as absent, so it keeps its default and a required one is
 /// `MissingRequiredField`. The text is read with those members blanked to white space (and the
 /// comma that joined one to its neighbour), so offsets and spans are the file's.
+///
+/// # Errors
+///
+/// Returns `SliceError` when `slice` does not read as `T` once its null members are blanked, with the span and path of the fault.
 pub fn parse_at_null_absent<'a, T: Facet<'a>>(slice: JsonSlice<'a>) -> Result<T, SliceError> {
     let absent = match super::from_str_jsonc::<Value>(slice.text) {
         Ok(json) => member_paths(T::SHAPE, &json),

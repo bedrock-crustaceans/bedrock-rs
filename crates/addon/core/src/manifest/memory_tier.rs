@@ -26,6 +26,7 @@ pub enum MemoryTier {
 
 impl MemoryTier {
     /// The tier numbered `number` (`memory_performance_tier`); `None` above 5.
+    #[must_use]
     pub const fn from_number(number: u8) -> Option<MemoryTier> {
         match number {
             0 => Some(Self::Tier0),
@@ -39,6 +40,7 @@ impl MemoryTier {
     }
 
     /// The tier's number, 0 to 5.
+    #[must_use]
     pub const fn number(self) -> u8 {
         self as u8
     }

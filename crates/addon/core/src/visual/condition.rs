@@ -28,6 +28,7 @@ pub enum ControllerUse {
 
 impl ControllerUse {
     /// The render controller this entry draws; `None` for an empty object.
+    #[must_use]
     pub fn controller(&self) -> Option<RenderControllerId> {
         match self {
             Self::Always(id) => Some(id.clone()),
@@ -38,6 +39,7 @@ impl ControllerUse {
     }
 
     /// The condition it is drawn under; `None` when it is always drawn (or names nothing).
+    #[must_use]
     pub fn condition(&self) -> Option<&Molang> {
         match self {
             Self::Always(_) => None,
@@ -73,6 +75,7 @@ pub enum AnimateEntry {
 
 impl AnimateEntry {
     /// The short name this entry plays; `None` for an empty object.
+    #[must_use]
     pub fn name(&self) -> Option<&str> {
         match self {
             Self::Always(name) => Some(name),
@@ -81,6 +84,7 @@ impl AnimateEntry {
     }
 
     /// The condition it is played under; `None` when it is always played (or names nothing).
+    #[must_use]
     pub fn condition(&self) -> Option<&Molang> {
         match self {
             Self::Always(_) => None,

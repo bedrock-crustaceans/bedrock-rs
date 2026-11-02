@@ -29,6 +29,7 @@ pub struct Extra(IndexMap<String, Value>);
 
 impl Extra {
     /// The unknown member `key`.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.0.get(key)
     }
@@ -50,11 +51,13 @@ impl Extra {
     }
 
     /// How many unknown members.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
     /// No unknown members.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }

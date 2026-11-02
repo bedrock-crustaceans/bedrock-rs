@@ -21,6 +21,13 @@ use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, MinEngineVersio
 use bytes::Bytes;
 use uuid::Uuid;
 
+/// Whether `path` ends in `.ext`, the letter case compared exactly.
+fn has_extension(path: &PackPath, ext: &str) -> bool {
+    path.as_str()
+        .rsplit_once('.')
+        .is_some_and(|(_, found)| found == ext)
+}
+
 /// A toy block: its file holds its identifier.
 #[derive(Clone, Debug, PartialEq)]
 struct Ruby {
@@ -57,7 +64,7 @@ mod ruby {
     use super::*;
 
     fn is_json(path: &PackPath) -> bool {
-        path.as_str().ends_with(".json")
+        has_extension(path, "json")
     }
 
     const WALK: Walk = Walk {
@@ -432,7 +439,7 @@ fn a_walk_matches_app_data_in_its_app_data_directories() {
 #[test]
 fn the_accept_rule_filters_before_the_directories() {
     fn lang(path: &PackPath) -> bool {
-        path.as_str().ends_with(".lang")
+        has_extension(path, "lang")
     }
     let texts = Walk {
         accept: lang,
@@ -476,7 +483,7 @@ mod setting {
     use bedrock_addon_core::load::Registration;
 
     fn is_list(path: &PackPath) -> bool {
-        path.as_str().ends_with(".txt")
+        has_extension(path, "txt")
     }
 
     fn parse(file: &WalkFile, _: &LoadContext) -> Vec<String> {
@@ -619,7 +626,7 @@ fn a_registration_says_whether_a_pack_registered_the_identifier() {
 // ---- a walk that leaves files out by their pack ----
 
 fn not_templates_of_the_base_game(path: &PackPath, cx: &LoadContext) -> bool {
-    !(cx.is_base_game_pack && path.as_str().ends_with(".nbt"))
+    !(cx.is_base_game_pack && has_extension(path, "nbt"))
 }
 
 #[test]

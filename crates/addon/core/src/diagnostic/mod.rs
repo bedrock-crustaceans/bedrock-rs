@@ -50,6 +50,7 @@ pub struct Diagnostic {
 impl Diagnostic {
     /// An error-level finding that rejects the document it is about: an error that is not
     /// [`kept`](Self::kept). A loader's "any error rejects" check asks this.
+    #[must_use]
     pub fn rejects(&self) -> bool {
         self.severity == Severity::Error && !self.kept
     }
@@ -70,6 +71,7 @@ impl Diagnostic {
     /// A finding without detail. The struct is `#[non_exhaustive]`, so `bedrock_addon` builds
     /// it here.
     #[doc(hidden)]
+    #[must_use]
     pub fn new(code: DiagnosticCode, severity: Severity, phase: Phase, location: Location) -> Self {
         Self {
             code,
@@ -246,6 +248,7 @@ impl Location {
     /// A location from its parts. The struct is `#[non_exhaustive]`, so `bedrock_addon` builds
     /// it here.
     #[doc(hidden)]
+    #[must_use]
     pub fn new(
         pack: Option<PackRef>,
         path: Option<PackPath>,
@@ -280,6 +283,7 @@ enum Segment {
 
 impl JsonPath {
     /// The empty path: the document root.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -307,11 +311,13 @@ impl JsonPath {
     }
 
     /// The number of segments.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.segments.len()
     }
 
     /// The path is the document root.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.segments.is_empty()
     }
@@ -391,6 +397,7 @@ impl JsonPath {
 
     /// The segments, from the document root down: each key as the file has it (the `Display`
     /// text escapes `/` and `~` in a key) and each index as a number.
+    #[must_use]
     pub fn segments(&self) -> impl ExactSizeIterator<Item = JsonPathSegment<'_>> + '_ {
         self.segments.iter().map(|segment| match segment {
             Segment::Key(key) => JsonPathSegment::Key(key),
@@ -474,6 +481,7 @@ impl Span {
     /// last whole character before it. A byte-order mark at the start of `text` is no
     /// column: the first character after it is column 1, as an editor shows it (the span's
     /// offset does count the mark's three bytes).
+    #[must_use]
     pub fn line_col(&self, text: &str) -> (u32, u32) {
         let mut end = usize::try_from(self.offset).map_or(text.len(), |o| o.min(text.len()));
         while !text.is_char_boundary(end) {
@@ -562,11 +570,13 @@ impl Diagnostics {
     }
 
     /// How many findings.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.list().len()
     }
 
     /// No findings.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.list().is_empty()
     }
@@ -579,6 +589,7 @@ impl Diagnostics {
     }
 
     /// The most severe finding's severity, if any.
+    #[must_use]
     pub fn max_severity(&self) -> Option<Severity> {
         self.list().iter().map(|d| d.severity).max()
     }
@@ -651,6 +662,7 @@ impl Diagnostics {
     /// far) has in the file: every recorded move undone, the latest first. For a step that
     /// holds where the file has a member (a block's write refusal names it).
     #[doc(hidden)]
+    #[must_use]
     pub fn source_of(&self, at: &JsonPath) -> JsonPath {
         self.0
             .as_ref()
@@ -661,6 +673,7 @@ impl Diagnostics {
     /// gathers the findings of one member with paths relative to it, and hands them on
     /// below the member's own path (a move goes on through [`Diagnostics::moved`]).
     #[doc(hidden)]
+    #[must_use]
     pub fn into_told(self) -> Vec<Told> {
         let held = self.0.map(|held| *held).unwrap_or_default();
         let mut moves = held.moves.into_moves().into_iter().peekable();
@@ -706,6 +719,7 @@ impl Diagnostics {
     /// (a document from `parse_as_written`, whose upgrade has not run) nothing is known yet
     /// and `at` comes back unchanged; so does a path no move touches.
     #[doc(hidden)]
+    #[must_use]
     pub fn place_of(&self, at: &JsonPath) -> JsonPath {
         let Some(held) = self.0.as_ref().filter(|held| !held.places.is_empty()) else {
             return at.clone();
@@ -750,11 +764,13 @@ impl Diagnostics {
     }
 
     /// The first error-level finding, if any.
+    #[must_use]
     pub fn first_error(&self) -> Option<&Diagnostic> {
         self.list().iter().find(|d| d.severity == Severity::Error)
     }
 
     /// For error messages: the first error, else the most severe finding, else "no findings".
+    #[must_use]
     pub fn summary(&self) -> impl fmt::Display + '_ {
         Summary(self)
     }
@@ -869,6 +885,7 @@ impl PackReport {
     /// An empty report for a pack found at `location`. The struct is `#[non_exhaustive]`, so
     /// `bedrock_addon` builds it here and fills the fields.
     #[doc(hidden)]
+    #[must_use]
     pub fn new(location: Place, pack_type: PackType, pack_origin: PackOrigin) -> Self {
         Self {
             diagnostics: Diagnostics::default(),
@@ -885,17 +902,20 @@ impl PackReport {
     }
 
     /// The findings about the manifest and the container.
+    #[must_use]
     pub fn diagnostics(&self) -> &Diagnostics {
         &self.diagnostics
     }
 
     /// At least one rejecting error-level finding (a kept error does not count), as the
     /// game's pack report counts errors.
+    #[must_use]
     pub fn has_errors(&self) -> bool {
         self.diagnostics.has_errors()
     }
 
     /// For error messages: the first error, else the most severe finding, else "no findings".
+    #[must_use]
     pub fn summary(&self) -> impl fmt::Display + '_ {
         self.diagnostics.summary()
     }

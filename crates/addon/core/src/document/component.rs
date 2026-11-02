@@ -73,6 +73,7 @@ pub struct ComponentMap<C: ComponentSet> {
 
 impl<C: ComponentSet> ComponentMap<C> {
     /// Empty; `Default` too.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             entries: IndexMap::new(),
@@ -80,6 +81,7 @@ impl<C: ComponentSet> ComponentMap<C> {
     }
 
     /// The component of type `T`, if present: `block.components.get::<Friction>()`.
+    #[must_use]
     pub fn get<T: Component<Set = C>>(&self) -> Option<&T> {
         match self.entries.get(T::NAME)? {
             Entry::Typed { value, .. } => T::from_set(value),
@@ -96,6 +98,7 @@ impl<C: ComponentSet> ComponentMap<C> {
     }
 
     /// Whether a component of type `T` is present.
+    #[must_use]
     pub fn contains<T: Component<Set = C>>(&self) -> bool {
         self.get::<T>().is_some()
     }
@@ -141,11 +144,13 @@ impl<C: ComponentSet> ComponentMap<C> {
     }
 
     /// How many entries.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// No entries.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }

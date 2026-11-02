@@ -350,10 +350,11 @@ impl Pair {
             if reference <= start {
                 break;
             }
-            if reference < start + real {
-                // Inside a replaced token: no finding points there.
-                panic!("offset {reference} of the reference is inside a replaced token");
-            }
+            // Inside a replaced token: no finding points there.
+            assert!(
+                reference >= start + real,
+                "offset {reference} of the reference is inside a replaced token"
+            );
             shift += written.cast_signed() - real.cast_signed();
         }
         usize::try_from(reference.cast_signed() + shift).unwrap()
@@ -593,6 +594,7 @@ fn a_megabyte_of_wide_integers_is_read_in_linear_time() {
 /// One integer of a million digits against one of four million is read in linear time: as a
 /// value (infinity), skipped as an unread member, and held raw.
 #[test]
+#[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn an_integer_of_a_million_digits_is_read_in_linear_time() {
     #[derive(Facet)]
     struct Read {

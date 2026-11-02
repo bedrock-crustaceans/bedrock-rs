@@ -65,7 +65,7 @@ fn number(value: &Value) -> f64 {
 fn raw(value: &Value) -> RawVersion {
     let raw = value
         .as_number()
-        .and_then(|n| n.to_i64())
+        .and_then(facet_value::VNumber::to_i64)
         .expect("a version");
     RawVersion(i16::try_from(raw).expect("an i16 version"))
 }
@@ -212,7 +212,7 @@ fn the_reader_matrix_agrees_three_ways() {
         let json = row
             .get("json")
             .and_then(Value::as_string)
-            .map(|s| s.as_str());
+            .map(facet_value::VString::as_str);
         let narrower = row.get("facet").is_some_and(|f| text(f) == "narrower");
         let expect = row.get("expect").unwrap().as_object().unwrap();
         for (name, reader) in READERS {
@@ -252,11 +252,8 @@ fn the_reader_matrix_agrees_three_ways() {
                     if **code == (DiagnosticCode::MissingRequiredField { text: None })
                         && lacks_an_object_form_member(&value) => {}
                 (Err(code), Err(error)) if **code == reader_code(error) => {}
-                (Err(code), Err(_)) => failures.push(format!(
-                    "{case} [{name}] facet rejects as {code:?}, want {want:?}"
-                )),
                 (Err(code), Ok(_)) if narrower && **code == invalid_type => {}
-                (Err(code), Ok(_)) => failures.push(format!(
+                (Err(code), _) => failures.push(format!(
                     "{case} [{name}] facet rejects as {code:?}, want {want:?}"
                 )),
                 (Ok(_), Ok(_)) if narrower => {
