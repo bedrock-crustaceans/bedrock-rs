@@ -1,0 +1,22 @@
+{
+			"format_version": "1.26.20",
+			"minecraft:block": {
+				"description": {
+					"identifier": "minecraft:test_block",
+					"traits": {
+						"minecraft:multi_block": {
+							"enabled_states": [
+								"minecraft:multi_block_part"
+							],
+							"parts": 4,
+							"direction": "up"
+						}
+					}
+				},
+				"components": {
+					"minecraft:movable": {
+						"movement_type": "popped"
+					}
+				}
+			}
+		}

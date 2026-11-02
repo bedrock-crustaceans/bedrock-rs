@@ -1,0 +1,11 @@
+{
+    "resource_pack_name": "Test resource pack with referenced assets",
+    "texture_name": "atlas.items",
+    "texture_data": {
+        "test_icon": {
+            "textures": [
+                "textures/items/test_icon"
+            ]
+        }
+    }
+}

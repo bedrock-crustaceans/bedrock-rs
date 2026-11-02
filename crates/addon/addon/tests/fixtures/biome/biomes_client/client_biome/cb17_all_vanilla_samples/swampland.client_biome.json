@@ -1,0 +1,53 @@
+// source: bedrock-samples v1.26.50.4 resource_pack/biomes/swampland.client_biome.json
+{
+  "format_version": "1.21.120",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "minecraft:swampland"
+    },
+    "components": {
+      "minecraft:fog_appearance": {
+        "fog_identifier": "minecraft:fog_swampland"
+      },
+      "minecraft:water_appearance": {
+        "surface_color": "#617b64",
+        "surface_opacity": 0.65
+      },
+      "minecraft:foliage_appearance": {
+        "color": {
+          "color_map": "swamp_foliage"
+        }
+      },
+      "minecraft:grass_appearance": {
+        "color": {
+          "color_map": "swamp_grass"
+        }
+      },
+      "minecraft:dry_foliage_color": {
+        "color": "#7B5334"
+      },
+      "minecraft:atmosphere_identifier": {
+        "atmosphere_identifier": "minecraft:swampland_atmospherics"
+      },
+      "minecraft:color_grading_identifier": {
+        "color_grading_identifier": "minecraft:swampland_color_grading"
+      },
+      "minecraft:lighting_identifier": {
+        "lighting_identifier": "minecraft:swampland_lighting"
+      },
+      "minecraft:water_identifier": {
+        "water_identifier": "minecraft:default_water"
+      },
+      "minecraft:ambient_sounds": {
+        "underwater_addition": {
+          "asset": "ambient.underwater.additions",
+          "chance": 0.01
+        },
+        "underwater_loop": "ambient.underwater.loop"
+      },
+      "minecraft:biome_music": {
+        "music_definition": "swampland"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "format_version": "1.8.0",
+  "minecraft:spawn_groups": {
+    "description": {
+      "identifier": "determinism:raiders",
+      "population_control": "monster"
+    },
+    "conditions": [
+      {
+        "minecraft:spawns_on_surface": {}
+      }
+    ]
+  }
+}

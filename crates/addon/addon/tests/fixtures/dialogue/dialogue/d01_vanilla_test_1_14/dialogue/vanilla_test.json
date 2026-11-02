@@ -1,0 +1,27 @@
+{
+  "format_version": "1.14",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      {
+        "scene_tag": "test_scene",
+        "npc_name": "Test",
+        "text": "This is a test scene."
+      },
+      {
+        "scene_tag": "no_button_test",
+        "text": "No buttons here.",
+        "on_open_commands": ["/give @initiator emerald"]
+      },
+      {
+        "scene_tag": "give_emerald_scene",
+        "text": "Do you want an emerald?",
+        "buttons": [
+          {
+            "name": "Yes",
+            "commands": ["/give @initiator emerald"]
+          }
+        ]
+      }
+    ]
+  }
+}

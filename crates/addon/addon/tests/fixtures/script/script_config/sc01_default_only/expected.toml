@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sc01_default_only (probe A).
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [netdefault - 1.0.0] - requesting dependency on module [@minecraft/server-net] but it is not configured to use it."

@@ -1,0 +1,17 @@
+# families/script_config fixtures.md, row sp16_enum_case (review Ph).
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "script-debugger-auto-attach"
+text = "Unkown script debugger auto attach mode DISABLED, expected one of [ 'connect', 'listen', 'disabled' ]"
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "content-log-level"
+text = "content-log-level was set to invalid value 'Info'.  Accepted values are verbose, info, warning, and error.  Defaulting to info"

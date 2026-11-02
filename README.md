@@ -48,6 +48,11 @@ To maintain modularity and scalability, **bedrock-rs** is divided into multiple 
 - [`bedrock::form`](crates/form)  
   - Implementation of the JSON form format used by Minecraft Bedrock Edition.  
 
+- [`bedrock::addon`](crates/addon/addon) (`bedrock_addon`) and [`bedrock::addon_std`](crates/addon/std) (`bedrock_addon_std`)
+  - Behaviour and resource packs as typed Rust data: manifests, containers, pack stacks, every content family the game loads, diagnostics shaped like the game's content log, and write-back.
+  - `bedrock_addon` is sans-IO; `bedrock_addon_std` is the driver that answers its loaders with the file system and, optionally, a thread pool. Enabled through the `addon` and `addon-std` features.
+  - Built from `bedrock_addon_core` (shared vocabulary), `bedrock_addon_derive` (the component derive), `bedrock_addon_support` (helpers shared by families) and one crate per content family under `crates/addon/families/`.
+
 - [`bedrock::level`](crates/level)  
   - Data structures for managing Minecraft Bedrock levels.  
   - Implementation of Bedrock's level format on top of a pure-Rust LevelDB implementation

@@ -1,0 +1,34 @@
+# consumer2: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] [consumer2] FAIL shared_lib.js / ./shared_lib.js -> Import [shared_lib.js] not found.
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "shared_lib.js"
+normalized = "shared_lib.js"
+resolution = "not_found"
+hint = "BarePackage"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./shared_lib.js"
+normalized = "shared_lib.js"
+resolution = "not_found"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [shared_lib.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [shared_lib.js] not found."
+file = "scripts/main.js"

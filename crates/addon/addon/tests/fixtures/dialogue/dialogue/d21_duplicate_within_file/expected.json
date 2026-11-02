@@ -1,0 +1,13 @@
+{
+  "scenes": ["a"],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "DuplicateIdentifier",
+      "severity": "error",
+      "path": "dialogue/twice.json",
+      "json_path": "minecraft:npc_dialogue/scenes/1",
+      "text": "JSON: twice.json has an error: \n A scene with a scene name of 'a' already exists. Skipping scene..."
+    }
+  ]
+}

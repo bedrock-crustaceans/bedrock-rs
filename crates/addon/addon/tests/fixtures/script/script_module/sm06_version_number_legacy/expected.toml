@@ -1,0 +1,8 @@
+# Probe: Q31
+scope = "pack"
+
+[[diagnostic]]
+code = "WrongTypeProperty"
+severity = "error"
+path = "dependencies/0/version"
+text = "Required '/dependencies/0/version' element is the wrong type in pack manifest."

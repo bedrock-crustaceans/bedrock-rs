@@ -1,0 +1,58 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:crafting_item_catalog": {
+    "categories": [
+      {
+        "category_name": "construction",
+        "groups": [
+          {
+            "group_identifier": {
+              "name": "custom:building",
+              "icon": "custom:item1"
+            },
+            "items": [
+              "custom:item1",
+              "custom:item2"
+            ]
+          }
+        ]
+      },
+      {
+        "category_name": "equipment",
+        "groups": [
+          {
+            "group_identifier": {
+              "name": "custom:tools",
+              "icon": "custom:my_icon:1"
+            },
+            "items": [
+              "custom:item3"
+            ]
+          }
+        ]
+      },
+      {
+        "category_name": "items",
+        "groups": [
+          {
+            "items": [
+              "custom:item4",
+              "minecraft:stone"
+            ]
+          }
+        ]
+      },
+      {
+        "category_name": "nature",
+        "groups": [
+          {
+            "group_identifier": {
+              "name": "custom:plants"
+            },
+            "items": []
+          }
+        ]
+      }
+    ]
+  }
+}

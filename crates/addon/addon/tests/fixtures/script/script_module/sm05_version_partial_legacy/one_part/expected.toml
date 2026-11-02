@@ -1,0 +1,8 @@
+# Probe: Q35
+scope = "pack"
+
+[[diagnostic]]
+code = "MalformedPropertyVersion"
+severity = "error"
+path = "dependencies/0/version"
+text = "Provided '/dependencies/0/version' element is not SemVer (semver.org) compliant in pack manifest."

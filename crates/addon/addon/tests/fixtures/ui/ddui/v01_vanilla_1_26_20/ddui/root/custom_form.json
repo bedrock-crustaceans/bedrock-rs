@@ -1,0 +1,397 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:ui-root": {
+    "description": {
+      "identifier": "minecraft:custom_form"
+    },
+    "attribs": {
+      "root_point": "minecraft:screen"
+    },
+    "layout": {
+      "markup": [
+        {
+          "component": "Context",
+          "attribs": {
+            "data": { "$path": "$.minecraft.custom_form_data_{instanceId}" }
+          },
+          "children": [
+            {
+              "component": "Panel",
+              "attribs": { "colorMode": "modalForm", "stacked": false },
+              "children": [
+                {
+                  "component": "Panel.Text",
+                  "attribs": {
+                    "type": "header",
+                    "text": { "$relativePath": "$.title.getString" }
+                  }
+                },
+                {
+                  "component": "Panel.CloseButton",
+                  "attribs": {
+                    "onClick": {
+                      "$relativePath": "$.closeButton.onClick.closeAction"
+                    }
+                  }
+                },
+                { "component": "Panel.Spacing" },
+                {
+                  "component": "Form.ScrollView",
+                  "attribs": { "size": "small" },
+                  "children": [
+                    {
+                      "component": "Context.List",
+                      "attribs": { "data": { "$relativePath": "$.layout" } },
+                      "children": [
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.button_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Form.Button",
+                                  "attribs": {
+                                    "disabled": {
+                                      "$relativePath": "$.disabled.getBoolean"
+                                    },
+                                    "onClick": {
+                                      "$relativePath": "$.onClick.action"
+                                    },
+                                    "label": {
+                                      "$relativePath": "$.label.getString"
+                                    },
+                                    "tooltip": {
+                                      "$relativePath": "$.tooltip.getString"
+                                    },
+                                    "data-testid": "test-CustomFormButton"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.divider_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Form.Divider"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.dropdown_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Form.Dropdown",
+                                  "attribs": {
+                                    "visible": {
+                                      "$relativePath": "$.dropdown_visible.getBoolean"
+                                    },
+                                    "disabled": {
+                                      "$relativePath": "$.disabled.getBoolean"
+                                    },
+                                    "label": {
+                                      "$relativePath": "$.label.getString"
+                                    },
+                                    "onChange": {
+                                      "$relativePath": "$.value.setNumber"
+                                    },
+                                    "value": {
+                                      "$relativePath": "$.value.getNumber"
+                                    },
+                                    "description": {
+                                      "$relativePath": "$.description.getString"
+                                    },
+                                    "options": {
+                                      "$relativePath": "$.items.getObjectArray"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.slider_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Form.Slider",
+                                  "attribs": {
+                                    "disabled": {
+                                      "$relativePath": "$.disabled.getBoolean"
+                                    },
+                                    "title": {
+                                      "$relativePath": "$.label.getString"
+                                    },
+                                    "onChange": {
+                                      "$relativePath": "$.value.setNumber"
+                                    },
+                                    "value": {
+                                      "$relativePath": "$.value.getNumber"
+                                    },
+                                    "description": {
+                                      "$relativePath": "$.description.getString"
+                                    },
+                                    "minValue": {
+                                      "$relativePath": "$.minValue.getNumber"
+                                    },
+                                    "maxValue": {
+                                      "$relativePath": "$.maxValue.getNumber"
+                                    },
+                                    "step": {
+                                      "$relativePath": "$.step.getNumber"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.toggle_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Form.Switch",
+                                  "attribs": {
+                                    "disabled": {
+                                      "$relativePath": "$.disabled.getBoolean"
+                                    },
+                                    "title": {
+                                      "$relativePath": "$.label.getString"
+                                    },
+                                    "onChange": {
+                                      "$relativePath": "$.toggled.setBoolean"
+                                    },
+                                    "value": {
+                                      "$relativePath": "$.toggled.getBoolean"
+                                    },
+                                    "description": {
+                                      "$relativePath": "$.description.getString"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.textfield_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Form.TextField",
+                                  "attribs": {
+                                    "disabled": {
+                                      "$relativePath": "$.disabled.getBoolean"
+                                    },
+                                    "label": {
+                                      "$relativePath": "$.label.getString"
+                                    },
+                                    "onChange": {
+                                      "$relativePath": "$.text.setString"
+                                    },
+                                    "value": {
+                                      "$relativePath": "$.text.getString"
+                                    },
+                                    "description": {
+                                      "$relativePath": "$.description.getString"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.spacer_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Panel.Spacing"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.header_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Panel.Text",
+                                  "attribs": {
+                                    "type": "header",
+                                    "multiline": true,
+                                    "text": {
+                                      "$relativePath": "$.text.getString"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "component": "Visibility",
+                          "attribs": {
+                            "visible": {
+                              "$relativePath": "$.label_visible.getBoolean"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Visibility",
+                              "attribs": {
+                                "visible": {
+                                  "$relativePath": "$.visible.getBoolean"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "component": "Panel.Text",
+                                  "attribs": {
+                                    "text": {
+                                      "$relativePath": "$.text.getString"
+                                    },
+                                    "multiline": true
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                { "component": "Panel.Spacing" },
+                {
+                  "component": "Visibility",
+                  "attribs": {
+                    "visible": {
+                      "$relativePath": "$.closeButton.button_visible.getBoolean"
+                    }
+                  },
+                  "children": [
+                    {
+                      "component": "Form.Button",
+                      "attribs": {
+                        "onClick": {
+                          "$relativePath": "$.closeButton.onClick.closeAction"
+                        },
+                        "label": {
+                          "$relativePath": "$.closeButton.label.getString"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

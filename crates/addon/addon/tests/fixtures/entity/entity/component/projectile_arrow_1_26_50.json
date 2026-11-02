@@ -1,0 +1,34 @@
+{
+  "anchor": "eye_height",
+  "gravity": 0.05,
+  "power": 1.1,
+  "hit_sound": "bow.hit",
+  "on_hit": {
+    "arrow_effect": {
+      "apply_effect_to_blocking_targets": false
+    },
+    "impact_damage": {
+      "apply_knockback_to_blocking_targets": true,
+      "damage": {
+        "min": 0,
+        "max": 0
+      },
+      "power_multiplier": 2.0,
+      "ceil_pre_critical_damage": true,
+      "knockback": true,
+      "destroy_on_hit": true
+    },
+    "stick_in_ground": {
+      "shake_time": 0.35
+    }
+  },
+  "offset": [
+    0,
+    -0.1,
+    0
+  ],
+  "should_bounce": "if_no_damage_dealt",
+  "uncertainty_base": 16,
+  "uncertainty_multiplier": 4,
+  "isolated_physics": false
+}

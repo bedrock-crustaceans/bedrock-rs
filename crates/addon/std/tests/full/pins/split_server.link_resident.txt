@@ -1,0 +1,14 @@
+# split_server: the findings of link() over the packs copied through PackWriter, every file resident: the rules that read image and font bytes run
+     63  E UnresolvedReference [atlas key] @ items
+     23  I TextureNotFound [-] @ textures
+     14  I UnknownSound [sound event] @ sounds.json
+      1  I UnresolvedReference [animation] @ entity         # R4 (lint): animations and controllers a client entity names that no file defines (`animation.camel.look_at_target`, `controller.animation.player.base`, …); vanilla keeps the name and plays nothing
+    609  I UnresolvedReference [atlas key] @ blocks.json
+     23  I UnresolvedReference [atlas key] @ textures
+      1  I UnresolvedReference [block] @ aim_assist         # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
+     12  I UnresolvedReference [feature] @ feature_rules    # W8 (lint): feature rules whose `places_feature` is a feature a file of the app's own `definitions/features` defines: the pack tree has no app data
+     29  I UnresolvedReference [feature] @ features
+      1  I UnresolvedReference [geometry] @ entity          # R3 (lint): `geometry.boat` and `geometry.chest_boat`, which no file defines: the game builds the two models in code
+      3  I UnresolvedReference [loot table] @ entities      # E12 (lint): `loot_tables/entities/fox.json` and `…/piglin.json`, which no pack has; vanilla resolves a table when it is rolled and says nothing
+      1  I UnresolvedReference [render controller] @ entity
+      2  I UnresolvedReference [sound file] @ sounds

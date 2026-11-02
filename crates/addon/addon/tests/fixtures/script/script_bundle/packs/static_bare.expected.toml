@@ -1,0 +1,21 @@
+# static_bare: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_static_bare] ReferenceError: Import [unknown-pkg.js] not found.
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "unknown-pkg"
+normalized = "unknown-pkg.js"
+resolution = "not_found"
+hint = "BarePackage"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "error"
+text = "ReferenceError: Import [unknown-pkg.js] not found."
+file = "scripts/main.js"

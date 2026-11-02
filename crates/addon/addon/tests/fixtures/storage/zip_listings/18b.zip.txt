@@ -1,0 +1,8 @@
+manifest.json
+texts/
+texts/en_US.lang
+texts/languages.json
+borealis_hair.geometry.json
+borealis_hair.meta.json
+borealis_hair_geo.png
+borealis_hair_head.png

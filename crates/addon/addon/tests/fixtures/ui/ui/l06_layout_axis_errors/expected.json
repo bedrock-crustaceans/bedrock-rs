@@ -1,0 +1,22 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "info",
+      "text": "Dangling number (no % or px in Size)",
+      "at": "p1/size/0"
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "info",
+      "text": "% modifier given without '%' symbol!",
+      "at": "p1/size/1"
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "info",
+      "text": "An unknown sibling axis type was found: q",
+      "at": "p2/size/0"
+    }
+  ]
+}

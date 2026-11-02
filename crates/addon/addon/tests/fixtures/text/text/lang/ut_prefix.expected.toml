@@ -1,0 +1,8 @@
+# fixtures.md `lang/ut_prefix` (LocalizationUnitTests): every key is stored under the prefix.
+prefix = "pre."
+
+[entries]
+"pre.key.1" = "value.1"
+"pre.key.2" = "value.2"
+"pre.key.3" = "value.3"
+"pre.key.4" = "value.4"

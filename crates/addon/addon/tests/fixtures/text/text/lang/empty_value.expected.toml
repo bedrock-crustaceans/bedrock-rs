@@ -1,0 +1,4 @@
+# fixtures.md `a=`: an empty value is dropped silently.
+
+[entries]
+"b" = "c"

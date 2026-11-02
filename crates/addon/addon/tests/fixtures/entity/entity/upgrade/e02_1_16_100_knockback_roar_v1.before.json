@@ -1,0 +1,14 @@
+{
+  "format_version": "1.16.100",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:ravagerish"
+    },
+    "components": {
+      "minecraft:behavior.knockback_roar": {
+        "priority": 1,
+        "knockback_strength": 2
+      }
+    }
+  }
+}

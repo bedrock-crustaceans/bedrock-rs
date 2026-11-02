@@ -1,0 +1,48 @@
+{
+    "format_version": "1.21.50",
+    "minecraft:aim_assist_categories": {
+        "categories": [
+            {
+                "name": "minecraft:bucket",
+                "priorities": {
+                    "entity_default": 30,
+                    "block_default": 30,
+                    "blocks": {
+                        "minecraft:cauldron": 60,
+                        "minecraft:water": 60,
+                        "minecraft:lava": 60
+                    }
+                }
+            },
+            {
+                "name": "minecraft:empty_hand",
+                "priorities": {
+                    "entity_default": 30,
+                    "block_default": 30,
+                    "blocks": {
+                        "minecraft:oak_log": 60,
+                        "minecraft:birch_log": 60,
+                        "minecraft:spruce_log": 60,
+                        "minecraft:jungle_log": 60,
+                        "minecraft:acacia_log": 60,
+                        "minecraft:dark_oak_log": 60,
+                        "minecraft:mangrove_log": 60,
+                        "minecraft:cherry_log": 60
+                    }
+                }
+            },
+            {
+                "name": "minecraft:default",
+                "priorities": {
+                    "blocks": {
+                        "minecraft:lever": 60,
+                        "minecraft:oak_button": 60,
+                        "minecraft:birch_button": 60,
+                        "minecraft:spruce_button": 60,
+                        "minecraft:dark_oak_button": 60
+                    }
+                }
+            }
+        ]
+    }
+}

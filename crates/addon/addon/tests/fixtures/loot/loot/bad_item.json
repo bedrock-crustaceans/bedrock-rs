@@ -1,0 +1,2 @@
+// fixtures.md row 9: an item entry whose name names no item
+{"pools": [{"rolls": 1, "entries": [{"type": "item", "name": "minecraft:not_an_item"}, {"type": "empty"}]}]}

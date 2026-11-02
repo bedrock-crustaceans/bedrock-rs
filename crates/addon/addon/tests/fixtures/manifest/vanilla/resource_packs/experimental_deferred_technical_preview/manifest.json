@@ -1,0 +1,33 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Experimental RenderDragon Features for Creators resource pack",
+        "name": "experimental deferred technical preview",
+        "uuid": "e440ef15-118e-4ca4-a794-18cd786367a4",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            21,
+            120
+        ]
+    },
+    "modules": [
+        {
+            "description": "Experimental RenderDragon Features for Creators resource pack",
+            "type": "resources",
+            "uuid": "34d5ca6c-89d8-4aae-a33f-fc3dea1f0fdb",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ],
+    "capabilities": [
+       "pbr"
+    ]
+}

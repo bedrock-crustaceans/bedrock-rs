@@ -14,7 +14,14 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      # The workspace's test build outgrows the runner's disk with debug info and incremental files.
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_INCREMENTAL: 0
     steps:
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
       - uses: actions/checkout@v6
 
       - uses: Swatinem/rust-cache@v2

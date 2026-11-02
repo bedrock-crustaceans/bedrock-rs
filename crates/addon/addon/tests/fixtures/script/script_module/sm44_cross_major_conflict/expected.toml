@@ -1,0 +1,8 @@
+# Probe: P16
+scope = "module"
+
+[[diagnostic]]
+code = "ScriptModuleVersionConflict"
+severity = "error"
+path = "dependencies/1"
+text = "Plugin [sm44] - version conflict for module [@minecraft/server].\n [1.5.0] requested by [sm44 - 3.2.1],\n [2.0.0] requested by [sm44 - 3.2.1]"

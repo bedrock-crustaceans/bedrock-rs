@@ -1,0 +1,13 @@
+# Probe: P25
+scope = "module"
+
+[[diagnostic]]
+code = "IgnoredMember"
+severity = "info"
+path = "dependencies/0/optional"
+
+[[diagnostic]]
+code = "MissingToggles"
+severity = "error"
+path = "dependencies/0"
+text = "Plugin [sm13 - 3.2.1] - requesting dependency on beta APIs [@minecraft/server - 2.9.0-beta], but the Beta APIs experiment is not enabled."

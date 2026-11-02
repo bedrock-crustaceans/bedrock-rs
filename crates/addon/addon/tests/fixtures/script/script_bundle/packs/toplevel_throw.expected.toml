@@ -1,0 +1,7 @@
+# toplevel_throw: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_toplevel_throw] Error: boom at load    at <anonymous> (main.js:2): run time, no load finding
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []

@@ -1,0 +1,11 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "remove"
+      }
+    ],
+    "layer": 5
+  }
+}

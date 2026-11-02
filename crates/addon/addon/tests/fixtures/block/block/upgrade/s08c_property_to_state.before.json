@@ -1,0 +1,67 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x",
+      "states": {
+        "demo:lit": [
+          false,
+          true
+        ]
+      },
+      "properties": {
+        "demo:open": [
+          false,
+          true
+        ],
+        "demo:lit": [
+          true,
+          false
+        ]
+      }
+    },
+    "components": {
+      "minecraft:geometry": {
+        "identifier": "geometry.demo",
+        "bone_visibility": {
+          "lid": "q.block_property('demo:open') == 1"
+        }
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_property('demo:open') == 1",
+        "components": {
+          "minecraft:geometry": {
+            "identifier": "geometry.demo",
+            "bone_visibility": {
+              "lid": "!q.block_property('demo:open')"
+            }
+          }
+        }
+      }
+    ],
+    "events": {
+      "demo:toggle": {
+        "set_block_property": {
+          "demo:open": "!q.block_property('demo:open')"
+        },
+        "sequence": [
+          {
+            "set_block_property": {
+              "demo:lit": 1
+            }
+          }
+        ],
+        "randomize": [
+          {
+            "weight": 1,
+            "set_block_property": {
+              "demo:lit": 0
+            }
+          }
+        ]
+      }
+    }
+  }
+}

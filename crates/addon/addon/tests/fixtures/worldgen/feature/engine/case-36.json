@@ -1,0 +1,7 @@
+{
+				"places_feature": "minecraft:pink_petals_feature",
+				"min_required_downward_height_diff": 5,
+				"min_required_upward_height_diff": 5,
+				"max_allowed_downward_height_diff": 5,
+				"search_radius": 5
+			}

@@ -1,0 +1,5 @@
+error: unsupported enum attribute `beta`; expected one of `family`, `custom`, `unknown`, `dynamic`, `from_only`
+  --> tests/ui/unsupported_enum_attribute.rs:10:27
+   |
+10 | #[component(family = Toy, beta = Glint)]
+   |                           ^^^^

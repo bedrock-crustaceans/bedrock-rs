@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "header": {
+    "uuid": "c26765e0-3246-4668-9002-335875428243",
+    "name": "SwingDurationItemComponentFunctionalTests",
+    "version": [ 1, 0, 0 ],
+    "description": "SwingDurationItemComponentFunctionalTests"
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [ 1, 0, 0 ],
+      "uuid": "e1b693a6-16e9-4f84-b671-8fd703e9fdb1",
+      "type": "data"
+    }
+  ]
+}

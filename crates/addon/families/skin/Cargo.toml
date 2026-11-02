@@ -1,0 +1,15 @@
+[package]
+name = "bedrock_addon_family_skin"
+description = "The `skin` content family of bedrock_addon, re-exported as bedrock_addon::families::skin; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+facet-value = { workspace = true }
+thiserror = { workspace = true }

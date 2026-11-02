@@ -1,0 +1,22 @@
+[
+  "textures/blocks/sulfur",
+  "textures/blocks/polished_sulfur",
+  "textures/blocks/sulfur_bricks",
+  "textures/blocks/chiseled_sulfur",
+  "textures/blocks/potent_sulfur",
+  "textures/blocks/cinnabar",
+  "textures/blocks/polished_cinnabar",
+  "textures/blocks/cinnabar_bricks",
+  "textures/blocks/chiseled_cinnabar",
+  "textures/blocks/sulfur_spike_down_base",
+  "textures/blocks/sulfur_spike_down_frustum",
+  "textures/blocks/sulfur_spike_down_middle",
+  "textures/blocks/sulfur_spike_down_tip",
+  "textures/blocks/sulfur_spike_down_tip_merge",
+  "textures/blocks/sulfur_spike_up_base",
+  "textures/blocks/sulfur_spike_up_frustum",
+  "textures/blocks/sulfur_spike_up_middle",
+  "textures/blocks/sulfur_spike_up_tip",
+  "textures/blocks/sulfur_spike_up_tip_merge",
+  "textures/items/bucket_sulfur_cube"
+]

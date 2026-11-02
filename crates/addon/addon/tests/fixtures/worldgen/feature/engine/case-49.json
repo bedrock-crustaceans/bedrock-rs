@@ -1,0 +1,21 @@
+
+			{
+				"format_version": "1.13.0",
+				"minecraft:structure_template_feature": {
+					"description": {
+						"identifier": "custom:test_feature"
+					},
+					"structure_name": "test:structure",
+					"adjustment_radius": 4,
+					"facing_direction": "random",
+					"constraints": {
+						"grounded": {},
+						"unburied": {},
+						"block_intersection": {
+							"block_allowlist": [
+								"minecraft:air"
+							]
+						}
+					}
+				}
+			}

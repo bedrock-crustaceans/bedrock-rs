@@ -1,0 +1,10 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "x",
+        "operation": "remove"
+      }
+    ]
+  }
+}

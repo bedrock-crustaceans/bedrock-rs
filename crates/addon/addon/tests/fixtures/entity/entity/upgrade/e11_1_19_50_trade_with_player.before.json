@@ -1,0 +1,26 @@
+{
+  "format_version": "1.19.50",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:trader"
+    },
+    "components": {
+      "minecraft:behavior.trade_with_player": {
+        "priority": 1
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.trade_with_player": {
+          "filters": {
+            "all_of": [
+              {
+                "test": "x"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

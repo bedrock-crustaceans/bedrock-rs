@@ -1,0 +1,20 @@
+# eval_nocap: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [eval_nocap] eval threw ReferenceError: 'eval' is not defined
+# [bds-run 1] [eval_nocap] Function threw TypeError: Function from string is not supported
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[diagnostics]]
+code = "ScriptEvalWithoutCapability"
+severity = "info"
+text = "eval without the script_eval capability"
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptEvalWithoutCapability"
+severity = "info"
+text = "eval without the script_eval capability"
+file = "scripts/main.js"

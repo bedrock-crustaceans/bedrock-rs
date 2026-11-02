@@ -1,0 +1,18 @@
+{
+  "format_version": "1.21.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:horse"
+    },
+    "components": {
+      "minecraft:entity_armor_equipment_slot_mapping": {
+        "armor_slot": "slot.armor.chest"
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:equippable": {}
+      }
+    }
+  }
+}

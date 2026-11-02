@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with block creative group in block description",
+    "name": "Block Menu Category Pack",
+    "uuid":"b96b52ee-cbdb-4713-9e43-7140a16913d6",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 17, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "My First Add-On!",
+          "type": "data",
+          "uuid": "55186ea1-c741-4b42-8b93-5e3dc7e0d037",
+          "version": [1, 0, 0]
+      }
+    ]
+}

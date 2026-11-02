@@ -1,0 +1,63 @@
+# `format/ut_percent_escapes` (the game's localization unit tests). The game's test writes the six forms as one id with
+# one parameter; under `replaceTokens` only the first `%s` of one id takes it, so
+# each form is a case of its own here, which gives exactly the listed results.
+
+[[case]]
+id = "%s"
+params = ["p"]
+expected = "s"
+
+[[case]]
+id = "%%s"
+params = ["p"]
+expected = "p"
+
+[[case]]
+id = "%%%s"
+params = ["p"]
+expected = "p"
+
+[[case]]
+id = "%%%%s"
+params = ["p"]
+expected = "%p"
+
+[[case]]
+id = "%%%%%s"
+params = ["p"]
+expected = "%p"
+
+[[case]]
+id = "%%%%%%s"
+params = ["p"]
+expected = "%%p"
+
+[[case]]
+id = "%1"
+params = ["p"]
+expected = "1"
+
+[[case]]
+id = "%%1"
+params = ["p"]
+expected = "p"
+
+[[case]]
+id = "%%%1"
+params = ["p"]
+expected = "p"
+
+[[case]]
+id = "%%%%1"
+params = ["p"]
+expected = "%p"
+
+[[case]]
+id = "%%%%%1"
+params = ["p"]
+expected = "%p"
+
+[[case]]
+id = "%%%%%%1"
+params = ["p"]
+expected = "%%p"

@@ -1,0 +1,18 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.move_towards_restriction": {
+        "priority": 5
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.move_towards_restriction": {}
+      }
+    }
+  }
+}

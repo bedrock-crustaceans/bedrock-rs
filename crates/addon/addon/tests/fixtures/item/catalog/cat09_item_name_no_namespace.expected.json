@@ -1,0 +1,7 @@
+[
+  {
+    "code": "InvalidValue",
+    "severity": "error",
+    "text": "expected string to match the \"^(?:.)+:(?:.)+$\" regex"
+  }
+]

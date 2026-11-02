@@ -1,0 +1,17 @@
+error: unsupported enum attribute `colour`; expected one of `family`, `custom`, `unknown`, `dynamic`, `from_only`
+  --> tests/ui/enum_and_variant_errors.rs:11:30
+   |
+11 | #[component(custom = Custom, colour = "red")]
+   |                              ^^^^^^
+
+error: missing `#[component(family = …)]` on the component enum: the family whose `ComponentTable` it fills
+  --> tests/ui/enum_and_variant_errors.rs:12:6
+   |
+12 | enum ToyComponent {
+   |      ^^^^^^^^^^^^
+
+error: missing `#[component(name = "minecraft:…", parse = …)]`: every variant other than the `custom`, `unknown` and `dynamic` ones is a typed component
+  --> tests/ui/enum_and_variant_errors.rs:13:5
+   |
+13 |     Friction(Friction),
+   |     ^^^^^^^^

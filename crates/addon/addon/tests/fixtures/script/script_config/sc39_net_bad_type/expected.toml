@@ -1,0 +1,16 @@
+# families/script_config fixtures.md, row sc39_net_bad_type (probe F netbadtype).
+
+[[diagnostic]]
+code = "InvalidType"
+severity = "error"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "module_permissions/@minecraft~1server-net/force_tls"
+
+[[diagnostic]]
+code = "NetConfigRejected"
+severity = "error"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "module_permissions/@minecraft~1server-net"
+text = "Failed to load config for @minecraft/server-net due to error(s):  -> force_tls:  invalid numeric value"

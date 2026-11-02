@@ -1,0 +1,8 @@
+# Probe: Q40
+scope = "module"
+
+[[diagnostic]]
+code = "MissingToggles"
+severity = "error"
+path = "dependencies/0"
+text = "Plugin [sm33 - 3.2.1] - requesting dependency on [@minecraft/server-gametest - 1.0.0-beta], but the Beta APIs experiment is not enabled."

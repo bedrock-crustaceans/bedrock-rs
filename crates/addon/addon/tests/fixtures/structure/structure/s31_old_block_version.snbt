@@ -1,0 +1,16 @@
+// A palette entry in the pre-flattening form, version 17959425 (1.18.10.1).
+{
+  format_version: 1,
+  size: [1, 1, 1],
+  structure: {
+    block_indices: [[0], [-1]],
+    palette: {
+      default: {
+        block_palette: [{name: "minecraft:wool", states: {color: "red"}, version: 17959425}],
+        block_position_data: {}
+      }
+    },
+    entities: []
+  },
+  structure_world_origin: [0, 0, 0]
+}

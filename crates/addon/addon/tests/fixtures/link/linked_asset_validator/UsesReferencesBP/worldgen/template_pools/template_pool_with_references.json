@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:template_pool": {
+    "description": {
+      "identifier": "test:template_pool_with_references"
+    },
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "test:structure",
+          "processors": "test:processors"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "test:template_pool"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:atmosphere_settings": {
+    "description": {
+      "identifier": "determinism:atmosphere"
+    },
+    "rayleigh_strength": 2.0
+  }
+}

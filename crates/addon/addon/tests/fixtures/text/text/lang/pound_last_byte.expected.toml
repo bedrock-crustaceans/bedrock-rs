@@ -1,0 +1,10 @@
+# schema.md rule 4: a `#` that is the last byte of the file is an ordinary byte; here it
+# starts a key that has no `=`.
+
+[entries]
+"a" = "b#"
+
+[[diagnostics]]
+code = "MalformedInput"
+severity = "warning"
+text = "Line: 2 - Invalid lang file format. Null character was found while parsing key: '#'."

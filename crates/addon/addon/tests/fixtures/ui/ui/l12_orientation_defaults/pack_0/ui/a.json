@@ -1,0 +1,21 @@
+{
+  "namespace": "a",
+  "stack": {
+    "type": "stack_panel"
+  },
+  "grid": {
+    "type": "grid"
+  },
+  "slider": {
+    "type": "slider"
+  },
+  "book": {
+    "anim_type": "flip_book",
+    "initial_uv": [
+      0,
+      0
+    ],
+    "frame_count": 2,
+    "fps": 1
+  }
+}

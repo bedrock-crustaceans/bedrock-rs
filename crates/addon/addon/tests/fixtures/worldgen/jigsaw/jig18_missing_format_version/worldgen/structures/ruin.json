@@ -1,0 +1,16 @@
+{
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "demo:ruin"
+    },
+    "step": "surface_structures",
+    "start_pool": "demo:ruin/start",
+    "max_depth": 4,
+    "start_height": {
+      "type": "constant",
+      "value": {
+        "absolute": 0
+      }
+    }
+  }
+}

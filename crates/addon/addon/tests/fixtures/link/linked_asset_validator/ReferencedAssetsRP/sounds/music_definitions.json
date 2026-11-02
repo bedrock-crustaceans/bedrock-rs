@@ -1,0 +1,7 @@
+{
+  "test_music": {
+    "event_name": "music.game.soulsand_valley",
+    "min_delay": 60,
+    "max_delay": 180
+  }
+}

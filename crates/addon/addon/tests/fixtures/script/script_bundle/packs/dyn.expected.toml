@@ -1,0 +1,408 @@
+# dyn: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] one `[dyn] OK|FAIL <spec> -> ...` line per row; the vanilla outcome of each:
+#   FAIL ./upper.js -> upper.js
+#   FAIL ./m.mjs -> m.mjs.js
+#   FAIL ./m -> m.js
+#   FAIL ../escape.js -> ../escape.js
+#   FAIL /lib/b.js -> /lib/b.js
+#   FAIL ./lib/../lib/b.js -> lib/../lib/b.js
+#   FAIL ./lib/./b.js -> lib/./b.js
+#   FAIL ./x.JS -> x.JS.js
+#   FAIL ./lib/b.js?q=1 -> lib/b.js?q=1.js
+#   FAIL @minecraft/unknown -> @minecraft/unknown
+#   FAIL unknown-pkg -> unknown-pkg.js
+#   FAIL @minecraft/server-bindings -> @minecraft/server-bindings
+#   FAIL ./noext -> noext.js
+#   FAIL (its own import fails) ./sub/deep/d.js -> sub/deep/d.js
+#   FAIL .//lib/b.js -> /lib/b.js
+#   FAIL ./scripts/lib/b.js -> scripts/lib/b.js
+#   FAIL scripts/lib/b.js -> scripts/lib/b.js
+#   FAIL ./ts.ts -> ts.ts.js
+#   OK   ./lib/b.js -> lib/b.js
+#   OK   ./lib/c -> lib/c.js
+#   OK (file next to dir) ./lib -> lib.js
+#   OK (file next to dir) ./lib/ -> lib.js
+#   OK   ./Upper.js -> Upper.js
+#   OK   ./data.json -> data.json.js
+#   OK   lib/b.js -> lib/b.js
+#   OK   @minecraft/common -> @minecraft/common
+#   OK   @minecraft/server -> @minecraft/server
+#   OK   ./bom.js -> bom.js
+#   OK   ./lib/nested.js -> lib/nested.js
+#   OK   ./lib\b.js -> lib/b.js
+#   OK   ./main.js -> main.js
+# [bds-run 1] [dyn] import.meta.url=undefined meta keys= (ours: L17)
+# [bds-run 1] [dyn] top-level await ok 42
+# [bds-run 1] FAIL ./sub/deep/d.js -> ReferenceError: Import [../../../escape2.js] not found.
+members = ["Upper.js", "bom.js", "data.json.js", "lib.js", "lib/b.js", "lib/c.js", "lib/nested.js", "main.js", "shared.js", "sub/deep/d.js"]
+others = ["scripts/data.json"]
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = ["Upper.js", "bom.js", "data.json.js", "lib.js", "lib/b.js", "lib/c.js", "lib/nested.js", "shared.js", "sub/deep/d.js"]
+
+[[imports]]
+file = "lib/nested.js"
+kind = "static"
+raw = "../shared.js"
+normalized = "shared.js"
+resolution = "file"
+
+[[imports]]
+file = "lib/nested.js"
+kind = "static"
+raw = "./../shared.js"
+normalized = "shared.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./upper.js"
+normalized = "upper.js"
+resolution = "not_found"
+hint = "CaseMismatch"
+near = "Upper.js"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./m.mjs"
+normalized = "m.mjs.js"
+resolution = "not_found"
+hint = "AppendedJs"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./m"
+normalized = "m.js"
+resolution = "not_found"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "../escape.js"
+normalized = "../escape.js"
+resolution = "not_found"
+hint = "EscapesRoot"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "/lib/b.js"
+normalized = "/lib/b.js"
+resolution = "not_found"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/../lib/b.js"
+normalized = "lib/../lib/b.js"
+resolution = "not_found"
+hint = "MidPathDots"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/./b.js"
+normalized = "lib/./b.js"
+resolution = "not_found"
+hint = "MidPathDots"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./x.JS"
+normalized = "x.JS.js"
+resolution = "not_found"
+hint = "AppendedJs"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/b.js?q=1"
+normalized = "lib/b.js?q=1.js"
+resolution = "not_found"
+hint = "AppendedJs"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/unknown"
+normalized = "@minecraft/unknown"
+resolution = "unrecognized"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "unknown-pkg"
+normalized = "unknown-pkg.js"
+resolution = "not_found"
+hint = "BarePackage"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/server-bindings"
+normalized = "@minecraft/server-bindings"
+resolution = "restricted"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./noext"
+normalized = "noext.js"
+resolution = "not_found"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./sub/deep/d.js"
+normalized = "sub/deep/d.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = ".//lib/b.js"
+normalized = "/lib/b.js"
+resolution = "not_found"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./scripts/lib/b.js"
+normalized = "scripts/lib/b.js"
+resolution = "not_found"
+hint = "ScriptsPrefix"
+near = "lib/b.js"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "scripts/lib/b.js"
+normalized = "scripts/lib/b.js"
+resolution = "not_found"
+hint = "ScriptsPrefix"
+near = "lib/b.js"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./ts.ts"
+normalized = "ts.ts.js"
+resolution = "not_found"
+hint = "AppendedJs"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/b.js"
+normalized = "lib/b.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/c"
+normalized = "lib/c.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib"
+normalized = "lib.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/"
+normalized = "lib.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./Upper.js"
+normalized = "Upper.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./data.json"
+normalized = "data.json.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "lib/b.js"
+normalized = "lib/b.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/common"
+normalized = "@minecraft/common"
+resolution = "native"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./bom.js"
+normalized = "bom.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib/nested.js"
+normalized = "lib/nested.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib\\b.js"
+normalized = "lib/b.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./main.js"
+normalized = "main.js"
+resolution = "file"
+
+[[imports]]
+file = "sub/deep/d.js"
+kind = "static"
+raw = "../../../escape2.js"
+normalized = "../../../escape2.js"
+resolution = "not_found"
+hint = "EscapesRoot"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [upper.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [m.mjs.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [m.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [../escape.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [/lib/b.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [lib/../lib/b.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [lib/./b.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [x.JS.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [lib/b.js?q=1.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptModuleUnrecognized"
+severity = "info"
+text = "Module [@minecraft/unknown] is unrecognized. If this is a Native module, did you remember to add it to your manifest.json?"
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [unknown-pkg.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptModuleRestricted"
+severity = "info"
+text = "Import failed, can not load restricted module '@minecraft/server-bindings' from 'main.js'."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [noext.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [/lib/b.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [scripts/lib/b.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [scripts/lib/b.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [ts.ts.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportMetaEmpty"
+severity = "info"
+text = "import.meta has no members"
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [../../../escape2.js] not found."
+file = "scripts/sub/deep/d.js"

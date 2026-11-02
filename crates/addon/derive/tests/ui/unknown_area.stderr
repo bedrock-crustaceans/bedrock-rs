@@ -1,0 +1,5 @@
+error: unknown area `Marketplace`; expected `Public`, `Vanilla` or `Internal`
+  --> tests/ui/unknown_area.rs:12:53
+   |
+12 |     #[component(name = "minecraft:friction", area = Marketplace, parse = parse)]
+   |                                                     ^^^^^^^^^^^

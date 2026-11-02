@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:crafting_items_catalog": {
+    "categories": [
+      {
+        "category_name": "items",
+        "groups": [
+          {
+            "items": [
+              "x:"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

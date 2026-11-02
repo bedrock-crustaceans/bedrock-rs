@@ -1,0 +1,16 @@
+# families/script_config fixtures.md, row sc14_string_not_array (probe C).
+
+[[diagnostic]]
+code = "InvalidType"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "allowed_modules"
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [permstring - 1.0.0] - requesting dependency on module [@minecraft/server] but it is not configured to use it."

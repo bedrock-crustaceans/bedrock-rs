@@ -1,0 +1,18 @@
+{
+  "scenes": ["versioned"],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "DuplicateIdentifier",
+      "severity": "error",
+      "path": "dialogue/versioned.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0",
+      "text": "JSON: versioned.json has an error: \n A scene with a scene name of 'versioned' already exists. Skipping scene..."
+    },
+    {
+      "code": "ShadowedDefinition",
+      "severity": "info",
+      "path": "dialogue/versioned.json"
+    }
+  ]
+}

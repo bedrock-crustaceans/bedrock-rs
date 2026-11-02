@@ -1,0 +1,9 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "npc_name": 5, "scene_tag": "number_name", "text": "Dropped." },
+      { "npc_name": { "foo": 1 }, "scene_tag": "object_name", "text": "Kept." }
+    ]
+  }
+}

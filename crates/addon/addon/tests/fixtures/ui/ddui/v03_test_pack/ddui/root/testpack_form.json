@@ -1,0 +1,40 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:ui-root": {
+    "description": {
+      "identifier": "minecraft:test_form"
+    },
+    "attribs": {
+      "root_point": "minecraft:screen"
+    },
+    "layout": {
+      "markup": [
+        {
+          "component": "Panel",
+          "attribs": { "colorMode": "barrel", "stacked": false },
+          "children": [
+            {
+              "component": "Form.TextField",
+              "attribs": {
+                "onChange": {
+                  "$path": "$.testpack.textfieldValue.setString"
+                },
+                "value": { "$path": "$.testpack.textfieldValue.getString" },
+                "data-testid": "test-textfield"
+              }
+            },
+            { "component": "Panel.Spacing" },
+            {
+              "component": "Form.Button",
+              "attribs": {
+                "label": "Button",
+                "onClick": { "$path": "$.testpack.button.action" },
+                "data-testid": "test-button"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

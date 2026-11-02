@@ -1,0 +1,27 @@
+{
+  "namespace": "a",
+  "fade": {
+    "anim_type": "alpha",
+    "from": 0,
+    "to": 1
+  },
+  "c1": {
+    "type": "panel",
+    "alpha": "@a.fade"
+  },
+  "c2": {
+    "type": "panel",
+    "alpha": {
+      "anim_type": "alpha",
+      "from": 0,
+      "to": 1
+    }
+  },
+  "c3": {
+    "type": "panel",
+    "alpha": 0.5
+  },
+  "c4": {
+    "type": "panel"
+  }
+}

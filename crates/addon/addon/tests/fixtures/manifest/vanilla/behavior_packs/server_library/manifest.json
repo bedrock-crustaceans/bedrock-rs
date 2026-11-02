@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "A BP containing all the @minecraft/server typescript code.",
+        "name": "@minecraft/server TS Library",
+        "uuid": "37ca4282-69e9-4402-b40b-0b07de579f02",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            14,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "@minecraft/server TS Library Module",
+            "type": "data",
+            "uuid": "295c4f8c-8910-42d3-8520-001fbe12bdfb",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

@@ -1,0 +1,26 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:ruin",
+      "demo:dup"
+    ],
+    "pools": [
+      "demo:ruin"
+    ],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "ShadowedDefinition",
+      "severity": "info",
+      "path": "worldgen/structures/ruin.json"
+    },
+    {
+      "code": "ShadowedDefinition",
+      "severity": "info",
+      "path": "worldgen/structures/z_dup.json"
+    }
+  ]
+}

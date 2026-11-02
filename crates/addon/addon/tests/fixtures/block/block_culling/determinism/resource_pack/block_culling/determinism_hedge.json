@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.80",
+  "minecraft:block_culling_rules": {
+    "description": {
+      "identifier": "determinism:hedge"
+    },
+    "rules": [
+      {
+        "condition": "same_culling_layer",
+        "cull_against_full_and_opaque": false,
+        "geometry_part": {
+          "bone": "leaves",
+          "cube": 0,
+          "face": "up"
+        },
+        "direction": "up"
+      },
+      {
+        "geometry_part": {
+          "bone": "trunk"
+        },
+        "direction": "down"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Actor Property Override Functional Tests Asset Behavior Pack",
+    "name": "Actor Property Override Functional Tests Asset Behavior Pack",
+    "uuid": "d893892c-fa88-4763-ae42-dbea25b5bea8",
+    "version": [ 1, 0, 0],
+    "min_engine_version": [ 1, 16, 0]
+  },
+  "modules": [
+    {
+      "description": "Actor Property Override Functional Tests Asset Behavior Pack",
+      "type": "data",
+      "uuid": "cb2cfa11-5b88-4a81-8890-bf0d90173e28",
+      "version": [ 1, 0, 0 ]
+    }
+  ]
+}

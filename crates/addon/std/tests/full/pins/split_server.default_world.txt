@@ -1,0 +1,9 @@
+# split_server: the default world (support::default_world): packs on the stacks and findings by severity at load and at link
+      0  link errors
+     45  link infos
+      0  link warnings
+      2  load errors
+   2463  load infos
+      0  load warnings
+     54  packs on the behaviour stack
+      0  packs on the resource stack

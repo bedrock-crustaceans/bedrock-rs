@@ -1,0 +1,18 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:ruin"
+    ],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "MissingFormatVersion",
+      "severity": "info",
+      "path": "worldgen/structures/ruin.json"
+    }
+  ]
+}

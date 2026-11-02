@@ -1,0 +1,12 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:fog_settings": {
+    "description": { "identifier": "determinism:fog" },
+    "distance": {
+      "water": { "fog_start": 0, "fog_end": 60, "fog_color": "#44AFF5", "render_distance_type": "fixed", "unknown": 1 }
+    },
+    "volumetric": {
+      "density": { "air": { "uniform": true, "max_density": { "0.5": 0.1, "0.0": 0.02 } } }
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"format_version":"1.26.0","minecraft:entity":{"components":{"minecraft:pushable":{"is_pushable":true,"is_pushable_by_piston":true}},"description":{"identifier":"server_test:test_mob"}}}

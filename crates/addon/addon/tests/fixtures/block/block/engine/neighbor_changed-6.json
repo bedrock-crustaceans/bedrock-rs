@@ -1,0 +1,17 @@
+{
+				"format_version": "1.26.60",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:neighbor_changed_stateful_block",
+						"states": {
+							"test:neighbor_state": [0, 1]
+						}
+					},
+					"components": {
+						"minecraft:neighbor_change": {
+							"neighbor_directions": ["west"]
+						},
+						"test:neighbor_changed_component": {}
+					}
+				}
+			}

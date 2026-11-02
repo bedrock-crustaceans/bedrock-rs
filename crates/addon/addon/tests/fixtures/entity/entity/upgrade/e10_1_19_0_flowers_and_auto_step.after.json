@@ -1,0 +1,50 @@
+{
+  "format_version": "1.19.50",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:golem"
+    },
+    "components": {
+      "minecraft:behavior.take_flower": {
+        "priority": 9,
+        "filters": {
+          "all_of": [
+            {
+              "test": "is_daytime",
+              "value": true
+            }
+          ]
+        }
+      },
+      "minecraft:behavior.offer_flower": {
+        "filters": {
+          "all_of": [
+            {
+              "test": "is_family",
+              "value": "x"
+            },
+            {
+              "test": "is_daytime",
+              "value": true
+            }
+          ]
+        }
+      },
+      "minecraft:input_ground_controlled": {},
+      "minecraft:variable_max_auto_step": {
+        "base_value": 0.5625,
+        "jump_prevented_value": 0.5625,
+        "controlled_value": 1.0625
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:input_ground_controlled": {},
+        "minecraft:variable_max_auto_step": {
+          "base_value": 0.5625,
+          "controlled_value": 2.0
+        }
+      }
+    }
+  }
+}

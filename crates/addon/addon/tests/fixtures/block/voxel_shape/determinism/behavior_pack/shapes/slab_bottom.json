@@ -1,0 +1,13 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:voxel_shape": {
+    "description": {
+      "identifier": "demo:slab_bottom"
+    },
+    "shape": {
+      "boxes": [
+        { "min": [0, 0, 0], "max": [16, 8, 16] }
+      ]
+    }
+  }
+}

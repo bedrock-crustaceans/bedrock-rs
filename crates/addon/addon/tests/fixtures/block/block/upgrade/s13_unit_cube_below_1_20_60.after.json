@@ -1,0 +1,37 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:tags": [
+        "ore"
+      ],
+      "minecraft:chest_obstruction": {
+        "obstruction_rule": "never"
+      }
+    },
+    "deprecated": {
+      "on_step_on": {
+        "event": "hiss",
+        "target": "self"
+      },
+      "breathability": "air",
+      "unit_cube": true
+    },
+    "deprecated_event_handlers": {
+      "hiss": {
+        "responses": [
+          {
+            "run_command": {
+              "command": [
+                "say hi"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidEnumValue",
+      "severity": "info",
+      "text": "invalid enum value",
+      "at": "k/button_mappings/0/input_mode_condition"
+    }
+  ]
+}

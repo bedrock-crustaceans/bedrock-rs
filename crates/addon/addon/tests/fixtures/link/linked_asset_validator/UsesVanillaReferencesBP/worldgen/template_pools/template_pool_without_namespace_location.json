@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:template_pool": {
+    "description": {
+      "identifier": "test:template_pool_with_namespace_location"
+    },
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "trial_chambers/chamber/chamber_1",
+          "processors": "minecraft:trail_ruins_roads_archaeology"
+        },
+        "weight": 1
+      }
+    ],
+    "fallback": "minecraft:empty"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:aim_assist_categories": {
+    "categories": [
+      {
+        "name": "test:categories_with_references",
+        "priorities": {
+          "entity_default": 30,
+          "block_default": 30,
+          "blocks": {
+            "minecraft:dirt": 60
+          },
+          "entities": {
+            "minecraft:cow": 40
+          }
+        }
+      }
+    ]
+  }
+}

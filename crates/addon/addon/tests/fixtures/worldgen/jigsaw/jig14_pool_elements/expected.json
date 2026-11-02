@@ -1,0 +1,50 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [
+      "demo:single",
+      "demo:feature"
+    ],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "InvalidEnumValue",
+      "severity": "error",
+      "path": "worldgen/template_pools/c_projection.json",
+      "json_path": "minecraft:template_pool/elements/0/element/projection"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/template_pools/c_projection.json",
+      "text": "Failed to parse jigsaw structure template pool 'worldgen/template_pools/c_projection.json'."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/template_pools/d_weight0.json",
+      "json_path": "minecraft:template_pool/elements/0/weight"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/template_pools/d_weight0.json",
+      "text": "Failed to parse jigsaw structure template pool 'worldgen/template_pools/d_weight0.json'."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/template_pools/e_weight201.json",
+      "json_path": "minecraft:template_pool/elements/0/weight"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/template_pools/e_weight201.json",
+      "text": "Failed to parse jigsaw structure template pool 'worldgen/template_pools/e_weight201.json'."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "chop_wood",
+    "minecraft:root": { "minecraft:wait_ticks": { "num_of_ticks": 5 } }
+  }
+}

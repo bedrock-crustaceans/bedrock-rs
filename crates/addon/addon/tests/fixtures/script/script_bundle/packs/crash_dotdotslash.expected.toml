@@ -1,0 +1,21 @@
+# crash_dotdotslash: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run review runs 1-4] libc++abi: terminating due to uncaught exception of type std::out_of_range: basic_string
+# never put this pack in a shared BDS run
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "../"
+normalized = ""
+resolution = "crash"
+
+[[diagnostics]]
+code = "ScriptImportCrashesEngine"
+severity = "error"
+text = "this import specifier terminates the server"
+file = "scripts/main.js"

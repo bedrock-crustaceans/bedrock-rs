@@ -1,0 +1,7 @@
+# fixtures.md `format/mixed_offset`: an index counts from the parameters the `%s` / `%d`
+# tokens left.
+
+[[case]]
+value = "%s then %1"
+params = ["a", "b"]
+expected = "a then b"

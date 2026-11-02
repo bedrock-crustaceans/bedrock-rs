@@ -1,0 +1,9 @@
+# Probe: Q22 (the last engine without the relaxed form)
+scope = "pack"
+engine = "1.26.29"
+
+[[diagnostic]]
+code = "MalformedPropertyVersion"
+severity = "error"
+path = "dependencies/0/version"
+text = "dependency @minecraft/server invalid version: 0.0.0"

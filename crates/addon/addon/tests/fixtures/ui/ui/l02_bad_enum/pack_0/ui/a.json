@@ -1,0 +1,8 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "panel",
+    "anchor_from": "middle",
+    "anchor_to": "center"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_libpack",
+    "description": "script_bundle fixture",
+    "uuid": "a6eff64a-4c63-5561-a65e-159bbeff7a51",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "9850466a-3070-58e7-b040-db92ae62b903",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": []
+}

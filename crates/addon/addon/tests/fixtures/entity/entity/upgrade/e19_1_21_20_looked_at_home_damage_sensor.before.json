@@ -1,0 +1,48 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:enderman"
+    },
+    "components": {
+      "minecraft:lookat": {
+        "set_target": true,
+        "look_event": "x:look",
+        "look_cooldown": 5,
+        "allow_invulnerable": true,
+        "search_radius": 64
+      },
+      "minecraft:home": {
+        "restriction_radius": 16
+      },
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "deals_damage": false
+          },
+          {
+            "deals_damage": true
+          },
+          {
+            "deals_damage": "no"
+          }
+        ]
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:lookat": {
+          "set_target": false
+        },
+        "minecraft:home": {
+          "restriction_radius": 0
+        },
+        "minecraft:damage_sensor": {
+          "triggers": {
+            "deals_damage": true
+          }
+        }
+      }
+    }
+  }
+}

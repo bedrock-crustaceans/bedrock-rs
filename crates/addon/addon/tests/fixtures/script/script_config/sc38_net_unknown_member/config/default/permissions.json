@@ -1,0 +1,14 @@
+{
+  "allowed_modules": [
+    "@minecraft/server",
+    "@minecraft/server-net"
+  ],
+  "module_permissions": {
+    "@minecraft/server-net": {
+      "allowed_uris": [
+        "https://127.0.0.1:9/allowed"
+      ],
+      "bogus_key": 1
+    }
+  }
+}

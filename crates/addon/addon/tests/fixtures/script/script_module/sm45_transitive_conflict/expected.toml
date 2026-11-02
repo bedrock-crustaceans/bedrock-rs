@@ -1,0 +1,8 @@
+# Probe: Q34
+scope = "module"
+
+[[diagnostic]]
+code = "ScriptModuleVersionConflict"
+severity = "error"
+path = "dependencies/0"
+text = "Plugin [sm45] - version conflict for module [@minecraft/server].\n [1.19.0] requested by [sm45 - 3.2.1],\n [2.0.0] requested by [@minecraft/server-ui-bindings - 2.1.0]"

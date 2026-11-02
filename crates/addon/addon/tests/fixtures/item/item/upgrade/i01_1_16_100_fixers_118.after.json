@@ -1,0 +1,18 @@
+{
+  "format_version": "1.19.83",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:fixed"
+    },
+    "components": {
+      "minecraft:food": {
+        "nutrition": 4,
+        "saturation_modifier": 0.8
+      },
+      "minecraft:durability": {
+        "max_durability": 250
+      },
+      "minecraft:repairable": {}
+    }
+  }
+}

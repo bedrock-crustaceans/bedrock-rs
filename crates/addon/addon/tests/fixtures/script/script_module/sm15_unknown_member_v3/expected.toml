@@ -1,0 +1,7 @@
+# Probe: none (strict mask 0xfffc)
+scope = "pack"
+
+[[diagnostic]]
+code = "UnrecognizedField"
+severity = "error"
+path = "modules/0/main"

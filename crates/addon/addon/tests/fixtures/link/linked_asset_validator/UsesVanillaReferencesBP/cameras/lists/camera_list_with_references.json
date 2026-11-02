@@ -1,0 +1,9 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:camera_list": {
+    "identifier": "test:camera_list_with_references",
+    "cameras": [
+        "minecraft:first_person"
+    ]
+  }
+}

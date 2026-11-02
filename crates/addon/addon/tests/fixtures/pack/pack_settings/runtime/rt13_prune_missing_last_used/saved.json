@@ -1,0 +1,27 @@
+{
+  "format_version": "1.21.100",
+  "minecraft:pack_settings": {
+    "settings": [
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000001",
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000002",
+        "last_used": 5,
+        "values": {
+          "banana:slider": 2
+        }
+      },
+      {
+        "pack_id": "00000000-0000-0000-0000-000000000003",
+        "last_used": 1,
+        "values": {
+          "banana:slider": 2
+        }
+      }
+    ]
+  }
+}

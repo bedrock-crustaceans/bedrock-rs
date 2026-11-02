@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sc26_extra_member (probe C2).
+
+[[diagnostic]]
+code = "UnrecognizedField"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "foo"

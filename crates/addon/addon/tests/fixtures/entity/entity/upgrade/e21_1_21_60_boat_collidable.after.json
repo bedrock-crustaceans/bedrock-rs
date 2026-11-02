@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.70",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:boat"
+    },
+    "components": {
+      "minecraft:is_collidable": {}
+    }
+  }
+}

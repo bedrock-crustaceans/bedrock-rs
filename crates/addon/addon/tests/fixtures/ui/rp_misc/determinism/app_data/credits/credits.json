@@ -1,0 +1,14 @@
+[
+  {
+    "section": "Determinism",
+    "disciplines": [
+      {
+        "discipline": "Fixtures",
+        "titles": [
+          { "title": "Fixture Author", "names": [ "Determinism Credit", "Second Credit" ] }
+        ]
+      }
+    ]
+  },
+  { "section": "Thanks" }
+]

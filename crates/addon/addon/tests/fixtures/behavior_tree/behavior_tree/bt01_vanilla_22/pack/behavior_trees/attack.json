@@ -1,0 +1,15 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "attack",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:attack": { 
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "scenes": [],
+  "rejected": 3,
+  "diagnostics": [
+    {
+      "code": "MalformedInput",
+      "severity": "error",
+      "path": "dialogue/array.json",
+      "json_path": "",
+      "text": "JSON: array.json has an error: \n Root value is not a object"
+    },
+    {
+      "code": "MalformedInput",
+      "severity": "error",
+      "path": "dialogue/null.json",
+      "json_path": "",
+      "text": "JSON: null.json has an error: \n Root value is not a object"
+    },
+    {
+      "code": "MalformedInput",
+      "severity": "error",
+      "path": "dialogue/number.json",
+      "json_path": "",
+      "text": "JSON: number.json has an error: \n Root value is not a object"
+    }
+  ]
+}

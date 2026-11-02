@@ -1,0 +1,9 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:strider"
+    },
+    "components": {}
+  }
+}

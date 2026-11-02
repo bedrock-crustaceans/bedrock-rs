@@ -1,0 +1,146 @@
+# The join table of `cargo xtask actor-types` (xtask/src/actor_types.rs): every entity identifier
+# of the game's `mojang-entities.json` metadata mapped to vanilla's numeric `ActorType`, the value
+# the game's entity-type lookup gives for it. The generator fails when an identifier of the
+# metadata has no row here or a row names no identifier there.
+#
+# Each row's comment names the `ActorType` enumerator the value belongs to. Identifier and
+# enumerator are paired by name; a row marked `(paired by hand)` pairs names that differ
+# (`magma_cube` is `LavaSlime`). The low byte of a value is the type, the higher bits its
+# categories (0x100 mob, 0x300 pathfinder mob, 0xb00 monster, 0x1300 animal, 0x80000 minecart,
+# 0x400000 projectile, ...).
+
+[types]
+"minecraft:agent" = 0x138 # Agent = 312
+"minecraft:allay" = 0x186 # Allay = 390
+"minecraft:area_effect_cloud" = 0x5f # AreaEffectCloud = 95
+"minecraft:armadillo" = 0x138e # Armadillo = 5006
+"minecraft:armor_stand" = 0x13d # ArmorStand = 317
+"minecraft:arrow" = 0xc00050 # Arrow = 12582992
+"minecraft:axolotl" = 0x1382 # Axolotl = 4994
+"minecraft:bat" = 0x8113 # Bat = 33043
+"minecraft:bee" = 0x17a # Bee = 378
+"minecraft:blaze" = 0xb2b # Blaze = 2859
+"minecraft:boat" = 0x5a # BoatRideable = 90 (paired by hand)
+"minecraft:bogged" = 0x110b90 # Bogged = 1117072
+"minecraft:breeze" = 0xb8c # Breeze = 2956
+"minecraft:breeze_wind_charge_projectile" = 0x40008d # BreezeWindChargeProjectile = 4194445
+"minecraft:camel" = 0x138a # Camel = 5002
+"minecraft:camel_husk" = 0x11398 # CamelHusk = 70552
+"minecraft:cat" = 0x534b # Cat = 21323
+"minecraft:cave_spider" = 0x40b28 # CaveSpider = 265000
+"minecraft:chest_boat" = 0xda # ChestBoatRideable = 218 (paired by hand)
+"minecraft:chest_minecart" = 0x80062 # MinecartChest = 524386 (paired by hand)
+"minecraft:chicken" = 0x130a # Chicken = 4874
+"minecraft:cod" = 0x2370 # Fish = 9072 (paired by hand)
+"minecraft:command_block_minecart" = 0x80064 # MinecartCommandBlock = 524388 (paired by hand)
+"minecraft:copper_golem" = 0x394 # CopperGolem = 916
+"minecraft:cow" = 0x130b # Cow = 4875
+"minecraft:creaking" = 0xb92 # Creaking = 2962
+"minecraft:creeper" = 0xb21 # Creeper = 2849
+"minecraft:cushion" = 0x9a # Cushion = 154
+"minecraft:dolphin" = 0x231f # Dolphin = 8991
+"minecraft:donkey" = 0x205318 # Donkey = 2118424
+"minecraft:dragon_fireball" = 0x40004f # DragonFireball = 4194383
+"minecraft:drowned" = 0x30b6e # Drowned = 199534
+"minecraft:egg" = 0x400052 # ThrownEgg = 4194386 (paired by hand)
+"minecraft:elder_guardian" = 0xb32 # ElderGuardian = 2866
+"minecraft:ender_crystal" = 0x47 # EnderCrystal = 71
+"minecraft:ender_dragon" = 0xb35 # Dragon = 2869 (paired by hand)
+"minecraft:ender_pearl" = 0x400057 # Enderpearl = 4194391
+"minecraft:enderman" = 0xb26 # EnderMan = 2854
+"minecraft:endermite" = 0x40b37 # Endermite = 265015
+"minecraft:evocation_illager" = 0xb68 # EvocationIllager = 2920
+"minecraft:eye_of_ender_signal" = 0x46 # EyeOfEnder = 70 (paired by hand)
+"minecraft:fireball" = 0x400055 # LargeFireball = 4194389 (paired by hand)
+"minecraft:fireworks_rocket" = 0x48 # FireworksRocket = 72
+"minecraft:fishing_hook" = 0x4d # FishingHook = 77
+"minecraft:fox" = 0x1379 # Fox = 4985
+"minecraft:frog" = 0x1384 # Frog = 4996
+"minecraft:ghast" = 0xb29 # Ghast = 2857
+"minecraft:glow_squid" = 0x2381 # GlowSquid = 9089
+"minecraft:goat" = 0x1380 # Goat = 4992
+"minecraft:guardian" = 0xb31 # Guardian = 2865
+"minecraft:happy_ghast" = 0x1393 # HappyGhast = 5011
+"minecraft:hoglin" = 0x137c # Hoglin = 4988
+"minecraft:hopper_minecart" = 0x80060 # MinecartHopper = 524384 (paired by hand)
+"minecraft:horse" = 0x205317 # Horse = 2118423
+"minecraft:husk" = 0x30b2f # Husk = 199471
+"minecraft:iron_golem" = 0x314 # IronGolem = 788
+"minecraft:lightning_bolt" = 0x5d # LightningBolt = 93
+"minecraft:lingering_potion" = 0x400065 # LingeringPotion = 4194405
+"minecraft:llama" = 0x131d # Llama = 4893
+"minecraft:llama_spit" = 0x400066 # LlamaSpit = 4194406
+"minecraft:magma_cube" = 0xb2a # LavaSlime = 2858 (paired by hand)
+"minecraft:minecart" = 0x80054 # MinecartRideable = 524372 (paired by hand)
+"minecraft:mooshroom" = 0x1310 # MushroomCow = 4880 (paired by hand)
+"minecraft:mule" = 0x205319 # Mule = 2118425
+"minecraft:nautilus" = 0x2395 # Nautilus = 9109
+"minecraft:npc" = 0x133 # Npc = 307
+"minecraft:ocelot" = 0x5316 # Ocelot = 21270
+"minecraft:ominous_item_spawner" = 0x91 # OminousItemSpawner = 145
+"minecraft:panda" = 0x1371 # Panda = 4977
+"minecraft:parched" = 0x110b97 # Parched = 1117079
+"minecraft:parrot" = 0x531e # Parrot = 21278
+"minecraft:phantom" = 0x10b3a # Phantom = 68410
+"minecraft:pig" = 0x130c # Pig = 4876
+"minecraft:piglin" = 0x17b # Piglin = 379
+"minecraft:piglin_brute" = 0x17f # PiglinBrute = 383
+"minecraft:pillager" = 0xb72 # Pillager = 2930
+"minecraft:player" = 0x13f # Player = 319
+"minecraft:polar_bear" = 0x131c # PolarBear = 4892
+"minecraft:pufferfish" = 0x236c # Pufferfish = 9068
+"minecraft:rabbit" = 0x1312 # Rabbit = 4882
+"minecraft:ravager" = 0xb3b # IllagerBeast = 2875 (paired by hand)
+"minecraft:salmon" = 0x236d # Salmon = 9069
+"minecraft:sheep" = 0x130d # Sheep = 4877
+"minecraft:shulker" = 0xb36 # Shulker = 2870
+"minecraft:shulker_bullet" = 0x40004c # ShulkerBullet = 4194380
+"minecraft:silverfish" = 0x40b27 # Silverfish = 264999
+"minecraft:skeleton" = 0x110b22 # Skeleton = 1116962
+"minecraft:skeleton_horse" = 0x21531a # SkeletonHorse = 2183962
+"minecraft:slime" = 0xb25 # Slime = 2853
+"minecraft:small_fireball" = 0x40005e # SmallFireball = 4194398
+"minecraft:sniffer" = 0x138b # Sniffer = 5003
+"minecraft:snow_golem" = 0x315 # SnowGolem = 789
+"minecraft:snowball" = 0x400051 # Snowball = 4194385
+"minecraft:spider" = 0x40b23 # Spider = 264995
+"minecraft:splash_potion" = 0x400056 # ThrownPotion = 4194390 (paired by hand)
+"minecraft:squid" = 0x2311 # Squid = 8977
+"minecraft:stray" = 0x110b2e # Stray = 1116974
+"minecraft:strider" = 0x137d # Strider = 4989
+"minecraft:sulfur_cube" = 0x399 # SulfurCube = 921
+"minecraft:tadpole" = 0x2385 # Tadpole = 9093
+"minecraft:thrown_trident" = 0xc00049 # Trident = 12582985 (paired by hand)
+"minecraft:tnt" = 0x41 # PrimedTnt = 65 (paired by hand)
+"minecraft:tnt_minecart" = 0x80061 # MinecartTNT = 524385 (paired by hand)
+"minecraft:trader_llama" = 0x139d # TraderLlama = 5021
+"minecraft:tripod_camera" = 0x13e # TripodCamera = 318
+"minecraft:tropicalfish" = 0x236f # Tropicalfish = 9071
+"minecraft:turtle" = 0x134a # Turtle = 4938
+"minecraft:vex" = 0xb69 # Vex = 2921
+"minecraft:villager" = 0x100030f # Villager = 16777999
+"minecraft:villager_v2" = 0x1000373 # VillagerV2 = 16778099
+"minecraft:vindicator" = 0xb39 # Vindicator = 2873
+"minecraft:wandering_trader" = 0x376 # WanderingTrader = 886
+"minecraft:warden" = 0xb83 # Warden = 2947
+"minecraft:wind_charge_projectile" = 0x40008f # WindChargeProjectile = 4194447
+"minecraft:witch" = 0xb2d # Witch = 2861
+"minecraft:wither" = 0x10b34 # WitherBoss = 68404 (paired by hand)
+"minecraft:wither_skeleton" = 0x110b30 # WitherSkeleton = 1116976
+"minecraft:wither_skull" = 0x400059 # WitherSkull = 4194393
+"minecraft:wither_skull_dangerous" = 0x40005b # WitherSkullDangerous = 4194395
+"minecraft:wolf" = 0x530e # Wolf = 21262
+"minecraft:xp_bottle" = 0x400044 # ExperiencePotion = 4194372 (paired by hand)
+"minecraft:xp_orb" = 0x45 # Experience = 69 (paired by hand)
+"minecraft:zoglin" = 0x10b7e # Zoglin = 68478
+"minecraft:zombie" = 0x30b20 # Zombie = 199456
+"minecraft:zombie_horse" = 0x21531b # ZombieHorse = 2183963
+"minecraft:zombie_nautilus" = 0x12396 # ZombieNautilus = 74646
+"minecraft:zombie_pigman" = 0x10b24 # PigZombie = 68388 (paired by hand)
+"minecraft:zombie_villager" = 0x30b2c # ZombieVillager = 199468
+"minecraft:zombie_villager_v2" = 0x30b74 # ZombieVillagerV2 = 199540
+
+# The type of a custom identifier whose `runtime_identifier` names no vanilla entity:
+# `ActorType::Mob` (0x100), never "no type".
+[default]
+"Mob" = 0x100 # Mob = 256

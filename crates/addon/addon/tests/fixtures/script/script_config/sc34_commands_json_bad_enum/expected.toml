@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sc34_commands_json_bad_enum (probe D cmd_bad_enum).
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "parse"
+file = "config/commands.json"
+path = "default_permission_level"
+text = "Failed to parse JSON in file 'config/commands.json'\n -> default_permission_level:  This value is bound to 'command_permission_level' and expects one of the following strings: 'any', 'game_directors', 'admin', ... (3 others). Found: 'bogus'"

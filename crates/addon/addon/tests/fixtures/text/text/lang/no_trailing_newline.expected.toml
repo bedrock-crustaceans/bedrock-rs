@@ -1,0 +1,5 @@
+# fixtures.md file without a trailing newline: the end of the file ends the last line.
+
+[entries]
+"a" = "b"
+"c" = "d"

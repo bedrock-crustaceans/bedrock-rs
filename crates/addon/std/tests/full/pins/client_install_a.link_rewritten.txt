@@ -1,0 +1,12 @@
+     21  I ClampedValue [-] @ textures
+    143  I InvalidValue [-] @ font
+     21  I UnknownSound [sound event] @ sounds.json
+      4  I UnresolvedReference [animation] @ entity
+      1  I UnresolvedReference [block] @ aim_assist
+      5  I UnresolvedReference [entity] @ entity
+      2  I UnresolvedReference [geometry] @ entity
+      3  I UnresolvedReference [loot table] @ entities
+      1  I UnresolvedReference [particle event] @ particles
+     39  I UnresolvedReference [sound file] @ sounds
+      1  W TextureNotFound [texture] @ attachables
+     11  W TextureNotFound [texture] @ entity

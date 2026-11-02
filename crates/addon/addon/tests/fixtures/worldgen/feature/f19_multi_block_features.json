@@ -1,0 +1,9 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:multi_block_feature": {
+    "description": {
+      "identifier": "demo:place_lamp"
+    },
+    "places_block": "demo:lamp"
+  }
+}

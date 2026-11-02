@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "resourcePack.platform_google.description",
+    "name": "resourcePack.platform_google.name",
+    "uuid": "47e901c5-fbf4-4c31-8a4f-71e7dbd5b34c",
+    "version": [ 0, 0, 1 ],
+    "min_engine_version": [ 1, 14, 0 ]
+  },
+  "modules": [
+    {
+      "description": "resourcePack.platform_google.description",
+      "type": "resources",
+      "uuid": "63b5d2f2-52c8-4d23-ad30-56159ec47626",
+      "version": [ 0, 0, 1 ]
+    }
+  ]
+}

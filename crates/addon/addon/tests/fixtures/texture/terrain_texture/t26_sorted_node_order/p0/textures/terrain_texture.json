@@ -1,0 +1,14 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "b": {
+      "textures": "b"
+    },
+    "a": {
+      "textures": "a"
+    },
+    "c": {
+      "textures": "c"
+    }
+  }
+}

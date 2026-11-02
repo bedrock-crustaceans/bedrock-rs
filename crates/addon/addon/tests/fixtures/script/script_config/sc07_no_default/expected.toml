@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sc07_no_default (probe D nodefault).
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [plain - 1.0.0] - requesting dependency on module [@minecraft/server] but it is not configured to use it."

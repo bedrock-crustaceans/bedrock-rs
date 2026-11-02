@@ -1,0 +1,5 @@
+# Probe: B13, B13b
+scope = "none"
+resolved = ["@minecraft/server 2.9.0-beta"]
+optional = ["@minecraft/server"]
+beta_apis = true

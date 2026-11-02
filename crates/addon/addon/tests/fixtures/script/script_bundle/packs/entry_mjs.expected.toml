@@ -1,0 +1,11 @@
+# entry_mjs: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run] Plugin [SB_entry_mjs - 1.0.0] - entry [scripts/main.mjs] not supported for runtime [JavaScript].
+members = []
+others = ["scripts/main.mjs"]
+main = "main.mjs"
+
+[[diagnostics]]
+code = "InvalidValue"
+severity = "error"
+text = "Plugin [SB_entry_mjs - 1.0.0] - entry [scripts/main.mjs] not supported for runtime [JavaScript]."
+file = "manifest.json"

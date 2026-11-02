@@ -1,0 +1,23 @@
+{
+  "format_version": "1.19.80",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:transformation": {
+        "rotation": [
+          0,
+          90,
+          0
+        ]
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('demo:a') == 1",
+        "components": {}
+      }
+    ]
+  }
+}

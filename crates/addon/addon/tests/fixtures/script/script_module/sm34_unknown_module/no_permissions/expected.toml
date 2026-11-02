@@ -1,0 +1,9 @@
+# Probe: P11 (no permission list; path not run)
+scope = "module"
+permissions = "none"
+
+[[diagnostic]]
+code = "UnresolvedReference"
+severity = "error"
+path = "dependencies/0"
+text = "Plugin [sm34] - module [sm34 - 3.2.1] depends on unknown module [@minecraft/nonexistent]."

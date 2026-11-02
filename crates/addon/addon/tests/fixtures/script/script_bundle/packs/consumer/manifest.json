@@ -1,0 +1,45 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_consumer",
+    "description": "script_bundle fixture",
+    "uuid": "e45cbf63-aef8-5bfb-b974-124a4079a690",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "55c0303e-8461-546f-b2d2-432c4c8a17b5",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    },
+    {
+      "uuid": "a6eff64a-4c63-5561-a65e-159bbeff7a51",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

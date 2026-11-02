@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sc16_optional_dependency ([bin] only).
+
+[[diagnostic]]
+code = "DroppedField"
+severity = "info"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""

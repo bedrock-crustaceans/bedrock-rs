@@ -1,0 +1,40 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:a_integer",
+      "demo:b_horizontal",
+      "demo:c_both",
+      "demo:f_absent"
+    ],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/structures/d_zero.json",
+      "json_path": "minecraft:jigsaw/max_distance_from_center"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/structures/d_zero.json",
+      "text": "Failed to parse jigsaw structure definition 'worldgen/structures/d_zero.json'."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "worldgen/structures/e_too_far.json",
+      "json_path": "minecraft:jigsaw/max_distance_from_center/horizontal"
+    },
+    {
+      "code": "DocumentRejected",
+      "severity": "error",
+      "path": "worldgen/structures/e_too_far.json",
+      "text": "Failed to parse jigsaw structure definition 'worldgen/structures/e_too_far.json'."
+    }
+  ]
+}

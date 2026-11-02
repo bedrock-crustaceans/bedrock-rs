@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "bool_float",
+    "minecraft:root": { "minecraft:move_to": { "distance_epsilon": false } }
+  }
+}

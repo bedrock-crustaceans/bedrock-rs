@@ -1,0 +1,10 @@
+{
+    "content": [
+        {
+            "path": "manifest.json"
+        },
+        {
+            "path": "entities/balloon.json"
+        }
+    ]
+}

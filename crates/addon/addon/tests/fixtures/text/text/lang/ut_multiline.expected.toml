@@ -1,0 +1,11 @@
+# `lang/ut_multiline` (the game's localization unit test for a valid multiline file): six
+# keys, no log. The game's test describes the text and does not quote it; this file is written to
+# that description.
+
+[entries]
+"key.first" = "First value"
+"key.second" = "Second value"
+"key.indented" = "Indented value"
+"key.with_equals" = "a=b"
+"key.unicode_entry" = "Ünïcödé ✓ §aGreen"
+"key.last" = "Last value"

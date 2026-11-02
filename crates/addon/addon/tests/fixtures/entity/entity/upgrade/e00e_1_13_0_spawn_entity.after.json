@@ -1,0 +1,35 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:hen"
+    },
+    "components": {
+      "minecraft:spawn_entity": {
+        "entities": {
+          "spawn_item": "egg"
+        }
+      }
+    },
+    "component_groups": {
+      "a": {
+        "minecraft:spawn_entity": {
+          "entities": [
+            {
+              "spawn_item": "egg"
+            }
+          ]
+        }
+      },
+      "b": {
+        "minecraft:spawn_entity": {
+          "entities": [
+            {
+              "spawn_item": "x"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

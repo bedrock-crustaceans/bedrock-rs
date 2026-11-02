@@ -1,0 +1,17 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "MalformedFormatVersion",
+      "severity": "error",
+      "path": "worldgen/metadata/a.dat",
+      "text": "Failed to parse format version string of file worldgen/metadata/a.dat; it will be skipped."
+    }
+  ]
+}

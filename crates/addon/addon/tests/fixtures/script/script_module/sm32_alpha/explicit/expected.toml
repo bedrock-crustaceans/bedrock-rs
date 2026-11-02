@@ -1,0 +1,8 @@
+# Probe: Q14
+scope = "none"
+resolved = ["@minecraft/server 3.0.0-alpha"]
+
+[[diagnostic]]
+code = "ScriptAlphaDependency"
+severity = "info"
+path = "dependencies/0"

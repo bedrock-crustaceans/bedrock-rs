@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Experimental Vanilla Block Geometry resource pack",
+        "name": "experimental vanilla block geometry",
+        "uuid": "4c29cbb6-f763-4787-b4f8-abab5e74a050",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "Experimental Vanilla Block Geometry resource pack",
+            "type": "resources",
+            "uuid": "78220127-e42e-4f93-991d-57d566baf6b6",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:pig"
+    },
+    "components": {
+      "minecraft:boostable": {
+        "duration": 3,
+        "speed_multiplier": 1.35
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:boostable": {
+          "speed_multiplier": 2.0
+        }
+      }
+    }
+  }
+}

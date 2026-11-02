@@ -1,0 +1,8 @@
+# Probe: Q09
+scope = "module"
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+path = "modules/0/language"
+text = "Plugin [sm22 - 3.2.1] - using unsupported runtime []."

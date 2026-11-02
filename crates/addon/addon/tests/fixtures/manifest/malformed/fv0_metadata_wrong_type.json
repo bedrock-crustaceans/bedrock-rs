@@ -1,0 +1,24 @@
+{
+  "format_version": 0,
+  "header": {
+    "name": "Old Pack",
+    "pack_id": "77777777-7777-7777-7777-777777777777",
+    "packs_version": [
+      1,
+      0,
+      0
+    ],
+    "modules": [
+      {
+        "type": "data",
+        "uuid": "22222222-2222-2222-2222-222222222222",
+        "version": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "metadata": "oops"
+  }
+}

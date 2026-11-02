@@ -1,0 +1,14 @@
+{
+  "format_version": "1.19.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:magma_cube"
+    },
+    "components": {},
+    "component_groups": {
+      "minecraft:slime_large": {},
+      "minecraft:slime_medium": {},
+      "minecraft:slime_small": {}
+    }
+  }
+}

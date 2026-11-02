@@ -1,0 +1,25 @@
+{
+   "format_version" : "1.14",
+   "minecraft:recipe_material_reduction" : {
+      "description" : {
+         "identifier" : "minecraft:quartz"
+		 //Nether quartz gems
+      },
+      "input" : "minecraft:quartz",
+      "output" : [
+         {
+            "count" : 33,
+            "item" : "minecraft:element_14"
+         },
+         {
+            "count" : 64,
+            "item" : "minecraft:element_8"
+         },
+         {
+            "count" : 3,
+            "item" : "minecraft:element_8"
+         }
+      ],
+      "tags" : "material_reducer"
+   }
+}

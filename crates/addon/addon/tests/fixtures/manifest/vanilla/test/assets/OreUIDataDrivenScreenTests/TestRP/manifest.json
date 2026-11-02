@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Used for testing data driven UI",
+        "name": "DDUI RP",
+        "uuid": "019a373f-6169-7bcd-802c-c6ecb04cf7ce",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "Used for testing data driven UI",
+            "type": "resources",
+            "uuid": "019a373f-7abe-7e24-886a-74ddfc787c5f",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:ghast"
+    },
+    "components": {
+      "minecraft:behavior.float_wander": {
+        "must_reach": true
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "test:jigsaw_with_references"
+    },
+    "step": "underground_structures",
+    "start_pool": "minecraft:trail_ruins/tower",
+    "max_depth": 1,
+    "start_height": {
+      "type": "constant",
+      "value": {
+        "absolute": 10
+      }
+    },
+    "pool_aliases": [
+      {
+        "groups": [
+          {
+            "data": [
+              {
+                "alias": "test:default_pool",
+                "target": "minecraft:trail_ruins/tower"
+              }
+            ],
+            "weight": 1
+          },
+          {
+            "data": [
+              {
+                "alias": "test:category_1",
+                "targets": [
+                  {
+                    "data": "minecraft:trail_ruins/tower",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "weight": 1
+          }
+        ]
+      }
+    ]
+  }
+}

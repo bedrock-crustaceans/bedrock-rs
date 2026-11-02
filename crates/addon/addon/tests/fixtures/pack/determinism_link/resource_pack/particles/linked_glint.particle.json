@@ -1,0 +1,1 @@
+{"format_version": "1.10.0", "particle_effect": {"description": {"identifier": "linked:glint", "basic_render_parameters": {"material": "determinism_base", "texture": "textures/particle/linked_no_glint"}}, "components": {}}}

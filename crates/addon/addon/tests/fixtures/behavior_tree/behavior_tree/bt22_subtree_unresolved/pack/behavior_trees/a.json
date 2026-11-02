@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "a",
+    "minecraft:root": { "minecraft:subtree": { "subtree_id": "b" } }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "format_version": "1.16.100",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:villagerish"
+    },
+    "components": {
+      "minecraft:dweller": {},
+      "minecraft:behavior.move_towards_dwelling_restriction": {
+        "priority": 5
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:dweller": {},
+        "minecraft:behavior.move_towards_dwelling_restriction": {
+          "priority": 6
+        }
+      }
+    }
+  }
+}

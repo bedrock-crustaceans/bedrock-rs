@@ -1,0 +1,11 @@
+
+				{{
+					"type": "slider",
+					"text": "slider text",
+					"name": "{}",
+					"min": 1,
+					"max": 10,
+					"step": 1,
+					"default": 1
+				}}
+			

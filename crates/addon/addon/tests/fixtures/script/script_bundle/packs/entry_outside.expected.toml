@@ -1,0 +1,17 @@
+# entry_outside: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] Plugin [SB_entry_outside - 1.0.0] - does not contain main file [other/main.js].
+# ours adds L15 for the .js file outside scripts/
+members = []
+others = []
+main = "other/main.js"
+
+[[diagnostics]]
+code = "UnresolvedReference"
+severity = "error"
+text = "Plugin [SB_entry_outside - 1.0.0] - does not contain main file [other/main.js]."
+file = "manifest.json"
+[[diagnostics]]
+code = "ScriptFileNotLoadable"
+severity = "info"
+text = "script file can never be loaded"
+file = "other/main.js"

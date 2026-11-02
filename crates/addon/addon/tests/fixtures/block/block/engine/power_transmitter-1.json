@@ -1,0 +1,11 @@
+{
+				"format_version": "1.26.60",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:enchantment_power_transmitter"
+					},
+					"components": {
+						"minecraft:enchantment_power_transmitter": true
+					}
+				}
+			}

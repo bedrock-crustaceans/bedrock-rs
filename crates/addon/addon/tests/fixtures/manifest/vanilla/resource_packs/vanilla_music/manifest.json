@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "uuid": "6989C411-4355-4756-9163-51C1DF5EF677",
+    "name": "resourcePack.vanilla.music",
+    "version": [0, 0, 1],
+    "description": "resourcePack.vanilla.music.description",
+	"min_engine_version": [1, 15, 0]
+  },
+  "modules": [
+    {
+      "description": "resourcePack.vanilla.music.description",
+      "version": [0, 0, 1], 
+      "uuid": "FAF77F7A-8B3B-4FE7-9A14-08D80CC7EAD0",
+      "type": "resources"
+    }
+  ]
+}

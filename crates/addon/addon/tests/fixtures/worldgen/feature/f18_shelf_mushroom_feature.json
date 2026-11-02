@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:horizontal_tree_decoration_feature": {
+    "description": {
+      "identifier": "minecraft:shelf_mushroom_feature"
+    },
+    "places_block": "minecraft:shelf_mushroom",
+    "bark_side_only": true,
+    "allow_adjacent": false
+  }
+}

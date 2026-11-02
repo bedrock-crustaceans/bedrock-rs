@@ -1,0 +1,8 @@
+texture.png
+texts/
+texts/en_US.lang
+texts/languages.json
+body.png
+manifest.json
+rgb_monster.geometry.json
+rgb_monster.meta.json

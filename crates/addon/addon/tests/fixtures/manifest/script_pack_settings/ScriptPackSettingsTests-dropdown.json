@@ -1,0 +1,13 @@
+
+				{{
+					"type": "dropdown",
+					"text": "dropdown text",
+					"name": "{}",
+					"default": "option1",
+					"options": [
+						{{ "name": "option1", "text": "apple" }},
+						{{ "name": "option2", "text": "banana" }},
+						{{ "name": "option3", "text": "orange" }}
+					]
+				}}
+			

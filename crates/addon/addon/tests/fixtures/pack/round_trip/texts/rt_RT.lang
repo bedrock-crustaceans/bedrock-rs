@@ -1,0 +1,6 @@
+## A file of the round-trip suite.
+
+round.trip.one=One
+round.trip.two=Two	## trailing
+
+round.trip.three=Three

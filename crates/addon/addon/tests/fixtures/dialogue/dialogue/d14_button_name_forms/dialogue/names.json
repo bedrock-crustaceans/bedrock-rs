@@ -1,0 +1,8 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "names", "text": "Text.", "buttons": [ { "name": { "rawtext": [ { "text": "Hi" } ] }, "commands": [ "/say hi" ] }, { "name": 1 }, { "name": "" }, { "name": "Plain" } ] }
+    ]
+  }
+}

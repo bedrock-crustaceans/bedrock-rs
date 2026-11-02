@@ -1,0 +1,25 @@
+[package]
+name = "bedrock_addon_derive"
+description = "The #[derive(Components)] proc-macro of the bedrock_addon crate family: Component impls, From<T> for the family's component enum and the static component table"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = { workspace = true }
+syn = { workspace = true }
+quote = { workspace = true }
+
+[dev-dependencies]
+# The expansion tests implement core's traits on a toy family.
+bedrock_addon_core = { path = "../core" }
+# `compile_fail` cases with their expected compiler errors (tests/ui).
+trybuild = "1"

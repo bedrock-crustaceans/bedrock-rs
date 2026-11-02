@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.30",
+  "tiers": [
+    {
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [{ "choice": [{ "quantity": { "min": 18, "max": 22 }, "item": "minecraft:wheat", "functions": [], "price_multiplier": 0.05 }] }],
+              "gives": [{ "choice": [{ "item": "minecraft:emerald", "functions": [] }] }],
+              "trader_exp": 2,
+              "max_uses": 16
+            },
+            {
+              "wants": [{ "item": "minecraft:emerald" }],
+              "gives": [{ "item": "minecraft:bread", "quantity": 6 }],
+              "weight": 2
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 0
+    }
+  ]
+}

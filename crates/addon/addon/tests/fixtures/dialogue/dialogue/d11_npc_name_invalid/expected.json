@@ -1,0 +1,13 @@
+{
+  "scenes": ["object_name"],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/names.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/npc_name",
+      "text": "JSON: names.json has an error: \n The 'name' of an NPC must be a string or rawtext object. Skipping scene..."
+    }
+  ]
+}

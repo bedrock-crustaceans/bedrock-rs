@@ -1,0 +1,10 @@
+{
+  "format_version": "1.20.0",
+  "flipbooks": [
+    {
+      "flipbook_texture": "textures/blocks/sea_lantern",
+      "atlas_tile": "sea_lantern",
+      "ticks_per_frame": 5
+    }
+  ]
+}

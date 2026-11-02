@@ -1,0 +1,5 @@
+error: a component variant has exactly one unnamed field, the component type: `Friction(Friction)`
+  --> tests/ui/not_a_newtype_variant.rs:13:14
+   |
+13 |     Friction { value: f32 },
+   |              ^^^^^^^^^^^^^^

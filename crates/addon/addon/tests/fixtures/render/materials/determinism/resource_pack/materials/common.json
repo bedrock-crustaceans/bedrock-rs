@@ -1,0 +1,4 @@
+[
+  { "path": "materials/determinism.material", "+defines": [ "DETERMINISM" ] },
+  { "path": "materials/determinism_single.material" }
+]

@@ -1,0 +1,17 @@
+{
+  "format_version": "1.8.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:area_effect_cloud",
+      "is_spawnable": false,
+      "is_summonable": false,
+      "is_experimental": false
+    },
+    "components": {
+      "minecraft:collision_box": { "width": 6, "height": 0.5 },
+      "minecraft:damage_sensor": { "deals_damage": false },
+      "minecraft:physics": {},
+      "minecraft:pushable": { "is_pushable": false, "is_pushable_by_piston": false }
+    }
+  }
+}

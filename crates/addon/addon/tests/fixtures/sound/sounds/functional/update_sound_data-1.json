@@ -1,0 +1,9 @@
+{
+				"format_version": "1.14.0",
+				"sound_definitions": {
+					"test_sound_event": {
+						"category": "neutral",
+						"sounds": ["sounds/random/click"]
+					}
+				}
+			}

@@ -1,0 +1,14 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "demo:two_stations"
+    },
+    "tags": [
+      "furnace",
+      "smoker"
+    ],
+    "input": "minecraft:beef",
+    "output": "minecraft:cooked_beef"
+  }
+}

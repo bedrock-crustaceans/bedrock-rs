@@ -1,0 +1,11 @@
+{
+  "format_version": "beta",
+  "minecraft:item": {
+    "description": {
+      "identifier": "demo:determinism_beta"
+    },
+    "components": {
+      "minecraft:max_stack_size": 16
+    }
+  }
+}

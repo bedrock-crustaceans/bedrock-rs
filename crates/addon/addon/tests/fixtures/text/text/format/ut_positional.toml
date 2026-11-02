@@ -1,0 +1,15 @@
+# fixtures.md `format/ut_positional` (LocalizationUnitTests): `%1` / `%2`; without parameters nothing is
+# replaced.
+
+[keys]
+"key.1" = "Value %1 %2"
+
+[[case]]
+id = "key.1"
+params = ["param1", "param2"]
+expected = "Value param1 param2"
+
+[[case]]
+id = "key.1"
+params = []
+expected = "Value %1 %2"

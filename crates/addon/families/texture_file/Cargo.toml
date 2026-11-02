@@ -1,0 +1,14 @@
+[package]
+name = "bedrock_addon_family_texture_file"
+description = "The `texture_file` content family of bedrock_addon, re-exported as bedrock_addon::families::texture_file; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_support = { path = "../../support" }

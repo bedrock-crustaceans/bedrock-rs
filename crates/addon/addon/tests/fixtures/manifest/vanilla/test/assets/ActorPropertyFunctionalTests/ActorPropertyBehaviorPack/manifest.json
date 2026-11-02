@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Actor Property Functional Tests Asset Behavior Pack",
+    "name": "Actor Property Functional Tests Asset Behavior Pack",
+    "uuid": "96887ccd-76a5-4b1e-818e-a4cffd026960",
+    "version": [ 1, 0, 0],
+    "min_engine_version": [ 1, 16, 0]
+  },
+  "modules": [
+    {
+      "description": "Actor Property Functional Tests Asset Behavior Pack",
+      "type": "data",
+      "uuid": "253e7b61-bcd2-481a-85c4-e721c9de1f42",
+      "version": [ 1, 0, 0 ]
+    }
+  ]
+}

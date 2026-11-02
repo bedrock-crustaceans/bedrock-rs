@@ -1,0 +1,18 @@
+{
+  "format_version": "1.19.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:slime"
+    },
+    "components": {},
+    "component_groups": {
+      "minecraft:slime_large": {
+        "minecraft:area_attack": {
+          "damage_per_tick": 9
+        }
+      },
+      "minecraft:slime_medium": {},
+      "minecraft:slime_small": {}
+    }
+  }
+}

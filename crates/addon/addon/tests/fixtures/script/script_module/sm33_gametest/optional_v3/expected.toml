@@ -1,0 +1,8 @@
+# Probe: Q40 with optional (S9)
+scope = "dep"
+resolved = []
+
+[[diagnostic]]
+code = "DroppedField"
+severity = "info"
+path = "dependencies/0"

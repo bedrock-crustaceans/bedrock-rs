@@ -1,0 +1,6 @@
+{
+  "allowed_modules": [
+    "@minecraft/server@2.0.0",
+    "@minecraft/server-ui"
+  ]
+}

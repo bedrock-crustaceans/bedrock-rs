@@ -1,0 +1,8 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_unknown": {
+    "description": {
+      "identifier": "demo:no_payload"
+    }
+  }
+}

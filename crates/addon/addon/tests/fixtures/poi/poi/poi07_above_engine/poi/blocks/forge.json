@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.70",
+  "minecraft:poi_block": {
+    "description": {
+      "identifier": "test:forge"
+    },
+    "blocks": [
+      "minecraft:anvil"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+# Probe: P26
+scope = "dep"
+resolved = []
+main = "main.js"
+
+[[diagnostic]]
+code = "InvalidProperty"
+severity = "warning"
+path = "dependencies/0"

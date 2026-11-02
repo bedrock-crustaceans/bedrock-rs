@@ -1,0 +1,13 @@
+// fixtures.md row 24: biome_has_tag (engine 1.26.30)
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
+        {"condition": "biome_has_tag", "tag": "overworld"},
+        {"condition": "biome_has_tag"}
+      ],
+      "entries": [{"type": "empty"}]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:point_light_settings": {
+    "colors": {
+      "minecraft:torch": "#EFE39D"
+    }
+  }
+}

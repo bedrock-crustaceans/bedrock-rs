@@ -1,0 +1,21 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "attack_mob_test2",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:look_at": {
+              "block_pos": [-1, 4, 0]
+            }
+          },
+          {
+            "minecraft:attack": {
+              "num_of_ticks": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

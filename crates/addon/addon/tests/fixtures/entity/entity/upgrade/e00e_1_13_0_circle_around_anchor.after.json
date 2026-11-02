@@ -1,0 +1,19 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:phantomish"
+    },
+    "components": {
+      "minecraft:behavior.circle_around_anchor": {
+        "radius_adjustment_chance": 0.25,
+        "height_adjustment_chance": 1.0
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.circle_around_anchor": {}
+      }
+    }
+  }
+}

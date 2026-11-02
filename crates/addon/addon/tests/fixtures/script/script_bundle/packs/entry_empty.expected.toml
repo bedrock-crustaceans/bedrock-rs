@@ -1,0 +1,12 @@
+# entry_empty: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] Plugin [SB_entry_empty - 1.0.0] - entry [] not supported for runtime [JavaScript].
+members = ["main.js"]
+others = []
+main = ""
+
+# ours: the module starts no plugin, so main.js is listed and not read (no import site)
+[[diagnostics]]
+code = "InvalidValue"
+severity = "error"
+text = "Plugin [SB_entry_empty - 1.0.0] - entry [] not supported for runtime [JavaScript]."
+file = "manifest.json"

@@ -1,0 +1,9 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:camera_preset": {
+    "identifier": "determinism:orbit",
+    "inherit_from": "minecraft:follow_orbit",
+    "radius": 8,
+    "view_offset": [1, 0.5]
+  }
+}

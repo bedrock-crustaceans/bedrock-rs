@@ -1,0 +1,5 @@
+{
+  "impact_damage": { "power": 1.6, "on_hit": { "impact_damage": { "damage": 2, "knockback": true, "apply_knockback_to_blocking_targets": true } } },
+  "author_false_overwritten": { "on_hit": { "impact_damage": { "apply_knockback_to_blocking_targets": true } } },
+  "no_impact_damage": { "on_hit": { "remove_on_hit": {} } }
+}

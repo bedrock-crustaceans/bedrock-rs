@@ -1,0 +1,16 @@
+{
+				"minecraft:biome": {
+					"description": {
+						"identifier": "test_name"
+					},
+					"components": {
+						"minecraft:something": {},
+						"minecraft:tags": {
+							"tags": [
+								"tag1",
+								"tag2"
+							]
+						}
+					}
+				}
+			}

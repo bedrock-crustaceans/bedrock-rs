@@ -1,0 +1,14 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "determinism:ghost",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/entity/ghost" },
+      "geometry": { "default": "geometry.ghost" },
+      "scripts": { "pre_animation": ["variable.t = query.life_time;"], "animate": ["float"] },
+      "animations": { "float": "animation.ghost.float" },
+      "render_controllers": ["controller.render.ghost"]
+    }
+  }
+}

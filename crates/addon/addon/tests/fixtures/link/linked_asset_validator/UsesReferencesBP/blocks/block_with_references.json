@@ -1,0 +1,38 @@
+{
+    "format_version": "1.21.50",
+    "minecraft:block": {
+        "description": {
+            "identifier": "test:block_with_references"
+        },
+        "components": {
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 10,
+                "item_specific_speeds": [
+                    {
+                        "item": "test:item",
+                        "destroy_speed": 5
+                    }
+                ]
+            },
+            "minecraft:loot": "loot_tables/test_loot.json",
+            "minecraft:material_instances": {
+                "north": "custom_face",
+                "south": "custom_face",
+                "*": {
+                    "texture": "test_block_texture"
+                },
+                "custom_face": {
+                    "texture": "test_block_texture"
+                }
+            },
+            "minecraft:placement_filter" : {
+                "conditions": [
+                    {
+                        "allowed_faces": ["up", "side"],
+                        "block_filter": ["test:block"]
+                    }
+                ]
+            }
+        }
+    }
+}

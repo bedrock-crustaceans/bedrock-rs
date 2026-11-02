@@ -1,0 +1,14 @@
+{
+						"format_version": "1.21.130",
+						"minecraft:item": {
+							"description": {
+								"identifier": "test:default_item"
+							},
+							"components": {
+								"minecraft:swing_sounds": {
+									// At least one field needs to be initialized to prevent a content error to occur.
+									"attack_miss": "<LevelSoundEvent 615>"
+								}
+							}
+						}
+					}

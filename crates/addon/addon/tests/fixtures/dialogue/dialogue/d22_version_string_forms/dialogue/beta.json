@@ -1,0 +1,8 @@
+{
+  "format_version": "beta",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "beta", "text": "Hello." }
+    ]
+  }
+}

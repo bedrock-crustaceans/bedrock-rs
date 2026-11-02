@@ -1,0 +1,179 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "on_damage": {
+              "filters": {
+                "test": "has_tag",
+                "value": "a"
+              },
+              "event": "x:e"
+            },
+            "cause": "fall",
+            "deals_damage": true,
+            "damage_multiplier": 0.5
+          }
+        ]
+      },
+      "minecraft:interact": {
+        "interactions": {
+          "cooldown": 2.5,
+          "use_item": true,
+          "on_interact": {
+            "event": "x:sheared",
+            "target": "self"
+          }
+        }
+      },
+      "minecraft:type_family": {
+        "family": [
+          "demo",
+          "mob"
+        ]
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:hurt_on_condition": {
+        "damage_conditions": [
+          {
+            "filters": {
+              "test": "in_water_or_rain",
+              "operator": "==",
+              "value": true
+            },
+            "cause": "drowning",
+            "damage_per_tick": 1
+          }
+        ]
+      }
+    },
+    "component_groups": {
+      "g1": {
+        "minecraft:damage_sensor": {
+          "triggers": [
+            {
+              "cause": "fire",
+              "deals_damage": false
+            },
+            {
+              "deals_damage": false,
+              "cause": "fall"
+            }
+          ]
+        },
+        "minecraft:environment_sensor": {
+          "triggers": {
+            "filters": {
+              "test": "is_underwater"
+            },
+            "event": "x:wet"
+          }
+        },
+        "minecraft:giveable": {
+          "triggers": {
+            "items": [
+              "minecraft:stick"
+            ],
+            "on_give": "x:given"
+          }
+        },
+        "minecraft:interact": {
+          "interactions": [
+            {
+              "on_interact": {
+                "event": "x:keep"
+              }
+            }
+          ]
+        },
+        "minecraft:scheduler": {
+          "scheduled_events": [
+            {
+              "event": "x:s"
+            }
+          ]
+        },
+        "minecraft:spawn_entity": {
+          "min_wait_time": 300,
+          "filters": {
+            "all_of": [
+              {
+                "test": "is_daytime"
+              },
+              {
+                "test": "rider_count",
+                "subject": "self",
+                "operator": "==",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "minecraft:type_family": {
+          "family": [
+            "single",
+            "mob"
+          ]
+        }
+      },
+      "g2": {
+        "minecraft:damage_sensor": {
+          "triggers": [
+            {
+              "on_damage": {
+                "filters": {
+                  "test": "a"
+                },
+                "event": "x:b"
+              },
+              "cause": "x"
+            }
+          ]
+        },
+        "minecraft:environment_sensor": {
+          "triggers": [
+            {
+              "event": "x:one"
+            },
+            {
+              "event": "x:two"
+            }
+          ]
+        },
+        "minecraft:spawn_entity": [
+          {
+            "spawn_item": "egg",
+            "filters": {
+              "test": "rider_count",
+              "subject": "self",
+              "operator": "==",
+              "value": 0
+            }
+          },
+          {
+            "spawn_item": "x",
+            "filters": [
+              {
+                "test": "b"
+              },
+              {
+                "test": "rider_count",
+                "subject": "self",
+                "operator": "==",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

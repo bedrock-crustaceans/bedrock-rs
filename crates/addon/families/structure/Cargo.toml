@@ -1,0 +1,15 @@
+[package]
+name = "bedrock_addon_family_structure"
+description = "The `structure` content family of bedrock_addon, re-exported as bedrock_addon::families::structure; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+indexmap = { workspace = true }
+nbtx = { workspace = true }

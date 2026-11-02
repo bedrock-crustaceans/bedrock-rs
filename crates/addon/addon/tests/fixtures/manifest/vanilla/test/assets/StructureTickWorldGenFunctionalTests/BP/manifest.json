@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "BP for StructureTickWorldGenFunctionalTests - tests tick scheduling for custom blocks placed via structure during worldgen",
+    "name": "StructureTickWorldGenFunctionalTests BP",
+    "uuid": "c7a1b2d3-e4f5-6789-abcd-ef0123456789",
+    "version": [0, 0, 1],
+    "min_engine_version": [1, 20, 0]
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [1, 0, 0],
+      "uuid": "d8b2c3e4-f5a6-7890-bcde-f01234567890",
+      "type": "data"
+    }
+  ]
+}

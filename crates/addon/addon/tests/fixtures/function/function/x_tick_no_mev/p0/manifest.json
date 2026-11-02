@@ -1,0 +1,33 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "p0",
+    "description": "function fixture",
+    "uuid": "00000000-0000-4000-8000-009900000001",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "00000000-0000-4000-8000-009900000002",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "skin_pack",
+      "uuid": "00000000-0000-4000-8000-009900000003",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

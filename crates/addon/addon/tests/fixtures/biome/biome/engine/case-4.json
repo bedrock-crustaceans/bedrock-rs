@@ -1,0 +1,21 @@
+{
+			"format_version": "1.20.60",
+			"minecraft:biome": {
+				"description": {
+					"identifier": "minecraft:test_biome"
+				},
+				"components": {
+					"minecraft:climate": {
+						"downfall": 0.5,
+						"snow_accumulation": [ 0.25, 1.0 ],
+						"temperature": 0.0
+					},
+					"minecraft:tags": {
+						"tags": [
+							"ice_plains",
+							"overworld"
+						]
+					}
+				}
+			}
+			}

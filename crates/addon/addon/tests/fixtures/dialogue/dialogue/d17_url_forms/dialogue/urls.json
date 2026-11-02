@@ -1,0 +1,8 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "urls", "text": "Text.", "buttons": [ { "name": "Link", "url": "https://x" }, { "name": "Bad", "url": 5 }, { "name": "Empty", "url": "" } ] }
+    ]
+  }
+}

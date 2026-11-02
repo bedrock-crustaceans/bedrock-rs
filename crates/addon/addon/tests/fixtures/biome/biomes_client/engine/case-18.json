@@ -1,0 +1,17 @@
+
+				{
+					"format_version": "1.21.40",
+					"minecraft:client_biome": {
+						"description": {
+							"identifier": "test:biome_grass_upgrade"
+						},
+						"components": {
+							"minecraft:grass_appearance": {
+								"color": {
+								  "color_map": "swamp_grass"
+								}
+							}
+						}
+					}
+				}
+				

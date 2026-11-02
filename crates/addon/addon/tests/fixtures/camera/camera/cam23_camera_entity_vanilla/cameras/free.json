@@ -1,0 +1,32 @@
+{
+  "format_version": "1.26.10",
+  "minecraft:camera_entity": {
+    "description": {
+      "identifier": "minecraft:free"
+    },
+    "components": {
+      "minecraft:camera": {
+        "field_of_view": 66
+      },
+      "minecraft:camera_render_player_model": {},
+      "minecraft:camera_shake": {
+        "frequency": 10,
+        "amplitude": 5,
+        "noise_multiplier": 4
+      },
+      "minecraft:extend_player_rendering": {},
+      "minecraft:redirect_camera_input": {},
+      "minecraft:stationary_camera": {},
+      "minecraft:target": {
+        "horizontal_rotation_limit": [
+          0,
+          360
+        ],
+        "vertical_rotation_limit": [
+          0,
+          180
+        ]
+      }
+    }
+  }
+}

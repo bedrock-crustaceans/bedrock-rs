@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "short",
+    "minecraft:root": { "minecraft:look_at": { "block_pos": [1, 2] } }
+  }
+}

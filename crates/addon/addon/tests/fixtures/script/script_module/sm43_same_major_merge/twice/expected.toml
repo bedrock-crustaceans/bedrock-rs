@@ -1,0 +1,3 @@
+# Probe: Q19
+scope = "none"
+resolved = ["@minecraft/server 2.8.0", "@minecraft/server 2.8.0"]

@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Player Actor Property Functional Tests BP",
+    "description": "Player Actor Property Functional Tests BP",
+    "uuid": "5422a51f-ed6d-49ee-a7c4-3ac410ee820c",
+    "version": [0, 0, 1],
+    "min_engine_version": [1, 16, 100]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "0570d361-99d8-45cc-9cd6-53383c55b249",
+      "version": [0, 0, 1]
+    }
+  ]
+}

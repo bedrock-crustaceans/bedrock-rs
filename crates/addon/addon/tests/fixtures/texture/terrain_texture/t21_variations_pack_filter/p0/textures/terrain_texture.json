@@ -1,0 +1,19 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/v1",
+            "weight": 1
+          },
+          {
+            "path": "textures/v2",
+            "weight": 3
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+// No neighbor_aware_block_upgrade_version, a wall in the palette.
+{
+  format_version: 1,
+  size: [1, 1, 1],
+  structure: {
+    block_indices: [[0], [-1]],
+    palette: {
+      default: {
+        block_palette: [{name: "minecraft:cobblestone_wall", states: {wall_block_type: "cobblestone"}, version: 18168865}],
+        block_position_data: {}
+      }
+    },
+    entities: []
+  },
+  structure_world_origin: [0, 0, 0]
+}

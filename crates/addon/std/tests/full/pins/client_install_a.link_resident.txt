@@ -1,0 +1,13 @@
+# client_install_a: the findings of link() over the packs copied through PackWriter, every file resident: the rules that read image and font bytes run
+     21  I ClampedValue [-] @ textures                      # R34 (lint, an information): vanilla's `flipbook_textures.json` writes `atlas_tile_variant` on 21 tiles that have no variations; the game uses variant 0 and says nothing
+    143  I InvalidValue [-] @ font                          # F24: glyphs of the `.fontdata` files with an advance of zero or less
+     21  I UnknownSound [sound event] @ sounds.json
+      4  I UnresolvedReference [animation] @ entity         # R4 (lint): animations and controllers a client entity names that no file defines (`animation.camel.look_at_target`, `controller.animation.player.base`, …); vanilla keeps the name and plays nothing
+      1  I UnresolvedReference [block] @ aim_assist         # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
+      5  I UnresolvedReference [entity] @ entity            # R10 (lint): client entities of things that are no behaviour-pack entity and are in no list (`minecraft:bed`, `skull`, `leash_knot`, `decorated_pot`, `trial_spawner`; two more are in experimental packs, which stay off without their experiments): the game draws them from code
+      2  I UnresolvedReference [geometry] @ entity          # R3 (lint): `geometry.boat` and `geometry.chest_boat`, which no file defines: the game builds the two models in code
+      3  I UnresolvedReference [loot table] @ entities      # E12 (lint): `loot_tables/entities/fox.json` and `…/piglin.json`, which no pack has; vanilla resolves a table when it is rolled and says nothing
+      1  I UnresolvedReference [particle event] @ particles # R39 (lint, an information): `obsidian_tear` fires `hit_ground` on collision and has no `events`; the game's own file, and the game fires nothing and says nothing
+     39  I UnresolvedReference [sound file] @ sounds
+      1  W TextureNotFound [texture] @ attachables          # R7 (the game's content-log warning: the client starts the image's load when it reads the definition and logs "Failed to find either texture set or image file of name"): the mace attachable names `textures/item/mace`, an image no pack has
+     11  W TextureNotFound [texture] @ entity               # R7 (the game's content-log warning: the client starts the image's load when it reads the definition and logs "Failed to find either texture set or image file of name"): the eleven `textures/items/potion_bottle_lingering_…` images the lingering potion's client entity names and no pack has

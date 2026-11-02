@@ -1,0 +1,13 @@
+{
+  "custom:item1": {
+    "menu_category": {
+      "category": "nature",
+      "group": "custom:other_group"
+    }
+  },
+  "custom:item2": {},
+  "custom:item3": {},
+  "custom:item4": {},
+  "custom:my_icon": {},
+  "minecraft:stone": {}
+}

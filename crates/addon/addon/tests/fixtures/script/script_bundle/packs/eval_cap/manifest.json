@@ -1,0 +1,40 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_eval_cap",
+    "description": "script_bundle fixture",
+    "uuid": "54607b37-f163-5478-ada4-3f58a26e1b16",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "3866b7a3-93a2-5410-9ff1-ba572a1190fc",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ],
+  "capabilities": [
+    "script_eval"
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:ui-root": {
+    "description": {
+      "identifier": "minecraft:message_box"
+    },
+    "attribs": {
+      "root_point": "minecraft:screen"
+    },
+    "layout": {
+      "markup": [
+        {
+          "component": "Context",
+          "attribs": {
+            "data": { "$path": "$.minecraft.message_box_data_{instanceId}" }
+          },
+          "children": [
+            {
+              "component": "Panel",
+              "attribs": { "colorMode": "modalForm", "stacked": false },
+              "children": [
+                {
+                  "component": "Panel.Text",
+                  "attribs": {
+                    "text": { "$relativePath": "$.title.getString" },
+                    "type": "header"
+                  }
+                },
+                { "component": "Panel.Spacing" },
+                {
+                  "component": "Form.ScrollView",
+                  "attribs": { "size": "small" },
+                  "children": [
+                    {
+                      "component": "Panel.Text",
+                      "attribs": {
+                        "text": { "$relativePath": "$.body.getString" },
+                        "multiline": true
+                      }
+                    }
+                  ]
+                },
+                { "component": "Panel.Spacing" },
+                { "component": "Form.Divider" },
+                { "component": "Panel.Spacing" },
+                {
+                  "component": "Form.Button",
+                  "attribs": {
+                    "onClick": {
+                      "$relativePath": "$.button1.onClick.closeAction"
+                    },
+                    "label": { "$relativePath": "$.button1.label.getString" },
+                    "tooltip": {
+                      "$relativePath": "$.button1.tooltip.getString"
+                    },
+                    "data-testid": "test-MessageFormButton1"
+                  }
+                },
+                { "component": "Panel.Spacing" },
+                { "component": "Form.Divider" },
+                { "component": "Panel.Spacing" },
+                {
+                  "component": "Form.Button",
+                  "attribs": {
+                    "onClick": {
+                      "$relativePath": "$.button2.onClick.closeAction"
+                    },
+                    "label": { "$relativePath": "$.button2.label.getString" },
+                    "tooltip": {
+                      "$relativePath": "$.button2.tooltip.getString"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

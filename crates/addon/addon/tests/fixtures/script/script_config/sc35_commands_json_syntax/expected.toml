@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sc35_commands_json_syntax (probe D cmd_broken).
+
+[[diagnostic]]
+code = "MalformedInput"
+severity = "error"
+phase = "parse"
+file = "config/commands.json"
+path = ""
+text = "Failed to parse JSON in file 'config/commands.json'\n:  malformed input"

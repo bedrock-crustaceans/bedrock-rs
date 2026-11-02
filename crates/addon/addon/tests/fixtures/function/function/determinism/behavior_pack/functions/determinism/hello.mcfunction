@@ -1,0 +1,2 @@
+say determinism
+tp @s ~ ~ ~

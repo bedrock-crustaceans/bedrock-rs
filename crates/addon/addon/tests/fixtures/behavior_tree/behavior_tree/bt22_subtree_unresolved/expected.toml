@@ -1,0 +1,22 @@
+# Validation rule 16 (20 M5): the link pass's findings; loading raises none.
+
+[[diagnostic]]
+phase = "link"
+kind = "UnresolvedReference"
+severity = "info"
+file = "behavior_trees/orphan.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/subtree_id"
+
+[[diagnostic]]
+phase = "link"
+kind = "ReferenceCycle"
+severity = "info"
+file = "behavior_trees/a.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/subtree_id"
+
+[[diagnostic]]
+phase = "link"
+kind = "ReferenceCycle"
+severity = "info"
+file = "behavior_trees/b.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/subtree_id"

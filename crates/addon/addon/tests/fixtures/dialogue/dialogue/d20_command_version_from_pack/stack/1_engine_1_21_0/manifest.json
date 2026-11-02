@@ -1,0 +1,12 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "min engine 1, 21, 0",
+    "uuid": "00000000-0000-0000-0000-000000000021",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    { "type": "data", "uuid": "00000000-0000-0000-0001-000000000021", "version": [1, 0, 0] }
+  ]
+}

@@ -1,0 +1,11 @@
+{{
+			"format_version": "1.26.20",
+			"minecraft:block": {{
+				"description": {{
+				  "identifier": "test:custom_block"
+				}},
+				"components": {{
+					"minecraft:collision_box": {}
+				}}
+			}}
+		}}

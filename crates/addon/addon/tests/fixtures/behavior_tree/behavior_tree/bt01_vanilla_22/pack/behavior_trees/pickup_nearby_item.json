@@ -1,0 +1,25 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "pickup_nearby_item",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:find_entity": {
+              "entity_name": "item"
+            }
+          },
+          {
+            "minecraft:move_to": {
+            }
+          },
+          {
+            "minecraft:wait": {
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

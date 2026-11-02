@@ -1,0 +1,13 @@
+{
+  "scenes": ["kept"],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/tags.json",
+      "json_path": "minecraft:npc_dialogue/scenes/1/scene_tag",
+      "text": "JSON: tags.json has an error: \n Each scene needs a 'scene_tag' to reference, was not found. Skipping scene..."
+    }
+  ]
+}

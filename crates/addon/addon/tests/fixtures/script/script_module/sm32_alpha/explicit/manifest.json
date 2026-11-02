@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm32",
+    "description": "families/script_module fixture sm32_alpha",
+    "uuid": "bc84c2c4-e257-56aa-aa46-49b6850adc32",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "db1ad9c4-8a7b-5999-9d0d-45c076355642",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "3.0.0-alpha"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "scenes": [],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "MalformedFormatVersion",
+      "severity": "error",
+      "path": "dialogue/number.json",
+      "json_path": "format_version",
+      "text": "JSON: number.json has an error: \n Couldn't find 'format_version' property."
+    }
+  ]
+}

@@ -1,12 +1,41 @@
+mod actor_types;
 pub mod codegen;
+mod entity_schemas;
+mod goal_numeric;
+mod script_meta;
 
 use proc_macro2::TokenStream;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::{fs, io};
+use std::{env, fs, io, process};
 use syn::File;
 
+const USAGE: &str = "usage: cargo xtask [protocol | actor-types --samples <dir> | script-meta --samples <dir> | entity-schemas]";
+
 fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let result = match args.as_slice() {
+        [] | ["protocol"] => {
+            protocol();
+            Ok(())
+        }
+        ["actor-types", "--samples", dir] => actor_types::run(Path::new(dir)),
+        ["script-meta", "--samples", dir] => script_meta::run(Path::new(dir)),
+        ["entity-schemas"] => entity_schemas::run(),
+        _ => {
+            eprintln!("{USAGE}");
+            process::exit(2);
+        }
+    };
+    if let Err(error) = result {
+        eprintln!("{error}");
+        process::exit(1);
+    }
+}
+
+/// Regenerates `crates/protocol/src/generated/` from `crates/protocol/def/versions.def.rs`.
+fn protocol() {
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()

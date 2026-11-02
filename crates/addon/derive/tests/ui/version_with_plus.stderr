@@ -1,0 +1,5 @@
+error: `+1.19.20` is not a version: expected `major.minor.patch`, e.g. "1.21.60"
+  --> tests/ui/version_with_plus.rs:12:57
+   |
+12 |     #[component(name = "minecraft:friction", released = "+1.19.20", parse = parse)]
+   |                                                         ^^^^^^^^^^

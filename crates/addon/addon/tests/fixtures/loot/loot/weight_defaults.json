@@ -1,0 +1,2 @@
+// fixtures.md row 5: an entry without weight or quality
+{"pools": [{"rolls": 1, "entries": [{"type": "item", "name": "minecraft:stick"}]}]}

@@ -1,0 +1,4 @@
+{
+  "should_bounce": "sometimes",
+  "on_hit": { "impact_damage": { "damage": [1, 4], "difficulty_randomization": "double" } }
+}

@@ -1,0 +1,23 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Test Pack",
+    "description": "desc",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "uuid": "55555555-5555-5555-5555-555555555555",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

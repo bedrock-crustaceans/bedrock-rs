@@ -1,0 +1,24 @@
+{
+  // fixtures.md v13: deprecated inherited names are reported and dropped; a name deprecated
+  // and re-bound is an ordinary member.
+  "minecraft:behavior.delayed_attack": {
+    "priority": 2,
+    "cooldown_time": 3,
+    "attack_duration": 0.5
+  },
+  "minecraft:behavior.stomp_attack": {
+    "priority": 1,
+    "melee_fov": 60,
+    "stomp_range_multiplier": 2.5
+  },
+  "minecraft:behavior.hurt_by_target": {
+    "priority": 1,
+    "must_see": true,
+    "hurt_owner": true
+  },
+  "minecraft:behavior.move_outdoors": {
+    "priority": 2,
+    "search_count": 12,
+    "speed_multiplier": 0.6
+  }
+}

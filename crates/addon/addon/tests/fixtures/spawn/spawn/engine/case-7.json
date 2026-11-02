@@ -1,0 +1,14 @@
+{
+				"format_version": "1.21.60",
+				"minecraft:spawn_rules": {
+					"description": {
+						"identifier": "test:mob"
+					},
+					"placement": {
+						"type": "test:doesnt_exist",
+						"heightmap": "test:doesnt_exist",
+						"spawn_predicate": "test:doesnt_exist",
+						"spawn_obstruction_predicate": "test:doesnt_exist"
+					}
+				}
+			}

@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "code": "InvalidEnumValue",
+      "severity": "info",
+      "text": "Unrecognized mapping type String: ",
+      "at": "k/button_mappings/0/mapping_type"
+    }
+  ]
+}

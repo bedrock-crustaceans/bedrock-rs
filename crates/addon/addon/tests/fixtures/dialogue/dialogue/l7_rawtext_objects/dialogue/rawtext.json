@@ -1,0 +1,8 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "rawtext", "npc_name": { "rawtext": [ { "translate": "npc.name" } ] }, "text": { "rawtext": [ { "text": "Hello " }, { "translate": "npc.greeting", "with": [ "Steve" ] } ] } }
+    ]
+  }
+}

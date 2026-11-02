@@ -1,0 +1,20 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "test:unknown_block"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:rule",
+        "rules": [
+          {
+            "output_state": {
+              "name": "test:invalid"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

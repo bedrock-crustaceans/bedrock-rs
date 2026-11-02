@@ -1,0 +1,102 @@
+// fixtures.md p06: a 1.10.0 document with one of each of the 29 components, two curves and one
+// event. Loaded in a pack whose min_engine_version is 1.21.100 (Molang version 13).
+{
+  "format_version": "1.10.0",
+  "particle_effect": {
+    "description": {
+      "identifier": "demo:full",
+      "basic_render_parameters": {
+        "material": "particles_alpha",
+        "texture": "textures/particle/particles"
+      }
+    },
+    "curves": {
+      "variable.fade": {
+        "type": "linear",
+        "input": "variable.particle_age",
+        "horizontal_range": "variable.particle_lifetime",
+        "nodes": [1, "variable.particle_random_1", 0]
+      },
+      "variable.swell": {
+        "type": "bezier_chain",
+        "input": "variable.particle_age",
+        "nodes": {
+          "0.0": { "value": 0, "slope": 1 },
+          "1.0": { "left_value": 1, "right_value": 0.5, "left_slope": 0, "right_slope": -1 }
+        }
+      }
+    },
+    "events": {
+      "demo:burst": {
+        "particle_effect": { "effect": "demo:spark", "type": "emitter" },
+        "sound_effect": { "event_name": "explode" },
+        "log": "burst"
+      }
+    },
+    "components": {
+      "minecraft:emitter_local_space": { "position": true, "rotation": true },
+      "minecraft:emitter_initialization": {
+        "creation_expression": "variable.size = 0.1;",
+        "per_update_expression": "variable.size = variable.size + 0.01;"
+      },
+      "minecraft:emitter_lifetime_looping": { "active_time": 1, "sleep_time": "math.random(0, 1)" },
+      "minecraft:emitter_lifetime_once": { "active_time": 2 },
+      "minecraft:emitter_lifetime_expression": {
+        "activation_expression": 1,
+        "expiration_expression": "variable.emitter_age > 4"
+      },
+      "minecraft:emitter_lifetime_events": {
+        "creation_event": "demo:burst",
+        "expiration_event": ["demo:burst"],
+        "timeline": { "0.5": "demo:burst" },
+        "travel_distance_events": { "2.0": ["demo:burst"] },
+        "looping_travel_distance_events": [{ "distance": 1, "effects": "demo:burst" }]
+      },
+      "minecraft:emitter_rate_instant": { "num_particles": 10 },
+      "minecraft:emitter_rate_steady": { "spawn_rate": "variable.rate", "max_particles": 50 },
+      "minecraft:emitter_rate_manual": { "max_particles": 20 },
+      "minecraft:emitter_shape_point": { "offset": [0, 1, 0] },
+      "minecraft:emitter_shape_box": {
+        "half_dimensions": [1, "variable.height", 1],
+        "surface_only": true,
+        "direction": "inwards"
+      },
+      "minecraft:emitter_shape_sphere": { "radius": 2, "direction": "outwards" },
+      "minecraft:emitter_shape_custom": { "offset": [0, 0, 0], "direction": [0, "variable.up", 0] },
+      "minecraft:emitter_shape_entity_aabb": { "direction": [0, 1, 0] },
+      "minecraft:emitter_shape_disc": { "radius": 1, "plane_normal": "x" },
+      "minecraft:particle_appearance_billboard": {
+        "size": ["variable.size", "variable.size"],
+        "uv": {
+          "texture_width": 128,
+          "texture_height": 128,
+          "flipbook": { "base_UV": [0, 0], "size_UV": [8, 8], "step_UV": [8, 0], "max_frame": 8 }
+        }
+      },
+      "minecraft:particle_appearance_tinting": {
+        "color": {
+          "gradient": { "0.0": "#FFFF0000", "1.0": [0, 0, 1, "variable.fade"] },
+          "interpolant": "variable.particle_age / variable.particle_lifetime"
+        }
+      },
+      "minecraft:particle_appearance_lighting": {},
+      "minecraft:particle_initial_spin": { "rotation": "math.random(0, 360)", "rotation_rate": 10 },
+      "minecraft:particle_initial_speed": 2,
+      "minecraft:particle_initialization": { "per_render_expression": "variable.swell = 1;" },
+      "minecraft:particle_lifetime_expression": { "max_lifetime": 1 },
+      "minecraft:particle_expire_if_in_blocks": ["minecraft:water"],
+      "minecraft:particle_expire_if_not_in_blocks": ["minecraft:air"],
+      "minecraft:particle_kill_plane": [0, 1, 0, 0],
+      "minecraft:particle_lifetime_events": { "expiration_event": "demo:burst" },
+      "minecraft:particle_motion_dynamic": {
+        "linear_acceleration": [0, -9.8, 0],
+        "linear_drag_coefficient": 0.5
+      },
+      "minecraft:particle_motion_parametric": { "rotation": "variable.particle_age * 90" },
+      "minecraft:particle_motion_collision": {
+        "collision_radius": 0.1,
+        "events": [{ "event": "demo:burst", "min_speed": 3 }]
+      }
+    }
+  }
+}

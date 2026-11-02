@@ -1,0 +1,18 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:ruin"
+    ],
+    "pools": [
+      "demo:ruin/start"
+    ],
+    "structure_sets": [
+      "demo:ruins"
+    ],
+    "processors": [
+      "demo:ruin_rot"
+    ],
+    "metadata": []
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,9 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "eight_with_two_nameless", "text": "Text.", "buttons": [ { "name": "Button 1", "commands": [ "/say 1" ] }, { "name": "Button 2", "commands": [ "/say 2" ] }, { "name": "Button 3", "commands": [ "/say 3" ] }, { "commands": [ "/say nameless" ] }, { "name": "Button 4", "commands": [ "/say 4" ] }, { "name": "Button 5", "commands": [ "/say 5" ] }, { "name": "Button 6", "commands": [ "/say 6" ] }, { "url": "https://nameless" } ] },
+      { "scene_tag": "seven_valid", "text": "Text.", "buttons": [ { "name": "Button 1", "commands": [ "/say 1" ] }, { "name": "Button 2", "commands": [ "/say 2" ] }, { "name": "Button 3", "commands": [ "/say 3" ] }, { "name": "Button 4", "commands": [ "/say 4" ] }, { "name": "Button 5", "commands": [ "/say 5" ] }, { "name": "Button 6", "commands": [ "/say 6" ] }, { "name": "Button 7", "commands": [ "/say 7" ] } ] }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+[package]
+name = "bedrock_addon_family_block"
+description = "The `block` content family of bedrock_addon, re-exported as bedrock_addon::families::block; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+nbt = ["dep:nbtx"]
+molang = ["bedrock_addon_core/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_derive = { path = "../../derive" }
+facet = { workspace = true }
+facet-json = { workspace = true }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+nbtx = { workspace = true, optional = true }
+uuid = { workspace = true }

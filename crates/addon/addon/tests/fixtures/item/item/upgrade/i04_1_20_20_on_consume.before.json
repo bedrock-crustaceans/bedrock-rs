@@ -1,0 +1,17 @@
+{
+  "format_version": "1.20.20",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:snack"
+    },
+    "components": {
+      "minecraft:food": {
+        "nutrition": 2,
+        "on_consume": {
+          "event": "demo:ate",
+          "target": "self"
+        }
+      }
+    }
+  }
+}

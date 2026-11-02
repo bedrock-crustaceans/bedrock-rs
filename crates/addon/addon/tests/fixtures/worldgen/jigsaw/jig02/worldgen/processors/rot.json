@@ -1,0 +1,14 @@
+{
+  "format_version": "1.21.10",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:rot"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:protected_blocks",
+        "value": "minecraft:features_cannot_replace"
+      }
+    ]
+  }
+}

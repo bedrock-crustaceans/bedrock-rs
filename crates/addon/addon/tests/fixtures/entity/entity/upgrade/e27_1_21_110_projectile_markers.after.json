@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:skeleton"
+    },
+    "components": {
+      "minecraft:projectile": {
+        "on_hit": {
+          "impact_damage": {
+            "damage": 2,
+            "apply_knockback_to_blocking_targets": true
+          }
+        }
+      },
+      "minecraft:rotation_locked_to_vehicle": {}
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "on_attack": {
+          "event": "x:killed"
+        }
+      },
+      "minecraft:behavior.delayed_attack": {
+        "on_attack": {
+          "event": "x:k"
+        }
+      },
+      "minecraft:behavior.stomp_attack": {
+        "on_attack": {
+          "event": "x:a"
+        }
+      },
+      "minecraft:pushable_by_entity": {
+        "presets": [
+          {
+            "push_mode": "default",
+            "require_collision_overlap": false
+          }
+        ]
+      },
+      "minecraft:projectile": {
+        "should_bounce": "if_invulnerable",
+        "on_hit": {
+          "impact_damage": {
+            "damage": [
+              1,
+              4
+            ],
+            "knockback": true,
+            "difficulty_randomization": "none",
+            "power_multiplier": 2.0,
+            "should_bounce": true
+          }
+        }
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:pushable_by_entity": {
+          "presets": [],
+          "use_default_with_overlap_check": false
+        },
+        "minecraft:projectile": {
+          "should_bounce": "no",
+          "on_hit": {
+            "impact_damage": {
+              "power_multiplier": 1.0,
+              "difficulty_randomization": "additive"
+            }
+          }
+        }
+      },
+      "h": {
+        "minecraft:projectile": {
+          "should_bounce": "no"
+        }
+      }
+    }
+  }
+}

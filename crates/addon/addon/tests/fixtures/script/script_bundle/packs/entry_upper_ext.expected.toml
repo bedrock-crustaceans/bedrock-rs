@@ -1,0 +1,11 @@
+# entry_upper_ext: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run] Plugin [SB_entry_upper_ext - 1.0.0] - entry [scripts/main.JS] not supported for runtime [JavaScript].
+members = []
+others = ["scripts/main.JS"]
+main = "main.JS"
+
+[[diagnostics]]
+code = "InvalidValue"
+severity = "error"
+text = "Plugin [SB_entry_upper_ext - 1.0.0] - entry [scripts/main.JS] not supported for runtime [JavaScript]."
+file = "manifest.json"

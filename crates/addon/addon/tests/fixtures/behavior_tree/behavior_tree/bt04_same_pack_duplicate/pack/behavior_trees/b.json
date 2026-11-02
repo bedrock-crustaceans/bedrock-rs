@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "x",
+    "minecraft:root": { "minecraft:use_entity": {} }
+  }
+}

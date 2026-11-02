@@ -1,0 +1,14 @@
+{
+				"description": {
+					"identifier": "test:feature_pool_structure"
+				},
+				"elements": [
+					{
+						"element": {
+							"element_type": "minecraft:feature_pool_element",
+							"feature": "minecraft:_huge_crimson_fungus_feature",
+						},
+						"weight": 1,
+					}
+				]
+			}

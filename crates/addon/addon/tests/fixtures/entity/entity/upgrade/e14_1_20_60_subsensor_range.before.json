@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.60",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:entity_sensor": {
+        "subsensors": [
+          {
+            "range": 2.5
+          },
+          {
+            "range": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

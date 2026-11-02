@@ -1,0 +1,12 @@
+{
+  "source": "families/spawn steps.md §D.6.6: the placement type FunctionUpgrader<Legacy, v1_21_60> gives a minecraft: identifier; every other minecraft: name and every other namespace is minecraft:on_ground",
+  "override": {
+    "minecraft:spawns_underwater without minecraft:spawns_lava": "minecraft:in_water",
+    "minecraft:spawns_lava without minecraft:spawns_underwater": "minecraft:in_lava",
+    "both or neither": "the table"
+  },
+  "minecraft:in_water": ["axolotl", "cod", "dolphin", "elder_guardian", "glow_squid", "guardian", "pufferfish", "salmon", "squid", "tropicalfish"],
+  "minecraft:in_lava": ["strider"],
+  "minecraft:no_restrictions": ["fox", "panda", "phantom", "ravager", "shulker", "trader_llama", "vex", "vindicator", "warden"],
+  "minecraft:on_ground": ["armadillo", "bat", "blaze", "bogged", "breeze", "cat", "cave_spider", "chicken", "cow", "creeper", "donkey", "ender_dragon", "enderman", "endermite", "frog", "ghast", "goat", "hoglin", "horse", "husk", "llama", "magma_cube", "mooshroom", "mule", "ocelot", "parrot", "pig", "piglin", "pillager", "polar_bear", "rabbit", "sheep", "silverfish", "skeleton", "skeleton_horse", "slime", "snow_golem", "spider", "stray", "turtle", "villager", "wandering_trader", "witch", "wither", "wither_skeleton", "wolf", "zoglin", "zombie_horse", "zombie_pigman", "zombie_villager_v2"]
+}

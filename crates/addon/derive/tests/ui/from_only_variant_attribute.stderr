@@ -1,0 +1,5 @@
+error: a `from_only` enum takes no `#[component]` attribute on its variants
+  --> tests/ui/from_only_variant_attribute.rs:12:5
+   |
+12 |     #[component(name = "minecraft:friction", parse = parse)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

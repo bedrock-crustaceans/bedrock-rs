@@ -1,0 +1,27 @@
+# static_dotdot: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_static_dotdot] ReferenceError: Import [../escape.js] not found.
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "../escape.js"
+normalized = "../escape.js"
+resolution = "not_found"
+hint = "EscapesRoot"
+
+[[diagnostics]]
+code = "ScriptFileNotLoadable"
+severity = "info"
+text = "script file can never be loaded"
+file = "escape.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "error"
+text = "ReferenceError: Import [../escape.js] not found."
+file = "scripts/main.js"

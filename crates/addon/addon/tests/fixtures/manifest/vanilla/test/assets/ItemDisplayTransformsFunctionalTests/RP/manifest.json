@@ -1,0 +1,18 @@
+{
+	"format_version": 2,
+	"header": {
+		"name": "ItemDisplayTransforms TestPack",
+		"description": "ItemDisplayTransforms Resource Pack",
+		"uuid": "2bc91d56-b90a-48df-b282-9cb524ffc725",
+		"version": [1, 0, 0],
+		"min_engine_version": [1, 21, 0]
+	},
+	"modules": [
+		{
+			"description": "ItemDisplayTransforms",
+			"type": "resources",
+			"uuid": "231b1526-81c3-4350-b21e-87da35030eb0",
+			"version": [1, 0, 0]
+		}
+	]
+}

@@ -1,0 +1,25 @@
+# split_server: the findings of the load of the packs whose typed documents were written back through PackWriter::put
+      2  E MissingRequiredField @ loot_tables
+      3  I DroppedField @ manifest.json
+    206  I DuplicateIdentifier @ features
+      2  I IgnoredMember @ blocks.json
+      2  I IgnoredMember @ texts
+      1  I InvalidValue @ sounds
+    385  I InvalidValue @ texts
+      1  I InvalidValue @ textures
+     77  I InvalidValue @ ui
+   1566  I LangKeyTrailingSpace @ texts
+     59  I LegacyItemFormat @ items
+      6  I MissingDependency @ -
+      2  I MissingIdentifier @ entities
+    142  I MissingRequiredField @ ui
+      2  I ShadowedDefinition @ blocks.json
+     64  I ShadowedDefinition @ feature_rules
+      3  I SkippedCacheDocument @ worldgen
+      4  I TextureNotFound @ textures
+    169  I UnrecognizedField @ loot_tables
+   1008  I UnrecognizedField @ recipes
+      2  I UnresolvedLangKey @ manifest.json
+    279  I UnresolvedReference @ entities
+     66  I UnresolvedReference @ ui
+    206  I ValueRewritten @ trading

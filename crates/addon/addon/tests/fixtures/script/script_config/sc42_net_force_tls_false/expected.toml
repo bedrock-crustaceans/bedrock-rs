@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sc42_net_force_tls_false (probe F2 tlsfalse).
+
+[[diagnostic]]
+code = "NoEffect"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "module_permissions/@minecraft~1server-net/force_tls"

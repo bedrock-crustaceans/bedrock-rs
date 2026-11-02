@@ -1,0 +1,22 @@
+{
+  // 1.26.20.04 writes horizontal_power 1.5 (vertical -1.5 / cap -1.0) with a runtime x0.4; we write the products 0.6 / -0.6 / -0.4 (e31b, steps.md §D.2.31).
+  "format_version": "1.26.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:drowned"
+    },
+    "components": {
+      "minecraft:apply_knockback_rules": {
+        "presets": [
+          {
+            "horizontal_power": 0.6,
+            "vertical_power": -0.6,
+            "vertical_velocity_cap": -0.4,
+            "check_if_target_is_immersed_in_water": true
+          }
+        ]
+      },
+      "minecraft:uses_legacy_friction": {}
+    }
+  }
+}

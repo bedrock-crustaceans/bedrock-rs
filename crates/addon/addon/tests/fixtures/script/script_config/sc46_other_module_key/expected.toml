@@ -1,0 +1,8 @@
+# families/script_config fixtures.md, row sc46_other_module_key (probe F2 othermodule).
+
+[[diagnostic]]
+code = "NoEffect"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "module_permissions/@minecraft~1server"

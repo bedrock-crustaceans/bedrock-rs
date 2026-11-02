@@ -1,0 +1,45 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:relic",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:durability": {
+        "max_durability": 120
+      },
+      "minecraft:food": {
+        "nutrition": 3,
+        "saturation_modifier": 0.3
+      },
+      "minecraft:use_modifiers": {
+        "use_duration": 1.6,
+        "start_using": "always"
+      },
+      "minecraft:icon": {
+        "textures": {
+          "default": "relic"
+        }
+      },
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": "minecraft:stone",
+            "speed": 4
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "demo:old"
+        ]
+      }
+    }
+  }
+}

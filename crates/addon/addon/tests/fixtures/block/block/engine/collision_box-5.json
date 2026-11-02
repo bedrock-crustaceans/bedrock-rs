@@ -1,0 +1,21 @@
+{
+			"format_version": "1.26.20",
+			"minecraft:block": {
+				"description": {
+					"identifier": "test:non_symmetric_z_collision",
+					"states": {
+						"custom:facing_direction": [0, 1, 2, 3]
+					}
+				},
+				"components": {
+					"minecraft:collision_box": {
+						"origin": [-8, 0, -8],
+						"size": [16, 16, 1]
+					},
+					"minecraft:selection_box": {
+						"origin": [-8, 0, -8],
+						"size": [16, 16, 1]
+					}
+				}
+			}
+		}

@@ -1,0 +1,36 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "test:biome_with_references"
+    },
+    "components": {
+      "minecraft:ambient_sounds": {
+        "addition": {
+          "asset": "ambient.crimson_forest.additions",
+          "chance": 0.01
+        },
+        "loop": "ambient.crimson_forest.loop",
+        "mood": "ambient.crimson_forest.mood"
+      },
+      "minecraft:atmosphere_identifier": {
+        "atmosphere_identifier": "minecraft:default_atmospherics"
+      },
+      "minecraft:biome_music": {
+        "music_definition": "crimson_forest"
+      },
+      "minecraft:color_grading_identifier": {
+        "color_grading_identifier": "minecraft:default_color_grading"
+      },
+      "minecraft:fog_appearance": {
+        "fog_identifier": "minecraft:fog_bamboo_jungle"
+      },
+      "minecraft:lighting_identifier": {
+        "lighting_identifier": "minecraft:default_lighting"
+      },
+      "minecraft:water_identifier": {
+        "water_identifier": "minecraft:default_water"
+      }
+    }
+  }
+}

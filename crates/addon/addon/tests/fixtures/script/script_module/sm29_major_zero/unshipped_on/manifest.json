@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm29",
+    "description": "families/script_module fixture sm29_major_zero",
+    "uuid": "5d907bf0-cca9-57bf-9f76-dab0c8a9635c",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "a78f081f-416a-587a-a0e4-23d47a464f0c",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "0.2.0"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "dirt": {
+      "textures": {
+        "variations": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    }
+  }
+}

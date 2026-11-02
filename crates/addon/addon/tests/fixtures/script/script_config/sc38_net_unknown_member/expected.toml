@@ -1,0 +1,9 @@
+# families/script_config fixtures.md, row sc38_net_unknown_member (probe F netunknown).
+
+[[diagnostic]]
+code = "NetConfigRejected"
+severity = "error"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "module_permissions/@minecraft~1server-net"
+text = "Failed to load config for @minecraft/server-net due to error(s):  -> bogus_key:  this member was found in the input, but is not present in the Schema"

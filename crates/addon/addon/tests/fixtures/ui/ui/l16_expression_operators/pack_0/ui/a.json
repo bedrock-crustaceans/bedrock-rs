@@ -1,0 +1,18 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "label",
+    "text": "t",
+    "bindings": [
+      {
+        "binding_name": "(#a >= 2)"
+      },
+      {
+        "binding_name": "(#a % 2)"
+      },
+      {
+        "binding_name": "(#a > 2 and not #b)"
+      }
+    ]
+  }
+}

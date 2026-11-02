@@ -1,0 +1,52 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:zombieish",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "is_experimental": false
+    },
+    "component_groups": {
+      "demo:baby": {
+        "minecraft:is_baby": {},
+        "minecraft:scale": { "value": 0.5 },
+        "minecraft:behavior.melee_attack": { "priority": 3, "on_kill": { "event": "demo:killed" } }
+      },
+      "demo:adult": {
+        "minecraft:experience_reward": { "on_death": "query.last_hit_by_player ? 5 : 0" },
+        "minecraft:behavior.melee_attack": { "priority": 3 }
+      },
+      "demo:mount": {
+        "minecraft:rideable": { "seat_count": 1, "controlling_seat": 0, "family_types": ["demo"], "seats": { "position": [0, 1, 0] } }
+      }
+    },
+    "components": {
+      "minecraft:type_family": { "family": ["demo", "monster"] },
+      "minecraft:breathable": { "total_supply": 15, "suffocate_time": 0, "breathes_water": true },
+      "minecraft:navigation.walk": { "can_path_over_water": true, "can_open_doors": true, "using_door_annotation": false },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:can_climb": {},
+      "minecraft:health": { "value": 20, "max": 20 },
+      "minecraft:pushable": { "is_pushable": true, "is_pushable_by_piston": true },
+      "minecraft:behavior.move_towards_restriction": { "priority": 4 },
+      "minecraft:behavior.nearest_attackable_target": { "priority": 2, "attack_interval": 10, "attack_interval_min": 5, "entity_types": [ { "filters": { "test": "is_family", "subject": "other", "value": "player" }, "max_dist": 35 } ] },
+      "minecraft:behavior.look_at_player": { "priority": 8, "look_distance": 6, "probability": 0.02, "min_look_time": 2, "max_look_time": 4 },
+      "minecraft:behavior.random_stroll": { "priority": 7, "speed_multiplier": 1 },
+      "minecraft:interact": { "interactions": [ { "on_interact": { "event": "demo:tame", "target": "self" }, "equip_item_slot": 2 } ] },
+      "minecraft:behavior.panic": { "speed_multiplier": 1.25 },
+      "minecraft:leashable": { "soft_distance": 4, "hard_distance": 6, "max_distance": 10 },
+      "minecraft:projectile": { "should_bounce": true, "anchor": 1, "on_hit": { "impact_damage": { "damage": 2 } } }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "randomize": [
+          { "weight": 95, "add": { "component_groups": ["demo:adult"] } },
+          { "weight": 5, "add": { "component_groups": ["demo:baby"] } }
+        ]
+      },
+      "demo:killed": { "filters": { "test": "is_family", "value": "player" }, "remove": { "component_groups": ["demo:baby"] } }
+    }
+  }
+}

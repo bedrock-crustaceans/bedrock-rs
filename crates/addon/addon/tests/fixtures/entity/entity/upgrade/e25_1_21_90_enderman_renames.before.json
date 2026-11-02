@@ -1,0 +1,18 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:enderman"
+    },
+    "components": {
+      "minecraft:behavior.enderman_leave_block": {
+        "priority": 10
+      },
+      "minecraft:behavior.enderman_take_block": {
+        "priority": 11,
+        "chance": 9
+      },
+      "minecraft:body_rotation_axis_aligned": {}
+    }
+  }
+}

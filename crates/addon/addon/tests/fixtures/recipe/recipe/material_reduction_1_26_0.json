@@ -1,0 +1,20 @@
+{
+   "format_version" : "1.26.0",
+   "minecraft:recipe_material_reduction" : {
+      "description" : {
+         "identifier" : "minecraft:sulfur"
+      },
+      "input" : "minecraft:sulfur",
+      "output" : [
+         {
+            "count" : 64,
+            "item" : "minecraft:element_16"
+         },
+         {
+            "count" : 36,
+            "item" : "minecraft:element_16"
+         }
+      ],
+      "tags" : "material_reducer"
+   }
+}

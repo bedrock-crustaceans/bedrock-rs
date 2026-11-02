@@ -1,0 +1,20 @@
+# unused_bad: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] [unused_bad] main ran: a file nothing imports is never read (ours: L7 only)
+members = ["bad.js", "main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"
+
+[[diagnostics]]
+code = "ScriptSyntaxError"
+severity = "info"
+text = "bad.js is not UTF-8 at line 2; nothing imports the file, so the engine never reads it"
+file = "scripts/bad.js"

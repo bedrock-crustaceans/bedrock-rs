@@ -1,0 +1,8 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "label",
+    "text": "t",
+    "font_size": "medium"
+  }
+}

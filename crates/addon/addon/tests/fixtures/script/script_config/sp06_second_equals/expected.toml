@@ -1,0 +1,16 @@
+# families/script_config fixtures.md, row sp06_second_equals (P2).
+
+[[diagnostic]]
+code = "NoEffect"
+severity = "info"
+phase = "parse"
+file = "server.properties"
+path = "content-log-level"
+
+[[diagnostic]]
+code = "InvalidEnumValue"
+severity = "error"
+phase = "validate"
+file = "server.properties"
+path = "content-log-level"
+text = "content-log-level was set to invalid value 'bog'.  Accepted values are verbose, info, warning, and error.  Defaulting to info"

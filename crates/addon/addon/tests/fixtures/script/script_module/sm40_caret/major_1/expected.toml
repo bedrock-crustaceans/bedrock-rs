@@ -1,0 +1,3 @@
+# Probe: P21
+scope = "none"
+resolved = ["@minecraft/server 1.19.0"]

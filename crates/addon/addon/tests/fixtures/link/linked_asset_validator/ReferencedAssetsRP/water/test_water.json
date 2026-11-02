@@ -1,0 +1,8 @@
+{
+  "format_version": "1.21.80",
+  "minecraft:water_settings": {
+    "description": {
+      "identifier": "test:water"
+    }
+  }
+}

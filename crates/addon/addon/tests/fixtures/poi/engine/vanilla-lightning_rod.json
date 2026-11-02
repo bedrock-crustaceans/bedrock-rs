@@ -1,0 +1,19 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:poi_block": {
+    "description": { "identifier": "minecraft:lightning_rod" },
+    "tickets": 0,
+    "usable_distance": 1,
+    "blocks": [
+      "minecraft:lightning_rod",
+      "minecraft:exposed_lightning_rod",
+      "minecraft:oxidized_lightning_rod",
+      "minecraft:weathered_lightning_rod",
+      "minecraft:waxed_lightning_rod",
+      "minecraft:waxed_exposed_lightning_rod",
+      "minecraft:waxed_oxidized_lightning_rod",
+      "minecraft:waxed_weathered_lightning_rod"
+    ],
+    "tags": []
+  }
+}

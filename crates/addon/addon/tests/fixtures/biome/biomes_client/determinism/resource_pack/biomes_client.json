@@ -1,0 +1,13 @@
+{
+  "biomes": {
+    "default": {
+      "water_surface_color": "#44AFF5",
+      "water_surface_transparency": 0.65
+    },
+    "swampland": {
+      "water_surface_color": "#617B64",
+      "fog_identifier": "minecraft:fog_swampland",
+      "fog_ids_to_merge": [ "minecraft:fog_swampland" ]
+    }
+  }
+}

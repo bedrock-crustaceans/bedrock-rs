@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.89",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:leashable": {
+        "presets": [
+          {
+            "soft_distance": 4
+          },
+          {
+            "hard_distance": 3,
+            "spring_type": "dampened"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,289 @@
+{
+				"format_version": "1.26.40",
+				"minecraft:entity": {
+					"description": {
+						 "identifier": "test:mob"
+					},
+					"components": {
+						"minecraft:boss": {
+							"hud_range": 125,
+							"should_darken_sky": true
+						},
+						"minecraft:collision_box": {
+							"height": 0.25,
+							"width": 0.25
+						},
+						"minecraft:damage_over_time": {
+							"damage_per_hurt": 1,
+							"time_between_hurt": 0
+						},
+						"minecraft:exhaustion_values": {
+							"sprint": 0.1,
+							"jump": 0.05,
+							"attack": 0.1,
+							"damage": 0.1,
+							"heal": 6.0,
+							"lunge": 4.0,
+							"sprint_jump": 0.2,
+							"mine": 0.005,
+							"swim": 0.01,
+							"walk": 0.0
+						},
+						"minecraft:flocking": {
+							"in_water": true,
+							"match_variants": true,
+							"use_center_of_mass": true,
+							"low_flock_limit": 4,
+							"high_flock_limit": 8,
+							"goal_weight": 2.0,
+							"loner_chance": 0.1,
+							"influence_radius": 6.0,
+							"breach_influence": 0.0,
+							"separation_weight": 1.75,
+							"separation_threshold": 3.0,
+							"cohesion_weight": 1.85,
+							"cohesion_threshold": 6.5,
+							"innner_cohesion_threshold": 3.5,
+							"min_height": 4.0,
+							"max_height": 4.0,
+							"block_distance": 1.0,
+							"block_weight": 0.0
+						},
+						"minecraft:game_event_movement_tracking": {
+							"emit_move": true,
+							"emit_swim": true,
+							"emit_flap": true
+						},
+						"minecraft:grows_crop": {
+							"charges": 1,
+							"chance": 0.1
+						},
+						"minecraft:home": {
+							"restriction_type": "random_movement",
+							"restriction_radius": 16,
+							"home_block_list": [
+							  "minecraft:bee_nest",
+							  "minecraft:beehive"
+							]
+						},
+						"minecraft:instant_despawn": {
+							"remove_child_entities": true
+						},
+						"minecraft:trade_table": {
+							"display_name": "entity.villager.armor",
+							"table": "trading/armorer_trades.json",
+							"new_screen": true,
+							"persist_trades": true,
+							"convert_trades_economy": true
+						},
+						"minecraft:physics": {
+							"has_gravity": false,
+							"has_collision": false,
+							"push_towards_closest_space": true
+						},
+						"minecraft:projectile": {
+							"on_hit": {
+								  "catch_fire": {
+									"on_fire_time": 5.5,
+									"fire_affected_by_griefing": true
+								  },
+								  "douse_fire": {},
+								  "ignite": {},
+								  "wind_burst_on_hit": {},
+								  "freeze_on_hit": {
+									"shape": "cube",
+									"size": 1.1,
+									"snap_to_block": true
+								  },
+								  "particle_on_hit": {
+									"particle_type": "snowballpoof",
+									"on_entity_hit": true,
+									"on_other_hit": true,
+									"num_particles": 6,
+									"particle_item_name": {
+									  "blue_egg": {
+										"domain": "minecraft:climate_variant",
+										"test": "enum_property",
+										"value": "cold"
+									  }
+									}
+								  },
+								  "remove_on_hit": {},
+								  "hurt_owner": {
+									"owner_damage": 5,
+									"knockback": true,
+									"ignite": false
+								  },
+								  "arrow_effect": {
+									"apply_effect_to_blocking_targets": true
+								  },
+								  "impact_damage": {
+									  "damage": { "min": 1, "max": 5},
+									  "filter":  "blaze",
+									  "knockback": true,
+									  "catch_fire": true,
+									  "channeling": true,
+									  "difficulty_randomization": "additive",
+									  "power_multiplier": 0.97,
+									  "ceil_pre_critical_damage": true,
+									  "max_critical_damage": 10,
+									  "min_critical_damage": 9,
+									  "destroy_on_hit": true,
+									  "destroy_on_hit_requires_damage": true,
+									  "set_last_hurt_requires_damage": true,
+									  "apply_knockback_to_blocking_targets": true
+								  },
+								  "stick_in_ground": {
+									"shake_time": 0.35
+								  },
+								  "spawn_aoe_cloud": {
+									"potion": 23,
+									"radius": 6.0,
+									"radius_on_use": 0,
+									"duration": 120,
+									"particle": "dragonbreath",
+									"affect_owner": false,
+									"reapplication_delay": 3
+								  },
+								  "spawn_chance": {
+									"first_spawn_chance": 0.08,
+									"first_spawn_count": 1,
+									"second_spawn_chance": 0.32,
+									"second_spawn_count": 4,
+									"spawn_definition": "minecraft:chicken",
+									"spawn_baby": true,
+									"on_spawn": [
+									  {
+										"event": "minecraft:hatch_warm",
+										"filters": {
+										  "domain": "minecraft:climate_variant",
+										  "subject": "other",
+										  "test": "enum_property",
+										  "value": "warm"
+										}
+									  }
+									]
+								  },
+								  "mob_effect": {
+									"effects":[
+										{
+											"effect": "levitation",
+											"amplifier": 1,
+											"durationeasy": 200,
+											"durationnormal": 200,
+											"durationhard": 200
+										}
+									]
+								  },
+								  "thrown_potion_effect": {
+										"effect": 1
+								  },
+								  "grant_xp": {
+									"maxXP": 11,
+									"minXP": 3
+								  },
+								  "definition_event": {
+									"affect_shooter": true,
+									"affect_projectile": true,
+									"affect_target": true,
+									"affect_splash_area": true,
+									"splash_area": 4,
+									"event_trigger": {
+									  "event": "minecraft:explode",
+									  "target": "self"
+									}
+								  },
+								  "teleport_owner": {}
+								
+							},
+							"anchor": "eye_height",
+							"angle_offset": 20,
+							"gravity": 0.025,
+							"hit_sound": "icebomb.hit",
+							"hit_water": true,
+							"shoot_target": true,
+							"multiple_targets": true,
+							"hit_nearest_passenger": true,
+							"power": 1.5,
+							"inertia": 1,
+							"liquid_inertia": 1,
+							"offset": [
+							  0,
+							  -0.1,
+							  0
+							],
+							"reflect_on_hurt": true,
+							"particle": "dragonbreath",
+							"should_bounce": "if_invulnerable",
+							"isolated_physics": true,
+							"ignored_entities": [
+							  "ender_crystal"
+							],
+							"shoot_sound": "bow",
+							"hit_sound": "bow",
+							"homing": true,
+							"is_dangerous": true,
+							"destroy_on_hurt": true,
+							"stop_on_hurt": true,
+							"crit_particle_on_hurt": true,
+							"lightning": true,
+							"potion_effect": 2,
+							"splash_range": 2,
+							"catch_fire": true,
+							"reflect_immunity": 3,
+							"on_fire_time": 3,
+							"uncertainty_base": 16,
+							"uncertainty_multiplier": 4
+						},
+						"minecraft:transformation": {
+							"into": "minecraft:drowned<minecraft:as_adult>",
+							"drop_equipment": true,
+							"transformation_sound": ["convert_to_drowned"],
+							"add": { "component_groups": ["minecraft:mob_arrow"] },
+							"delay": { "value": 15 }
+						},
+						"minecraft:tamemount": {
+						  "auto_reject_items": [
+							{
+							  "item": "horsearmorleather"
+							}
+						  ],
+						  "feed_items": [
+							{
+							  "item": "wheat",
+							  "temper_mod": 3
+							}
+						  ],
+						  "feed_text": "action.interact.feed",
+						  "ride_text": "action.interact.mount",
+						  "min_temper": 0,
+						  "max_temper": 100,
+						  "attempt_temper_mod": 8,
+						  "tame_event": {
+							"event": "minecraft:on_tame",
+							"target": "self"
+						  }
+						},
+						"minecraft:preferred_path": {
+							"default_block_cost": 3,
+							"jump_cost": 20,
+							"preferred_path_blocks": [
+								{
+									"blocks": [
+										"cobblestone",
+										"stone"
+									],
+									"cost": 2
+								},
+								{
+									"blocks": [
+										"bed"
+									],
+									"cost": 50
+								}
+							],
+							"max_fall_blocks": 1						
+						}
+					}
+				}
+			}

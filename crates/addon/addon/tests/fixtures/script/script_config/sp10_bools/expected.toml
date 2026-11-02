@@ -1,0 +1,29 @@
+# families/script_config fixtures.md, row sp10_bools (P3-P6).
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "content-log-console-output-enabled"
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "content-log-console-output-enabled"
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "content-log-console-output-enabled"
+
+[[diagnostic]]
+code = "InvalidValue"
+severity = "info"
+phase = "validate"
+file = "server.properties"
+path = "content-log-console-output-enabled"

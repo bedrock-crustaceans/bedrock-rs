@@ -1,0 +1,21 @@
+# syntax_import: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_syntax_import] SyntaxError: function name expected    at bad.js:2
+members = ["bad.js", "main.js"]
+others = []
+main = "main.js"
+reachable_static = ["bad.js", "main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "./bad.js"
+normalized = "bad.js"
+resolution = "file"
+
+[[diagnostics]]
+code = "ScriptSyntaxError"
+severity = "error"
+text = "syntax error in a script file"
+file = "scripts/bad.js"
+only = "script-syntax"

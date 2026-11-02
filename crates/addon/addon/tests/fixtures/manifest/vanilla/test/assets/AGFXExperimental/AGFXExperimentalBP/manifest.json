@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with content using AGFX Experimental features",
+    "name": "AGFXExperimental behavior pack",
+    "uuid": "e9870221-6791-44f7-9898-f8c7d8b93ea1",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 19, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "AGFX Experimental",
+          "type": "data",
+          "uuid": "007e95c3-ef6e-41da-8443-ff6aedbda517",
+          "version": [1, 0, 0]
+      }
+    ]
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "atlas_tile": "dirt",
+    "atlas_index": 2,
+    "flipbook_texture": "textures/blocks/s"
+  },
+  {
+    "atlas_tile": "dirt",
+    "atlas_index": -1,
+    "flipbook_texture": "textures/blocks/s"
+  }
+]

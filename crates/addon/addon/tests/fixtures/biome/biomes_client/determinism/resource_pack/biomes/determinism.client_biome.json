@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "minecraft:swampland"
+    },
+    "components": {
+      "minecraft:water_appearance": {
+        "surface_color": "#617B64"
+      },
+      "minecraft:ambient_sounds": {
+        "addition": "ambient.swamp.additions",
+        "loop": "ambient.swamp.loop"
+      }
+    }
+  }
+}

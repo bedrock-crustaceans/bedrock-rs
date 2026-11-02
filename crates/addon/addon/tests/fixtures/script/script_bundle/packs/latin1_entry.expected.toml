@@ -1,0 +1,13 @@
+# latin1_entry: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [SB_latin1_entry] SyntaxError: invalid UTF-8 sequence    at main.js:1 (ours: L6)
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[diagnostics]]
+code = "ScriptSyntaxError"
+severity = "error"
+text = "SyntaxError: invalid UTF-8 sequence    at main.js:1"
+file = "scripts/main.js"

@@ -1,0 +1,3 @@
+[
+  { "path": "materials/determinism_sad.material", "+defines": [ "DETERMINISM_SAD" ] }
+]

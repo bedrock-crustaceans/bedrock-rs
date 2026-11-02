@@ -1,0 +1,5 @@
+error: missing `#[component(family = …)]` on the component enum: the family whose `ComponentTable` it fills
+  --> tests/ui/missing_family.rs:10:6
+   |
+10 | enum ToyComponent {
+   |      ^^^^^^^^^^^^

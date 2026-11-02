@@ -1,0 +1,5 @@
+error: missing `parse`: the component's parse function, `parse = path::to::fn`
+  --> tests/ui/missing_parse.rs:12:5
+   |
+12 |     #[component(name = "minecraft:friction")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

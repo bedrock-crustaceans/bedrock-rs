@@ -1,0 +1,7 @@
+[
+  {
+    "code": "MissingFormatVersion",
+    "severity": "error",
+    "text": "The file cannot be processed without a valid format_version"
+  }
+]

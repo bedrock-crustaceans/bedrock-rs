@@ -1,0 +1,7 @@
+# The pack tree `move` is replaced by the built-in one (validation rule 15).
+
+[[diagnostic]]
+kind = "ShadowedByBuiltin"
+severity = "info"
+file = "behavior_trees/move.json"
+path = ""

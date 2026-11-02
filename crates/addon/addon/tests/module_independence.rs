@@ -1,0 +1,927 @@
+//! A family lifted into its own crate (`crates/addon/families/<name>/`, the package
+//! `bedrock_addon_family_<name>`, which `families/mod.rs` re-exports) depends on no
+//! `bedrock_addon` and no other family: its manifest names neither, and its sources do not
+//! either. The compiler enforces the rest (a family crate cannot name `crate::pack`,
+//! `crate::storage`, another family or `bedrock_addon`'s `load`).
+//!
+//! The second rule: library code never reads the text of a finding's path.
+//!
+//! The tests read the crate's own source files, which library code may never do.
+#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
+
+use std::fs;
+use std::path::{Path, PathBuf};
+
+/// The directories directly below `dir`, sorted by name; none when `dir` does not exist.
+fn directories(dir: &Path) -> Vec<String> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut names: Vec<String> = entries
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.is_dir())
+        .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+/// The directory of the lifted families: `crates/addon/families/`.
+fn lifted_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../families")
+}
+
+/// Every family lifted into its own crate: a directory of `crates/addon/families/` with a
+/// `Cargo.toml`, sorted by name; none when the crate is packaged alone.
+fn lifted_families() -> &'static [String] {
+    static LIFTED: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    LIFTED.get_or_init(|| {
+        directories(&lifted_dir())
+            .into_iter()
+            .filter(|name| lifted_dir().join(name).join("Cargo.toml").is_file())
+            .collect()
+    })
+}
+
+/// The dependency names of a `Cargo.toml` (every `[*dependencies]` table, target-specific ones
+/// included, and `[dependencies.<name>]` tables), each with its line.
+fn manifest_dependencies(manifest: &str) -> Vec<(usize, String)> {
+    let mut names = Vec::new();
+    let mut in_dependencies = false;
+    for (index, line) in manifest.lines().enumerate() {
+        let line = line.trim();
+        if let Some(table) = line.strip_prefix('[') {
+            let table = table.trim_end_matches(']').trim();
+            let (head, last) = table.rsplit_once('.').unwrap_or(("", table));
+            if last.ends_with("dependencies") {
+                in_dependencies = true;
+            } else if head.ends_with("dependencies") {
+                // `[dependencies.name]`
+                in_dependencies = false;
+                names.push((index + 1, last.trim_matches('"').to_owned()));
+            } else {
+                in_dependencies = false;
+            }
+            continue;
+        }
+        if in_dependencies && let Some((key, _)) = line.split_once('=') {
+            let key = key.trim().trim_matches('"');
+            if !key.is_empty() && !key.starts_with('#') {
+                // `name.workspace = true` names `name`.
+                names.push((index + 1, key.split('.').next().unwrap().to_owned()));
+            }
+        }
+    }
+    names
+}
+
+/// What a lifted family crate depends on or names that it may not: `bedrock_addon` or another
+/// family, in its manifest (`manifest`) or its sources (`sources`, each with its path below the
+/// crate's `src/`).
+fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)]) -> Vec<String> {
+    let own = format!("bedrock_addon_family_{family}");
+    let mut violations = Vec::new();
+    for (line, name) in manifest_dependencies(manifest) {
+        let other_family = name.starts_with("bedrock_addon_family_") && name != own;
+        if name == "bedrock_addon" || other_family {
+            violations.push(format!("{family}/Cargo.toml:{line} depends on {name}"));
+        }
+    }
+    for (relative, source) in sources {
+        let code = code_of(source).replace("r#", "");
+        for (index, _) in code.match_indices("bedrock_addon") {
+            if code[..index].chars().next_back().is_some_and(is_ident) {
+                continue;
+            }
+            let rest = &code[index + "bedrock_addon".len()..];
+            let end = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
+            let name = format!("bedrock_addon{}", &rest[..end]);
+            if !rest[end..].trim_start().starts_with("::") {
+                continue;
+            }
+            let other_family = name.starts_with("bedrock_addon_family_") && name != own;
+            if name == "bedrock_addon" || other_family {
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!("{family}/src/{relative}:{line} names {name}::"));
+            }
+        }
+    }
+    violations
+}
+
+/// Every `.rs` file under `dir`, recursively.
+fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
+    for entry in fs::read_dir(dir).unwrap_or_else(|e| panic!("{}: {e}", dir.display())) {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            rust_files(&path, out);
+        } else if path.extension().is_some_and(|ext| ext == "rs") {
+            out.push(path);
+        }
+    }
+}
+
+/// Whether `c` can be part of an identifier.
+fn is_ident(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_'
+}
+
+/// `source` with every comment, string literal and character literal blanked (each byte of
+/// one replaced by a space, newlines kept), so the scans read code only and offsets stay.
+fn code_of(source: &str) -> String {
+    blanked(source, true)
+}
+
+/// `source` with every comment blanked, and with `literals` every string and character
+/// literal too (each byte replaced by a space, newlines kept).
+fn blanked(source: &str, literals: bool) -> String {
+    let bytes = source.as_bytes();
+    let mut out = bytes.to_vec();
+    let blank = |out: &mut Vec<u8>, from: usize, to: usize| {
+        for byte in &mut out[from..to] {
+            if *byte != b'\n' {
+                *byte = b' ';
+            }
+        }
+    };
+    let mut i = 0;
+    while i < bytes.len() {
+        let rest = &bytes[i..];
+        let comment = rest.starts_with(b"//") || rest.starts_with(b"/*");
+        let end = if rest.starts_with(b"//") {
+            i + rest.iter().position(|&b| b == b'\n').unwrap_or(rest.len())
+        } else if rest.starts_with(b"/*") {
+            let mut depth = 0_usize;
+            let mut j = i;
+            loop {
+                if bytes[j..].starts_with(b"/*") {
+                    depth += 1;
+                    j += 2;
+                } else if bytes[j..].starts_with(b"*/") {
+                    depth -= 1;
+                    j += 2;
+                    if depth == 0 {
+                        break j;
+                    }
+                } else if j >= bytes.len() {
+                    break bytes.len();
+                } else {
+                    j += 1;
+                }
+            }
+        } else if rest[0] == b'"' {
+            let mut j = i + 1;
+            while j < bytes.len() && bytes[j] != b'"' {
+                j += if bytes[j] == b'\\' { 2 } else { 1 };
+            }
+            (j + 1).min(bytes.len())
+        } else if rest[0] == b'r'
+            && (i == 0 || !is_ident(char::from(bytes[i - 1])))
+            && raw_string_hashes(rest).is_some()
+        {
+            let hashes = raw_string_hashes(rest).unwrap_or_default();
+            let close: Vec<u8> = std::iter::once(b'"')
+                .chain(std::iter::repeat_n(b'#', hashes))
+                .collect();
+            let body = i + 2 + hashes;
+            bytes[body..]
+                .windows(close.len())
+                .position(|window| window == close)
+                .map_or(bytes.len(), |at| body + at + close.len())
+        } else if rest[0] == b'\'' {
+            // A character literal (`'x'`, `'\n'`, `'\u{1F600}'`); anything else is a lifetime.
+            let close = if rest.get(1) == Some(&b'\\') {
+                rest[2..].iter().position(|&b| b == b'\'').map(|at| at + 3)
+            } else {
+                let width = source[i + 1..].chars().next().map_or(1, char::len_utf8);
+                (rest.get(1 + width) == Some(&b'\'')).then_some(width + 2)
+            };
+            match close {
+                Some(len) => i + len,
+                None => {
+                    i += 1;
+                    continue;
+                }
+            }
+        } else {
+            i += 1;
+            continue;
+        };
+        if comment || literals {
+            blank(&mut out, i, end);
+        }
+        i = end;
+    }
+    String::from_utf8(out).expect("blanking keeps the text UTF-8 outside the blanked spans")
+}
+
+/// The number of `#` of a raw string literal starting at `rest` (`r"…"`, `r#"…"#`), if one
+/// starts there.
+fn raw_string_hashes(rest: &[u8]) -> Option<usize> {
+    let hashes = rest[1..].iter().take_while(|&&b| b == b'#').count();
+    (rest.get(1 + hashes) == Some(&b'"')).then_some(hashes)
+}
+
+/// A family in its own crate is held to the rule across crates.
+#[test]
+fn lifted_families_depend_on_no_other_family_and_not_on_bedrock_addon() {
+    let mut violations = Vec::new();
+    for family in lifted_families() {
+        let dir = lifted_dir().join(family);
+        let manifest = fs::read_to_string(dir.join("Cargo.toml")).unwrap();
+        let package = format!("name = \"bedrock_addon_family_{family}\"");
+        assert!(
+            manifest.lines().any(|line| line.trim() == package),
+            "{family}/Cargo.toml is not the package bedrock_addon_family_{family}"
+        );
+        assert!(
+            !src_families_dir().join(family).exists(),
+            "{family} is both a crate and a directory of src/families/"
+        );
+        let mut files = Vec::new();
+        rust_files(&dir.join("src"), &mut files);
+        assert!(!files.is_empty(), "{family} has no source files");
+        let sources: Vec<(String, String)> = files
+            .iter()
+            .map(|file| {
+                let relative = file.strip_prefix(dir.join("src")).unwrap();
+                (
+                    relative.display().to_string(),
+                    fs::read_to_string(file).unwrap(),
+                )
+            })
+            .collect();
+        violations.extend(lifted_violations(family, &manifest, &sources));
+    }
+    assert!(
+        violations.is_empty(),
+        "a lifted family depends on bedrock_addon_core, bedrock_addon_support and \
+         bedrock_addon_derive only:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// `src/families/`.
+fn src_families_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("src/families")
+}
+
+#[test]
+fn the_lifted_scan_reads_manifests_and_paths() {
+    let manifest = "[package]\nname = \"bedrock_addon_family_fog\"\n\n[dependencies]\n\
+        bedrock_addon_core = { path = \"../../core\" }\nbedrock_addon = { path = \"x\" }\n\
+        [target.'cfg(unix)'.dependencies]\nbedrock_addon_family_lang.workspace = true\n\
+        [dependencies.bedrock_addon_family_block]\npath = \"../block\"\n[features]\n\
+        bedrock_addon = []\n";
+    let sources = [(
+        "lib.rs".to_owned(),
+        "use bedrock_addon_core::id::Id; use bedrock_addon::pack::X;\n\
+         // bedrock_addon::pack in a comment\nuse bedrock_addon_family_fog::A;\n\
+         fn f() { bedrock_addon_family_item::Item::new(); }"
+            .to_owned(),
+    )];
+    assert_eq!(
+        lifted_violations("fog", manifest, &sources),
+        [
+            "fog/Cargo.toml:6 depends on bedrock_addon",
+            "fog/Cargo.toml:8 depends on bedrock_addon_family_lang",
+            "fog/Cargo.toml:9 depends on bedrock_addon_family_block",
+            "fog/src/lib.rs:1 names bedrock_addon::",
+            "fog/src/lib.rs:4 names bedrock_addon_family_item::",
+        ]
+    );
+}
+
+#[test]
+fn comments_and_literals_are_not_code() {
+    let source = "// use crate::block::A;\n/* crate::item /* nested */ crate::pack */\nlet s = \"crate::entity\"; let r = r#\"crate::loot \"quoted\"\"#; let c = '\"'; let q = '\\''; fn f<'a>(x: &'a str) { crate::id::X }";
+    let code = code_of(source);
+    assert_eq!(code.len(), source.len(), "offsets are kept");
+    assert_eq!(code.matches('\n').count(), source.matches('\n').count());
+    assert_eq!(code.matches("crate::").count(), 1, "{code}");
+    assert!(code.contains("crate::id::X"), "{code}");
+    // An escaped quote does not end a string, and a lifetime opens no literal.
+    let escaped = code_of("let s = \"a \\\" crate::block\"; crate::json::V");
+    assert_eq!(escaped.matches("crate::").count(), 1, "{escaped}");
+    assert!(escaped.contains("crate::json::V"), "{escaped}");
+    let lifetime = code_of("impl<'a> T<'a> { fn f() { crate::block::B } }");
+    assert!(lifetime.contains("crate::block::B"), "{lifetime}");
+}
+
+/// A family is the crate `crates/addon/families/<name>/`, never a module of `src/`.
+#[test]
+fn no_family_remains_a_module_of_src() {
+    let dir = src_families_dir();
+    assert!(
+        dir.join("mod.rs").is_file(),
+        "{} has no mod.rs",
+        dir.display()
+    );
+    let directories = directories(&dir);
+    assert!(
+        directories.is_empty(),
+        "a family is the crate crates/addon/families/<name>/, never a module of src/: \
+         src/families/ holds the directories {directories:?}"
+    );
+    let lifted = lifted_families();
+    assert!(lifted.iter().any(|name| name == "block"), "{lifted:?}");
+    for not_a_family in ["load", "pack", "storage", "families", "support"] {
+        assert!(
+            !lifted.iter().any(|name| name == not_a_family),
+            "{not_a_family} in {lifted:?}"
+        );
+    }
+}
+
+/// The library part of a source file: `source` without its comments and without the items
+/// of its tests, each blanked (newlines kept, so a line of the result is a line of the file).
+/// An item of the tests is what a `#[cfg(test)]` stands before (a module, a function, a
+/// `use`, a constant, a field), wherever in the file; `#![cfg(test)]` makes the rest one.
+fn library_part(source: &str) -> String {
+    let code = code_of(source);
+    let mut out = blanked(source, false).into_bytes();
+    for item in test_items(&code) {
+        for byte in &mut out[item] {
+            if *byte != b'\n' {
+                *byte = b' ';
+            }
+        }
+    }
+    String::from_utf8(out).expect("an item starts and ends at an ASCII character")
+}
+
+/// The spans of the items of `code` (comments and literals blanked) behind a `#[cfg(test)]`
+/// or a `#[cfg(all(test, …))]`, the attribute included.
+fn test_items(code: &str) -> Vec<std::ops::Range<usize>> {
+    let bytes = code.as_bytes();
+    let mut items = Vec::new();
+    let mut at = 0;
+    while let Some(found) = code[at..].find('#') {
+        let start = at + found;
+        at = start + 1;
+        let Some((inner, after)) = attribute_at(code, start) else {
+            continue;
+        };
+        let is_inner = code[start + 1..].trim_start().starts_with('!');
+        if inner != "cfg(test)" && !inner.starts_with("cfg(all(test,") {
+            continue;
+        }
+        let end = if is_inner {
+            bytes.len()
+        } else {
+            item_end(bytes, after)
+        };
+        items.push(start..end);
+        at = end.max(at);
+    }
+    items
+}
+
+/// The attribute that starts with the `#` at `start`: what stands between its brackets,
+/// without white space, and the offset after its closing bracket.
+fn attribute_at(code: &str, start: usize) -> Option<(String, usize)> {
+    let rest = code[start + 1..].trim_start();
+    let rest = rest.strip_prefix('!').map_or(rest, str::trim_start);
+    let body = rest.strip_prefix('[')?;
+    let open = code.len() - body.len();
+    let mut depth = 1_usize;
+    for (offset, byte) in body.bytes().enumerate() {
+        match byte {
+            b'[' => depth += 1,
+            b']' => depth -= 1,
+            _ => {}
+        }
+        if depth == 0 {
+            let inner = body[..offset].split_whitespace().collect();
+            return Some((inner, open + offset + 1));
+        }
+    }
+    None
+}
+
+/// Where the item that starts at `from` ends: after the block of its first brace, or after
+/// the `;` or `,` that ends it where it has none (a `use`, a constant, a field, a variant),
+/// or where what it stands in ends. `()`, `[]` and the `<>` of generics are stepped over; a
+/// `<` after the `=` of a value is an operator, and a `<` left open (a comparison in a
+/// condition) ends at the bracket, the `;` or the block that follows it.
+fn item_end(bytes: &[u8], from: usize) -> usize {
+    // The `(`, `[` and `<` the scan is in.
+    let mut open: Vec<u8> = Vec::new();
+    // After the `=` of a constant or a field's value: `<` and `>` compare or shift.
+    let mut value = false;
+    // After `where`: a `,` sets two bounds apart and ends nothing.
+    let mut bounds = false;
+    let mut at = from;
+    while at < bytes.len() {
+        let before = at.checked_sub(1).map(|at| bytes[at]);
+        let after = bytes.get(at + 1).copied();
+        let only_angles = open.iter().all(|bracket| *bracket == b'<');
+        match bytes[at] {
+            b'(' | b'[' => open.push(bytes[at]),
+            b'<' if !value => open.push(b'<'),
+            b'>' if open.last() == Some(&b'<') && !matches!(before, Some(b'-' | b'=')) => {
+                open.pop();
+            }
+            b')' | b']' if only_angles => return at,
+            b')' | b']' => {
+                // The bracket closes, and with it every `<` left open in it.
+                while open.pop() == Some(b'<') {}
+            }
+            b'}' => return at,
+            b'=' if open.is_empty()
+                && !matches!(after, Some(b'=' | b'>'))
+                && !matches!(before, Some(b'=' | b'!' | b'<' | b'>')) =>
+            {
+                value = true;
+            }
+            b';' if only_angles => return at + 1,
+            b',' if open.is_empty() && !bounds => return at + 1,
+            b'w' if open.is_empty()
+                && bytes[at..].starts_with(b"where")
+                && !before.is_some_and(|byte| is_ident(char::from(byte)))
+                && !bytes
+                    .get(at + 5)
+                    .is_some_and(|byte| is_ident(char::from(*byte))) =>
+            {
+                bounds = true;
+            }
+            b'{' if only_angles => {
+                let mut depth = 0_usize;
+                for (offset, byte) in bytes[at..].iter().enumerate() {
+                    match byte {
+                        b'{' => depth += 1,
+                        b'}' => depth -= 1,
+                        _ => {}
+                    }
+                    if depth == 0 {
+                        return at + offset + 1;
+                    }
+                }
+                return bytes.len();
+            }
+            _ => {}
+        }
+        at += 1;
+    }
+    bytes.len()
+}
+
+/// Whether `relative` is a file of tests or of a test harness, not of the library.
+fn is_test_file(relative: &Path) -> bool {
+    relative.components().any(|part| {
+        let part = part.as_os_str().to_string_lossy();
+        part == "tests" || part == "tests.rs" || part.starts_with("tests_")
+    })
+}
+
+/// The name every finding gives its path.
+const JSON_PATH: &str = "json_path";
+
+/// Where `text` (a source without its comments) takes the text of a path, as 1-based line
+/// numbers, in order, each line once. A path is `json_path` anywhere, and in a file that
+/// declares a name as a `JsonPath` (`at: JsonPath,`) that name too. Its text is taken by:
+/// `.to_string()` on it, with any white space and after any `.clone()`; `{name}` or
+/// `{name:…}` in a string literal; the path (or a clone, or a reference) as an argument
+/// after the text of a macro that writes its arguments out (`format!("{}", d.json_path)`,
+/// `assert!(ok, "{}", d.json_path)`, `log::warn!("{}", d.json_path)`); the path as the
+/// argument of `ToString::to_string`; and `ToString::to_string` passed on in a statement
+/// that names a path (`.map(|f| &f.json_path).map(ToString::to_string)`).
+fn path_text_reads(text: &str) -> Vec<usize> {
+    let code = code_of(text);
+    let line_of = |at: usize| text[..at].matches('\n').count() + 1;
+    let mut names = declared_paths(&code);
+    names.push(JSON_PATH);
+    names.sort_unstable();
+    names.dedup();
+    let macros = macro_arguments(&code);
+    let mut found = Vec::new();
+    for name in &names {
+        let mut from = 0;
+        while let Some(at) = text[from..].find(name) {
+            let start = from + at;
+            let end = start + name.len();
+            from = end;
+            if code.as_bytes()[start] == b' ' {
+                // In a string literal: the name between the braces of a format.
+                let opened = text[..start].ends_with('{') && !text[..start].ends_with("{{");
+                if opened && matches!(text.as_bytes().get(end), Some(b'}' | b':')) {
+                    found.push(line_of(start));
+                }
+                continue;
+            }
+            if code[..start].ends_with(is_ident) || code[end..].starts_with(is_ident) {
+                continue;
+            }
+            if takes_text(text, &code, start, end, &macros) {
+                found.push(line_of(start));
+            }
+        }
+    }
+    // `ToString::to_string` passed on, in a statement that names a path.
+    const PASSED: &str = "ToString::to_string";
+    let mut from = 0;
+    while let Some(at) = code[from..].find(PASSED) {
+        let start = from + at;
+        from = start + PASSED.len();
+        if code[from..].trim_start().starts_with('(') {
+            continue;
+        }
+        let statement = &code[code[..start].rfind(';').map_or(0, |end| end + 1)..start];
+        if names.iter().any(|name| has_word(statement, name)) {
+            found.push(line_of(start));
+        }
+    }
+    found.sort_unstable();
+    found.dedup();
+    found
+}
+
+/// Whether `code` holds `word` as a whole identifier.
+fn has_word(code: &str, word: &str) -> bool {
+    code.match_indices(word).any(|(at, _)| {
+        !code[..at].ends_with(is_ident) && !code[at + word.len()..].starts_with(is_ident)
+    })
+}
+
+/// Whether the path named at `start..end` of `code` has its text taken there (the ways of
+/// [`path_text_reads`] that are code, not the inside of a string literal).
+fn takes_text(
+    text: &str,
+    code: &str,
+    start: usize,
+    end: usize,
+    macros: &[std::ops::Range<usize>],
+) -> bool {
+    // What follows the name, without white space and without the clones of it.
+    let mut rest: String = code[end..]
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .take(256)
+        .collect();
+    while let Some(after) = rest.strip_prefix(".clone()") {
+        rest = after.to_owned();
+    }
+    if rest.starts_with(".to_string()") {
+        return true;
+    }
+    if !rest.starts_with([',', ')']) {
+        return false;
+    }
+    // An argument after the text of a macro that writes its arguments out: a string
+    // literal with a `{` that is no `{{` stands before it among the macro's arguments.
+    let placeholder = |at: usize| {
+        let bytes = text.as_bytes();
+        bytes[at] == b'{'
+            && code.as_bytes()[at] == b' '
+            && bytes.get(at + 1) != Some(&b'{')
+            && (at == 0 || bytes[at - 1] != b'{')
+    };
+    if macros
+        .iter()
+        .filter(|arguments| arguments.contains(&start))
+        .any(|arguments| (arguments.start..start).any(placeholder))
+    {
+        return true;
+    }
+    // The argument of `to_string(…)`: `ToString::to_string(&d.json_path)`.
+    let mut depth = 0_usize;
+    for (at, byte) in code[..start].bytes().enumerate().rev() {
+        match byte {
+            b')' => depth += 1,
+            b'(' if depth == 0 => return code[..at].trim_end().ends_with("to_string"),
+            b'(' => depth -= 1,
+            b';' | b'{' | b'}' if depth == 0 => return false,
+            _ => {}
+        }
+    }
+    false
+}
+
+/// The spans of the arguments of every macro call written with parentheses (`name!(…)`).
+fn macro_arguments(code: &str) -> Vec<std::ops::Range<usize>> {
+    let mut spans = Vec::new();
+    for (bang, _) in code.match_indices('!') {
+        if !code[..bang].ends_with(is_ident) {
+            continue;
+        }
+        let rest = &code[bang + 1..];
+        let open = bang + 1 + rest.len() - rest.trim_start().len();
+        if !code[open..].starts_with('(') {
+            continue;
+        }
+        let mut depth = 0_usize;
+        let close = code[open..].bytes().position(|byte| {
+            match byte {
+                b'(' => depth += 1,
+                b')' => depth -= 1,
+                _ => {}
+            }
+            depth == 0
+        });
+        spans.push(open + 1..close.map_or(code.len(), |close| open + close));
+    }
+    spans
+}
+
+/// The names `code` declares as a `JsonPath`: `name: JsonPath,` or `name: JsonPath }`, the
+/// type by any path (`crate::diagnostic::JsonPath`). A field of a struct or of a variant.
+fn declared_paths(code: &str) -> Vec<&str> {
+    const TYPE: &str = "JsonPath";
+    let mut names = Vec::new();
+    for (at, _) in code.match_indices(TYPE) {
+        let after = code[at + TYPE.len()..].trim_start();
+        if code[at + TYPE.len()..].starts_with(is_ident) || !after.starts_with([',', '}']) {
+            continue;
+        }
+        // Back over the path the type is named by, to the `:` after the name.
+        let mut before = &code[..at];
+        while let Some(module) = before.strip_suffix("::") {
+            before = module.trim_end_matches(is_ident);
+        }
+        let Some(name) = before.trim_end().strip_suffix(':') else {
+            continue;
+        };
+        let name = name.trim_end();
+        if name.ends_with(':') {
+            continue;
+        }
+        let start = name.len() - name.chars().rev().take_while(|c| is_ident(*c)).count();
+        if start < name.len() {
+            names.push(&name[start..]);
+        }
+    }
+    names
+}
+
+/// Library code never takes a key, a prefix or a step out of the TEXT of
+/// a `JsonPath`. The text escapes `/` and `~` in a key and cannot tell a digit key from an
+/// index, so code that reads it back goes wrong for such keys; `JsonPath::segments`,
+/// `last_key`, `starts_with`, `ends_with`, `strip_prefix`, `is_key` and `index_after` answer
+/// from the segments. This scan catches the spellings of the mistake a text can show
+/// ([`path_text_reads`]) in the library sources of this crate and of `bedrock_addon_core`:
+/// all of each file but the items of its tests, wherever those stand. A path is a finding's
+/// `json_path`, and in a file that declares a field as a `JsonPath` that field. A path held
+/// under yet another name (a local, a parameter, a field of a type of another file) is not
+/// seen by it (the type is not in the text), which is why the rule is also written on
+/// `JsonPath`'s `Display`.
+#[test]
+fn library_code_does_not_read_the_text_of_a_finding_s_path() {
+    /// The library files that write a path out for a reader, and on how many lines: the
+    /// text of a finding (`Display for Diagnostic`) and the texts of three errors that say
+    /// where (`EncodeError::NotRepresentable`, `ShapeError`, `MetaError::UnknownMember`).
+    /// They are messages; nothing reads a key, a prefix or a step back out of them. A line
+    /// more in one of these files, or one in any other file, fails.
+    const SHOWN: [(&str, usize); 4] = [
+        ("core/src/diagnostic/mod.rs", 1),
+        ("core/src/json/mod.rs", 1),
+        ("core/src/shared/read.rs", 1),
+        ("families/script/src/meta/error.rs", 1),
+    ];
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut violations = Vec::new();
+    let mut scanned = 0usize;
+    let lifted = lifted_families()
+        .iter()
+        .map(|family| lifted_dir().join(family).join("src"));
+    for src in [manifest.join("src"), manifest.join("../core/src")]
+        .into_iter()
+        .chain(lifted)
+    {
+        if !src.is_dir() {
+            // A crate packaged alone has no sibling to scan.
+            continue;
+        }
+        let mut files = Vec::new();
+        rust_files(&src, &mut files);
+        for file in files {
+            let relative = file.strip_prefix(&src).unwrap();
+            if is_test_file(relative) {
+                continue;
+            }
+            scanned += 1;
+            let source = fs::read_to_string(&file).unwrap();
+            let reads = path_text_reads(&library_part(&source));
+            let shown = SHOWN
+                .iter()
+                .find(|(shows, _)| file.ends_with(shows))
+                .map_or(0, |(_, times)| *times);
+            if reads.len() != shown {
+                violations.push(format!(
+                    "{}: lines {reads:?} ({shown} listed as written out for a reader)",
+                    file.display()
+                ));
+            }
+        }
+    }
+    assert!(scanned > 500, "{scanned} library files scanned");
+    assert!(
+        violations.is_empty(),
+        "library code takes the text of a finding's path (use the path's segments):\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn the_scan_for_path_text_sees_the_call_and_nothing_else() {
+    assert_eq!(
+        path_text_reads("let a = finding.location.json_path.to_string();\nlet b = 1;"),
+        [1]
+    );
+    assert_eq!(
+        path_text_reads("x\n    .location\n    .json_path\n    .to_string()\n    .len()"),
+        [3]
+    );
+    // Another member, another method, a longer name.
+    assert_eq!(
+        path_text_reads("a.json_path.len(); my_json_path.to_string();"),
+        [0usize; 0]
+    );
+    assert_eq!(
+        path_text_reads("a.json_path.clone().to_owned()"),
+        [0usize; 0]
+    );
+    // The unit tests are no part of the library, and test files are no library.
+    let code = "fn f() {}\n#[cfg(test)]\nmod tests { fn g(d: D) { d.json_path.to_string(); } }";
+    assert_eq!(path_text_reads(&library_part(code)), [0usize; 0]);
+    assert!(is_test_file(Path::new("script/config/tests.rs")));
+    assert!(is_test_file(Path::new("pack/link/tests_findings.rs")));
+    assert!(is_test_file(Path::new(
+        "pack/stack/accessors/tests/forms.rs"
+    )));
+    assert!(!is_test_file(Path::new("entity/goal/check.rs")));
+}
+
+/// The library part of a file is all of it but the items of its tests: a test-only item long
+/// before the test module does not end it, and neither does the test module.
+#[test]
+fn the_library_part_of_a_file_goes_on_after_an_item_of_its_tests() {
+    let source = "#[cfg(test)]
+fn only_for_tests<A, B>(d: D) -> [u8; 2] { d.json_path.to_string(); }
+fn f(d: D) { d.json_path.to_string(); }
+#[cfg(test)]
+#[allow(dead_code)]
+mod tests { fn g(d: D) { if true { d.json_path.to_string(); } } }
+fn h(d: D) { d.json_path.to_string(); }
+# [ cfg ( test ) ] use std::fmt::Write;
+#[cfg(test)]
+const SHOWN: fn(&D) -> String = |d| d.json_path.to_string();
+struct S {
+    #[cfg(test)]
+    seen: Vec<u8>,
+    json_path: JsonPath,
+}
+fn k(s: S) { s.json_path.to_string(); }";
+    assert_eq!(path_text_reads(&library_part(source)), [3, 7, 16]);
+    // An attribute that is no `cfg(test)` hides nothing.
+    let source = "#[cfg(feature = \"test\")]\nfn f(d: D) { d.json_path.to_string(); }";
+    assert_eq!(path_text_reads(&library_part(source)), [2]);
+}
+
+/// The scan sees a path written out by a format, as an argument and as a name in the text.
+#[test]
+fn the_scan_for_path_text_sees_a_path_in_a_format() {
+    assert_eq!(
+        path_text_reads(r#"let a = format!("{}", finding.location.json_path);"#),
+        [1]
+    );
+    assert_eq!(
+        path_text_reads(
+            "let a = format!(\"at {json_path}\");\nwrite!(f, \"{json_path:>4} | \")?;\nwriteln!(\n    out,\n    \"{} {}\",\n    code,\n    &d.json_path,\n);"
+        ),
+        [1, 2, 7]
+    );
+    // No format: a call on the path, a comparison, braces that are text, a comment.
+    for code in [
+        r#"let a = format!("{}", d.json_path.len());"#,
+        "assert_eq!(a.json_path, b.json_path);",
+        r#"let a = format!("{{json_path}}");"#,
+        "// format!(\"{json_path}\")\nlet a = 1;",
+        r#"let a = format!("{}", my_json_path);"#,
+    ] {
+        assert_eq!(path_text_reads(&library_part(code)), [0usize; 0], "{code}");
+    }
+}
+
+/// The files a scan that stopped at the first `#[cfg(test)]` read least of: a test-only item
+/// stands near their top. Their library part goes on to their last function.
+#[test]
+fn the_library_part_of_a_file_with_an_early_test_item_is_the_rest_of_it() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for file in [
+        "src/pack/link/resource/block.rs",
+        "../families/material/src/patch.rs",
+        "src/pack/link/mod.rs",
+        "../families/feature/src/load.rs",
+    ] {
+        let source = fs::read_to_string(root.join(file)).unwrap();
+        let library = library_part(&source);
+        assert_eq!(library.len(), source.len(), "{file}");
+        let first = source.find("#[cfg(test)]").expect(file);
+        let functions = |text: &str| text.matches("fn ").count();
+        let (before, after) = (functions(&library[..first]), functions(&library[first..]));
+        assert!(
+            after > 0 && before + after <= functions(&code_of(&source)),
+            "{file}: {before} functions before its first test item, {after} after"
+        );
+        // And the item of the tests itself is no part of it.
+        assert!(!library.contains("cfg(test)"), "{file}");
+    }
+}
+
+/// A `<` that is no generic's (a comparison, a shift) in an item of the tests does not hide
+/// the library code after the item, and the body of a test item with a `where` is the item's.
+#[test]
+fn a_comparison_in_an_item_of_the_tests_does_not_hide_the_library_after_it() {
+    for item in [
+        "#[cfg(test)]\nconst X: bool = 1 < 2;",
+        "#[cfg(test)]\nconst X: u8 = 1 << 2;",
+        "#[cfg(test)]\nconst X: bool = 1 <= 2;",
+        "#[cfg(test)]\nstatic X: bool = f(1 < 2, 3);",
+        "#[cfg(test)]\nconst X: Vec<u8> = Vec::<u8>::new();",
+        "#[cfg(test)]\nfn t(a: u8) -> bool { a < 2 }",
+    ] {
+        let source = format!("{item}\nfn f(d: D) {{ d.json_path.to_string(); }}\nfn g() {{}}");
+        assert_eq!(path_text_reads(&library_part(&source)), [3], "{item}");
+    }
+    let source = "#[cfg(test)]
+fn t<A, B>(d: D) where A: X<u8>, B: Y { d.json_path.to_string(); }
+fn f(d: D) { d.json_path.to_string(); }";
+    assert_eq!(path_text_reads(&library_part(source)), [3]);
+    let source = "fn f(d: D) {
+    #[cfg(test)]
+    if 1 < 2 { d.json_path.to_string(); }
+    #[cfg(test)]
+    assert!(1 < 2);
+    d.json_path.to_string();
+}";
+    assert_eq!(path_text_reads(&library_part(source)), [6]);
+}
+
+/// The spellings that take a path's text by another way than `.to_string()` on it or a
+/// format: a clone before either, `ToString::to_string` called or passed on, and a macro
+/// that is no `format!` but writes its arguments out after a text (`assert!`, `log::warn!`).
+#[test]
+fn the_scan_for_path_text_sees_the_other_ways_to_the_text() {
+    for code in [
+        r#"let a = format!("{}", d.json_path.clone());"#,
+        "let a = d.json_path.clone().to_string();",
+        "let a = d.json_path\n    .clone()\n    .clone()\n    .to_string();",
+        "let a = ToString::to_string(&d.json_path);",
+        "let a = ToString::to_string(&d.location.json_path.clone());",
+        "let a = found.map(|f| &f.location.json_path).map(ToString::to_string);",
+        r#"assert!(ok, "at {}", d.json_path);"#,
+        r#"debug_assert_eq!(a, b, "at {}", &d.json_path);"#,
+        r#"log::warn!("dropped at {}", d.location.json_path);"#,
+        r#"tracing::info!(target: "x", "dropped at {} ({})", d.location.json_path, 1);"#,
+    ] {
+        assert_eq!(path_text_reads(&library_part(code)), [1], "{code}");
+    }
+    // No text is taken: a path compared (before the text of the assertion), a macro without
+    // a text, a clone kept, `ToString` of another value.
+    for code in [
+        r#"assert_eq!(a.json_path, b.json_path, "the two differ ({})", 1);"#,
+        "assert!(a.json_path == b.json_path);",
+        "let a = vec![d.json_path.clone()];",
+        "let a = d.json_path.clone();",
+        "let a = names.iter().map(ToString::to_string); let b = d.json_path.len();",
+        "let a = ToString::to_string(&d.json_path.len());",
+    ] {
+        assert_eq!(path_text_reads(&library_part(code)), [0usize; 0], "{code}");
+    }
+}
+
+/// A name a file declares as a `JsonPath` (a field of an error, of a finding) is a path in
+/// that file under that name: its text in a format is seen, as `json_path`'s is anywhere.
+#[test]
+fn the_scan_for_path_text_knows_the_names_a_file_gives_its_paths() {
+    let error = "#[derive(Debug, thiserror::Error)]
+pub enum E {
+    #[error(\"unknown member `{at}`\")]
+    Unknown {
+        at: crate::diagnostic::JsonPath,
+    },
+}";
+    assert_eq!(path_text_reads(&library_part(error)), [3]);
+    let shape = "pub struct ShapeError {
+    kind: Kind,
+    path: JsonPath,
+}
+impl fmt::Display for ShapeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, \"at `{}`: {}\", self.path, self.kind)
+    }
+}
+fn text(e: &ShapeError) -> String {
+    e.path.to_string()
+}";
+    assert_eq!(path_text_reads(&library_part(shape)), [7, 11]);
+    // The same texts where the name is no path of the file: nothing.
+    let other = "pub struct Place {
+    path: PackPath,
+    at: usize,
+}
+fn text(p: &Place) -> String {
+    format!(\"{} {at}\", p.path, at = p.at)
+}";
+    assert_eq!(path_text_reads(&library_part(other)), [0usize; 0]);
+}

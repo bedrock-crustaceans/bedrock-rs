@@ -1,0 +1,15 @@
+[
+  {
+    "ticks_per_frame": "5",
+    "blend_frames": "false",
+    "flipbook_texture": 5,
+    "atlas_tile": "x",
+    "atlas_index": 1.9,
+    "atlas_tile_variant": "2",
+    "frames": [
+      1,
+      "2",
+      2.7
+    ]
+  }
+]

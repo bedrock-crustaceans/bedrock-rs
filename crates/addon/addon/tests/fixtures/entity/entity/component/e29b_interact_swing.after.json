@@ -1,0 +1,4 @@
+{
+  "array": { "interactions": [ { "cooldown": 2.5, "swing": false }, { "swing": true } ] },
+  "single_object": { "interactions": { "use_item": true, "swing": false } }
+}

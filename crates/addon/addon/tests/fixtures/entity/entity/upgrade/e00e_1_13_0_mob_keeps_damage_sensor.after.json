@@ -1,0 +1,13 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:mob"
+    },
+    "components": {
+      "minecraft:damage_sensor": {
+        "triggers": []
+      }
+    }
+  }
+}

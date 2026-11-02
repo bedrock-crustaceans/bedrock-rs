@@ -1,0 +1,20 @@
+// fixtures.md row 15: the shapes of RandomValueBounds
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:stick",
+          "functions": [
+            {"function": "set_count", "count": 2},
+            {"function": "set_count", "count": 1.5},
+            {"function": "set_count", "count": {"min": 1}},
+            {"function": "set_count", "count": {"min": 3, "max": 1}}
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "interact",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:interact": {
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+// a line comment
+[ /* a block */ { "atlas_tile": /* here too */ "x" } // and here
+]

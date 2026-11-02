@@ -1,0 +1,29 @@
+{
+  "scenes": [
+    "eight_with_two_nameless"
+  ],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "MissingRequiredField",
+      "severity": "error",
+      "path": "dialogue/counts.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/3/name",
+      "text": "JSON: counts.json has an error: \n Each button needs a 'name' field, was not found. Skipping button..."
+    },
+    {
+      "code": "MissingRequiredField",
+      "severity": "error",
+      "path": "dialogue/counts.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/7/name",
+      "text": "JSON: counts.json has an error: \n Each button needs a 'name' field, was not found. Skipping button..."
+    },
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "dialogue/counts.json",
+      "json_path": "minecraft:npc_dialogue/scenes/1/buttons",
+      "text": "JSON: counts.json has an error: \n Only a maximum number of 6 buttons are currently supported. Skipping scene..."
+    }
+  ]
+}

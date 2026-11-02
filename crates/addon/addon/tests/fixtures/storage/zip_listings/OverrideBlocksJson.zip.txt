@@ -1,0 +1,7 @@
+resource_pack/
+resource_pack/blocks.json
+resource_pack/manifest.json
+resource_pack/textures/
+resource_pack/textures/blocks/
+resource_pack/textures/blocks/test_tnt.png
+resource_pack/textures/terrain_texture.json

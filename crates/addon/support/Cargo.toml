@@ -1,0 +1,23 @@
+[package]
+name = "bedrock_addon_support"
+description = "Helpers more than one bedrock_addon content family shares that are no vocabulary of bedrock_addon_core: schema walks, JSON readers, texture and sound rules, spawn conditions; no I/O"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+# The load-time Molang compile check of the shared walks.
+molang = ["bedrock_addon_core/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../core" }
+facet = { workspace = true }
+facet-json = { workspace = true }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+thiserror = { workspace = true }

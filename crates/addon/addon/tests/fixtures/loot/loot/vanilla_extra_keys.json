@@ -1,0 +1,21 @@
+// fixtures.md row 23: keys vanilla's own tables carry and no 1.26.20 parser reads
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:wool",
+          "aux_val": 17,
+          "count": 1,
+          "functions": [
+            {"function": "looting_enchant", "count": {"min": 0, "max": 1}, "limit": 1},
+            {"function": "set_count", "count": {"min": 1, "max": 3}, "add": false}
+          ]
+        }
+      ]
+    }
+  ]
+}

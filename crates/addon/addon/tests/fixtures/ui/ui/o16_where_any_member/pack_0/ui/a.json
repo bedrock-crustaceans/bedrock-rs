@@ -1,0 +1,34 @@
+{
+  "namespace": "a",
+  "root@a.base": {
+    "type": "panel",
+    "controls": [
+      {
+        "x@a.leaf": {}
+      },
+      {
+        "y@a.leaf": {}
+      }
+    ],
+    "bindings": [
+      {
+        "binding_name": "#a",
+        "binding_type": "global"
+      },
+      {
+        "binding_name": "#b",
+        "binding_type": "global"
+      }
+    ]
+  },
+  "base": {
+    "size": [
+      10,
+      10
+    ]
+  },
+  "leaf": {
+    "type": "label",
+    "text": "hi"
+  }
+}

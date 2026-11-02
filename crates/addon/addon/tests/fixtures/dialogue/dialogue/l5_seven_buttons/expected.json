@@ -1,0 +1,13 @@
+{
+  "scenes": [],
+  "rejected": 1,
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "error",
+      "path": "dialogue/seven.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons",
+      "text": "JSON: seven.json has an error: \n Only a maximum number of 6 buttons are currently supported. Skipping scene..."
+    }
+  ]
+}

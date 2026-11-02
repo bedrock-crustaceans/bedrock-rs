@@ -1,0 +1,8 @@
+# Probe: P11
+scope = "module"
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+path = "dependencies/0"
+text = "Plugin [sm34 - 3.2.1] - requesting dependency on module [@minecraft/nonexistent] but it is not configured to use it."

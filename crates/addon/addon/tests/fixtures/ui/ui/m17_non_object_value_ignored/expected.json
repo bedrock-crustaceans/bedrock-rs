@@ -1,0 +1,45 @@
+{
+  "diagnostics": [
+    {
+      "code": "IgnoredMember",
+      "severity": "info",
+      "text": "member ignored",
+      "pack": 1,
+      "at": "root"
+    },
+    {
+      "code": "IgnoredMember",
+      "severity": "info",
+      "text": "member ignored",
+      "pack": 1,
+      "at": "newkey"
+    }
+  ],
+  "files": {
+    "ui/a.json": {
+      "namespace": "a",
+      "root@a.base": {
+        "type": "panel",
+        "controls": [
+          {
+            "x@a.leaf": {}
+          },
+          {
+            "y@a.leaf": {}
+          }
+        ]
+      },
+      "base": {
+        "size": [
+          10,
+          10
+        ]
+      },
+      "leaf": {
+        "type": "label",
+        "text": "hi",
+        "layer": 2
+      }
+    }
+  }
+}

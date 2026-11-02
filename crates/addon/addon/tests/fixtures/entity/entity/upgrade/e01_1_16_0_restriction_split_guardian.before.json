@@ -1,0 +1,13 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:guardian"
+    },
+    "components": {
+      "minecraft:behavior.move_towards_restriction": {
+        "priority": 5
+      }
+    }
+  }
+}

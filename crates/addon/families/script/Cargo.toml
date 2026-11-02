@@ -1,0 +1,24 @@
+[package]
+name = "bedrock_addon_family_script"
+description = "The `script` content family of bedrock_addon, re-exported as bedrock_addon::families::script; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+script-syntax = ["dep:oxc_parser"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bytes = { workspace = true }
+facet = { workspace = true }
+facet-json = { workspace = true }
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+oxc_parser = { workspace = true, optional = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }

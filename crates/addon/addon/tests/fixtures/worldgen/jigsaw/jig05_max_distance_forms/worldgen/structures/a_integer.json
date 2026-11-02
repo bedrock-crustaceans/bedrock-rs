@@ -1,0 +1,18 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "demo:a_integer"
+    },
+    "step": "surface_structures",
+    "start_pool": "demo:ruin/start",
+    "max_depth": 4,
+    "start_height": {
+      "type": "constant",
+      "value": {
+        "absolute": 0
+      }
+    },
+    "max_distance_from_center": 7
+  }
+}

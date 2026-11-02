@@ -1,0 +1,25 @@
+# families/script_config fixtures.md, row sc49_unlisted_modules (review GR).
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [gfxbeta - 1.0.0] - requesting dependency on module [@minecraft/server-graphics] but it is not configured to use it."
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [gfx100 - 1.0.0] - requesting dependency on module [@minecraft/server-graphics] but it is not configured to use it."
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [common - 1.0.0] - requesting dependency on module [@minecraft/common] but it is not configured to use it."

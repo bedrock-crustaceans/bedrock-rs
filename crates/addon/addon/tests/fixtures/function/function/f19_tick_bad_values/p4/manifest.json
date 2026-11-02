@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "p4",
+    "description": "function fixture",
+    "uuid": "00000000-0000-4000-8000-001900040001",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "00000000-0000-4000-8000-001900040002",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

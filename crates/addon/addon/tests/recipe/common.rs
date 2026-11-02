@@ -1,0 +1,228 @@
+//! Fixture loading, load contexts and finding matchers for the recipe tests.
+
+#![allow(dead_code, reason = "each test module uses part of the helpers")]
+
+use std::path::PathBuf;
+
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::document::{Content, Document, Rejected};
+use bedrock_addon::families::recipe::{Recipe, Shaped};
+use bedrock_addon::load::LoadContext;
+use bedrock_addon::molang::pack_molang_version;
+use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin};
+use bedrock_addon::storage::PackPath;
+use bedrock_addon::version::{BaseGameVersion, MinEngineVersion, SemVersion};
+use bytes::Bytes;
+use uuid::Uuid;
+
+/// The fixture directory of the family.
+pub fn fixtures() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/recipe/recipe")
+}
+
+/// The bytes of fixture `name`.
+pub fn fixture(name: &str) -> Vec<u8> {
+    std::fs::read(fixtures().join(name)).unwrap_or_else(|e| panic!("{name}: {e}"))
+}
+
+/// A third-party pack of the engine version, outside any stack.
+pub fn cx() -> LoadContext {
+    LoadContext::detached()
+}
+
+/// A third-party pack with `min_engine_version` `version`.
+pub fn cx_mev(major: u16, minor: u16, patch: u16) -> LoadContext {
+    let mut cx = LoadContext::detached();
+    let mev = MinEngineVersion::new(major, minor, patch);
+    cx.molang_version = pack_molang_version(Some(&mev));
+    cx.min_engine_version = Some(mev);
+    cx
+}
+
+/// A base-game pack.
+pub fn cx_base_game() -> LoadContext {
+    let mut cx = LoadContext::detached();
+    cx.is_base_game_pack = true;
+    cx
+}
+
+/// A pack of a world whose base-game version is `major.minor.0`.
+pub fn cx_world(major: u16, minor: u16) -> LoadContext {
+    let mut cx = LoadContext::detached();
+    cx.world_base_game_version = BaseGameVersion::new(SemVersion::new(major, minor, 0));
+    cx
+}
+
+/// Parses `bytes` as `recipes/<name>`.
+pub fn parse_bytes(
+    name: &str,
+    bytes: &[u8],
+    cx: &LoadContext,
+) -> Result<Document<Recipe>, Rejected> {
+    let path = PackPath::new(&format!("recipes/{name}")).unwrap();
+    Recipe::parse(&path, bytes, cx)
+}
+
+/// Parses fixture `name`.
+pub fn load(name: &str, cx: &LoadContext) -> Result<Document<Recipe>, Rejected> {
+    parse_bytes(name, &fixture(name), cx)
+}
+
+/// Fixture `name`, which must load.
+pub fn loaded(name: &str, cx: &LoadContext) -> Document<Recipe> {
+    load(name, cx)
+        .unwrap_or_else(|rejected| panic!("{name} was rejected:\n{:#?}", rejected.diagnostics))
+}
+
+/// Fixture `name`, which must be rejected.
+pub fn rejected(name: &str, cx: &LoadContext) -> Rejected {
+    match load(name, cx) {
+        Ok(document) => panic!(
+            "{name} loaded:\n{:#?}\n{:#?}",
+            document.value(),
+            document.diagnostics()
+        ),
+        Err(rejected) => rejected,
+    }
+}
+
+/// The shaped recipe of a document.
+pub fn shaped(document: &Document<Recipe>) -> &Shaped {
+    match document.value() {
+        Recipe::Shaped(shaped) => shaped,
+        other => panic!("not shaped: {other:?}"),
+    }
+}
+
+/// The vanilla text a finding carries, if any.
+pub fn text(code: &DiagnosticCode) -> Option<&VanillaText> {
+    match code {
+        DiagnosticCode::MalformedInput { text, .. }
+        | DiagnosticCode::MissingIdentifier { text }
+        | DiagnosticCode::DuplicateIdentifier { text }
+        | DiagnosticCode::MissingFormatVersion { text }
+        | DiagnosticCode::MissingRequiredField { text }
+        | DiagnosticCode::InvalidValue { text }
+        | DiagnosticCode::InvalidType { text }
+        | DiagnosticCode::DocumentRejected { text }
+        | DiagnosticCode::IgnoredMember { text }
+        | DiagnosticCode::NoEffect { text }
+        | DiagnosticCode::UnrecognizedField { text }
+        | DiagnosticCode::UnresolvedReference { text }
+        | DiagnosticCode::InvalidReference { text } => text.as_ref(),
+        _ => None,
+    }
+}
+
+/// The template of a finding's vanilla text: the fixed text, or the template with `{}`.
+pub fn template(diagnostic: &Diagnostic) -> Option<&'static str> {
+    match text(&diagnostic.code)? {
+        VanillaText::Fixed(text) => Some(text),
+        VanillaText::Formatted { template, .. } => Some(template),
+        _ => None,
+    }
+}
+
+/// The arguments of a finding's formatted vanilla text.
+pub fn args(diagnostic: &Diagnostic) -> Vec<String> {
+    match text(&diagnostic.code) {
+        Some(VanillaText::Formatted { args, .. }) => args.clone(),
+        _ => Vec::new(),
+    }
+}
+
+/// The findings whose vanilla text has `template`.
+pub fn with_text<'d>(diagnostics: &'d Diagnostics, template_: &str) -> Vec<&'d Diagnostic> {
+    diagnostics
+        .iter()
+        .filter(|d| template(d) == Some(template_))
+        .collect()
+}
+
+/// Exactly one finding with `template`, a kept error (the game's level-3
+/// line after which the recipe loads); returns it.
+pub fn one_kept<'d>(diagnostics: &'d Diagnostics, template_: &str) -> &'d Diagnostic {
+    let finding = one(diagnostics, template_, Severity::Error);
+    assert!(finding.kept, "{finding:#?}");
+    finding
+}
+
+/// Exactly one finding with `template`, at `severity`; returns it.
+pub fn one<'d>(
+    diagnostics: &'d Diagnostics,
+    template_: &str,
+    severity: Severity,
+) -> &'d Diagnostic {
+    let found = with_text(diagnostics, template_);
+    assert_eq!(
+        found.len(),
+        1,
+        "expected one `{template_}`, found {}:\n{diagnostics:#?}",
+        found.len()
+    );
+    assert_eq!(found[0].severity, severity, "{:#?}", found[0]);
+    found[0]
+}
+
+/// No finding at warning level or above.
+pub fn clean(diagnostics: &Diagnostics) {
+    let loud: Vec<_> = diagnostics.at_least(Severity::Warning).collect();
+    assert!(loud.is_empty(), "unexpected findings:\n{loud:#?}");
+}
+
+/// No finding at all.
+pub fn silent(diagnostics: &Diagnostics) {
+    assert!(
+        diagnostics.is_empty(),
+        "unexpected findings:\n{diagnostics:#?}"
+    );
+}
+
+/// A behaviour pack `n` with `min_engine_version` `mev`, opened from memory with `origin`, holding
+/// `files` (pack-relative paths).
+pub fn pack(n: u128, mev: [u16; 3], origin: PackOrigin, files: Vec<(String, Vec<u8>)>) -> Pack {
+    let uuid = Uuid::from_u128(n);
+    let module = Uuid::from_u128(n ^ (0xabcd_u128 << 64));
+    let [a, b, c] = mev;
+    let manifest = format!(
+        r#"{{"format_version": 2, "header": {{"name": "bp {n}", "description": "", "uuid": "{uuid}", "version": [1, 0, 0], "min_engine_version": [{a}, {b}, {c}]}}, "modules": [{{"type": "data", "uuid": "{module}", "version": [1, 0, 0]}}]}}"#
+    );
+    let mut all: Vec<(PackPath, Bytes)> = vec![(
+        PackPath::from_static("manifest.json"),
+        Bytes::from(manifest),
+    )];
+    all.extend(
+        files
+            .into_iter()
+            .map(|(path, bytes)| (PackPath::new(&path).unwrap(), Bytes::from(bytes))),
+    );
+    let options = OpenOptions {
+        origin,
+        ..OpenOptions::default()
+    };
+    Pack::from_files(all, &options).expect("the pack opens")
+}
+
+/// Every file below fixture directory `dir`, as pack-relative paths.
+pub fn files_below(dir: &str) -> Vec<(String, Vec<u8>)> {
+    fn walk(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<(String, Vec<u8>)>) {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                walk(root, &path, out);
+            } else {
+                let relative = path
+                    .strip_prefix(root)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                out.push((relative, std::fs::read(&path).unwrap()));
+            }
+        }
+    }
+    let root = fixtures().join(dir);
+    let mut out = Vec::new();
+    walk(&root, &root, &mut out);
+    out.sort();
+    out
+}

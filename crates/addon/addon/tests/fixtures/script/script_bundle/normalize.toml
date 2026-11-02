@@ -1,0 +1,352 @@
+# The normaliser, one row per line of the observed table of families/script_bundle
+# schema.md (BDS 1.26.36.1), then the branches of its algorithm the table has no row for.
+# `known` is the one native module name of the context, when the row needs one;
+# `expected = "!"` is the uncaught std::out_of_range that terminates the server.
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/b.js"
+known = ""
+expected = "lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/c"
+known = ""
+expected = "lib/c.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib"
+known = ""
+expected = "lib.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/"
+known = ""
+expected = "lib.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib2"
+known = ""
+expected = "lib2.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./Upper.js"
+known = ""
+expected = "Upper.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./upper.js"
+known = ""
+expected = "upper.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./data.json"
+known = ""
+expected = "data.json.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./m.mjs"
+known = ""
+expected = "m.mjs.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./x.JS"
+known = ""
+expected = "x.JS.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./ts.ts"
+known = ""
+expected = "ts.ts.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./noext"
+known = ""
+expected = "noext.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/b.js?q=1"
+known = ""
+expected = "lib/b.js?q=1.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "../escape.js"
+known = ""
+expected = "../escape.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/../lib/b.js"
+known = ""
+expected = "lib/../lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/./b.js"
+known = ""
+expected = "lib/./b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = ".//lib/b.js"
+known = ""
+expected = "/lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "/lib/b.js"
+known = ""
+expected = "/lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib\\b.js"
+known = ""
+expected = "lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "lib/b.js"
+known = ""
+expected = "lib/b.js"
+
+[[rows]]
+referrer = "sub/main.js"
+spec = "x.js"
+known = ""
+expected = "x.js"
+
+[[rows]]
+referrer = "sub/main.js"
+spec = "./x.js"
+known = ""
+expected = "sub/x.js"
+
+[[rows]]
+referrer = "sub/main.js"
+spec = "../top.js"
+known = ""
+expected = "top.js"
+
+[[rows]]
+referrer = "lib/nested.js"
+spec = "../shared.js"
+known = ""
+expected = "shared.js"
+
+[[rows]]
+referrer = "lib/nested.js"
+spec = "./../shared.js"
+known = ""
+expected = "shared.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "scripts/lib/b.js"
+known = ""
+expected = "scripts/lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./scripts/lib/b.js"
+known = ""
+expected = "scripts/lib/b.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "unknown-pkg"
+known = ""
+expected = "unknown-pkg.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "pkg"
+known = ""
+expected = "pkg.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./node_modules/pkg/index.js"
+known = ""
+expected = "node_modules/pkg/index.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "@minecraft/unknown"
+known = ""
+expected = "@minecraft/unknown"
+
+[[rows]]
+referrer = "main.js"
+spec = "@minecraft/server-ui"
+known = ""
+expected = "@minecraft/server-ui"
+
+[[rows]]
+referrer = "main.js"
+spec = "@minecraft/server-bindings"
+known = "@minecraft/server-bindings"
+expected = "@minecraft/server-bindings"
+
+[[rows]]
+referrer = "main.js"
+spec = "@minecraft/server-ui-private-bindings"
+known = ""
+expected = "@minecraft/server-ui-private-bindings"
+
+[[rows]]
+referrer = "main.js"
+spec = "@minecraft/common"
+known = "@minecraft/common"
+expected = "@minecraft/common"
+
+[[rows]]
+referrer = "main.js"
+spec = "@minecraft/server-ui-bindings"
+known = "@minecraft/server-ui-bindings"
+expected = "@minecraft/server-ui-bindings"
+
+[[rows]]
+referrer = "main.js"
+spec = "./main.js"
+known = ""
+expected = "main.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "."
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "main.js"
+spec = ".."
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "main.js"
+spec = "./"
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "main.js"
+spec = "../"
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "main.js"
+spec = "../escape"
+known = ""
+expected = "../escape.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./lib/."
+known = ""
+expected = "lib/..js"
+
+[[rows]]
+referrer = "main.js"
+spec = "..."
+known = ""
+expected = "....js"
+
+[[rows]]
+referrer = "main.js"
+spec = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+known = ""
+expected = ".js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+known = ""
+expected = ""
+
+[[rows]]
+referrer = "main.js"
+spec = ""
+known = ""
+expected = ""
+
+[[rows]]
+referrer = "main.js"
+spec = "./."
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "main.js"
+spec = "../.."
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "main.js"
+spec = "././"
+known = ""
+expected = "!"
+
+[[rows]]
+referrer = "sub/deep/d.js"
+spec = "../../../escape2.js"
+known = ""
+expected = "../../../escape2.js"
+
+[[rows]]
+referrer = "sub/deep/d.js"
+spec = "../x.js"
+known = ""
+expected = "sub/x.js"
+
+[[rows]]
+referrer = "sub/deep/d.js"
+spec = "../../x.js"
+known = ""
+expected = "x.js"
+
+[[rows]]
+referrer = "sub/deep/d.js"
+spec = "./x"
+known = ""
+expected = "sub/deep/x.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "native-name"
+known = "native-name"
+expected = "native-name"
+
+[[rows]]
+referrer = "main.js"
+spec = "./native-name"
+known = "native-name"
+expected = "native-name.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./.hidden.js"
+known = ""
+expected = ".hidden.js"
+
+[[rows]]
+referrer = "main.js"
+spec = "./a.b"
+known = ""
+expected = "a.b.js"

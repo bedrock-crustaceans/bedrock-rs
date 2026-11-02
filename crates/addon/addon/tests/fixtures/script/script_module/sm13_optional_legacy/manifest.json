@@ -1,0 +1,38 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm13",
+    "description": "families/script_module fixture sm13_optional_legacy",
+    "uuid": "4b4e0358-1080-5d08-8a74-743b69dafbbc",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "f28fd28e-125b-5605-bb9a-cf89221bc8f8",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "beta",
+      "optional": true
+    }
+  ]
+}

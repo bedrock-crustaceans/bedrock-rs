@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Control Scheme functional tests behavior pack",
+    "name": "Control Scheme Functional Tests",
+    "uuid":"ba6d9752-568b-4840-be76-51c8e8b51dac",
+    "version": [0, 0, 1],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "Control scheme functional tests behavior pack",
+          "type": "data",
+          "uuid": "a99e0d65-4eb2-413a-b47c-db3611119162",
+          "version": [0, 0, 1]
+      }
+    ]
+}

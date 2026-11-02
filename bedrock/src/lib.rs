@@ -36,3 +36,11 @@ pub mod network {
 pub mod form {
     pub use ::bedrock_form::*;
 }
+
+/// The sans-IO add-on toolkit (`bedrock_addon`): packs, stacks, loaders and every content family.
+#[cfg(feature = "addon")]
+pub use ::bedrock_addon as addon;
+
+/// The std driver of the add-on toolkit (`bedrock_addon_std`): file system, threads and archives.
+#[cfg(feature = "addon-std")]
+pub use ::bedrock_addon_std as addon_std;

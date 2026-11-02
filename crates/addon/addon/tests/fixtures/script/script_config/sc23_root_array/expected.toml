@@ -1,0 +1,30 @@
+# families/script_config fixtures.md, row sc23_root_array (probe C).
+
+[[diagnostic]]
+code = "InvalidType"
+severity = "info"
+phase = "parse"
+file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"
+path = ""
+
+[[diagnostic]]
+code = "InvalidType"
+severity = "info"
+phase = "parse"
+file = "config/a0000000-0000-4000-8000-000000000001/variables.json"
+path = ""
+
+[[diagnostic]]
+code = "InvalidType"
+severity = "info"
+phase = "parse"
+file = "config/a0000000-0000-4000-8000-000000000001/secrets.json"
+path = ""
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"
+path = ""
+text = "Plugin [permarray - 1.0.0] - requesting dependency on module [@minecraft/server] but it is not configured to use it."

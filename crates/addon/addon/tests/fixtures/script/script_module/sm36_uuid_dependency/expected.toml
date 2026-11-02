@@ -1,0 +1,9 @@
+# Probe: P14
+scope = "none"
+resolved = ["@minecraft/server 0.1.0"]
+
+[[diagnostic]]
+code = "DeprecatedMember"
+severity = "warning"
+path = "dependencies/0"
+text = "Plugin [sm36 - 3.2.1] dependency by UUID is deprecated and only supports version 0.1.0, use module_name instead."

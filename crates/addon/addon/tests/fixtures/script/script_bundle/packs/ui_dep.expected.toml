@@ -1,0 +1,49 @@
+# ui_dep: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] [ui_dep] FAIL @minecraft/server-ui-private-bindings -> ... restricted module ... from 'main.js'.
+# [bds-run 2] [ui_dep] FAIL @minecraft/server-admin -> ... is unrecognized ...
+# [bds-run 2] [ui_dep] OK @minecraft/server-ui; OK @minecraft/server-ui-bindings
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/server-ui-private-bindings"
+normalized = "@minecraft/server-ui-private-bindings"
+resolution = "restricted"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/server-admin"
+normalized = "@minecraft/server-admin"
+resolution = "unrecognized"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/server-ui"
+normalized = "@minecraft/server-ui"
+resolution = "native"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "@minecraft/server-ui-bindings"
+normalized = "@minecraft/server-ui-bindings"
+resolution = "native"
+
+[[diagnostics]]
+code = "ScriptModuleRestricted"
+severity = "info"
+text = "Import failed, can not load restricted module '@minecraft/server-ui-private-bindings' from 'main.js'."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptModuleUnrecognized"
+severity = "info"
+text = "Module [@minecraft/server-admin] is unrecognized. If this is a Native module, did you remember to add it to your manifest.json?"
+file = "scripts/main.js"

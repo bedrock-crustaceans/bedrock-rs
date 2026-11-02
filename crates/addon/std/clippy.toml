@@ -1,0 +1,39 @@
+# Overrides crates/addon/clippy.toml (nearest file wins, no merging): std is the host layer, so files,
+# threads and the clock are its job and the sans-IO lists do not apply. Only the json door stays.
+disallowed-methods = [
+    # The door: facet-json reads and writes by a call of itself for each level, has no nesting
+    # limit and decodes a bad escape out of bounds. `bedrock_addon_core::json` is its one caller.
+    { path = "facet_json::from_str", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_slice", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_str_borrowed", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_slice_borrowed", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_str_into", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_slice_into", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_str_into_borrowed", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_slice_into_borrowed", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_str_jsonc", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_slice_jsonc", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_str_borrowed_jsonc", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::from_slice_borrowed_jsonc", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::to_vec", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_vec_pretty", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_vec_with_options", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_string", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_string_pretty", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_string_with_options", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::peek_to_string", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::peek_to_string_pretty", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::peek_to_string_with_options", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_writer_std", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_writer_std_pretty", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::to_writer_std_with_options", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::peek_to_writer_std", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::peek_to_writer_std_pretty", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+    { path = "facet_json::peek_to_writer_std_with_options", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+]
+disallowed-types = [
+    # The door, as above: a walk driven through facet-format with facet-json's own parser or
+    # serializer is a read or a write past it.
+    { path = "facet_json::JsonParser", reason = "read through bedrock_addon_core::json (from_str_jsonc, parse_at): the door scans the text and sizes the stack" },
+    { path = "facet_json::JsonSerializer", reason = "write through bedrock_addon_core::json (write_json, to_json, to_facet_json): the door bounds the depth and sizes the stack" },
+]

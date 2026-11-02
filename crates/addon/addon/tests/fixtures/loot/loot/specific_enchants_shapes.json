@@ -1,0 +1,17 @@
+// fixtures.md row 20: specific_enchants takes ids and {id, level} objects
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:diamond_sword",
+          "functions": [
+            {"function": "specific_enchants", "enchants": ["sharpness", {"id": "unbreaking", "level": [1, 3]}, "nope"]}
+          ]
+        }
+      ]
+    }
+  ]
+}

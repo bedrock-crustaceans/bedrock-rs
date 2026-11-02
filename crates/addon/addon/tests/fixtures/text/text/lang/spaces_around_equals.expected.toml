@@ -1,0 +1,8 @@
+# `lang/spaces_around_equals`: nothing is trimmed; ours: information (L2).
+
+[entries]
+"key " = " v"
+
+[[diagnostics]]
+code = "LangKeyTrailingSpace"
+severity = "info"

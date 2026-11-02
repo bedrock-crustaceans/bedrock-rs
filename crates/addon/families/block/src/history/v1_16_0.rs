@@ -1,0 +1,28 @@
+//! Format 1.16.0 (the floor): the description still has `is_experimental` and
+//! `register_to_creative_menu`; components are 1.16.100's.
+
+use super::legacy::Legacy;
+use super::ops::dropped_field;
+use crate::parse::child;
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+
+/// A block document of `[1.16.0, 1.16.100)`.
+pub type Block = Legacy<1, 16, 0>;
+
+/// the two description flags 1.16.100 removed are dropped
+/// (vanilla reads neither); components pass through.
+impl Upgrade for Block {
+    type Next = super::v1_16_100::Block;
+
+    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block: Self::Next = self.retag();
+        for flag in ["is_experimental", "register_to_creative_menu"] {
+            if block.description.shift_remove(flag).is_some() {
+                let at = child(&JsonPath::new(), &["minecraft:block", "description", flag]);
+                dropped_field(&at, None, cx.diagnostics);
+            }
+        }
+        block
+    }
+}

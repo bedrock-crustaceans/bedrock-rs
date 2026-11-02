@@ -1,0 +1,2 @@
+// fixtures.md row 16: a loot_table entry whose name has a namespace
+{"pools": [{"rolls": 1, "entries": [{"type": "loot_table", "name": "minecraft:loot_tables/chests/x.json"}]}]}

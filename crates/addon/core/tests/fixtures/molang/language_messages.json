@@ -1,0 +1,810 @@
+{
+ "about": "One input per row of molangx's LanguageMessage table (1-49; #6 is the kept message), the golden input of the addon's diagnostic mapping. Rows are compiled on the client side at `version` with the default query set and `ops` (all, or no_assignments); each message is the vanilla text, its E.. id and the addon severity: error for a rejecting message, warning for a kept one (#6, and a root-only message below the root). Inputs come from molangx tests/parse_vectors.json (commit ffa4a42) where it has one, else from molangx tests/diagnostics.rs (also every row whose vectors fail to link, #43 and #47, since the vectors leave the link messages #48 and #49 out).",
+ "rows": [
+  {
+   "row": 1,
+   "source": "molangx tests/parse_vectors.json vector 407",
+   "expr": "",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E01",
+     "text": "No tokens found in expression",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 2,
+   "source": "molangx tests/parse_vectors.json vector 138",
+   "expr": "1 # comment",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E02",
+     "text": "unrecognized token: # comment",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 3,
+   "source": "molangx tests/parse_vectors.json vector 74",
+   "expr": "1.5d",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E03",
+     "text": "Error: unknown token: d",
+     "severity": "error"
+    },
+    {
+     "id": "E02",
+     "text": "unrecognized token: d",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 4,
+   "source": "molangx tests/parse_vectors.json vector 132",
+   "expr": "'unterminated",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E04",
+     "text": "Error: Molang string missing final ' character",
+     "severity": "error"
+    },
+    {
+     "id": "E02",
+     "text": "unrecognized token: 'unterminated",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 5,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "query.does_not_exist",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E05",
+     "text": "Failed to resolve query query.does_not_exist.  Either the query does not exist or it is not supported in this context.",
+     "severity": "error"
+    },
+    {
+     "id": "E02",
+     "text": "unrecognized token: query.does_not_exist",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 6,
+   "source": "molangx tests/parse_vectors.json vector 69",
+   "expr": "1e",
+   "version": 13,
+   "ops": "all",
+   "rejected": false,
+   "messages": [
+    {
+     "id": "E06",
+     "text": "error parsing float string, expected '+' or '-' after 'e':",
+     "severity": "warning"
+    }
+   ]
+  },
+  {
+   "row": 7,
+   "source": "molangx tests/parse_vectors.json vector 146",
+   "expr": "{1;}",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E07",
+     "text": "Error: complex expressions (contains either '=' or ';') must end with a ';'",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 8,
+   "source": "molangx tests/parse_vectors.json vector 64",
+   "expr": "1.5.5",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E08",
+     "text": "found multiple operations without a combining operation between them:\n\t1.500000\n\t0.500000",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 9,
+   "source": "molangx tests/parse_vectors.json vector 280",
+   "expr": ".foo",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E09",
+     "text": "Error: cannot start an expression with a member accessor; member accessors require a variable of which to access a member.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 10,
+   "source": "molangx tests/parse_vectors.json vector 273",
+   "expr": "3 { 6",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E10",
+     "text": "Unable to find matching closing section symbol for symbol at 2(Left Brace '{') -- looking for Right Brace '}'",
+     "severity": "error"
+    },
+    {
+     "id": "E12",
+     "text": "Error: Could not find Right Brace '}' to close section started with Left Brace '{'",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 11,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "[1)",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E11",
+     "text": "Unable to match closing section symbol at 1(Left Bracket '[') - looking for Right Bracket ']', found Right Parenthesis ')' at 2",
+     "severity": "error"
+    },
+    {
+     "id": "E12",
+     "text": "Error: Could not find Right Bracket ']' to close section started with Left Bracket '['",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 12,
+   "source": "molangx tests/parse_vectors.json vector 273",
+   "expr": "3 { 6",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E10",
+     "text": "Unable to find matching closing section symbol for symbol at 2(Left Brace '{') -- looking for Right Brace '}'",
+     "severity": "error"
+    },
+    {
+     "id": "E12",
+     "text": "Error: Could not find Right Brace '}' to close section started with Left Brace '{'",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 13,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "loop()",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E13",
+     "text": "Error: Loop 'loop' operators with no params should not use parentheses",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 14,
+   "source": "molangx tests/parse_vectors.json vector 153",
+   "expr": ";",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E14",
+     "text": "Error: expressions can't begin with a semicolon",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 15,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "array.a[ ]",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E15",
+     "text": "Error: array expression is empty",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 16,
+   "source": "molangx tests/parse_vectors.json vector 78",
+   "expr": "--1",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E16",
+     "text": "Error: binary Add '+' operator at end of expression",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 17,
+   "source": "molangx tests/parse_vectors.json vector 110",
+   "expr": "math.abs -2",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E17",
+     "text": "Error: Absolute Value 'math.abs' operator not followed by parenthesis section",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 18,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "1 -",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E18",
+     "text": "Error: '-' not followed by expression",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 19,
+   "source": "molangx tests/parse_vectors.json vector 272",
+   "expr": "2 : 7",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E19",
+     "text": "Error: could not find sub-expressions for Conditional Else ':' operator",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 20,
+   "source": "molangx tests/parse_vectors.json vector 157",
+   "expr": "return;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E20",
+     "text": "Error: unary Return 'return' operator not followed by expression",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 21,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "v.x = math.random(0, 1);",
+   "version": 13,
+   "ops": "no_assignments",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E21",
+     "text": "Expression uses operation Assignment '=' which is not allowed in this context",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 22,
+   "source": "molangx tests/parse_vectors.json vector 325",
+   "expr": "((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E22",
+     "text": "Error: Expression could not be parsed due to stack depth overflow (too many sub-expressions)",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 23,
+   "source": "molangx tests/parse_vectors.json vector 112",
+   "expr": "math.min(1)",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E23",
+     "text": "Unexpected number of parameters to Min 'math.min' function - expected 2, found 1.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 24,
+   "source": "molangx tests/parse_vectors.json vector 144",
+   "expr": "()",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E24",
+     "text": "Malformed Left Parenthesis '(' expression. It has 0 children but should have between 1 and -1",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 25,
+   "source": "molangx tests/parse_vectors.json vector 7",
+   "expr": "v.a?v.b?v.c:v.d:v.e",
+   "version": 0,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E25",
+     "text": "Unsupported Conditional Else ':' operator in expression optimization",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 26,
+   "source": "molangx tests/parse_vectors.json vector 142",
+   "expr": "(1, 2)",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E26",
+     "text": "Error: Unexpected Comma ',' operator not inside an arguments list for a query, loop, or math function",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 27,
+   "source": "molangx tests/parse_vectors.json vector 317",
+   "expr": "for_each(v.x, v.arr, v.y = 1);",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E27",
+     "text": "Error: for_each requires three parameters - a variable to represent an element of an array, an expression resulting in an array, and an expression to run per element of that array.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 28,
+   "source": "molangx tests/parse_vectors.json vector 204",
+   "expr": "v.x = v.y = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E28",
+     "text": "Error: assignment to non-variable not allowed. Expression is trying to assign to a: Assignment '='",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 29,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "1 : 2 ? 3",
+   "version": 4,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E29",
+     "text": "Error: '?' operator couldn't find a valid preceding 'if' expression",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 30,
+   "source": "molangx tests/parse_vectors.json vector 163",
+   "expr": "loop(3, v.x = v.x + 1);",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E30",
+     "text": "Error: loop requires two parameters - an expression resulting in a number of times to loop, and a {}-delimited expression to loop.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 31,
+   "source": "molangx tests/parse_vectors.json vector 300",
+   "expr": "v.x.1 = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E31",
+     "text": "Error: Could not reduce sub-expression before a semicolon to a single operation to evaluate",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 32,
+   "source": "molangx tests/parse_vectors.json vector 22",
+   "expr": "(1 2)",
+   "version": 4,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E32",
+     "text": "Error: Left Parenthesis '(' optimization expected only one child operation but found 2",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 33,
+   "source": "molangx tests/parse_vectors.json vector 170",
+   "expr": "for_each(c.e, v.arr, {v.x = 1;});",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E33",
+     "text": "Error: for_each expressions require either a temp or entity variable as the iteration variable (the first parameter)",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 34,
+   "source": "molangx tests/parse_vectors.json vector 145",
+   "expr": "{1}",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E34",
+     "text": "Brace sections must only contain semicolon-delimited expressions, even if only one expression is contained.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 35,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "math.max()",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E35",
+     "text": "Max 'math.max' operator (math, query, loop, etc) with empty parameter list should have failed to parse",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 36,
+   "source": "molangx tests/parse_vectors.json vector 16",
+   "expr": "'a' + 3",
+   "version": 3,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E36",
+     "text": "'Add '+'' expression cannot take a 'String '''' argument. It only supports numerical arguments.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 37,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "q.bone_aabb('a') + 1",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E37",
+     "text": "Add '+' expressions may only contain query functions that return numbers",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 38,
+   "source": "molangx tests/parse_vectors.json vector 158",
+   "expr": "return 1; return 2;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E38",
+     "text": "Error: unreachable statements after Return 'return'.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 39,
+   "source": "molangx tests/parse_vectors.json vector 209",
+   "expr": "t.x.y = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": false,
+   "messages": [
+    {
+     "id": "E39",
+     "text": "Error: left side of an assignment expression can only use temp variables if they are on their own and not part of a more complicated expression.",
+     "severity": "warning"
+    }
+   ]
+  },
+  {
+   "row": 40,
+   "source": "molangx tests/parse_vectors.json vector 503",
+   "expr": "c.a.b = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": false,
+   "messages": [
+    {
+     "id": "E40",
+     "text": "Error: cannot use Context Variable 'context.' or 'c.' operators on the left side of an assignment expression",
+     "severity": "warning"
+    }
+   ]
+  },
+  {
+   "row": 41,
+   "source": "molangx tests/parse_vectors.json vector 416",
+   "expr": "c.a->v.b->v.c",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E41",
+     "text": "Error: nested pointer statements (eg: A->B->C) are not yet supported.  Store A->B in a variable (eg: D), then use D->C",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 42,
+   "source": "molangx tests/parse_vectors.json vector 551",
+   "expr": "array.test[1 + 1] + 1",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E42",
+     "text": "Error: can't currently do math operations on resource array results",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 43,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "v.x->v.y = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E43",
+     "text": "Error: Assignment attempted on Pointer result. Writing to another entity's public variables is not supported, only reading them.",
+     "severity": "warning"
+    },
+    {
+     "id": "E49",
+     "text": "Error: You cannot write to a variable on another mob.",
+     "severity": "error"
+    },
+    {
+     "id": "E48",
+     "text": "expression 'v.x->v.y = 1;' compile failed",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 44,
+   "source": "molangx tests/parse_vectors.json vector 53",
+   "expr": "v.a?v.b:v.c??v.d",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E44",
+     "text": "Error: found left-hand-side of ?? expression that isn't a direct-variable reference - this is unsupported at this time.",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 45,
+   "source": "molangx tests/parse_vectors.json vector 172",
+   "expr": "break",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E45",
+     "text": "Error: break encountered outside of loop",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 46,
+   "source": "molangx tests/parse_vectors.json vector 189",
+   "expr": "c.other->t.x",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E46",
+     "text": "Error: right-hand-side of pointer expression did not evaluate to an entity variable or query function",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 47,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "return c.x = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E40",
+     "text": "Error: cannot use Context Variable 'context.' or 'c.' operators on the left side of an assignment expression",
+     "severity": "warning"
+    },
+    {
+     "id": "E47",
+     "text": "Error: assignment expressions may either be of the form 'A->B = D' or 'C = D' where B and C may be an entity variable or member accessor, or C may be a temp variable.  Found an expression where C is a Context Variable 'context.' or 'c.'",
+     "severity": "warning"
+    },
+    {
+     "id": "E48",
+     "text": "expression 'return c.x = 1;' compile failed",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 48,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "return c.x = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E40",
+     "text": "Error: cannot use Context Variable 'context.' or 'c.' operators on the left side of an assignment expression",
+     "severity": "warning"
+    },
+    {
+     "id": "E47",
+     "text": "Error: assignment expressions may either be of the form 'A->B = D' or 'C = D' where B and C may be an entity variable or member accessor, or C may be a temp variable.  Found an expression where C is a Context Variable 'context.' or 'c.'",
+     "severity": "warning"
+    },
+    {
+     "id": "E48",
+     "text": "expression 'return c.x = 1;' compile failed",
+     "severity": "error"
+    }
+   ]
+  },
+  {
+   "row": 49,
+   "source": "molangx tests/diagnostics.rs",
+   "expr": "v.x->v.y = 1;",
+   "version": 13,
+   "ops": "all",
+   "rejected": true,
+   "messages": [
+    {
+     "id": "E43",
+     "text": "Error: Assignment attempted on Pointer result. Writing to another entity's public variables is not supported, only reading them.",
+     "severity": "warning"
+    },
+    {
+     "id": "E49",
+     "text": "Error: You cannot write to a variable on another mob.",
+     "severity": "error"
+    },
+    {
+     "id": "E48",
+     "text": "expression 'v.x->v.y = 1;' compile failed",
+     "severity": "error"
+    }
+   ]
+  }
+ ]
+}

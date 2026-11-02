@@ -1,0 +1,21 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [
+      "test:pool_a",
+      "test:pool_b"
+    ],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "InvalidValue",
+      "severity": "info",
+      "path": "worldgen/template_pools/b.json",
+      "json_path": "minecraft:template_pool/elements/0/element/location",
+      "text": "Redefinition of existing element with location 'test_path/test_structure'."
+    }
+  ]
+}

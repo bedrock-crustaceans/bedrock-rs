@@ -1,0 +1,4 @@
+# fixtures.md `lang/backslash_t`: `\t` is not an escape; the two bytes stay.
+
+[entries]
+"a" = "x\\ty"

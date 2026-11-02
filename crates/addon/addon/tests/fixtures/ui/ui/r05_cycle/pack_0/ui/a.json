@@ -1,0 +1,9 @@
+{
+  "namespace": "a",
+  "p@a.q": {
+    "layer": 1
+  },
+  "q@a.p": {
+    "layer": 2
+  }
+}

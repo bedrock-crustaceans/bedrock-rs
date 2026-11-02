@@ -1,0 +1,21 @@
+[package]
+name = "bedrock_addon_family_feature_rules"
+description = "The `feature_rules` content family of bedrock_addon, re-exported as bedrock_addon::families::feature_rules; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+molang = ["bedrock_addon_core/molang", "bedrock_addon_support/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_support = { path = "../../support" }
+facet = { workspace = true }
+facet-json = { workspace = true }
+facet-value = { workspace = true }
+indexmap = { workspace = true }

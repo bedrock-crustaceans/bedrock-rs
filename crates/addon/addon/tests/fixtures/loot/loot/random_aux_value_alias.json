@@ -1,0 +1,18 @@
+// fixtures.md row 13: random_aux_value is read by set_data's parser
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:wool",
+          "functions": [
+            {"function": "random_aux_value", "values": {"min": 0, "max": 15}},
+            {"function": "random_aux_value", "data": 3}
+          ]
+        }
+      ]
+    }
+  ]
+}

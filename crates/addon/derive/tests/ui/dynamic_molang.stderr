@@ -1,0 +1,5 @@
+error: a dynamic key holds JSON, not Molang fields: `molang` applies to typed variants
+  --> tests/ui/dynamic_molang.rs:21:63
+   |
+21 |     #[component(name = "minecraft:health", parse = keep_json, molang)]
+   |                                                               ^^^^^^

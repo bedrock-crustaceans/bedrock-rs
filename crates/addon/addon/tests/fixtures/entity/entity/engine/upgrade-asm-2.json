@@ -1,0 +1,18 @@
+
+			{
+				"format_version": "1.16.100",
+				"minecraft:entity": {
+					"description": {
+						"identifier": "test:test_actor",
+						"is_spawnable": true,
+						"is_summonable": true,
+						"spawn_egg": true,
+						"is_experimental": false
+					},
+					"components": {
+						"minecraft:foot_size": {
+							
+						}
+					}
+				}
+			}

@@ -1,0 +1,4 @@
+# Probe: B03, B03b
+scope = "none"
+resolved = ["@minecraft/server 0.1.0"]
+beta_apis = true

@@ -1,0 +1,15 @@
+{
+  "scenes": [
+    "names"
+  ],
+  "rejected": 0,
+  "diagnostics": [
+    {
+      "code": "InvalidType",
+      "severity": "error",
+      "path": "dialogue/names.json",
+      "json_path": "minecraft:npc_dialogue/scenes/0/buttons/1/name",
+      "text": "JSON: names.json has an error: \n Each button needs a 'name' field, was not found. Skipping button..."
+    }
+  ]
+}

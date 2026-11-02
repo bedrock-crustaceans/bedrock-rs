@@ -1,0 +1,20 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:b"
+    ],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": [
+      "worldgen/metadata/top.dat"
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "SkippedCacheDocument",
+      "severity": "info",
+      "path": "worldgen/metadata/top.dat"
+    }
+  ]
+}

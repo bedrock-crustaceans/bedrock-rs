@@ -1,0 +1,13 @@
+{
+  "defs": {
+    "a.k": {
+      "$base_ref": "a.leaf",
+      "type": "label",
+      "text": "hi"
+    },
+    "a.leaf": {
+      "type": "label",
+      "text": "hi"
+    }
+  }
+}

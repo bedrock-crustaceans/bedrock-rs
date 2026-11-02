@@ -1,0 +1,21 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "panel",
+    "bindings": [
+      {
+        "binding_name": "#x"
+      },
+      {
+        "binding_type": "none",
+        "binding_name": "#x"
+      },
+      {
+        "binding_type": "collection_details"
+      },
+      {
+        "binding_type": "bogus"
+      }
+    ]
+  }
+}

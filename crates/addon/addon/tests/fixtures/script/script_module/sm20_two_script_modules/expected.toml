@@ -1,0 +1,10 @@
+# Probe: P12
+scope = "none"
+resolved = ["@minecraft/server 2.8.0"]
+main = "main.js"
+
+[[diagnostic]]
+code = "MultipleScriptModules"
+severity = "warning"
+path = "modules/1"
+text = "Plugin [sm20 - 3.2.2] - skipped, only one script module allowed per pack."

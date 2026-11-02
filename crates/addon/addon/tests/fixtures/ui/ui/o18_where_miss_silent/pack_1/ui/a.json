@@ -1,0 +1,17 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "array_name": "bindings",
+        "operation": "replace",
+        "where": {
+          "binding_name": "#zz"
+        },
+        "value": {
+          "binding_name": "#c"
+        }
+      }
+    ],
+    "layer": 5
+  }
+}

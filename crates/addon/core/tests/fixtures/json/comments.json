@@ -1,0 +1,6 @@
+// A line comment before the root, as in the chemistry manifests.
+{
+    /* a block comment */ "format_version": 2, // after a member
+    "header": { "name": "x" /* inside */ }
+}
+/* an unterminated block comment at the end of the file

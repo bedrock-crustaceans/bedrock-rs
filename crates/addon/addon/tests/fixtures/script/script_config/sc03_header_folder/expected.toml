@@ -1,0 +1,17 @@
+# families/script_config fixtures.md, row sc03_header_folder (probe A).
+
+[[diagnostic]]
+code = "UnmatchedConfigFolder"
+severity = "info"
+phase = "link"
+file = "config/b0000000-0000-4000-8000-000000000001"
+path = ""
+text = "config folder 'b0000000-0000-4000-8000-000000000001' is never used; the script module's folder is 'a0000000-0000-4000-8000-000000000001'"
+
+[[diagnostic]]
+code = "ScriptModulePermission"
+severity = "error"
+phase = "link"
+file = "config/default/permissions.json"
+path = ""
+text = "Plugin [nethdrcfg - 1.0.0] - requesting dependency on module [@minecraft/server-net] but it is not configured to use it."

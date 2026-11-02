@@ -1,0 +1,7 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": { "identifier": "other", "places_feature": "demo:feature" },
+    "conditions": { "placement_pass": "surface_pass" }
+  }
+}

@@ -1,0 +1,9 @@
+# data_with_scripts: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] printed nothing: a data-only pack's scripts/ never runs (ours: L20)
+members = ["main.js"]
+others = []
+
+[[diagnostics]]
+code = "ScriptFileNotLoadable"
+severity = "info"
+text = "script file can never be loaded"

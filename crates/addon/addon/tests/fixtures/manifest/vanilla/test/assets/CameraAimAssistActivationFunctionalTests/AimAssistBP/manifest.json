@@ -1,0 +1,20 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Aim assist functional tests behavior pack",
+    "name": "aim assist functional tests",
+    "uuid":"1175a010-a4aa-4a23-8f78-c3afd5e8128f",
+    "version": [0, 0, 1],
+    "min_engine_version": [1, 21, 0]
+
+  },
+  "modules":
+    [
+      {
+        "description": "Aim assist functional tests behavior pack",
+          "type": "data",
+          "uuid": "2f6b60ab-b561-4133-b081-b9f75e3ad54b",
+          "version": [0, 0, 1]
+      }
+    ]
+}

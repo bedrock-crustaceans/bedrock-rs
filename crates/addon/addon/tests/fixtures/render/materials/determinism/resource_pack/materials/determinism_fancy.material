@@ -1,0 +1,13 @@
+{
+  "materials": {
+    "version": "1.0.0",
+    "determinism_fancy": {
+      "vertexShader": "shaders/entity.vertex",
+      "fragmentShader": "shaders/entity.fragment",
+      "variants": [ { "skinning": { "+defines": [ "USE_SKINNING" ] } } ]
+    },
+    "determinism_fancy_child:determinism_fancy": {
+      "+defines": [ "FANCY" ]
+    }
+  }
+}

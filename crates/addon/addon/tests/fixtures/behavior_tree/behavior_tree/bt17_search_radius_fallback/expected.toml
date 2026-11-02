@@ -1,0 +1,7 @@
+# Validation rule 10: a literal of the wrong type; the absent one is silent.
+
+[[diagnostic]]
+kind = "LiteralIgnored"
+severity = "info"
+file = "behavior_trees/far.json"
+path = "minecraft:behavior_tree/minecraft:root/minecraft:find_block/search_radius"

@@ -1,0 +1,4 @@
+# fixtures.md `lang/ut_single_pound` (LocalizationUnitTests): a lone `#` is not a comment.
+
+[entries]
+"key.pound_value" = "Value with single # is valid"

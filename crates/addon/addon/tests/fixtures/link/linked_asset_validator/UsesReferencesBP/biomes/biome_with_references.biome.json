@@ -1,0 +1,65 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "test:biome_with_references"
+    },
+    "components": {
+      "minecraft:surface_builder": {
+        "builder": {
+          "type":  "minecraft:capped",
+          "beach_material": "test:block",
+          "floor_materials": [
+            "test:block"
+          ],
+          "ceiling_materials": [
+            "test:block"
+          ],
+          "sea_material": "test:block",
+          "foundation_material": "test:block"
+        }
+      },
+      "minecraft:mountain_parameters": {
+        "steep_material_adjustment": {
+          "material": "test:block",
+          "north_slopes": true,
+          "east_slopes": true
+        }
+      },
+      "minecraft:overworld_generation_rules": {
+        "hills_transformation": [
+          [ "test:biome_1", 9 ],
+          "test:biome_2"
+        ],
+        "mutate_transformation": "test:biome_1",
+        "river_transformation": "test:biome_1",
+        "shore_transformation": "test:biome_1"
+      },
+      "minecraft:replace_biomes": {
+        "replacements": [
+          {
+            "amount": 0.6,
+            "dimension": "minecraft:overworld",
+            "noise_frequency_scale": 42.0,
+            "targets": [ "test:biome_1", "test:biome_2" ]
+          }
+        ]
+      },
+      "minecraft:surface_material_adjustments": {
+        "adjustments": [
+          {
+            "materials": {
+              "sea_floor_material": "test:block",
+              "foundation_material": "test:block",
+              "mid_material": "test:block",
+              "top_material": "test:block",
+              "sea_material": "test:block"
+            },
+            "noise_frequency_scale": 0.0625,
+            "noise_range": [ 0.121, 1.0 ]
+          }
+        ]
+      }
+    }
+  }
+}

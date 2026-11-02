@@ -1,0 +1,1 @@
+{ "minecraft:spawns_above_block_filter": { "blocks": [5, { "tags": "1 +" }], "distance": 2 } }

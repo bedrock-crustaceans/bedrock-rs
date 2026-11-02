@@ -1,0 +1,92 @@
+# names: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] [names] OK for the seven files; FAIL ./lib2 -> ReferenceError: Import [lib2.js] not found.; FAIL pkg -> ReferenceError: Import [pkg.js] not found.
+members = [".hidden.js", "a.b.js", "lib2/index.js", "main.js", "my file.js", "node_modules/pkg/index.js", "ünï.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = [".hidden.js", "a.b.js", "lib2/index.js", "my file.js", "node_modules/pkg/index.js", "ünï.js"]
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./my file.js"
+normalized = "my file.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./ünï.js"
+normalized = "ünï.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib2/index.js"
+normalized = "lib2/index.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./.hidden.js"
+normalized = ".hidden.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./a.b.js"
+normalized = "a.b.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./a.b"
+normalized = "a.b.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./node_modules/pkg/index.js"
+normalized = "node_modules/pkg/index.js"
+resolution = "file"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "./lib2"
+normalized = "lib2.js"
+resolution = "not_found"
+hint = "DirectoryIndex"
+near = "lib2/index.js"
+
+[[imports]]
+file = "main.js"
+kind = "dynamic"
+raw = "pkg"
+normalized = "pkg.js"
+resolution = "not_found"
+hint = "BarePackage"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [lib2.js] not found."
+file = "scripts/main.js"
+
+[[diagnostics]]
+code = "ScriptImportNotFound"
+severity = "info"
+text = "ReferenceError: Import [pkg.js] not found."
+file = "scripts/main.js"

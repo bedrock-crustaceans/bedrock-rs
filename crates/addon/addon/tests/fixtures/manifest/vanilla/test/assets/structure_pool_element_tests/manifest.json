@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Structure Pool Element Test Behavior Pack for 1.21",
+    "name": "Structure Pool Element Test Behavior Pack for 1.21",
+    "uuid": "46c845ab-35a2-4d02-ba82-d15618066406",
+    "version": [1,21, 2],
+    "min_engine_version": [1,21,2]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "d756c34e-66f2-4ec8-b18e-cc51e904d65d",
+      "version": [1,0,0]
+    }
+  ]
+}

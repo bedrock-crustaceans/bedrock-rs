@@ -1,0 +1,505 @@
+{
+    "content": [
+        {
+            "path": "manifest.json"
+        },
+        {
+            "path": "pack_icon.png"
+        },
+        {
+            "path": "entities/balloon.json"
+        },
+        {
+            "path": "entities/ice_bomb.json"
+        },
+        {
+            "path": "item_catalog/crafting_item_catalog.json"
+        },
+        {
+            "path": "recipes/reducer_andesite_slab.json"
+        },
+        {
+            "path": "recipes/reducer_andesite_slab_polished.json"
+        },
+        {
+            "path": "recipes/reducer_andesite_stairs.json"
+        },
+        {
+            "path": "recipes/reducer_andesite_stairs_polished.json"
+        },
+        {
+            "path": "recipes/reducer_andesite_wall.json"
+        },
+        {
+            "path": "recipes/reducer_bucket_lava.json"
+        },
+        {
+            "path": "recipes/reducer_bucket_water.json"
+        },
+        {
+            "path": "recipes/reducer_clay_block.json"
+        },
+        {
+            "path": "recipes/reducer_coal_block.json"
+        },
+        {
+            "path": "recipes/reducer_coal_gem.json"
+        },
+        {
+            "path": "recipes/reducer_coal_ore.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_block.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_block_mossy.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_slab.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_slab_mossy.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_stairs.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_stairs_mossy.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_wall.json"
+        },
+        {
+            "path": "recipes/reducer_cobblestone_wall_mossy.json"
+        },
+        {
+            "path": "recipes/reducer_diamond_block.json"
+        },
+        {
+            "path": "recipes/reducer_diamond_gem.json"
+        },
+        {
+            "path": "recipes/reducer_diamond_ore.json"
+        },
+        {
+            "path": "recipes/reducer_diorite_slab.json"
+        },
+        {
+            "path": "recipes/reducer_diorite_slab_polished.json"
+        },
+        {
+            "path": "recipes/reducer_diorite_stairs.json"
+        },
+        {
+            "path": "recipes/reducer_diorite_stairs_polished.json"
+        },
+        {
+            "path": "recipes/reducer_diorite_wall.json"
+        },
+        {
+            "path": "recipes/reducer_dirt.json"
+        },
+        {
+            "path": "recipes/reducer_emerald_block.json"
+        },
+        {
+            "path": "recipes/reducer_emerald_gem.json"
+        },
+        {
+            "path": "recipes/reducer_emerald_ore.json"
+        },
+        {
+            "path": "recipes/reducer_end_stone.json"
+        },
+        {
+            "path": "recipes/reducer_glowstone.json"
+        },
+        {
+            "path": "recipes/reducer_glowstone_gem.json"
+        },
+        {
+            "path": "recipes/reducer_gold_block.json"
+        },
+        {
+            "path": "recipes/reducer_gold_ingot.json"
+        },
+        {
+            "path": "recipes/reducer_gold_nugget.json"
+        },
+        {
+            "path": "recipes/reducer_gold_ore.json"
+        },
+        {
+            "path": "recipes/reducer_granite_slab.json"
+        },
+        {
+            "path": "recipes/reducer_granite_slab_polished.json"
+        },
+        {
+            "path": "recipes/reducer_granite_stairs.json"
+        },
+        {
+            "path": "recipes/reducer_granite_stairs_polished.json"
+        },
+        {
+            "path": "recipes/reducer_granite_wall.json"
+        },
+        {
+            "path": "recipes/reducer_grass.json"
+        },
+        {
+            "path": "recipes/reducer_gravel.json"
+        },
+        {
+            "path": "recipes/reducer_ice.json"
+        },
+        {
+            "path": "recipes/reducer_ice_blue.json"
+        },
+        {
+            "path": "recipes/reducer_iron_block.json"
+        },
+        {
+            "path": "recipes/reducer_iron_ingot.json"
+        },
+        {
+            "path": "recipes/reducer_iron_nugget.json"
+        },
+        {
+            "path": "recipes/reducer_iron_ore.json"
+        },
+        {
+            "path": "recipes/reducer_lapis_block.json"
+        },
+        {
+            "path": "recipes/reducer_lapis_gem.json"
+        },
+        {
+            "path": "recipes/reducer_lapis_ore.json"
+        },
+        {
+            "path": "recipes/reducer_magma.json"
+        },
+        {
+            "path": "recipes/reducer_mycelium.json"
+        },
+        {
+            "path": "recipes/reducer_netherrack.json"
+        },
+        {
+            "path": "recipes/reducer_obsidian.json"
+        },
+        {
+            "path": "recipes/reducer_packed_ice.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_block.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_gem.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_ore.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_slab.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_slab_smooth.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_stairs.json"
+        },
+        {
+            "path": "recipes/reducer_quartz_stairs_smooth.json"
+        },
+        {
+            "path": "recipes/reducer_redstone_block.json"
+        },
+        {
+            "path": "recipes/reducer_redstone_gem.json"
+        },
+        {
+            "path": "recipes/reducer_redstone_ore.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_chiseled.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_chiseled_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_cut.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_cut_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_smooth.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_block_smooth_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_slab.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_slab_cut.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_slab_cut_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_slab_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_slab_smooth.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_slab_smooth_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_stairs.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_stairs_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_stairs_smooth.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_stairs_smooth_red.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_wall.json"
+        },
+        {
+            "path": "recipes/reducer_sandstone_wall_red.json"
+        },
+        {
+            "path": "recipes/reducer_sand_block.json"
+        },
+        {
+            "path": "recipes/reducer_sand_block_red.json"
+        },
+        {
+            "path": "recipes/reducer_snow.json"
+        },
+        {
+            "path": "recipes/reducer_snowball.json"
+        },
+        {
+            "path": "recipes/reducer_snow_layer.json"
+        },
+        {
+            "path": "recipes/reducer_soul_sand.json"
+        },
+        {
+            "path": "recipes/reducer_stone_block_all_group.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_block.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_block_all_colors.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_black.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_blue.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_blue_light.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_brown.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_cyan.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_gray.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_green.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_lime.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_magenta.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_orange.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_pink.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_purple.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_red.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_silver.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_white.json"
+        },
+        {
+            "path": "recipes/reducer_terracotta_glazed_yellow.json"
+        },
+        {
+            "path": "recipes/reducer_wooden_slab_group_all.json"
+        },
+        {
+            "path": "recipes/reducer_wood_block_and stripped_all.json"
+        },
+        {
+            "path": "recipes/reducer_wood_log_group1.json"
+        },
+        {
+            "path": "recipes/reducer_wood_log_group2.json"
+        },
+        {
+            "path": "recipes/reducer_wood_planks_all.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stairs_acacia.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stairs_birch.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stairs_dark_oak.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stairs_jungle.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stairs_oak.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stairs_spruce.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stripped_log_acacia.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stripped_log_birch.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stripped_log_dark_oak.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stripped_log_jungle.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stripped_log_oak.json"
+        },
+        {
+            "path": "recipes/reducer_wood_stripped_log_spruce.json"
+        },
+        {
+            "path": "texts/bg_BG.lang"
+        },
+        {
+            "path": "texts/cs_CZ.lang"
+        },
+        {
+            "path": "texts/da_DK.lang"
+        },
+        {
+            "path": "texts/de_DE.lang"
+        },
+        {
+            "path": "texts/el_GR.lang"
+        },
+        {
+            "path": "texts/en_GB.lang"
+        },
+        {
+            "path": "texts/en_US.lang"
+        },
+        {
+            "path": "texts/es_ES.lang"
+        },
+        {
+            "path": "texts/es_MX.lang"
+        },
+        {
+            "path": "texts/fi_FI.lang"
+        },
+        {
+            "path": "texts/fr_CA.lang"
+        },
+        {
+            "path": "texts/fr_FR.lang"
+        },
+        {
+            "path": "texts/hu_HU.lang"
+        },
+        {
+            "path": "texts/id_ID.lang"
+        },
+        {
+            "path": "texts/it_IT.lang"
+        },
+        {
+            "path": "texts/ja_JP.lang"
+        },
+        {
+            "path": "texts/ko_KR.lang"
+        },
+        {
+            "path": "texts/languages.json"
+        },
+        {
+            "path": "texts/language_names.json"
+        },
+        {
+            "path": "texts/nb_NO.lang"
+        },
+        {
+            "path": "texts/nl_NL.lang"
+        },
+        {
+            "path": "texts/pl_PL.lang"
+        },
+        {
+            "path": "texts/pt_BR.lang"
+        },
+        {
+            "path": "texts/pt_PT.lang"
+        },
+        {
+            "path": "texts/ru_RU.lang"
+        },
+        {
+            "path": "texts/sk_SK.lang"
+        },
+        {
+            "path": "texts/sv_SE.lang"
+        },
+        {
+            "path": "texts/tr_TR.lang"
+        },
+        {
+            "path": "texts/uk_UA.lang"
+        },
+        {
+            "path": "texts/zh_CN.lang"
+        },
+        {
+            "path": "texts/zh_TW.lang"
+        }
+    ]
+}

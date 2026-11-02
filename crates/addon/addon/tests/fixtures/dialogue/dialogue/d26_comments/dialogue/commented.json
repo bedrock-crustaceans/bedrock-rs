@@ -1,0 +1,12 @@
+// A line comment before the root.
+{
+  /* a block comment */
+  "format_version": "1.14.0", // after a member
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      /* before an element */
+      { "scene_tag": "commented", /* inside */ "text": "Comments are fine." } // after an element
+    ]
+  }
+}
+// A trailing comment.

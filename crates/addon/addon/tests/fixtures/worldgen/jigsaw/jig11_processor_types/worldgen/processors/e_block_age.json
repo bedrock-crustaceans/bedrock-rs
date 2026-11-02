@@ -1,0 +1,14 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:block_age"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:block_age",
+        "mossiness": 0.5
+      }
+    ]
+  }
+}
