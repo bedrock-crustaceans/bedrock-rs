@@ -73,6 +73,22 @@ fn the_compile_items_are_molangs() {
     same::<Option<LanguageMessage>>(None, None::<molang::diag::LanguageMessage>);
     same::<Option<MolangDiagnostic>>(None, None::<molang::diag::Diagnostic>);
     same::<Option<MolangSeverity>>(None, None::<molang::diag::Severity>);
+    {
+        use bedrock_addon_core::molang::{
+            CheckDecision, CheckOptions, Checked, ClientOnlyNotes, OnFailure, VersionFrom,
+        };
+        same::<Option<CheckDecision>>(None, None::<molang::compile::CheckDecision>);
+        same::<Option<CheckOptions>>(None, None::<molang::compile::CheckOptions>);
+        same::<Option<Checked>>(None, None::<molang::compile::Checked>);
+        same::<Option<ClientOnlyNotes>>(None, None::<molang::compile::ClientOnlyNotes>);
+        same::<Option<OnFailure>>(None, None::<molang::compile::OnFailure>);
+        same::<Option<VersionFrom>>(None, None::<molang::compile::VersionFrom>);
+        let checked = bedrock_addon_core::molang::check(
+            &MolangSource::string("1 +", 13),
+            &CheckOptions::new(CompileOptions::server(MolangVersion::LATEST)),
+        );
+        assert_eq!(checked.decision(), CheckDecision::Rejected);
+    }
     let compiled = compile_source(
         &MolangSource::string("1 + 1", 13),
         &CompileOptions::server(MolangVersion::LATEST),

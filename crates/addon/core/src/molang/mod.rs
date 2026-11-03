@@ -18,7 +18,8 @@
 //!   operations, empty-text rule, failure rule and error severity;
 //! - `MolangFields`: the walk over a version struct's fields; `pass_one` (reader check and
 //!   version, both builds), `not_checked`, and with `molang` `check_fields` / `MolangCheck::check`
-//!   (pass 2) and `molang_diagnostic` (the mapping of one compiler diagnostic);
+//!   (pass 2, over molang's `compile::check`), `MolangCheck::check_source_with` and `ReportRules`
+//!   (a family's own pass 2) and `molang_diagnostic` (the mapping of one compiler diagnostic);
 //! - `MolangContext`, `pack_molang_version`, `format_molang_version`: where versions come from.
 
 #[cfg(feature = "molang")]
@@ -32,7 +33,7 @@ mod write;
 
 #[cfg(feature = "molang")]
 #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
-pub use check::MolangCheck;
+pub use check::{MolangCheck, RenderNote, ReportRules};
 
 /// The exact crate, for callers that need more than the list below.
 pub use molang;
@@ -51,7 +52,8 @@ pub use molang::version::{
 pub use molang::{
     cache::CompileCache,
     compile::{
-        CompileFailure, CompileOptions, CompileOutcome, Compiled, Deviations, compile_source,
+        CheckDecision, CheckOptions, Checked, ClientOnlyNotes, CompileFailure, CompileOptions,
+        CompileOutcome, Compiled, Deviations, OnFailure, VersionFrom, check, compile_source,
     },
     diag::{DiagCode, Diagnostic as MolangDiagnostic, LanguageMessage, Severity as MolangSeverity},
 };

@@ -10,11 +10,11 @@ use molang::stdlib;
 
 use super::fields::{MolangFieldMut, at, visit_fields};
 use super::{
-    Admission, BLOCK_STATE_QUERIES, CompileCache, CompileFailure, CompileOptions, EmptyRule,
-    Molang, MolangContext, MolangDiagnostic, MolangFieldSpec, MolangFields, MolangList,
-    MolangOutcome, MolangSeverity, MolangSource, MolangVersionSource, OpSet, OpsRule,
-    PROPERTY_DEFAULT_QUERIES, QueryAdmission, QueryAllowList, QueryCatalog, QuerySetMask,
-    RawVersion, Side, SourceForm,
+    Admission, BLOCK_STATE_QUERIES, CheckOptions, Checked, CompileCache, CompileFailure,
+    CompileOptions, EmptyRule, Molang, MolangContext, MolangDiagnostic, MolangFailure,
+    MolangFieldSpec, MolangFields, MolangList, MolangOutcome, MolangSeverity, MolangSource,
+    MolangVersionSource, OnFailure, OpSet, OpsRule, PROPERTY_DEFAULT_QUERIES, QueryAdmission,
+    QueryAllowList, QueryCatalog, QuerySetMask, RawVersion, Side, SourceForm, VersionFrom,
 };
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
@@ -160,6 +160,45 @@ impl MolangCheck {
         }
     }
 
+    /// The check options of a field: [`MolangCheck::options`], the field's failure rule as a
+    /// policy (`ReplaceWith` keeps the expression, the family substitutes the value), arrays and
+    /// resources accepted, and the version from the source, or from the options for
+    /// `PackIgnoringObject`.
+    #[doc(hidden)]
+    pub fn check_options(
+        &self,
+        spec: &MolangFieldSpec,
+        side: Side,
+        cx: &MolangContext,
+    ) -> CheckOptions {
+        let on_failure = match spec.on_failure {
+            MolangFailure::RejectDocument => OnFailure::Reject,
+            MolangFailure::DropEntry => OnFailure::Drop,
+            MolangFailure::KeepLogged | MolangFailure::ReplaceWith(_) => OnFailure::Keep,
+        };
+        let version_from = match spec.version {
+            MolangVersionSource::PackIgnoringObject => VersionFrom::Options,
+            _ => VersionFrom::Source,
+        };
+        CheckOptions::new(self.options(spec, side, cx))
+            .with_on_failure(on_failure)
+            .with_version_from(version_from)
+    }
+
+    /// Compiles one expression under its field's [`check_options`](Self::check_options) through
+    /// the cache; nothing is reported.
+    #[doc(hidden)]
+    pub fn compile(
+        &self,
+        source: &MolangSource,
+        spec: &MolangFieldSpec,
+        side: Side,
+        cx: &MolangContext,
+    ) -> Checked {
+        self.cache
+            .check(source, &self.check_options(spec, side, cx))
+    }
+
     /// Checks one expression at `location`: what the field's
     /// `EmptyRule` makes no expression (an empty text in a cereal field; in block files also an
     /// object form at version −1) is compiled and logged nothing; otherwise the expression
@@ -182,6 +221,36 @@ impl MolangCheck {
         location: &Location,
         diagnostics: &mut Diagnostics,
     ) -> MolangOutcome {
+        let (outcome, _) = self.check_source_with(
+            source,
+            source,
+            spec,
+            side,
+            cx,
+            location,
+            &ReportRules::LOAD,
+            diagnostics,
+        );
+        outcome
+    }
+
+    /// [`check_source`](Self::check_source) for a family's own pass 2: `source` is compiled,
+    /// the findings quote `written` (the text as the file holds it), and `rules` say what the
+    /// family reports beyond the shared mapping. Returns the outcome and the compile, `None` for
+    /// no expression.
+    #[doc(hidden)]
+    #[allow(clippy::too_many_arguments, reason = "one member's whole context")]
+    pub fn check_source_with(
+        &self,
+        written: &MolangSource,
+        source: &MolangSource,
+        spec: &MolangFieldSpec,
+        side: Side,
+        cx: &MolangContext,
+        location: &Location,
+        rules: &ReportRules,
+        diagnostics: &mut Diagnostics,
+    ) -> (MolangOutcome, Option<Checked>) {
         // Pass 1 gave every loaded source its version; one without would compile at `Invalid`
         // rules with molang's "made without its load context" warning.
         debug_assert!(
@@ -190,57 +259,134 @@ impl MolangCheck {
         );
         if is_no_expression(source, spec.empty) {
             // Vanilla clears the expression node: no compile, no log.
-            return MolangOutcome::NoExpression;
+            return (MolangOutcome::NoExpression, None);
         }
-        let options = self.options(spec, side, cx);
-        let compiled = match spec.version {
-            MolangVersionSource::PackIgnoringObject => {
-                self.cache.compile_source_ignoring_version(source, &options)
-            }
-            _ => self.cache.compile_source(source, &options),
-        };
-        // Diagnostics are cached with the program; a hit reports them again at this field.
-        let mut pack_setting_reported = false;
-        for diagnostic in compiled.diagnostics() {
-            let mut finding =
-                molang_diagnostic(diagnostic, source, spec.error_severity, location.clone());
-            // The game logs the parser's line at error level and goes on.
-            if spec.error_kept && finding.severity == Severity::Error {
-                finding = finding.into_kept();
-            }
-            if is_slot_and_tag_arity(diagnostic) || is_anger_level_arity(diagnostic) {
-                // Vanilla's own files call these with a slot and a tag, and
-                // `query.anger_level` with `this`.
+        let checked = self.compile(source, spec, side, cx);
+        let outcome = report(&checked, written, spec, side, location, *rules, diagnostics);
+        (outcome, Some(checked))
+    }
+}
+
+/// What a pass 2 reports beyond the shared mapping of [`molang_diagnostic`]. The load's own
+/// rules are [`ReportRules::LOAD`]; a family whose game loader logs differently says so here.
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ReportRules {
+    /// Leave out molang's argument-count lint for the calls vanilla's own files make
+    /// (`query.equipped_item_any_tag` with a slot and a tag, `query.anger_level(this)`).
+    pub vanilla_arities: bool,
+    /// On the server side, report the client-only notes about queries other than the
+    /// pack-setting ones (those are told once per expression either way).
+    pub other_client_only: bool,
+    /// On the server side, the information for an expression that uses arrays or resources.
+    pub render_note: RenderNote,
+    /// A rejection whose findings all stay below the field's severity gets one `InvalidMolang`
+    /// at it.
+    pub rejection_floor: bool,
+}
+
+impl ReportRules {
+    /// The load's rules ([`MolangCheck::check_source`]).
+    pub const LOAD: Self = Self {
+        vanilla_arities: true,
+        other_client_only: true,
+        render_note: RenderNote::MolangLint,
+        rejection_floor: false,
+    };
+}
+
+/// The code of the server-side information for an expression molang cannot evaluate.
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RenderNote {
+    /// `MolangLint`, the load's.
+    MolangLint,
+    /// `InvalidMolang`, the animation loaders'.
+    InvalidMolang,
+}
+
+/// Reports `checked` at `location` under `rules` and gives the field's outcome: only a
+/// rejection fails it.
+fn report(
+    checked: &Checked,
+    written: &MolangSource,
+    spec: &MolangFieldSpec,
+    side: Side,
+    location: &Location,
+    rules: ReportRules,
+    diagnostics: &mut Diagnostics,
+) -> MolangOutcome {
+    let start = diagnostics.len();
+    // Diagnostics are cached with the program; a hit reports them again at this field.
+    let mut pack_setting_reported = false;
+    for diagnostic in checked.diagnostics() {
+        let mut finding =
+            molang_diagnostic(diagnostic, written, spec.error_severity, location.clone());
+        // The game logs the parser's line at error level and goes on.
+        if spec.error_kept && finding.severity == Severity::Error {
+            finding = finding.into_kept();
+        }
+        if rules.vanilla_arities
+            && (is_slot_and_tag_arity(diagnostic) || is_anger_level_arity(diagnostic))
+        {
+            // Vanilla's own files call these with a slot and a tag, and
+            // `query.anger_level` with `this`.
+            continue;
+        }
+        if side == Side::Server && is_pack_setting_lint(diagnostic) {
+            // One information per expression, however many of the queries it calls. The
+            // crate's own finding: the game's line comes from the query itself, when the
+            // query runs, not at the load.
+            if std::mem::replace(&mut pack_setting_reported, true) {
                 continue;
             }
-            if side == Side::Server && is_pack_setting_lint(diagnostic) {
-                // One information per expression, however many of the queries it calls. The
-                // crate's own finding: the game's line comes from the query itself, when the
-                // query runs, not at the load.
-                if std::mem::replace(&mut pack_setting_reported, true) {
-                    continue;
-                }
-                finding.severity = Severity::Info;
-            }
-            diagnostics.push(finding);
+            finding.severity = Severity::Info;
+        } else if side == Side::Server
+            && !rules.other_client_only
+            && diagnostic.code() == super::DiagCode::QueryClientOnly
+        {
+            continue;
         }
-        match compiled.failure() {
-            None => MolangOutcome::Ok,
-            Some(CompileFailure::UsesArrays | CompileFailure::UsesResources) => {
-                if side == Side::Server {
-                    // The crate's own finding: the game has no line for it.
-                    diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::MolangLint {
-                            expression: source.as_str().to_owned(),
-                        },
-                        Severity::Info,
-                        Phase::Validate,
-                        location.clone(),
-                    ));
-                }
-                MolangOutcome::Ok
+        diagnostics.push(finding);
+    }
+    match checked.failure() {
+        None => MolangOutcome::Ok,
+        Some(CompileFailure::UsesArrays | CompileFailure::UsesResources) => {
+            if side == Side::Server {
+                // The crate's own finding: the game has no line for it.
+                let expression = written.as_str().to_owned();
+                let code = match rules.render_note {
+                    RenderNote::MolangLint => DiagnosticCode::MolangLint { expression },
+                    RenderNote::InvalidMolang => DiagnosticCode::InvalidMolang { expression },
+                };
+                diagnostics.push(Diagnostic::new(
+                    code,
+                    Severity::Info,
+                    Phase::Validate,
+                    location.clone(),
+                ));
             }
-            Some(_) => MolangOutcome::Failed(spec.on_failure),
+            MolangOutcome::Ok
+        }
+        Some(_) => {
+            // A rejection with only an info note (an empty text below version 4) takes the
+            // field's severity.
+            if rules.rejection_floor
+                && !diagnostics
+                    .iter()
+                    .skip(start)
+                    .any(|d| d.severity >= spec.error_severity)
+            {
+                diagnostics.push(Diagnostic::new(
+                    DiagnosticCode::InvalidMolang {
+                        expression: written.as_str().to_owned(),
+                    },
+                    spec.error_severity,
+                    Phase::Validate,
+                    location.clone(),
+                ));
+            }
+            MolangOutcome::Failed(spec.on_failure)
         }
     }
 }
