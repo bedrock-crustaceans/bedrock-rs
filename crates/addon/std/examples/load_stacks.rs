@@ -17,7 +17,8 @@ use bedrock_addon::families::block::component::LightEmission;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::molang::molang::compile::Expr;
 use bedrock_addon::molang::{
-    CompileCache, CompileOptions, Molang, MolangCheck, MolangSource, MolangVersion,
+    CheckOptions, CompileCache, CompileOptions, Molang, MolangCheck, MolangSource, MolangVersion,
+    OnFailure,
 };
 use bedrock_addon::pack::{PackOrigin, StackSet};
 use bedrock_addon::shared::StateValue;
@@ -96,7 +97,7 @@ struct BlockDefinition {
 /// with.
 struct MolangRuntime {
     cache: Arc<CompileCache>,
-    block_condition_options: CompileOptions,
+    block_condition_options: CheckOptions,
 }
 
 fn register_blocks(stacks: &StackSet, registry: &mut Vec<BlockDefinition>, molang: &MolangRuntime) {
@@ -113,12 +114,11 @@ fn register_blocks(stacks: &StackSet, registry: &mut Vec<BlockDefinition>, molan
         for permutation in &block.permutations {
             let condition = match &permutation.condition {
                 Molang::Expr(source) => {
-                    let compiled = molang
-                        .cache
-                        .compile_source(source, &molang.block_condition_options);
-                    // `expr_or_zero` is `None` only for array / resource expressions, which no block condition can use
-                    compiled
-                        .expr_or_zero()
+                    let checked = molang.cache.check(source, &molang.block_condition_options);
+                    // A rejected condition is kept as the constant 0; there is no expression only
+                    // for array / resource expressions, which no block condition can use
+                    checked
+                        .expr()
                         .map_or(PermutationCondition::Constant(false), |expr| {
                             PermutationCondition::Molang {
                                 expr: expr.clone(),
@@ -156,7 +156,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let molang = MolangRuntime {
         cache: Arc::clone(check.cache()), // the conditions were compiled once already, by the load
-        block_condition_options: CompileOptions::server(MolangVersion::LATEST),
+        block_condition_options: CheckOptions::new(CompileOptions::server(MolangVersion::LATEST))
+            .with_on_failure(OnFailure::Keep),
     };
     let mut registry = Vec::new();
     register_blocks(&stacks, &mut registry, &molang);
