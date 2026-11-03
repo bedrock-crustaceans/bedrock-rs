@@ -58,7 +58,12 @@ mod fixtures {
     fn names_agree_with_the_brarchive_crate() {
         let archive = Brarchive::decode(small()).unwrap();
         let names: Vec<&str> = archive.entries().iter().map(|entry| &*entry.name).collect();
-        assert_eq!(names, brarchive::list(&small()).unwrap());
+        let bytes = small();
+        let crate_names: Vec<&str> = brarchive::entries(&bytes)
+            .unwrap()
+            .map(|entry| entry.unwrap().name)
+            .collect();
+        assert_eq!(names, crate_names);
     }
 
     #[test]
@@ -75,6 +80,16 @@ mod fixtures {
     fn an_empty_archive_has_no_entries() {
         let archive = Brarchive::decode(Bytes::from(fixture("brarchive/empty.brarchive"))).unwrap();
         assert!(archive.entries().is_empty());
+    }
+
+    #[test]
+    fn a_repeated_name_keeps_every_entry_and_reads_the_last() {
+        let bytes =
+            brarchive::serialize([("a.json", "1"), ("b.json", "2"), ("a.json", "3")]).unwrap();
+        let archive = Brarchive::decode(Bytes::from(bytes)).unwrap();
+        let names: Vec<&str> = archive.entries().iter().map(|entry| &*entry.name).collect();
+        assert_eq!(names, ["a.json", "b.json", "a.json"]);
+        assert_eq!(archive.get("a.json"), Some(Bytes::from_static(b"3")));
     }
 
     #[test]
@@ -117,8 +132,7 @@ mod malformed {
 
     #[test]
     fn descriptors_cut_short() {
-        // the count promises three descriptors; the brarchive crate would index past the end
-        // of the buffer here, so the length is checked first
+        // the count promises three descriptors that the buffer does not hold
         assert!(refused(small()[..17].to_vec()));
         assert!(refused(small()[..16 + 256 * 2 + 10].to_vec()));
     }

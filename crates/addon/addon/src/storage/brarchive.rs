@@ -1,11 +1,6 @@
 //! `.brarchive`: Mojang's uncompressed bundle of a folder's files, and the read-through layer a
-//! pack consults before its loose files.
-//!
-//! Layout: a 16-byte header (u64 magic `0x267052A0B125277D`, u32 entry count, u32 version 1),
-//! one 256-byte descriptor per entry (u8 name length, 247 name bytes, u32 offset at 0xF8, u32
-//! size at 0xFC), then the data, at `0x10 + count * 256 + offset`. The `brarchive` crate checks
-//! the header and the names; the entry ranges are read here so that an entry stays a zero-copy
-//! slice of the archive.
+//! pack consults before its loose files. The `brarchive` crate checks the format and gives each
+//! entry as a byte range, so an entry stays a zero-copy slice of the archive.
 
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -14,12 +9,6 @@ use bytes::Bytes;
 
 use super::{PackPath, StorageError};
 
-/// The header size.
-const HEADER_LEN: usize = 16;
-/// One entry descriptor's size.
-const DESCRIPTOR_LEN: usize = 256;
-/// The offset of the u32 data offset inside a descriptor; the u32 size follows it.
-const DESCRIPTOR_OFFSET_FIELD: usize = 0xF8;
 /// The folder that holds a pack's archives.
 const ARCHIVE_FOLDER: &str = "__brarchive";
 /// The extension of an archive file.
@@ -45,36 +34,13 @@ impl Brarchive {
     /// Decodes the header and descriptors of `bytes`; `Brarchive` when the magic or version is
     /// wrong, a name is longer than 247 bytes or not UTF-8, or an entry lies outside the file.
     pub(crate) fn decode(bytes: Bytes) -> Result<Brarchive, StorageError> {
-        // `brarchive::list` indexes the buffer for a name without a bounds check, so the
-        // descriptors must be known to fit before it runs.
-        let count = bytes
-            .get(8..12)
-            .map(|field| u64::from(u32::from_le_bytes([field[0], field[1], field[2], field[3]])))
-            .ok_or(StorageError::Brarchive)?;
-        let data_start = HEADER_LEN as u64 + count * DESCRIPTOR_LEN as u64;
-        if data_start > bytes.len() as u64 {
-            return Err(StorageError::Brarchive);
-        }
-        let names = brarchive::list(&bytes).map_err(|_| StorageError::Brarchive)?;
-        // The descriptors fit, so every index below is in bounds and fits a `usize`.
-        let data_start = usize::try_from(data_start).map_err(|_| StorageError::Brarchive)?;
-        let entries = names
-            .into_iter()
-            .enumerate()
-            .map(|(index, name)| {
-                let field = HEADER_LEN + index * DESCRIPTOR_LEN + DESCRIPTOR_OFFSET_FIELD;
-                let offset = read_u32(&bytes, field);
-                let size = read_u32(&bytes, field + 4);
-                let start = data_start
-                    .checked_add(offset)
-                    .ok_or(StorageError::Brarchive)?;
-                let end = start.checked_add(size).ok_or(StorageError::Brarchive)?;
-                if end > bytes.len() {
-                    return Err(StorageError::Brarchive);
-                }
+        let entries = brarchive::entries(&bytes)
+            .map_err(|_| StorageError::Brarchive)?
+            .map(|entry| {
+                let entry = entry.map_err(|_| StorageError::Brarchive)?;
                 Ok(BrarchiveEntry {
-                    name: name.into(),
-                    range: start..end,
+                    name: entry.name.into(),
+                    range: entry.range,
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -113,12 +79,6 @@ impl Brarchive {
         )
         .map_err(|_| StorageError::Brarchive)
     }
-}
-
-/// The u32 at `at` (in bounds: the caller checked the descriptors fit), as a `usize`.
-fn read_u32(bytes: &[u8], at: usize) -> usize {
-    let field = [bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]];
-    u32::from_le_bytes(field) as usize
 }
 
 /// The folder an archive stands for: `__brarchive/<dir>.brarchive` serves `<dir>/`, relative to
