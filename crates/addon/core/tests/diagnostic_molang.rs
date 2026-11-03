@@ -6,11 +6,11 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity,
 };
-use molangx::compile::{CompileOptions, compile};
-use molangx::version::MolangVersion;
+use molang::compile::{CompileOptions, compile};
+use molang::version::MolangVersion;
 
 /// The first compiler diagnostic for `source` on the server side.
-fn compiler_diagnostic(source: &str) -> molangx::diag::Diagnostic {
+fn compiler_diagnostic(source: &str) -> molang::diag::Diagnostic {
     let compiled = compile(source, &CompileOptions::server(MolangVersion::LATEST));
     compiled
         .diagnostics()

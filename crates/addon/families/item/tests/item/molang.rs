@@ -135,7 +135,7 @@ mod compiled {
         let (_, d) = repair_amount(&repairable(high), &checking());
         let found = molang(&d);
         assert!(
-            // molangx's own version lint, an information
+            // molang's own version lint, an information
             found.contains(&(DiagCode::InvalidVersion, Severity::Info)),
             "{found:?}"
         );

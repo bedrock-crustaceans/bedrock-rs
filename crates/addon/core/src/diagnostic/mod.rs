@@ -123,7 +123,7 @@ pub enum DiagnosticDetail {
     /// parser message and span in the expression.
     #[cfg(feature = "molang")]
     #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
-    Molang(molangx::diag::Diagnostic),
+    Molang(molang::diag::Diagnostic),
     /// The name behind an `UnresolvedReference` / `InvalidReference`: what kind of thing it
     /// names, the name as written, and a near miss when one exists.
     Reference {

@@ -1,4 +1,4 @@
-//! the fixture rows 20–28 (molangx): how each Molang member is read, which
+//! the fixture rows 20–28 (molang): how each Molang member is read, which
 //! version it compiles at and what a failure does. Without the `molang` feature a document with
 //! expressions gets one `MolangNotChecked` info.
 
@@ -265,7 +265,7 @@ mod compiled {
     }
 }
 
-/// The Molang lints of `d` as `<severity> <molangx code> <path>`.
+/// The Molang lints of `d` as `<severity> <molang code> <path>`.
 #[cfg(feature = "molang")]
 fn lints(d: &bedrock_addon::diagnostic::Diagnostics) -> Vec<String> {
     use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail};

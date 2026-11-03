@@ -111,7 +111,7 @@ fn scalar_value(scalar: JsonScalar) -> Result<Value, Unrepresentable> {
             object.insert("version", Value::from(i64::from(version.0)));
             Value::from(object)
         }
-        // `write` never gives another shape; a newer molangx's would have no JSON form here.
+        // `write` never gives another shape; a newer molang's would have no JSON form here.
         _ => return Err(Unrepresentable::Unsupported),
     })
 }

@@ -1,6 +1,6 @@
 //! The diagnostic mapping of the compile pass: one input per
-//! row of molangx's `LanguageMessage` table, `tests/fixtures/molang/language_messages.json`,
-//! taken from molangx `tests/parse_vectors.json` where it has one. Each message becomes one
+//! row of molang's `LanguageMessage` table, `tests/fixtures/molang/language_messages.json`,
+//! taken from molang `tests/parse_vectors.json` where it has one. Each message becomes one
 //! `InvalidMolang` with the compiler's diagnostic as its detail: the vanilla text, the `E..` id,
 //! the severity (error; kept when the expression survives it) and vanilla's scope
 //! chain `<member> | <expression> | <message>`.
@@ -29,8 +29,8 @@ fn text(value: &Value) -> &str {
     value.as_string().expect("a string").as_str()
 }
 
-/// The fixture's molangx severity as the finding's severity and `kept`: a message the
-/// expression survives (molangx's warning) is the game's level-3 line the parse goes past, a
+/// The fixture's molang severity as the finding's severity and `kept`: a message the
+/// expression survives (molang's warning) is the game's level-3 line the parse goes past, a
 /// kept error: the expression is still accepted.
 fn severity(name: &str) -> (Severity, bool) {
     match name {
@@ -238,10 +238,10 @@ fn mapped(text: &str) -> Vec<(&'static str, Severity, bool)> {
 
 /// The findings that do not reject the expression: a parser message the expression survives (#6, a
 /// validator message below the root, #39) is the game's content-log error and the parse goes on, a
-/// kept error; a lint of molangx's own (the argument count, "this crate's check") has no line of
+/// kept error; a lint of molang's own (the argument count, "this crate's check") has no line of
 /// the game's, so the crate reports it as an information.
 #[test]
-fn the_messages_that_keep_the_expression_and_molangx_s_own_lints_map_as_the_game_logs() {
+fn the_messages_that_keep_the_expression_and_molang_s_own_lints_map_as_the_game_logs() {
     assert_eq!(mapped("1e"), [("InvalidMolang", Severity::Error, true)]);
     assert_eq!(
         mapped("t.x.y = 1;"),

@@ -1,9 +1,9 @@
 {
- "about": "One input per row of molangx's LanguageMessage table (1-49; #6 is the kept message), the golden input of the addon's diagnostic mapping. Rows are compiled on the client side at `version` with the default query set and `ops` (all, or no_assignments); each message is the vanilla text, its E.. id and the addon severity: error for a rejecting message, warning for a kept one (#6, and a root-only message below the root). Inputs come from molangx tests/parse_vectors.json (commit ffa4a42) where it has one, else from molangx tests/diagnostics.rs (also every row whose vectors fail to link, #43 and #47, since the vectors leave the link messages #48 and #49 out).",
+ "about": "One input per row of molang's LanguageMessage table (1-49; #6 is the kept message), the golden input of the addon's diagnostic mapping. Rows are compiled on the client side at `version` with the default query set and `ops` (all, or no_assignments); each message is the vanilla text, its E.. id and the addon severity: error for a rejecting message, warning for a kept one (#6, and a root-only message below the root). Inputs come from molang tests/parse_vectors.json (commit ffa4a42) where it has one, else from molang tests/diagnostics.rs (also every row whose vectors fail to link, #43 and #47, since the vectors leave the link messages #48 and #49 out).",
  "rows": [
   {
    "row": 1,
-   "source": "molangx tests/parse_vectors.json vector 407",
+   "source": "molang tests/parse_vectors.json vector 407",
    "expr": "",
    "version": 13,
    "ops": "all",
@@ -18,7 +18,7 @@
   },
   {
    "row": 2,
-   "source": "molangx tests/parse_vectors.json vector 138",
+   "source": "molang tests/parse_vectors.json vector 138",
    "expr": "1 # comment",
    "version": 13,
    "ops": "all",
@@ -33,7 +33,7 @@
   },
   {
    "row": 3,
-   "source": "molangx tests/parse_vectors.json vector 74",
+   "source": "molang tests/parse_vectors.json vector 74",
    "expr": "1.5d",
    "version": 13,
    "ops": "all",
@@ -53,7 +53,7 @@
   },
   {
    "row": 4,
-   "source": "molangx tests/parse_vectors.json vector 132",
+   "source": "molang tests/parse_vectors.json vector 132",
    "expr": "'unterminated",
    "version": 13,
    "ops": "all",
@@ -73,7 +73,7 @@
   },
   {
    "row": 5,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "query.does_not_exist",
    "version": 13,
    "ops": "all",
@@ -93,7 +93,7 @@
   },
   {
    "row": 6,
-   "source": "molangx tests/parse_vectors.json vector 69",
+   "source": "molang tests/parse_vectors.json vector 69",
    "expr": "1e",
    "version": 13,
    "ops": "all",
@@ -108,7 +108,7 @@
   },
   {
    "row": 7,
-   "source": "molangx tests/parse_vectors.json vector 146",
+   "source": "molang tests/parse_vectors.json vector 146",
    "expr": "{1;}",
    "version": 13,
    "ops": "all",
@@ -123,7 +123,7 @@
   },
   {
    "row": 8,
-   "source": "molangx tests/parse_vectors.json vector 64",
+   "source": "molang tests/parse_vectors.json vector 64",
    "expr": "1.5.5",
    "version": 13,
    "ops": "all",
@@ -138,7 +138,7 @@
   },
   {
    "row": 9,
-   "source": "molangx tests/parse_vectors.json vector 280",
+   "source": "molang tests/parse_vectors.json vector 280",
    "expr": ".foo",
    "version": 13,
    "ops": "all",
@@ -153,7 +153,7 @@
   },
   {
    "row": 10,
-   "source": "molangx tests/parse_vectors.json vector 273",
+   "source": "molang tests/parse_vectors.json vector 273",
    "expr": "3 { 6",
    "version": 13,
    "ops": "all",
@@ -173,7 +173,7 @@
   },
   {
    "row": 11,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "[1)",
    "version": 13,
    "ops": "all",
@@ -193,7 +193,7 @@
   },
   {
    "row": 12,
-   "source": "molangx tests/parse_vectors.json vector 273",
+   "source": "molang tests/parse_vectors.json vector 273",
    "expr": "3 { 6",
    "version": 13,
    "ops": "all",
@@ -213,7 +213,7 @@
   },
   {
    "row": 13,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "loop()",
    "version": 13,
    "ops": "all",
@@ -228,7 +228,7 @@
   },
   {
    "row": 14,
-   "source": "molangx tests/parse_vectors.json vector 153",
+   "source": "molang tests/parse_vectors.json vector 153",
    "expr": ";",
    "version": 13,
    "ops": "all",
@@ -243,7 +243,7 @@
   },
   {
    "row": 15,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "array.a[ ]",
    "version": 13,
    "ops": "all",
@@ -258,7 +258,7 @@
   },
   {
    "row": 16,
-   "source": "molangx tests/parse_vectors.json vector 78",
+   "source": "molang tests/parse_vectors.json vector 78",
    "expr": "--1",
    "version": 13,
    "ops": "all",
@@ -273,7 +273,7 @@
   },
   {
    "row": 17,
-   "source": "molangx tests/parse_vectors.json vector 110",
+   "source": "molang tests/parse_vectors.json vector 110",
    "expr": "math.abs -2",
    "version": 13,
    "ops": "all",
@@ -288,7 +288,7 @@
   },
   {
    "row": 18,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "1 -",
    "version": 13,
    "ops": "all",
@@ -303,7 +303,7 @@
   },
   {
    "row": 19,
-   "source": "molangx tests/parse_vectors.json vector 272",
+   "source": "molang tests/parse_vectors.json vector 272",
    "expr": "2 : 7",
    "version": 13,
    "ops": "all",
@@ -318,7 +318,7 @@
   },
   {
    "row": 20,
-   "source": "molangx tests/parse_vectors.json vector 157",
+   "source": "molang tests/parse_vectors.json vector 157",
    "expr": "return;",
    "version": 13,
    "ops": "all",
@@ -333,7 +333,7 @@
   },
   {
    "row": 21,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "v.x = math.random(0, 1);",
    "version": 13,
    "ops": "no_assignments",
@@ -348,7 +348,7 @@
   },
   {
    "row": 22,
-   "source": "molangx tests/parse_vectors.json vector 325",
+   "source": "molang tests/parse_vectors.json vector 325",
    "expr": "((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((1))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))",
    "version": 13,
    "ops": "all",
@@ -363,7 +363,7 @@
   },
   {
    "row": 23,
-   "source": "molangx tests/parse_vectors.json vector 112",
+   "source": "molang tests/parse_vectors.json vector 112",
    "expr": "math.min(1)",
    "version": 13,
    "ops": "all",
@@ -378,7 +378,7 @@
   },
   {
    "row": 24,
-   "source": "molangx tests/parse_vectors.json vector 144",
+   "source": "molang tests/parse_vectors.json vector 144",
    "expr": "()",
    "version": 13,
    "ops": "all",
@@ -393,7 +393,7 @@
   },
   {
    "row": 25,
-   "source": "molangx tests/parse_vectors.json vector 7",
+   "source": "molang tests/parse_vectors.json vector 7",
    "expr": "v.a?v.b?v.c:v.d:v.e",
    "version": 0,
    "ops": "all",
@@ -408,7 +408,7 @@
   },
   {
    "row": 26,
-   "source": "molangx tests/parse_vectors.json vector 142",
+   "source": "molang tests/parse_vectors.json vector 142",
    "expr": "(1, 2)",
    "version": 13,
    "ops": "all",
@@ -423,7 +423,7 @@
   },
   {
    "row": 27,
-   "source": "molangx tests/parse_vectors.json vector 317",
+   "source": "molang tests/parse_vectors.json vector 317",
    "expr": "for_each(v.x, v.arr, v.y = 1);",
    "version": 13,
    "ops": "all",
@@ -438,7 +438,7 @@
   },
   {
    "row": 28,
-   "source": "molangx tests/parse_vectors.json vector 204",
+   "source": "molang tests/parse_vectors.json vector 204",
    "expr": "v.x = v.y = 1;",
    "version": 13,
    "ops": "all",
@@ -453,7 +453,7 @@
   },
   {
    "row": 29,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "1 : 2 ? 3",
    "version": 4,
    "ops": "all",
@@ -468,7 +468,7 @@
   },
   {
    "row": 30,
-   "source": "molangx tests/parse_vectors.json vector 163",
+   "source": "molang tests/parse_vectors.json vector 163",
    "expr": "loop(3, v.x = v.x + 1);",
    "version": 13,
    "ops": "all",
@@ -483,7 +483,7 @@
   },
   {
    "row": 31,
-   "source": "molangx tests/parse_vectors.json vector 300",
+   "source": "molang tests/parse_vectors.json vector 300",
    "expr": "v.x.1 = 1;",
    "version": 13,
    "ops": "all",
@@ -498,7 +498,7 @@
   },
   {
    "row": 32,
-   "source": "molangx tests/parse_vectors.json vector 22",
+   "source": "molang tests/parse_vectors.json vector 22",
    "expr": "(1 2)",
    "version": 4,
    "ops": "all",
@@ -513,7 +513,7 @@
   },
   {
    "row": 33,
-   "source": "molangx tests/parse_vectors.json vector 170",
+   "source": "molang tests/parse_vectors.json vector 170",
    "expr": "for_each(c.e, v.arr, {v.x = 1;});",
    "version": 13,
    "ops": "all",
@@ -528,7 +528,7 @@
   },
   {
    "row": 34,
-   "source": "molangx tests/parse_vectors.json vector 145",
+   "source": "molang tests/parse_vectors.json vector 145",
    "expr": "{1}",
    "version": 13,
    "ops": "all",
@@ -543,7 +543,7 @@
   },
   {
    "row": 35,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "math.max()",
    "version": 13,
    "ops": "all",
@@ -558,7 +558,7 @@
   },
   {
    "row": 36,
-   "source": "molangx tests/parse_vectors.json vector 16",
+   "source": "molang tests/parse_vectors.json vector 16",
    "expr": "'a' + 3",
    "version": 3,
    "ops": "all",
@@ -573,7 +573,7 @@
   },
   {
    "row": 37,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "q.bone_aabb('a') + 1",
    "version": 13,
    "ops": "all",
@@ -588,7 +588,7 @@
   },
   {
    "row": 38,
-   "source": "molangx tests/parse_vectors.json vector 158",
+   "source": "molang tests/parse_vectors.json vector 158",
    "expr": "return 1; return 2;",
    "version": 13,
    "ops": "all",
@@ -603,7 +603,7 @@
   },
   {
    "row": 39,
-   "source": "molangx tests/parse_vectors.json vector 209",
+   "source": "molang tests/parse_vectors.json vector 209",
    "expr": "t.x.y = 1;",
    "version": 13,
    "ops": "all",
@@ -618,7 +618,7 @@
   },
   {
    "row": 40,
-   "source": "molangx tests/parse_vectors.json vector 503",
+   "source": "molang tests/parse_vectors.json vector 503",
    "expr": "c.a.b = 1;",
    "version": 13,
    "ops": "all",
@@ -633,7 +633,7 @@
   },
   {
    "row": 41,
-   "source": "molangx tests/parse_vectors.json vector 416",
+   "source": "molang tests/parse_vectors.json vector 416",
    "expr": "c.a->v.b->v.c",
    "version": 13,
    "ops": "all",
@@ -648,7 +648,7 @@
   },
   {
    "row": 42,
-   "source": "molangx tests/parse_vectors.json vector 551",
+   "source": "molang tests/parse_vectors.json vector 551",
    "expr": "array.test[1 + 1] + 1",
    "version": 13,
    "ops": "all",
@@ -663,7 +663,7 @@
   },
   {
    "row": 43,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "v.x->v.y = 1;",
    "version": 13,
    "ops": "all",
@@ -688,7 +688,7 @@
   },
   {
    "row": 44,
-   "source": "molangx tests/parse_vectors.json vector 53",
+   "source": "molang tests/parse_vectors.json vector 53",
    "expr": "v.a?v.b:v.c??v.d",
    "version": 13,
    "ops": "all",
@@ -703,7 +703,7 @@
   },
   {
    "row": 45,
-   "source": "molangx tests/parse_vectors.json vector 172",
+   "source": "molang tests/parse_vectors.json vector 172",
    "expr": "break",
    "version": 13,
    "ops": "all",
@@ -718,7 +718,7 @@
   },
   {
    "row": 46,
-   "source": "molangx tests/parse_vectors.json vector 189",
+   "source": "molang tests/parse_vectors.json vector 189",
    "expr": "c.other->t.x",
    "version": 13,
    "ops": "all",
@@ -733,7 +733,7 @@
   },
   {
    "row": 47,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "return c.x = 1;",
    "version": 13,
    "ops": "all",
@@ -758,7 +758,7 @@
   },
   {
    "row": 48,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "return c.x = 1;",
    "version": 13,
    "ops": "all",
@@ -783,7 +783,7 @@
   },
   {
    "row": 49,
-   "source": "molangx tests/diagnostics.rs",
+   "source": "molang tests/diagnostics.rs",
    "expr": "v.x->v.y = 1;",
    "version": 13,
    "ops": "all",

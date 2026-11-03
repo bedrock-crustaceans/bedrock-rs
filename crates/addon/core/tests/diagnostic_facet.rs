@@ -37,7 +37,7 @@ struct Pair {
 
 #[derive(Facet, Debug)]
 struct Expression {
-    expression: molangx::json::MolangValueRepr,
+    expression: molang::json::MolangValueRepr,
 }
 
 #[derive(Facet, Debug)]
@@ -218,7 +218,7 @@ fn no_matching_variant_is_invalid_type() {
     );
 }
 
-/// A rejection by the `molangx` facet proxy, which `Reflect` includes.
+/// A rejection by the `molang` facet proxy, which `Reflect` includes.
 #[test]
 fn reflect_is_invalid_type() {
     let (kind, _, code) =

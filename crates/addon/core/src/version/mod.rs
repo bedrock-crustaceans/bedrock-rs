@@ -713,10 +713,10 @@ impl MinEngineVersion {
         self.version >= SemVersion::new(1, 13, 0)
     }
 
-    /// The version as molangx's engine version: the any-version, or the three numbers with a
+    /// The version as molang's engine version: the any-version, or the three numbers with a
     /// pre-release tag when the version has one (the tag text matters only as "present").
     pub fn engine_version(&self) -> EngineVersion {
-        use crate::molang::molangx::version::semver::{Prerelease, Version};
+        use semver::{Prerelease, Version};
         if self.version.any {
             return EngineVersion::Any;
         }

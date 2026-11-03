@@ -1,7 +1,7 @@
 //! Where a Molang field's version comes from: the pack's `min_engine_version`, the
 //! document's `format_version`, or a constant, per field.
 
-use molangx::version::semver::{Prerelease, Version};
+use semver::{Prerelease, Version};
 
 use super::{EngineVersion, ExperimentMask, MolangVersion, RawVersion};
 use crate::version::{FormatVersionInput, MinEngineVersion, SemVersion};
@@ -32,7 +32,7 @@ pub fn format_molang_version(version: &FormatVersionInput) -> RawVersion {
         u64::from(numbers.patch),
     );
     if version.prerelease {
-        // Only "has a tag" takes part in the mapping's order in molangx.
+        // Only "has a tag" takes part in the mapping's order in molang.
         engine.pre = Prerelease::new("pre").unwrap_or(Prerelease::EMPTY);
     }
     MolangVersion::from(&EngineVersion::Version(engine)).into()
@@ -56,7 +56,7 @@ pub struct MolangContext {
     pub document: RawVersion,
     /// The `__molang_version` a merge wrote into the entry (`sounds.json`), if any.
     pub injected: Option<RawVersion>,
-    /// The world's experiments as molangx's mask (`LoadContext::molang_experiments`).
+    /// The world's experiments as molang's mask (`LoadContext::molang_experiments`).
     pub experiments: ExperimentMask,
 }
 

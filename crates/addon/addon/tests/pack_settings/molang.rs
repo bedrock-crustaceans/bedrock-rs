@@ -1,6 +1,6 @@
 //! The three pack-setting queries in
 //! behaviour-pack Molang are one warning per expression. The finding is the compile check's
-//! (core, over molangx's `QueryClientOnly` info).
+//! (core, over molang's `QueryClientOnly` info).
 
 use bedrock_addon::diagnostic::{
     DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity,
@@ -18,7 +18,7 @@ const QUERIES: [&str; 3] = [
     "query.is_pack_setting_selected('ns:some_dropdown', 'banana')",
 ];
 
-/// The outcome and the lints (molangx code, severity) of `text` compiled for `side` in a pack
+/// The outcome and the lints (molang code, severity) of `text` compiled for `side` in a pack
 /// at 1.21.130, the engine that introduced the queries.
 fn lints(text: &str, side: Side) -> (MolangOutcome, Vec<(DiagCode, Severity)>, usize) {
     let cx = MolangContext::new(
@@ -52,7 +52,7 @@ fn each_pack_setting_query_in_a_behavior_pack_is_one_client_only_warning() {
     for query in QUERIES {
         let (outcome, found, total) = lints(query, Side::Server);
         assert_eq!(outcome, MolangOutcome::Ok, "{query}");
-        // An information of ours (molangx's `QueryClientOnly` is one too).
+        // An information of ours (molang's `QueryClientOnly` is one too).
         assert_eq!(
             found,
             [(DiagCode::QueryClientOnly, Severity::Info)],

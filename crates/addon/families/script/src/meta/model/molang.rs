@@ -1,6 +1,6 @@
 //! `metadata/molang_modules/mojang-molang-queries.json`: the Molang queries and math functions
 //! the engine registers. A cross-check only: the crate's Molang facts
-//! come from molangx, not from this file.
+//! come from molang, not from this file.
 
 use facet::Facet;
 

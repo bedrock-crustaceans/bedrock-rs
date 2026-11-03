@@ -289,7 +289,7 @@ fn nan_and_infinities_are_not_representable() {
 #[test]
 #[expect(clippy::float_cmp, reason = "the reader gives exact values")]
 fn a_molang_constant_is_written_as_its_shortest_token() {
-    use molangx::json::MolangValueRepr as Molang;
+    use molang::json::MolangValueRepr as Molang;
     #[derive(Facet)]
     struct Fields {
         member: Molang,
@@ -316,9 +316,9 @@ fn a_molang_constant_is_written_as_its_shortest_token() {
 
 #[test]
 fn a_non_finite_molang_constant_is_refused() {
-    let constant = molangx::json::MolangValueRepr::Const(f32::NAN);
+    let constant = molang::json::MolangValueRepr::Const(f32::NAN);
     assert_eq!(not_representable(&constant), Unrepresentable::NaN);
-    let constant = molangx::json::MolangValueRepr::Const(f32::NEG_INFINITY);
+    let constant = molang::json::MolangValueRepr::Const(f32::NEG_INFINITY);
     assert_eq!(
         not_representable(&constant),
         Unrepresentable::NegativeInfinity

@@ -214,10 +214,8 @@ mod compiled {
             document.diagnostics()
         );
         // The field's options (server catalogue, `world_gen`) at each version.
-        let options = CompileOptions {
-            admission: QueryAdmission::Sets(QuerySetMask::WORLD_GEN),
-            ..CompileOptions::server(MolangVersion::LATEST)
-        };
+        let options = CompileOptions::server(MolangVersion::LATEST)
+            .with_admission(QueryAdmission::Sets(QuerySetMask::WORLD_GEN));
         let codes = |version: MolangVersion| -> Vec<DiagCode> {
             compile_source(&MolangSource::string(text, version), &options)
                 .diagnostics()

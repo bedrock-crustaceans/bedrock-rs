@@ -1,8 +1,8 @@
 //! Reading Molang fields: the reader matrix and facet
-//! cases of molangx `tests/serialised_forms.rs`, copied as a table into
+//! cases of molang `tests/serialised_forms.rs`, copied as a table into
 //! `tests/fixtures/molang/reader_matrix.json`, run three ways that must agree:
 //!
-//! 1. molangx's `MolangValueRepr::read` on the `JsonScalar` the row gives;
+//! 1. molang's `MolangValueRepr::read` on the `JsonScalar` the row gives;
 //! 2. the crate's `molang::read` on the `facet_value::Value` facet-json parses from the row's text;
 //! 3. facet-json deserialising the typed field from the text (`Molang`, or `Option<MolangList>`
 //!    for the scalar-or-array reader), then pass 1 (reader check and context version).
@@ -217,7 +217,8 @@ fn the_reader_matrix_agrees_three_ways() {
         let expect = row.get("expect").unwrap().as_object().unwrap();
         for (name, reader) in READERS {
             let want = expected(expect.get(name).unwrap(), reader);
-            let repr_result = molangx::json::MolangValueRepr::read(input.clone(), reader, context);
+            let repr_result =
+                molang::molang::json::MolangValueRepr::read(input.clone(), reader, context);
             if !same(&repr_result, &want) {
                 failures.push(format!(
                     "{case} [{name}] crate: {repr_result:?}, want {want:?}"
@@ -227,7 +228,7 @@ fn the_reader_matrix_agrees_three_ways() {
             let value = facet_json::from_str::<Value>(json).unwrap();
             let read_result = molang::read(&value, reader, context);
             // The crate's reader gives a number beyond `f32` as the largest finite float, where
-            // molangx's `MolangValueRepr::read` gives the infinity.
+            // molang's `MolangValueRepr::read` gives the infinity.
             let want_read = match &want {
                 Ok(ReadField::Value(Molang::Const(x))) if x.is_infinite() => {
                     Ok(ReadField::Value(Molang::Const(f32::MAX.copysign(*x))))
@@ -242,10 +243,10 @@ fn the_reader_matrix_agrees_three_ways() {
             let facet = typed(json, reader, context);
             let invalid_type = DiagnosticCode::InvalidType { text: None };
             match (&facet, &want) {
-                // facet refuses a number not finite as an `f32` through molangx's proxy, which the
+                // facet refuses a number not finite as an `f32` through molang's proxy, which the
                 // crate maps to `InvalidType`; the strict reader on a `Value` says `InvalidValue`.
                 (Err(code), Err(ReprError::NumberOutOfRange { .. })) if **code == invalid_type => {}
-                // An object without `expression` or `version` misses a member of molangx's
+                // An object without `expression` or `version` misses a member of molang's
                 // object-form struct (`MissingRequiredField`); on a `Value` it is just not the
                 // object form (`InvalidType`).
                 (Err(code), Err(_))
@@ -329,7 +330,7 @@ fn a_list_rejects_objects_and_null_elements() {
 
 /// An integer literal outside `i64` / `u64` reaches a `Value` as a string of its digits, so a
 /// hand-written parser reads it as a Molang string where vanilla reads a real (an accepted
-/// loss). The typed path agrees: facet-json hands molangx's proxy the same string.
+/// loss). The typed path agrees: facet-json hands molang's proxy the same string.
 #[test]
 fn an_integer_literal_past_64_bits_reads_as_a_string_from_a_value_deviation() {
     let json = "99999999999999999999";
@@ -545,7 +546,7 @@ fn the_json_writer_keeps_each_form() {
 
 /// A number whose nearest `f32` is an infinity is read as the
 /// largest finite float of its sign under every reader but the strict one, which refuses it
-/// as molangx does; the caller is told, so that it can say so once.
+/// as molang does; the caller is told, so that it can say so once.
 #[test]
 fn a_number_beyond_f32_is_read_as_the_largest_finite_float() {
     let context = RawVersion(-1);
@@ -595,7 +596,7 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float() {
     ] {
         let value = bedrock_addon_core::json::from_str::<Value>(json).unwrap();
         for (name, reader) in READERS {
-            // The strict reader is molangx's, unchanged: it refuses the shortest text of the
+            // The strict reader is molang's, unchanged: it refuses the shortest text of the
             // largest float, which as a double is a little above it.
             if reader == ReaderKind::StrictVersioned {
                 continue;

@@ -1,7 +1,7 @@
 //! `ItemDescriptor`: one item, or a set of items by tag.
 
 use facet_value::VObject;
-use molangx::json::MolangSource;
+use molang::json::MolangSource;
 
 use super::read::{compact, molang_source, molang_value};
 use super::{finding, unrecognized_except};

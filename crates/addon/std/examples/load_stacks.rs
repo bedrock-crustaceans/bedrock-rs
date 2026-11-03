@@ -15,7 +15,7 @@ use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::block::StateValues;
 use bedrock_addon::families::block::component::LightEmission;
 use bedrock_addon::load::{LoadOptions, StackOptions};
-use bedrock_addon::molang::molangx::compile::Expr;
+use bedrock_addon::molang::molang::compile::Expr;
 use bedrock_addon::molang::{
     CompileCache, CompileOptions, Molang, MolangCheck, MolangSource, MolangVersion,
 };

@@ -103,7 +103,7 @@ fn is_constant(source: &MolangSource) -> bool {
 #[cfg(feature = "molang")]
 fn folds_to_a_constant(source: &MolangSource) -> bool {
     use bedrock_addon_core::molang::{CompileOptions, CompileOutcome, Side, compile_source};
-    let catalog = bedrock_addon_core::molang::molangx::stdlib::queries(Side::Client).clone();
+    let catalog = bedrock_addon_core::molang::molang::stdlib::queries(Side::Client).clone();
     let Some(version) = source.raw_version() else {
         return false;
     };

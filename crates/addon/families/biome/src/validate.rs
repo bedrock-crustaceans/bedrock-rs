@@ -712,7 +712,7 @@ fn molang_failures(
                 let compiled = check.cache().compile_source(source, &options);
                 folded[slot] = compiled
                     .expr()
-                    .and_then(bedrock_addon_core::molang::molangx::compile::Expr::as_constant);
+                    .and_then(bedrock_addon_core::molang::molang::compile::Expr::as_constant);
                 matches!(
                     compiled.failure(),
                     Some(CompileFailure::UsesArrays | CompileFailure::UsesResources)

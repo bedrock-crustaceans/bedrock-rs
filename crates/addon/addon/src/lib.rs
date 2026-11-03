@@ -49,7 +49,7 @@
 //! # One path per item
 //!
 //! A public item has its path in the module it lives in (`molang` also re-exports the
-//! `molangx` crate, whose items so have a second path). Nothing is re-exported at the
+//! `molang` crate, whose items so have a second path). Nothing is re-exported at the
 //! crate root. Modules, with the feature a module needs:
 //!
 //! - `id`: typed identifiers (`Id<K>` and one alias per kind).

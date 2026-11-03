@@ -288,7 +288,7 @@ impl Experiments {
         self.bits == 0 && self.unknown.is_empty()
     }
 
-    /// The enabled experiments as molangx's experiment mask: bit `n` is the experiment whose
+    /// The enabled experiments as molang's experiment mask: bit `n` is the experiment whose
     /// [`Experiment::bit`] is `n`.
     pub fn molang_mask(&self) -> ExperimentMask {
         self.iter()

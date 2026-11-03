@@ -61,11 +61,11 @@ mod compiled {
 
     use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Severity};
     use bedrock_addon_core::load::LoadContext;
-    use bedrock_addon_core::molang::molangx::stdlib;
-    use bedrock_addon_core::molang::molangx::version::semver::Version;
+    use bedrock_addon_core::molang::molang::stdlib;
     use bedrock_addon_core::molang::{
         CompileCache, DiagCode, MolangCheck, MolangVersion, RawVersion, Side,
     };
+    use semver::Version;
 
     use super::super::common::{error_at, kept_at, rejects};
     use super::*;

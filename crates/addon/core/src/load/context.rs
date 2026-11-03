@@ -31,7 +31,7 @@ pub struct LoadContext {
     /// Molang field whose version comes from the pack. Invalid (−1) without a
     /// `min_engine_version`.
     pub molang_version: RawVersion,
-    /// [`experiments`](Self::experiments) as molangx's experiment mask, for compiling.
+    /// [`experiments`](Self::experiments) as molang's experiment mask, for compiling.
     pub molang_experiments: ExperimentMask,
     /// The pack is a base-game pack: one the game ships (`PackOrigin::Package`).
     pub is_base_game_pack: bool,

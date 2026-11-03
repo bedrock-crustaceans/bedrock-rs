@@ -10,7 +10,7 @@
 //! # One path per item
 //!
 //! A public item of this crate has its path in the module it lives in (the `molang` module
-//! also re-exports the `molangx` crate, whose items so have a second path). No type or
+//! also re-exports the `molang` crate, whose items so have a second path). No type or
 //! function is re-exported at the crate root (the hidden macro `version_chain!` is exported
 //! there, as `#[macro_export]` places it). Modules, with the feature a part of one needs:
 //!
@@ -28,7 +28,7 @@
 //!   `MAX_JSON_DEPTH`, the envelope of a versioned document, `WriteStyle`, `EncodeError`);
 //!   the other helpers `bedrock_addon` reads and writes with are named from here and not
 //!   listed on the module's page.
-//! - `molang`: the molangx types pack content holds; with `molang`, the compile check.
+//! - `molang`: the molang types pack content holds; with `molang`, the compile check.
 //! - `visual`: the description slots client entities, attachables and atomic client entities
 //!   share, and the spawn egg of a description.
 //! - `shared`: value types several content modules use (descriptors, ranges, filters).
@@ -42,7 +42,7 @@
 //! # Features
 //!
 //! - `molang`: the load-time Molang compile check (`molang::MolangCheck`), which enables
-//!   molangx's `compiler`, `stdlib` and `cache`.
+//!   molang's `compiler`, `stdlib` and `cache`.
 //!
 //! # The stack of a JSON read
 //!

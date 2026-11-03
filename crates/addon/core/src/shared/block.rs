@@ -2,7 +2,7 @@
 
 use facet_value::VObject;
 use indexmap::IndexMap;
-use molangx::json::MolangSource;
+use molang::json::MolangSource;
 
 use super::read::{
     Failure, ROOT, ShapeError, ShapeErrorKind, compact, fail, jsoncpp_type, molang_source,

@@ -1,7 +1,7 @@
 //! The `from_value` canary: typed structs are deserialised from text, never
 //! from a `facet_value::Value`, because in rc.7 `facet_value::from_value` fills a missing
 //! required field with its `Default`, drops the keys bound for a `#[facet(flatten)]` map and
-//! breaks molangx's proxies. These tests pin that behaviour: when one of
+//! breaks molang's proxies. These tests pin that behaviour: when one of
 //! them fails, facet has changed and the rule that every typed read goes through the text is
 //! open for review again.
 
@@ -63,7 +63,7 @@ fn from_value_still_drops_the_keys_of_a_flatten_map_canary() {
 
 #[derive(Debug, Facet)]
 struct WithMolang {
-    m: molangx::json::MolangValueRepr,
+    m: molang::json::MolangValueRepr,
 }
 
 #[test]
@@ -71,9 +71,9 @@ struct WithMolang {
 fn from_value_still_breaks_the_molang_proxy_canary() {
     let parsed: WithMolang = facet_value::from_value(value(r#"{ "m": 1.5 }"#)).unwrap();
     assert!(
-        matches!(parsed.m, molangx::json::MolangValueRepr::Expr(_)),
+        matches!(parsed.m, molang::json::MolangValueRepr::Expr(_)),
         "from_value now reads 1.5 as a constant: revisit the text-only reading rule"
     );
     let from_text: WithMolang = facet_json::from_str_borrowed_jsonc(r#"{ "m": 1.5 }"#).unwrap();
-    assert!(matches!(from_text.m, molangx::json::MolangValueRepr::Const(x) if x == 1.5));
+    assert!(matches!(from_text.m, molang::json::MolangValueRepr::Const(x) if x == 1.5));
 }

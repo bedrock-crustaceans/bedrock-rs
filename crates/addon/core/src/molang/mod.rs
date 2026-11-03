@@ -1,4 +1,4 @@
-//! Molang in pack content: the molangx types fields hold, re-exported once so there is exactly
+//! Molang in pack content: the molang types fields hold, re-exported once so there is exactly
 //! one `MolangVersion` across this crate and the Molang crate; [`Molang`], the name the families
 //! use for a Molang-valued field; [`MolangList`] for value-or-array fields; and, with the `molang`
 //! feature, `MolangCheck`, the load-time compile check.
@@ -6,7 +6,7 @@
 //! A loaded document's expressions always carry their version: a plain string takes the version
 //! its field's vanilla loader gives it (the pack's `min_engine_version`, the file's
 //! `format_version`, or a constant), an object form `{"expression", "version"}` keeps its own. So
-//! `molangx::compile::compile_source` compiles any of them without knowing where it came from.
+//! `molang::compile::compile_source` compiles any of them without knowing where it came from.
 //! With the `molang` feature, loading compiles every expression once and reports
 //! `InvalidMolang` / `MolangLint` with the compiler's diagnostic attached; without it, a
 //! document holding expressions gets one `MolangNotChecked` info.
@@ -35,20 +35,20 @@ mod write;
 pub use check::MolangCheck;
 
 /// The exact crate, for callers that need more than the list below.
-pub use molangx;
-pub use molangx::catalog::{QueryAdmission, QueryAllowList, QueryCatalog, QuerySetMask, Side};
-pub use molangx::hash::HashedStr;
-pub use molangx::json::{
+pub use molang;
+pub use molang::catalog::{QueryAdmission, QueryAllowList, QueryCatalog, QuerySetMask, Side};
+pub use molang::hash::HashedStr;
+pub use molang::json::{
     JsonScalar, JsonType, MolangSource, MolangValueRepr, OtherJson, ReadField, ReaderKind,
     ReprError, SourceForm,
 };
-pub use molangx::ops::OpSet;
-pub use molangx::version::{
+pub use molang::ops::OpSet;
+pub use molang::version::{
     EngineVersion, Experiment, ExperimentMask, MolangVersion, RawVersion, VERSION_THRESHOLDS,
 };
 #[cfg(feature = "molang")]
 #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
-pub use molangx::{
+pub use molang::{
     cache::CompileCache,
     compile::{
         CompileFailure, CompileOptions, CompileOutcome, Compiled, Deviations, compile_source,
@@ -58,7 +58,7 @@ pub use molangx::{
 
 /// The name the families use for a Molang-valued field (vanilla
 /// reads it as a string, a short or a float): `Const(f32) | Bool(bool) | Expr(MolangSource)`.
-pub type Molang = molangx::json::MolangValueRepr;
+pub type Molang = molang::json::MolangValueRepr;
 
 /// A value-or-array Molang field (vanilla reads it as an expression node from a JSON value): one
 /// value, or an array whose elements are read the same way, recursively. The field is an

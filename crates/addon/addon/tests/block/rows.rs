@@ -1277,7 +1277,7 @@ fn condition_object_invalid_and_high() {
         // The rejecting kinds are the parser's level-3 lines, after which the
         // game's Molang loader goes on: kept errors, and the block loads.
         for expected in [
-            // molangx's own version lint, an information.
+            // molang's own version lint, an information.
             (DiagCode::InvalidVersion, Severity::Info),
             (DiagCode::QueryDeprecated, Severity::Info),
             (DiagCode::UnknownQuery, Severity::Error),

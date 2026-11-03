@@ -122,7 +122,7 @@ fn data_molang_unparsable_is_a_kept_error_and_reads_as_zero() {
     assert_eq!(shaped(&document).key["#"].aux(), 0);
 }
 
-/// Vanilla evaluates `q.is_baby` with no actor to 0; evaluation needs molangx's `vm`, which is
+/// Vanilla evaluates `q.is_baby` with no actor to 0; evaluation needs molang's `vm`, which is
 /// out of scope: the expression compiles, is not evaluated, and `data` stays "any".
 #[cfg(feature = "molang")]
 #[test]

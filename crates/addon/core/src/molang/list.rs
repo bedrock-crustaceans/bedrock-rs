@@ -61,7 +61,7 @@ pub enum ListRejected {
     /// A number that is not finite as an `f32`, read or written.
     #[error("a Molang constant must be a finite f32")]
     NonFinite,
-    /// A value of a kind a newer molangx added, which this list cannot write.
+    /// A value of a kind a newer molang added, which this list cannot write.
     #[error("a Molang value of an unknown kind")]
     Unsupported,
 }

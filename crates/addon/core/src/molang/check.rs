@@ -5,8 +5,8 @@
 use std::fmt;
 use std::sync::Arc;
 
-use molangx::catalog::AllowListError;
-use molangx::stdlib;
+use molang::catalog::AllowListError;
+use molang::stdlib;
 
 use super::fields::{MolangFieldMut, at, visit_fields};
 use super::{
@@ -33,7 +33,7 @@ pub struct MolangCheck {
 }
 
 impl MolangCheck {
-    /// The standard catalogues of molangx (`stdlib::queries`) and a new, empty cache.
+    /// The standard catalogues of molang (`stdlib::queries`) and a new, empty cache.
     pub fn new() -> Self {
         Self {
             cache: Arc::new(CompileCache::new()),
@@ -105,12 +105,10 @@ impl MolangCheck {
             OpsRule::NoAssignments => OpSet::all().without_assignments(),
             OpsRule::NoAssignmentsOrRandom => OpSet::all().without_assignments_or_random(),
         };
-        CompileOptions {
-            admission,
-            allowed_ops,
-            experiments: cx.experiments,
-            ..CompileOptions::from_raw_version(catalog.clone(), cx.pack)
-        }
+        CompileOptions::from_raw_version(catalog.clone(), cx.pack)
+            .with_admission(admission)
+            .with_allowed_ops(allowed_ops)
+            .with_experiments(cx.experiments)
     }
 
     /// Checks one `Molang` field at `location`: a constant or a bool needs no compile; an
@@ -170,7 +168,7 @@ impl MolangCheck {
     /// kept error.
     /// Only a rejection fails the field: an expression that uses render-controller
     /// arrays or resources parsed, and in a behaviour pack (the server side) gets one
-    /// `MolangLint` warning because molangx cannot evaluate it. On the server side an
+    /// `MolangLint` warning because molang cannot evaluate it. On the server side an
     /// expression that calls `query.get_pack_setting`, `query.is_pack_setting_enabled` or
     /// `query.is_pack_setting_selected` gets one `MolangLint` warning (the compiler's
     /// client-only note about the first of them): those queries fail in a behaviour pack.
@@ -185,7 +183,7 @@ impl MolangCheck {
         diagnostics: &mut Diagnostics,
     ) -> MolangOutcome {
         // Pass 1 gave every loaded source its version; one without would compile at `Invalid`
-        // rules with molangx's "made without its load context" warning.
+        // rules with molang's "made without its load context" warning.
         debug_assert!(
             source.raw_version().is_some(),
             "a Molang source reached the compile pass without its version: {source:?}"
@@ -271,11 +269,11 @@ const PACK_SETTING_QUERIES: [&str; 3] = [
     "query.is_pack_setting_selected",
 ];
 
-/// Whether `diagnostic` is molangx's client-only lint about one of the three pack-setting
+/// Whether `diagnostic` is molang's client-only lint about one of the three pack-setting
 /// queries: the lint names its query first, by its declared name. For a family that compiles its
 /// expressions itself and tells the lint as [`MolangCheck::check_source`] does (a warning,
 /// once for an expression, on the server side).
-// molangx `lint_query_side`: "<name> is a client-only query in this crate's table; …".
+// molang `lint_query_side`: "<name> is a client-only query in this crate's table; …".
 #[doc(hidden)]
 #[must_use]
 pub fn is_pack_setting_lint(diagnostic: &MolangDiagnostic) -> bool {
@@ -287,17 +285,17 @@ pub fn is_pack_setting_lint(diagnostic: &MolangDiagnostic) -> bool {
             .is_some_and(|name| PACK_SETTING_QUERIES.contains(&name))
 }
 
-/// The queries vanilla's files call with a slot and a tag, where molangx's table registers at
-/// most one argument (`query_table.rs`: `args(0, 1)`); molangx is not changed, so its lint is
+/// The queries vanilla's files call with a slot and a tag, where molang's table registers at
+/// most one argument (`query_table.rs`: `args(0, 1)`); molang is not changed, so its lint is
 /// not passed on for exactly that count.
 const SLOT_AND_TAG_QUERIES: [&str; 2] = [
     "query.equipped_item_any_tag",
     "query.equipped_item_all_tags",
 ];
 
-/// Whether `diagnostic` is molangx's argument-count lint about one of
+/// Whether `diagnostic` is molang's argument-count lint about one of
 /// [`SLOT_AND_TAG_QUERIES`] called with two arguments.
-// molangx: "<name> is registered with <n> arguments, <m> given (this crate's check)".
+// molang: "<name> is registered with <n> arguments, <m> given (this crate's check)".
 fn is_slot_and_tag_arity(diagnostic: &MolangDiagnostic) -> bool {
     let message = diagnostic.message();
     diagnostic.code() == super::DiagCode::QueryArity
@@ -308,7 +306,7 @@ fn is_slot_and_tag_arity(diagnostic: &MolangDiagnostic) -> bool {
         && message.contains(", 2 given")
 }
 
-/// Whether `diagnostic` is molangx's argument-count lint about `query.anger_level` called with
+/// Whether `diagnostic` is molang's argument-count lint about `query.anger_level` called with
 /// one argument: the game registers it with none (minimum and maximum 0) and its function never
 /// reads the arguments, so vanilla's warden (`query.anger_level(this)`) runs without a word.
 fn is_anger_level_arity(diagnostic: &MolangDiagnostic) -> bool {
@@ -342,9 +340,9 @@ fn is_no_expression(source: &MolangSource, rule: EmptyRule) -> bool {
 /// One compiler diagnostic as an addon finding at `location`: a parser
 /// message is `InvalidMolang`. A rejecting one (`Error`) takes `error_severity` (the field's
 /// spec decides whether it is kept, [`MolangFieldSpec::error_kept`]). One the expression
-/// survives (molangx's `Warning` or `Info`, a validator message below the root) is a
+/// survives (molang's `Warning` or `Info`, a validator message below the root) is a
 /// line the game logs at content-log error level and after which the parse goes on: a kept
-/// error. A lint of molangx's own is `MolangLint`: at error level an `InvalidMolang` at
+/// error. A lint of molang's own is `MolangLint`: at error level an `InvalidMolang` at
 /// `error_severity` as before, below it an information, since the game has no such line.
 /// The detail is the compiler's diagnostic, so the content-log line ends in
 /// vanilla's `<expression> | <message>`.

@@ -339,7 +339,7 @@ fn list_sources(list: &MolangList) -> u32 {
     }
 }
 
-/// `ReprError::UnsupportedType` (and anything a newer molangx adds) is `InvalidType`,
+/// `ReprError::UnsupportedType` (and anything a newer molang adds) is `InvalidType`,
 /// `ReprError::NumberOutOfRange` is `InvalidValue`.
 fn reader_error_code(error: &ReprError) -> DiagnosticCode {
     match error {

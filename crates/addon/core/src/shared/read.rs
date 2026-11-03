@@ -8,7 +8,7 @@
 //! members for write-back. The unknown-member walk does not descend into a proxied type,
 //! so these conversions keep the unknown members themselves, in the type's `extra`.
 
-use molangx::json::{MolangSource, SourceForm};
+use molang::json::{MolangSource, SourceForm};
 
 use crate::diagnostic::JsonPath;
 use crate::json::{Indent, Value, WriteStyle, write_json};
@@ -217,7 +217,7 @@ pub(crate) fn f32_value(x: f32) -> Result<Value, Failure> {
 }
 
 /// A Molang member: a string, or the object form `{"expression": string, "version": integer}`
-/// (molangx's `MolangSource` reader). `None` for any other value.
+/// (molang's `MolangSource` reader). `None` for any other value.
 pub(crate) fn molang_source(value: &Value) -> Option<MolangSource> {
     if let Some(text) = value.as_string() {
         return Some(MolangSource::string_without_context(text.as_str()));

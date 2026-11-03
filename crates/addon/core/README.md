@@ -25,7 +25,7 @@ No type or function is re-exported at the crate root. (One macro is there, hidde
 | `document` | a loaded value with its provenance (`Document<T>`), the collections (`Registry`, `Files`, `Merged`; `Registry::all_layers` and `Files::all_layers` list every kept copy), `ComponentMap` | `document` |
 | `load` | what loading depends on: `LoadOptions`, `LoadContext`, experiments, limits and the virtual locations loaders speak in | `load`, beside the loaders |
 | `json` | `Value`; the strict scalar wrappers (`StrictInt`, `StrictFloat`, `StrictBool`, `StrictString`) with the sealed traits of their number types, the scalar shape they are read through (`ScalarShape`) and their error (`StrictError`, `JsonType`); `MAX_JSON_DEPTH`; the envelope of a versioned document (`Envelope`, `EnvelopeVersion`, `probe_envelope`, whose signatures name the hidden `JsonSlice` and `SliceError`); `WriteStyle`, `EncodeError`. Hidden from the docs and outside SemVer, for `bedrock_addon`'s own readers: the other parse and write helpers, among them `JsonSlice`, `parse_at`, `take_root_member` (a member of a document's root taken out of the text before the envelope is read), `to_facet_json_signed` (a value's text with a real negative zero written `-0.0`) and `too_deep_to_walk` (whether a value built by hand nests past the limit) | `json` |
-| `molang` | the molangx types pack content holds (`Molang`, `MolangSource`, `MolangVersion`); with the `molang` feature, the compile check | `molang` |
+| `molang` | the molang types pack content holds (`Molang`, `MolangSource`, `MolangVersion`); with the `molang` feature, the compile check | `molang` |
 | `visual` | the description slots client entities, attachables and atomic client entities share (`HasVisuals`, `Visuals`), and the spawn egg of a description (`SpawnEgg`, `SpawnEggInfo`) | `visual` |
 | `shared` | value types several content modules use (descriptors, ranges, filters) | `shared` |
 | `vanilla` | generated vanilla identifier lists, the command table and `ActorType` | `vanilla` |
@@ -36,7 +36,7 @@ No type or function is re-exported at the crate root. (One macro is there, hidde
 
 | Feature | Contents | Implies |
 | --- | --- | --- |
-| `molang` | the load-time Molang compile check (`molang::MolangCheck`), over molangx's `compiler`, `stdlib` and `cache` | |
+| `molang` | the load-time Molang compile check (`molang::MolangCheck`), over molang's `compiler`, `stdlib` and `cache` | |
 
 ## Dependencies and the build script
 

@@ -13,7 +13,7 @@ use crate::json::Value;
 /// The JSON value of a Molang field as the crate's readers take it: a number of either tag is a
 /// `Number`, a bool a `Bool`, a string a `String`; an object with a string `expression` and an
 /// integer-tagged `version` that fits an `i16` is the object form (other members ignored, as
-/// molangx's facet impl ignores them); `null`, arrays and any other object are `Other`.
+/// molang's facet impl ignores them); `null`, arrays and any other object are `Other`.
 ///
 /// An integer literal outside `i64` / `u64` reaches a `Value` as a string of its digits, so it is
 /// read as a Molang string, not a constant (an accepted loss).
@@ -38,7 +38,7 @@ pub fn json_scalar(value: &Value) -> JsonScalar {
     let object_form = value.as_object().and_then(|object| {
         let expression = object.get("expression")?.as_string()?;
         let version = object.get("version")?.as_number()?;
-        // `12.0` is a real token: not the object form (molangx's `VersionNotInteger`).
+        // `12.0` is a real token: not the object form (molang's `VersionNotInteger`).
         if !version.is_integer() {
             return None;
         }
@@ -51,7 +51,7 @@ pub fn json_scalar(value: &Value) -> JsonScalar {
     object_form.unwrap_or(JsonScalar::Other(OtherJson::Object))
 }
 
-/// Reads a Molang field of kind `reader` from an untyped value: [`json_scalar`], then molangx's
+/// Reads a Molang field of kind `reader` from an untyped value: [`json_scalar`], then molang's
 /// reader, which applies the reader's rules and gives a plain string `context_version`. A number
 /// beyond `f32` is read as [`read_finite`] reads it; a caller that reports findings calls that.
 ///
@@ -66,13 +66,13 @@ pub fn read(
     read_finite(json_scalar(value), reader, context_version).map(|(field, _)| field)
 }
 
-/// Reads `json` as a field of kind `reader`, as molangx's reader does, but for a number whose
+/// Reads `json` as a field of kind `reader`, as molang's reader does, but for a number whose
 /// nearest `f32` is an infinity (`1e39`, `1e999`, an integer token past 2^128): that is read as
 /// the largest finite float of its sign, and the second part of the result is `true` so the
 /// caller can report it once ([`beyond_f32_warning`]). This is the crate's own
 /// rule for every family: vanilla's `asFloat` gives the infinity, which no writer can spell.
 ///
-/// `ReaderKind::StrictVersioned` refuses such a number with `NumberOutOfRange`, as molangx does;
+/// `ReaderKind::StrictVersioned` refuses such a number with `NumberOutOfRange`, as molang does;
 /// nothing is clamped there. A typed `Molang` member never sees such a number as a constant:
 /// facet refuses it (`json::clamp_text` rewrites the text first where a family wants the clamp).
 #[doc(hidden)]
@@ -180,7 +180,7 @@ pub fn settle_list(list: &mut MolangList, context_version: RawVersion) -> Result
     }
 }
 
-/// Pass 1 for a string-only field (`MolangSource`): molangx has no string-only reader, so the
+/// Pass 1 for a string-only field (`MolangSource`): molang has no string-only reader, so the
 /// object form is refused here (as `reader`'s `UnsupportedType` of an object), then the string
 /// takes `context_version`.
 #[doc(hidden)]

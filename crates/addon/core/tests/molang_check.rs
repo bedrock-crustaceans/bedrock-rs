@@ -177,7 +177,7 @@ fn a_render_controller_entry_is_dropped() {
     assert!(arrays.diagnostics.is_empty(), "{:?}", arrays.diagnostics);
 }
 
-/// A behaviour-pack expression molangx cannot evaluate parses, and gets one `MolangLint`
+/// A behaviour-pack expression molang cannot evaluate parses, and gets one `MolangLint`
 /// information (the game logs nothing for it).
 #[test]
 fn an_unevaluable_expression_in_a_behaviour_pack_is_linted() {
@@ -369,7 +369,7 @@ fn a_client_only_query_on_the_server_is_an_info_lint() {
     assert_eq!(lints, [(DiagCode::QueryClientOnly, Severity::Info)]);
 }
 
-/// The lints of `text` compiled for `side` in a 1.21.130 pack: molangx's code and the crate's
+/// The lints of `text` compiled for `side` in a 1.21.130 pack: molang's code and the crate's
 /// severity.
 fn lints_of(text: &str, side: Side) -> Vec<(DiagCode, Severity)> {
     let checked = check(text, &CEREAL, side, &pack(1, 21, 130));
@@ -402,7 +402,7 @@ fn a_pack_setting_query_on_the_server_is_one_information_per_expression() {
         assert_eq!(lints_of(text, Side::Client), [], "{text}");
     }
     // By name: a query that merely starts like one, and every other client-only query, keeps
-    // molangx's info, one per use.
+    // molang's info, one per use.
     assert_eq!(
         lints_of(
             "q.anim_time + q.get_pack_setting('ns:a') + q.anim_time",
@@ -555,7 +555,7 @@ fn an_empty_text_is_rejected_when_compiled() {
     let checked = check("", &compiled, Side::Server, &cx);
     assert!(matches!(checked.outcome, MolangOutcome::Failed(_)));
     assert_eq!(messages(&checked.diagnostics), [LanguageMessage::NoTokens]);
-    // Below version 4 the rejection carries only an info lint (molangx's own).
+    // Below version 4 the rejection carries only an info lint (molang's own).
     let old = pack(1, 16, 0);
     let checked = check("", &compiled, Side::Server, &old);
     assert!(matches!(checked.outcome, MolangOutcome::Failed(_)));
@@ -826,7 +826,7 @@ fn a_nested_list_element_is_reported_at_its_indices() {
 }
 
 // Vanilla's own files call the two equipped-item tag queries
-// with a slot and a tag; molangx's table registers them with at most one argument.
+// with a slot and a tag; molang's table registers them with at most one argument.
 #[test]
 fn the_equipped_item_tag_queries_take_a_slot_and_a_tag() {
     for side in [Side::Server, Side::Client] {
@@ -843,7 +843,7 @@ fn the_equipped_item_tag_queries_take_a_slot_and_a_tag() {
                 .collect();
             assert!(arity.is_empty(), "{text}: {arity:?}");
         }
-        // The count molangx's table has stays its lint for every other query, and for these
+        // The count molang's table has stays its lint for every other query, and for these
         // two beyond a slot and a tag.
         for text in [
             "query.is_item_equipped('main_hand', 'x')",
@@ -862,7 +862,7 @@ fn the_equipped_item_tag_queries_take_a_slot_and_a_tag() {
 
 // `query.anger_level` is registered with no argument, and the game's implementation never reads the
 // argument list, so vanilla's warden (`query.anger_level(this) >= 5`) runs with no log. The
-// one-argument call raises no lint; every other count stays molangx's lint.
+// one-argument call raises no lint; every other count stays molang's lint.
 #[test]
 fn query_anger_level_takes_the_warden_s_one_argument() {
     for side in [Side::Server, Side::Client] {

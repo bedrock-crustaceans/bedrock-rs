@@ -69,7 +69,8 @@ strum_macros = "0.28.0"
 reqwest = "0.13.2"
 # bedrock_addon family (crates/addon/core, addon/derive, addon/addon, addon/std)
 # A git dependency until the crate is published.
-molangx = { git = "https://github.com/bedrock-crustaceans/molangx", rev = "ffa4a4206903def0f1c4ee8b595378df54ab984c", default-features = false }
+molang = { git = "https://github.com/bedrock-crustaceans/molang", default-features = false }
+semver = "1.0.28" # the engine versions of `molang::version::EngineVersion`
 indexmap = "2"
 bytes = "1"
 stacker = "0.1.25" # the stack of a typed JSON read, grown on the thread that reads

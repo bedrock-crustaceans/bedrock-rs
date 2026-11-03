@@ -835,7 +835,7 @@ impl<'c> Reader<'c> {
             let compiled = check.cache().compile_source(source, &options);
             if let Some(value) = compiled
                 .expr()
-                .and_then(bedrock_addon_core::molang::molangx::compile::Expr::as_constant)
+                .and_then(bedrock_addon_core::molang::molang::compile::Expr::as_constant)
             {
                 return Some(super::ingredient::truncate(value));
             }

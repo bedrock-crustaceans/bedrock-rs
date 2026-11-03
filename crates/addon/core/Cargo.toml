@@ -16,7 +16,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 # The load-time Molang compile check.
-molang = ["molangx/compiler", "molangx/stdlib", "molangx/cache"]
+molang = ["molang/compiler", "molang/stdlib", "molang/cache"]
 
 [dependencies]
 thiserror = { workspace = true }
@@ -29,7 +29,8 @@ indexmap = { workspace = true }
 bytes = { workspace = true }
 uuid = { workspace = true }
 # Always built with `facet` only: `version`, `json`, `hash`, `catalog`, `ops`.
-molangx = { workspace = true, features = ["facet"] }
+molang = { workspace = true, features = ["facet"] }
+semver = { workspace = true }
 
 # No thread of WebAssembly has a stack to grow from within: there the stack is the embedder's
 # to size (`json::MAX_JSON_DEPTH`).
