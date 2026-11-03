@@ -708,13 +708,17 @@ fn molang_failures(
             };
             let rejected = failed.contains(&full);
             let unresolvable = check.is_some_and(|check| {
-                let options = check.options(&super::component::HEIGHT_RANGE, Side::Server, &molang);
-                let compiled = check.cache().compile_source(source, &options);
-                folded[slot] = compiled
+                let checked = check.compile(
+                    source,
+                    &super::component::HEIGHT_RANGE,
+                    Side::Server,
+                    &molang,
+                );
+                folded[slot] = checked
                     .expr()
                     .and_then(bedrock_addon_core::molang::molang::compile::Expr::as_constant);
                 matches!(
-                    compiled.failure(),
+                    checked.failure(),
                     Some(CompileFailure::UsesArrays | CompileFailure::UsesResources)
                 )
             });

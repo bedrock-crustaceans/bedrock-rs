@@ -231,6 +231,20 @@ mod compiled {
         );
     }
 
+    /// An expression the server cannot evaluate (a render-controller array, a resource) parses,
+    /// but gets the glue's text all the same and the biome is not loaded.
+    #[test]
+    fn an_array_or_resource_height_range_is_the_glue_error() {
+        for source in ["array.skins[0]", "geometry.default"] {
+            let found = rejected(
+                &height_range(&format!(r#"["{source}", 64]"#)),
+                &checked(context()),
+            );
+            assert_eq!(errors(&found).len(), 1, "{source}: {found:#?}");
+            glue_last(&found, source);
+        }
+    }
+
     /// A folded constant expression takes part in the bounds check (rule 9a "Bounds check").
     #[test]
     fn a_folded_height_range_is_bounds_checked() {
