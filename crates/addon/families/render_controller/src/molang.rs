@@ -169,12 +169,19 @@ mod check {
         Severity,
     };
     use bedrock_addon_core::molang::{
-        CompileFailure, MolangCheck, MolangContext, MolangFieldMut, MolangFields, Side,
-        molang_diagnostic, visit_fields,
+        MolangCheck, MolangContext, MolangFieldMut, MolangFields, ReportRules, Side, visit_fields,
     };
 
     /// `Error parsing: %s`: the line the array parser adds after a failing element's own.
     const ERROR_PARSING: &str = "Error parsing: ";
+
+    /// What the controller loader reports beyond the load's rules: molang's argument-count lint
+    /// stays for every call. Every member compiles with the client catalogue, so the server-side
+    /// rules never apply.
+    const RULES: ReportRules = ReportRules {
+        vanilla_arities: false,
+        ..ReportRules::LOAD
+    };
 
     /// The position of a `materials` pair, when `path` is one's.
     fn material_index(path: &JsonPath) -> Option<usize> {
@@ -223,20 +230,23 @@ mod check {
                 let location = Location::new(None, None, field.path.clone(), None);
                 // Every member compiles with the client catalogue: render controllers exist
                 // only on the client, whatever kind of pack carries the file.
-                let options = check.options(field.spec, Side::Client, cx);
-                let compiled = check.cache().compile_source(source, &options);
                 let start = diagnostics.len();
-                for diagnostic in compiled.diagnostics() {
-                    diagnostics.push(molang_diagnostic(
-                        diagnostic,
-                        source,
-                        Severity::Error,
-                        location.clone(),
-                    ));
-                }
+                let (field_outcome, _) = check.check_source_with(
+                    source,
+                    source,
+                    field.spec,
+                    Side::Client,
+                    cx,
+                    &location,
+                    &RULES,
+                    diagnostics,
+                );
                 // `UsesArrays` and `UsesResources` are the normal outcome of `geometry`,
                 // `textures`, `materials` and `arrays` sources.
-                if compiled.failure() != Some(CompileFailure::Rejected) {
+                if !matches!(
+                    field_outcome,
+                    bedrock_addon_core::molang::MolangOutcome::Failed(_)
+                ) {
                     return;
                 }
                 let reached = diagnostics

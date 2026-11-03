@@ -292,6 +292,34 @@ mod checked {
         assert_eq!(document.render_controllers.len(), 1);
     }
 
+    /// A render controller keeps molang's argument-count lint for the calls the load passes over
+    /// in vanilla's files (`query.anger_level(this)`).
+    #[test]
+    fn a_render_controller_keeps_the_argument_count_lint_the_load_passes_over() {
+        use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail};
+        use bedrock_addon::molang::DiagCode;
+        let document = loaded(parse(
+            &with(r#""light_color_multiplier": "query.anger_level(this)""#),
+            &rp(1, 21, 100),
+        ));
+        let arity: Vec<Severity> = document
+            .diagnostics()
+            .iter()
+            .filter(|d| matches!(d.code, DiagnosticCode::MolangLint { .. }))
+            .filter(|d| {
+                matches!(d.detail.as_deref(), Some(DiagnosticDetail::Molang(m)) if m.code() == DiagCode::QueryArity)
+            })
+            .map(|d| d.severity)
+            .collect();
+        assert_eq!(
+            arity,
+            [Severity::Info],
+            "{:?}",
+            lines(document.diagnostics())
+        );
+        assert_eq!(document.render_controllers.len(), 1);
+    }
+
     #[test]
     fn rc41_material_number() {
         let text = beside_ok(
