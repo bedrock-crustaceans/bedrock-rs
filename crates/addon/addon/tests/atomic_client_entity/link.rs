@@ -169,6 +169,25 @@ fn r06_light_multiplier_constant_and_r06b_constant_string() {
     }
 }
 
+/// An expression that folds to a constant is a constant: with the compile check it is
+/// compiled and folded, so the entity is clean.
+#[cfg(all(
+    feature = "render_controller",
+    feature = "material",
+    feature = "molang"
+))]
+#[test]
+fn r06c_light_multiplier_folding_to_a_constant() {
+    let d = linked(
+        &wisp(&["controller.render.wisp"]),
+        &controllers(&[controller(
+            "controller.render.wisp",
+            r#""light_color_multiplier": "1 + 1""#,
+        )]),
+    );
+    clean(&d);
+}
+
 // The rule is compiled with its target's feature.
 #[cfg(all(feature = "render_controller", feature = "material"))]
 #[test]

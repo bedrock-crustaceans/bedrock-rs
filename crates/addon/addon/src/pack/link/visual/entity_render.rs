@@ -102,16 +102,16 @@ fn is_constant(source: &MolangSource) -> bool {
 
 #[cfg(feature = "molang")]
 fn folds_to_a_constant(source: &MolangSource) -> bool {
-    use bedrock_addon_core::molang::{CompileOptions, CompileOutcome, Side, compile_source};
+    use bedrock_addon_core::molang::{CheckOptions, CompileOptions, Side, check};
     let catalog = bedrock_addon_core::molang::molang::stdlib::queries(Side::Client).clone();
     let Some(version) = source.raw_version() else {
         return false;
     };
-    let options = CompileOptions::from_raw_version(catalog, version);
-    match compile_source(source, &options).into_outcome() {
-        CompileOutcome::Success(expression) => expression.as_constant().is_some(),
-        _ => false,
-    }
+    // A rejection has no expression, nor does an expression that uses arrays or resources.
+    let options = CheckOptions::new(CompileOptions::from_raw_version(catalog, version));
+    check(source, &options)
+        .expr()
+        .is_some_and(|expression| expression.as_constant().is_some())
 }
 
 #[cfg(not(feature = "molang"))]
