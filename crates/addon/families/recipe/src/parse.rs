@@ -800,16 +800,18 @@ impl<'c> Reader<'c> {
     fn expression(&mut self, source: &MolangSource, at: &JsonPath) -> Option<i32> {
         #[cfg(feature = "molang")]
         if let Some(check) = self.cx.molang.clone() {
-            use bedrock_addon_core::molang::{MolangOutcome, Side};
+            use bedrock_addon_core::molang::{MolangOutcome, ReportRules, Side};
             let mcx = self.molang_context();
             let location = Location::new(None, None, at.clone(), None);
             let mut found = Diagnostics::default();
-            let outcome = check.check_source(
+            let (outcome, checked) = check.check_source_with(
+                source,
                 source,
                 &DATA_SPEC,
                 Side::Server,
                 &mcx,
                 &location,
+                &ReportRules::LOAD,
                 &mut found,
             );
             let rejected = matches!(outcome, MolangOutcome::Failed(_));
@@ -831,12 +833,11 @@ impl<'c> Reader<'c> {
             if rejected {
                 return Some(0);
             }
-            let options = check.options(&DATA_SPEC, Side::Server, &mcx);
-            let compiled = check.cache().compile_source(source, &options);
-            if let Some(value) = compiled
-                .expr()
-                .and_then(bedrock_addon_core::molang::molang::compile::Expr::as_constant)
-            {
+            if let Some(value) = checked.as_ref().and_then(|checked| {
+                checked
+                    .expr()
+                    .and_then(bedrock_addon_core::molang::molang::compile::Expr::as_constant)
+            }) {
                 return Some(super::ingredient::truncate(value));
             }
         }
