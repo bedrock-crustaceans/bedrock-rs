@@ -1,10 +1,8 @@
 //! Where a Molang field's version comes from: the pack's `min_engine_version`, the
 //! document's `format_version`, or a constant, per field.
 
-use semver::{Prerelease, Version};
-
-use super::{EngineVersion, ExperimentMask, MolangVersion, RawVersion};
-use crate::version::{FormatVersionInput, MinEngineVersion, SemVersion};
+use super::{ExperimentMask, MolangVersion, RawVersion};
+use crate::version::{FormatVersionInput, MinEngineVersion, SemVersion, engine_version_of};
 
 /// The pack's Molang version (vanilla maps the manifest's
 /// `min_engine_version` to one): `None`, an absent or invalid version, is
@@ -26,16 +24,13 @@ pub fn format_molang_version(version: &FormatVersionInput) -> RawVersion {
         // The `"beta"` literal.
         return MolangVersion::LATEST.into();
     };
-    let mut engine = Version::new(
-        u64::from(numbers.major),
-        u64::from(numbers.minor),
-        u64::from(numbers.patch),
+    let engine = engine_version_of(
+        numbers.major,
+        numbers.minor,
+        numbers.patch,
+        version.prerelease.then_some("pre"),
     );
-    if version.prerelease {
-        // Only "has a tag" takes part in the mapping's order in molang.
-        engine.pre = Prerelease::new("pre").unwrap_or(Prerelease::EMPTY);
-    }
-    MolangVersion::from(&EngineVersion::Version(engine)).into()
+    MolangVersion::from(&engine).into()
 }
 
 /// The engine version from which animation controllers take the pack's version instead of the

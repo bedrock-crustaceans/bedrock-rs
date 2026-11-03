@@ -232,3 +232,17 @@ fn a_detached_context_is_the_newest_version() {
         assert_eq!(source.resolve(&cx), RawVersion::from(MolangVersion::LATEST));
     }
 }
+
+/// The engine version a `min_engine_version` hands molang: the any-version for `*`, the three
+/// numbers with the written tag.
+#[test]
+fn a_min_engine_version_is_the_engine_version_with_its_tag() {
+    use bedrock_addon_core::molang::EngineVersion;
+    let text = |written: &str| match engine(written).engine_version() {
+        EngineVersion::Version(version) => version.to_string(),
+        EngineVersion::Any => "*".to_owned(),
+    };
+    assert_eq!(text("1.21.100"), "1.21.100");
+    assert_eq!(text("1.21.100-beta.3"), "1.21.100-beta.3");
+    assert!(matches!(engine("*").engine_version(), EngineVersion::Any));
+}

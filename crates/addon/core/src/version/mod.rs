@@ -716,21 +716,17 @@ impl MinEngineVersion {
     /// The version as molang's engine version: the any-version, or the three numbers with a
     /// pre-release tag when the version has one (the tag text matters only as "present").
     pub fn engine_version(&self) -> EngineVersion {
-        use semver::{Prerelease, Version};
         if self.version.any {
             return EngineVersion::Any;
         }
-        let mut version = Version::new(
-            u64::from(self.version.major),
-            u64::from(self.version.minor),
-            u64::from(self.version.patch),
-        );
-        if self.version.is_pre_release() {
-            version.pre = Prerelease::new(&self.version.pre_release)
-                .or_else(|_| Prerelease::new("pre"))
-                .unwrap_or(Prerelease::EMPTY);
-        }
-        EngineVersion::Version(version)
+        engine_version_of(
+            self.version.major,
+            self.version.minor,
+            self.version.patch,
+            self.version
+                .is_pre_release()
+                .then_some(self.version.pre_release.as_str()),
+        )
     }
 
     /// The Molang version vanilla maps this engine version to: a
@@ -819,6 +815,26 @@ impl BaseGameVersion {
 /// game's current format version for items, blocks and manifests, and so the version at which
 /// every open-ended slice sequence of a family closes.
 pub const ENGINE_VERSION: FormatVersion = FormatVersion::new(1, 26, 60);
+
+/// The engine version Molang versions are mapped from: three numbers and, for a pre-release,
+/// its tag (`pre` when the text is not a semver tag; only "has a tag" takes part in the
+/// mapping's order). The one construction behind [`MinEngineVersion::engine_version`] and
+/// `molang::format_molang_version`.
+pub(crate) fn engine_version_of(
+    major: u16,
+    minor: u16,
+    patch: u16,
+    pre_release: Option<&str>,
+) -> EngineVersion {
+    use semver::{Prerelease, Version};
+    let mut version = Version::new(u64::from(major), u64::from(minor), u64::from(patch));
+    if let Some(tag) = pre_release {
+        version.pre = Prerelease::new(tag)
+            .or_else(|_| Prerelease::new("pre"))
+            .unwrap_or(Prerelease::EMPTY);
+    }
+    EngineVersion::Version(version)
+}
 
 #[cfg(test)]
 mod command_version_map {

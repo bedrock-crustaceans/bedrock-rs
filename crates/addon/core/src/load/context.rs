@@ -9,7 +9,7 @@ use super::{Experiment, Experiments, LoadOptions};
 use crate::id::{
     AtmosphereSettingsId, BiomeId, ColorGradingSettingsId, LightingSettingsId, WaterSettingsId,
 };
-use crate::molang::{ExperimentMask, MolangVersion, RawVersion};
+use crate::molang::{ExperimentMask, RawVersion};
 use crate::pack_identity::PackType;
 use crate::version::{
     BaseGameVersion, ENGINE_VERSION, FormatVersion, MinEngineVersion, SemVersion,
@@ -150,12 +150,10 @@ impl LoadContext {
         if upcoming_creator_features {
             experiments.insert(Experiment::UpcomingCreatorFeatures);
         }
-        let molang_version = min_engine_version
-            .as_ref()
-            .map_or(MolangVersion::Invalid, MinEngineVersion::molang_version);
+        let molang_version = crate::molang::pack_molang_version(min_engine_version.as_ref());
         Self {
             min_engine_version,
-            molang_version: RawVersion::from(molang_version),
+            molang_version,
             molang_experiments: experiments.molang_mask(),
             is_base_game_pack,
             is_trusted_pack: false,
