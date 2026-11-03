@@ -12,6 +12,8 @@ use bedrock_addon_core::molang::{
 use bedrock_addon_core::version::FormatVersionInput;
 
 /// A typed `ExpressionNode` member: read as number, bool or string; an empty text is compiled.
+/// The parser's error is a kept error where the game keeps the member (its text, or the
+/// constant it is replaced by).
 const fn spec(
     version: MolangVersionSource,
     on_failure: MolangFailure,
@@ -25,7 +27,10 @@ const fn spec(
         empty: EmptyRule::Compile,
         on_failure,
         error_severity,
-        error_kept: false,
+        error_kept: matches!(
+            on_failure,
+            MolangFailure::KeepLogged | MolangFailure::ReplaceWith(_)
+        ),
     }
 }
 
@@ -166,15 +171,24 @@ mod check {
     use super::{
         CONTROLLER_TRANSITION, CONTROLLER_TRANSITION_1_8, DEFAULT_ANIM_TIME_UPDATE, MolangRun,
     };
-    use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
-    };
+    use bedrock_addon_core::diagnostic::{Diagnostics, Location};
     use bedrock_addon_core::molang::{
-        CompileFailure, DiagCode, MolangCheck, MolangContext, MolangFailure, MolangFieldMut,
-        MolangFieldSpec, MolangFields, MolangSource, RawVersion, Side, is_pack_setting_lint,
-        molang_diagnostic, visit_fields,
+        MolangCheck, MolangContext, MolangFailure, MolangFieldMut, MolangFields, MolangOutcome,
+        MolangSource, RawVersion, RenderNote, ReportRules, Side, visit_fields,
     };
     use bedrock_addon_core::pack_identity::PackType;
+
+    /// What the animation loaders report beyond the load's rules: molang's argument-count lint
+    /// stays for every call; on the server no client-only note but the pack-setting one (the
+    /// game's default `anim_time_update` reads `query.anim_time` there), and an expression
+    /// that uses arrays or resources is an `InvalidMolang` information; a rejection carrying only
+    /// an info note takes the member's severity.
+    const RULES: ReportRules = ReportRules {
+        vanilla_arities: false,
+        other_client_only: false,
+        render_note: RenderNote::InvalidMolang,
+        rejection_floor: true,
+    };
 
     /// The compile check of every member, each with its own failure rule, then the default
     /// `anim_time_update` once per animation that has none (a quiet compile that fills the cache).
@@ -221,17 +235,17 @@ mod check {
                     source
                 };
                 let location = Location::new(None, None, field.path.clone(), None);
-                if !compile(
-                    check,
-                    side,
-                    cx,
-                    spec,
+                let (outcome, _) = check.check_source_with(
                     source,
                     compiled_source,
+                    spec,
+                    side,
+                    cx,
                     &location,
+                    &RULES,
                     diagnostics,
-                ) && spec.on_failure == MolangFailure::RejectDocument
-                {
+                );
+                if outcome == MolangOutcome::Failed(MolangFailure::RejectDocument) {
                     keep = false;
                 }
             },
@@ -240,102 +254,10 @@ mod check {
             // The absent `anim_time_update` is vanilla's default expression at version 13;
             // one cache entry serves every animation.
             let source = MolangSource::string(DEFAULT_ANIM_TIME_UPDATE, RawVersion(13));
-            let mut quiet = Diagnostics::default();
             for _ in 0..default_anim_time_updates {
-                compile(
-                    check,
-                    side,
-                    cx,
-                    &ANIMATION_VALUE,
-                    &source,
-                    &source,
-                    &Location::default(),
-                    &mut quiet,
-                );
+                let _ = check.compile(&source, &ANIMATION_VALUE, side, cx);
             }
         }
         keep
-    }
-
-    /// Compiles one member; `false` when it was rejected.
-    #[allow(clippy::too_many_arguments, reason = "one member's whole context")]
-    fn compile(
-        check: &MolangCheck,
-        side: Side,
-        cx: &MolangContext,
-        spec: &MolangFieldSpec,
-        written: &MolangSource,
-        source: &MolangSource,
-        location: &Location,
-        diagnostics: &mut Diagnostics,
-    ) -> bool {
-        let options = check.options(spec, side, cx);
-        let compiled = check.cache().compile_source(source, &options);
-        let start = diagnostics.len();
-        let mut pack_setting_told = false;
-        for diagnostic in compiled.diagnostics() {
-            let mut finding =
-                molang_diagnostic(diagnostic, written, spec.error_severity, location.clone());
-            // A member the game keeps after the parser's error: the document loads.
-            if finding.severity == Severity::Error
-                && matches!(
-                    spec.on_failure,
-                    MolangFailure::KeepLogged | MolangFailure::ReplaceWith(_)
-                )
-            {
-                finding = finding.into_kept();
-            }
-            if side == Side::Server && diagnostic.code() == DiagCode::QueryClientOnly {
-                // The crate: vanilla's own `anim_time_update` default reads `query.anim_time` on
-                // the server, so the client-only note stays off. But for the pack-setting queries,
-                // which fail in a behaviour pack: one warning for the expression, as in any other
-                // behaviour-pack Molang.
-                if !is_pack_setting_lint(diagnostic)
-                    || std::mem::replace(&mut pack_setting_told, true)
-                {
-                    continue;
-                }
-                // An information of the crate's own.
-                finding.severity = Severity::Info;
-            }
-            diagnostics.push(finding);
-        }
-        match compiled.failure() {
-            None => true,
-            Some(CompileFailure::UsesArrays | CompileFailure::UsesResources) => {
-                if side == Side::Server {
-                    // The crate's own information: a render-only name in a behaviour pack evaluates
-                    // to 0 on the server.
-                    diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::InvalidMolang {
-                            expression: written.as_str().to_owned(),
-                        },
-                        Severity::Info,
-                        Phase::Validate,
-                        location.clone(),
-                    ));
-                }
-                true
-            }
-            Some(_) => {
-                // A rejection with only an info note (an empty text below version 4) still takes
-                // the member's severity.
-                let reached = diagnostics
-                    .iter()
-                    .skip(start)
-                    .any(|d| d.severity >= spec.error_severity);
-                if !reached {
-                    diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::InvalidMolang {
-                            expression: written.as_str().to_owned(),
-                        },
-                        spec.error_severity,
-                        Phase::Validate,
-                        location.clone(),
-                    ));
-                }
-                false
-            }
-        }
     }
 }

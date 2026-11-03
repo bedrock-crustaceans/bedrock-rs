@@ -1092,6 +1092,31 @@ mod compiled {
                 .any(|d| d.code.name() == "CaseFoldedTransition" && d.severity == Severity::Info)
         );
     }
+
+    /// A lower-cased transition compiles in lower case, but its findings quote the text as
+    /// written.
+    #[test]
+    fn a_lowercase_transitions_findings_quote_the_written_text() {
+        use bedrock_addon::diagnostic::DiagnosticCode;
+        let written = "Query.Is_Baby +";
+        let document = loaded(controller(
+            &ctrl(
+                "1.10.0",
+                &format!(r#"{{"transitions": [{{"idle": "{written}"}}]}}"#),
+            ),
+            &rp(1, 21, 0),
+        ));
+        let quoted: Vec<&str> = document
+            .diagnostics()
+            .iter()
+            .filter_map(|d| match &d.code {
+                DiagnosticCode::InvalidMolang { expression } => Some(expression.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(!quoted.is_empty(), "{:?}", lines(document.diagnostics()));
+        assert!(quoted.iter().all(|e| *e == written), "{quoted:?}");
+    }
 }
 
 // ---- stack ----

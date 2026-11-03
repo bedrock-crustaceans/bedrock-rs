@@ -340,3 +340,20 @@ fn s13_a_pack_setting_query_in_a_behavior_pack_is_one_warning_of_the_expression(
     ));
     assert_eq!(lints(file.diagnostics()), [] as [&str; 0]);
 }
+
+/// The family's own rule beside the load's: an animation keeps molang's argument-count lint for
+/// the calls the load passes over in vanilla's files (`query.anger_level(this)`).
+#[cfg(feature = "molang")]
+#[test]
+fn an_animation_keeps_the_argument_count_lint_the_load_passes_over() {
+    let file = loaded(animation(
+        &anim(r#"{"blend_weight": "query.anger_level(this)"}"#),
+        &bp(1, 21, 130),
+    ));
+    assert_eq!(
+        lints(file.diagnostics()),
+        ["Info QueryArity animations/animation.x/blend_weight"],
+        "{:?}",
+        lines(file.diagnostics())
+    );
+}
