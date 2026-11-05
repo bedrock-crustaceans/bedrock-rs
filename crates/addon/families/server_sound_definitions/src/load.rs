@@ -15,7 +15,6 @@ use bedrock_addon_core::id::{SoundEventName, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle};
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Family, Loaded, load};
 
 /// The one path the server reads the definitions of a behaviour pack from.
@@ -29,25 +28,6 @@ const DUPLICATE: &str =
 
 impl bedrock_addon_core::__private::Sealed for SoundMetadataFile {}
 impl bedrock_addon_core::__private::Sealed for SoundMetadata {}
-
-/// Gives a version below the one slice this loader's text: the versioned loader has no parser below
-/// its first slice, so a version below 1.26.60 is "no parser
-/// available" like one above it, not the "use json format version … or higher" of a floor.
-fn vanilla_texts(diagnostics: Diagnostics, written: Option<FormatVersion>) -> Diagnostics {
-    let mut out = Diagnostics::default();
-    for mut finding in diagnostics {
-        if let DiagnosticCode::UnsupportedVersion { text } = &mut finding.code
-            && matches!(text, Some(VanillaText::UseFormatVersion { .. }))
-            && let Some(version) = written
-        {
-            *text = Some(VanillaText::NoParserForVersion {
-                version: version.to_string(),
-            });
-        }
-        out.push(finding);
-    }
-    out
-}
 
 /// Loads the file of `pack` at `path`.
 fn parse_file(
@@ -72,7 +52,7 @@ fn parse_file(
     let text = bedrock_addon_core::json::last_wins(prepared.as_str());
     let document = JsonSlice::new(&text);
     let outcome = load::<MetadataFamily>(document, cx);
-    let diagnostics = vanilla_texts(outcome.diagnostics, outcome.version.written).located(&origin);
+    let diagnostics = outcome.diagnostics.located(&origin);
     match outcome.value {
         Some(Loaded::Stable(file)) => Ok(Document::new(file, origin, outcome.version, diagnostics)),
         _ => Err(Rejected::new(origin, diagnostics)),

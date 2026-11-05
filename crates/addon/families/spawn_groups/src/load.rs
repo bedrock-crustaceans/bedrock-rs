@@ -14,7 +14,7 @@ use bedrock_addon_core::load::{AppDataPlace, CollectionLoader, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
+    BelowFloor, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
 };
 use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -34,6 +34,8 @@ impl Family for GroupFamily {
     const PAYLOAD_KEY: &'static str = GROUPS_KEY;
     const DIRECTORIES: &'static [&'static str] = &[GROUPS_DIRECTORY];
     const FLOOR: FormatVersion = V1_8_0;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToEngine;
     type Latest = SpawnGroup;
     type Beta = std::convert::Infallible;

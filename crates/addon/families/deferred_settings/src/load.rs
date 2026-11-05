@@ -27,7 +27,7 @@ use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, W
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx, Versioned,
+    BelowFloor, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx, Versioned,
 };
 
 /// `lighting`: `minecraft:lighting_settings` documents.
@@ -115,6 +115,8 @@ macro_rules! payload {
             const PAYLOAD_KEY: &'static str = $key;
             const DIRECTORIES: &'static [&'static str] = &[$directory];
             const FLOOR: FormatVersion = $floor;
+            // Below the first slice the versioned loader has no parser at all.
+            const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
             // Every struct's parser takes exactly its own version, so its range is
             // `[VERSION, VERSION]`.
             const RANGE_MODEL: RangeModel = RangeModel::ExactOnly;

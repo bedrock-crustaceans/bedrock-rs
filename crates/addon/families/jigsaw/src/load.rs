@@ -23,8 +23,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{Id, Kind, kind};
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, Prepared, Unrepresentable, Value, WriteStyle,
-    probe_envelope, write_json,
+    EncodeError, JsonSlice, Prepared, Unrepresentable, Value, WriteStyle, write_json,
 };
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
@@ -32,8 +31,9 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents, Parsed, Selection,
-    StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written, select,
+    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents,
+    Parsed, Selection, StructIndex, ValidateCx, VersionStruct, Versioned, finish_file,
+    parse_as_written, parse_file_as_written, select,
 };
 
 /// `worldgen/structures`: `minecraft:jigsaw` documents.
@@ -76,6 +76,8 @@ macro_rules! json_family {
             const PAYLOAD_KEY: &'static str = $key;
             const DIRECTORIES: &'static [&'static str] = &[$dir];
             const FLOOR: FormatVersion = V1_21_20;
+            // Below the first slice the versioned loader has no parser at all.
+            const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
             type Latest = $root;
             type Beta = Infallible;
             type Component = NoComponents;
@@ -103,6 +105,17 @@ macro_rules! json_family {
 
             fn actor_type(_: &Identity) -> ActorType {
                 ActorType::Mob
+            }
+
+            fn close(
+                diagnostics: &mut Diagnostics,
+                _: Option<JsonSlice<'_>>,
+                path: &PackPath,
+                failed: bool,
+            ) {
+                if failed {
+                    failure_line::<Self>(diagnostics, path);
+                }
             }
         }
 
@@ -258,26 +271,6 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Below 1.21.20 vanilla has no slice at all: the game says "no parser available",
-/// where the generic floor check says "To use …, use json format version … or higher".
-fn no_parser_below_floor(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
-    let written = || match probe_envelope(document).map(|e| e.format_version) {
-        Ok(EnvelopeVersion::String(text)) => text,
-        Ok(EnvelopeVersion::Array([a, b, c])) => format!("{a}.{b}.{c}"),
-        _ => String::new(),
-    };
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        if let DiagnosticCode::UnsupportedVersion {
-            text: Some(text @ VanillaText::UseFormatVersion { .. }),
-        } = &mut finding.code
-        {
-            *text = VanillaText::NoParserForVersion { version: written() };
-        }
-        diagnostics.push(finding);
-    }
-}
-
 /// After a failed parse (a parse error, not a registration check), the family's line
 /// with the file's path.
 fn failure_line<F: JsonFamily>(diagnostics: &mut Diagnostics, path: &PackPath) {
@@ -292,14 +285,6 @@ fn failure_line<F: JsonFamily>(diagnostics: &mut Diagnostics, path: &PackPath) {
             }),
         }));
     }
-}
-
-/// The parse stage of one file of family `F`, the floor text corrected.
-fn parse_stage<F: JsonFamily>(text: &str, cx: &LoadContext) -> Parsed<F> {
-    let document = JsonSlice::new(text);
-    let mut parsed = parse_as_written::<F>(document, cx);
-    no_parser_below_floor(&mut parsed.diagnostics, document);
-    parsed
 }
 
 /// What loading one file gives: the identifier it names, when the payload has one, and the
@@ -322,27 +307,27 @@ pub(crate) fn parse_file<F: JsonFamily>(
     let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
-        failure_line::<F>(&mut diagnostics, path);
+        <F as Family>::close(&mut diagnostics, None, path, true);
         return (None, Err(Rejected::located(origin, diagnostics)));
     };
-    let parsed = parse_stage::<F>(prepared.as_str(), cx);
+    // The full load: the parse is not closed here, `finished` closes the file once.
+    let parsed = parse_as_written::<F>(prepared.slice(), cx);
     let identifier = parsed.identity.identifier.clone().map(Id::parse);
-    (identifier, finish_file::<F>(parsed, origin, cx))
+    (identifier, finished::<F>(parsed, origin, cx))
 }
 
-/// The rest of the load of a parsed file.
-fn finish_file<F: JsonFamily>(
+/// The rest of the load of a parsed file, closed once by core's `finish_file`.
+fn finished<F: JsonFamily>(
     parsed: Parsed<F>,
     origin: Origin,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let outcome = finish(parsed, cx);
+    let outcome = finish_file(parsed, None, &origin.path, cx);
     let mut diagnostics = outcome.diagnostics;
     if let Some(Loaded::Stable(value)) = outcome.value {
         diagnostics.locate(&origin);
         Ok(Document::new(value, origin, outcome.version, diagnostics))
     } else {
-        failure_line::<F>(&mut diagnostics, &origin.path);
         Err(Rejected::located(origin, diagnostics))
     }
 }
@@ -357,16 +342,15 @@ fn as_written<F: JsonFamily>(
     let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
-        failure_line::<F>(&mut diagnostics, path);
+        <F as Family>::close(&mut diagnostics, None, path, true);
         return Err(Rejected::located(origin, diagnostics));
     };
-    let parsed = parse_stage::<F>(prepared.as_str(), cx);
+    let parsed = parse_file_as_written::<F>(prepared.slice(), path, cx);
     let mut diagnostics = parsed.diagnostics;
     if let Some(value) = parsed.value {
         diagnostics.locate(&origin);
         Ok(Document::new(value, origin, parsed.version, diagnostics))
     } else {
-        failure_line::<F>(&mut diagnostics, path);
         Err(Rejected::located(origin, diagnostics))
     }
 }
@@ -397,7 +381,7 @@ fn upgrade<F: JsonFamily>(
         at,
         diagnostics,
     );
-    finish_file::<F>(parsed, origin, cx)
+    finished::<F>(parsed, origin, cx)
 }
 
 /// The whole document of family `F`: `format_version` 1.21.20 and the payload.

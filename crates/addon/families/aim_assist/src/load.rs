@@ -17,10 +17,10 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    StructIndex, ValidateCx, VersionStruct, Versioned,
+    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, StructIndex, ValidateCx, VersionStruct, Versioned,
 };
-use bedrock_addon_support::chain_file::{self as file, FileFamily, FileOutcome, puv_below_floor};
+use bedrock_addon_support::chain_file::{self as file, FileFamily, FileOutcome};
 
 /// `aim_assist/categories`: `minecraft:aim_assist_categories` documents.
 const CATEGORIES: &str = "aim_assist/categories";
@@ -39,6 +39,8 @@ impl Family for PresetFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:aim_assist_preset";
     const DIRECTORIES: &'static [&'static str] = &[PRESETS];
     const FLOOR: FormatVersion = V1_21_50;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = AimAssistPreset;
     type Beta = Infallible;
     type Component = NoComponents;
@@ -68,15 +70,6 @@ impl Family for PresetFamily {
 }
 
 impl FileFamily for PresetFamily {
-    fn close(
-        diagnostics: &mut Diagnostics,
-        document: Option<JsonSlice<'_>>,
-        _: &PackPath,
-        _: bool,
-    ) {
-        puv_below_floor(diagnostics, document);
-    }
-
     fn document(value: &AimAssistPreset) -> Result<Value, EncodeError> {
         value.write()
     }
@@ -87,6 +80,8 @@ impl Family for CategoriesFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:aim_assist_categories";
     const DIRECTORIES: &'static [&'static str] = &[CATEGORIES];
     const FLOOR: FormatVersion = V1_21_50;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = AimAssistCategories;
     type Beta = Infallible;
     type Component = NoComponents;
@@ -115,15 +110,6 @@ impl Family for CategoriesFamily {
 }
 
 impl FileFamily for CategoriesFamily {
-    fn close(
-        diagnostics: &mut Diagnostics,
-        document: Option<JsonSlice<'_>>,
-        _: &PackPath,
-        _: bool,
-    ) {
-        puv_below_floor(diagnostics, document);
-    }
-
     fn document(value: &AimAssistCategories) -> Result<Value, EncodeError> {
         value.write()
     }

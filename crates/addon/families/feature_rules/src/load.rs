@@ -19,10 +19,9 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::versioning::{
-    ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex, ValidateCx,
-    finish, parse_as_written,
+    BelowFloor, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex,
+    ValidateCx, finish, parse_as_written,
 };
-use bedrock_addon_support::puv::puv_below_floor;
 
 /// The feature-rule family of the version-chain machinery.
 #[derive(Clone, Copy, Debug)]
@@ -46,6 +45,8 @@ impl Family for FeatureRuleFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:feature_rules";
     const DIRECTORIES: &'static [&'static str] = &["feature_rules"];
     const FLOOR: bedrock_addon_core::version::FormatVersion = FLOOR;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = FeatureRule;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
@@ -169,10 +170,8 @@ pub(crate) fn parse_file(
         return Err(Rejected::located(origin, diagnostics));
     };
     let parsed = parse_as_written::<FeatureRuleFamily>(prepared.slice(), cx);
-    let written = parsed.version.written;
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    puv_below_floor(&mut diagnostics, written);
     diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(rule)) => {

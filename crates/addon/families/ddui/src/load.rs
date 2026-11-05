@@ -33,9 +33,9 @@ use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, NoStable, ParseCx, Parsed, RangeModel, StructIndex, ValidateCx, VersionStruct,
-    Versioned, finish, no_parser_version, parse_as_written,
+    BETA_VERSION, BelowFloor, BetaPermission, ErrorMask, Family, Identity, InputKind, Loaded,
+    MissingVersion, NoComponents, NoStable, ParseCx, Parsed, RangeModel, StructIndex, ValidateCx,
+    VersionStruct, Versioned, finish, no_parser_version, parse_as_written,
 };
 
 /// `ddui/root`: `minecraft:ui-root` documents.
@@ -83,6 +83,8 @@ impl Family for RootFamily {
     // The loader reads exactly one version, so the range is closed at both ends:
     // [1.21.130, 1.21.130].
     const FLOOR: FormatVersion = FORMAT_VERSION;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = UiRoot;
     type Beta = Infallible;
@@ -129,6 +131,8 @@ impl Family for CompositionFamily {
     const DIRECTORIES: &'static [&'static str] = &[COMPOSITIONS];
     // Exactly one version is read, as for roots.
     const FLOOR: FormatVersion = FORMAT_VERSION;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = UiComposition;
     type Beta = Infallible;
@@ -412,17 +416,12 @@ fn stage<F: UiFamily>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
 }
 
 /// The loader has one closed range and no beta version: every version outside it, the beta
-/// literal included, is "no parser available for version …", where the generic checks say "To
-/// use …, use json format version … or higher" or ask for the Beta APIs toggle.
+/// literal included, is "no parser available for version …" (below the range the pipeline says
+/// so, `BELOW_FLOOR`), where the generic check asks for the Beta APIs toggle.
 fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
-        if matches!(
-            finding.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UseFormatVersion { .. })
-            } | DiagnosticCode::BetaFeaturesNotEnabled { .. }
-        ) {
+        if matches!(finding.code, DiagnosticCode::BetaFeaturesNotEnabled { .. }) {
             finding.code = DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::NoParserForVersion {
                     version: version.to_owned(),

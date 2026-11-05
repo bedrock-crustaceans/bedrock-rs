@@ -137,7 +137,7 @@ fn a_number_format_version_is_read_as_its_text() {
         [
             error(
                 "UnsupportedVersion",
-                "unsupported version: no parser available for version 1.21",
+                "unsupported version: no parser available for version 1.21.0",
                 "format_version"
             ),
             failed()

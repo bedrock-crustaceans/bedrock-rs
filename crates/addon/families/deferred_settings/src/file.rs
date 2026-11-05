@@ -338,20 +338,12 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
                 *text = Some(VanillaText::Fixed(MALFORMED_VERSION));
             }
         } else if let DiagnosticCode::UnsupportedVersion { text: Some(text) } = &mut finding.code {
-            match text {
-                VanillaText::UseFormatVersion { .. } => {
-                    if let Some(version) = shown {
-                        *text = VanillaText::NoParserForVersion {
-                            version: version.to_owned(),
-                        };
-                    }
-                }
-                VanillaText::NoParserForVersion { version } => {
-                    if let Some(shown) = shown {
-                        shown.clone_into(version);
-                    }
-                }
-                _ => {}
+            // Below the first struct the pipeline says no parser is available
+            // (`BELOW_FLOOR`), as above the last; both print the version as shown.
+            if let VanillaText::NoParserForVersion { version } = text
+                && let Some(shown) = shown
+            {
+                shown.clone_into(version);
             }
         }
         diagnostics.push(finding);

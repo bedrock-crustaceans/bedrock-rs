@@ -20,7 +20,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BetaPermission, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
-    ValidateCx, finish, parse_as_written,
+    ValidateCx, load_file,
 };
 
 /// The directory vanilla walks.
@@ -52,6 +52,73 @@ impl Family for CullingFamily {
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(document) = v {
             validate::check(document, cx.load.is_base_game_pack, &cx.at, cx.diagnostics);
+        }
+    }
+
+    /// Puts vanilla's texts on the findings of a culling file that was skipped:
+    /// - a file that never reaches a slice (unparsable, no version or a malformed one, a version
+    ///   below 1.20.60, an envelope that is not `format_version` plus the payload) is "Missing
+    ///   object", on the finding itself when it is the version's;
+    /// - a version above 1.21.80 is "no parser available", then "Failed to parse";
+    /// - a strict parse error is followed by "Failed to parse";
+    /// - a failed identifier or rule check by "… into internal format".
+    fn close(
+        diagnostics: &mut Diagnostics,
+        document: Option<JsonSlice<'_>>,
+        path: &PackPath,
+        failed: bool,
+    ) {
+        if !failed {
+            return;
+        }
+        let missing_object = || formatted(MISSING_OBJECT, &[path.as_str()]);
+        let found = std::mem::take(diagnostics);
+        let mut envelope = false;
+        let mut above = false;
+        let mut parse = false;
+        let mut validate = false;
+        for mut finding in found {
+            if finding.severity >= Severity::Error {
+                match &mut finding.code {
+                    DiagnosticCode::UnsupportedVersion { text } => {
+                        if matches!(text, Some(VanillaText::UseFormatVersion { .. })) {
+                            *text = Some(missing_object());
+                        } else {
+                            *text = Some(VanillaText::NoParserForVersion {
+                                version: document.map(written_version).unwrap_or_default(),
+                            });
+                            above = true;
+                        }
+                    }
+                    DiagnosticCode::MissingFormatVersion { text }
+                    | DiagnosticCode::MalformedFormatVersion { text }
+                    | DiagnosticCode::MissingPayload { text } => *text = Some(missing_object()),
+                    DiagnosticCode::MalformedInput { .. }
+                    | DiagnosticCode::EmptyDocument { .. }
+                    | DiagnosticCode::PayloadKeyMismatch
+                    | DiagnosticCode::UnknownPayloadKey { .. }
+                        if finding.location.json_path.is_empty() =>
+                    {
+                        envelope = true;
+                    }
+                    DiagnosticCode::UnrecognizedField { text }
+                        if text.is_none() && finding.location.json_path.len() == 1 =>
+                    {
+                        // A third root member: the envelope is not exactly two members.
+                        *text = Some(missing_object());
+                    }
+                    _ if finding.phase == Phase::Validate => validate = true,
+                    _ => parse = true,
+                }
+            }
+            diagnostics.push(finding);
+        }
+        if envelope {
+            diagnostics.push(closing(MISSING_OBJECT, path, Phase::Parse));
+        } else if above || parse {
+            diagnostics.push(closing(FAILED_TO_PARSE, path, Phase::Parse));
+        } else if validate {
+            diagnostics.push(closing(FAILED_INTERNAL, path, Phase::Validate));
         }
     }
 }
@@ -129,65 +196,6 @@ fn written_version(document: JsonSlice<'_>) -> String {
     }
 }
 
-/// Puts vanilla's texts on the findings of a culling file that was skipped:
-/// - a file that never reaches a slice (unparsable, no version or a malformed one, a version
-///   below 1.20.60, an envelope that is not `format_version` plus the payload) is "Missing
-///   object", on the finding itself when it is the version's;
-/// - a version above 1.21.80 is "no parser available", then "Failed to parse";
-/// - a strict parse error is followed by "Failed to parse";
-/// - a failed identifier or rule check by "… into internal format".
-fn vanilla_lines(diagnostics: &mut Diagnostics, document: Option<JsonSlice<'_>>, path: &PackPath) {
-    let missing_object = || formatted(MISSING_OBJECT, &[path.as_str()]);
-    let found = std::mem::take(diagnostics);
-    let mut envelope = false;
-    let mut above = false;
-    let mut parse = false;
-    let mut validate = false;
-    for mut finding in found {
-        if finding.severity >= Severity::Error {
-            match &mut finding.code {
-                DiagnosticCode::UnsupportedVersion { text } => {
-                    if matches!(text, Some(VanillaText::UseFormatVersion { .. })) {
-                        *text = Some(missing_object());
-                    } else {
-                        *text = Some(VanillaText::NoParserForVersion {
-                            version: document.map(written_version).unwrap_or_default(),
-                        });
-                        above = true;
-                    }
-                }
-                DiagnosticCode::MissingFormatVersion { text }
-                | DiagnosticCode::MalformedFormatVersion { text }
-                | DiagnosticCode::MissingPayload { text } => *text = Some(missing_object()),
-                DiagnosticCode::MalformedInput { .. }
-                | DiagnosticCode::EmptyDocument { .. }
-                | DiagnosticCode::PayloadKeyMismatch
-                | DiagnosticCode::UnknownPayloadKey { .. }
-                    if finding.location.json_path.is_empty() =>
-                {
-                    envelope = true;
-                }
-                DiagnosticCode::UnrecognizedField { text }
-                    if text.is_none() && finding.location.json_path.len() == 1 =>
-                {
-                    // A third root member: the envelope is not exactly two members.
-                    *text = Some(missing_object());
-                }
-                _ if finding.phase == Phase::Validate => validate = true,
-                _ => parse = true,
-            }
-        }
-        diagnostics.push(finding);
-    }
-    if envelope {
-        diagnostics.push(closing(MISSING_OBJECT, path, Phase::Parse));
-    } else if above || parse {
-        diagnostics.push(closing(FAILED_TO_PARSE, path, Phase::Parse));
-    } else if validate {
-        diagnostics.push(closing(FAILED_INTERNAL, path, Phase::Validate));
-    }
-}
-
 /// Loads one culling-rules file of `pack`.
 pub(crate) fn parse_culling(
     pack: PackRef,
@@ -204,23 +212,19 @@ pub(crate) fn parse_culling(
             message: "not UTF-8 JSON within the nesting limit".to_owned(),
             text: None,
         }));
-        vanilla_lines(&mut diagnostics, None, path);
+        <CullingFamily as Family>::close(&mut diagnostics, None, path, true);
         diagnostics.locate(&origin);
         return Err(Rejected::new(origin, diagnostics));
     };
     let document = JsonSlice::new(prepared.as_str());
-    let outcome = finish(parse_as_written::<CullingFamily>(document, cx), cx);
+    let outcome = load_file::<CullingFamily>(document, path, cx);
     let mut diagnostics = outcome.diagnostics;
+    diagnostics.locate(&origin);
     match outcome.value {
-        Some(Loaded::Stable(rules)) if !diagnostics.has_errors() => {
-            diagnostics.locate(&origin);
+        Some(Loaded::Stable(rules)) => {
             Ok(Document::new(rules, origin, outcome.version, diagnostics))
         }
-        _ => {
-            vanilla_lines(&mut diagnostics, Some(document), path);
-            diagnostics.locate(&origin);
-            Err(Rejected::new(origin, diagnostics))
-        }
+        _ => Err(Rejected::new(origin, diagnostics)),
     }
 }
 

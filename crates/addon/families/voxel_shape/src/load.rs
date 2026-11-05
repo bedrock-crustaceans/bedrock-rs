@@ -2,9 +2,7 @@
 //! `shapes/` and the combine rule.
 
 use super::{FLOOR, VoxelShape, texts, validate};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
     Placed, Registry, RegistryBuilder, Rejected, default_path,
@@ -13,10 +11,10 @@ use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex,
-    ValidateCx, finish, parse_as_written,
+    BelowFloor, EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    StructIndex, ValidateCx, load_file,
 };
 
 /// The voxel-shape family of the version-chain machinery.
@@ -39,6 +37,8 @@ impl Family for VoxelShapeFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:voxel_shape";
     const DIRECTORIES: &'static [&'static str] = &["shapes"];
     const FLOOR: FormatVersion = FLOOR;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = VoxelShape;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
@@ -63,6 +63,20 @@ impl Family for VoxelShapeFamily {
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(shape) = v {
             validate::rules(shape, cx.load.is_base_game_pack, &cx.at, cx.diagnostics);
+        }
+    }
+
+    /// After a file the schema loader rejected (a parse error; not a namespace or geometry
+    /// failure, which log one line of their own), vanilla's "Failed to load voxel shape file" with
+    /// the file's path in its pack.
+    fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, path: &PackPath, _: bool) {
+        let rejected_by_schema = diagnostics
+            .iter()
+            .any(|finding| finding.severity >= Severity::Error && finding.phase == Phase::Parse);
+        if rejected_by_schema {
+            diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+                text: Some(texts::failed_to_load(path.as_str())),
+            }));
         }
     }
 }
@@ -105,42 +119,6 @@ fn malformed() -> Diagnostic {
     })
 }
 
-/// Below 1.21.110 vanilla has no slice at all: the game says "no parser available" with the
-/// version as written, where core's floor check says "To use …, use json format version …
-/// or higher". The version is the one the document input picked from the text (a number's
-/// token, an array in dotted form).
-fn no_parser_below_floor(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
-    let written = || {
-        FormatVersionInput::pick(document.text)
-            .with(|_, written| written.to_owned())
-            .or_absent(String::new())
-    };
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        if let DiagnosticCode::UnsupportedVersion {
-            text: Some(text @ VanillaText::UseFormatVersion { .. }),
-        } = &mut finding.code
-        {
-            *text = VanillaText::NoParserForVersion { version: written() };
-        }
-        diagnostics.push(finding);
-    }
-}
-
-/// After a file the schema loader rejected (a parse error; not a namespace or geometry
-/// failure, which log one line of their own), vanilla's "Failed to load voxel shape file" with
-/// the file's path in its pack.
-fn failure_line(diagnostics: &mut Diagnostics, path: &PackPath) {
-    let rejected_by_schema = diagnostics
-        .iter()
-        .any(|finding| finding.severity >= Severity::Error && finding.phase == Phase::Parse);
-    if rejected_by_schema {
-        diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
-            text: Some(texts::failed_to_load(path.as_str())),
-        }));
-    }
-}
-
 /// Loads one shape file of `pack`.
 pub(crate) fn parse_file(
     pack: PackRef,
@@ -154,14 +132,12 @@ pub(crate) fn parse_file(
     let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
-        failure_line(&mut diagnostics, path);
+        <VoxelShapeFamily as Family>::close(&mut diagnostics, None, path, true);
         return Err(Rejected::located(origin, diagnostics));
     };
     let document = prepared.slice();
-    let outcome = finish(parse_as_written::<VoxelShapeFamily>(document, cx), cx);
+    let outcome = load_file::<VoxelShapeFamily>(document, path, cx);
     let mut diagnostics = outcome.diagnostics;
-    no_parser_below_floor(&mut diagnostics, document);
-    failure_line(&mut diagnostics, path);
     diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(shape)) => {

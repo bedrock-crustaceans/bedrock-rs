@@ -25,12 +25,10 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    StructIndex, ValidateCx, VersionStruct, Versioned,
+    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, StructIndex, ValidateCx, VersionStruct, Versioned,
 };
-use bedrock_addon_support::chain_file::{
-    self as file, FileFamily, FileOutcome, closing_line, puv_below_floor,
-};
+use bedrock_addon_support::chain_file::{self as file, FileFamily, FileOutcome, closing_line};
 
 /// `cameras/presets`: `minecraft:camera_preset` documents.
 const PRESETS: &str = "cameras/presets";
@@ -56,6 +54,8 @@ impl Family for PresetFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:camera_preset";
     const DIRECTORIES: &'static [&'static str] = &[PRESETS];
     const FLOOR: FormatVersion = V1_19_50;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = CameraPreset;
     type Beta = Infallible;
     type Component = NoComponents;
@@ -89,16 +89,8 @@ impl Family for PresetFamily {
             validate::preset(preset, cx);
         }
     }
-}
 
-impl FileFamily for PresetFamily {
-    fn close(
-        diagnostics: &mut Diagnostics,
-        document: Option<JsonSlice<'_>>,
-        _: &PackPath,
-        failed: bool,
-    ) {
-        puv_below_floor(diagnostics, document);
+    fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
         // With an unknown member vanilla logs its own line and nothing else: the only line
         // is 'Unrecognized field on camera preset!'.
         let unknown = diagnostics
@@ -108,7 +100,9 @@ impl FileFamily for PresetFamily {
             closing_line(diagnostics, texts::FAILED_PRESETS);
         }
     }
+}
 
+impl FileFamily for PresetFamily {
     fn document(value: &CameraPreset) -> Result<Value, EncodeError> {
         value.write()
     }
@@ -137,9 +131,7 @@ impl Family for ListFamily {
     fn identity(payload: JsonSlice<'_>) -> Identity {
         file::identity(payload, "identifier")
     }
-}
 
-impl FileFamily for ListFamily {
     fn close(
         diagnostics: &mut Diagnostics,
         _: Option<JsonSlice<'_>>,
@@ -167,7 +159,9 @@ impl FileFamily for ListFamily {
             closing_line(diagnostics, texts::LIST_INVALID);
         }
     }
+}
 
+impl FileFamily for ListFamily {
     fn document(value: &CameraList) -> Result<Value, EncodeError> {
         value.write()
     }
@@ -178,6 +172,8 @@ impl Family for SplineFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:camera_custom_splines";
     const DIRECTORIES: &'static [&'static str] = &[SPLINES];
     const FLOOR: FormatVersion = V1_26_0;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = CameraSpline;
     type Beta = Infallible;
     type Component = NoComponents;
@@ -197,21 +193,15 @@ impl Family for SplineFamily {
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()
     }
-}
 
-impl FileFamily for SplineFamily {
-    fn close(
-        diagnostics: &mut Diagnostics,
-        document: Option<JsonSlice<'_>>,
-        _: &PackPath,
-        failed: bool,
-    ) {
-        puv_below_floor(diagnostics, document);
+    fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
         if failed {
             closing_line(diagnostics, texts::SPLINES_FAILED);
         }
     }
+}
 
+impl FileFamily for SplineFamily {
     fn document(value: &CameraSpline) -> Result<Value, EncodeError> {
         enveloped::<Self>(V1_26_0, value)
     }
@@ -239,8 +229,6 @@ impl Family for EntityFamily {
 }
 
 impl FileFamily for EntityFamily {
-    fn close(_: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, _: bool) {}
-
     fn document(value: &CameraEntity) -> Result<Value, EncodeError> {
         enveloped::<Self>(ENTITY_WRITTEN, value)
     }

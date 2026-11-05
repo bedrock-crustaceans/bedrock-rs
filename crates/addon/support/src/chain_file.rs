@@ -9,16 +9,17 @@ use bedrock_addon_core::diagnostic::{
     code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected};
-use bedrock_addon_core::json::{
-    EnvelopeVersion, JsonSlice, Prepared, Value, parse_at, probe_envelope,
-};
+use bedrock_addon_core::json::{JsonSlice, Prepared, Value, parse_at, probe_envelope};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersionInput;
-use bedrock_addon_core::versioning::{Identity, Loaded, ParseCx, Parsed, finish, parse_as_written};
+use bedrock_addon_core::versioning::{
+    Family, Identity, Loaded, ParseCx, Parsed, finish_file, parse_as_written, parse_file_as_written,
+};
 
-/// A family of this module: no beta struct, and its own texts for the generic findings.
+/// A family of this module: no beta struct, written back whole; its own texts for the generic
+/// findings are its `Family::close`, which core's closed entry points run once per file.
 pub use bedrock_addon_core::versioning::FileFamily;
 
 /// The finding of an unreadable file: not UTF-8, or nested too deeply (one finding either
@@ -36,32 +37,6 @@ fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
     for mut finding in found {
         finding.location.pack = Some(origin.pack.clone());
         finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
-/// The `format_version` of `document` as written, for a message.
-fn written_version(document: JsonSlice<'_>) -> String {
-    match probe_envelope(document).map(|envelope| envelope.format_version) {
-        Ok(EnvelopeVersion::String(text)) => text,
-        Ok(EnvelopeVersion::Array([a, b, c])) => format!("{a}.{b}.{c}"),
-        _ => String::new(),
-    }
-}
-
-/// Below a versioned loader's first slice there is no parser at all: the "no parser available" text
-/// where the generic floor check says "To use …, use json format version … or higher".
-pub fn puv_below_floor(diagnostics: &mut Diagnostics, document: Option<JsonSlice<'_>>) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        if let DiagnosticCode::UnsupportedVersion {
-            text: Some(text @ VanillaText::UseFormatVersion { .. }),
-        } = &mut finding.code
-        {
-            *text = VanillaText::NoParserForVersion {
-                version: document.map(written_version).unwrap_or_default(),
-            };
-        }
         diagnostics.push(finding);
     }
 }
@@ -95,7 +70,7 @@ pub fn parse_file<F: FileFamily>(
     let identifier = parsed.identity.identifier.clone();
     (
         identifier,
-        finish_file::<F>(parsed, Some(document), origin, cx),
+        finished::<F>(parsed, Some(document), origin, cx),
     )
 }
 
@@ -103,29 +78,26 @@ pub fn parse_file<F: FileFamily>(
 fn unreadable<F: FileFamily>(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(malformed());
-    <F as FileFamily>::close(&mut diagnostics, None, &origin.path, true);
+    <F as Family>::close(&mut diagnostics, None, &origin.path, true);
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
 }
 
-/// The rest of the load of a parsed file. Through core's unclosed `finish`: the close here,
-/// with `FileFamily::close`, is the file's only one.
-fn finish_file<F: FileFamily>(
+/// The rest of the load of a parsed file, closed once by core's `finish_file`.
+fn finished<F: FileFamily>(
     parsed: Parsed<F>,
     document: Option<JsonSlice<'_>>,
     origin: Origin,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let outcome = finish(parsed, cx);
+    let outcome = finish_file(parsed, document, &origin.path, cx);
     let mut diagnostics = outcome.diagnostics;
-    if let Some(Loaded::Stable(value)) = outcome.value {
-        <F as FileFamily>::close(&mut diagnostics, document, &origin.path, false);
-        locate(&mut diagnostics, &origin);
-        Ok(Document::new(value, origin, outcome.version, diagnostics))
-    } else {
-        <F as FileFamily>::close(&mut diagnostics, document, &origin.path, true);
-        locate(&mut diagnostics, &origin);
-        Err(Rejected::new(origin, diagnostics))
+    locate(&mut diagnostics, &origin);
+    match outcome.value {
+        Some(Loaded::Stable(value)) => {
+            Ok(Document::new(value, origin, outcome.version, diagnostics))
+        }
+        _ => Err(Rejected::new(origin, diagnostics)),
     }
 }
 
@@ -148,10 +120,15 @@ pub fn as_written<F: FileFamily>(
         return Err(unreadable::<F>(origin));
     };
     let document = prepared.slice();
-    let parsed = parse_as_written::<F>(document, cx);
+    let mut parsed = parse_file_as_written::<F>(document, path, cx);
+    if parsed.value.is_some() {
+        // A successful as-written parse is not closed by core (its `finish_file` would), but
+        // this stage is the end of the as-written path, so it closes the file itself. The
+        // camera and aim-assist closes are idempotent: a later `finish_file` close of the
+        // upgrade finds nothing left to rewrite and adds no line to a file that loaded.
+        <F as Family>::close(&mut parsed.diagnostics, Some(document), path, false);
+    }
     let mut diagnostics = parsed.diagnostics;
-    let failed = parsed.value.is_none();
-    <F as FileFamily>::close(&mut diagnostics, Some(document), path, failed);
     locate(&mut diagnostics, &origin);
     match parsed.value {
         Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
@@ -190,7 +167,7 @@ pub fn upgrade<F: FileFamily>(
         at,
         diagnostics,
     );
-    finish_file::<F>(parsed, None, origin, cx)
+    finished::<F>(parsed, None, origin, cx)
 }
 
 /// The identity of a payload whose identifier is its own member `key` (not in a

@@ -17,8 +17,8 @@ use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
-    file_version,
+    BelowFloor, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
+    ValidateCx, file_version,
 };
 use bedrock_addon_support::spawn::legacy::{RULES_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -36,6 +36,8 @@ impl Family for SpawnFamily {
     const PAYLOAD_KEY: &'static str = RULES_KEY;
     const DIRECTORIES: &'static [&'static str] = &[RULES_DIRECTORY];
     const FLOOR: FormatVersion = V1_8_0;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     // The legacy slice covers `[1.8.0, engine version]`, both ends included.
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToEngine;
     type Latest = StandardSpawnRules;
@@ -67,6 +69,8 @@ impl Family for SimplifiedFamily {
     const PAYLOAD_KEY: &'static str = RULES_KEY;
     const DIRECTORIES: &'static [&'static str] = &[RULES_DIRECTORY];
     const FLOOR: FormatVersion = V1_21_60;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     // The simplified slice covers `[1.21.60, engine version)`: the engine version itself has no
     // parser.
     const RANGE_MODEL: RangeModel = RangeModel::HalfOpenToEngine;

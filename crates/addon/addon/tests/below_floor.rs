@@ -1,15 +1,13 @@
-//! Characterization: the text a document below a chain's floor is told today, for the version
-//! spellings that render apart (two parts, three integers, a pre-release, a bare number), over
-//! three families that each render the version their own way: the camera preset (the raw
-//! envelope text, `chain_file::puv_below_floor`), POI (the version as the input parsed it,
-//! `versioning::no_parser_version`) and feature rules (`FormatVersion::to_string`,
-//! `support::puv`). The rows of voxel shape, the jigsaw processor list, spawn rules, the
-//! lighting settings of `deferred_settings`, block culling and the crafting catalog pin the
-//! renderings and texts the rest of the families give today (spawn groups and the other
-//! jigsaw and deferred documents are not pinned here).
-//!
-//! This pins the behaviour `Family::BELOW_FLOOR` will take over; the change that picks one
-//! rendering updates these rows with its reasons and deletes this file.
+//! The text a document below a chain's floor is told: the one rendering of
+//! `Family::BELOW_FLOOR`, pinned per family for the version spellings that once rendered apart
+//! (two parts, three integers, a pre-release, a bare number). The families with
+//! `BelowFloor::NoParser` (the camera preset and spline, both aim-assist files, POI, feature
+//! rules, voxel shape, the jigsaw structure, template pool, structure set and processor list,
+//! spawn rules and spawn groups, the lighting settings of `deferred_settings`, biome,
+//! dimension, the server sound definitions and the pack settings) all print the version as
+//! `versioning::no_parser_version` does: the version as parsed, a pre-release as written; a
+//! bare number under the root member's reading is malformed. Block culling and the crafting
+//! catalog keep texts of their own below the floor.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(any(
@@ -22,6 +20,11 @@
     feature = "deferred_settings",
     feature = "block_culling",
     feature = "crafting_catalog",
+    feature = "aim_assist",
+    feature = "biome",
+    feature = "dimension",
+    feature = "spawn_groups",
+    feature = "server_sound_definitions",
 ))]
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
@@ -88,14 +91,23 @@ fn load<T: Content>(path: &'static str, text: &str) -> Result<Document<T>, Rejec
 }
 
 /// Each version spelling, as written in the file, and what the family tells of it.
-type Rows = [(&'static str, &'static str); 4];
+type Rows<'a> = &'a [(&'static str, &'static str)];
 
-fn check<T: Content>(path: &'static str, document: &str, rows: Rows) {
+fn check<T: Content>(path: &'static str, document: &str, rows: Rows<'_>) {
+    check_with(|text| load::<T>(path, text), document, rows);
+}
+
+/// [`check`] of a file `parse` reads.
+fn check_with<T>(
+    parse: impl Fn(&str) -> Result<Document<T>, Rejected>,
+    document: &str,
+    rows: Rows<'_>,
+) {
     let found: Vec<(&str, String)> = rows
         .iter()
         .map(|(version, _)| {
             let text = document.replace("VERSION", version);
-            (*version, told(&load::<T>(path, &text)))
+            (*version, told(&parse(&text)))
         })
         .collect();
     let expected: Vec<(&str, String)> = rows
@@ -107,16 +119,16 @@ fn check<T: Content>(path: &'static str, document: &str, rows: Rows) {
 
 #[cfg(feature = "camera")]
 #[test]
-fn camera_preset_below_its_floor_is_told_the_raw_envelope_text() {
+fn camera_preset_below_its_floor_is_told_the_version_as_parsed() {
     // Floor 1.19.50.
     check::<bedrock_addon::families::camera::CameraPreset>(
         "cameras/presets/test.json",
         r#"{"format_version": VERSION, "minecraft:camera_preset": {"identifier": "demo:p"}}"#,
-        [
-            (r#""1.19""#, r#"no parser "1.19""#),
+        &[
+            (r#""1.19""#, r#"no parser "1.19.0""#),
             ("[1, 19, 0]", r#"no parser "1.19.0""#),
             (r#""1.19.50-beta.1""#, r#"no parser "1.19.50-beta.1""#),
-            ("1", r#"no parser """#),
+            ("1", r#"no parser "1.0.0""#),
         ],
     );
 }
@@ -128,7 +140,7 @@ fn poi_below_its_floor_is_told_the_version_as_parsed() {
     check::<bedrock_addon::families::poi::PoiType>(
         "poi/blocks/test.json",
         r#"{"format_version": VERSION, "minecraft:poi_block": {"description": {"identifier": "test:forge"}, "blocks": ["minecraft:anvil"]}}"#,
-        [
+        &[
             (r#""1.26""#, r#"no parser "1.26.0""#),
             ("[1, 26, 0]", r#"no parser "1.26.0""#),
             (r#""1.26.40-beta.1""#, r#"no parser "1.26.40-beta.1""#),
@@ -139,15 +151,15 @@ fn poi_below_its_floor_is_told_the_version_as_parsed() {
 
 #[cfg(feature = "feature_rules")]
 #[test]
-fn feature_rules_below_their_floor_are_told_the_version_struct() {
+fn feature_rules_below_their_floor_are_told_the_version_as_parsed() {
     // Floor 1.12.0.
     check::<bedrock_addon::families::feature_rules::FeatureRule>(
         "feature_rules/test.json",
         r#"{"format_version": VERSION, "minecraft:feature_rules": {"description": {"identifier": "demo:r", "places_feature": "demo:f"}, "conditions": {"placement_pass": "surface_pass"}}}"#,
-        [
+        &[
             (r#""1.11""#, r#"no parser "1.11.0""#),
             ("[1, 11, 0]", r#"no parser "1.11.0""#),
-            (r#""1.12.0-beta.1""#, r#"no parser "1.12.0""#),
+            (r#""1.12.0-beta.1""#, r#"no parser "1.12.0-beta.1""#),
             ("1", r#"no parser "1.0.0""#),
         ],
     );
@@ -155,47 +167,47 @@ fn feature_rules_below_their_floor_are_told_the_version_struct() {
 
 #[cfg(feature = "voxel_shape")]
 #[test]
-fn voxel_shape_below_its_floor_is_told_the_version_as_written() {
+fn voxel_shape_below_its_floor_is_told_the_version_as_parsed() {
     // Floor 1.21.110.
     check::<bedrock_addon::families::voxel_shape::VoxelShape>(
         "shapes/test.json",
         r#"{"format_version": VERSION, "minecraft:voxel_shape": {"description": {"identifier": "a:shape"}, "shape": {"boxes": [{"min": [0, 0, 0], "max": [16, 8, 16]}]}}}"#,
-        [
-            (r#""1.21""#, r#"no parser "1.21""#),
+        &[
+            (r#""1.21""#, r#"no parser "1.21.0""#),
             ("[1, 21, 100]", r#"no parser "1.21.100""#),
             (r#""1.21.110-beta.1""#, r#"no parser "1.21.110-beta.1""#),
-            ("1", r#"no parser "1""#),
+            ("1", r#"no parser "1.0.0""#),
         ],
     );
 }
 
 #[cfg(feature = "jigsaw")]
 #[test]
-fn jigsaw_processor_list_below_its_floor_is_told_the_raw_envelope_text() {
+fn jigsaw_processor_list_below_its_floor_is_told_the_version_as_parsed() {
     // Floor 1.21.20.
     check::<bedrock_addon::families::jigsaw::ProcessorList>(
         "worldgen/processors/test.json",
         r#"{"format_version": VERSION, "minecraft:processor_list": {"description": {"identifier": "demo:l"}, "processors": []}}"#,
-        [
-            (r#""1.21""#, r#"no parser "1.21""#),
+        &[
+            (r#""1.21""#, r#"no parser "1.21.0""#),
             ("[1, 21, 0]", r#"no parser "1.21.0""#),
             (r#""1.21.20-beta.1""#, r#"no parser "1.21.20-beta.1""#),
-            ("1", r#"no parser """#),
+            ("1", r#"no parser "1.0.0""#),
         ],
     );
 }
 
 #[cfg(feature = "spawn_rules")]
 #[test]
-fn spawn_rules_below_their_floor_are_told_the_version_struct() {
+fn spawn_rules_below_their_floor_are_told_the_version_as_parsed() {
     // Floor 1.8.0.
     check::<bedrock_addon::families::spawn_rules::SpawnRules>(
         "spawn_rules/test.json",
         r#"{"format_version": VERSION, "minecraft:spawn_rules": {"description": {"identifier": "x:mob", "population_control": "animal"}, "conditions": []}}"#,
-        [
+        &[
             (r#""1.7""#, r#"no parser "1.7.0""#),
             ("[1, 7, 0]", r#"no parser "1.7.0""#),
-            (r#""1.8.0-beta.1""#, r#"no parser "1.8.0""#),
+            (r#""1.8.0-beta.1""#, r#"no parser "1.8.0-beta.1""#),
             ("1", "malformed"),
         ],
     );
@@ -208,7 +220,7 @@ fn lighting_settings_below_their_floor_are_told_the_version_as_parsed() {
     check::<bedrock_addon::families::deferred_settings::LightingSettings>(
         "lighting/test.json",
         r#"{"format_version": VERSION, "minecraft:lighting_settings": {"description": {"identifier": "demo:l"}, "emissive": {"desaturation": 0.5}}}"#,
-        [
+        &[
             (r#""1.21""#, r#"no parser "1.21.0""#),
             ("[1, 21, 30]", r#"no parser "1.21.30""#),
             (r#""1.21.40-beta.1""#, r#"no parser "1.21.40-beta.1""#),
@@ -224,7 +236,7 @@ fn block_culling_below_its_floor_is_told_missing_object() {
     check::<bedrock_addon::families::block_culling::CullingRules>(
         "block_culling/test.json",
         r#"{"format_version": VERSION, "minecraft:block_culling_rules": {"description": {"identifier": "demo:lamp_culling"}, "rules": []}}"#,
-        [
+        &[
             (
                 r#""1.20""#,
                 "formatted \"Failed to parse block culling file '{}'. Missing object \\\"minecraft:block_culling_rules\\\"\"",
@@ -249,7 +261,7 @@ fn crafting_catalog_below_its_floor_is_told_no_valid_format_version() {
     check::<bedrock_addon::families::crafting_catalog::CraftingCatalog>(
         "item_catalog/crafting_item_catalog.json",
         r#"{"format_version": VERSION, "minecraft:crafting_items_catalog": {}}"#,
-        [
+        &[
             (
                 r#""1.21""#,
                 "fixed \"The file cannot be processed without a valid format_version\"",
@@ -266,6 +278,170 @@ fn crafting_catalog_below_its_floor_is_told_no_valid_format_version() {
                 "1",
                 "fixed \"The file cannot be processed without a valid format_version\"",
             ),
+        ],
+    );
+}
+
+#[cfg(feature = "camera")]
+#[test]
+fn camera_spline_below_its_floor_is_told_the_version_as_parsed() {
+    // Floor 1.26.0.
+    check::<bedrock_addon::families::camera::CameraSpline>(
+        "cameras/splines/test.json",
+        r#"{"format_version": VERSION, "minecraft:camera_custom_splines": {"splines": []}}"#,
+        &[
+            (r#""1.25""#, r#"no parser "1.25.0""#),
+            ("[1, 25, 0]", r#"no parser "1.25.0""#),
+            (r#""1.26.0-beta.1""#, r#"no parser "1.26.0-beta.1""#),
+            ("1", r#"no parser "1.0.0""#),
+        ],
+    );
+}
+
+/// The four spellings below aim assist's floor, 1.21.50.
+#[cfg(feature = "aim_assist")]
+const AIM_ASSIST_ROWS: Rows<'static> = &[
+    (r#""1.21""#, r#"no parser "1.21.0""#),
+    ("[1, 21, 40]", r#"no parser "1.21.40""#),
+    (r#""1.21.50-beta.1""#, r#"no parser "1.21.50-beta.1""#),
+    ("1", r#"no parser "1.0.0""#),
+];
+
+#[cfg(feature = "aim_assist")]
+#[test]
+fn aim_assist_preset_below_its_floor_is_told_the_version_as_parsed() {
+    check::<bedrock_addon::families::aim_assist::AimAssistPreset>(
+        "aim_assist/presets/test.json",
+        r#"{"format_version": VERSION, "minecraft:aim_assist_preset": {"identifier": "test:p"}}"#,
+        AIM_ASSIST_ROWS,
+    );
+}
+
+#[cfg(feature = "aim_assist")]
+#[test]
+fn aim_assist_categories_below_their_floor_are_told_the_version_as_parsed() {
+    check::<bedrock_addon::families::aim_assist::AimAssistCategories>(
+        "aim_assist/categories/test.json",
+        r#"{"format_version": VERSION, "minecraft:aim_assist_categories": {"categories": []}}"#,
+        AIM_ASSIST_ROWS,
+    );
+}
+
+#[test]
+fn pack_settings_below_their_floor_are_told_the_version_as_parsed() {
+    // Floor 1.21.100.
+    check_with(
+        |text| bedrock_addon::pack::settings::SavedSettings::parse(text.as_bytes()),
+        r#"{"format_version": VERSION, "minecraft:pack_settings": {"settings": []}}"#,
+        &[
+            (r#""1.21""#, r#"no parser "1.21.0""#),
+            ("[1, 21, 90]", r#"no parser "1.21.90""#),
+            (r#""1.21.100-beta.1""#, r#"no parser "1.21.100-beta.1""#),
+            ("1", "malformed"),
+        ],
+    );
+}
+
+/// The four spellings below the jigsaw floor, 1.21.20.
+#[cfg(feature = "jigsaw")]
+const JIGSAW_ROWS: Rows<'static> = &[
+    (r#""1.21""#, r#"no parser "1.21.0""#),
+    ("[1, 21, 0]", r#"no parser "1.21.0""#),
+    (r#""1.21.20-beta.1""#, r#"no parser "1.21.20-beta.1""#),
+    ("1", r#"no parser "1.0.0""#),
+];
+
+#[cfg(feature = "jigsaw")]
+#[test]
+fn jigsaw_structure_below_its_floor_is_told_the_version_as_parsed() {
+    check::<bedrock_addon::families::jigsaw::JigsawStructure>(
+        "worldgen/structures/test.json",
+        r#"{"format_version": VERSION, "minecraft:jigsaw": {"description": {"identifier": "demo:j"}}}"#,
+        JIGSAW_ROWS,
+    );
+}
+
+#[cfg(feature = "jigsaw")]
+#[test]
+fn jigsaw_template_pool_below_its_floor_is_told_the_version_as_parsed() {
+    check::<bedrock_addon::families::jigsaw::TemplatePool>(
+        "worldgen/template_pools/test.json",
+        r#"{"format_version": VERSION, "minecraft:template_pool": {"description": {"identifier": "demo:p"}, "elements": []}}"#,
+        JIGSAW_ROWS,
+    );
+}
+
+#[cfg(feature = "jigsaw")]
+#[test]
+fn jigsaw_structure_set_below_its_floor_is_told_the_version_as_parsed() {
+    check::<bedrock_addon::families::jigsaw::StructureSet>(
+        "worldgen/structure_sets/test.json",
+        r#"{"format_version": VERSION, "minecraft:structure_set": {"description": {"identifier": "demo:s"}, "structures": []}}"#,
+        JIGSAW_ROWS,
+    );
+}
+
+#[cfg(feature = "biome")]
+#[test]
+fn biome_below_its_floor_is_told_the_version_as_parsed() {
+    // Floor 1.21.110; a pre-release of the floor is below it.
+    check::<bedrock_addon::families::biome::Biome>(
+        "biomes/test.json",
+        r#"{"format_version": VERSION, "minecraft:biome": {"description": {"identifier": "test:x"}, "components": {}}}"#,
+        &[
+            (r#""1.21""#, r#"no parser "1.21.0""#),
+            ("[1, 21, 100]", r#"no parser "1.21.100""#),
+            (r#""1.20.0-beta.1""#, r#"no parser "1.20.0-beta.1""#),
+            (r#""1.21.110-beta.1""#, r#"no parser "1.21.110-beta.1""#),
+            ("1", r#"no parser "1.0.0""#),
+        ],
+    );
+}
+
+#[cfg(feature = "dimension")]
+#[test]
+fn dimension_below_its_floor_is_told_the_version_as_parsed() {
+    // Floor 1.18.0.
+    check::<bedrock_addon::families::dimension::Dimension>(
+        "dimensions/test.json",
+        r#"{"format_version": VERSION, "minecraft:dimension": {"description": {"identifier": "test:void"}, "components": {}}}"#,
+        &[
+            (r#""1.17""#, r#"no parser "1.17.0""#),
+            ("[1, 17, 0]", r#"no parser "1.17.0""#),
+            (r#""1.18.0-beta.1""#, r#"no parser "1.18.0-beta.1""#),
+            ("1", r#"no parser "1.0.0""#),
+        ],
+    );
+}
+
+#[cfg(feature = "spawn_groups")]
+#[test]
+fn spawn_groups_below_their_floor_are_told_the_version_as_parsed() {
+    // Floor 1.8.0.
+    check::<bedrock_addon::families::spawn_groups::SpawnGroup>(
+        "definitions/spawn_groups/test.json",
+        r#"{"format_version": VERSION, "minecraft:spawn_groups": {"description": {"identifier": "x:g"}, "conditions": [{}]}}"#,
+        &[
+            (r#""1.7""#, r#"no parser "1.7.0""#),
+            ("[1, 7, 0]", r#"no parser "1.7.0""#),
+            (r#""1.8.0-beta.1""#, r#"no parser "1.8.0-beta.1""#),
+            ("1", "malformed"),
+        ],
+    );
+}
+
+#[cfg(feature = "server_sound_definitions")]
+#[test]
+fn server_sound_definitions_below_their_floor_are_told_the_version_as_parsed() {
+    // Floor 1.26.60.
+    check::<bedrock_addon::families::server_sound_definitions::SoundMetadataFile>(
+        "sounds/sound_definitions.json",
+        r#"{"format_version": VERSION, "minecraft:server_sound_definitions": []}"#,
+        &[
+            (r#""1.26""#, r#"no parser "1.26.0""#),
+            ("[1, 26, 50]", r#"no parser "1.26.50""#),
+            (r#""1.26.60-beta.1""#, r#"no parser "1.26.60-beta.1""#),
+            ("1", r#"no parser "1.0.0""#),
         ],
     );
 }

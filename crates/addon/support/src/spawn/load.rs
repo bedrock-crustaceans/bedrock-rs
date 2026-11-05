@@ -11,7 +11,6 @@ use bedrock_addon_core::json::{JsonSlice, Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::StackCx;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Family, Loaded, finish, parse_as_written};
 
 /// A spawn file loaded: the identifier its payload names (when it was read), the document or
@@ -71,23 +70,13 @@ pub fn closing(text: &'static str) -> Diagnostic {
     .phase(Phase::Validate)
 }
 
-/// Gives every finding the document's pack and file. The versioned loader's text replaces
-/// the floor text of a version below 1.8.0 (the game's legacy slices have no floor message:
-/// "no parser available"); the checked envelope's missing payload takes the document-input
-/// text of the game's loader.
-pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin, written: Option<FormatVersion>) {
+/// Gives every finding the document's pack and file; the checked envelope's missing payload
+/// takes the document-input text of the game's loader.
+pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
     // In place: the list keeps where the members of the document are in the file.
     for finding in diagnostics.iter_mut() {
         if matches!(finding.code, DiagnosticCode::MissingPayload { text: None }) {
             finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
-        }
-        if let DiagnosticCode::UnsupportedVersion {
-            text: text @ Some(VanillaText::UseFormatVersion { .. }),
-        } = &mut finding.code
-        {
-            *text = Some(VanillaText::NoParserForVersion {
-                version: written.map(|v| v.to_string()).unwrap_or_default(),
-            });
         }
         finding.location.pack = Some(origin.pack.clone());
         finding.location.path = Some(origin.path.clone());
@@ -103,10 +92,9 @@ pub fn load_family<F: Family, T>(
 ) -> (Option<String>, Result<Document<T>, Rejected>) {
     let parsed = parse_as_written::<F>(JsonSlice::new(text), cx);
     let identifier = parsed.identity.identifier.clone();
-    let written = parsed.version.written;
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, origin, written);
+    locate(&mut diagnostics, origin);
     let result = match outcome.value {
         Some(Loaded::Stable(value)) => Ok(Document::new(
             map(value),
@@ -132,7 +120,7 @@ pub fn load_file<T>(
         if closes {
             diagnostics.push(closing(closing_text));
         }
-        locate(&mut diagnostics, origin, None);
+        locate(&mut diagnostics, origin);
         Err(Rejected::new(origin.clone(), diagnostics))
     };
     // The BOM is blanked, not cut, so every offset is an offset into the file as written; a

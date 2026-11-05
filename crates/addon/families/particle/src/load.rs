@@ -21,8 +21,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
-    Loaded, Parsed, StructIndex, finish, no_parser_version, parse_as_written,
+    BelowFloor, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
+    InputKind, Loaded, Parsed, StructIndex, finish, parse_as_written,
 };
 
 impl Family for ParticleFamily {
@@ -35,6 +35,8 @@ impl Family for ParticleFamily {
     // The legacy slice is the only one below 1.20.80, and data-driven particles start with
     // it.
     const FLOOR: FormatVersion = known::V1_10_0;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = ParticleEffect;
     // Particles have no experimental-build struct, so there is no second text to read.
     type Beta = std::convert::Infallible;
@@ -216,28 +218,17 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
 }
 
 /// The envelope findings as the particle loader words them, where the shared stage words them
-/// otherwise: below 1.10.0 there is no slice, so the game says that no parser is available
-/// for the version as written, not "To use …, use json format version … or higher"; from
-/// 1.20.80, a document with `format_version` alone has no payload, which the game words as
-/// "The payload of the Minecraft Document is missing"; and from 1.20.80, a payload under
-/// another key is refused at that key, a finding of the crate's own because the game checks
-/// the name only in development builds.
+/// otherwise: from 1.20.80, a document with `format_version` alone has no payload, which the
+/// game words as "The payload of the Minecraft Document is missing"; and from 1.20.80, a
+/// payload under another key is refused at that key, a finding of the crate's own because the
+/// game checks the name only in development builds. (Below 1.10.0 there is no slice: the
+/// pipeline says no parser is available, `BELOW_FLOOR`.)
 fn vanilla_envelope_texts(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
     let cleaned = bedrock_addon_core::json::last_wins(document.text);
     let envelope = probe_envelope(JsonSlice::new(&cleaned)).ok();
-    // The version as the game read it (the first textual `"format_version"`), as the game's
-    // "no parser available" text prints it.
-    let written = || {
-        FormatVersionInput::pick(document.text)
-            .with(no_parser_version)
-            .or_absent(String::new())
-    };
     // In place, as `Diagnostics::locate`.
     for finding in diagnostics.iter_mut() {
         match &mut finding.code {
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(text @ VanillaText::UseFormatVersion { .. }),
-            } => *text = VanillaText::NoParserForVersion { version: written() },
             DiagnosticCode::MalformedInput {
                 text: Some(VanillaText::DocumentMemberCount),
                 ..

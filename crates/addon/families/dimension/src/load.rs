@@ -16,11 +16,11 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    ParseCx, Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
-    write_payload,
+    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, ParseCx, Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish,
+    parse_as_written, write_payload,
 };
-use bedrock_addon_support::puv::{puv_below_floor, shadowed};
+use bedrock_addon_support::puv::shadowed;
 use indexmap::IndexMap;
 
 impl Family for DimensionFamily {
@@ -31,6 +31,8 @@ impl Family for DimensionFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:dimension";
     const DIRECTORIES: &'static [&'static str] = &["dimensions"];
     const FLOOR: FormatVersion = FLOOR;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = Dimension;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
@@ -176,7 +178,6 @@ impl Dimension {
         };
         let parsed = parse_as_written::<DimensionFamily>(prepared.slice(), cx);
         let mut diagnostics = parsed.diagnostics;
-        puv_below_floor(&mut diagnostics, parsed.version.written);
         diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
@@ -278,10 +279,8 @@ pub(crate) fn parse_file(
         return Err(reject(origin));
     };
     let parsed = parse_as_written::<DimensionFamily>(prepared.slice(), cx);
-    let written = parsed.version.written;
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    puv_below_floor(&mut diagnostics, written);
     diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(dimension)) => Ok(Document::new(

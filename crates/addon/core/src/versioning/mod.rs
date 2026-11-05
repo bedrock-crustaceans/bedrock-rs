@@ -537,10 +537,11 @@ pub trait Family: Sized + 'static {
     /// The post-parse hook a file's load closes with: rewrites the generic findings of a
     /// parse into the family's vanilla texts and, when the file `failed`, adds the family's
     /// closing line. `document` is the text, when it is one; `path` is the file's. The
-    /// default does nothing. The closed entries ([`load_file`], [`parse_file_as_written`],
-    /// [`finish_file`]) call it once per file, the two-stage path included; the unclosed ones
-    /// never do. The one-file families' write-back sub-trait [`FileFamily`] closes through it
-    /// too.
+    /// default does nothing. The closed entries ([`load_file`], [`finish_file`]) call it once
+    /// per file; [`parse_file_as_written`] calls it only for a parse with no value (`failed`),
+    /// and a successful one is not closed, its [`finish_file`] closes the file; the unclosed
+    /// ones never do. The one-file families' write-back sub-trait [`FileFamily`] closes
+    /// through it too.
     #[allow(unused_variables)]
     fn close(
         diagnostics: &mut Diagnostics,

@@ -14,8 +14,9 @@ use crate::json::{
 use crate::load::LoadContext;
 use crate::version::{FormatVersion, FormatVersionInput};
 use crate::versioning::{
-    BetaPermission, ComponentTable, EnvelopeCheck, Family, Identity, Loaded, MissingVersion,
-    NoComponents, RangeModel, Selection, ValidateCx, Versioned, finish, parse_as_written, select,
+    BelowFloor, BetaPermission, ComponentTable, EnvelopeCheck, Family, Identity, Loaded,
+    MissingVersion, NoComponents, RangeModel, Selection, ValidateCx, Versioned, finish,
+    parse_as_written, select,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
@@ -34,6 +35,8 @@ impl Family for PackSettingsFamily {
     // Not pack content: the world file and the global file.
     const DIRECTORIES: &'static [&'static str] = &[];
     const FLOOR: FormatVersion = FLOOR;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     // The loader's last range is the newest struct's version exactly.
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = SavedSettings;
@@ -225,16 +228,6 @@ fn load(
         if let (Some(key), Some(span)) = (&foreign, &mut finding.location.span) {
             key.restore(span);
         }
-        // The game's loader has no floor message: below 1.21.100 (and for `1.21.100-beta.n`) it
-        // finds no parser.
-        if let DiagnosticCode::UnsupportedVersion {
-            text: text @ Some(VanillaText::UseFormatVersion { .. }),
-        } = &mut finding.code
-        {
-            *text = Some(VanillaText::NoParserForVersion {
-                version: written_text(&written),
-            });
-        }
         d.push(finding);
     }
     let value = outcome.value?;
@@ -424,15 +417,6 @@ fn string_end(bytes: &[u8], start: usize) -> Option<usize> {
             b'\\' => i += 2,
             _ => i += 1,
         }
-    }
-}
-
-/// The envelope's version as written, for messages.
-fn written_text(version: &EnvelopeVersion) -> String {
-    match version {
-        EnvelopeVersion::String(text) => text.clone(),
-        EnvelopeVersion::Array([major, minor, patch]) => format!("{major}.{minor}.{patch}"),
-        _ => String::new(),
     }
 }
 

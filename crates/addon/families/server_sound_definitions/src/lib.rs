@@ -27,8 +27,8 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, ParseCx,
-    StructIndex, ValidateCx, VersionStruct, Versioned, write_payload,
+    BelowFloor, EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    ParseCx, StructIndex, ValidateCx, VersionStruct, Versioned, write_payload,
 };
 
 /// The version of the one struct, and of the one slice: the game's document format is
@@ -310,6 +310,8 @@ impl Family for MetadataFamily {
     // The one slice covers `[1.26.60, end]`, where the end is the larger of the slice's version
     // and the game's current version, which is 1.26.60: the engine version closes it.
     const FLOOR: FormatVersion = V1_26_60;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = SoundMetadataFile;
     // No Beta slice: `"beta"` has no parser.
     type Beta = std::convert::Infallible;

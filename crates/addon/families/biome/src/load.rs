@@ -29,8 +29,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
-    Loaded, MissingVersion, Parsed, StructIndex, ValidateCx, finish, member_version,
+    BelowFloor, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
+    InputKind, Loaded, MissingVersion, Parsed, StructIndex, ValidateCx, finish, member_version,
     parse_as_written,
 };
 
@@ -51,6 +51,8 @@ impl Family for BiomeFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:biome";
     const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     const FLOOR: FormatVersion = FLOOR;
+    // Below the first slice the versioned loader has no parser at all.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
     type Latest = Biome;
     type Beta = Beta;
     type Component = BiomeComponent;
@@ -355,7 +357,7 @@ fn parse(
     // The payload is under `minecraft:biome` on the raw-text path too: the checks after the
     // parse report below it.
     parsed.at = child(&JsonPath::new(), &["minecraft:biome"]);
-    below_floor(&mut parsed, &text);
+    floor_hint(&mut parsed, &text);
     let identifier = parsed.identity.identifier.clone().map(BiomeId::parse);
     Ok((identifier, parsed))
 }
@@ -392,33 +394,23 @@ fn load(
     (identifier, result)
 }
 
-/// Below the floor vanilla has no parser: the floor's generic text becomes "unsupported
-/// version: no parser available for version %s", followed by the crate's own hint for the old
-/// formats.
-fn below_floor(parsed: &mut Parsed<BiomeFamily>, text: &str) {
+/// Below the floor vanilla has no parser ("unsupported version: no parser available for
+/// version %s", `BELOW_FLOOR`): the crate's own hint for the old formats follows that finding.
+fn floor_hint(parsed: &mut Parsed<BiomeFamily>, text: &str) {
     let Some(written) = parsed.version.written.filter(|v| *v < FLOOR) else {
         return;
     };
     let mut found = Diagnostics::default();
-    for mut diagnostic in std::mem::take(&mut parsed.diagnostics) {
+    for diagnostic in std::mem::take(&mut parsed.diagnostics) {
         let floor = matches!(
             diagnostic.code,
             DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UseFormatVersion { .. })
+                text: Some(VanillaText::NoParserForVersion { .. })
             }
         );
-        if floor {
-            diagnostic.code = DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: written.to_string(),
-                }),
-            };
-            found.push(diagnostic);
-            if let Some(hint) = hint(text, written) {
-                found.push(Diagnostic::info(hint));
-            }
-        } else {
-            found.push(diagnostic);
+        found.push(diagnostic);
+        if floor && let Some(hint) = hint(text, written) {
+            found.push(Diagnostic::info(hint));
         }
     }
     parsed.diagnostics = found;

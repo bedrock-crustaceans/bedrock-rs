@@ -203,3 +203,34 @@ fn a_number_version_of_a_camera_list_stays_malformed() {
         finding("MalformedFormatVersion", "format_version", MALFORMED)
     );
 }
+
+/// Content after a camera list's root value is the game's own "not valid JSON" text on the
+/// as-written path too, as on the load and the upgrade: the stage closes a successful parse.
+#[test]
+fn a_camera_list_with_trailing_content_reads_list_not_json_as_written() {
+    let text = format!(
+        "{} trailing",
+        list_json("1.21.60", "ex:l", r#"["minecraft:free"]"#)
+    );
+    let expected = finding(
+        "MalformedInput",
+        "",
+        "Camera List file cameras/lists/test.json is not valid JSON: \
+         content after the JSON value is ignored",
+    );
+    let written = bedrock_addon::families::camera::CameraList::parse_as_written(
+        &bedrock_addon::storage::PackPath::from_static("cameras/lists/test.json"),
+        text.as_bytes(),
+        &bedrock_addon::load::LoadContext::detached(),
+    );
+    let written = match written {
+        Ok(document) => document,
+        Err(rejected) => panic!("rejected: {:#?}", rejected.diagnostics),
+    };
+    assert_eq!(
+        infos(written.diagnostics()),
+        std::slice::from_ref(&expected)
+    );
+    let loaded = loads(list(&text));
+    assert_eq!(infos(loaded.diagnostics()), [expected]);
+}

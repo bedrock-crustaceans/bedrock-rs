@@ -56,6 +56,10 @@ pub fn load_file<F: Family>(
 /// [`parse_as_written`] of one file at `path`, the first of two stages: a parse that gives no
 /// value ends the file, and is closed here (`failed`); a parse that gives one is not closed,
 /// since [`finish_file`] closes the file once at its end. Either way a file is closed once.
+///
+/// A parse with no value is already closed and must not be followed by [`finish_file`],
+/// which would close it a second time. A caller that ends the file at a successful parse,
+/// with no [`finish_file`] after it, closes the file itself.
 pub fn parse_file_as_written<F: Family>(
     document: JsonSlice<'_>,
     path: &PackPath,
@@ -880,8 +884,9 @@ impl Run {
         }
     }
 
-    /// The stable struct `written` selects, or the rejection: below the floor ("To use … use
-    /// json format version … or higher"), or no range ("no parser available").
+    /// The stable struct `written` selects, or the rejection: below the floor, the line
+    /// `Family::BELOW_FLOOR` names (`UseFormatVersion` or `NoParser`), or above every range
+    /// ("no parser available").
     fn stable<F: Family>(
         &mut self,
         written: &FormatVersionInput,

@@ -23,8 +23,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents, Parsed,
-    StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
+    BelowFloor, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
+    Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish_file, parse_as_written,
 };
 use indexmap::IndexMap;
 
@@ -56,6 +56,8 @@ macro_rules! document {
             const PAYLOAD_KEY: &'static str = $key;
             const DIRECTORIES: &'static [&'static str] = &[$dir];
             const FLOOR: FormatVersion = V1_26_40;
+            // Below the first slice the versioned loader has no parser at all.
+            const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
             type Latest = $root;
             type Beta = Infallible;
             type Component = NoComponents;
@@ -77,6 +79,17 @@ macro_rules! document {
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
                     $validate(value, &cx.at, cx.diagnostics);
+                }
+            }
+
+            fn close(
+                diagnostics: &mut Diagnostics,
+                _: Option<JsonSlice<'_>>,
+                _: &PackPath,
+                failed: bool,
+            ) {
+                if failed {
+                    diagnostics.push(failed_to_load());
                 }
             }
         }
@@ -262,58 +275,26 @@ pub(crate) fn parse_file<F: PoiFamily>(
     let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
-        diagnostics.push(failed_to_load());
+        <F as Family>::close(&mut diagnostics, None, path, true);
         return (None, Err(reject(origin, diagnostics)));
     };
-    let text = prepared.as_str();
-    let parsed = parse_stage::<F>(text, cx);
+    let parsed = parse_as_written::<F>(prepared.slice(), cx);
     let identifier = parsed.identity.identifier.clone().map(Id::parse);
-    (identifier, finish_file::<F>(parsed, origin, cx))
+    (identifier, finished::<F>(parsed, origin, cx))
 }
 
-/// The parse stage of one file of family `F`, the floor text corrected.
-fn parse_stage<F: PoiFamily>(text: &str, cx: &LoadContext) -> Parsed<F> {
-    let document = JsonSlice::new(text);
-    let mut parsed = parse_as_written::<F>(document, cx);
-    no_parser_below_floor(&mut parsed.diagnostics, document);
-    parsed
-}
-
-/// Below 1.26.40 vanilla has no slice at all: its text is "no parser available", where the
-/// generic floor check says "To use …, use json format version … or higher". The version is the
-/// one the document reader picked from the text (a number's token too), printed as the game
-/// prints a parsed version: `1.26` is `1.26.0`.
-fn no_parser_below_floor(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
-    let written = || {
-        FormatVersionInput::pick(document.text)
-            .with(bedrock_addon_core::versioning::no_parser_version)
-            .or_absent(String::new())
-    };
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        if let DiagnosticCode::UnsupportedVersion {
-            text: Some(text @ VanillaText::UseFormatVersion { .. }),
-        } = &mut finding.code
-        {
-            *text = VanillaText::NoParserForVersion { version: written() };
-        }
-        diagnostics.push(finding);
-    }
-}
-
-/// The rest of the load of a parsed file.
-fn finish_file<F: PoiFamily>(
+/// The rest of the load of a parsed file, closed once by core's `finish_file`.
+fn finished<F: PoiFamily>(
     parsed: Parsed<F>,
     origin: Origin,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let outcome = finish(parsed, cx);
+    let outcome = finish_file(parsed, None, &origin.path, cx);
     let mut diagnostics = outcome.diagnostics;
     if let Some(Loaded::Stable(value)) = outcome.value {
         diagnostics.locate(&origin);
         Ok(Document::new(value, origin, outcome.version, diagnostics))
     } else {
-        diagnostics.push(failed_to_load());
         Err(reject(origin, diagnostics))
     }
 }
@@ -390,8 +371,7 @@ fn as_written<F: PoiFamily>(
     let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unread(origin, malformed()));
     };
-    let text = prepared.as_str();
-    let parsed = parse_stage::<F>(text, cx);
+    let parsed = parse_as_written::<F>(prepared.slice(), cx);
     let mut diagnostics = parsed.diagnostics;
     match parsed.value {
         Some(value) => {
@@ -431,7 +411,7 @@ fn upgrade<F: PoiFamily>(
         at,
         diagnostics,
     );
-    finish_file::<F>(parsed, origin, cx)
+    finished::<F>(parsed, origin, cx)
 }
 
 // ---- the group -------------------------------------------------------------------------------

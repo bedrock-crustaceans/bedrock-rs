@@ -4,31 +4,15 @@
 use std::convert::Infallible;
 
 use super::{Family, VersionStruct};
-use crate::diagnostic::Diagnostics;
-use crate::json::{EncodeError, JsonSlice, Value};
-use crate::pack_identity::PackPath;
+use crate::json::{EncodeError, Value};
 
 /// A family whose files are one document each, with no beta struct, written back whole: the
 /// write-back sub-trait of [`Family`].
 ///
-/// Its [`close`](Self::close) is the hook the support crate's one-file load closes with; it
-/// delegates to [`Family::close`] by default, so a family states its hook once on either trait.
-/// A family overriding both gets this one from `support::chain_file`, which loads through the
-/// unclosed stages (`parse_as_written`, `finish`) and closes itself: a file is closed once,
-/// never by both.
+/// Its files close with [`Family::close`], run once per file by the closed entry points
+/// (`versioning::load_file`, `parse_file_as_written`, `finish_file`) the support crate's
+/// one-file load goes through.
 pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
-    /// Rewrites the generic findings of a parse into the family's vanilla texts and, when the
-    /// file `failed`, adds the family's closing line. `document` is the text, when it is one.
-    /// Default [`Family::close`].
-    fn close(
-        diagnostics: &mut Diagnostics,
-        document: Option<JsonSlice<'_>>,
-        path: &PackPath,
-        failed: bool,
-    ) {
-        <Self as Family>::close(diagnostics, document, path, failed);
-    }
-
     /// The whole document of `value`, `format_version` included.
     ///
     /// # Errors
