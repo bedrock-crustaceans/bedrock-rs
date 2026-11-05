@@ -150,12 +150,12 @@ mod codec {
     const KEY: &str = "minecraft:atmosphere_settings";
 
     // The bounds of each keyframe value.
-    const RAYLEIGH: Range = Range::new(0.0, 50.0);
-    const SUN_MIE: Range = Range::new(0.0, 60.0);
-    const MOON_MIE: Range = Range::new(0.0, 20.0);
-    const SUN_GLARE: Range = Range::new(0.0, 50.0);
-    const STOP: Range = Range::new(0.0, 1.0);
-    const MIE_START: Range = Range::new(0.0, 1.2);
+    const RAYLEIGH: Range = read::range(0.0, 50.0);
+    const SUN_MIE: Range = read::range(0.0, 60.0);
+    const MOON_MIE: Range = read::range(0.0, 20.0);
+    const SUN_GLARE: Range = read::range(0.0, 50.0);
+    const STOP: Range = read::range(0.0, 1.0);
+    const MIE_START: Range = read::range(0.0, 1.2);
 
     /// A keyframed number whose values lie in `range`.
     fn ranged(

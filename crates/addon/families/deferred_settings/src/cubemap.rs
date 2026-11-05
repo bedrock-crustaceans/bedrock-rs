@@ -71,9 +71,9 @@ mod codec {
     use bedrock_addon_core::versioning::{ParseCx, VersionStruct};
 
     /// The bounds of each `ambient_light_illuminance` value.
-    const ILLUMINANCE: Range = Range::new(0.0, 100_000.0);
+    const ILLUMINANCE: Range = read::range(0.0, 100_000.0);
     /// The bounds of the two contributions.
-    const CONTRIBUTION: Range = Range::new(0.0, 1.0);
+    const CONTRIBUTION: Range = read::range(0.0, 1.0);
     /// The members of `lighting`.
     const LIGHTING: &[&str] = &[
         "ambient_light_illuminance",

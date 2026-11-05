@@ -270,11 +270,11 @@ mod codec {
 
     const KEY: &str = "minecraft:lighting_settings";
 
-    const ILLUMINANCE: Range = Range::new(0.0, 110_000.0);
-    const ORBITAL_OFFSET: Range = Range::new(0.0, 359.99);
-    const DESATURATION: Range = Range::new(0.0, 1.0);
-    const AMBIENT: Range = Range::new(0.0, 5.0);
-    const SKY: Range = Range::new(0.1, 1.0);
+    const ILLUMINANCE: Range = read::range(0.0, 110_000.0);
+    const ORBITAL_OFFSET: Range = read::range(0.0, 359.99);
+    const DESATURATION: Range = read::range(0.0, 1.0);
+    const AMBIENT: Range = read::range(0.0, 5.0);
+    const SKY: Range = read::range(0.1, 1.0);
 
     /// The colour form of the sun and the moon: with alpha in 1.21.40, without from 1.21.60.
     trait Colour: Copy {

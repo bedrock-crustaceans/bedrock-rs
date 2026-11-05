@@ -39,34 +39,18 @@ pub(crate) struct Failed;
 /// The outcome of reading one value.
 pub(crate) type Read<T> = Result<T, Failed>;
 
-/// A numeric constraint, both ends included.
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct Range {
-    /// The lowest accepted value.
-    pub(crate) min: f32,
-    /// The highest accepted value.
-    pub(crate) max: f32,
-}
+/// A numeric constraint, both ends included: core's `cereal::NumericRange`, with the `f32` ends the
+/// game writes its constraints in ([`range`]).
+pub(crate) type Range = bedrock_addon_core::diagnostic::cereal::NumericRange;
 
-impl Range {
-    /// `[min, max]`.
-    pub(crate) const fn new(min: f32, max: f32) -> Self {
-        Self { min, max }
-    }
-
-    /// Whether `value` lies within the range.
-    pub(crate) fn contains(self, value: f32) -> bool {
-        value >= self.min && value <= self.max
-    }
-
-    /// The game's text for a value outside the range.
-    pub(crate) fn text(self) -> VanillaText {
-        bedrock_addon_core::diagnostic::cereal::NumericRange::inclusive(
-            f64::from(self.min),
-            f64::from(self.max),
-        )
-        .text()
-    }
+/// `[min, max]`, the `f32` ends widened exactly, so a value compares and a finding prints as
+/// against the `f32`s.
+#[allow(
+    clippy::cast_lossless,
+    reason = "`f64::from` is not a const fn; an f32 widens to f64 exactly"
+)]
+pub(crate) const fn range(min: f32, max: f32) -> Range {
+    Range::inclusive(min as f64, max as f64)
 }
 
 /// A fixed vanilla text.
@@ -316,7 +300,7 @@ pub(crate) fn float_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Re
     let (value, _) = number(node, d)?;
     #[allow(clippy::cast_possible_truncation, reason = "the game reads a float")]
     let narrow = value as f32;
-    if range.contains(narrow) {
+    if range.contains(f64::from(narrow)) {
         Ok(narrow)
     } else {
         Err(node.error(
@@ -352,7 +336,7 @@ pub(crate) fn integer_in(min: i32, max: i32, node: &Node<'_>, d: &mut Diagnostic
     }
     if value < f64::from(min) || value > f64::from(max) {
         #[allow(clippy::cast_precision_loss, reason = "the bounds are small integers")]
-        let range = Range::new(min as f32, max as f32);
+        let range = range(min as f32, max as f32);
         return Err(node.error(
             DiagnosticCode::InvalidValue {
                 text: Some(range.text()),

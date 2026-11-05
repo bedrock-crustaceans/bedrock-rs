@@ -734,7 +734,20 @@ fn declared(file: &str) -> (Vec<String>, usize) {
         }
     }
     names.sort();
-    (names, source.matches("Range::new(").count())
+    // Every way to build a range: the settings' constructor, core's three (also through the
+    // `NumericRange` name, which each pattern is a suffix of) and a struct literal (which a
+    // `-> Range {` signature would also match, and fail the guard loudly).
+    let built = [
+        "read::range(",
+        "Range::inclusive(",
+        "Range::at_least(",
+        "Range::at_most(",
+        "Range {",
+    ]
+    .iter()
+    .map(|pattern| source.matches(pattern).count())
+    .sum();
+    (names, built)
 }
 
 #[test]

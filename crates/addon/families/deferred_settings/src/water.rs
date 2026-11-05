@@ -166,23 +166,23 @@ mod codec {
 
     const KEY: &str = "minecraft:water_settings";
 
-    const CHLOROPHYLL: Range = Range::new(0.0, 10.0);
-    const SUSPENDED_SEDIMENT: Range = Range::new(0.0, 300.0);
-    const CDOM: Range = Range::new(0.0, 15.0);
-    const FREQUENCY: Range = Range::new(0.01, 3.0);
+    const CHLOROPHYLL: Range = read::range(0.0, 10.0);
+    const SUSPENDED_SEDIMENT: Range = read::range(0.0, 300.0);
+    const CDOM: Range = read::range(0.0, 15.0);
+    const FREQUENCY: Range = read::range(0.01, 3.0);
     const OCTAVES: (u8, u8) = (1, 30);
-    const DEPTH: Range = Range::new(0.0, 3.0);
-    const SAMPLE_WIDTH: Range = Range::new(0.01, 1.0);
-    const SPEED: Range = Range::new(0.01, 10.0);
-    const PULL: Range = Range::new(-1.0, 1.0);
-    const MIX: Range = Range::new(0.0, 1.0);
-    const SCALING: Range = Range::new(0.0, 2.0);
-    const DIRECTION_INCREMENT: Range = Range::new(0.0, 360.0);
-    const SHAPE: Range = Range::new(1.0, 10.0);
-    const FRAME_LENGTH: Range = Range::new(0.01, 5.0);
-    const SCALE: Range = Range::new(0.1, 5.0);
-    const POWER: Range = Range::new(1.0, 6.0);
-    const CONTRIBUTION: Range = Range::new(0.0, 1.0);
+    const DEPTH: Range = read::range(0.0, 3.0);
+    const SAMPLE_WIDTH: Range = read::range(0.01, 1.0);
+    const SPEED: Range = read::range(0.01, 10.0);
+    const PULL: Range = read::range(-1.0, 1.0);
+    const MIX: Range = read::range(0.0, 1.0);
+    const SCALING: Range = read::range(0.0, 2.0);
+    const DIRECTION_INCREMENT: Range = read::range(0.0, 360.0);
+    const SHAPE: Range = read::range(1.0, 10.0);
+    const FRAME_LENGTH: Range = read::range(0.01, 5.0);
+    const SCALE: Range = read::range(0.1, 5.0);
+    const POWER: Range = read::range(1.0, 6.0);
+    const CONTRIBUTION: Range = read::range(0.0, 1.0);
 
     /// What a format version declares beyond 1.21.40's members.
     #[derive(Clone, Copy)]

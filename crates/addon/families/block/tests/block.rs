@@ -11,3 +11,6 @@ mod upgrade_steps;
 
 #[path = "block/places.rs"]
 mod places;
+
+#[path = "block/bounds.rs"]
+mod bounds;

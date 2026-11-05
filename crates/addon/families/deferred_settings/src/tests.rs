@@ -538,7 +538,7 @@ fn keyframe_text(n: usize) -> String {
 #[test]
 #[allow(clippy::float_cmp, reason = "exact: the values the text holds")]
 fn the_keyframes_of_one_member_are_read_and_merged_in_near_linear_time() {
-    use super::read::{self, Node, Range};
+    use super::read::{self, Node};
     use super::value::Keyframes;
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon_core::json::JsonSlice;
@@ -553,7 +553,7 @@ fn the_keyframes_of_one_member_are_read_and_merged_in_near_linear_time() {
             };
             let mut d = Diagnostics::default();
             let read = read::keyframes(&node, &mut d, |n, d| {
-                read::float_in(Range::new(0.0, 10.0), n, d)
+                read::float_in(read::range(0.0, 10.0), n, d)
             });
             let Ok(Keyframes::Keys(frames)) = read else {
                 panic!("frames")

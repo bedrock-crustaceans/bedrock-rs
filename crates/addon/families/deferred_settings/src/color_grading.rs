@@ -235,16 +235,16 @@ mod codec {
     const KEY: &str = "minecraft:color_grading_settings";
 
     // The bounds of each component of the five controls.
-    const CONTRAST: Range = Range::new(0.0, 4.0);
-    const GAIN: Range = Range::new(0.0, 10.0);
-    const GAMMA: Range = Range::new(0.0, 4.0);
-    const OFFSET: Range = Range::new(-1.0, 1.0);
-    const SATURATION: Range = Range::new(0.0, 10.0);
+    const CONTRAST: Range = read::range(0.0, 4.0);
+    const GAIN: Range = read::range(0.0, 10.0);
+    const GAMMA: Range = read::range(0.0, 4.0);
+    const OFFSET: Range = read::range(-1.0, 1.0);
+    const SATURATION: Range = read::range(0.0, 10.0);
     /// The game's bounds, wider than the published documentation's 1–4.
-    const HIGHLIGHTS_MIN: Range = Range::new(1.0, 20.0);
+    const HIGHLIGHTS_MIN: Range = read::range(1.0, 20.0);
     /// The game's bounds, wider than the published documentation's 0.1–1.
-    const SHADOWS_MAX: Range = Range::new(0.0, 1.0);
-    const TEMPERATURE: Range = Range::new(1000.0, 15000.0);
+    const SHADOWS_MAX: Range = read::range(0.0, 1.0);
+    const TEMPERATURE: Range = read::range(1000.0, 15000.0);
     /// The game's temperature of a file that names none.
     const DEFAULT_TEMPERATURE: f32 = 6500.0;
 

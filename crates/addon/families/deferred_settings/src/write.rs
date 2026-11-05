@@ -98,7 +98,7 @@ pub(crate) fn float(value: f32, at: &JsonPath) -> Written {
 
 /// A number in `range`; one outside it is refused (the loader refuses the file).
 pub(crate) fn float_in(range: Range, value: f32, at: &JsonPath) -> Written {
-    if range.contains(value) {
+    if range.contains(f64::from(value)) {
         float(value, at)
     } else {
         Err(refuse(at))
