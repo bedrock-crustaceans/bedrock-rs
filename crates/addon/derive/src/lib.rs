@@ -213,11 +213,13 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   `multiple_of` step for a value inside the range, graded alike, and the silent ASCII
 ///   lower-casing of `lowercase`, then the walk into every field;
 ///   `trigger_members`); `impl MolangFields` (a Molang field under the walk's default spec or
-///   its `schema::molang`, every other field nested); `impl Default` when no field is required;
+///   its `schema::molang`, every other field nested, under its `schema::molang` as the nested
+///   walk's default spec if it has one); `impl Default` when no field is required;
 ///   a getter `fn x(&self) -> T` per `Option` field with a `schema::fallback`;
 /// - on a unit-only enum: `ALL` (none with `schema::order = "game"`, where the enum states
-///   its own in the game's order), `NAMES`, `EXPECTED`, `name`, `from_name`, `parse_name`,
-///   `Display`, and empty `Schema` and `MolangFields` impls;
+///   its own in the game's order and a compile-time check holds it to every variant once),
+///   `NAMES` and `EXPECTED` (in declaration order either way), `name`, `from_name`,
+///   `parse_name`, `Display`, and empty `Schema` and `MolangFields` impls;
 /// - on an untagged enum (`#[facet(untagged)]`) whose variants are units, newtypes or struct
 ///   variants: `impl Schema` (empty `FIELDS`; `check` and the Molang walk of the active
 ///   variant's fields at the enum's own path, a newtype's value as the enum's; every
@@ -228,16 +230,18 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// A field is required (plain `T`), filled on read (plain `T` with facet's `default = x`, the
 /// value in the field's own type) or optional (`Option<T>`, with or without
 /// `schema::fallback`). What the derive refuses at compile time: facet's `default` on an
-/// `Option` or on the container, `fallback` on a plain field, a bound that is neither a number nor another field's
-/// name (or names the field itself, or a field that does not exist, or doubles a side), a
-/// `multiple_of` that is not a positive number literal, a
-/// stored key whose value is not a string literal, a version that is not `major.minor.patch`,
-/// an `unknown` that is not `keep`, `report`, `reject` or `ignore`, a key on the wrong item
-/// (a field's key on the container, an enum's key on a field or a struct, `unknown` on a
-/// string enum, any key on a variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
-/// `EventTrigger`, `molang` off a Molang field or beside `molang_with`, generics, a tuple
-/// struct that is not transparent, a tagged enum with data, an untagged variant of several
-/// unnamed fields, and a `schema::` key on an untagged variant other than `unknown`. A misspelt key is facet's error.
+/// `Option` or on the container, `fallback` on a plain field, a bound that is neither a number
+/// nor another field's name (or names the field itself, or a field that does not exist, or
+/// doubles a side), a `multiple_of` that is not a positive number literal, a stored key whose
+/// value is not a string literal, a version that is not `major.minor.patch`, an `unknown` that
+/// is not `keep`, `report`, `reject` or `ignore`, a key on the wrong item (a field's key on the
+/// container, an enum's key on a field or a struct, `unknown` on a string enum, any key on a
+/// variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
+/// `EventTrigger`, `molang` on a plain value (a number, `bool` or string) or beside
+/// `molang_with`, generics, a tuple struct that is not transparent, a tagged enum with data, an
+/// untagged variant of several unnamed fields, a `schema::` key on an untagged variant other
+/// than `unknown`, and `unknown` on one that is not a struct variant. A misspelt key is facet's
+/// error.
 ///
 /// The emitted paths are `::bedrock_addon_core::…`, so the user crate depends on core.
 ///

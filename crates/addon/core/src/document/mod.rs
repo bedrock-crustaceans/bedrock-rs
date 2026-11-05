@@ -369,7 +369,6 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
     /// puts it back by default, or the written one, for a writer that writes every member it
     /// knows from the value. [`write_json_with`](Self::write_json_with)'s default, and a JSON
     /// document kind's, merge by it.
-    #[doc(hidden)]
     const UNKNOWN_PRECEDENCE: crate::json::Precedence = crate::json::Precedence::UnknownWins;
 
     /// Parses one file: version selection, upgrade to the newest struct, validation.

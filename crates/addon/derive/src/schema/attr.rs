@@ -195,8 +195,6 @@ pub(crate) struct ContainerAttrs {
     pub case_insensitive: bool,
     /// `schema::order = "game"`: the enum keeps its own `ALL`.
     pub order_game: bool,
-    /// facet's `untagged`.
-    pub untagged: bool,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -530,7 +528,6 @@ impl ContainerAttrs {
                         }
                     }
                     "transparent" => out.transparent = true,
-                    "untagged" => out.untagged = true,
                     "default" => errors.push(Error::new(
                         entry.span,
                         "facet's container `default` fills a missing member from the field \
@@ -586,8 +583,14 @@ pub(crate) fn is_untagged(attrs: &[Attribute]) -> bool {
 }
 
 /// What a variant of an untagged enum declares: facet's `rename_all` (its members' names), and
-/// a checked `schema::unknown` (stored, the door's); an error for any other `schema::` key.
-pub(crate) fn untagged_variant(attrs: &[Attribute], errors: &mut Vec<Error>) -> Option<RenameRule> {
+/// a checked `schema::unknown` (stored, the door's), which only a struct variant (`named`)
+/// takes: the door reads the word on the object's arm alone. An error for any other
+/// `schema::` key.
+pub(crate) fn untagged_variant(
+    attrs: &[Attribute],
+    named: bool,
+    errors: &mut Vec<Error>,
+) -> Option<RenameRule> {
     let entries = entries(attrs);
     placement(&entries, Place::UntaggedVariant, errors);
     let mut rename_all = None;
@@ -601,6 +604,11 @@ pub(crate) fn untagged_variant(attrs: &[Attribute], errors: &mut Vec<Error>) -> 
                     rename_all = RenameRule::parse(&lit.value());
                 }
             }
+            (_, Some("unknown")) if !named => errors.push(Error::new(
+                entry.span,
+                "`schema::unknown` is about the members of an object: put it on a struct \
+                 variant, whose members it is about",
+            )),
             (_, Some("unknown")) => {
                 if let Err(error) = unknown_word(entry) {
                     errors.push(error);

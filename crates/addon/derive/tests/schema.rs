@@ -839,6 +839,25 @@ fn check_worded<T: Schema>(value: &mut T, failure: MemberFailure) -> (Diagnostic
     (out, failed)
 }
 
+/// A step `f64` holds only near: `0.1`.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Tenths {
+    #[facet(schema::multiple_of = 0.1)]
+    pub x: f64,
+}
+
+#[test]
+fn a_step_f64_holds_only_near_tells_a_decimal_multiple_of_it() {
+    // `0.5 % 0.1` and `1.0 % 0.1` are about 0.1 in `f64`, not 0: the check compares with
+    // the remainder. `0.2 % 0.1` is 0.
+    for x in [0.5, 1.0] {
+        let (out, _) = check(&mut Tenths { x }, MemberFailure::Refuse);
+        assert_eq!(paths(&out), [("x".to_owned(), Severity::Error)], "{x}");
+    }
+    let (out, _) = check(&mut Tenths { x: 0.2 }, MemberFailure::Refuse);
+    assert!(out.is_empty(), "{out:?}");
+}
+
 #[test]
 fn multiple_of_is_a_row_fact_and_a_value_off_the_step_is_one_finding() {
     assert_eq!(Height::FIELDS[0].multiple_of, Some(16.0));
@@ -1088,4 +1107,41 @@ fn a_string_enum_in_the_games_order_keeps_its_own_all() {
     assert_eq!(Direction::NAMES, ["north", "south", "east", "west"]);
     assert_eq!(Direction::parse_name("east"), Ok(Direction::East));
     assert_eq!(Direction::West.to_string(), "west");
+}
+
+/// `schema::molang` on fields whose types walk Molang of their own: the spec is the nested
+/// walk's default, for every field below that has none of its own.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct NestedSpecs {
+    #[facet(schema::molang = TAGS)]
+    pub item: Option<bedrock_addon_core::shared::ItemDescriptor>,
+    #[facet(schema::molang = TAGS)]
+    pub tagged_boss: Option<Boss>,
+    pub boss: Option<Boss>,
+}
+
+#[test]
+fn molang_on_a_nested_walk_sets_that_walks_default_spec() {
+    let mut nested: NestedSpecs =
+        bedrock_addon_core::json::from_str_jsonc(r#"{"item": {"tags": "q.any_tag('a')"}}"#)
+            .expect("the document reads");
+    nested.tagged_boss = Some(boss());
+    nested.boss = Some(boss());
+    let mut seen = Vec::new();
+    visit_fields_under(
+        &mut nested,
+        &JsonPath::new(),
+        &MolangFieldSpec::DEFAULT,
+        |field| {
+            seen.push((field.path.to_string(), *field.spec));
+        },
+    );
+    assert_eq!(
+        seen,
+        [
+            ("item/tags".to_owned(), TAGS),
+            ("tagged_boss/cond".to_owned(), TAGS),
+            ("boss/cond".to_owned(), MolangFieldSpec::DEFAULT),
+        ]
+    );
 }

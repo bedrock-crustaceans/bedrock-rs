@@ -107,7 +107,7 @@ pub(super) fn failure_finding(
 ) -> Diagnostic {
     match failure {
         ScalarFailure::Read(error) => slice_error(error, base, slice, Severity::Error),
-        ScalarFailure::Refused(misread) => misread.finding(base),
+        ScalarFailure::Refused(refused) => refused.misread.finding(base),
     }
 }
 

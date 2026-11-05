@@ -136,7 +136,8 @@ pub struct FieldRow {
     pub fallback: Option<Lit>,
     /// `schema::min`, `max`, `above`, `below`, in the order written.
     pub bounds: &'static [Bound],
-    /// `schema::multiple_of`: the step the value is a multiple of.
+    /// `schema::multiple_of`: the step the value is a multiple of, compared in `f64`
+    /// (`value % step == 0.0`), so exact for an integer step or a binary fraction alone.
     pub multiple_of: Option<f64>,
     /// `schema::since_format`.
     pub since_format: Option<FormatVersion>,

@@ -745,7 +745,7 @@ mod prepass {
     fn a_scalar_no_arm_takes_is_refused_before_the_read() {
         let refused =
             |text: &str| match parse_with_rules::<Shorthand>(JsonSlice::new(text), None, STRICT) {
-                Err(ScalarFailure::Refused(misread)) => Some(misread.path.to_string()),
+                Err(ScalarFailure::Refused(refused)) => Some(refused.misread.path.to_string()),
                 _ => None,
             };
         assert_eq!(refused("5"), Some(String::new()));
@@ -789,18 +789,18 @@ mod prepass {
         assert_eq!(error.relative_path().to_string(), "n/0");
         // A respelling is no fault: the arm is refused as before.
         let respelling = STRICT.with_scalars(Scalars::NonStrict);
-        let Err(ScalarFailure::Refused(misread)) = parse_with_rules::<BeforeTheArm>(
+        let Err(ScalarFailure::Refused(refused)) = parse_with_rules::<BeforeTheArm>(
             JsonSlice::new(r#"{"n": true, "shorthand": 5}"#),
             None,
             respelling,
         ) else {
             panic!("the arm is not refused");
         };
-        assert_eq!(misread.path.to_string(), "shorthand");
+        assert_eq!(refused.misread.path.to_string(), "shorthand");
         // With nothing before it, the arm is refused before the read.
         assert!(matches!(
             read(r#"{"shorthand": 5, "s": 5}"#),
-            Err(ScalarFailure::Refused(misread)) if misread.path.to_string() == "shorthand"
+            Err(ScalarFailure::Refused(refused)) if refused.misread.path.to_string() == "shorthand"
         ));
     }
 
@@ -824,12 +824,12 @@ mod prepass {
             len: 4,
         };
         assert_eq!(refused.span, Some(span));
-        assert_eq!(refused.path.to_string(), "shorthand");
+        assert_eq!(refused.misread.path.to_string(), "shorthand");
         // The finding as the misread tells it, now at the scalar's place.
         let at = bedrock_addon_core::diagnostic::JsonPath::new().child("x");
         let finding = refused.spanned_finding(&at);
         assert_eq!(finding.location.span, Some(span));
-        let plain = refused.finding(&at);
+        let plain = refused.misread.finding(&at);
         assert_eq!(
             plain.location.span, None,
             "the misread's own finding is unchanged"

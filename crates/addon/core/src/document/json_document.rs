@@ -46,7 +46,6 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// [`Content::UNKNOWN_PRECEDENCE`] of the kind: which value
     /// [`write_root_with`](Self::write_root_with) keeps where an unknown member has the key of
     /// a written one.
-    #[doc(hidden)]
     const UNKNOWN_PRECEDENCE: crate::json::Precedence = crate::json::Precedence::UnknownWins;
 
     /// The `format_version` the value is written at. Default: the family's newest struct's,

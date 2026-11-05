@@ -68,6 +68,34 @@ pub(crate) fn is_molang_slot(ty: &Type) -> bool {
     })
 }
 
+/// Whether the field holds a plain value below its containers (a number, a `bool`, a `char` or
+/// a string), which has no Molang walk of its own.
+pub(crate) fn is_plain_value(ty: &Type) -> bool {
+    name(innermost(ty)).is_some_and(|name| {
+        matches!(
+            name.as_str(),
+            "bool"
+                | "char"
+                | "str"
+                | "String"
+                | "i8"
+                | "i16"
+                | "i32"
+                | "i64"
+                | "i128"
+                | "isize"
+                | "u8"
+                | "u16"
+                | "u32"
+                | "u64"
+                | "u128"
+                | "usize"
+                | "f32"
+                | "f64"
+        )
+    })
+}
+
 /// Whether the field holds event triggers below its containers.
 pub(crate) fn is_event_trigger(ty: &Type) -> bool {
     name(innermost(ty)).is_some_and(|name| name == "EventTrigger")

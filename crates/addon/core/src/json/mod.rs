@@ -94,10 +94,11 @@ pub use unknown::{
     BEYOND_FLOAT_MEMBER, Misread, Misreading, keep_members, keep_members_and_range_members,
     keep_unknown_members, keep_unknown_members_with, too_deep_to_walk, unknown_members,
 };
+pub use write::{Precedence, merge_unknown, merge_unknown_with};
 #[doc(hidden)]
 pub use write::{
-    Precedence, UNKNOWN_MEMBER_NOT_WRITTEN, merge_unknown, merge_unknown_with, to_facet_json,
-    to_facet_json_signed, to_json, write_json, write_json_with, write_json_with_precedence,
+    UNKNOWN_MEMBER_NOT_WRITTEN, to_facet_json, to_facet_json_signed, to_json, write_json,
+    write_json_with, write_json_with_precedence,
 };
 
 /// An untyped JSON value: opaque members (`events`, `extra`, raw layers) are held as this.

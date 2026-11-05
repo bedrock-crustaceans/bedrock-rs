@@ -37,7 +37,12 @@ use crate::version::FormatVersion;
 /// A row with `shorthand = scalar` whose payload is a struct of one member
 /// ([`ShorthandShape::OneField`](crate::schema::ShorthandShape)) also reads a payload that is
 /// no object (`5` for `{"value": 5}`): the text is read as that member, by the slice's scalar
-/// rules and no null rule, its findings at the component and spanning the text as written.
+/// rules and its null rule (a bare `null` is the member's `null`: a type error under
+/// `Rejected`, the member left out under `Absent`), its findings at the component. Under
+/// [`ScalarRules::default_and_tell`](crate::json::ScalarRules) a bare scalar of the wrong
+/// type is the member's: blanked and told, and the component kept with the member's default. A failed read spans the text as
+/// written; a scalar no arm of an untagged member takes is told, as every such refusal at the
+/// door ([`ScalarFailure::Refused`](crate::json::ScalarFailure)), without a span.
 /// An untagged enum or a transparent newtype reads the scalar itself, so the row's shorthand
 /// changes nothing there.
 pub fn parse_component<T, C>(
@@ -158,8 +163,24 @@ where
             super::payload::span_of(slice)
         }
     };
-    match parse_with_rules::<T>(inner, None, cx.scalar_rules) {
+    // A bare `null` is the member's `null`: the slice's null rule reads it as the object
+    // form's.
+    let rule = cx.null_rule;
+    match parse_with_rules::<T>(inner, rule, cx.scalar_rules) {
         Ok(read) => {
+            let mut found = Diagnostics::default();
+            if rule == Some(NullRule::Rejected)
+                && reject_nulls(&read.value, inner, &JsonPath::new(), &mut found)
+            {
+                for mut finding in found {
+                    finding.location.json_path = below_member(&finding.location.json_path);
+                    finding.location.span = finding.location.span.map(unwrap);
+                    d.push(finding);
+                }
+                return None;
+            }
+            let absent: Vec<JsonPath> = read.absent.iter().map(below_member).collect();
+            crate::json::tell_null_members(&absent, &JsonPath::new(), d);
             for mut told in read.told {
                 told.path = below_member(&told.path);
                 d.push(told.finding(&JsonPath::new()));
@@ -175,6 +196,7 @@ where
                 }
                 ScalarFailure::Refused(mut refused) => {
                     refused.misread.path = below_member(&refused.misread.path);
+                    // Kept right for `spanned_finding`; the door's finding has no span.
                     refused.span = refused.span.map(unwrap);
                     ScalarFailure::Refused(refused)
                 }

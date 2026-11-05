@@ -5,7 +5,7 @@
 use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity, Span};
-use bedrock_addon_core::json::{JsonSlice, ScalarRules, Scalars, Value};
+use bedrock_addon_core::json::{JsonSlice, NullRule, ScalarRules, Scalars, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{
     ShorthandRows, ShorthandShape, misshapen_shorthand_rows, shorthand_shape,
@@ -155,7 +155,17 @@ pub enum Misshapen {
     Count(Count),
     #[component(name = "minecraft:pair", shorthand = scalar, parse = parse_component::<Pair, Misshapen>)]
     Pair(Pair),
+    #[component(name = "minecraft:blast", shorthand = scalar, parse = parse_component::<Blast, Misshapen>)]
+    Blast(Blast),
+    #[component(name = "minecraft:maybe", shorthand = scalar, parse = parse_component::<Maybe, Misshapen>)]
+    Maybe(Maybe),
     Unknown(Value),
+}
+
+/// `{"value": n}`, `{}` or `n`: a one-member payload whose member is optional.
+#[derive(Clone, Debug, PartialEq, Facet)]
+pub struct Maybe {
+    pub value: Option<i32>,
 }
 
 /// One finding as the test compares it.
@@ -167,6 +177,19 @@ where
     T: for<'a> Facet<'a> + Into<C>,
     C: ShorthandRows,
 {
+    read_under::<T, C>(text, rules, None)
+}
+
+/// [`read`] under the slice's null rule `null`.
+fn read_under<T, C>(
+    text: &str,
+    rules: ScalarRules,
+    null: Option<NullRule>,
+) -> (Option<C>, Vec<Told>)
+where
+    T: for<'a> Facet<'a> + Into<C>,
+    C: ShorthandRows,
+{
     let file = format!("{}{text}", " ".repeat(30));
     let slice = JsonSlice {
         text: &file[30..],
@@ -174,6 +197,7 @@ where
     };
     let mut cx = LoadContext::detached();
     cx.scalar_rules = rules;
+    cx.null_rule = null;
     let mut found = Diagnostics::default();
     let value = parse_component::<T, C>(slice, ConvertMode::Strict, &cx, &mut found);
     let told = found
@@ -276,4 +300,112 @@ fn an_untagged_enum_and_a_newtype_read_their_scalar_as_without_the_shorthand() {
         assert_eq!(told, plain_told, "{text}");
         assert_eq!(value.is_some(), plain_value.is_some(), "{text}");
     }
+}
+
+/// `{"mode": …}`, or the mode bare: a one-member payload whose member is an untagged enum.
+#[derive(Clone, Debug, PartialEq, Facet)]
+pub struct Blast {
+    pub mode: Explode,
+}
+
+#[test]
+fn a_bare_scalar_no_arm_of_the_member_takes_is_refused_at_the_component_without_a_span() {
+    let (value, told) = read::<Blast, Misshapen>(r#""no""#, STRICT);
+    assert_eq!(value, None);
+    assert_eq!(
+        told,
+        [(
+            String::new(),
+            "InvalidType".to_owned(),
+            Severity::Error,
+            None
+        )],
+        "a refusal is told at the component and, as every refusal at the door, without a span"
+    );
+    assert_eq!(
+        read::<Blast, Misshapen>("true", STRICT).0,
+        Some(Misshapen::Blast(Blast {
+            mode: Explode::Enabled(true)
+        }))
+    );
+}
+
+fn told(path: &str, code: &str, severity: Severity, span: Option<Span>) -> Told {
+    (path.to_owned(), code.to_owned(), severity, span)
+}
+
+#[test]
+fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
+    let damage = |n| Some(Shorthands::Damage(Damage { value: n }));
+    let rejected = Some(NullRule::Rejected);
+    let absent = Some(NullRule::Absent);
+    // The object form, for the parity: the typed read fails at the member's key.
+    assert_eq!(
+        read_under::<Damage, Shorthands>(r#"{"value": null}"#, STRICT, rejected),
+        (
+            None,
+            vec![told(
+                "value",
+                "InvalidType",
+                Severity::Error,
+                Some(at(31, 7))
+            )]
+        )
+    );
+    assert_eq!(
+        read_under::<Damage, Shorthands>(r#"{"value": null}"#, STRICT, absent),
+        (
+            damage(0),
+            vec![told("value", "ValueRewritten", Severity::Info, None)]
+        )
+    );
+    // The bare `null`: the same, at the component and spanning the text.
+    assert_eq!(
+        read_under::<Damage, Shorthands>("null", STRICT, rejected),
+        (
+            None,
+            vec![told("", "InvalidType", Severity::Error, Some(at(30, 4)))]
+        ),
+        "under `Rejected` a bare null is a type error, as the member's null is"
+    );
+    assert_eq!(
+        read_under::<Damage, Shorthands>("null", STRICT, absent),
+        (
+            damage(0),
+            vec![told("", "ValueRewritten", Severity::Info, None)]
+        ),
+        "under `Absent` a bare null is the member left out"
+    );
+}
+
+#[test]
+fn a_one_member_payload_whose_member_is_optional_reads_a_bare_scalar_and_a_bare_null() {
+    let maybe = |value| Some(Misshapen::Maybe(Maybe { value }));
+    assert_eq!(
+        read::<Maybe, Misshapen>("5", STRICT),
+        (maybe(Some(5)), vec![])
+    );
+    assert_eq!(
+        read_under::<Maybe, Misshapen>("null", STRICT, Some(NullRule::Rejected)),
+        (
+            None,
+            vec![told("", "InvalidType", Severity::Error, Some(at(30, 4)))]
+        )
+    );
+    assert_eq!(
+        read_under::<Maybe, Misshapen>("null", STRICT, Some(NullRule::Absent)),
+        (
+            maybe(None),
+            vec![told("", "ValueRewritten", Severity::Info, None)]
+        )
+    );
+}
+
+#[test]
+fn under_default_and_tell_a_wrong_typed_bare_scalar_keeps_the_component_with_its_default() {
+    let rules = STRICT.with_default_and_tell(true);
+    let (value, found) = read::<Damage, Shorthands>("true", rules);
+    assert_eq!(value, Some(Shorthands::Damage(Damage { value: 0 })));
+    // Told as the member's defaulted scalar is, at the component.
+    assert_eq!(found, [told("", "InvalidValue", Severity::Info, None)]);
 }

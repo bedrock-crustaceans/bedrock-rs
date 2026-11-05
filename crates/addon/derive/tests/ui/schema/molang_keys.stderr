@@ -4,7 +4,7 @@ error: `schema::molang` and `schema::molang_with` both say how the field is walk
 11 |     #[facet(schema::molang = SPEC, schema::molang_with = walk)]
    |                                    ^^^^^^
 
-error: `schema::molang` names the spec of a Molang field, and this field holds no `Molang`, `MolangSource` or `MolangList`: a hand walk is `schema::molang_with`
+error: `schema::molang` names the spec of a Molang field, or the default spec of a nested walk, and this field holds a plain value: a hand walk is `schema::molang_with`
   --> tests/ui/schema/molang_keys.rs:13:13
    |
 13 |     #[facet(schema::molang = SPEC)]

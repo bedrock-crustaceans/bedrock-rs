@@ -1,0 +1,11 @@
+error[E0080]: evaluation panicked: `schema::order = "game"`: the enum's `ALL` leaves out a variant
+ --> tests/ui/schema/order_game_all.rs:4:17
+  |
+4 | #[derive(Facet, Schema)]
+  |                 ^^^^^^ evaluation of `_` failed here
+
+error[E0080]: evaluation panicked: `schema::order = "game"`: the enum's `ALL` names a variant twice
+  --> tests/ui/schema/order_game_all.rs:17:17
+   |
+17 | #[derive(Facet, Schema)]
+   |                 ^^^^^^ evaluation of `_` failed here

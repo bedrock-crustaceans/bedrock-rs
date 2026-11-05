@@ -1,0 +1,11 @@
+error: `schema::unknown` is about the members of an object: put it on a struct variant, whose members it is about
+ --> tests/ui/schema/unknown_off_struct_variant.rs:8:13
+  |
+8 |     #[facet(schema::unknown = "keep")]
+  |             ^^^^^^
+
+error: `schema::unknown` is about the members of an object: put it on a struct variant, whose members it is about
+  --> tests/ui/schema/unknown_off_struct_variant.rs:10:13
+   |
+10 |     #[facet(schema::unknown = "report")]
+   |             ^^^^^^

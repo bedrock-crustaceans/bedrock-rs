@@ -134,6 +134,32 @@ impl MolangVisitor<'_> {
         self.path.pop();
     }
 
+    /// The member or element `step`, which holds Molang fields of its own, walked with `spec`
+    /// the spec of each field below that has none of its own: a `#[derive(Schema)]` field
+    /// whose `schema::molang` names a nested walk's default.
+    pub fn nested_under<'s, T: MolangFields + ?Sized>(
+        &mut self,
+        step: impl Into<Step<'s>>,
+        spec: &MolangFieldSpec,
+        inner: &mut T,
+    ) {
+        self.enter(step.into());
+        self.under(spec, |visitor| inner.visit_molang(visitor));
+        self.path.pop();
+    }
+
+    /// Runs `walk` at the current path with `spec` the default spec ([`Self::nested_under`]
+    /// without the step: a flattened field).
+    pub fn under(&mut self, spec: &MolangFieldSpec, walk: impl FnOnce(&mut MolangVisitor<'_>)) {
+        let mut under = MolangVisitor {
+            path: std::mem::take(&mut self.path),
+            default_spec: spec,
+            visit: &mut *self.visit,
+        };
+        walk(&mut under);
+        self.path = under.path;
+    }
+
     /// Hands one value at the current path to the walk's callback; for [`MolangSlot`] impls.
     pub fn emit(&mut self, spec: &MolangFieldSpec, value: MolangFieldMut<'_>) {
         (self.visit)(MolangField {

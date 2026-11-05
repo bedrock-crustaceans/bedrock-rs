@@ -624,6 +624,8 @@ impl RefusedScalar {
     }
 }
 
+/// The misread, for the family readers that tell it as a [`Misread`](super::Misread); core
+/// reads the field.
 impl std::ops::Deref for RefusedScalar {
     type Target = super::Misread;
 

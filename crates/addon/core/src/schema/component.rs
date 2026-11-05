@@ -37,8 +37,8 @@ pub fn find_row(rows: &'static [ComponentRow], name: &str) -> Option<&'static Co
 
 /// The payloads of a component enum's `shorthand = scalar` rows, for
 /// `versioning::parse_component`: implemented by `#[derive(Components)]` for every component
-/// enum (a `from_only` one has no rows, and so none).
-#[doc(hidden)]
+/// enum (a `from_only` one has no rows, and so none). A family's shape test reads it through
+/// [`misshapen_shorthand_rows`].
 pub trait ShorthandRows {
     /// `(key, payload shape)` of every typed row with `shorthand = scalar`, in declaration
     /// order.

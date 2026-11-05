@@ -362,10 +362,10 @@ fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) 
             *span,
             "`schema::molang` and `schema::molang_with` both say how the field is walked: keep one",
         )),
-        (Some((_, span)), None) if !ty::is_molang_slot(info.ty) => errors.push(Error::new(
+        (Some((_, span)), None) if ty::is_plain_value(info.ty) => errors.push(Error::new(
             *span,
-            "`schema::molang` names the spec of a Molang field, and this field holds no \
-             `Molang`, `MolangSource` or `MolangList`: a hand walk is `schema::molang_with`",
+            "`schema::molang` names the spec of a Molang field, or the default spec of a nested \
+             walk, and this field holds a plain value: a hand walk is `schema::molang_with`",
         )),
         _ => {}
     }
@@ -753,10 +753,19 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
             },
         };
     }
-    if info.inline {
-        quote!(#core::molang::MolangFields::visit_molang(&mut #access, visitor);)
-    } else {
-        quote!(visitor.nested(#json, &mut #access);)
+    // A spec on a nested walk is that walk's default.
+    match (
+        info.inline,
+        info.attrs.molang.as_ref().map(|(spec, _)| spec),
+    ) {
+        (true, None) => quote!(#core::molang::MolangFields::visit_molang(&mut #access, visitor);),
+        (false, None) => quote!(visitor.nested(#json, &mut #access);),
+        (true, Some(spec)) => quote! {
+            visitor.under(&#spec, |visitor| {
+                #core::molang::MolangFields::visit_molang(&mut #access, visitor);
+            });
+        },
+        (false, Some(spec)) => quote!(visitor.nested_under(#json, &#spec, &mut #access);),
     }
 }
 
@@ -885,6 +894,9 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
             pub const ALL: &'static [Self] = &[#(#all),*];
         }
     });
+    let all_check = container
+        .order_game
+        .then(|| game_order_check(ident, &variants));
     let names: Vec<&String> = variants.iter().map(|(_, n)| n).collect();
     let expected = container.expected.as_ref().map_or_else(
         || {
@@ -898,17 +910,7 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         syn::LitStr::value,
     );
     let name_arms = variants.iter().map(|(v, n)| quote!(Self::#v => #n,));
-    let from_name = if container.case_insensitive {
-        let tests = variants.iter().map(|(v, n)| {
-            quote!(if name.eq_ignore_ascii_case(#n) { return ::core::option::Option::Some(Self::#v); })
-        });
-        quote!(#(#tests)* ::core::option::Option::None)
-    } else {
-        let arms = variants
-            .iter()
-            .map(|(v, n)| quote!(#n => ::core::option::Option::Some(Self::#v),));
-        quote!(match name { #(#arms)* _ => ::core::option::Option::None })
-    };
+    let from_name = from_name_body(&variants, container.case_insensitive);
     let case = if container.case_insensitive {
         ", in any case"
     } else {
@@ -919,7 +921,8 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         #[automatically_derived]
         impl #ident {
             #all
-            /// The JSON names, in declaration order.
+            /// The JSON names, in declaration order (an enum in the game's order states its
+            /// own `ALL` in that order; `NAMES` and `EXPECTED` keep the declaration's).
             pub const NAMES: &'static [&'static str] = &[#(#names),*];
             /// What the enum takes, in words: the error of a name it does not know.
             pub const EXPECTED: &'static str = #expected;
@@ -945,6 +948,8 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
             }
         }
 
+        #all_check
+
         #[automatically_derived]
         impl ::core::fmt::Display for #ident {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -965,6 +970,55 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         impl #core::molang::MolangFields for #ident {
             fn visit_molang(&mut self, _: &mut #core::molang::MolangVisitor<'_>) {}
         }
+    }
+}
+
+/// The body of a string enum's `from_name`: the variant spelt `name`, in any case where the
+/// enum says `case_insensitive`.
+fn from_name_body(variants: &[(&Ident, String)], case_insensitive: bool) -> TokenStream {
+    if case_insensitive {
+        let tests = variants.iter().map(|(v, n)| {
+            quote!(if name.eq_ignore_ascii_case(#n) { return ::core::option::Option::Some(Self::#v); })
+        });
+        quote!(#(#tests)* ::core::option::Option::None)
+    } else {
+        let arms = variants
+            .iter()
+            .map(|(v, n)| quote!(#n => ::core::option::Option::Some(Self::#v),));
+        quote!(match name { #(#arms)* _ => ::core::option::Option::None })
+    }
+}
+
+/// The compile-time check of an enum's own `ALL` (`schema::order = "game"`): a list of `Self`
+/// naming every variant once.
+fn game_order_check(ident: &Ident, variants: &[(&Ident, String)]) -> TokenStream {
+    let count = variants.len();
+    let indices = variants
+        .iter()
+        .enumerate()
+        .map(|(index, (v, _))| quote!(#ident::#v => #index,));
+    quote! {
+        #[automatically_derived]
+        const _: () = {
+            let all: &[#ident] = &#ident::ALL;
+            let mut seen = [false; #count];
+            let mut at = 0;
+            while at < all.len() {
+                let index = match &all[at] {
+                    #(#indices)*
+                };
+                assert!(
+                    !seen[index],
+                    "`schema::order = \"game\"`: the enum's `ALL` names a variant twice"
+                );
+                seen[index] = true;
+                at += 1;
+            }
+            assert!(
+                all.len() == #count,
+                "`schema::order = \"game\"`: the enum's `ALL` leaves out a variant"
+            );
+        };
     }
 }
 
@@ -996,7 +1050,8 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
 fn untagged_variants<'a>(data: &'a DataEnum, errors: &mut Vec<Error>) -> Vec<VariantInfo<'a>> {
     let mut variants: Vec<VariantInfo> = Vec::new();
     for variant in &data.variants {
-        let rename_all = attr::untagged_variant(&variant.attrs, errors);
+        let named = matches!(variant.fields, Fields::Named(_));
+        let rename_all = attr::untagged_variant(&variant.attrs, named, errors);
         let naming = ContainerAttrs {
             rename_all,
             ..ContainerAttrs::default()

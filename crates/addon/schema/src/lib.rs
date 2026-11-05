@@ -46,7 +46,9 @@ facet::define_attr_grammar! {
         /// `below = x` (compile-time): the value is `< x`.
         Below(arbitrary),
         /// `multiple_of = n` (compile-time): the value is a multiple of the positive number
-        /// `n`, checked after the field's range.
+        /// `n`, checked after the field's range as `value % n == 0.0` in `f64`: exact for an
+        /// integer step and a binary fraction (`0.5`, `0.25`), not for a step `f64` holds only
+        /// near (`0.1`, where `0.5` and `1.0` are told as off the step).
         MultipleOf(arbitrary),
         /// `molang = SPEC` (compile-time): the field's `MolangFieldSpec`, where it is not the
         /// family's default.
@@ -66,7 +68,8 @@ facet::define_attr_grammar! {
         /// `case_insensitive` (marker, a string enum): a name is read in any case.
         CaseInsensitive,
         /// `order = "game"` (compile-time, a string enum): the enum states its own `ALL`, in
-        /// the game's order, and the derive emits none.
+        /// the game's order, and the derive emits none; it checks at compile time that `ALL`
+        /// names every variant once. `NAMES` and `EXPECTED` stay in declaration order.
         Order(arbitrary),
     }
 }
