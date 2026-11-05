@@ -799,3 +799,37 @@ fn the_legacy_goal_reader_s_value_texts() {
         "{d:#?}"
     );
 }
+
+/// A beta file read on its own (`Content::parse`, which keeps only a stable entity) is refused
+/// with "no parser available" for `beta`, told in its file, as every single-type read
+/// refuses one.
+#[test]
+fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
+    use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+    use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+
+    let mut context = cx();
+    context.is_base_game_pack = true;
+    let path = PackPath::new("entities/test.json").unwrap();
+    let text = doc(
+        "beta",
+        r#"{"description": {"identifier": "demo:x"}, "components": {}}"#,
+    );
+    let refused = <Entity as Content>::parse(&path, text.as_bytes(), &context).unwrap_err();
+    let refusal = refused
+        .diagnostics
+        .iter()
+        .find(|d| matches!(d.code, DiagnosticCode::UnsupportedVersion { .. }))
+        .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
+    assert!(
+        matches!(
+            &refusal.code,
+            DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion { version })
+            } if version == "beta"
+        ),
+        "{refusal:?}"
+    );
+    assert_eq!(refusal.location.pack, Some(PackRef::app_data()));
+    assert_eq!(refusal.location.path, Some(path));
+}

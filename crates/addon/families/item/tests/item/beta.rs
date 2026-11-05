@@ -356,3 +356,32 @@ fn routing_wins_over_the_components_min_size_and_beta_meets_it() {
         "{d:#?}"
     );
 }
+
+/// A beta file read as an `Item` (`Content::parse`, which keeps only a stable item) is refused
+/// with the shared "no parser available" for `beta`, told in its file, as every single-type
+/// read refuses one.
+#[test]
+fn a_beta_file_read_as_an_item_is_refused_in_its_file() {
+    use bedrock_addon_core::diagnostic::VanillaText;
+    use bedrock_addon_core::pack_identity::PackRef;
+
+    let path = PackPath::new("items/x.json").unwrap();
+    let text = r#"{"format_version": "beta", "minecraft:item": {"description": {"identifier": "demo:x"}, "components": {"minecraft:max_stack_size": 2}}}"#;
+    let refused = <Item as Content>::parse(&path, text.as_bytes(), &beta_apis()).unwrap_err();
+    let refusal = refused
+        .diagnostics
+        .iter()
+        .find(|d| matches!(d.code, DiagnosticCode::UnsupportedVersion { .. }))
+        .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
+    assert!(
+        matches!(
+            &refusal.code,
+            DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion { version })
+            } if version == "beta"
+        ),
+        "{refusal:?}"
+    );
+    assert_eq!(refusal.location.pack, Some(PackRef::app_data()));
+    assert_eq!(refusal.location.path, Some(path));
+}
