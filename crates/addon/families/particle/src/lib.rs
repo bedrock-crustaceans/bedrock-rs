@@ -19,7 +19,6 @@ mod curve;
 mod event;
 #[cfg(test)]
 mod linear;
-mod parse;
 mod read;
 mod texts;
 mod write;
@@ -46,7 +45,7 @@ use bedrock_addon_core::versioning::{
 };
 use component::ParticleComponent;
 use history::{Any, ParticleFamily};
-use parse::CEREAL;
+use read::CEREAL;
 use read::{Opt, object};
 use write::PAYLOAD_KEY;
 
@@ -121,7 +120,7 @@ object! {
 object! {
     /// `description/basic_render_parameters`: the material and the texture of every particle
     /// of the effect.
-    pub struct BasicRenderParameters finish = parse::render_parameters {
+    pub struct BasicRenderParameters finish = read::render_parameters {
         /// The material, a name of the pack stack's material files (JSON `material`,
         /// required).
         req material: String = "material", Opt::NONE;
@@ -155,7 +154,7 @@ impl Family for ParticleFamily {
     /// The legacy slice `[1.10.0, 1.20.80)` is a hand-written parser, which reads the input
     /// itself (`null` as its readers take it), and its unknown-component line is a content-log
     /// warning that no strict rule acts on. A 1.20.80 document is read by the family's own
-    /// reader (`parse.rs`), which refuses a `null` where it reads a value, and an unknown member
+    /// reader (`read.rs`), which refuses a `null` where it reads a value, and an unknown member
     /// or component refuses it: the game loads that format strictly.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {

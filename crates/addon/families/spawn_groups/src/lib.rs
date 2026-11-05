@@ -203,7 +203,7 @@ fn parse_group_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnGroup> {
 
 /// The loader of `bp.spawn_groups()`, the family's own: a group that loads without conditions is
 /// not registered but its findings are (`Parsed::Unregistered`), which `load::registry` has no
-/// shape for. Only only the app data's `definitions/spawn_groups/*.json`
+/// shape for. Only the app data's `definitions/spawn_groups/*.json`
 /// (not recursive, extension exactly `json`), in file-name order, a later file with the same
 /// identifier replacing the earlier one with a `DuplicateIdentifier` warning; no pack is read.
 #[doc(hidden)]

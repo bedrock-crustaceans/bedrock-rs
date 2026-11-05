@@ -58,8 +58,8 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     #[allow(unused_variables)]
     fn write_extras(&self, root: &mut Extra) {}
 
-    /// Refuses to write a value the game would not read back (fog's rules, block's Cereal
-    /// check), before anything is written. Default: every value is written.
+    /// Refuses to write a value the game would not read back (fog's rules, block culling's
+    /// cube-index check), before anything is written. Default: every value is written.
     ///
     /// # Errors
     ///

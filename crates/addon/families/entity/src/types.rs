@@ -14,7 +14,7 @@ use super::component::EntityComponent;
 /// A behaviour-pack entity definition (`entities/*.json`, payload `minecraft:entity`), in the
 /// newest format version (1.26.60).
 ///
-/// Older documents are upgraded to it step by step ([`history`]); a document written with
+/// Older documents are upgraded to it step by step ([`history`](crate::history)); a document written with
 /// `"format_version": "beta"` is a [`Beta`] instead.
 ///
 /// Built from [`Entity::new`] with struct-update syntax, as from any other crate:

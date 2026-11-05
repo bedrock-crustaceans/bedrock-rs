@@ -2,7 +2,7 @@
 
 use facet_value::{VArray, VObject};
 
-use super::load::read_ui_defs;
+use super::stack::read_ui_defs;
 use super::{GlobalVariables, UiDefsList, UiFile};
 use bedrock_addon_core::json::Value;
 

@@ -21,7 +21,7 @@ pub mod v1_8_0;
 
 use super::GeometryFile;
 use super::read::{Era, read_file};
-use super::schema::{Node, SchemaWalk};
+use super::schema_walk::{Node, SchemaWalk};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};

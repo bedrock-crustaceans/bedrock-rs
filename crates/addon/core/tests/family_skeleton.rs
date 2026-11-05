@@ -853,8 +853,9 @@ fn malformed() -> Diagnostic {
     })
 }
 
-/// voxel shape's `parse_file` (`families/voxel_shape/src/load.rs`), verbatim but for the
-/// family and the struct: the oracle the generic loader is checked against.
+/// The hand loader's file step voxel shape had before `load::registry` (its `parse_file`),
+/// kept as it was but for the family and the struct: the oracle the generic loader is checked
+/// against.
 fn parse_file(
     pack: PackRef,
     side: PackSide,
@@ -884,7 +885,8 @@ fn parse_file(
     }
 }
 
-/// voxel shape's `parse_walk_file`, verbatim but for the struct.
+/// The walk step of that hand loader (voxel shape's former `parse_walk_file`), as it was but
+/// for the struct.
 fn hand_parse(file: &WalkFile, cx: &LoadContext) -> Contribution<Glint> {
     match parse_file(file.pack.clone(), file.side, &file.path, &file.bytes, cx) {
         Ok(document) => Contribution::Stable(document.description.identifier.clone(), document),

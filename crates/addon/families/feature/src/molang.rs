@@ -105,15 +105,15 @@ macro_rules! walk {
     };
     // The second list and the `Refer` impl
     ($ty:ty { $($key:literal => $field:ident),* $(,)? } + { $($more_key:literal => $more:ident),* $(,)? }) => {
-        impl $crate::walk::Walk for $ty {
+        impl $crate::molang::Walk for $ty {
             #[allow(unused_variables)]
             fn walk(&mut self, v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>) {
-                $( $crate::walk::member(v, $key, &mut self.$field); )*
+                $( $crate::molang::member(v, $key, &mut self.$field); )*
             }
         }
-        impl $crate::walk::Refer for $ty {
+        impl $crate::molang::Refer for $ty {
             #[allow(unused_variables)]
-            fn refer<'a>(&'a self, out: &mut $crate::walk::References<'a>) {
+            fn refer<'a>(&'a self, out: &mut $crate::molang::References<'a>) {
                 $( out.member($key, &self.$field); )*
                 $( out.member($more_key, &self.$more); )*
             }
@@ -126,7 +126,7 @@ macro_rules! walk {
         walk!($ty { $($key => $field),* } + { $($more_key => $more),* });
         impl ::bedrock_addon_core::molang::MolangFields for $ty {
             fn visit_molang(&mut self, v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>) {
-                $crate::walk::Walk::walk(self, v);
+                $crate::molang::Walk::walk(self, v);
             }
         }
     };

@@ -122,12 +122,12 @@ impl JsonDocument for Block {
     type Family = BlockFamily;
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
 
-    /// [`read_file`]: `parse_document`'s steps, with a legacy file's findings at the payload.
+    /// `read::read_file`: `parse_document`'s steps, with a legacy file's findings at the payload.
     fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<BlockFamily> {
         read_file(origin, bytes, cx)
     }
 
-    /// The document of the format the block is written in ([`Block::document`]): a block the
+    /// The document of the format the block is written in (`Block::document`): a block the
     /// 1.26.20 format cannot hold is written as a legacy document at its own version, whose
     /// payload is not [`VersionStruct::write`](bedrock_addon_core::versioning::VersionStruct::write).
     fn write_root(&self) -> Result<Value, EncodeError> {

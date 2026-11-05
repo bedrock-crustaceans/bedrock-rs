@@ -12,25 +12,195 @@
 
 pub mod history;
 mod read;
-mod set_load;
+mod stack;
 mod texts;
 mod types;
 mod write;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::document::{Document, Rejected};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
+use bedrock_addon_core::document::unversioned::{lone, rejected};
+use bedrock_addon_core::document::{Document, JsonDocument, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::versioning::{
+    DocumentRead, Envelope, Family, Identity, Loaded, MissingVersion, NoComponents, Parsed,
+    RangeModel, finish,
+};
 
 pub use types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 
-use crate::set_load::{LintPack, capability_lints, check_layer_images, parse_file, texture_path};
+use crate::history::{Any, TextureSetFamily};
+use crate::read::{PAYLOAD, Schema, V1_16_100, read};
+use crate::stack::{LintPack, capability_lints, check_layer_images, texture_path};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
-use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_support::texture::files::{
     IndexedFile, StackFiles, is_texture_file, listed_files,
 };
 #[doc(hidden)]
-pub use set_load::{PackSets, SetCopy, layer_path, payload_at};
+pub use stack::{PackSets, SetCopy, layer_path};
+
+// ---- the file -------------------------------------------------------------------------------
+
+impl Family for TextureSetFamily {
+    const NAME: &'static str = "texture_set";
+    const PAYLOAD_KEY: &'static str = PAYLOAD;
+    const FLOOR: FormatVersion = V1_16_100;
+    // The client compares the version with `==` against each schema's own: no range, no
+    // closest lower struct, and the ceiling is the newest struct's version.
+    const RANGE_MODEL: RangeModel = RangeModel::ExactOnly;
+    type Latest = TextureSet;
+    type Beta = std::convert::Infallible;
+    type Component = NoComponents;
+    type Any = Any;
+    const ENVELOPE: Envelope = Envelope {
+        // A missing version is an error here ("Invalid 'format_version' in JSON file").
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
+
+    fn identity(_: bedrock_addon_core::json::JsonSlice<'_>) -> Identity {
+        Identity::default()
+    }
+}
+
+impl JsonDocument for TextureSet {
+    type Family = TextureSetFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+    const NAME: &'static str = "texture set";
+
+    /// Reads one `.texture_set.json` with the file's own reader (the version the client
+    /// compares with `==`, its texts), then the chain: every rule of the file. Whether the
+    /// layers' images exist is the stack's to say.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<TextureSetFamily> {
+        match parse_file(origin, bytes, cx) {
+            Ok(document) => DocumentRead::Stable(document),
+            Err(rejected) => DocumentRead::Rejected(None, rejected),
+        }
+    }
+
+    /// Parses one texture-set file without upgrading it: the struct its `format_version`
+    /// selects, read by the file's own reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+    /// log would print when the bytes cannot be read as this file at all: not JSON, a
+    /// `format_version` with no struct here, or a document that does not fit the struct it selects.
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        _: &LoadContext,
+    ) -> Result<Document<Any>, Rejected> {
+        let origin = lone(path);
+        let mut diagnostics = Diagnostics::default();
+        let read = read(bytes, path.as_str(), &mut diagnostics);
+        match (read.value, read.schema) {
+            (Some(value), Some(schema)) => {
+                locate(&mut diagnostics, &origin);
+                Ok(Document::new(
+                    value,
+                    origin,
+                    version_info(schema),
+                    diagnostics,
+                ))
+            }
+            _ => Err(rejected(origin, diagnostics)),
+        }
+    }
+}
+
+impl TextureSet {
+    /// The payload object of the set as JSON, without the envelope.
+    #[must_use]
+    pub fn to_value(&self) -> Value {
+        write::write_layers(self)
+    }
+}
+
+/// What a file of `schema`'s version says about its version.
+fn version_info(schema: Schema) -> VersionInfo {
+    let version = schema.version();
+    VersionInfo::new(Some(version), false, version, version, false)
+}
+
+/// The path of the payload in the document.
+#[doc(hidden)]
+pub fn payload_at() -> JsonPath {
+    JsonPath::new().child(PAYLOAD)
+}
+
+/// The chain's parse stage of a value already read at `version`.
+fn parsed(value: Any, version: VersionInfo, diagnostics: Diagnostics) -> Parsed<TextureSetFamily> {
+    let written = FormatVersionInput {
+        version: Some(version.effective),
+        beta_literal: false,
+        prerelease: false,
+    };
+    Parsed::from_value(Some(value), version, written, payload_at(), diagnostics)
+}
+
+/// The rest of the load: the upgrade step and the document.
+fn finished(
+    parsed: Parsed<TextureSetFamily>,
+    origin: Origin,
+    cx: &LoadContext,
+) -> Result<Document<TextureSet>, Rejected> {
+    let outcome = finish(parsed, cx);
+    let mut diagnostics = outcome.diagnostics;
+    locate(&mut diagnostics, &origin);
+    match outcome.value {
+        Some(Loaded::Stable(set)) => Ok(Document::new(set, origin, outcome.version, diagnostics)),
+        _ => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+/// Rebuilds the parse stage from the document and finishes it.
+pub(crate) fn upgrade_document(
+    document: Document<Any>,
+    cx: &LoadContext,
+) -> Result<Document<TextureSet>, Rejected> {
+    let origin = document.origin().clone();
+    let version = document.version().clone();
+    let diagnostics = document.diagnostics().clone();
+    finished(
+        parsed(document.into_value(), version, diagnostics),
+        origin,
+        cx,
+    )
+}
+
+/// Loads the texture-set file at `origin`.
+fn parse_file(
+    origin: Origin,
+    bytes: &[u8],
+    cx: &LoadContext,
+) -> Result<Document<TextureSet>, Rejected> {
+    let mut diagnostics = Diagnostics::default();
+    let read = read(bytes, origin.path.as_str(), &mut diagnostics);
+    match (read.value, read.schema) {
+        (Some(value), Some(schema)) => {
+            finished(parsed(value, version_info(schema), diagnostics), origin, cx)
+        }
+        _ => Err(rejected(origin, diagnostics)),
+    }
+}
+
+/// Gives every finding the document's pack and file, taken out and pushed back as the
+/// unversioned kit does (so the moves and places the list held are dropped).
+// TODO(phase 1 step 4): `Diagnostics::locate` in place, which keeps them; behaviour-bearing,
+// with `unversioned`'s own switch.
+fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
+    let found = std::mem::take(diagnostics);
+    for mut finding in found {
+        finding.location.pack = Some(origin.pack.clone());
+        finding.location.path = Some(origin.path.clone());
+        diagnostics.push(finding);
+    }
+}
+
+// ---- the group ------------------------------------------------------------------------------
 
 /// The texture sets of a resource stack (`rp.texture_sets()`).
 ///
@@ -185,5 +355,52 @@ impl bedrock_addon_core::load::Reported for TextureSets {
         &self,
     ) -> Box<dyn Iterator<Item = &bedrock_addon_core::diagnostic::Diagnostic> + '_> {
         Box::new(self.diagnostics())
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn texture_set_reads_as_pinned() {
+        assert_reading_table(
+            "TextureSetFamily",
+            &reading_table::<super::TextureSetFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Error
+                1.16.100..=1.21.30 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn texture_set_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::TextureSetFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed = parse_as_written::<super::TextureSetFamily>(
+            JsonSlice::new(&text),
+            &LoadContext::detached(),
+        );
+        assert_eq!(parsed.identity, Identity::default());
     }
 }

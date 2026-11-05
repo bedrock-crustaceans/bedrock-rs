@@ -276,7 +276,7 @@ impl JsonDocument for Entity {
     type Family = Entity;
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
 
-    /// [`load_document`]: the chain, the above-the-engine text, the closing line of a refused
+    /// `read::load_document`: the chain, the above-the-engine text, the closing line of a refused
     /// file; a beta file is handed back open, a failed one names the identifier its raw text
     /// gives (even when its envelope or version is unreadable).
     fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<Entity> {

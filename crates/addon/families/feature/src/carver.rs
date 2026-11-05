@@ -4,9 +4,9 @@
 use facet::Facet;
 
 use super::Description;
+use super::molang::{WORLD_GEN, Walk};
 use super::validate::Check;
 use super::values::{CarverRange, JsonInt};
-use super::walk::{WORLD_GEN, Walk};
 use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
@@ -72,8 +72,8 @@ macro_rules! carver {
         }
 
         // The blocks a carver names.
-        impl super::walk::Refer for $name {
-            fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+        impl super::molang::Refer for $name {
+            fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
                 out.member("fill_with", &self.fill_with);
                 $( out.member(stringify!($extra), &self.$extra); )*
             }

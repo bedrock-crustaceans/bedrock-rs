@@ -4,10 +4,10 @@
 use facet::Facet;
 
 use super::Description;
+use super::molang::walk;
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::JsonInt;
-use super::walk::walk;
 use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::id::FeatureId;

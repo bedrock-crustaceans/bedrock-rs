@@ -1,7 +1,5 @@
 //! One file of a family as a [`Document`]: the bytes through [`Prepared`], the pipeline, the
-//! family's close and the file's origin on every finding. The generic body of the per-family
-//! `parse_file` copies (`voxel_shape`, `block_culling`, `dimension`, `feature_rules`,
-//! `crafting_catalog`, `server_sound_definitions`, `particle`, support's `chain_file`).
+//! family's close and the file's origin on every finding.
 
 use std::fmt;
 

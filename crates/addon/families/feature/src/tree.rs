@@ -6,9 +6,9 @@ use facet_value::VObject;
 
 use super::Description;
 use super::blocks::WeightedHeight;
+use super::molang::walk;
 use super::validate::Check;
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
-use super::walk::walk;
 use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;

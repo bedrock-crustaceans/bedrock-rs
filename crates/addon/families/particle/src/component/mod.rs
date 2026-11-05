@@ -292,7 +292,7 @@ fn row<T>(
 where
     T: Component<Set = ParticleComponent>,
 {
-    let value = crate::parse::value_of(slice.text).ok()?;
+    let value = crate::read::value_of(slice.text).ok()?;
     let era = match mode {
         ConvertMode::Lenient => Era::Legacy,
         ConvertMode::Strict => Era::Cereal,

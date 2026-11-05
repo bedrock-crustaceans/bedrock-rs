@@ -149,7 +149,7 @@ fn loader_script_drops_its_entry() {
     );
 }
 
-/// The scatter members: `support/src/scatter.rs` and `families/feature/src/walk.rs` `SCATTER`.
+/// The scatter members: `support/src/scatter.rs` and `families/feature/src/molang.rs` `SCATTER`.
 #[test]
 fn scatter_kept() {
     let scatter = MolangFieldSpec {
@@ -196,7 +196,7 @@ fn item_format_version_kept() {
     }
 }
 
-/// The block permutation conditions: `families/block/src/parse.rs` `CONDITION` (cereal) and
+/// The block permutation conditions: `families/block/src/read.rs` `CONDITION` (cereal) and
 /// `CONDITION_LEGACY`.
 #[test]
 fn block_conditions() {

@@ -15,12 +15,12 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::load::LoadContext;
 
 /// An item definition (`minecraft:item`), in the newest format version (1.26.50); an item
-/// written in an older format is upgraded to it on load ([`history`] has the older structs).
+/// written in an older format is upgraded to it on load ([`history`](crate::history) has the older structs).
 ///
 /// Two item formats exist. A document is component based only when its `format_version` is
 /// exactly 1.16.100 or 1.17.0 and later, **and** its `components` name at least one known
 /// component (or a `tag:` key); everything else is the legacy item format of 1.10, read into
-/// [`LegacyItemData::format_item`] with an empty component map ([`ItemFormat::Legacy`]).
+/// [`LegacyItemData::format_item`] with an empty component map ([`ItemFormat::Legacy`](crate::ItemFormat::Legacy)).
 ///
 /// JSON: `{"format_version": "1.26.50", "minecraft:item": {"description": …, "components":
 /// {…}, "__deprecated_components"?: …, "events"?: …}}`.

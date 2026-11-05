@@ -5,10 +5,10 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::Description;
+use super::molang::{Walk, walk};
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
-use super::walk::{Walk, walk};
 use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::FeatureId;
@@ -702,8 +702,8 @@ impl Walk for PlacesBlock {
     }
 }
 
-impl super::walk::Refer for PlacesBlock {
-    fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+impl super::molang::Refer for PlacesBlock {
+    fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
         match self {
             PlacesBlock::Specifier(specifier) => specifier.refer(out),
             PlacesBlock::Descriptor(descriptor) => descriptor.refer(out),
@@ -716,8 +716,8 @@ impl super::walk::Refer for PlacesBlock {
     }
 }
 
-impl super::walk::Refer for WeightedSpecifier {
-    fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+impl super::molang::Refer for WeightedSpecifier {
+    fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
         out.member("block", &self.block);
     }
 }

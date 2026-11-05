@@ -26,7 +26,9 @@ use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, St
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_support::animation::load::{combine, file_path, side_of, version_info, whole};
+use bedrock_addon_support::animation::read::{side_of, version_info, whole};
+use bedrock_addon_support::animation::registry::combine;
+use bedrock_addon_support::animation::write::file_path;
 use history::Any;
 use read::{V1_8_0, V1_10_0};
 

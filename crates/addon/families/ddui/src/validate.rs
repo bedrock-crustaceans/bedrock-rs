@@ -1,6 +1,6 @@
 //! The loader's validators, which run on a document whose parse succeeded. The check that a
 //! composition's extension point names an `ExtensionPoint` of a loaded root needs every root of
-//! the stack, so it belongs to the combine step (`load.rs`).
+//! the stack, so it belongs to the combine step (`lib.rs`).
 
 use super::UiComposition;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, VanillaText};

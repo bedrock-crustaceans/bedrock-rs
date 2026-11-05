@@ -20,7 +20,7 @@ use crate::component::{
     EmitterRateSteady, EmitterShapePoint, ParticleAppearanceBillboard, ParticleComponent,
     write_component,
 };
-use crate::parse::{
+use crate::read::{
     Entry, json, known, read_components, read_curves, read_events, walk_legacy_component,
     walk_named,
 };

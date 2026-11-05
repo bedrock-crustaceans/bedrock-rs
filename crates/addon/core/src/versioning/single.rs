@@ -24,9 +24,11 @@ use crate::version::FormatVersion;
 ///
 /// A chain of one declared `molang = none;` has its struct's empty `MolangFields` impl emitted by
 /// `version_chain!`; a family moving onto `Single` keeps that impl with
-/// `bedrock_addon_core::impl_no_molang!(Struct);` beside the struct. Today's one-version chains that declare it: camera's list, spline and entity chains,
-/// aim assist's categories, jigsaw's structure, pool, structure set and processor list, DDUI's
-/// root and composition, POI's type and tag, and voxel shape.
+/// `bedrock_addon_core::impl_no_molang!(Struct);` beside the struct. Today's one-version
+/// chains that declare it: camera's list, spline and entity chains, aim assist's categories,
+/// jigsaw's structure, pool, structure set and processor list, DDUI's root and composition,
+/// POI's type and tag, voxel shape, and deferred settings' cubemap, shadows, PBR fallback and
+/// local lighting.
 pub struct Single<F: Family>(pub F::Latest);
 
 impl<F: Family> VersionChain<F> for Single<F> {

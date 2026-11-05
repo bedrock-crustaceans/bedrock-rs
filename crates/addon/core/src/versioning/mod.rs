@@ -536,12 +536,12 @@ pub trait Family: Sized + 'static {
     /// Four local overrides the families make stay in their readers, outside this:
     ///
     /// - block's legacy slice forces strict components and reads scalars non-strictly
-    ///   (`families/block/src/parse.rs`);
+    ///   (`families/block/src/read.rs`);
     /// - item's legacy slice forces strict components for the parse but grades its range
     ///   members by the unforced flag (`families/item/src/history/document.rs`);
     /// - camera preset's slice 0 coerces scalars through `typed_unstrict`;
     /// - dimension filters its null rule by `original_version`
-    ///   (`families/dimension/src/parse.rs`).
+    ///   (`families/dimension/src/read.rs`).
     #[allow(unused_variables)]
     fn reading(index: StructIndex, source: crate::load::DocumentSource) -> Reading {
         Self::ENVELOPE.input.profile()

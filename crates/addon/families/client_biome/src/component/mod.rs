@@ -112,10 +112,11 @@ where
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let unrecognized = |path: JsonPath| {
         // Not a finding the user sees as a warning: every client-biome format version reads
-        // with the strict mask (`Family::reading` in `load.rs`), and core's
-        // `unknown_members_are_errors` (`versioning/pipeline.rs`) turns a Parse-phase
-        // `UnrecognizedField` / `UnrecognizedComponent` warning into the refusing error the game
-        // gives for an unknown member. The `Warning` here is that step's input, not a grade.
+        // with the strict mask (`Family::reading`'s default, the profile of the
+        // `InputKind::Document` envelope in `lib.rs`), and core's `unknown_members_are_errors`
+        // (`versioning/pipeline.rs`) turns a Parse-phase `UnrecognizedField` /
+        // `UnrecognizedComponent` warning into the refusing error the game gives for an unknown
+        // member. The `Warning` here is that step's input, not a grade.
         Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
     };
     if let Some(json) = &json {

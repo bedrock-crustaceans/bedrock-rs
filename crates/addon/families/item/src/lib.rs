@@ -356,7 +356,7 @@ impl JsonDocument for Item {
     type Family = ItemFamily;
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
 
-    /// [`load_item`]: the resource-pack rule, the chain and the JSON item path's texts.
+    /// `read::load_item`: the resource-pack rule, the chain and the JSON item path's texts.
     fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<ItemFamily> {
         read_item(origin, bytes, cx)
     }
@@ -390,7 +390,7 @@ impl JsonDocument for Item {
         }
     }
 
-    /// [`item_root`](crate::write::item_root): the newest format, the legacy item format at
+    /// `write::item_root`: the newest format, the legacy item format at
     /// 1.10.0, or a 1.26.0 document, by what the item holds.
     fn write_root(&self) -> Result<Value, EncodeError> {
         crate::write::item_root(self)

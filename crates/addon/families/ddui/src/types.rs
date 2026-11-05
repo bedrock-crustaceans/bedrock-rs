@@ -21,7 +21,7 @@ pub struct UiRoot {
     /// JSON `attribs`.
     pub attribs: RootAttribs,
     /// JSON `layout`. The top-level controls of a root are of
-    /// [`ChildSet::RootControl`].
+    /// [`ChildSet::RootControl`](crate::ChildSet::RootControl).
     pub layout: Layout,
 }
 
@@ -64,7 +64,7 @@ pub struct UiComposition {
     /// JSON `attribs`.
     pub attribs: CompositionAttribs,
     /// JSON `layout`. The top-level controls of a composition are of
-    /// [`ChildSet::PanelContent`].
+    /// [`ChildSet::PanelContent`](crate::ChildSet::PanelContent).
     pub layout: Layout,
 }
 
@@ -87,9 +87,9 @@ pub struct CompositionAttribs {
 /// One control: `{"component": "Form.Button", "attribs": {…}, "children": […]}`.
 ///
 /// Which of `attribs` and `children` a control may or must write, and which control types may
-/// stand below it, is the [`Catalogue`]'s of the engine that reads the file. A control drops
-/// the controls below it without recursion, so a tree built in memory may nest without bound;
-/// for the same reason its members cannot be moved out of it by a pattern
+/// stand below it, is the [`Catalogue`](crate::Catalogue)'s of the engine that reads the file.
+/// A control drops the controls below it without recursion, so a tree built in memory may nest
+/// without bound; for the same reason its members cannot be moved out of it by a pattern
 /// ([`std::mem::take`] them). Only the drop is free of recursion: `Clone`, `PartialEq` and
 /// `Debug` are derived and take a stack frame per level, so a tree nested deeper than the
 /// stack holds (some ten thousand levels) must not be cloned, compared or printed. A loaded

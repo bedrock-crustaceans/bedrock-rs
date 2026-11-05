@@ -1,84 +1,14 @@
-//! What loading an animation file and an animation controller file share: the document of a
-//! parsed file and the combine both loaders run over the files' copies (each file split into
-//! its definitions; per identifier, the higher pack's definition replaces the lower one whole).
+//! The combine the animation and animation controller loaders run over the files' copies:
+//! each file split into its definitions; per identifier, the higher pack's definition replaces
+//! the lower one whole.
 
-use super::read::Parsed;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{
-    CombineRule, Contribution, Definition, Document, Notice, Origin, Registry, RegistryBuilder,
-    Rejected, VersionInfo,
+    CombineRule, Contribution, Definition, Document, Notice, Registry, RegistryBuilder, Rejected,
 };
 use bedrock_addon_core::id::{AnimationRef, kind};
-use bedrock_addon_core::load::{FileCopy, LoadContext, StackCx};
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
-
-/// The side a context's pack is on (a resource pack is the client).
-pub fn side_of(cx: &LoadContext) -> PackSide {
-    if cx.pack_type == PackType::Resource {
-        PackSide::Resource
-    } else {
-        PackSide::Behavior
-    }
-}
-
-/// Gives every finding the file's pack and path, pushed one by one: the places the findings
-/// held are not carried over.
-fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
-    let mut out = Diagnostics::default();
-    for mut finding in diagnostics {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        out.push(finding);
-    }
-    out
-}
-
-/// The version record of a file whose `format_version` was written as `written`, parsed as
-/// `parsed_as`, and whether it was upgraded to get there.
-pub fn version_info(written: &SemVersion, parsed_as: FormatVersion, upgraded: bool) -> VersionInfo {
-    let written = written.format_version();
-    VersionInfo::new(Some(written), false, written, parsed_as, upgraded)
-}
-
-/// One file's result as a document of the whole file.
-///
-/// # Errors
-///
-/// `Rejected` (with the file's located diagnostics) when the parse produced no value or the file's
-/// `format_version` was not read.
-pub fn whole<T>(
-    parsed: Parsed<T>,
-    origin: Origin,
-    parsed_as: impl FnOnce(&SemVersion) -> (FormatVersion, bool),
-) -> Result<Document<T>, Rejected> {
-    let diagnostics = locate(parsed.diagnostics, &origin);
-    match (parsed.value, parsed.written) {
-        (Some(value), Some(written)) => {
-            let (as_, upgraded) = parsed_as(&written);
-            Ok(Document::new(
-                value,
-                origin,
-                version_info(&written, as_, upgraded),
-                diagnostics,
-            ))
-        }
-        _ => Err(Rejected::new(origin, diagnostics)),
-    }
-}
-
-/// `<directory>/<first key without its prefix>.json`.
-pub fn file_path(directory: &str, prefix: &str, first: Option<&String>) -> PackPath {
-    let name = first.map_or("unnamed", |key| {
-        key.get(..prefix.len())
-            .filter(|head| head.eq_ignore_ascii_case(prefix))
-            .map_or(key.as_str(), |_| &key[prefix.len()..])
-    });
-    PackPath::new(&format!("{directory}/{name}.json"))
-        .unwrap_or_else(|_| PackPath::from_static("animations/unnamed.json"))
-}
-
-// ---- the collections --------------------------------------------------------------------------
+use bedrock_addon_core::load::{FileCopy, StackCx};
+use bedrock_addon_core::pack_identity::PackRef;
 
 /// Combine the files' copies into one registry: each file read whole is split into one
 /// document per definition (`definitions` gives them, `member` is the object they sit under),

@@ -1,4 +1,4 @@
-//! Loading an atlas: each pack's copy read leniently, every copy merged with `patch_json`
+//! The atlas of a stack: each pack's copy read leniently, every copy merged with `patch_json`
 //! highest priority first, the merged document read once, and the image paths of the result
 //! looked up in the stack.
 

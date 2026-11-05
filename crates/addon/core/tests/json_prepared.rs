@@ -83,12 +83,12 @@ fn zero_bytes(bytes: &[u8]) -> bool {
     bytes.is_empty()
 }
 
-/// Meaning 2 (`texture_set`, `set_read.rs`): zero bytes after `strip_bom`, so a BOM alone is empty.
+/// Meaning 2 (`texture_set`, `read.rs`): zero bytes after `strip_bom`, so a BOM alone is empty.
 fn empty_after_strip(bytes: &[u8]) -> bool {
     strip_bom(bytes).is_empty()
 }
 
-/// Meaning 3 (geometry `load.rs`): ASCII white space only after `strip_bom`.
+/// Meaning 3 (geometry `read/mod.rs`): ASCII white space only after `strip_bom`.
 fn ascii_white(bytes: &[u8]) -> bool {
     strip_bom(bytes).iter().all(u8::is_ascii_whitespace)
 }

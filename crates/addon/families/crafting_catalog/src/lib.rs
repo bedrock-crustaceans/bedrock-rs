@@ -304,8 +304,8 @@ impl JsonDocument for CraftingCatalog {
         }
     }
 
-    /// Parses the catalogue file without upgrading it: the struct its `format_version` selects
-    ///, vanilla's envelope checks on a document it refused; [`CatalogAny::upgrade`] runs the
+    /// Parses the catalogue file without upgrading it: the struct its `format_version` selects,
+    /// with vanilla's envelope checks on a document it refused; [`CatalogAny::upgrade`] runs the
     /// rest of the load. Nothing is closed (the family has no close).
     ///
     /// # Errors

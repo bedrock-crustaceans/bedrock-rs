@@ -8,9 +8,9 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod atlas_load;
 mod patch;
 mod read;
+mod stack;
 mod texts;
 mod types;
 mod write;
@@ -19,7 +19,7 @@ use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::document::{Merged, RawLayer};
 use bedrock_addon_support::texture::files::StackFiles;
 
-use crate::atlas_load::{AtlasCopy, merge_atlas, parse_copy};
+use crate::stack::{AtlasCopy, merge_atlas, parse_copy};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_support::texture::files::listed_files;
@@ -92,8 +92,8 @@ impl TextureAtlases {
         let layers = item.layers(index);
         let mut kept: Vec<ResolvedLayer<'a>> = match item.elements().get(index) {
             Some(TextureElement::Variations { variations, .. }) => {
-                let paths = atlas_load::variation_paths(variations);
-                let keep = atlas_load::kept_variations(&paths, &self.files);
+                let paths = stack::variation_paths(variations);
+                let keep = stack::kept_variations(&paths, &self.files);
                 layers
                     .into_iter()
                     .zip(keep)

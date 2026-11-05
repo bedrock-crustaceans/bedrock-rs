@@ -4,9 +4,9 @@
 use facet::Facet;
 
 use super::Any;
+use crate::molang::{SCATTER_LEGACY, Walk, member};
 use crate::read::{parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
-use crate::walk::{SCATTER_LEGACY, Walk, member};
 use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::Extra;

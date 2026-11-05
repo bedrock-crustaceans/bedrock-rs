@@ -47,7 +47,7 @@ pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
         ));
     }
     // The payload's path: `minecraft:block`, also for a file below 1.26.20, which is read
-    // whole (`load::parse_file` gives the key).
+    // whole (`read::read_file` gives the key).
     let at = cx.at.clone();
     skipped.extend(rules(block, cx.load, &at, cx.diagnostics));
     references(block, &at, cx.diagnostics);

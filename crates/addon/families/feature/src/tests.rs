@@ -273,3 +273,237 @@ fn findings_carry_the_file_and_pack() {
         assert_located(&rejected.diagnostics, PATH);
     }
 }
+
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by,
+    //! for every feature type.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    use super::{Fam, FeatureType, KEYS, TypeFn, with_type};
+
+    /// The reading table of one feature type, headed by its payload key.
+    struct Table;
+
+    impl TypeFn<String> for Table {
+        fn call<T: FeatureType>(self) -> String {
+            format!("{}\n{}", T::KEY, reading_table::<Fam<T>>())
+        }
+    }
+
+    /// The tables of every feature type, in `Feature`'s order.
+    const TABLES: &str = r"
+            minecraft:aggregate_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:beards_and_shavers
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:cave_carver_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:conditional_list
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:fossil_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:geode_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:growing_plant_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:height_difference_filter_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:horizontal_tree_decoration_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:multi_block_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.26.40..=1.26.40 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:multiface_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:multipart_block_column_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.26.40..=1.26.40 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:nether_cave_carver_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:ore_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:partially_exposed_blob_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:rect_layout
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:scan_surface
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:scatter_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.21.10 (0..=1): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:sculk_patch_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:search_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:sequence_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:single_block_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.21.40 (0..=1): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:snap_to_surface_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.26.50 (0..=1): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:structure_template_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:surface_relative_threshold_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:tree_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:underwater_cave_carver_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:vegetation_patch_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            minecraft:weighted_random_feature
+            text: Root, clamps beyond a double: true, duplicates kept in: []
+            envelope: Always
+            missing version: rejected: NoValidVersion
+            below floor: UseFormatVersion
+            empty document: Error
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        ";
+
+    #[test]
+    fn feature_reads_as_pinned() {
+        let tables: String = KEYS
+            .iter()
+            .map(|key| with_type(key, Table).expect("a registered key"))
+            .collect();
+        assert_reading_table("Fam<T>", &tables, TABLES);
+    }
+}

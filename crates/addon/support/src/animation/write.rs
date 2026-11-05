@@ -1,5 +1,5 @@
 //! The writing both file kinds share: members in declaration order, only those the value holds,
-//! each in the form it was read.
+//! each in the form it was read, and the path a file is written at.
 
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
@@ -8,6 +8,7 @@ use super::types::{EventString, ParticleEffect, SoundEffect};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::FormatVersion;
 
 /// The error for a value the format cannot hold, at the root.
@@ -179,4 +180,15 @@ pub fn sound(s: &SoundEffect) -> Result<Value, EncodeError> {
     o.put("effect", string(&s.effect));
     o.opt("locator", s.locator.as_ref(), |l| Ok(string(l)))?;
     Ok(o.done())
+}
+
+/// `<directory>/<first key without its prefix>.json`.
+pub fn file_path(directory: &str, prefix: &str, first: Option<&String>) -> PackPath {
+    let name = first.map_or("unnamed", |key| {
+        key.get(..prefix.len())
+            .filter(|head| head.eq_ignore_ascii_case(prefix))
+            .map_or(key.as_str(), |_| &key[prefix.len()..])
+    });
+    PackPath::new(&format!("{directory}/{name}.json"))
+        .unwrap_or_else(|_| PackPath::from_static("animations/unnamed.json"))
 }

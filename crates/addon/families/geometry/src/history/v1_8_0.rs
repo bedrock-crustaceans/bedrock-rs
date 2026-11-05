@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use super::super::read::{
     LocatorForm, read_locators, read_poly_mesh, read_render_group_id, read_texture_mesh,
 };
-use super::super::schema::{ABOVE_MAX_VERSION, CAPE_DROPPED, Group, Node, SchemaWalk, text};
+use super::super::schema_walk::{ABOVE_MAX_VERSION, CAPE_DROPPED, Group, Node, SchemaWalk, text};
 use super::super::{
     Bone as NewBone, BoneLegacy, Cube as NewCube, CubeUv, Description, Geometry as NewGeometry,
     GeometryLegacy, Locator, PolyMesh, TextureMesh,

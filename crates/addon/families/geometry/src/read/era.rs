@@ -7,11 +7,11 @@
 
 use indexmap::IndexMap;
 
-use super::schema::{
+use crate::schema_walk::{
     ARRAY_TOO_SMALL, Group, Hit, INVALID_UV_ROTATION, JsonKind, NO_NAMESPACE_CUSTOM,
     NOT_ALLOWED_REGEX, Node, OUTSIDE_RANGE, Pattern, SchemaWalk, has_geometry_name, text,
 };
-use super::{
+use crate::{
     Bone, Cube, CubeUv, Description, FaceUv, Faces, Geometry, ItemDisplayTransform,
     ItemDisplayTransforms, Locator, PolyMesh, Polys, TextureMesh,
 };
@@ -541,7 +541,7 @@ fn read_polys(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Polys> {
                 let (template, bound) = match n {
                     0..3 => (ARRAY_TOO_SMALL, "3"),
                     3..=4 => return Some(vertices),
-                    _ => (super::schema::ARRAY_TOO_LARGE, "4"),
+                    _ => (crate::schema_walk::ARRAY_TOO_LARGE, "4"),
                 };
                 walk.error(
                     DiagnosticCode::InvalidValue {

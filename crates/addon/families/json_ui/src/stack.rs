@@ -1,6 +1,6 @@
-//! Loading JSON UI: `Content` of the file kinds, the walk of `ui/`, and the stack's merge:
-//! the united lists, each listed file merged from the lowest pack up, the global variables,
-//! the definition table and the checks over it.
+//! The stack merge of JSON UI, the bulk of its loader: the united lists, each listed file
+//! merged from the lowest pack up, the global variables, the definition table and the checks
+//! over it; with the walk of `ui/` and `Content` of the file kinds it reads.
 
 use std::collections::HashSet;
 

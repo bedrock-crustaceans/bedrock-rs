@@ -17,13 +17,10 @@ use crate::version::FormatVersion;
 /// This is the envelope the generated `Any::to_json` writes (`__macro::document_json`), as a
 /// [`Value`].
 ///
-/// The envelopes the families build by hand today that are this shape, version first, one
-/// payload key, then the root extras: `voxel_shape`, `feature_rules`, `block_culling`, fog
-/// (behind its pre-write refusal), trade (the cereal branch), `crafting_catalog`, `texture_set`,
-/// particle, biome, `client_biome` (`root_extra` after), item, entity (`"beta"` for the beta
-/// struct), block (both writers), the generic copy of camera, jigsaw, poi and
-/// `deferred_settings`, support's `chain_file::document`, ddui (two copies) and
-/// `atomic_client_entity`. Dimension, attachable and `client_entity` read their root struct
+/// The envelopes the families still build by hand in this shape, version first, one payload
+/// key, then the root extras, are those of structs on the raw-text path, which write their own
+/// root: particle's 1.10.0 struct, `client_biome`'s legacy structs, fog's older structs,
+/// biome's 1.21.110 struct and block's legacy document (and its legacy writer). Dimension, attachable and `client_entity` read their root struct
 /// from the whole text (`EnvelopeCheck::Never`): the struct writes its own envelope, version and
 /// root members included, and this returns it unchanged. Recipe (the key per
 /// recipe kind, the version member left out when there is none), the spawn legacy writer (an

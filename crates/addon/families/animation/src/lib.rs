@@ -21,7 +21,9 @@ use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
-use bedrock_addon_support::animation::load::{combine, file_path, side_of, whole};
+use bedrock_addon_support::animation::read::{side_of, whole};
+use bedrock_addon_support::animation::registry::combine;
+use bedrock_addon_support::animation::write::file_path;
 
 pub use bedrock_addon_support::animation::{EventString, ParticleEffect, SoundEffect};
 pub use types::{

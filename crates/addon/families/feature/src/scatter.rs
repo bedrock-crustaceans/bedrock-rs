@@ -5,9 +5,9 @@ use facet::Facet;
 
 use super::Description;
 use super::Rules;
+use super::molang::{SCATTER, Walk};
 use super::read::{formatted, parse_strict, required_child};
 use super::validate::Check;
-use super::walk::{SCATTER, Walk};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictInt, Value};
@@ -185,15 +185,15 @@ impl Walk for ScatterParams {
     }
 }
 
-impl super::walk::Refer for ScatterFeature {
-    fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+impl super::molang::Refer for ScatterFeature {
+    fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
         out.member("places_feature", &self.places_feature);
     }
 }
 
 impl MolangFields for ScatterFeature {
     fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
-        super::walk::member(v, "distribution", &mut self.distribution);
+        super::molang::member(v, "distribution", &mut self.distribution);
     }
 }
 

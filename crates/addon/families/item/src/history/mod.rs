@@ -4,7 +4,7 @@
 //! `v1_16_100` … `v1_26_0` are the component formats, each an instance of
 //! [`ItemDocument`](crate::history::ItemDocument); `v1_26_30` is the first modern format
 //! (its sound members bind level sound events); the newest format, 1.26.50, is
-//! [`crate::Item`]. [`Any`](crate::history::Any) is the struct a file's
+//! [`crate::Item`]. [`Any`] is the struct a file's
 //! `format_version` selected, from `Item::parse_as_written`.
 
 mod component;
@@ -184,9 +184,11 @@ bedrock_addon_core::version_chain! {
 }
 
 impl Any {
-    /// Runs the remaining upgrade steps on a document [`Item::parse_as_written`](JsonDocument::parse_as_written) gave: the
-    /// same result `Item::parse` gives (a beta document is rejected here; it has no stable
-    /// form).
+    /// Runs the remaining upgrade steps on a document
+    /// [`Item::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written)
+    /// gave: the chain's checks `Item::parse` runs, without its resource-pack rule (an item at
+    /// 1.16.100 or later refused in a resource pack), which `parse_as_written` does not apply
+    /// either. A beta document is rejected here; it has no stable form.
     ///
     /// # Errors
     ///

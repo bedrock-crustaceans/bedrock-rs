@@ -6,9 +6,9 @@ use facet::Facet;
 use facet_value::VArray;
 
 use super::Description;
+use super::molang::{WORLD_GEN, Walk, walk};
 use super::validate::Check;
 use super::values::{JsonInt, pair, weight_of, weight_value};
-use super::walk::{WORLD_GEN, Walk, walk};
 use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
@@ -282,21 +282,21 @@ walk!(fields SurfaceRelativeThresholdFeature {} + { "feature_to_place" => featur
 // no reference of the link pass.
 walk!(fields HeightDifferenceFilterFeature {});
 
-impl super::walk::Refer for WeightedFeature {
-    fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+impl super::molang::Refer for WeightedFeature {
+    fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
         // `[feature, weight]`.
         out.element(0, &self.feature);
     }
 }
 
-impl super::walk::Refer for ConditionalFeature {
-    fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+impl super::molang::Refer for ConditionalFeature {
+    fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
         out.member("places_feature", &self.places_feature);
     }
 }
 
-impl super::walk::Refer for FeatureArea {
-    fn refer<'a>(&'a self, out: &mut super::walk::References<'a>) {
+impl super::molang::Refer for FeatureArea {
+    fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
         out.member("feature", &self.feature);
     }
 }

@@ -41,8 +41,8 @@ pub type FileCopy<C> = (PackPath, Result<Document<C>, Rejected>);
 ///
 /// That identifier is known only once the envelope and the version are read: a file that is
 /// no text, whose envelope or payload is unreadable, or whose `format_version` is malformed
-/// names none (`Contribution::Rejected(None, ..)`). Entity's and dimension's hand loaders read it from the raw text instead
-/// (`identifier_of`), so they name it for such a file too. The difference shows only where a
+/// names none (`Contribution::Rejected(None, ..)`). Entity's reader reads it from the raw text instead
+/// (`identifier_of`), so it names it for such a file too. The difference shows only where a
 /// failed claim is held: `TopWinsFallback` with a notice, `ClaimBeforeValidate`, and any rule
 /// that reads the claims of failed files.
 ///

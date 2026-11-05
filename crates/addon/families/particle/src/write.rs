@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use super::component::{EmitterLifetimeEvents, ParticleMotionCollision, write_component};
 use super::curve::Curve;
 use super::event::EventNode;
-use super::parse::{MAX_TEXTURE, known};
+use super::read::{MAX_TEXTURE, known};
 use super::read::{Writer, put, put_opt};
 use super::{Description, ParticleEffect};
 use bedrock_addon_core::document::Component as _;

@@ -8,7 +8,7 @@
 pub mod v1_16_100;
 
 use super::TextureSet;
-use super::set_load::upgrade_document;
+use super::upgrade_document;
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 

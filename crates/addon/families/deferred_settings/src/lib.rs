@@ -357,17 +357,36 @@ impl JsonDocument for LightingSettings {
     }
 }
 
-/// The identifier a lighting settings value names, if any.
-fn identifier_of_lighting(value: &LightingSettings) -> Option<&str> {
-    value.description.as_ref().map(|d| d.identifier.as_str())
+/// The identifier a settings description names, if there is one.
+fn identifier_in<K: Kind>(description: Option<&Description<K>>) -> Option<&str> {
+    description.map(|d| d.identifier.as_str())
 }
 
-// The identifier is optional, so the payload is no `JsonDefinition`: its `Definition` is
-// written out.
-impl Definition for LightingSettings {
-    type Kind = kind::LightingSettings;
-    type File = LightingSettings;
-    type Beta = NoBeta<kind::LightingSettings>;
+/// The `Definition` of each payload named by an identifier, written out: the identifier is
+/// optional, so none of them is a `JsonDefinition`.
+macro_rules! definition_written_out {
+    ($($settings:ident),* $(,)?) => {
+        $(
+            impl Definition for $settings {
+                type Kind = kind::$settings;
+                type File = $settings;
+                type Beta = NoBeta<kind::$settings>;
+            }
+        )*
+    };
+}
+
+definition_written_out! {
+    LightingSettings,
+    AtmosphereSettings,
+    WaterSettings,
+    ColorGradingSettings,
+    CubemapSettings,
+}
+
+/// The identifier a lighting settings value names, if any.
+fn identifier_of_lighting(value: &LightingSettings) -> Option<&str> {
+    identifier_in(value.description.as_ref())
 }
 
 impl JsonPlaced for LightingSettings {
@@ -417,17 +436,9 @@ impl JsonDocument for AtmosphereSettings {
     }
 }
 
-/// The identifier a atmosphere settings value names, if any.
+/// The identifier an atmosphere settings value names, if any.
 fn identifier_of_atmosphere(value: &AtmosphereSettings) -> Option<&str> {
-    value.description.as_ref().map(|d| d.identifier.as_str())
-}
-
-// The identifier is optional, so the payload is no `JsonDefinition`: its `Definition` is
-// written out.
-impl Definition for AtmosphereSettings {
-    type Kind = kind::AtmosphereSettings;
-    type File = AtmosphereSettings;
-    type Beta = NoBeta<kind::AtmosphereSettings>;
+    identifier_in(value.description.as_ref())
 }
 
 impl JsonPlaced for AtmosphereSettings {
@@ -479,15 +490,7 @@ impl JsonDocument for WaterSettings {
 
 /// The identifier a water settings value names, if any.
 fn identifier_of_water(value: &WaterSettings) -> Option<&str> {
-    value.description.as_ref().map(|d| d.identifier.as_str())
-}
-
-// The identifier is optional, so the payload is no `JsonDefinition`: its `Definition` is
-// written out.
-impl Definition for WaterSettings {
-    type Kind = kind::WaterSettings;
-    type File = WaterSettings;
-    type Beta = NoBeta<kind::WaterSettings>;
+    identifier_in(value.description.as_ref())
 }
 
 impl JsonPlaced for WaterSettings {
@@ -546,14 +549,6 @@ fn identifier_of_color_grading(value: &ColorGradingSettings) -> Option<&str> {
         .map(Id::as_str)
 }
 
-// The identifier is optional, so the payload is no `JsonDefinition`: its `Definition` is
-// written out.
-impl Definition for ColorGradingSettings {
-    type Kind = kind::ColorGradingSettings;
-    type File = ColorGradingSettings;
-    type Beta = NoBeta<kind::ColorGradingSettings>;
-}
-
 impl JsonPlaced for ColorGradingSettings {
     /// The file directly in the payload's folder, named after the identifier with `:` as `_`;
     /// a value without an identifier is named after the payload.
@@ -603,15 +598,7 @@ impl JsonDocument for CubemapSettings {
 
 /// The identifier a cubemap settings value names, if any.
 fn identifier_of_cubemap(value: &CubemapSettings) -> Option<&str> {
-    value.description.as_ref().map(|d| d.identifier.as_str())
-}
-
-// The identifier is optional, so the payload is no `JsonDefinition`: its `Definition` is
-// written out.
-impl Definition for CubemapSettings {
-    type Kind = kind::CubemapSettings;
-    type File = CubemapSettings;
-    type Beta = NoBeta<kind::CubemapSettings>;
+    identifier_in(value.description.as_ref())
 }
 
 impl JsonPlaced for CubemapSettings {

@@ -8,7 +8,7 @@
 use indexmap::IndexMap;
 
 use super::super::read::{LocatorForm, read_locators, read_render_group_id};
-use super::super::schema::{Group, Hit, JsonKind, Node, Pattern, SchemaWalk};
+use super::super::schema_walk::{Group, Hit, JsonKind, Node, Pattern, SchemaWalk};
 use super::super::{GeometryLegacy, Locator};
 use super::{settle, v1_8_0, walk_for};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};

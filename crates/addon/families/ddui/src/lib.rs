@@ -707,6 +707,7 @@ impl Placed for UiStyle {
 
 // ---- the group -----------------------------------------------------------------------------
 
+#[doc(hidden)]
 /// What one walked file parses to.
 #[derive(Debug)]
 pub enum UiFile {
