@@ -48,3 +48,27 @@ fn particle_places_stay_after_the_findings_are_located() {
     let place = document.diagnostics().place_of(&list.index(1));
     assert_eq!(place, list.index(3));
 }
+
+/// The spans of every finding, loaded or rejected.
+fn spans(text: &str) -> Vec<(u32, u32)> {
+    let findings = match super::common::load(text, &super::common::context()) {
+        Ok(document) => document.diagnostics().iter().cloned().collect::<Vec<_>>(),
+        Err(rejected) => rejected.diagnostics.iter().cloned().collect(),
+    };
+    findings
+        .iter()
+        .filter_map(|finding| finding.location.span)
+        .map(|span| (span.offset, span.len))
+        .collect()
+}
+
+#[test]
+fn a_bom_moves_every_span_by_its_three_bytes() {
+    // The BOM is blanked, not cut off: every span is an offset into the file as written.
+    // Content after the root value: a finding on that content.
+    let text = format!("{} garbage", effect(super::common::CEREAL, ""));
+    let plain = spans(&text);
+    assert!(!plain.is_empty(), "the input gives a finding with a span");
+    let shifted: Vec<(u32, u32)> = plain.iter().map(|&(at, len)| (at + 3, len)).collect();
+    assert_eq!(spans(&format!("\u{feff}{text}")), shifted);
+}

@@ -16,7 +16,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{BiomeId, FogId};
 use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, last_wins, strip_bom, write_json,
+    EncodeError, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -260,14 +260,15 @@ fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
             .in_file(&origin),
         ))
     };
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
-    let Ok(text) = std::str::from_utf8(bytes) else {
-        return malformed("the file is not UTF-8".to_owned());
+    let prepared = match Prepared::new(bytes) {
+        Ok(prepared) => prepared,
+        Err(PrepareError::NotUtf8(_)) => return malformed("the file is not UTF-8".to_owned()),
+        // `new` never refuses empty input.
+        Err(PrepareError::TooDeep(_) | PrepareError::Empty) => {
+            return malformed("the JSON nests too deeply".to_owned());
+        }
     };
-    if check_depth(bytes, MAX_JSON_DEPTH).is_err() {
-        return malformed("the JSON nests too deeply".to_owned());
-    }
+    let text = prepared.as_str();
     match bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text)) {
         Ok(json) if json.is_object() => {
             BiomesCopy::Layer(RawLayer::new(origin, json), Diagnostics::default())

@@ -11,9 +11,7 @@ use bedrock_addon_core::document::{
     Placed, Registry, RegistryBuilder, Rejected, default_path_flat,
 };
 use bedrock_addon_core::id::{DimensionId, kind};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -175,12 +173,11 @@ impl Dimension {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
-        let Some(text) = text(bytes) else {
+        let Ok(prepared) = Prepared::new(bytes) else {
             return Err(reject(origin));
         };
-        let parsed = parse_as_written::<DimensionFamily>(JsonSlice::new(text), cx);
+        let parsed = parse_as_written::<DimensionFamily>(prepared.slice(), cx);
         let mut diagnostics = parsed.diagnostics;
         puv_below_floor(&mut diagnostics, parsed.version.written);
         diagnostics.locate(&origin);
@@ -260,14 +257,8 @@ pub(crate) fn upgrade_document(
     }
 }
 
-/// The text of a file, after the BOM and the depth check.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
-/// The rejection of an unreadable file.
+/// The rejection of an unreadable file: not UTF-8, or nested past the limit (one text for
+/// both).
 fn reject(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
@@ -285,12 +276,11 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<Dimension>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = Origin::file(pack, side, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(reject(origin));
     };
-    let parsed = parse_as_written::<DimensionFamily>(JsonSlice::new(text), cx);
+    let parsed = parse_as_written::<DimensionFamily>(prepared.slice(), cx);
     let written = parsed.version.written;
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
@@ -342,10 +332,9 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Dimension>
 /// `minecraft:dimension/description/identifier` of a file, when it is a string: what a file
 /// that failed still names (for the script-registration check of the combine step).
 fn written_identifier(bytes: &[u8]) -> Option<DimensionId> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     // Of a member written twice, the last copy is the one that stands.
     let value = bedrock_addon_core::json::from_str_jsonc::<Value>(
-        &bedrock_addon_core::json::last_wins(text(bytes)?),
+        &bedrock_addon_core::json::last_wins(Prepared::new(bytes).ok()?.as_str()),
     )
     .ok()?;
     let identifier = value

@@ -2,6 +2,8 @@
 //! vanilla's hand-written loader, `Content` / `Definition`, the walk of `attachables/` and the
 //! combine by `description.min_engine_version`.
 
+use std::borrow::Cow;
+
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
@@ -11,9 +13,8 @@ use bedrock_addon_core::document::{
     NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{AttachableId, ItemId, kind};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
+use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -143,7 +144,7 @@ impl Attachable {
         let root = root_of(bytes);
         refuse_client_entity(root.as_ref(), &origin)?;
         let text = admit(bytes, root.as_ref(), &origin, cx)?;
-        let parsed = parse_as_written::<AttachableFamily>(JsonSlice::new(text), cx);
+        let parsed = parse_as_written::<AttachableFamily>(JsonSlice::new(&text), cx);
         let diagnostics = place(parsed.diagnostics, &origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
@@ -254,8 +255,7 @@ fn admit<'b>(
     root: Option<&Value>,
     origin: &Origin,
     cx: &LoadContext,
-) -> Result<&'b str, Rejected> {
-    let bytes = strip_bom(bytes);
+) -> Result<Cow<'b, str>, Rejected> {
     let malformed = |message: &str| {
         reject(
             origin,
@@ -265,8 +265,13 @@ fn admit<'b>(
             }),
         )
     };
-    let text = std::str::from_utf8(bytes).map_err(|_| malformed("the file is not UTF-8"))?;
-    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("the JSON nests too deeply"))?;
+    // `new` never refuses an empty text: that is the chain's to report.
+    let text = Prepared::new(bytes)
+        .map_err(|error| match error {
+            PrepareError::NotUtf8(_) => malformed("the file is not UTF-8"),
+            _ => malformed("the JSON nests too deeply"),
+        })?
+        .into_text();
     // A text that is no JSON is the chain's to report (a parse error, or an empty document).
     let Some(root) = root else {
         return Ok(text);
@@ -333,12 +338,10 @@ fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<Diagnos
 /// payload the file holds, its `format_version`): parsed once per file. `None` for bytes that
 /// are no UTF-8, no JSON, or JSON nested deeper than the limit.
 pub(super) fn root_of(bytes: &[u8]) -> Option<Value> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
     // Before any parse: a text that nests deeper than the limit overflows the reader's stack
     // (`admit` reports it).
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    let text = std::str::from_utf8(bytes).ok()?;
+    let prepared = Prepared::new(bytes).ok()?;
+    let text = prepared.as_str();
     // Of a member written twice the last stands, whole. An untyped read of the text
     // as written merges two objects of one key, so the peek reads the cleaned text, as the
     // load does.
@@ -362,7 +365,7 @@ pub(crate) fn parse_file(
         Ok(text) => text,
         Err(rejected) => return (None, Err(rejected)),
     };
-    let parsed = parse_as_written::<AttachableFamily>(JsonSlice::new(text), cx);
+    let parsed = parse_as_written::<AttachableFamily>(JsonSlice::new(&text), cx);
     let identifier = parsed
         .identity
         .identifier

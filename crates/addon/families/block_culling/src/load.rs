@@ -13,8 +13,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, WriteStyle, check_depth,
-    probe_envelope, strip_bom,
+    EncodeError, EnvelopeVersion, JsonSlice, Prepared, WriteStyle, probe_envelope,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -201,12 +200,8 @@ pub(crate) fn parse_culling(
     cx: &LoadContext,
 ) -> Result<Document<CullingRules>, Rejected> {
     let origin = Origin::file(pack, side, path.clone());
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
-    let text = check_depth(bytes, MAX_JSON_DEPTH)
-        .ok()
-        .and_then(|()| std::str::from_utf8(bytes).ok());
-    let Some(text) = text else {
+    // Either failure of the gate is the one finding.
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
             message: "not UTF-8 JSON within the nesting limit".to_owned(),
@@ -216,7 +211,7 @@ pub(crate) fn parse_culling(
         diagnostics.locate(&origin);
         return Err(Rejected::new(origin, diagnostics));
     };
-    let document = JsonSlice::new(text);
+    let document = JsonSlice::new(prepared.as_str());
     let outcome = finish(parse_as_written::<CullingFamily>(document, cx), cx);
     let mut diagnostics = outcome.diagnostics;
     match outcome.value {

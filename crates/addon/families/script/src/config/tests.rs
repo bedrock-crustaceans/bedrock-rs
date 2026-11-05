@@ -182,6 +182,36 @@ fn values_nested_to_the_depth_limit_load_write_and_drop_on_a_small_stack() {
         .unwrap();
 }
 
+/// The too-deep message counts its byte from after a byte-order mark, as the reader did
+/// when it stripped the mark: the mark blanked for the spans does not move the number.
+#[test]
+fn the_too_deep_byte_of_a_file_with_a_bom_counts_from_after_the_mark() {
+    let depth = bedrock_addon_core::json::MAX_JSON_DEPTH;
+    for (bom, name) in [(&b""[..], "plain"), (&b"\xEF\xBB\xBF"[..], "bom")] {
+        let mut bytes = bom.to_vec();
+        bytes.extend("[".repeat(depth + 1).bytes());
+        let mut folder = ConfigFolder::new("default");
+        folder.variables = Some(Bytes::from(bytes));
+        let config = ScriptConfig::parse(&ScriptConfigFiles {
+            folders: vec![folder],
+            ..ScriptConfigFiles::default()
+        });
+        let message = config.diagnostics().first_error().map(|f| match &f.code {
+            bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput { message, .. } => {
+                message.clone()
+            }
+            other => panic!("{name}: {other:?}"),
+        });
+        assert_eq!(
+            message,
+            Some(format!(
+                "JSON nesting deeper than the limit at byte {depth}"
+            )),
+            "{name}"
+        );
+    }
+}
+
 /// Permissions whose held server-net entry has `allowed_uris` nested `arrays` arrays deep,
 /// with `server_net` as given: the entry nests `arrays` + 1 levels, and a `permissions.json`
 /// that holds it two more (the root and `module_permissions`).

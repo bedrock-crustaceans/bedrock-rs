@@ -1,6 +1,7 @@
 //! Loading the crafting item catalogue: the family's chain parameters, `Content` and `Placed`
 //! of [`CraftingCatalog`].
 
+use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
@@ -11,9 +12,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Placed, Rejected};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{
     ENGINE_VERSION, FormatVersion, FormatVersionInput, PickedVersion,
@@ -104,14 +103,6 @@ impl Placed for CraftingCatalog {
     }
 }
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The error of a file without a valid `format_version`.
 fn no_valid_version() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MissingFormatVersion {
@@ -200,11 +191,11 @@ impl CraftingCatalog {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<CatalogAny>, Rejected> {
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
-        let Some(text) = text(bytes) else {
+        let Ok(prepared) = Prepared::new(bytes) else {
             return Err(unreadable(origin));
         };
+        let text = prepared.as_str();
         let document = JsonSlice::new(text);
         let mut parsed = parse_as_written::<CatalogFamily>(document, cx);
         if parsed.value.is_none() {
@@ -277,11 +268,11 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<CraftingCatalog>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = Origin::file(pack, side, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unreadable(origin));
     };
+    let text = prepared.as_str();
     let document = JsonSlice::new(text);
     let mut parsed = parse_as_written::<CatalogFamily>(document, cx);
     if parsed.value.is_none() {

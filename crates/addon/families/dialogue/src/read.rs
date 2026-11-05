@@ -13,7 +13,7 @@ use super::{Button, DialogueScene, DialogueText, StoredCommand};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::DialogueSceneTag;
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
+use bedrock_addon_core::json::{Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
@@ -183,12 +183,8 @@ impl Reader<'_> {
     fn json(&mut self, bytes: &[u8]) -> Option<Value> {
         // A leading byte-order mark is blanked, not cut, so every offset stays an offset into the
         // file as written.
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let bytes = strip_bom(bytes);
-        let text = check_depth(bytes, MAX_JSON_DEPTH)
-            .ok()
-            .and_then(|()| std::str::from_utf8(bytes).ok());
-        let parsed = match text {
+        let prepared = Prepared::new(bytes).ok();
+        let parsed = match prepared.as_ref().map(Prepared::as_str) {
             // Of a member written twice the last stands.
             Some(text) => bedrock_addon_core::json::from_str_jsonc::<Value>(
                 &bedrock_addon_core::json::last_wins(text),

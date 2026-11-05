@@ -12,9 +12,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::NullRule;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, WriteStyle, check_depth, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -151,12 +149,12 @@ impl Block {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes); // spans stay offsets into the file as written
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
-        let Some(text) = text(bytes, &origin) else {
+        // The BOM is blanked: spans stay offsets into the file as written.
+        let Ok(prepared) = Prepared::new(bytes) else {
             return Err(reject(origin, malformed()));
         };
-        let parsed = parse_as_written::<BlockFamily>(JsonSlice::new(text), cx);
+        let parsed = parse_as_written::<BlockFamily>(prepared.slice(), cx);
         let mut diagnostics = parsed.diagnostics;
         diagnostics.locate(&origin);
         match parsed.value {
@@ -239,14 +237,6 @@ fn legacy_identifier(
         .unwrap_or_default()
 }
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text<'b>(bytes: &'b [u8], _: &Origin) -> Option<&'b str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
@@ -276,12 +266,12 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> (Option<BlockId>, Result<Document<Block>, Rejected>) {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes); // spans stay offsets into the file as written
     let origin = origin(pack, side, path);
-    let Some(text) = text(bytes, &origin) else {
+    // The BOM is blanked: spans stay offsets into the file as written.
+    let Ok(prepared) = Prepared::new(bytes) else {
         return (None, Err(reject(origin, malformed())));
     };
-    let mut parsed = parse_as_written::<BlockFamily>(JsonSlice::new(text), cx);
+    let mut parsed = parse_as_written::<BlockFamily>(prepared.slice(), cx);
     // A file below 1.26.20 is read whole (its envelope is not checked), so the parse stage
     // gives the root as its path; the block it becomes is the payload, under its key, where
     // the legacy reader's findings are: the checks on the upgraded block report there too,

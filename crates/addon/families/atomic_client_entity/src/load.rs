@@ -11,8 +11,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{AtomicClientEntityId, kind};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, last_wins, strip_bom,
-    write_json,
+    EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -183,14 +182,17 @@ fn parse_file(
             text: None,
         }))
     };
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
-    let Ok(text) = std::str::from_utf8(bytes) else {
-        return (None, Err(malformed("the file is not UTF-8")));
+    let prepared = match Prepared::new(bytes) {
+        Ok(prepared) => prepared,
+        Err(PrepareError::NotUtf8(_)) => {
+            return (None, Err(malformed("the file is not UTF-8")));
+        }
+        Err(PrepareError::TooDeep(_) | PrepareError::Empty) => {
+            // `new` never refuses empty input.
+            return (None, Err(malformed("the JSON nests too deeply")));
+        }
     };
-    if check_depth(bytes, MAX_JSON_DEPTH).is_err() {
-        return (None, Err(malformed("the JSON nests too deeply")));
-    }
+    let text = prepared.as_str();
     if let Some(found) = member_count(text) {
         return (None, Err(reject(found)));
     }

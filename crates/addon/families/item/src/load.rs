@@ -7,7 +7,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{ItemId, kind};
 use bedrock_addon_core::json::NullRule;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, check_depth, strip_bom};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle};
 use bedrock_addon_core::load::{
     Accept, CollectionLoader, DocumentSource, ListDepth, LoadContext, LoadRequirement, StackCx,
     Walk, WalkFile, WalkOrder,
@@ -496,39 +496,35 @@ pub(crate) struct ItemLoad {
     pub(crate) identifier: Option<String>,
 }
 
-/// The text of an item file, ready for the envelope: without a BOM, UTF-8 (else
+/// The text of an item file, ready for the envelope: its BOM blanked, UTF-8 (else
 /// `MalformedInput`), nested at most `MAX_JSON_DEPTH` deep (else `MalformedInput`).
 /// A root `use_beta_features` is no member of the current format: like any other root member
 /// beside the version and the payload it is read by nothing (the item envelope does not
 /// count members).
-fn prepare(bytes: &[u8]) -> Result<&str, Diagnostics> {
-    let mut early = Diagnostics::default();
-    let Ok(text) = std::str::from_utf8(strip_bom(bytes)) else {
+fn prepare(bytes: &[u8]) -> Result<Prepared<'_>, Diagnostics> {
+    Prepared::new(bytes).map_err(|error| {
+        let message = match error {
+            PrepareError::TooDeep(_) => "nested too deeply",
+            PrepareError::NotUtf8(_) | PrepareError::Empty => "not UTF-8",
+        };
+        let mut early = Diagnostics::default();
         early.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: "not UTF-8".to_owned(),
+            message: message.to_owned(),
             text: None,
         }));
-        return Err(early);
-    };
-    if check_depth(text.as_bytes(), bedrock_addon_core::json::MAX_JSON_DEPTH).is_err() {
-        early.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: "nested too deeply".to_owned(),
-            text: None,
-        }));
-        return Err(early);
-    }
-    Ok(text)
+        early
+    })
 }
 
 /// Loads one item file: the resource-pack rule, then the chain.
 pub(crate) fn load_item(bytes: &[u8], cx: &LoadContext) -> ItemLoad {
     // A leading byte-order mark is blanked, not cut off, so every span is an offset into the
     // file as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let text = match prepare(bytes) {
-        Ok(text) => text,
+    let prepared = match prepare(bytes) {
+        Ok(prepared) => prepared,
         Err(early) => return rejected_load(early),
     };
+    let text = prepared.as_str();
     let document = JsonSlice::new(text);
     let mut parsed = versioning::parse_as_written::<ItemFamily>(document, cx);
     parsed.diagnostics.extend(numeric_version(text));
@@ -962,14 +958,14 @@ impl Item {
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
         // A leading byte-order mark is blanked, so spans are offsets into the file as written.
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
-        let text = match prepare(bytes) {
-            Ok(text) => text,
+        let prepared = match prepare(bytes) {
+            Ok(prepared) => prepared,
             Err(early) => {
                 return Err(Rejected::located(origin.clone(), early));
             }
         };
+        let text = prepared.as_str();
         let mut parsed = versioning::parse_as_written::<ItemFamily>(JsonSlice::new(text), cx);
         parsed.diagnostics.extend(numeric_version(text));
         json_path_texts(&mut parsed.diagnostics, text, cx);

@@ -22,7 +22,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{FeatureId, kind};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
+    EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, write_json,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -410,14 +410,6 @@ const INTERNAL_TYPE: &str = "The feature uses the feature type '{}', which is co
 /// later).
 const DUPLICATE: &str = "Feature with identifier '{}' already exists";
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text_of(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The `description.identifier` string of the first root member that has one.
 fn identifier_in(root: &Value) -> Option<String> {
     root.as_object()?.iter().find_map(|(_, member)| {
@@ -604,7 +596,7 @@ enum DuplicateText {
 /// identifier; or the findings of a file that stops before the identifier map, so it claims no
 /// identifier.
 fn identify<'b>(
-    bytes: &'b [u8],
+    prepared: &'b Result<Prepared<'b>, PrepareError>,
     path: &PackPath,
     source: FileSource,
 ) -> Result<(&'b str, Value, FeatureId), Diagnostics> {
@@ -617,8 +609,10 @@ fn identify<'b>(
         }));
         d
     };
-    let text = text_of(bytes)
-        .ok_or_else(|| invalid("not UTF-8 JSON within the nesting limit".to_owned()))?;
+    let text = prepared
+        .as_ref()
+        .map(Prepared::as_str)
+        .map_err(|_| invalid("not UTF-8 JSON within the nesting limit".to_owned()))?;
     // The identifier is read from the copy of a doubled member that stands, as the parse
     // reads it.
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(
@@ -663,9 +657,9 @@ pub(crate) fn parse_file(
     cx: &LoadContext,
     source: FileSource,
 ) -> (Option<FeatureId>, Result<Document<Feature>, Rejected>) {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(pack, side, path);
-    let (text, root, identifier) = match identify(bytes, path, source) {
+    let prepared = Prepared::new(bytes);
+    let (text, root, identifier) = match identify(&prepared, path, source) {
         Ok(found) => found,
         Err(d) => return (None, Err(Rejected::located(origin, d))),
     };
@@ -696,9 +690,9 @@ pub(crate) fn parse_file_as_written(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<history::Any>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
-    let (text, root, _) = match identify(bytes, path, FileSource::Pack) {
+    let prepared = Prepared::new(bytes);
+    let (text, root, _) = match identify(&prepared, path, FileSource::Pack) {
         Ok(found) => found,
         Err(d) => return Err(Rejected::located(origin, d)),
     };

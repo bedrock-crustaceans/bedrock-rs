@@ -23,8 +23,8 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{Id, Kind, kind};
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle,
-    check_depth, probe_envelope, strip_bom, write_json,
+    EncodeError, EnvelopeVersion, JsonSlice, Prepared, Unrepresentable, Value, WriteStyle,
+    probe_envelope, write_json,
 };
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{
@@ -248,14 +248,6 @@ impl Family for MetadataFamily {
 
 // ---- one JSON file -------------------------------------------------------------------------
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
@@ -329,15 +321,14 @@ pub(crate) fn parse_file<F: JsonFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> FileOutcome<F::Latest> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(pack, side, path);
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         failure_line::<F>(&mut diagnostics, path);
         return (None, Err(Rejected::located(origin, diagnostics)));
     };
-    let parsed = parse_stage::<F>(text, cx);
+    let parsed = parse_stage::<F>(prepared.as_str(), cx);
     let identifier = parsed.identity.identifier.clone().map(Id::parse);
     (identifier, finish_file::<F>(parsed, origin, cx))
 }
@@ -365,15 +356,14 @@ fn as_written<F: JsonFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         failure_line::<F>(&mut diagnostics, path);
         return Err(Rejected::located(origin, diagnostics));
     };
-    let parsed = parse_stage::<F>(text, cx);
+    let parsed = parse_stage::<F>(prepared.as_str(), cx);
     let mut diagnostics = parsed.diagnostics;
     if let Some(value) = parsed.value {
         diagnostics.locate(&origin);

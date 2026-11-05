@@ -21,7 +21,9 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom};
+use bedrock_addon_core::json::{
+    MAX_JSON_DEPTH, Prepared, Value, blank_bom, check_depth, last_wins,
+};
 use bedrock_addon_core::version::SemVersion;
 
 /// The client's text for two keys of one copy with the same name before the first `:`; the
@@ -112,10 +114,13 @@ fn clamp_numbers(value: &mut Value, at: &mut JsonPath, clamped: &mut IndexSet<Js
 /// of a member written twice the last stands, and a number past the doubles is clamped. The
 /// error is the reader's message.
 pub(super) fn read_copy(bytes: &[u8]) -> Result<Layer, String> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
+    // The nesting is checked before the encoding, so a text both too deep and not UTF-8 is
+    // told as too deep. The mark is blanked first: the scan stops at it, and the offset in the
+    // message counts it.
+    let bytes = &*blank_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|error| error.to_string())?;
-    let text = std::str::from_utf8(bytes).map_err(|error| error.to_string())?;
+    let prepared = Prepared::new(bytes).map_err(|error| error.to_string())?;
+    let text = prepared.as_str();
     // jsoncpp keeps the last of two equal keys, so the text is cleaned before anything reads it.
     let mut root = bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text))
         .map_err(|error| error.to_string())?;
@@ -1077,5 +1082,32 @@ impl Reader<'_> {
         };
         entry.path = path;
         Some(entry)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_copy;
+    use bedrock_addon_core::json::MAX_JSON_DEPTH;
+
+    /// A copy nested too deep and not UTF-8 is told too deep, at the offset of the first bracket
+    /// past the limit counted in the file as written: a byte-order mark counts.
+    #[test]
+    fn a_copy_too_deep_and_not_utf8_is_told_too_deep_with_and_without_a_bom() {
+        for (bom, offset) in [
+            (&b""[..], MAX_JSON_DEPTH),
+            (&b"\xEF\xBB\xBF"[..], MAX_JSON_DEPTH + 3),
+        ] {
+            let mut bytes = bom.to_vec();
+            bytes.extend("[".repeat(MAX_JSON_DEPTH + 1).bytes());
+            bytes.push(0xff);
+            assert_eq!(
+                read_copy(&bytes).err(),
+                Some(format!(
+                    "JSON nesting deeper than the limit at byte {offset}"
+                )),
+                "bom: {bom:?}"
+            );
+        }
     }
 }

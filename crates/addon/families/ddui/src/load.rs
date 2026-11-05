@@ -5,6 +5,7 @@
 use std::collections::HashSet;
 use std::convert::Infallible;
 
+use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -27,8 +28,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{Id, kind};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, last_wins,
-    probe_envelope, strip_bom, write_json,
+    EncodeError, JsonSlice, Value, WriteStyle, last_wins, probe_envelope, write_json,
 };
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
@@ -271,14 +271,6 @@ impl VersionStruct for UiComposition {
 
 // ---- one file ------------------------------------------------------------------------------
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The path of the envelope's `format_version`.
 fn version_at() -> JsonPath {
     JsonPath::of_keys(["format_version"])
@@ -487,9 +479,8 @@ fn parse_file<F: UiFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> FileOutcome<F::Doc> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = Origin::file(pack, PackSide::Resource, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = unreadable::<F>();
         diagnostics.locate(&origin);
         return FileOutcome {
@@ -498,6 +489,7 @@ fn parse_file<F: UiFamily>(
             extension_point: None,
         };
     };
+    let text = prepared.as_str();
     // Of a member written twice the last value stands, before any look at the text.
     let cleaned = last_wins(text);
     let document = JsonSlice::new(&cleaned);
@@ -544,13 +536,13 @@ fn as_written<F: UiFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = unreadable::<F>();
         diagnostics.locate(&origin);
         return Err(Rejected::new(origin, diagnostics));
     };
+    let text = prepared.as_str();
     let cleaned = last_wins(text);
     let document = JsonSlice::new(&cleaned);
     let Stage { parsed, typed, .. } = stage::<F>(document, cx);

@@ -12,9 +12,7 @@ use bedrock_addon_core::document::{
     Registry, RegistryBuilder, Rejected,
 };
 use bedrock_addon_core::id::{SoundEventName, kind};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, WriteStyle, check_depth, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -65,12 +63,8 @@ fn parse_file(
     let origin = Origin::file(pack, side, path.clone());
     // A leading byte-order mark is blanked, not cut, so every span is an offset into the file
     // as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
-    let text = check_depth(bytes, MAX_JSON_DEPTH)
-        .ok()
-        .and_then(|()| std::str::from_utf8(bytes).ok());
-    let Some(text) = text else {
+    let Ok(prepared) = Prepared::new(bytes) else {
+        // Not UTF-8, or nested past the limit: one text for both.
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
             message: "not UTF-8 JSON within the nesting limit".to_owned(),
@@ -78,7 +72,7 @@ fn parse_file(
         }));
         return Err(Rejected::located(origin, diagnostics));
     };
-    let text = bedrock_addon_core::json::last_wins(text);
+    let text = bedrock_addon_core::json::last_wins(prepared.as_str());
     let document = JsonSlice::new(&text);
     let outcome = load::<MetadataFamily>(document, cx);
     let diagnostics = vanilla_texts(outcome.diagnostics, outcome.version.written).located(&origin);

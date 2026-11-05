@@ -17,7 +17,8 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom, trailing_content_finding,
+    JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value, check_depth, last_wins, strip_bom,
+    trailing_content_finding,
 };
 
 /// The namespace of every vanilla block, and the only one a vanilla block can have.
@@ -225,9 +226,14 @@ enum NotAnObject {
 
 /// The root object of a file, with the last value of every repeated key.
 fn parse(bytes: &[u8]) -> Result<VObject, NotAnObject> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| NotAnObject::TooDeep)?;
-    let text = std::str::from_utf8(bytes).map_err(|_| NotAnObject::NotUtf8)?;
+    // The nesting is checked before the encoding, so a text both too deep and not UTF-8 is
+    // told as too deep. The scan stops at a byte-order mark, so it reads past it.
+    check_depth(strip_bom(bytes), MAX_JSON_DEPTH).map_err(|_| NotAnObject::TooDeep)?;
+    let prepared = Prepared::new(bytes).map_err(|error| match error {
+        PrepareError::TooDeep(_) => NotAnObject::TooDeep,
+        PrepareError::NotUtf8(_) | PrepareError::Empty => NotAnObject::NotUtf8,
+    })?;
+    let text = prepared.as_str();
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text))
         .map_err(|error| NotAnObject::Syntax(Box::new(error)))?;
     match json.as_object() {
@@ -621,6 +627,23 @@ pub(super) fn duplicate_keys(text: &str) -> Vec<(String, usize)> {
 #[cfg(test)]
 mod tests {
     use super::{NotAnObject, parse};
+
+    /// A file too deep and not UTF-8 is refused as too deep, behind a byte-order mark too.
+    #[test]
+    fn a_file_too_deep_and_not_utf8_is_too_deep_with_and_without_a_bom() {
+        for bom in [&b""[..], &b"\xEF\xBB\xBF"[..]] {
+            let mut bytes = bom.to_vec();
+            bytes.extend(
+                "[".repeat(bedrock_addon_core::json::MAX_JSON_DEPTH + 1)
+                    .bytes(),
+            );
+            bytes.push(0xff);
+            assert!(
+                matches!(parse(&bytes), Err(NotAnObject::TooDeep)),
+                "bom: {bom:?}"
+            );
+        }
+    }
 
     /// Each way a file is no JSON object is a reason of its own, whatever its words.
     #[test]

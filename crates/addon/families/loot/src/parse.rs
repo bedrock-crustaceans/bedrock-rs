@@ -19,8 +19,9 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::json::{
-    Indent, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
+    Indent, MAX_JSON_DEPTH, Value, WriteStyle, blank_bom, check_depth, write_json,
 };
+use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::shared::{IntRange, RangeForm};
@@ -67,9 +68,10 @@ pub(crate) fn parse_table(
 /// Whether the file holds no value: nothing but whitespace and comments after its byte-order
 /// mark, or `null`.
 fn is_blank(bytes: &[u8]) -> bool {
-    let Ok(text) = std::str::from_utf8(strip_bom(bytes)) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return false;
     };
+    let text = prepared.as_str();
     let null = |text: &str| {
         bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok_and(|v| v.is_null())
     };
@@ -80,12 +82,9 @@ fn is_blank(bytes: &[u8]) -> bool {
 /// Why a file has no root object: the message is the reader's.
 #[derive(Debug, thiserror::Error)]
 enum RootError {
-    /// The nesting passes the reader's limit.
+    /// The nesting passes the reader's limit, or the bytes are not UTF-8.
     #[error(transparent)]
-    TooDeep(#[from] bedrock_addon_core::json::TooDeep),
-    /// The bytes are not UTF-8.
-    #[error(transparent)]
-    NotUtf8(#[from] std::str::Utf8Error),
+    Text(#[from] PrepareError),
     /// The text is not JSON; the parser's message.
     #[error("{0}")]
     Json(String),
@@ -96,10 +95,12 @@ enum RootError {
 
 /// The root object of the file, or the reader's message.
 fn read_root(bytes: &[u8]) -> Result<VObject, RootError> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH)?;
-    let text = std::str::from_utf8(bytes)?;
+    // The nesting before the encoding: a text that fails both is reported too deep. The mark
+    // is blanked first, or the scan stops at it.
+    let bytes = &*blank_bom(bytes);
+    check_depth(bytes, MAX_JSON_DEPTH).map_err(PrepareError::from)?;
+    let prepared = Prepared::new(bytes)?;
+    let text = prepared.as_str();
     // of a member written twice the last stands.
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(
         &bedrock_addon_core::json::last_wins(text),
@@ -1257,20 +1258,31 @@ fn item_color(value: &Value) -> Option<ItemColor> {
 
 #[cfg(test)]
 mod root_tests {
-    use super::{RootError, read_root};
+    use super::{PrepareError, RootError, read_root};
 
     #[test]
     fn read_root_reports_bad_input_as_typed_errors() {
         assert!(matches!(
             read_root(&[0xff, b'{']),
-            Err(RootError::NotUtf8(_))
+            Err(RootError::Text(PrepareError::NotUtf8(_)))
         ));
         assert!(matches!(read_root(b"{\"a\":"), Err(RootError::Json(_))));
         assert!(matches!(read_root(b"[1]"), Err(RootError::NotObject)));
         let deep = "[".repeat(2000);
         assert!(matches!(
             read_root(deep.as_bytes()),
-            Err(RootError::TooDeep(_))
+            Err(RootError::Text(PrepareError::TooDeep(_)))
+        ));
+    }
+
+    #[test]
+    fn read_root_reports_too_deep_before_bad_utf8_after_a_bom() {
+        let mut bytes = b"\xEF\xBB\xBF".to_vec();
+        bytes.extend("[".repeat(2000).bytes());
+        bytes.push(0xff);
+        assert!(matches!(
+            read_root(&bytes),
+            Err(RootError::Text(PrepareError::TooDeep(_)))
         ));
     }
 

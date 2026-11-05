@@ -8,9 +8,9 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::{
     Content, Document, Files, FilesBuilder, FilesRule, JsonContent, Origin, Rejected, VersionInfo,
 };
+use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, NullRule, Value, WriteStyle,
-    check_depth, probe_envelope, strip_bom,
+    EncodeError, EnvelopeVersion, JsonSlice, NullRule, Value, WriteStyle, probe_envelope,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -158,14 +158,6 @@ fn payload_at() -> JsonPath {
     JsonPath::of_keys([<TradeFamily as Family>::PAYLOAD_KEY])
 }
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
@@ -198,8 +190,8 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
 /// read there, both by the generic stage (the document input). A pre-release of
 /// 1.21.30 sorts below 1.21.30 and reaches the legacy slice through the generic stage.
 fn parse_stage(bytes: &[u8], cx: &LoadContext) -> Result<Parsed<TradeFamily>, Box<Diagnostic>> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let text = text(bytes).ok_or_else(|| Box::new(malformed()))?;
+    let prepared = Prepared::new(bytes).map_err(|_| Box::new(malformed()))?;
+    let text = prepared.as_str();
     let document = JsonSlice::new(text);
     match probe_envelope(document) {
         Err(_) if is_null(text) => Ok(legacy(document, cx)),

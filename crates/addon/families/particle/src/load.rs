@@ -15,9 +15,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::NullRule;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, WriteStyle, check_depth, probe_envelope, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle, probe_envelope};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -137,11 +135,11 @@ impl ParticleEffect {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let origin = origin(PackRef::app_data(), PackSide::Resource, path);
-        let Some(text) = text(bytes) else {
+        let Ok(prepared) = Prepared::new(bytes) else {
             return Err(reject(origin, malformed()));
         };
+        let text = prepared.as_str();
         let document = JsonSlice::new(text);
         let parsed = parse_as_written::<ParticleFamily>(document, cx);
         let mut diagnostics = parsed.diagnostics;
@@ -198,14 +196,6 @@ pub(crate) fn upgrade_document(
         }
         _ => Err(Rejected::new(origin, diagnostics)),
     }
-}
-
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
 }
 
 /// The finding of an unreadable file.
@@ -269,11 +259,11 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<ParticleEffect>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(pack, side, path);
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(reject(origin, malformed()));
     };
+    let text = prepared.as_str();
     let document = JsonSlice::new(text);
     let mut parsed = parse_as_written::<ParticleFamily>(document, cx);
     // The 1.10.0 struct is the whole document, the upgraded one its payload: what is found

@@ -24,7 +24,8 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{Extra, VersionInfo};
 use bedrock_addon_core::id::RecipeId;
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
+use bedrock_addon_core::json::Prepared;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
     JsonType, MolangList, MolangSource, ReadField, ReaderKind, ReprError, beyond_f32_warning,
@@ -220,12 +221,7 @@ impl<'c> Reader<'c> {
     fn document(&mut self, bytes: &[u8]) -> (Parsed, Option<Recipe>, Option<FormatVersion>) {
         let mut parsed = Parsed::default();
         let root_path = JsonPath::new();
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let bytes = strip_bom(bytes);
-        let text = check_depth(bytes, MAX_JSON_DEPTH)
-            .ok()
-            .and_then(|()| std::str::from_utf8(bytes).ok());
-        let Some(text) = text else {
+        let Ok(prepared) = Prepared::new(bytes) else {
             self.report(
                 &root_path,
                 DiagnosticCode::MalformedInput {
@@ -237,7 +233,7 @@ impl<'c> Reader<'c> {
             return (parsed, None, None);
         };
         // Of a member written twice the last stands.
-        let cleaned = bedrock_addon_core::json::last_wins(text);
+        let cleaned = bedrock_addon_core::json::last_wins(prepared.as_str());
         let text: &str = &cleaned;
         // The game's jsoncpp reader accepts comments.
         let root: Value = match bedrock_addon_core::json::from_str_jsonc(text) {

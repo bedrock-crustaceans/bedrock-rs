@@ -14,7 +14,8 @@ use bedrock_addon_core::document::{
     Content, Document, JsonContent, Origin, Placed, Rejected, VersionInfo,
 };
 use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, last_wins, strip_bom, write_json,
+    EncodeError, MAX_JSON_DEPTH, PrepareError, Prepared, Value, WriteStyle, blank_bom, check_depth,
+    last_wins, write_json,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersion;
@@ -55,13 +56,22 @@ fn refuse(origin: &Origin, code: DiagnosticCode) -> Rejected {
 /// A JSON file's root the way the game's reader takes it: a BOM skipped, comments accepted,
 /// the last of repeated members kept.
 fn read_json(bytes: &[u8]) -> Result<Value, ReadJsonError> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
+    // The nesting is checked before the encoding, as the game's reader does: a text that is
+    // both too deep and not UTF-8 is too deep. `Prepared` checks the encoding first. The
+    // mark is blanked first, or the scan stops at it.
+    let bytes = &*blank_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|deep| ReadJsonError::TooDeep {
         offset: deep.offset,
     })?;
-    let text = std::str::from_utf8(bytes)?;
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text))
+    let prepared = Prepared::new(bytes).map_err(|error| match error {
+        PrepareError::NotUtf8(error) => ReadJsonError::NotUtf8(error),
+        PrepareError::TooDeep(deep) => ReadJsonError::TooDeep {
+            offset: deep.offset,
+        },
+        // `new` never refuses an empty text.
+        PrepareError::Empty => ReadJsonError::NotJson(PrepareError::Empty.to_string()),
+    })?;
+    bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(prepared.as_str()))
         .map_err(|error| ReadJsonError::NotJson(error.to_string()))
 }
 
@@ -292,5 +302,36 @@ mod tests {
                 .to_string()
         );
         assert!(!read_json(b"{").unwrap_err().to_string().is_empty());
+    }
+
+    #[test]
+    fn a_text_too_deep_and_not_utf8_is_too_deep() {
+        let mut both = vec![b'['; 4096];
+        both.push(0xff);
+        assert!(matches!(
+            read_json(&both),
+            Err(ReadJsonError::TooDeep { .. })
+        ));
+    }
+
+    /// Behind a byte-order mark too, at the offset in the file as written.
+    #[test]
+    fn a_text_too_deep_and_not_utf8_behind_a_bom_is_too_deep() {
+        let mut both = b"\xEF\xBB\xBF".to_vec();
+        both.extend(vec![b'['; 4096]);
+        both.push(0xff);
+        assert!(matches!(
+            read_json(&both),
+            Err(ReadJsonError::TooDeep { offset }) if offset == MAX_JSON_DEPTH + 3
+        ));
+    }
+
+    #[test]
+    fn a_byte_order_mark_is_read_past() {
+        assert!(read_json(b"\xEF\xBB\xBF{}").unwrap().is_object());
+        assert!(matches!(
+            read_json(b"\xEF\xBB\xBF"),
+            Err(ReadJsonError::NotJson(_))
+        ));
     }
 }

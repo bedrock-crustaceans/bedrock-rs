@@ -5,7 +5,7 @@ use super::{Language, LanguageNames, Languages};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
+use bedrock_addon_core::json::{Prepared, Value};
 
 /// Vanilla's assert text for a name entry that is not an array of two elements (V5). A debug
 /// assert, not a content-log line; the entry is read all the same.
@@ -96,14 +96,14 @@ fn root(bytes: &[u8]) -> Result<Value, Box<Diagnostic>> {
             text: None,
         }))
     };
-    let bytes = strip_bom(bytes);
-    let text = check_depth(bytes, MAX_JSON_DEPTH)
-        .ok()
-        .and_then(|()| std::str::from_utf8(bytes).ok())
-        .ok_or_else(|| malformed("not UTF-8 JSON within the nesting limit".to_owned()))?;
+    // Either failure of the gate is the one text.
+    let prepared = Prepared::new(bytes)
+        .map_err(|_| malformed("not UTF-8 JSON within the nesting limit".to_owned()))?;
     // of a member written twice the last stands.
-    bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
-        .map_err(|error| malformed(error.to_string()))
+    bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(
+        prepared.as_str(),
+    ))
+    .map_err(|error| malformed(error.to_string()))
 }
 
 /// The elements vanilla iterates of a root, each with its path: the elements of an array; the
@@ -248,4 +248,30 @@ pub(super) fn names_json(names: &LanguageNames) -> Vec<Vec<String>> {
         .iter()
         .map(|(code, name)| vec![code.as_str().to_owned(), name.clone()])
         .collect()
+}
+#[cfg(test)]
+mod gate_tests {
+    use super::*;
+
+    /// The finding of a copy that is no JSON, as `(code, span)`.
+    fn refusal(bytes: &[u8]) -> (DiagnosticCode, Option<bedrock_addon_core::diagnostic::Span>) {
+        let finding = root(bytes).unwrap_err();
+        (finding.code.clone(), finding.location.span)
+    }
+
+    #[test]
+    fn a_byte_order_mark_changes_neither_the_root_nor_the_refusal() {
+        assert_eq!(
+            root(b"\xEF\xBB\xBF[\"en_US\"]").unwrap(),
+            root(b"[\"en_US\"]").unwrap()
+        );
+        assert_eq!(refusal(b"\xEF\xBB\xBF{"), refusal(b"{"));
+        assert_eq!(refusal(b"\xEF\xBB\xBF\"\xff\""), refusal(b"\"\xff\""));
+        let deep = [b'['; 4096];
+        assert_eq!(
+            refusal(&deep),
+            refusal(b"\"\xff\""),
+            "one text for both failures"
+        );
+    }
 }

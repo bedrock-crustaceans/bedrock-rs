@@ -7,9 +7,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, Value, check_depth, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, EnvelopeVersion, JsonSlice, Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -31,14 +29,6 @@ pub(crate) trait Payload: Family<Beta = Infallible, Latest: VersionStruct + Clon
 
     /// Whether the payload has an identifier at all (the five identifier maps).
     const NAMED: bool = true;
-}
-
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
 }
 
 /// The rejection of a file that is no text.
@@ -413,12 +403,11 @@ pub(crate) fn parse_file<F: Payload>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = Origin::file(pack, PackSide::Resource, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unreadable(origin));
     };
-    finish_file::<F>(parse_stage::<F>(JsonSlice::new(text), cx), origin, cx)
+    finish_file::<F>(parse_stage::<F>(prepared.slice(), cx), origin, cx)
 }
 
 /// The rest of the load of a parsed file.
@@ -445,12 +434,11 @@ pub(crate) fn as_written<F: Payload>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unreadable(origin));
     };
-    let parsed = parse_stage::<F>(JsonSlice::new(text), cx);
+    let parsed = parse_stage::<F>(prepared.slice(), cx);
     let mut diagnostics = parsed.diagnostics;
     diagnostics.locate(&origin);
     match parsed.value {

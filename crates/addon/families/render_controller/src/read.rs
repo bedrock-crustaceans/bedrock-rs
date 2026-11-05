@@ -19,6 +19,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, parse_at,
 };
+use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::pack_identity::PackPath;
@@ -182,13 +183,16 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
         }));
         Parsed::failed(diagnostics, None)
     };
+    // The nesting before the encoding, each in the loader's words.
     if check_depth(bytes, MAX_JSON_DEPTH).is_err() {
         return malformed("nesting too deep".to_owned());
     }
-    let original = match std::str::from_utf8(bytes) {
-        Ok(text) => text,
-        Err(e) => return malformed(e.to_string()),
+    let prepared = match Prepared::new(bytes) {
+        Ok(prepared) => prepared,
+        Err(PrepareError::NotUtf8(e)) => return malformed(e.to_string()),
+        Err(_) => return malformed("nesting too deep".to_owned()),
     };
+    let original = prepared.as_str();
     // the fold runs on the raw text, before the JSON reader sees it.
     let folded = fold(original);
     // The whole text is parsed first: a syntax error anywhere drops the file.

@@ -11,7 +11,8 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::BehaviorTreeId;
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{PrepareError, Prepared};
 
 /// The only member of the document root vanilla reads.
 pub(super) const PAYLOAD: &str = "minecraft:behavior_tree";
@@ -107,41 +108,33 @@ impl Reader {
     }
 
     fn document(&mut self, bytes: &[u8]) -> (Option<BehaviorTreeId>, Option<BehaviorTree>) {
-        if bytes.is_empty() {
-            // Vanilla skips an empty text without a word: an information.
-            self.report(
-                &JsonPath::new(),
-                DiagnosticCode::EmptyDocument { text: None },
-                Severity::Info,
-            );
-            return (None, None);
-        }
-        // Ours: vanilla's reader checks neither the encoding nor the nesting.
+        // Ours: vanilla's reader checks neither the encoding nor the nesting (a tree nests two
+        // levels per node: the limit bounds the walk below).
         let ours = |message: &str| DiagnosticCode::MalformedInput {
             message: message.to_owned(),
             text: None,
         };
-        let Ok(raw) = std::str::from_utf8(bytes) else {
-            self.report(
-                &JsonPath::new(),
-                ours("the file is not UTF-8"),
-                Severity::Error,
-            );
-            return (None, None);
+        let prepared = match Prepared::non_empty(bytes) {
+            Ok(prepared) => prepared,
+            Err(error) => {
+                let (code, severity) = match error {
+                    // Vanilla skips an empty text without a word: an information.
+                    PrepareError::Empty => {
+                        (DiagnosticCode::EmptyDocument { text: None }, Severity::Info)
+                    }
+                    PrepareError::NotUtf8(_) => (ours("the file is not UTF-8"), Severity::Error),
+                    PrepareError::TooDeep(_) => {
+                        (ours("the JSON nests too deeply"), Severity::Error)
+                    }
+                };
+                self.report(&JsonPath::new(), code, severity);
+                return (None, None);
+            }
         };
-        // A tree nests two levels per node: the limit bounds the walk below.
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let text = strip_bom(bytes);
-        if check_depth(text, MAX_JSON_DEPTH).is_err() {
-            self.report(
-                &JsonPath::new(),
-                ours("the JSON nests too deeply"),
-                Severity::Error,
-            );
-            return (None, None);
-        }
-        // The byte order mark is three bytes of valid UTF-8, so the rest is a string too.
-        let text = std::str::from_utf8(text).unwrap_or(raw);
+        let text = prepared.as_str();
+        // The tree keeps the text as written: the byte order mark is three bytes of valid
+        // UTF-8, so the bytes are a string too.
+        let raw = std::str::from_utf8(bytes).unwrap_or(text);
         // Of a member written twice the last stands.
         let cleaned = bedrock_addon_core::json::last_wins(text);
         let text: &str = &cleaned;

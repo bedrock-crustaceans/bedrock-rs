@@ -13,9 +13,7 @@ use bedrock_addon_core::document::{
     Placed, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{FeatureRuleId, kind};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, WriteStyle, check_depth, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -105,15 +103,7 @@ impl Placed for FeatureRule {
     }
 }
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
-/// The finding of an unreadable file.
+/// The finding of an unreadable file: not UTF-8, or nested past the limit (one text for both).
 fn malformed() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
         message: "not UTF-8 JSON within the nesting limit".to_owned(),
@@ -171,16 +161,15 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<FeatureRule>, Rejected> {
+    let origin = Origin::file(pack, side, path.clone());
     // A leading byte-order mark is blanked, not cut, so every span is an offset into the file
     // as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::file(pack, side, path.clone());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         return Err(Rejected::located(origin, diagnostics));
     };
-    let parsed = parse_as_written::<FeatureRuleFamily>(JsonSlice::new(text), cx);
+    let parsed = parse_as_written::<FeatureRuleFamily>(prepared.slice(), cx);
     let written = parsed.version.written;
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;

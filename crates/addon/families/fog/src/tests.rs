@@ -231,3 +231,59 @@ fn findings_carry_the_file_and_pack() {
         assert_located(&rejected.diagnostics, PATH);
     }
 }
+
+/// The gates check the nesting before the encoding: a text that is both too deep and not
+/// UTF-8 is told as too deep.
+#[test]
+fn a_text_too_deep_and_not_utf8_is_told_as_too_deep() {
+    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::PackPath;
+    let mut bytes = vec![b'['; bedrock_addon_core::json::MAX_JSON_DEPTH + 1];
+    bytes.push(0xff);
+    let rejected = super::FogSettings::parse(
+        &PackPath::from_static("fogs/x.json"),
+        &bytes,
+        &LoadContext::detached(),
+    )
+    .map(|_| ())
+    .expect_err("refused");
+    let messages: Vec<_> = rejected
+        .diagnostics
+        .iter()
+        .filter_map(|f| match &f.code {
+            DiagnosticCode::MalformedInput { message, .. } => Some(message.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(messages, ["nesting too deep"]);
+}
+
+/// Behind a byte-order mark too: the mark is blanked before the nesting is scanned.
+#[test]
+fn a_text_too_deep_and_not_utf8_behind_a_bom_is_told_as_too_deep() {
+    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::PackPath;
+    let mut bytes = b"\xEF\xBB\xBF".to_vec();
+    bytes.extend(vec![b'['; bedrock_addon_core::json::MAX_JSON_DEPTH + 1]);
+    bytes.push(0xff);
+    let rejected = super::FogSettings::parse(
+        &PackPath::from_static("fogs/x.json"),
+        &bytes,
+        &LoadContext::detached(),
+    )
+    .map(|_| ())
+    .expect_err("refused");
+    let messages: Vec<_> = rejected
+        .diagnostics
+        .iter()
+        .filter_map(|f| match &f.code {
+            DiagnosticCode::MalformedInput { message, .. } => Some(message.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(messages, ["nesting too deep"]);
+}

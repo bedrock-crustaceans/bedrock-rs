@@ -11,7 +11,7 @@ use uuid::Uuid;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
 };
-use bedrock_addon_core::json::{self, JsonSlice, MAX_JSON_DEPTH, Value, parse_at};
+use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Value, parse_at};
 use bedrock_addon_core::pack_identity::PackPath;
 
 use super::{
@@ -274,13 +274,29 @@ pub(super) fn with_root(
     sink: &mut Sink<'_>,
     with: impl FnOnce(JsonSlice<'_>, &mut Sink<'_>),
 ) -> bool {
-    let stripped = json::strip_bom(bytes);
-    let offset = bytes.len() - stripped.len();
-    let Ok(text) = std::str::from_utf8(stripped) else {
+    // The mark is blanked, so every offset is the file's own.
+    let text = match Prepared::new(bytes) {
+        Ok(prepared) => prepared.into_text(),
         // Bytes that are no UTF-8 are no JSON text, so the crate refuses the file.
-        sink.malformed("the file is not UTF-8".to_owned(), None);
-        return false;
+        Err(PrepareError::NotUtf8(_)) => {
+            sink.malformed("the file is not UTF-8".to_owned(), None);
+            return false;
+        }
+        // A blank text holds no bracket, so a text too deep is never the empty one below.
+        // Its byte counts from after a mark, as when the reader stripped it.
+        Err(PrepareError::TooDeep(too_deep)) => {
+            let mark = bytes.len() - json::strip_bom(bytes).len();
+            let too_deep = json::TooDeep {
+                offset: too_deep.offset - mark,
+            };
+            sink.malformed(too_deep.to_string(), None);
+            return false;
+        }
+        // `new` reads zero bytes as the empty text; were it to refuse them, they are that
+        // text all the same, told blank below.
+        Err(PrepareError::Empty) => std::borrow::Cow::Borrowed(""),
     };
+    let text = &*text;
     if text.trim().is_empty() {
         // An empty file is a parse failure.
         let text = Some(sink.parse_failed());
@@ -292,17 +308,13 @@ pub(super) fn with_root(
         );
         return false;
     }
-    if let Err(too_deep) = json::check_depth(stripped, MAX_JSON_DEPTH) {
-        sink.malformed(too_deep.to_string(), None);
-        return false;
-    }
     let clean = match twice {
         Twice::Last => json::last_wins(text),
         Twice::First => super::duplicates::first_wins(text),
     };
     if twice == Twice::First
         && matches!(clean, std::borrow::Cow::Owned(_))
-        && let Err(failure) = parse_at::<Value>(JsonSlice { text, offset })
+        && let Err(failure) = parse_at::<Value>(JsonSlice::new(text))
     {
         // `first_wins` follows brackets and keys, not the grammar: a copy it blanked may
         // hold the text's syntax fault. The server's reader reads the whole text, so the
@@ -310,10 +322,7 @@ pub(super) fn with_root(
         sink.malformed(failure.error.to_string(), Some(failure.span));
         return false;
     }
-    let root = JsonSlice {
-        text: &clean,
-        offset,
-    };
+    let root = JsonSlice::new(&clean);
     // The whole root is read once, so that every slice of it read later is known to parse.
     if let Err(failure) = parse_at::<Value>(root) {
         sink.malformed(failure.error.to_string(), Some(failure.span));

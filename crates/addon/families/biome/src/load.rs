@@ -10,6 +10,8 @@ use super::history::{Any, BiomeFamily};
 use super::parse::CEREAL;
 use super::texts::{DUPLICATE, WORLD_GATE, fixed, text as formatted};
 use super::{Beta, Biome, validate};
+use std::borrow::Cow;
+
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
@@ -20,9 +22,8 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{BiomeId, kind};
 use bedrock_addon_core::json::NullRule;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
+use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -307,8 +308,8 @@ impl Parts {
     }
 }
 
-/// The text of a file, after the BOM and the depth check.
-fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<&'b str, Rejected> {
+/// The text of a file, after the BOM, the UTF-8 and the depth check.
+fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<Cow<'b, str>, Rejected> {
     let malformed = |message: &str| {
         reject(
             origin.clone(),
@@ -318,9 +319,13 @@ fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<&'b str, Rejected> {
             }),
         )
     };
-    let bytes = strip_bom(bytes);
-    let text = std::str::from_utf8(bytes).map_err(|_| malformed("the file is not UTF-8"))?;
-    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("the JSON nests too deeply"))?;
+    // `new` never refuses an empty text: that is the chain's to report.
+    let text = Prepared::new(bytes)
+        .map_err(|error| match error {
+            PrepareError::NotUtf8(_) => malformed("the file is not UTF-8"),
+            _ => malformed("the JSON nests too deeply"),
+        })?
+        .into_text();
     Ok(text)
 }
 
@@ -348,11 +353,11 @@ fn parse(
     if let Some(gate) = world_gate(cx) {
         return Err(reject(origin.clone(), gate));
     }
-    let mut parsed = parse_as_written::<BiomeFamily>(JsonSlice::new(text), cx);
+    let mut parsed = parse_as_written::<BiomeFamily>(JsonSlice::new(&text), cx);
     // The payload is under `minecraft:biome` on the raw-text path too: the checks after the
     // parse report below it.
     parsed.at = child(&JsonPath::new(), &["minecraft:biome"]);
-    below_floor(&mut parsed, text);
+    below_floor(&mut parsed, &text);
     let identifier = parsed.identity.identifier.clone().map(BiomeId::parse);
     Ok((identifier, parsed))
 }

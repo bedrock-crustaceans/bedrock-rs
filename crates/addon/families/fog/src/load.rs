@@ -18,8 +18,8 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{FogId, kind};
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth,
-    last_wins, parse_at, probe_envelope, strip_bom,
+    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value,
+    WriteStyle, blank_bom, check_depth, last_wins, parse_at, probe_envelope,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -96,13 +96,18 @@ fn has_identifier(root: &Value) -> bool {
 /// Steps 1 to 7 of `registerFogFromJson` on a file's bytes: the text with duplicate members
 /// settled, or the findings of the gate that skipped the file.
 fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
-    if bytes.is_empty() {
-        return Err(empty(EMPTY_RESOURCE));
-    }
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("nesting too deep".to_owned()))?;
-    let text = std::str::from_utf8(bytes).map_err(|e| malformed(e.to_string()))?;
+    let too_deep = || malformed("nesting too deep".to_owned());
+    // The nesting is checked before the encoding (`Prepared` checks the encoding first): a
+    // text both too deep and not UTF-8 is told as too deep. The mark is blanked first, or
+    // the scan stops at it.
+    let bytes = &*blank_bom(bytes);
+    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| too_deep())?;
+    let prepared = Prepared::non_empty(bytes).map_err(|error| match error {
+        PrepareError::Empty => empty(EMPTY_RESOURCE),
+        PrepareError::TooDeep(_) => too_deep(),
+        PrepareError::NotUtf8(error) => malformed(error.to_string()),
+    })?;
+    let text = prepared.as_str();
     // Of a member written twice the last value stands, before anything looks at the text.
     let cleaned = last_wins(text).into_owned();
     let root =

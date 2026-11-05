@@ -16,9 +16,7 @@ use bedrock_addon_core::document::{
     Registry, RegistryBuilder, Rejected, default_path_flat,
 };
 use bedrock_addon_core::id::{Id, PoiTypeId, kind};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
     WalkOrder,
@@ -214,14 +212,6 @@ fn write_document<F: PoiFamily>(
 
 // ---- one file --------------------------------------------------------------------------------
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
@@ -268,17 +258,17 @@ pub(crate) fn parse_file<F: PoiFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> FileOutcome<F::Latest> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(pack, side, path);
     if !enabled(cx) {
         return (None, Err(unread(origin, gate_closed())));
     }
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         diagnostics.push(failed_to_load());
         return (None, Err(reject(origin, diagnostics)));
     };
+    let text = prepared.as_str();
     let parsed = parse_stage::<F>(text, cx);
     let identifier = parsed.identity.identifier.clone().map(Id::parse);
     (identifier, finish_file::<F>(parsed, origin, cx))
@@ -397,14 +387,14 @@ fn as_written<F: PoiFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
     if !enabled(cx) {
         return Err(unread(origin, gate_closed()));
     }
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unread(origin, malformed()));
     };
+    let text = prepared.as_str();
     let parsed = parse_stage::<F>(text, cx);
     let mut diagnostics = parsed.diagnostics;
     match parsed.value {

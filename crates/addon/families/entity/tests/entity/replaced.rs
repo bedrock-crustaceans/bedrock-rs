@@ -1575,3 +1575,25 @@ fn the_document_answers_where_a_moved_member_is_in_the_file() {
     assert_eq!(found.place_of(&at(&["look_time"])), at(&["min_look_time"]));
     assert_eq!(found.place_of(&at(&["priority"])), at(&["priority"]));
 }
+
+/// The span of a finding in a file with a byte-order mark is an offset into the file as
+/// written, the mark's three bytes included (phase 1 step 6 pin: the loader blanks the mark).
+#[test]
+fn a_finding_in_a_file_with_a_byte_order_mark_is_at_the_file_s_offset() {
+    let text = "\u{feff}{\"format_version\": \"1.26.50\", \"minecraft:entity\": @}";
+    let rejected = super::common::parse(text).expect_err("not JSON");
+    let spans: Vec<(String, u32)> = rejected
+        .diagnostics
+        .iter()
+        .filter_map(|f| {
+            f.location
+                .span
+                .map(|s| (f.code.name().to_owned(), s.offset))
+        })
+        .collect();
+    let at = u32::try_from(text.find('@').unwrap()).unwrap();
+    assert!(
+        spans.iter().any(|(_, offset)| *offset == at),
+        "{spans:?}, `@` at {at}"
+    );
+}

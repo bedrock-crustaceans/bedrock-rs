@@ -11,7 +11,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{EntityId, kind};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom,
+    EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, strip_bom,
 };
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
@@ -156,20 +156,22 @@ impl MolangFields for Beta {
     }
 }
 
-/// The file's text: without a byte-order mark, UTF-8, not nested too deeply. A file that is
-/// none of these is rejected with a `MalformedInput` error.
-fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<&'a str, Rejected> {
-    let bytes = strip_bom(bytes);
-    let malformed = |message: &str| {
+/// The file's text: the byte-order mark blanked (every span stays an offset into the file),
+/// UTF-8, not nested too deeply. A file that is none of these is rejected with a
+/// `MalformedInput` error.
+fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<Prepared<'a>, Rejected> {
+    Prepared::new(bytes).map_err(|error| {
+        let message = match error {
+            PrepareError::NotUtf8(_) => "the file is not UTF-8",
+            // `new` never refuses empty input.
+            PrepareError::TooDeep(_) | PrepareError::Empty => "the JSON nests too deeply",
+        };
         let found = Diagnostic::error(DiagnosticCode::MalformedInput {
             message: message.to_owned(),
             text: None,
         });
         Rejected::located(origin.clone(), [found].into_iter().collect())
-    };
-    let text = std::str::from_utf8(bytes).map_err(|_| malformed("the file is not UTF-8"))?;
-    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("the JSON nests too deeply"))?;
-    Ok(text)
+    })
 }
 
 /// The findings of a load, placed in the file of `origin`. A document above the engine gets
@@ -291,9 +293,8 @@ fn load_document(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<(Loaded<Entity>, VersionInfo, Diagnostics, Origin), Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let text = decode(bytes, &origin)?;
-    let outcome = load::<Entity>(JsonSlice::new(text), cx);
+    let outcome = load::<Entity>(text.slice(), cx);
     let mut diagnostics = place(outcome.diagnostics, &outcome.version, &origin);
     if let Some(value) = outcome.value {
         Ok((value, outcome.version, diagnostics, origin))
@@ -316,10 +317,9 @@ impl Entity {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<history::Any>, Rejected> {
-        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let origin = detached_origin(path);
         let text = decode(bytes, &origin)?;
-        let parsed = parse_as_written::<Entity>(JsonSlice::new(text), cx);
+        let parsed = parse_as_written::<Entity>(text.slice(), cx);
         let mut diagnostics = place(parsed.diagnostics, &parsed.version, &origin);
         if let Some(any) = parsed.value {
             Ok(Document::new(any, origin, parsed.version, diagnostics))
