@@ -10,7 +10,7 @@ use std::sync::Arc;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::load::{
     DocumentSource, LoadContext, LoadOptions, Place, ReadRange, Registered, RootId, StackCx,
-    StackPack, WalkFile,
+    StackPack,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bytes::Bytes;
@@ -21,7 +21,9 @@ use super::job::{Cancel, Erased, JobDone, JobId, JobKind};
 use super::pack::{internal_error, read_error};
 use super::{Input, Loader, LoaderError, Output, Progress, Residency, Sans, StackOptions, Stage};
 use crate::pack::open::storage_finding;
-use crate::pack::stack::{ENTRIES, WalkSource, pack_files, provider, then_items, walk_items};
+use crate::pack::stack::{
+    ENTRIES, WalkItem, WalkSource, pack_files, provider, then_items, walk_file, walk_items,
+};
 use crate::pack::stack::{PackStack, Side};
 use crate::pack::{FileSlot, Pack, StackSet};
 use crate::storage::brarchive::{Brarchive, archive_dir};
@@ -107,6 +109,36 @@ struct Slot {
     path: PackPath,
     key: PackPath,
     state: SlotState,
+}
+
+impl Slot {
+    /// The unread slot of a walked item: `packs` are the loader's pack indices of the
+    /// stack's entries, `stack_packs` the entries.
+    fn pending(item: WalkItem, packs: &[usize], stack_packs: &[StackPack]) -> Slot {
+        let stack_index = match item.source {
+            WalkSource::Pack(index) => Some(index),
+            WalkSource::AppData => None,
+        };
+        Slot {
+            pack: stack_index.map(|index| packs[index]),
+            stack_index,
+            pack_ref: stack_index.map(|index| stack_packs[index].pack.clone()),
+            path: item.path,
+            key: item.key,
+            state: SlotState::Pending,
+        }
+    }
+
+    /// The walked item the slot stands for.
+    fn item(&self) -> WalkItem {
+        WalkItem {
+            source: self
+                .stack_index
+                .map_or(WalkSource::AppData, WalkSource::Pack),
+            path: self.path.clone(),
+            key: self.key.clone(),
+        }
+    }
 }
 
 enum SlotState {
@@ -372,20 +404,7 @@ impl StackLoader {
         let items = walk_items(&walk, &entries, stack_packs, options.app_data.as_ref());
         let slots: Vec<Slot> = items
             .into_iter()
-            .map(|item| {
-                let stack_index = match item.source {
-                    WalkSource::Pack(index) => Some(index),
-                    WalkSource::AppData => None,
-                };
-                Slot {
-                    pack: stack_index.map(|index| packs[index]),
-                    stack_index,
-                    pack_ref: stack_index.map(|index| stack_packs[index].pack.clone()),
-                    path: item.path,
-                    key: item.key,
-                    state: SlotState::Pending,
-                }
-            })
+            .map(|item| Slot::pending(item, packs, stack_packs))
             .collect();
         let count = slots.len();
         self.collections[collection].slots = slots;
@@ -440,20 +459,7 @@ impl StackLoader {
         };
         let slots: Vec<Slot> = then_items(&walk, &entries, stack_packs, keys)
             .into_iter()
-            .map(|item| {
-                let stack_index = match item.source {
-                    WalkSource::Pack(index) => Some(index),
-                    WalkSource::AppData => None,
-                };
-                Slot {
-                    pack: stack_index.map(|index| packs[index]),
-                    stack_index,
-                    pack_ref: stack_index.map(|index| stack_packs[index].pack.clone()),
-                    path: item.path,
-                    key: item.key,
-                    state: SlotState::Pending,
-                }
-            })
+            .map(|item| Slot::pending(item, packs, stack_packs))
             .collect();
         let work = &mut self.collections[collection];
         let first = work.slots.len();
@@ -571,7 +577,7 @@ impl StackLoader {
             (PackSide::Behavior, None) => (PackRef::app_data(), set.behavior.app_data_context()),
             (PackSide::Resource, None) => (PackRef::app_data(), set.resource.app_data_context()),
         };
-        let (path, key) = (item.path.clone(), item.key.clone());
+        let walked = item.item();
         let weight = match &source {
             ParseBytes::Loose(bytes, _) => bytes.len() as u64,
             ParseBytes::Pack(_) => 0,
@@ -580,7 +586,7 @@ impl StackLoader {
             JobKind::Parse,
             weight,
             Box::new(move |cancel: &Cancel| -> Erased {
-                let (bytes, document_source) = match source.bytes(&path) {
+                let (bytes, document_source) = match source.bytes(&walked.path) {
                     Ok(prepared) => prepared,
                     Err(mut finding) => {
                         finding.location.pack = Some(pack_ref);
@@ -592,13 +598,7 @@ impl StackLoader {
                         None,
                     ))));
                 }
-                let file = WalkFile {
-                    pack: pack_ref,
-                    side,
-                    path,
-                    key,
-                    bytes,
-                };
+                let file = walk_file(walked, pack_ref, side, bytes);
                 let context = crate::pack::stack::context_for(&context, document_source);
                 Box::new(Ok::<Erased, Box<Diagnostic>>(entry.parse(&file, &context)))
             }),

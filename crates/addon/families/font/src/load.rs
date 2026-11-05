@@ -2,7 +2,8 @@
 //! stack makes of them.
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
@@ -277,7 +278,7 @@ pub const fn load_fonts() -> CollectionLoader<Fonts, FontCopy> {
         walk: Walk {
             directories: &["font"],
             depth: ListDepth::Children,
-            accept: is_font_json,
+            accept: Accept::Fn(is_font_json),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

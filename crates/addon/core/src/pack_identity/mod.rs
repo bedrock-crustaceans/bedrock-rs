@@ -111,6 +111,20 @@ impl PackPath {
         self.as_str().is_empty()
     }
 
+    /// Whether the last segment ends in `.<ext>`, the letter case compared exactly
+    /// (`a.json` has `json`; `a.JSON` and `a.json/b` do not).
+    pub fn has_extension(&self, ext: &str) -> bool {
+        let name = self.as_str().rsplit('/').next().unwrap_or_default();
+        name.rsplit_once('.')
+            .is_some_and(|(_, extension)| extension == ext)
+    }
+
+    /// Whether the file is a `.json` file, the letter case compared exactly
+    /// ([`has_extension`](Self::has_extension)`("json")`).
+    pub fn is_json(&self) -> bool {
+        self.has_extension("json")
+    }
+
     /// `self` followed by `child`'s segments (a subpack folder and a file in it). Both are
     /// already valid; a result beyond the length or segment limits is still returned, and a
     /// driver that reads it reports the miss.

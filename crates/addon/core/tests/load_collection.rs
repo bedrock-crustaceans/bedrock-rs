@@ -11,8 +11,8 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{BlockId, Id, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, Registered, Registration,
-    StackCx, StackPack, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, Registered,
+    Registration, StackCx, StackPack, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{
     PackIdVersion, PackOrigin, PackPath, PackRef, PackSide, PackType,
@@ -70,7 +70,7 @@ mod ruby {
     const WALK: Walk = Walk {
         directories: &["blocks"],
         depth: ListDepth::Recursive,
-        accept: is_json,
+        accept: Accept::Fn(is_json),
         order: WalkOrder::BottomUp,
         directory_major: false,
         app_data: &[],
@@ -146,7 +146,7 @@ mod ceiling {
             walk: Walk {
                 directories: &[],
                 depth: ListDepth::Children,
-                accept: none,
+                accept: Accept::Fn(none),
                 order: WalkOrder::BottomUp,
                 directory_major: false,
                 app_data: &[],
@@ -402,7 +402,7 @@ fn walk(directories: &'static [&'static str], depth: ListDepth) -> Walk {
     Walk {
         directories,
         depth,
-        accept: any,
+        accept: Accept::Fn(any),
         order: WalkOrder::BottomUp,
         directory_major: true,
         app_data: &["definitions/attachables"],
@@ -442,7 +442,7 @@ fn the_accept_rule_filters_before_the_directories() {
         has_extension(path, "lang")
     }
     let texts = Walk {
-        accept: lang,
+        accept: Accept::Fn(lang),
         ..walk(&["texts"], ListDepth::Children)
     };
     assert_eq!(
@@ -519,7 +519,7 @@ mod setting {
             walk: Walk {
                 directories: &["settings"],
                 depth: ListDepth::Recursive,
-                accept: is_list,
+                accept: Accept::Fn(is_list),
                 order: WalkOrder::BottomUp,
                 directory_major: false,
                 app_data: &[],
@@ -681,4 +681,182 @@ fn a_walk_reads_a_shadowed_file_only_when_it_asks_and_would_read_it_unshadowed()
     assert_eq!(walk.matches_shadowed(&list, &add_on), Some(0));
     // What the walk reads unshadowed does not depend on the rule.
     assert_eq!(walk.matches_in(&other, &add_on), Some(0));
+}
+
+/// `Accept`, the presets, and the modifiers, against the literals they stand for.
+mod presets {
+    use super::*;
+
+    fn path(text: &str) -> PackPath {
+        PackPath::new(text).unwrap()
+    }
+
+    const PATHS: &[&str] = &[
+        "blocks/a.json",
+        "blocks/a.JSON",
+        "blocks/x/.json",
+        "blocks/a.json/b",
+        "blocks/a",
+        "blocks/a.b.json",
+        "blocks/deep/er/c.json",
+        "blocks.json",
+        "items/a.json",
+        "credits/credits.json",
+        "a.json",
+    ];
+
+    /// Every field but `accept` of two walks, and their answers over `PATHS`.
+    fn assert_same(new: &Walk, old: &Walk) {
+        assert_eq!(new.directories, old.directories);
+        assert_eq!(new.depth, old.depth);
+        assert_eq!(new.order, old.order);
+        assert_eq!(new.directory_major, old.directory_major);
+        assert_eq!(new.app_data, old.app_data);
+        assert_eq!(new.app_data_place, old.app_data_place);
+        assert_eq!(new.in_pack.is_some(), old.in_pack.is_some());
+        assert_eq!(new.shadowed.is_some(), old.shadowed.is_some());
+        assert_eq!(new.read_error, old.read_error);
+        for text in PATHS {
+            let p = path(text);
+            assert_eq!(new.matches(&p), old.matches(&p), "{text}");
+            assert_eq!(new.matches_app_data(&p), old.matches_app_data(&p), "{text}");
+        }
+    }
+
+    fn json(path: &PackPath) -> bool {
+        has_extension(path, "json")
+    }
+
+    /// The ten-field literal of a JSON tree below `blocks/`, as 28 families spell it.
+    const BLOCKS: Walk = Walk {
+        directories: &["blocks"],
+        depth: ListDepth::Recursive,
+        accept: Accept::Fn(json),
+        order: WalkOrder::BottomUp,
+        directory_major: false,
+        app_data: &[],
+        app_data_place: AppDataPlace::After,
+        in_pack: None,
+        shadowed: None,
+        read_error: None,
+    };
+
+    #[test]
+    fn json_tree_in_is_the_literal_of_a_json_tree() {
+        const WALK: Walk = Walk::json_tree_in(&["blocks"]);
+        assert_same(&WALK, &BLOCKS);
+        assert!(matches!(WALK.accept, Accept::Ext("json")));
+    }
+
+    #[test]
+    fn json_children_in_reads_direct_children_only() {
+        const WALK: Walk = Walk::json_children_in(&["blocks"]);
+        assert_same(
+            &WALK,
+            &Walk {
+                depth: ListDepth::Children,
+                ..BLOCKS
+            },
+        );
+        assert_eq!(WALK.matches(&path("blocks/a.json")), Some(0));
+        assert_eq!(WALK.matches(&path("blocks/deep/er/c.json")), None);
+    }
+
+    #[test]
+    fn exact_files_of_one_path_reads_that_path_and_nothing_else() {
+        const WALK: Walk = Walk::exact_files(&["credits/credits.json"]);
+        for text in PATHS {
+            let p = path(text);
+            let expected = (*text == "credits/credits.json").then_some(0);
+            assert_eq!(WALK.matches(&p), expected, "{text}");
+        }
+        assert_eq!(WALK.directories, &[""]);
+        assert!(WALK.app_data.is_empty());
+    }
+
+    #[test]
+    fn exact_files_reads_each_listed_path_and_nothing_else() {
+        // The shape of font (`font/default8.json`, `font/emoticons.json`) and json_ui
+        // (`ui/_ui_defs.json`, `ui/_global_variables.json`): two fixed files of the pack.
+        const LISTED: &[&str] = &["ui/_ui_defs.json", "ui/_global_variables.json"];
+        const WALK: Walk = Walk::exact_files(LISTED);
+        let others = [
+            "ui/_ui_defs.JSON",
+            "ui/hud_screen.json",
+            "ui/deep/_ui_defs.json",
+            "_ui_defs.json",
+            "font/default8.json",
+        ];
+        for text in LISTED {
+            assert_eq!(WALK.matches(&path(text)), Some(0), "{text}");
+            assert!(WALK.accept.takes(&path(text)), "{text}");
+        }
+        for text in others.iter().chain(PATHS) {
+            assert_eq!(WALK.matches(&path(text)), None, "{text}");
+            assert!(!WALK.accept.takes(&path(text)), "{text}");
+        }
+        assert_eq!(WALK.directories, &[""]);
+        assert_eq!(WALK.depth, ListDepth::Recursive);
+        assert!(WALK.app_data.is_empty());
+    }
+
+    #[test]
+    fn none_reads_nothing() {
+        const WALK: Walk = Walk::none();
+        assert!(WALK.directories.is_empty());
+        for text in PATHS {
+            assert_eq!(WALK.matches(&path(text)), None, "{text}");
+            assert!(!WALK.matches_app_data(&path(text)), "{text}");
+        }
+    }
+
+    #[test]
+    fn each_accept_arm_takes_its_paths() {
+        let ext = Accept::Ext("json");
+        let exact = Accept::Exact(&["credits/credits.json"]);
+        let custom = Accept::Fn(|path| path.as_str().starts_with("items/"));
+        for text in PATHS {
+            let p = path(text);
+            assert_eq!(ext.takes(&p), p.is_json(), "{text}");
+            assert_eq!(exact.takes(&p), *text == "credits/credits.json", "{text}");
+            assert_eq!(custom.takes(&p), text.starts_with("items/"), "{text}");
+        }
+        // `Ext` agrees with the old `rsplit_once` body over the table.
+        for text in PATHS {
+            assert_eq!(ext.takes(&path(text)), json(&path(text)), "{text}");
+        }
+    }
+
+    fn in_pack(_: &PackPath, _: &LoadContext) -> bool {
+        true
+    }
+
+    fn shadowed(_: &PackPath) -> bool {
+        true
+    }
+
+    #[test]
+    fn the_modifiers_set_one_field_each() {
+        const WALK: Walk = Walk::json_tree_in(&["blocks", "items"])
+            .top_down()
+            .directory_major()
+            .app_data(&["blocks"], AppDataPlace::Before)
+            .in_pack(in_pack)
+            .shadowed(shadowed)
+            .read_error("could not read {}");
+        assert_same(
+            &WALK,
+            &Walk {
+                directories: &["blocks", "items"],
+                order: WalkOrder::TopDown,
+                directory_major: true,
+                app_data: &["blocks"],
+                app_data_place: AppDataPlace::Before,
+                in_pack: Some(in_pack),
+                shadowed: Some(shadowed),
+                read_error: Some("could not read {}"),
+                ..BLOCKS
+            },
+        );
+    }
 }

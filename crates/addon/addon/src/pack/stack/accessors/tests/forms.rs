@@ -4,8 +4,8 @@
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, StackCx, Walk, WalkFile,
-    WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, StackCx, Walk,
+    WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackOrigin, PackPath, PackSide};
 
@@ -58,7 +58,7 @@ mod toy {
         Walk {
             directories,
             depth: ListDepth::Children,
-            accept,
+            accept: Accept::Fn(accept),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

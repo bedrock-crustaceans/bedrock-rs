@@ -2,7 +2,8 @@
 //! are all the index is built from.
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::PackPath;
 
@@ -31,7 +32,7 @@ pub const fn load_files() -> CollectionLoader<TextureFiles, ()> {
         walk: Walk {
             directories: &[],
             depth: ListDepth::Children,
-            accept: accepts,
+            accept: Accept::Fn(accepts),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

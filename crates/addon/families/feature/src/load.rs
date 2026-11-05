@@ -26,7 +26,8 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
 };
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -941,7 +942,7 @@ fn is_json(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &["features"],
     depth: ListDepth::Recursive,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &["definitions/features"],

@@ -15,8 +15,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, StackPack, Walk, WalkFile,
-    WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, StackPack, Walk,
+    WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide, PackType};
 
@@ -53,7 +53,7 @@ fn is_read_in(path: &PackPath, cx: &LoadContext) -> bool {
 const WALK: Walk = Walk {
     directories: &[""],
     depth: ListDepth::Recursive,
-    accept: is_bundle_file,
+    accept: Accept::Fn(is_bundle_file),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &[],

@@ -7,8 +7,8 @@ use std::sync::{Mutex, OnceLock};
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::load::{
-    AppDataPlace, Limits, ListDepth, LoadContext, LoadOptions, Place, ReadRange, RootId, StackCx,
-    Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, Limits, ListDepth, LoadContext, LoadOptions, Place, ReadRange, RootId,
+    StackCx, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackOrigin, PackPath, PackRef, PackSide};
 use bytes::Bytes;
@@ -86,7 +86,7 @@ impl ErasedCollection for Toy {
         Walk {
             directories: self.directories,
             depth: ListDepth::Recursive,
-            accept: json,
+            accept: Accept::Fn(json),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

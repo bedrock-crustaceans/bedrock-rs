@@ -40,10 +40,10 @@ use std::sync::OnceLock;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
-use super::{PackStack, Side, WalkSource, prepare, walk_items};
+use super::{PackStack, Side, read_item, walk_items};
 use crate::load::{Erased, Loaded, Reported};
 
 /// The cache of a line on the side it is read from: a one-side cache is itself, a both-sides
@@ -356,41 +356,11 @@ fn visit<S: Side>(
         if !keep(&item.key) {
             continue;
         }
-        let (pack, bytes, context) = match item.source {
-            WalkSource::Pack(index) => {
-                let entry = &stack.stack_packs()[index];
-                match prepare(&stack.instances()[index].pack, &item.path) {
-                    Ok((bytes, source)) => (
-                        entry.pack.clone(),
-                        bytes,
-                        super::walk::context_for(&entry.context, source),
-                    ),
-                    Err(mut finding) => {
-                        finding.location.pack = Some(entry.pack.clone());
-                        findings.push(*finding);
-                        continue;
-                    }
-                }
-            }
-            WalkSource::AppData => {
-                let Some(bytes) = app_data.and_then(|files| files.get(&item.path)) else {
-                    continue;
-                };
-                (
-                    PackRef::app_data(),
-                    bytes.clone(),
-                    std::borrow::Cow::Borrowed(&app_data_context),
-                )
-            }
-        };
-        let file = WalkFile {
-            pack,
-            side: S::SIDE,
-            path: item.path,
-            key: item.key,
-            bytes,
-        };
-        each(&file, &context);
+        match read_item(stack, item, app_data, &app_data_context) {
+            Ok(Some((file, context))) => each(&file, &context),
+            Ok(None) => {}
+            Err(finding) => findings.push(*finding),
+        }
     }
     findings
 }

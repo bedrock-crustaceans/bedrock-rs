@@ -6,7 +6,8 @@ use std::collections::HashSet;
 use std::convert::Infallible;
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
@@ -783,7 +784,7 @@ fn reached(key: &PackPath, cx: &LoadContext) -> bool {
 const WALK: Walk = Walk {
     directories: &[ROOTS, COMPOSITIONS, STYLES],
     depth: ListDepth::Recursive,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::TopDown,
     directory_major: true,
     app_data: &[],

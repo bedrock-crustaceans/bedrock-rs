@@ -3,16 +3,16 @@
 //! suppression, the routing hook, Molang pass 1, the effective version and the generated
 //! `history::Any` methods.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
-use bedrock_addon_core::document::{ComponentRef, Document, Origin, VersionInfo};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::document::{ComponentMap, ComponentRef, Document, Origin, VersionInfo};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::format_molang_version;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BetaPermission, ChainError, ComponentTable, Family, Loaded, MissingVersion, NoComponents,
-    NoStable, VersionChain, check_chain, file_version,
+    BetaPermission, ChainError, ComponentSection, ComponentTable, Family, Loaded, MissingVersion,
+    NoComponents, NoStable, VersionChain, check_chain, file_version, validate_components,
 };
 
 use crate::envelope::{codes, load_toy, load_with};
@@ -406,9 +406,66 @@ impl Family for BetaOnly {
     type Beta = ToyBeta;
     type Component = NoComponents;
     type Any = beta_only::Any;
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
+    // No `components`: the trait's default is the empty table.
+}
+
+#[test]
+fn a_family_without_components_has_the_empty_table() {
+    assert!(BetaOnly::components().0.is_empty());
+    assert!(BetaOnly::components().get("minecraft:anything").is_none());
+}
+
+/// A family with components that forgot to override `components`: the trait's empty table.
+pub struct ForgotTable;
+impl Family for ForgotTable {
+    const NAME: &'static str = "toy";
+    const PAYLOAD_KEY: &'static str = "minecraft:toy";
+    const DIRECTORIES: &'static [&'static str] = &["toys"];
+    const FLOOR: FormatVersion = V100;
+    type Latest = Toy120;
+    type Beta = std::convert::Infallible;
+    type Component = ToyComponent;
+    type Any = forgot_table::Any;
+}
+pub mod forgot_table {
+    use super::*;
+    bedrock_addon_core::version_chain! {
+        family = ForgotTable;
+        /// The toy's chain, for a family without its table.
+        pub enum Any {
+            V1_0_0(v1_0_0::Toy),
+            V1_1_0(v1_1_0::Toy),
+            V1_2_0(Toy120),
+        }
     }
+}
+
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "components")]
+fn a_family_with_components_and_the_default_table_fails_a_debug_assertion() {
+    let mut map = ComponentMap::<ToyComponent>::new();
+    let mut d = Diagnostics::default();
+    validate_components::<ForgotTable>(
+        ComponentSection::new(JsonPath::new(), false, &mut map),
+        V100,
+        &LoadContext::detached(),
+        &JsonPath::new(),
+        &mut d,
+    );
+}
+
+#[test]
+fn a_family_without_components_reads_the_empty_table_without_a_panic() {
+    let mut map = ComponentMap::<NoComponents>::new();
+    let mut d = Diagnostics::default();
+    assert!(validate_components::<BetaOnly>(
+        ComponentSection::new(JsonPath::new(), false, &mut map),
+        V100,
+        &LoadContext::detached(),
+        &JsonPath::new(),
+        &mut d,
+    ));
 }
 
 #[test]

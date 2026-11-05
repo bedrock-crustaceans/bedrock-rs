@@ -23,7 +23,8 @@ use bedrock_addon_core::id::{BlockId, CubemapSettingsId, Id, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
@@ -430,7 +431,7 @@ pub(crate) fn is_read(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: DIRECTORIES,
     depth: ListDepth::Recursive,
-    accept: is_read,
+    accept: Accept::Fn(is_read),
     order: WalkOrder::TopDown,
     directory_major: true,
     app_data: &[],

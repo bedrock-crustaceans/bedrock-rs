@@ -5,8 +5,8 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use bedrock_addon_core::load::{
-    AppData, AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, StackCx, Walk,
-    WalkFile, WalkOrder,
+    Accept, AppData, AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, StackCx,
+    Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
@@ -48,7 +48,7 @@ mod toy {
             walk: Walk {
                 directories: &["features"],
                 depth: ListDepth::Recursive,
-                accept: is_json,
+                accept: Accept::Fn(is_json),
                 order: WalkOrder::BottomUp,
                 directory_major: false,
                 app_data: &["definitions/features"],

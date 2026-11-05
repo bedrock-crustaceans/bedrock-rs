@@ -14,7 +14,8 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{RecipeId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
@@ -130,7 +131,7 @@ const WALK: Walk = Walk {
     // Subfolders are read: add-ons organise recipes in subfolders, and the game's lookup does
     // not say it ignores them.
     depth: ListDepth::Recursive,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &[],

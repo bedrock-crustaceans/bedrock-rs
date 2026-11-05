@@ -22,7 +22,8 @@ use bedrock_addon_core::json::{
     last_wins, parse_at, probe_envelope, strip_bom,
 };
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -441,7 +442,7 @@ fn is_json(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &["fogs"],
     depth: ListDepth::Children,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &[],

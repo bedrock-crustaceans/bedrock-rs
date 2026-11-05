@@ -13,7 +13,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{SpawnRulesId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
@@ -196,7 +196,7 @@ pub const fn load_rules() -> CollectionLoader<Registry<SpawnRules>, Parsed<Spawn
         walk: Walk {
             directories: &[RULES_DIRECTORY],
             depth: ListDepth::Recursive,
-            accept: is_json,
+            accept: Accept::Fn(is_json),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

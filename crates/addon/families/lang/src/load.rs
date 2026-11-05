@@ -4,7 +4,7 @@
 use std::collections::btree_map::Entry;
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, StackCx, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
@@ -142,7 +142,7 @@ pub fn load_translations(side: PackSide) -> CollectionLoader<Merged<Translations
         walk: Walk {
             directories: &[TEXTS],
             depth: ListDepth::Children,
-            accept: is_lang,
+            accept: Accept::Fn(is_lang),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

@@ -106,7 +106,7 @@ pub struct Walk {
     /// Direct children of a directory, or every file below it.
     pub depth: ListDepth,
     /// Which files count, given their path in the pack (an extension rule, a fixed name).
-    pub accept: fn(&PackPath) -> bool,
+    pub accept: Accept,
     /// The pack order.
     pub order: WalkOrder,
     /// Each directory over every pack before the next directory, instead of each pack's
@@ -137,11 +137,140 @@ pub struct Walk {
     pub read_error: Option<&'static str>,
 }
 
+/// Which files a [`Walk`] takes, given their path in the pack. Data rather than a function
+/// pointer, so that a `const fn` preset can name an extension or a path.
+#[derive(Clone, Copy, Debug)]
+pub enum Accept {
+    /// Files whose last segment ends in `.<ext>`, the letter case compared exactly
+    /// ([`PackPath::has_extension`]): `"json"`, `"lang"`.
+    Ext(&'static str),
+    /// The files at these paths, each compared whole and exactly: a family's fixed files
+    /// (`ui/_ui_defs.json` and `ui/_global_variables.json`).
+    Exact(&'static [&'static str]),
+    /// The files a rule of the family's takes.
+    Fn(fn(&PackPath) -> bool),
+}
+
+impl Accept {
+    /// Whether the file at `path` counts.
+    pub fn takes(&self, path: &PackPath) -> bool {
+        match self {
+            Self::Ext(ext) => path.has_extension(ext),
+            Self::Exact(exact) => exact.contains(&path.as_str()),
+            Self::Fn(accept) => accept(path),
+        }
+    }
+}
+
+/// The presets and their modifiers: a walk is a preset and the fields that differ from it.
+/// Every preset reads packs only, lowest pack first, each pack's directories before the next
+/// pack, with no in-pack rule, no shadowed file and no read-error text.
+impl Walk {
+    /// A preset's fields around its directories, depth and rule.
+    const fn preset(
+        directories: &'static [&'static str],
+        depth: ListDepth,
+        accept: Accept,
+    ) -> Walk {
+        Walk {
+            directories,
+            depth,
+            accept,
+            order: WalkOrder::BottomUp,
+            directory_major: false,
+            app_data: &[],
+            app_data_place: AppDataPlace::After,
+            in_pack: None,
+            shadowed: None,
+            read_error: None,
+        }
+    }
+
+    /// The `.json` files directly in `directories`, one level deep: not the files of their
+    /// subdirectories ([`json_tree_in`](Self::json_tree_in) reads those too).
+    pub const fn json_children_in(directories: &'static [&'static str]) -> Walk {
+        Self::preset(directories, ListDepth::Children, Accept::Ext("json"))
+    }
+
+    /// The `.json` files anywhere below `directories`, the whole tree: the files directly in
+    /// them and in every subdirectory ([`json_children_in`](Self::json_children_in) reads the
+    /// first only).
+    pub const fn json_tree_in(directories: &'static [&'static str]) -> Walk {
+        Self::preset(directories, ListDepth::Recursive, Accept::Ext("json"))
+    }
+
+    /// The files at `paths` in each pack (paths from the pack root), whichever of them the
+    /// pack has.
+    pub const fn exact_files(paths: &'static [&'static str]) -> Walk {
+        Self::preset(&[""], ListDepth::Recursive, Accept::Exact(paths))
+    }
+
+    /// No file at all: a listing-only collection that reads no bytes (its `combine` asks
+    /// the packs' listings).
+    pub const fn none() -> Walk {
+        Self::preset(&[], ListDepth::Children, Accept::Fn(|_| false))
+    }
+
+    /// The same walk with another rule.
+    #[must_use]
+    pub const fn accept(mut self, accept: Accept) -> Walk {
+        self.accept = accept;
+        self
+    }
+
+    /// The same walk, highest pack first.
+    #[must_use]
+    pub const fn top_down(mut self) -> Walk {
+        self.order = WalkOrder::TopDown;
+        self
+    }
+
+    /// The same walk, each directory over every pack before the next directory.
+    #[must_use]
+    pub const fn directory_major(mut self) -> Walk {
+        self.directory_major = true;
+        self
+    }
+
+    /// The same walk, also reading the app-data `directories`, placed at `place`.
+    #[must_use]
+    pub const fn app_data(
+        mut self,
+        directories: &'static [&'static str],
+        place: AppDataPlace,
+    ) -> Walk {
+        self.app_data = directories;
+        self.app_data_place = place;
+        self
+    }
+
+    /// The same walk, reading of each pack only the files `in_pack` takes.
+    #[must_use]
+    pub const fn in_pack(mut self, in_pack: fn(&PackPath, &LoadContext) -> bool) -> Walk {
+        self.in_pack = Some(in_pack);
+        self
+    }
+
+    /// The same walk, also reading the shadowed files `shadowed` takes.
+    #[must_use]
+    pub const fn shadowed(mut self, shadowed: fn(&PackPath) -> bool) -> Walk {
+        self.shadowed = Some(shadowed);
+        self
+    }
+
+    /// The same walk, with vanilla's text for a file it could not read.
+    #[must_use]
+    pub const fn read_error(mut self, template: &'static str) -> Walk {
+        self.read_error = Some(template);
+        self
+    }
+}
+
 impl Walk {
     /// The index in [`directories`](Self::directories) of the directory `path` (a path in the
     /// pack, or in the app data) belongs to, if the walk reads it.
     pub fn matches(&self, path: &PackPath) -> Option<usize> {
-        if !(self.accept)(path) {
+        if !self.accept.takes(path) {
             return None;
         }
         self.directories
@@ -179,7 +308,7 @@ impl Walk {
 
     /// Whether the walk reads the app-data file at `path`.
     pub fn matches_app_data(&self, path: &PackPath) -> bool {
-        (self.accept)(path)
+        self.accept.takes(path)
             && self
                 .app_data
                 .iter()

@@ -317,10 +317,43 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
     /// [`write_json`](Self::write_json) into a string, pretty-printed with two spaces. Fallible:
     /// a non-finite number is `EncodeError::NotRepresentable`.
     ///
+    /// The default writes [`write_json`](Self::write_json) at [`WriteStyle::default`] and reads
+    /// the bytes as UTF-8, which is right for every JSON content. A content whose `write_json`
+    /// is not JSON overrides it: lang returns its text, structure and the jigsaw metadata
+    /// refuse (NBT and a binary header have no JSON form).
+    ///
     /// # Errors
     ///
     /// Returns `EncodeError` under the same conditions as [`write_json`](Self::write_json).
-    fn to_json(&self) -> Result<String, EncodeError>;
+    fn to_json(&self) -> Result<String, EncodeError> {
+        let mut out = Vec::new();
+        self.write_json(&mut out, WriteStyle::default())?;
+        // The JSON writer emits only UTF-8; a non-JSON content overrides this method.
+        Ok(String::from_utf8(out).unwrap_or_default())
+    }
+}
+
+/// A [`Content`] whose file is JSON: what [`Content::write_json`] writes is a JSON document.
+///
+/// The styled writer lives here rather than on `Content`, because a text or binary content
+/// (lang, function, structure) has no style to lay out. Its method has a default over
+/// `write_json`, so a JSON content implements it with an empty body.
+///
+/// Interim: [`Content::to_json`] moves onto this trait together with the rename of
+/// `write_json` to `write` (target design point 12). Until then its default on `Content` is
+/// right only for a JSON content; a non-JSON content (lang, function, structure, the jigsaw
+/// metadata) is wrong under it and must override it.
+pub trait JsonContent: Content {
+    /// Writes the whole document (`format_version` and envelope included) as JSON in `style`.
+    /// The default is [`Content::write_json`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` when the value has no JSON form, such as a non-finite number or a
+    /// value nested past the depth limit.
+    fn write_document(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        self.write_json(out, style)
+    }
 }
 
 /// A definition stored by identifier in a [`Registry`]. For one-definition files the file and
@@ -452,5 +485,61 @@ mod tests {
             assert_eq!(finding.location.json_path, from);
         }
         assert_eq!(rejected.diagnostics.place_of(&to), from);
+    }
+
+    /// A content that writes `{"n": <n>}` and parses nothing.
+    struct Number(u32);
+    impl Sealed for Number {}
+    impl Content for Number {
+        const NAME: &'static str = "number";
+        const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+        fn parse(path: &PackPath, _: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+            let origin = Origin::new(
+                PackRef::app_data(),
+                PackSide::Behavior,
+                path.clone(),
+                None,
+                Vec::new(),
+            );
+            Err(Rejected::new(origin, Diagnostics::default()))
+        }
+        fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+            let text = match style.indent {
+                crate::json::Indent::Compact => format!("{{\"n\":{}}}", self.0),
+                _ => format!("{{\n  \"n\": {}\n}}\n", self.0),
+            };
+            out.extend_from_slice(text.as_bytes());
+            Ok(())
+        }
+    }
+    impl JsonContent for Number {}
+
+    fn written(value: &Number, style: WriteStyle) -> String {
+        let mut out = Vec::new();
+        value.write_json(&mut out, style).unwrap();
+        String::from_utf8(out).unwrap()
+    }
+
+    #[test]
+    fn content_to_json_defaults_to_write_json_at_the_default_style() {
+        let value = Number(7);
+        assert_eq!(
+            value.to_json().unwrap(),
+            written(&value, WriteStyle::default())
+        );
+    }
+
+    #[test]
+    fn json_content_writes_its_document_through_write_json() {
+        let value = Number(3);
+        let compact = WriteStyle {
+            indent: crate::json::Indent::Compact,
+            trailing_newline: false,
+        };
+        for style in [WriteStyle::default(), compact] {
+            let mut out = Vec::new();
+            value.write_document(&mut out, style).unwrap();
+            assert_eq!(String::from_utf8(out).unwrap(), written(&value, style));
+        }
     }
 }

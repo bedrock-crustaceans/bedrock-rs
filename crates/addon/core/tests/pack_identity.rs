@@ -263,3 +263,49 @@ mod enums {
         assert_eq!(PackSide::Resource.pack_type(), PackType::Resource);
     }
 }
+
+mod extension {
+    use super::*;
+
+    /// The body 19 family `is_json` copies spell: the text after the path's last `.`.
+    fn old_is_json(path: &PackPath) -> bool {
+        path.as_str()
+            .rsplit_once('.')
+            .is_some_and(|(_, extension)| extension == "json")
+    }
+
+    #[test]
+    fn is_json_is_the_last_segments_extension_in_exact_case() {
+        for (text, json) in [
+            ("a.json", true),
+            ("blocks/a.json", true),
+            ("a.b.json", true),
+            ("x/.json", true),
+            ("a.JSON", false),
+            ("a.Json", false),
+            ("a.json/b", false),
+            ("a", false),
+            ("a.jsonc", false),
+            ("a.json.bak", false),
+            ("dir.json/file", false),
+        ] {
+            let p = path(text);
+            assert_eq!(p.is_json(), json, "{text}");
+            assert_eq!(
+                p.is_json(),
+                old_is_json(&p),
+                "{text} differs from the copies"
+            );
+            assert_eq!(p.has_extension("json"), json, "{text}");
+        }
+        assert!(!PackPath::ROOT.is_json());
+    }
+
+    #[test]
+    fn has_extension_takes_any_extension_in_exact_case() {
+        assert!(path("texts/en_US.lang").has_extension("lang"));
+        assert!(path("structures/a/b.mcstructure").has_extension("mcstructure"));
+        assert!(!path("texts/en_US.LANG").has_extension("lang"));
+        assert!(!path("texts/lang").has_extension("lang"));
+    }
+}

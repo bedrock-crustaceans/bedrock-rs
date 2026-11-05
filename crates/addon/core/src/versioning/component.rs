@@ -103,7 +103,7 @@ pub fn parse_component_map<'a, F: Family>(
     cx: &LoadContext,
     d: &mut Diagnostics,
 ) -> ComponentMap<F::Component> {
-    let table = F::components();
+    let table = table::<F>();
     let mut map = ComponentMap::new();
     for (key, raw) in entries {
         let slice = within.nested(raw).unwrap_or(JsonSlice {
@@ -212,7 +212,7 @@ pub fn validate_components<F: Family>(
         map,
     } = section;
     let at = join(at, &rel);
-    let table: &ComponentTable<F> = F::components();
+    let table = table::<F>();
     // An optional section's gate refuses the document too: a block permutation's toggle
     // lines are logged at level 3 and a failing permutation fails the component load, so the
     // whole block is refused.
@@ -319,7 +319,7 @@ pub fn check_released<F: Family>(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> bool {
-    let table: &ComponentTable<F> = F::components();
+    let table = table::<F>();
     // As `validate_components`' gate: an optional section's refuses the document too.
     let _ = optional;
     let severity = Severity::Error;
@@ -519,6 +519,20 @@ fn entry_name<'a, C>(entry: &ComponentRef<'a, C>) -> &'a str {
 }
 
 /// A finding of the component checks at `path`.
+/// `F`'s component table, where the pipeline reads components. A family whose component set
+/// is inhabited (not [`NoComponents`](super::NoComponents), which has size 0) and that kept
+/// the trait's empty default forgot to override [`Family::components`]: every component of
+/// its documents would read as unknown. A debug assertion, since the table is static.
+fn table<F: Family>() -> &'static ComponentTable<F> {
+    let table = F::components();
+    debug_assert!(
+        size_of::<F::Component>() == 0 || !table.0.is_empty(),
+        "family `{}` has components but an empty table: override `Family::components`",
+        F::NAME
+    );
+    table
+}
+
 fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
     Diagnostic::new(
         code,

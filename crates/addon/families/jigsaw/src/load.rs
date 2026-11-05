@@ -28,7 +28,8 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -666,7 +667,7 @@ fn accept(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &[STRUCTURES, POOLS, SETS, PROCESSORS, METADATA],
     depth: ListDepth::Recursive,
-    accept,
+    accept: Accept::Fn(accept),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &[],

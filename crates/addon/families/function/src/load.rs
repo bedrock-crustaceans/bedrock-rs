@@ -13,8 +13,8 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{FunctionPath, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, Registration, StackCx, Walk, WalkFile,
-    WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, Registration, StackCx, Walk,
+    WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{CURRENT_COMMAND_VERSION, MinEngineVersion};
@@ -227,7 +227,7 @@ fn is_tick_file(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &["functions"],
     depth: ListDepth::Recursive,
-    accept: is_function_file,
+    accept: Accept::Fn(is_function_file),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &[],
@@ -294,7 +294,7 @@ pub struct TickWalkFile {
 const TICK_WALK: Walk = Walk {
     directories: &["functions"],
     depth: ListDepth::Children,
-    accept: is_tick_file,
+    accept: Accept::Fn(is_tick_file),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

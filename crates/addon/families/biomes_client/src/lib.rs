@@ -21,7 +21,8 @@ use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, last_wins, strip_bom, write_json,
 };
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::SemVersion;
@@ -765,7 +766,7 @@ fn is_file(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &[""],
     depth: ListDepth::Children,
-    accept: is_file,
+    accept: Accept::Fn(is_file),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

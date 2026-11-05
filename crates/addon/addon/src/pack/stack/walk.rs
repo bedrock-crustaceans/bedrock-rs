@@ -10,7 +10,7 @@ use bedrock_addon_core::load::{
     StackCx, StackPack, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::molang;
-use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{ENGINE_VERSION, MinEngineVersion};
 use bytes::Bytes;
 use uuid::Uuid;
@@ -299,43 +299,15 @@ impl<S: Side> PackStack<S> {
         let app_data_context = self.app_data_context();
         let mut parsed = Vec::with_capacity(items.len());
         let mut findings = Diagnostics::default();
-        let mut read = |item: WalkItem, parsed: &mut Vec<P>| {
-            let (pack, bytes, context) = match item.source {
-                WalkSource::Pack(index) => {
-                    let entry = &self.stack_packs()[index];
-                    let (bytes, source) = match prepare(&self.instances()[index].pack, &item.path) {
-                        Ok(prepared) => prepared,
-                        Err(mut finding) => {
-                            finding.location.pack = Some(entry.pack.clone());
-                            findings.push(*finding);
-                            return;
-                        }
-                    };
-                    (
-                        entry.pack.clone(),
-                        bytes,
-                        context_for(&entry.context, source),
-                    )
-                }
-                WalkSource::AppData => {
-                    let Some(bytes) = app_data.and_then(|files| files.get(&item.path)) else {
-                        return;
-                    };
-                    (
-                        PackRef::app_data(),
-                        bytes.clone(),
-                        std::borrow::Cow::Borrowed(&app_data_context),
-                    )
-                }
-            };
-            let file = WalkFile {
-                pack,
-                side: S::SIDE,
-                path: item.path,
-                key: item.key,
-                bytes,
-            };
-            parsed.push((loader.parse)(&file, &context));
+        let mut read = |item: WalkItem, parsed: &mut Vec<P>| match read_item(
+            self,
+            item,
+            app_data,
+            &app_data_context,
+        ) {
+            Ok(Some((file, context))) => parsed.push((loader.parse)(&file, &context)),
+            Ok(None) => {}
+            Err(finding) => findings.push(*finding),
         };
         for item in items {
             read(item, &mut parsed);
@@ -372,6 +344,58 @@ impl<S: Side> PackStack<S> {
         );
         context.molang_version = molang::pack_molang_version(Some(&engine));
         context
+    }
+}
+
+/// One walked item read for its collection's `parse`: the file and the context it parses
+/// with (its pack's, or the app data's), `None` for an app-data file the options do not hold
+/// (skipped without a finding), or the read finding with the item's pack on it.
+///
+/// The one read-and-wrap body of the two synchronous drivers, [`PackStack::drive`] and the
+/// keyed accessors' visit; the sans-IO `StackLoader` reads outside and shares only
+/// [`walk_file`].
+pub(crate) fn read_item<'a, S: Side>(
+    stack: &'a PackStack<S>,
+    item: WalkItem,
+    app_data: Option<&'a AppData>,
+    app_data_context: &'a LoadContext,
+) -> Result<Option<(WalkFile, std::borrow::Cow<'a, LoadContext>)>, Box<Diagnostic>> {
+    let (pack, bytes, context) = match item.source {
+        WalkSource::Pack(index) => {
+            let entry = &stack.stack_packs()[index];
+            let (bytes, source) =
+                prepare(&stack.instances()[index].pack, &item.path).map_err(|mut finding| {
+                    finding.location.pack = Some(entry.pack.clone());
+                    finding
+                })?;
+            (
+                entry.pack.clone(),
+                bytes,
+                context_for(&entry.context, source),
+            )
+        }
+        WalkSource::AppData => {
+            let Some(bytes) = app_data.and_then(|files| files.get(&item.path)) else {
+                return Ok(None);
+            };
+            (
+                PackRef::app_data(),
+                bytes.clone(),
+                std::borrow::Cow::Borrowed(app_data_context),
+            )
+        }
+    };
+    Ok(Some((walk_file(item, pack, S::SIDE, bytes), context)))
+}
+
+/// The [`WalkFile`] a collection's `parse` gets for `item`, read from `pack` on `side`.
+pub(crate) fn walk_file(item: WalkItem, pack: PackRef, side: PackSide, bytes: Bytes) -> WalkFile {
+    WalkFile {
+        pack,
+        side,
+        path: item.path,
+        key: item.key,
+        bytes,
     }
 }
 
@@ -490,7 +514,7 @@ mod tests {
         Walk {
             directories: &["entity", "attachables"],
             depth: ListDepth::Recursive,
-            accept: json,
+            accept: bedrock_addon_core::load::Accept::Fn(json),
             order,
             directory_major,
             app_data: &["definitions/attachables"],
@@ -863,7 +887,7 @@ mod tests {
             walk: Walk {
                 directories: &["entity"],
                 depth: ListDepth::Recursive,
-                accept: json,
+                accept: bedrock_addon_core::load::Accept::Fn(json),
                 order: WalkOrder::BottomUp,
                 directory_major: false,
                 app_data: &[],

@@ -11,7 +11,7 @@ use bedrock_addon_core::id::{SpawnGroupId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
@@ -134,7 +134,7 @@ pub const fn load_groups() -> CollectionLoader<Registry<SpawnGroup>, Parsed<Spaw
         walk: Walk {
             directories: &[],
             depth: ListDepth::Children,
-            accept: is_json,
+            accept: Accept::Fn(is_json),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[GROUPS_DIRECTORY],

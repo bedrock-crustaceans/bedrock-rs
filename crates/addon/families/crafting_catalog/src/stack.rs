@@ -14,8 +14,8 @@
 //! is kept without a warning, since the catalogue cannot know.
 
 use bedrock_addon_core::load::{
-    AppDataPlace, BuiltIns, CollectionLoader, ListDepth, LoadContext, Registration, StackCx,
-    StackPack, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, BuiltIns, CollectionLoader, ListDepth, LoadContext, Registration,
+    StackCx, StackPack, Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::PackPath;
 use uuid::Uuid;
@@ -45,7 +45,7 @@ fn is_catalog(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &["item_catalog"],
     depth: ListDepth::Recursive,
-    accept: is_catalog,
+    accept: Accept::Fn(is_catalog),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

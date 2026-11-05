@@ -19,8 +19,8 @@ pub use collection::ListedFile;
 pub use collection::NamedFiles;
 #[doc(hidden)]
 pub use collection::{
-    AppDataPlace, CollectionLoader, Registered, Registration, Reported, StackCx, StackPack, Walk,
-    WalkFile, WalkOrder, unread_files,
+    Accept, AppDataPlace, CollectionLoader, Registered, Registration, Reported, StackCx, StackPack,
+    Walk, WalkFile, WalkOrder, unread_files,
 };
 pub use context::{BiomeRenderIdentifiers, DocumentSource, LoadContext};
 pub use experiment::{Experiment, Experiments, LoadRequirement, SaveName};

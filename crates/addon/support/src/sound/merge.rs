@@ -2,7 +2,9 @@
 //! stack: one pack's copy, the reading of it, the checks on the copies, and the documents of
 //! the files read on their own.
 
-use bedrock_addon_core::load::{AppDataPlace, ListDepth, LoadContext, Walk, WalkFile, WalkOrder};
+use bedrock_addon_core::load::{
+    Accept, AppDataPlace, ListDepth, LoadContext, Walk, WalkFile, WalkOrder,
+};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use bedrock_addon_core::diagnostic::{
@@ -220,7 +222,7 @@ pub const fn walk(accept: fn(&PackPath) -> bool) -> Walk {
     Walk {
         directories: &[""],
         depth: ListDepth::Recursive,
-        accept,
+        accept: Accept::Fn(accept),
         order: WalkOrder::BottomUp,
         directory_major: false,
         app_data: &[],

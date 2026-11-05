@@ -2,7 +2,8 @@
 //! vanilla does by identifier.
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
@@ -238,7 +239,7 @@ fn is_structure_or_template(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &[FOLDER],
     depth: ListDepth::Recursive,
-    accept: is_structure_or_template,
+    accept: Accept::Fn(is_structure_or_template),
     order: WalkOrder::TopDown,
     directory_major: false,
     app_data: &[],

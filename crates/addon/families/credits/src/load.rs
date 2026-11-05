@@ -2,7 +2,8 @@
 //! the copy the stack keeps.
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
@@ -118,7 +119,7 @@ pub const fn load_credits() -> CollectionLoader<Merged<Credits>, FileCopy<Credit
         walk: Walk {
             directories: &[],
             depth: ListDepth::Children,
-            accept: is_credits,
+            accept: Accept::Fn(is_credits),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &["credits"],

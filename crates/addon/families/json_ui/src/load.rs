@@ -5,7 +5,8 @@
 use std::collections::HashSet;
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
@@ -398,7 +399,7 @@ pub const fn load() -> CollectionLoader<Merged<UiDefinitions, RawLayer>, UiCopy>
         walk: Walk {
             directories: &[UI],
             depth: ListDepth::Recursive,
-            accept: fixed_file,
+            accept: Accept::Fn(fixed_file),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],
@@ -907,6 +908,19 @@ fn merged_origin(file_origins: &[Origin], committed: &[usize]) -> Option<Origin>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Characterization: the files a list names are told JSON without regard to case, unlike
+    /// `PackPath::is_json`. Pinned, not decided: no vanilla sample says which the game does.
+    #[test]
+    fn a_listed_file_is_json_in_any_case() {
+        for path in ["ui/screen.json", "ui/screen.JSON", "ui/screen.Json"] {
+            assert!(is_json(path), "{path}");
+            assert!(is_read(path), "{path}");
+        }
+        assert!(!PackPath::new("ui/screen.JSON").unwrap().is_json());
+        assert!(!is_read("textures/screen.JSON"));
+        assert!(!is_json("ui/screen.jsonc"));
+    }
 
     /// `UiCopy` can be printed in a failure message.
     #[test]

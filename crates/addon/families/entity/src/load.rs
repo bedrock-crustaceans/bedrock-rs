@@ -14,7 +14,8 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom,
 };
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::molang::{
     Admission, EmptyRule, MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, OpsRule,
@@ -581,7 +582,7 @@ pub const fn load_registry() -> CollectionLoader<Registry<Entity>, Contribution<
         walk: Walk {
             directories: &[DIRECTORY],
             depth: ListDepth::Recursive,
-            accept,
+            accept: Accept::Fn(accept),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

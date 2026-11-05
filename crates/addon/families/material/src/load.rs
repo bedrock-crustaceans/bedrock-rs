@@ -5,7 +5,8 @@
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bytes::Bytes;
@@ -83,7 +84,7 @@ fn is_read(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &[""],
     depth: ListDepth::Recursive,
-    accept: is_read,
+    accept: Accept::Fn(is_read),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

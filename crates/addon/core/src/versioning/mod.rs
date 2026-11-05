@@ -419,8 +419,12 @@ pub trait Family: Sized + 'static {
     /// %s or higher"). `false` (an empty `requires` is no gate at all) unless the family's
     /// loaders bind components per format version.
     const RELEASED_IS_A_GATE: bool = false;
-    /// The family's component table (`<Enum>::TABLE` of `#[derive(Components)]`).
-    fn components() -> &'static ComponentTable<Self>;
+    /// The family's component table (`<Enum>::TABLE` of `#[derive(Components)]`). The empty
+    /// table by default, for a family without components (`type Component = NoComponents`); a
+    /// family with components overrides it, or its documents read no component at all.
+    fn components() -> &'static ComponentTable<Self> {
+        &ComponentTable::EMPTY
+    }
     /// Family rules on the loaded value, after the generic per-component checks; may drop
     /// parts of it (the sections in `cx.skipped`, a failed Molang field) and reports to
     /// `cx.diagnostics`, where an error rejects the document. The Molang compile check (pass

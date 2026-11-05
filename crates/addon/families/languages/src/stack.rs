@@ -3,8 +3,8 @@
 //! stack-level lints.
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, ListedFile, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, ListedFile, LoadContext, StackCx, Walk,
+    WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
@@ -166,7 +166,7 @@ const fn walk(
     Walk {
         directories,
         depth,
-        accept,
+        accept: Accept::Fn(accept),
         order: WalkOrder::BottomUp,
         directory_major: false,
         app_data: &[],

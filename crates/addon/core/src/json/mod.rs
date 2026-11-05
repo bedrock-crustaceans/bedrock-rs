@@ -38,6 +38,7 @@ pub(crate) mod extra;
 mod finite;
 mod null;
 mod path;
+mod prepared;
 mod read; // the only caller of facet-json's parsers
 mod root_member;
 mod slice;
@@ -62,6 +63,7 @@ pub use null::{
     NULL_MEMBER_READ_AS_ABSENT, NullRule, null_members, nulls_read, parse_at_null_absent,
     reject_nulls, remove_null_members, tell_null_members,
 };
+pub use prepared::{PrepareError, Prepared};
 #[doc(hidden)]
 pub use read::{
     DOCUMENT_NUMBER_TOO_BIG, DOCUMENT_ROOT_NOT_SINGULAR, Scanned, TRAILING_CONTENT, UnsafeText,

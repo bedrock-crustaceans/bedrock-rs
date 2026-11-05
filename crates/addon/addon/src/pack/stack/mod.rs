@@ -18,7 +18,8 @@ pub use vanilla::VANILLA_EXPERIMENTAL_PACKS;
 #[cfg(test)]
 pub(crate) use walk::mcb_text;
 pub(crate) use walk::{
-    WalkSource, context_for, mcb_source, pack_files, prepare, then_items, walk_items,
+    WalkItem, WalkSource, context_for, mcb_source, pack_files, prepare, read_item, then_items,
+    walk_file, walk_items,
 };
 
 use std::any::Any;

@@ -3,7 +3,7 @@
 //! lean on, the walk of one file at the pack root, and the document of an unversioned file.
 
 use bedrock_addon_core::load::ListedFile;
-use bedrock_addon_core::load::{AppDataPlace, ListDepth, StackPack, Walk, WalkOrder};
+use bedrock_addon_core::load::{Accept, AppDataPlace, ListDepth, StackPack, Walk, WalkOrder};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use bedrock_addon_core::diagnostic::{
@@ -306,7 +306,7 @@ pub const fn root_file(accept: fn(&PackPath) -> bool) -> Walk {
     Walk {
         directories: &[""],
         depth: ListDepth::Children,
-        accept,
+        accept: Accept::Fn(accept),
         order: WalkOrder::BottomUp,
         directory_major: false,
         app_data: &[],

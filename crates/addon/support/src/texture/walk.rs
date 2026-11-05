@@ -1,6 +1,6 @@
 //! The walk of the JSON files of the texture families.
 
-use bedrock_addon_core::load::{AppDataPlace, ListDepth, Walk, WalkOrder};
+use bedrock_addon_core::load::{Accept, AppDataPlace, ListDepth, Walk, WalkOrder};
 use bedrock_addon_core::pack_identity::PackPath;
 
 /// The JSON files `accept` takes anywhere in the pack, lowest pack first; of the files an
@@ -9,7 +9,7 @@ pub const fn walk(accept: fn(&PackPath) -> bool, shadowed: Option<fn(&PackPath) 
     Walk {
         directories: &[""],
         depth: ListDepth::Recursive,
-        accept,
+        accept: Accept::Fn(accept),
         order: WalkOrder::BottomUp,
         directory_major: false,
         app_data: &[],

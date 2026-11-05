@@ -15,7 +15,8 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
@@ -122,7 +123,7 @@ fn is_blocks_json(path: &PackPath) -> bool {
 const BLOCKS_WALK: Walk = Walk {
     directories: &[""],
     depth: ListDepth::Children,
-    accept: is_blocks_json,
+    accept: Accept::Fn(is_blocks_json),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

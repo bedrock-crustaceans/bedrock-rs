@@ -9,7 +9,8 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
@@ -78,7 +79,7 @@ fn parse_animation_file(file: &WalkFile, cx: &LoadContext) -> FileContribution<A
 const ANIMATION_WALK: Walk = Walk {
     directories: &["animations"],
     depth: ListDepth::Recursive,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

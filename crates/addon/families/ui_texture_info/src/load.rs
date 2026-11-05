@@ -5,7 +5,8 @@
 use std::collections::HashSet;
 
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 use indexmap::IndexMap;
@@ -108,7 +109,7 @@ pub const fn load_texture_infos() -> CollectionLoader<Files<UiTextureInfo>, Side
         walk: Walk {
             directories: &[DIRECTORY],
             depth: ListDepth::Recursive,
-            accept: is_json,
+            accept: Accept::Fn(is_json),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],

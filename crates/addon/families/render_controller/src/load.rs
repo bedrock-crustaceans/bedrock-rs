@@ -16,7 +16,8 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{RenderControllerId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
@@ -157,7 +158,7 @@ fn is_json(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &[DIRECTORY],
     depth: ListDepth::Recursive,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],

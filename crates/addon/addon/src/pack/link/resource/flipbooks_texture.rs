@@ -500,7 +500,7 @@ mod checker {
             files.sort_by_key(|(path, _)| *path);
             for (path, bytes) in files {
                 let path = PackPath::new(path).unwrap();
-                if !(loader.walk.accept)(&path) {
+                if !loader.walk.accept.takes(&path) {
                     continue;
                 }
                 let file = WalkFile {

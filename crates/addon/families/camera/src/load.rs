@@ -23,7 +23,8 @@ use bedrock_addon_core::id::{CameraListId, CameraPresetId, Id, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
@@ -407,7 +408,7 @@ fn is_json(path: &PackPath) -> bool {
 const WALK: Walk = Walk {
     directories: &[PRESETS, LISTS, SPLINES],
     depth: ListDepth::Recursive,
-    accept: is_json,
+    accept: Accept::Fn(is_json),
     order: WalkOrder::BottomUp,
     directory_major: true,
     app_data: &[],

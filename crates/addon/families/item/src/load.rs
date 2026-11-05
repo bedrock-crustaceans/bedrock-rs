@@ -9,8 +9,8 @@ use bedrock_addon_core::id::{ItemId, kind};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, check_depth, strip_bom};
 use bedrock_addon_core::load::{
-    CollectionLoader, DocumentSource, ListDepth, LoadContext, LoadRequirement, StackCx, Walk,
-    WalkFile, WalkOrder,
+    Accept, CollectionLoader, DocumentSource, ListDepth, LoadContext, LoadRequirement, StackCx,
+    Walk, WalkFile, WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -932,7 +932,7 @@ pub const fn load_registry() -> CollectionLoader<Registry<Item>, ParsedItem> {
         walk: Walk {
             directories: ItemFamily::DIRECTORIES,
             depth: ListDepth::Recursive,
-            accept: is_json,
+            accept: Accept::Fn(is_json),
             order: WalkOrder::BottomUp,
             directory_major: false,
             app_data: &[],
@@ -1147,5 +1147,27 @@ impl Any {
             Any::V1_26_50(v) => v.description.identifier.as_str(),
             Any::Beta(v) => v.description.identifier.as_str(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Characterization: the walk takes `.json` without regard to case, unlike
+    /// `PackPath::is_json`. Pinned, not decided: no vanilla sample says which the game does.
+    #[test]
+    fn the_walk_takes_json_in_any_case() {
+        let walk = load_registry().walk;
+        for path in ["items/sword.json", "items/Sword.JSON", "items/a/b.Json"] {
+            let path = PackPath::new(path).unwrap();
+            assert!(is_json(&path), "{path}");
+            assert_eq!(walk.matches(&path), Some(0), "{path}");
+        }
+        assert!(!PackPath::new("items/Sword.JSON").unwrap().is_json());
+        assert_eq!(
+            walk.matches(&PackPath::new("items/sword.jsonc").unwrap()),
+            None
+        );
     }
 }

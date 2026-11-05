@@ -29,7 +29,8 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::json::{parse_at, strip_bom};
 use bedrock_addon_core::load::{
-    AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile, WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
+    WalkOrder,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -745,7 +746,7 @@ const UNREAD: &str = "Cannot load geometry file {}: pack has no access strategy"
 const GEOMETRY_WALK: Walk = Walk {
     directories: &["models"],
     depth: ListDepth::Recursive,
-    accept: is_geometry_file,
+    accept: Accept::Fn(is_geometry_file),
     order: WalkOrder::BottomUp,
     directory_major: false,
     app_data: &[],
