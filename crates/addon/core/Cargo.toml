@@ -33,6 +33,8 @@ molang = { workspace = true, features = ["facet"] }
 semver = { workspace = true }
 # The `schema::` attribute grammar, re-exported as `schema`.
 bedrock_addon_schema = { path = "../schema" }
+# The game's tables, re-exported as `vanilla` and indexed by `vanilla::GeneratedBuiltIns`.
+bedrock_addon_vanilla = { path = "../vanilla" }
 
 # No thread of WebAssembly has a stack to grow from within: there the stack is the embedder's
 # to size (`json::MAX_JSON_DEPTH`).

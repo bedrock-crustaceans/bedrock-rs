@@ -3,10 +3,10 @@
 // `blocks`, `items` and `potion_effects` end with the identifiers the game registers that
 // the metadata lacks (technical and retired blocks and items).
 
-use crate::vanilla::VanillaIds;
+use crate::VanillaIds;
 
 /// The identifier lists.
-pub(in crate::vanilla) static IDS: VanillaIds = VanillaIds {
+pub(crate) static IDS: VanillaIds = VanillaIds {
     blocks: &[
         "minecraft:acacia_button",
         "minecraft:acacia_door",

@@ -1,11 +1,14 @@
-//! The level sound event names the crate knows for typed goal members.
+//! The game's level sound events (`LevelSoundEvent`): the one table every family checks a
+//! level sound event name against.
 
-/// Vanilla's level sound event names, sorted for binary search.
-// The 571 names the game's schema accepts for a level sound event, one constant each. The list
-// lives in `xtask/src/script_meta/game/level_sound_events.txt` and this table is a copy of that
-// file (a test below keeps them equal). It includes names the published sample schemas omit,
-// such as `ice_ball.break`. A name outside the list stays a warning, not a parse error.
-pub(crate) const SOUND_EVENTS: &[&str] = &[
+/// The game's level sound event names, lower case, sorted for binary search.
+///
+/// The 571 names the game binds, the generated list `level_sound_events.txt` under
+/// `xtask/src/script_meta/game/`. `undefined` is one of them, the `Undefined` value: vanilla's
+/// creaking names it as its ambient sound for no sound, and only a `sounds.json` binding
+/// refuses it. It includes names the published sample schemas omit, such as
+/// `ice_ball.break`.
+pub const LEVEL_SOUND_EVENTS: &[&str] = &[
     "absorb_block",
     "activate",
     "add.chest",
@@ -579,17 +582,56 @@ pub(crate) const SOUND_EVENTS: &[&str] = &[
     "wind_charge.burst",
 ];
 
+/// Whether `name`, as written, is a level sound event (the table is lower case, so a name
+/// with an upper-case letter is none).
+pub fn is_level_sound_event(name: &str) -> bool {
+    LEVEL_SOUND_EVENTS.binary_search(&name).is_ok()
+}
+
+/// The table's spelling of the level sound event `name`, compared without ASCII case; `None`
+/// for a name that is no level sound event.
+pub fn level_sound_event(name: &str) -> Option<&'static str> {
+    let found = if name.bytes().any(|byte| byte.is_ascii_uppercase()) {
+        LEVEL_SOUND_EVENTS.binary_search(&name.to_ascii_lowercase().as_str())
+    } else {
+        LEVEL_SOUND_EVENTS.binary_search(&name)
+    };
+    found.ok().map(|index| LEVEL_SOUND_EVENTS[index])
+}
+
 #[cfg(test)]
 mod tests {
-    use super::SOUND_EVENTS;
+    use super::*;
 
-    /// The table is a copy of the generated `level_sound_events.txt`.
+    #[test]
+    fn the_event_names_are_sorted_unique_and_lower_case() {
+        assert!(LEVEL_SOUND_EVENTS.windows(2).all(|pair| pair[0] < pair[1]));
+        for name in LEVEL_SOUND_EVENTS {
+            assert_eq!(name.to_ascii_lowercase(), *name);
+        }
+    }
+
+    /// The table is the generated list of the names the game binds (`level_sound_events.txt`).
     #[test]
     fn the_table_is_the_generated_list() {
         let generated: Vec<&str> =
-            include_str!("../../../../../../xtask/src/script_meta/game/level_sound_events.txt")
+            include_str!("../../../../xtask/src/script_meta/game/level_sound_events.txt")
                 .lines()
                 .collect();
-        assert_eq!(SOUND_EVENTS, generated.as_slice());
+        assert_eq!(LEVEL_SOUND_EVENTS, generated.as_slice());
+        assert_eq!(LEVEL_SOUND_EVENTS.len(), 571);
+    }
+
+    #[test]
+    fn a_name_is_found_as_written_or_without_case() {
+        assert!(is_level_sound_event("ice_ball.break"));
+        assert!(is_level_sound_event("undefined"));
+        assert!(!is_level_sound_event("Ambient"));
+        assert_eq!(level_sound_event("Ambient"), Some("ambient"));
+        assert_eq!(
+            level_sound_event("ITEM.SHIELD.BLOCK"),
+            level_sound_event("item.shield.block")
+        );
+        assert_eq!(level_sound_event("custom.boom"), None);
     }
 }

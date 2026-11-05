@@ -264,3 +264,20 @@ mod tables {
         }
     }
 }
+
+mod data_crate {
+    use super::*;
+
+    #[test]
+    fn the_core_tables_are_the_data_crate_s() {
+        assert!(std::ptr::eq(vanilla::ids(), bedrock_addon_vanilla::ids()));
+        assert!(std::ptr::eq(
+            vanilla::commands(),
+            bedrock_addon_vanilla::commands()
+        ));
+        assert!(std::ptr::eq(
+            vanilla::command_enums(),
+            bedrock_addon_vanilla::command_enums()
+        ));
+    }
+}

@@ -8,23 +8,8 @@ use super::super::{Findings, LinkCx, Validator, kinds, validator_text};
 use crate::diagnostic::{Diagnostic, DiagnosticDetail, JsonPath, JsonPathSegment};
 use crate::document::Origin;
 use crate::families::aim_assist::{self, Targets};
+use crate::vanilla::names::{AIM_ASSIST_CATEGORIES, AIM_ASSIST_PRESETS};
 use crate::version::FormatVersion;
-
-/// The aim-assist categories of the game: the ones its own `vanilla` behaviour pack defines,
-/// for a world whose stack does not hold that pack.
-// `aim_assist/categories/categories.json` of the `vanilla` behaviour pack: `minecraft:bucket`,
-// `minecraft:default`, `minecraft:empty_hand`. The last two are also what a preset falls back
-// to when it names no category (`default_item_settings` / `hand_settings`).
-const GAME_CATEGORIES: [&str; 3] = [
-    "minecraft:bucket",
-    "minecraft:default",
-    "minecraft:empty_hand",
-];
-
-/// The aim-assist preset of the game: the one its own `vanilla` behaviour pack defines.
-// `aim_assist/presets/aim_assist_preset.json` of the `vanilla` behaviour pack; the script
-// API's metadata gives the same name as the default of a camera's aim assist.
-const GAME_PRESETS: [&str; 1] = ["minecraft:aim_assist_default"];
 
 /// The lookups of the pass, for the family's checkers. Every name arrives in the form the
 /// game registers it in: lower-cased, an item without its auxiliary value, an entity without
@@ -85,12 +70,12 @@ impl Targets for World<'_, '_> {
 
     fn category(&self, key: &str) -> bool {
         // The checker has looked among the categories of the stack.
-        self.game_has(kinds::AIM_ASSIST_CATEGORY, key, &GAME_CATEGORIES)
+        self.game_has(kinds::AIM_ASSIST_CATEGORY, key, &AIM_ASSIST_CATEGORIES)
     }
 
     fn preset(&self, key: &str) -> bool {
         // The checker has looked among the aim-assist presets of the stack.
-        self.game_has(kinds::AIM_ASSIST_PRESET, key, &GAME_PRESETS)
+        self.game_has(kinds::AIM_ASSIST_PRESET, key, &AIM_ASSIST_PRESETS)
     }
 }
 

@@ -943,3 +943,34 @@ fn the_vanilla_tables_render_lists_in_file_order_and_commands_sorted() {
     // Descriptions are Mojang text and are not generated.
     assert!(!generated.commands.contains("Sets a game mode."));
 }
+
+#[test]
+fn the_vanilla_tables_open_like_the_committed_files_in_the_data_crate() {
+    // Without the metadata checkout the regeneration check skips; this pins what the tag does
+    // not decide: where the two files live and the lines before their first row.
+    let generated = tiny_tag().generate().unwrap();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap();
+    for (text, out, first_row) in [
+        (
+            &generated.vanilla_ids,
+            super::step::VANILLA_IDS_OUT,
+            "    blocks: &[",
+        ),
+        (
+            &generated.commands,
+            super::step::COMMANDS_OUT,
+            "    Command {",
+        ),
+    ] {
+        assert!(
+            out.starts_with("crates/addon/vanilla/src/generated/"),
+            "{out}"
+        );
+        let committed = std::fs::read_to_string(root.join(out)).unwrap();
+        let formatted = super::step::format(text).unwrap();
+        let preamble = |file: &str| file[..file.find(first_row).unwrap()].to_owned();
+        assert_eq!(preamble(&formatted), preamble(&committed), "{out}");
+    }
+}

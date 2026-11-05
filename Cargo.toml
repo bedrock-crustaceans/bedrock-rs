@@ -15,6 +15,7 @@ members = [
     "crates/addon/schema",
     "crates/addon/std",
     "crates/addon/support",
+    "crates/addon/vanilla",
     "crates/addon/families/*",
     "xtask",
 ]

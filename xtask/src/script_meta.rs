@@ -1,6 +1,6 @@
 //! `cargo xtask script-meta --samples <dir>`: generates
 //! `crates/addon/families/script/src/meta/generated/versions.rs` and
-//! `crates/addon/core/src/vanilla/generated/{vanilla_ids,commands}.rs` from the game's public
+//! `crates/addon/vanilla/src/generated/{vanilla_ids,commands}.rs` from the game's public
 //! script metadata (the `metadata/` folder of a checkout of Mojang's `bedrock-samples`
 //! repository at a release tag).
 //!
@@ -37,9 +37,9 @@ use bedrock_addon::version::SemVersion;
 /// The generated catalog, relative to the workspace root.
 pub const VERSIONS_OUT: &str = "crates/addon/families/script/src/meta/generated/versions.rs";
 /// The generated identifier lists, relative to the workspace root.
-pub const VANILLA_IDS_OUT: &str = "crates/addon/core/src/vanilla/generated/vanilla_ids.rs";
+pub const VANILLA_IDS_OUT: &str = "crates/addon/vanilla/src/generated/vanilla_ids.rs";
 /// The generated command table, relative to the workspace root.
-pub const COMMANDS_OUT: &str = "crates/addon/core/src/vanilla/generated/commands.rs";
+pub const COMMANDS_OUT: &str = "crates/addon/vanilla/src/generated/commands.rs";
 
 /// The script-module directory, relative to the samples checkout.
 pub const SCRIPT_MODULES: &str = "metadata/script_modules/@minecraft";
@@ -1772,8 +1772,8 @@ fn render_vanilla_ids(header: &str, lists: &VanillaLists) -> String {
         "// `blocks`, `items` and `potion_effects` end with the identifiers the game registers that\n\
          // the metadata lacks (technical and retired blocks and items).\n",
     );
-    out.push_str("\nuse crate::vanilla::VanillaIds;\n\n/// The identifier lists.\n");
-    out.push_str("pub(in crate::vanilla) static IDS: VanillaIds = VanillaIds {\n");
+    out.push_str("\nuse crate::VanillaIds;\n\n/// The identifier lists.\n");
+    out.push_str("pub(crate) static IDS: VanillaIds = VanillaIds {\n");
     let rows: [(&str, &[String]); 6] = [
         ("blocks", &lists.blocks),
         ("items", &lists.items),
@@ -1815,8 +1815,10 @@ fn render_commands(header: &str, file: &CommandsFile) -> String {
     enums.sort_by(|a, b| a.name.cmp(&b.name));
     let mut out = String::new();
     out.push_str(header);
-    out.push_str("\nuse crate::vanilla::{Command, CommandEnum, Overload, Param};\n\n");
-    out.push_str("/// The commands, sorted by name.\npub(in crate::vanilla) static COMMANDS: &[Command] = &[\n");
+    out.push_str("\nuse crate::{Command, CommandEnum, Overload, Param};\n\n");
+    out.push_str(
+        "/// The commands, sorted by name.\npub(crate) static COMMANDS: &[Command] = &[\n",
+    );
     for command in commands {
         let aliases: Vec<String> = command.aliases.iter().map(|a| lit(&a.name)).collect();
         let _ = writeln!(
@@ -1843,7 +1845,7 @@ fn render_commands(header: &str, file: &CommandsFile) -> String {
         out.push_str("] },\n");
     }
     out.push_str("];\n\n/// The command enums, sorted by name.\n");
-    out.push_str("pub(in crate::vanilla) static ENUMS: &[CommandEnum] = &[\n");
+    out.push_str("pub(crate) static ENUMS: &[CommandEnum] = &[\n");
     for command_enum in enums {
         let values: Vec<String> = command_enum.values.iter().map(|v| lit(&v.value)).collect();
         let _ = writeln!(

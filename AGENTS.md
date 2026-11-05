@@ -135,7 +135,7 @@ gate (`vanilla_gate`) need files that are not in the repository: they read
 `BEDROCK_ADDON_CORPUS` and `BEDROCK_ADDON_VANILLA_1_26_60` and skip without them, which is not a
 pass; report which ran. `bedrock_addon` is sans-IO by convention: no file, thread or clock access outside
 `std`. The workspace `clippy.toml` keeps every facet-json call behind `core`'s `json` door. The tables
-under `core/src/vanilla/generated/`, `families/script/src/meta/generated/` and the entity
+under `core/src/vanilla/generated/`, `vanilla/src/generated/`, `families/script/src/meta/generated/` and the entity
 schema tables are generator output (`cargo xtask script-meta`, `actor-types`,
 `entity-schemas`): change `xtask/` and regenerate, never edit by hand. The test that
 regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a release tag from

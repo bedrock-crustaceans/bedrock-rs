@@ -11,7 +11,6 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::check::GoalCheck;
-use super::sound::SOUND_EVENTS;
 
 /// Why a goal member's JSON value could not be read: the facet message of an `InvalidType`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
@@ -419,9 +418,10 @@ impl SoundEvent {
         &self.0
     }
 
-    /// The name is one of the level sound events the crate knows.
+    /// The name is one of the game's level sound events, as written (the vanilla data
+    /// crate's table).
     pub fn is_known(&self) -> bool {
-        SOUND_EVENTS.binary_search(&self.0.as_str()).is_ok()
+        bedrock_addon_core::vanilla::sound_events::is_level_sound_event(&self.0)
     }
 }
 
