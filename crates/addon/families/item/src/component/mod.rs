@@ -33,7 +33,7 @@ pub use value::{
 };
 
 pub(crate) use equipment::ENCHANT_SLOTS;
-pub(crate) use value::{ValueComponent, is_object as value_is_object, parse_value, tell_misread};
+pub(crate) use value::{ValueComponent, is_object as value_is_object, parse_value, read_bare};
 
 use bedrock_addon_core::document::CustomComponent;
 use bedrock_addon_core::json::{JsonSlice, Value};

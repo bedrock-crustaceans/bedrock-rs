@@ -1,7 +1,7 @@
 //! Components that hold one value and also read the bare value: `{"value": x}`
 //! or `x`.
 
-use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc, keep_members, parse_at};
+use bedrock_addon_core::json::{JsonSlice, ScalarFailure, parse_with_rules};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
@@ -33,18 +33,24 @@ pub(crate) fn is_object(text: &str) -> bool {
     }
 }
 
-/// Says what the bare `value` read from `slice` is misread as (a string where a number
-/// belongs, a number beyond a float), as a member of the object form is told.
-pub(crate) fn tell_misread<S: for<'a> Facet<'a>>(
-    value: &mut S,
+/// Reads the bare `value` of a one-value component from `slice` under the slice's scalar rules
+/// (`LoadContext::scalar_rules`), and says what it is read as where that is another value than
+/// the text writes (a string where a number belongs, a number beyond a float), as a member of
+/// the object form is told. A bare value no arm of its type takes is told at the value here.
+pub(crate) fn read_bare<S: for<'a> Facet<'a>>(
     slice: JsonSlice<'_>,
+    cx: &LoadContext,
     d: &mut Diagnostics,
-) {
-    if let Ok(json) = from_str_jsonc::<Value>(slice.text) {
-        for misread in keep_members(value, &json).1 {
+) -> Result<S, ScalarFailure> {
+    let read = parse_with_rules::<S>(slice, None, cx.scalar_rules).inspect_err(|failure| {
+        if let ScalarFailure::Refused(misread) = failure {
             d.push(misread.finding(&JsonPath::new()));
         }
+    })?;
+    for told in read.told {
+        d.push(told.finding(&JsonPath::new()));
     }
+    Ok(read.value)
 }
 
 /// Parses a [`ValueComponent`] from its object form or its bare value. A bare value of the
@@ -58,12 +64,10 @@ pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
     if is_object(slice.text) {
         return typed::<T>(slice, mode, cx, d);
     }
-    match parse_at::<T::Scalar>(slice) {
-        Ok(mut value) => {
-            tell_misread(&mut value, slice, d);
-            Some(T::from_scalar(value).into())
-        }
-        Err(error) => {
+    match read_bare::<T::Scalar>(slice, cx, d) {
+        Ok(value) => Some(T::from_scalar(value).into()),
+        Err(ScalarFailure::Refused(_)) => None,
+        Err(ScalarFailure::Read(error)) => {
             // A scalar of another type is a type error that refuses the item; the one
             // context without `strict_components` is the write-back probe of `write.rs`,
             // which reads only the `Unrecognized*` codes.

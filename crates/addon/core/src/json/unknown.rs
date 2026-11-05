@@ -15,6 +15,7 @@ use facet::{Def, Facet, Field, Peek, Poke, Shape, Type, UserType};
 use super::Value;
 use super::extra::Extra;
 use super::path::MemberPath;
+use super::scalar::{Declared, Refusal, ScalarRules, Scalars, Token, Verdict, judge};
 use super::slice::element_of;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
@@ -57,7 +58,8 @@ pub fn keep_unknown_members<'f, T: Facet<'f>>(
     target: &mut T,
     json: &Value,
 ) -> Vec<(JsonPath, Value)> {
-    keep_members(target, json).0
+    // The misread scalars are not asked for: the walk does not look for them.
+    keep_walked(target, json, false, false).0
 }
 
 /// [`keep_unknown_members`], and with the unknown members every scalar of `json` that its
@@ -66,7 +68,7 @@ pub fn keep_members<'f, T: Facet<'f>>(
     target: &mut T,
     json: &Value,
 ) -> (Vec<(JsonPath, Value)>, Vec<Misread>) {
-    keep_walked(target, json, false)
+    keep_walked(target, json, false, true)
 }
 
 /// [`keep_members`], and among the unknown members those of a [`Range`](crate::shared::Range)
@@ -76,15 +78,25 @@ pub fn keep_members_and_range_members<'f, T: Facet<'f>>(
     target: &mut T,
     json: &Value,
 ) -> (Vec<(JsonPath, Value)>, Vec<Misread>) {
-    keep_walked(target, json, true)
+    keep_walked(target, json, true, true)
 }
 
+/// The unknown members kept in `target`, and the misread scalars when `tell_misread`.
 fn keep_walked<'f, T: Facet<'f>>(
     target: &mut T,
     json: &Value,
     ranges: bool,
+    tell_misread: bool,
 ) -> (Vec<(JsonPath, Value)>, Vec<Misread>) {
-    let (unknowns, misread) = walk_all(T::SHAPE, json, Some(Peek::new(&*target)), ranges);
+    let walked = walk_with(
+        T::SHAPE,
+        json,
+        Some(Peek::new(&*target)),
+        ranges,
+        None,
+        tell_misread,
+    );
+    let (unknowns, misread) = (walked.unknowns, walked.misread);
     for unknown in &unknowns {
         if let (Some(route), Some(key)) = (&unknown.route, &unknown.key) {
             keep(Poke::new(&mut *target), route, key, unknown.value.clone());
@@ -136,9 +148,10 @@ impl Misread {
                 text: Some(VanillaText::Fixed(BEYOND_FLOAT_MEMBER)),
             },
             Misreading::WrongType => DiagnosticCode::InvalidType { text: None },
+            Misreading::Defaulted => DiagnosticCode::InvalidValue { text: None },
         };
         let severity = match self.kind {
-            Misreading::BeyondFloat => Severity::Info,
+            Misreading::BeyondFloat | Misreading::Defaulted => Severity::Info,
             Misreading::WrongType => Severity::Error,
         };
         Diagnostic::new(
@@ -161,6 +174,10 @@ pub enum Misreading {
     /// belongs, a number or a boolean where a string belongs, `null` where a value belongs.
     /// The member holds what facet made of it.
     WrongType,
+    /// A scalar its member refuses, read as the member left out under a reading that defaults
+    /// a failed member and tells it (`MemberFailure::DefaultAndTell`): an information at the
+    /// scalar, the crate's own.
+    Defaulted,
 }
 
 /// One unknown member.
@@ -205,6 +222,33 @@ struct Cursor {
     nulls: Vec<JsonPath>,
     /// The struct members, so far, written as `null` (`json::null`, rule N1).
     null_members: Vec<MemberPath>,
+    /// The slice's scalar rules, when the walk is the scalar pre-pass: each scalar is judged
+    /// by them ([`ScalarCall`]) instead of being looked at for a misreading.
+    rules: Option<ScalarRules>,
+    /// The scalars judged, so far, that are not read as written.
+    scalars: Vec<ScalarCall>,
+    /// Whether the walk without rules looks for misread scalars ([`Cursor::misread`]).
+    tell_misread: bool,
+}
+
+/// What the scalar pre-pass decided for one scalar of the text: every verdict but
+/// [`Verdict::Keep`], in document order.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ScalarCall {
+    /// The scalar's path from the root of the value walked.
+    pub(crate) path: MemberPath,
+    /// What its member reads it as.
+    pub(crate) verdict: Verdict,
+    /// The scalar's declared type; `None` for a scalar no arm of its untagged enum takes
+    /// (`arm`), or a `null` given for a struct.
+    pub(crate) declared: Option<Declared>,
+    /// Whether the scalar is a value of an untagged enum none of whose scalar arms takes it:
+    /// refused there, before any arm is read.
+    pub(crate) arm: bool,
+    /// The length of the array the text has where a scalar belongs (under every profile but
+    /// [`Scalars::ConvertAndTell`]): facet refuses it at its `[`, a strict wrapper at its last
+    /// element (`json::scalar::parse_with_rules` says it there).
+    pub(crate) list: Option<usize>,
 }
 
 impl Cursor {
@@ -222,18 +266,7 @@ type Typed<'m, 'f> = Option<Peek<'m, 'f>>;
 /// The unknown members of `json` read as `shape`; `typed` is the value deserialised from it,
 /// whose enum variants then decide the arms.
 pub(crate) fn walk(shape: &'static Shape, json: &Value, typed: Typed<'_, '_>) -> Vec<Unknown> {
-    walk_all(shape, json, typed, false).0
-}
-
-/// [`walk`], and the scalars of `json` their member read as another value.
-fn walk_all(
-    shape: &'static Shape,
-    json: &Value,
-    typed: Typed<'_, '_>,
-    ranges: bool,
-) -> (Vec<Unknown>, Vec<Misread>) {
-    let walked = walk_whole(shape, json, typed, ranges);
-    (walked.unknowns, walked.misread)
+    walk_whole(shape, json, typed, false).unknowns
 }
 
 /// What one walk of a value found.
@@ -241,21 +274,44 @@ fn walk_all(
 pub(crate) struct Walked {
     /// The unknown members.
     pub(crate) unknowns: Vec<Unknown>,
-    /// The scalars read as another value.
+    /// The scalars read as another value, for a walk that looks for them (`keep_members`).
     pub(crate) misread: Vec<Misread>,
     /// Every place where the shape reads a value (an `Option` among them) and the JSON has
     /// `null`; opaque places (`Value`, `RawJson`, proxies) and a unit are left out.
     pub(crate) nulls: Vec<JsonPath>,
     /// Every struct member written as `null`, whatever its type.
     pub(crate) null_members: Vec<MemberPath>,
+    /// The scalars the pre-pass does not read as written ([`walk_scalars`]); empty for a walk
+    /// without rules.
+    pub(crate) scalars: Vec<ScalarCall>,
 }
 
-/// The whole walk of `json` as `shape`.
+/// The whole walk of `json` as `shape`, the misread scalars aside (no caller of it asks).
 pub(crate) fn walk_whole(
     shape: &'static Shape,
     json: &Value,
     typed: Typed<'_, '_>,
     ranges: bool,
+) -> Walked {
+    walk_with(shape, json, typed, ranges, None, false)
+}
+
+/// The scalar pre-pass's walk of `json`, a value of the text to be read as `shape`: every
+/// scalar judged under `rules` ([`Walked::scalars`]), an untagged enum's scalar arm chosen as
+/// the rules choose it. Untyped: it runs before the typed read.
+pub(crate) fn walk_scalars(shape: &'static Shape, json: &Value, rules: ScalarRules) -> Walked {
+    walk_with(shape, json, None, false, Some(rules), false)
+}
+
+/// [`walk_whole`], judging the scalars under `rules` when there are some, and without them
+/// looking for the misread ones when `tell_misread`.
+fn walk_with(
+    shape: &'static Shape,
+    json: &Value,
+    typed: Typed<'_, '_>,
+    ranges: bool,
+    rules: Option<ScalarRules>,
+    tell_misread: bool,
 ) -> Walked {
     // The walk calls itself for each level of `json`: it runs with the stack that depth
     // can take, as facet's read of the typed value did, and not on what its caller
@@ -264,7 +320,9 @@ pub(crate) fn walk_whole(
     let Ok(levels) = super::write::levels_of(json) else {
         return Walked::default();
     };
-    super::stack::with_stack_for(levels, || walk_on_this_stack(shape, json, typed, ranges))
+    super::stack::with_stack_for(levels, || {
+        walk_on_this_stack(shape, json, typed, ranges, rules, tell_misread)
+    })
 }
 
 /// [`walk_whole`] on the stack of its caller: the walk calls itself for each level of `json`.
@@ -273,6 +331,8 @@ fn walk_on_this_stack(
     json: &Value,
     typed: Typed<'_, '_>,
     ranges: bool,
+    rules: Option<ScalarRules>,
+    tell_misread: bool,
 ) -> Walked {
     let mut out = Vec::new();
     let mut cursor = Cursor {
@@ -282,6 +342,9 @@ fn walk_on_this_stack(
         ranges,
         nulls: Vec::new(),
         null_members: Vec::new(),
+        rules,
+        scalars: Vec::new(),
+        tell_misread,
     };
     walk_value(shape, json, typed, &mut cursor, &mut out);
     Walked {
@@ -289,6 +352,7 @@ fn walk_on_this_stack(
         misread: cursor.misread,
         nulls: cursor.nulls,
         null_members: cursor.null_members,
+        scalars: cursor.scalars,
     }
 }
 
@@ -320,6 +384,140 @@ fn misreading(ty: facet::ScalarType, json: &Value) -> Option<Misreading> {
         T::F64 => number.is_infinite().then_some(Misreading::BeyondFloat),
         T::Bool => Some(Misreading::WrongType),
         _ => is_text.then_some(Misreading::WrongType),
+    }
+}
+
+/// The pre-pass's judgment of the scalar `json` for a member of the scalar type `ty`, pushed
+/// when it is not read as written.
+fn judge_scalar(ty: facet::ScalarType, json: &Value, rules: ScalarRules, cursor: &mut Cursor) {
+    if let (Some(array), false) = (json.as_array(), rules.scalars == Scalars::ConvertAndTell) {
+        cursor.scalars.push(ScalarCall {
+            path: cursor.path.clone(),
+            verdict: Verdict::Refused(Refusal::WrongType),
+            declared: Declared::of(ty),
+            arm: false,
+            list: Some(array.len()),
+        });
+        return;
+    }
+    let (Some(declared), Some(token)) = (Declared::of(ty), Token::of(json)) else {
+        return;
+    };
+    let verdict = judge(declared, token, rules);
+    if verdict != Verdict::Keep {
+        cursor.scalars.push(ScalarCall {
+            path: cursor.path.clone(),
+            verdict,
+            declared: Some(declared),
+            arm: false,
+            list: None,
+        });
+    }
+}
+
+/// The arm of an untagged enum that reads the scalar `token`, as the pre-pass chooses it under
+/// `rules`, or `None` when no arm with a declared scalar type reads it (then the enum's own
+/// read, or the refusal pushed here, says what it is).
+///
+/// facet-format (rc.7) reads a scalar into an untagged enum by its variants in order: `null`
+/// into the first unit variant, a string into the unit variant of its name, else the first
+/// newtype variant around a scalar (or an enum of unit variants) whose type takes the token
+/// (`scalar_matches_shape`: a string that parses into the type is taken), else the first such
+/// variant whatever the token. Under [`Scalars::ConvertAndTell`] that is the arm. Under the
+/// other profiles an arm takes the token when the strict rule does (the `JsonCpp` one under
+/// [`Scalars::JsonCpp`]): the first such arm in order, and when none does and every scalar arm
+/// has a declared scalar type, the token is refused at the enum (the `StrictShape` check the
+/// block family made before the typed read).
+fn scalar_arm(
+    variants: &'static [facet::Variant],
+    token: Token<'_>,
+    rules: ScalarRules,
+    cursor: &mut Cursor,
+) -> Option<usize> {
+    if matches!(token, Token::Null) && variants.iter().any(|v| v.data.fields.is_empty()) {
+        return None;
+    }
+    if let Token::Str(text) = token
+        && variants
+            .iter()
+            .any(|v| v.data.fields.is_empty() && v.effective_name() == text)
+    {
+        return None;
+    }
+    // The newtype variants facet reads a scalar as (`VariantFormat::NewtypeScalar`), with the
+    // declared type of each that has one.
+    let arms: Vec<(usize, &'static Shape, Option<Declared>)> = variants
+        .iter()
+        .enumerate()
+        .filter_map(|(index, variant)| {
+            let payload = see_through_pointer(payload_shape(variant)?);
+            let scalar = payload.scalar_type();
+            (scalar.is_some() || is_unit_enum(payload))
+                .then(|| (index, payload, scalar.and_then(Declared::of)))
+        })
+        .collect();
+    if rules.scalars == Scalars::ConvertAndTell {
+        let json = token_value(token);
+        let scalar = Scalar::of(&json)?;
+        let chosen = arms
+            .iter()
+            .find(|(_, payload, _)| scalar.match_quality(payload).is_some())
+            .or_else(|| arms.first())?;
+        return chosen.2.map(|_| chosen.0);
+    }
+    let arm_rules = match rules.scalars {
+        Scalars::JsonCpp => rules,
+        _ => rules.with_scalars(Scalars::Strict),
+    };
+    let takes =
+        |declared: Declared| !matches!(judge(declared, token, arm_rules), Verdict::Refused(_));
+    if let Some((index, _, _)) = arms
+        .iter()
+        .find(|(_, _, declared)| declared.is_some_and(takes))
+    {
+        return Some(*index);
+    }
+    if !arms.is_empty() && arms.iter().all(|(_, _, declared)| declared.is_some()) {
+        cursor.scalars.push(ScalarCall {
+            path: cursor.path.clone(),
+            verdict: Verdict::Refused(Refusal::WrongType),
+            declared: None,
+            arm: true,
+            list: None,
+        });
+    }
+    None
+}
+
+/// The value of a scalar token, for the scalar matching facet's untagged read does.
+fn token_value(token: Token<'_>) -> Value {
+    match token {
+        Token::Null => Value::NULL,
+        Token::Bool(b) => Value::from(b),
+        Token::UInt(u) => Value::from(u),
+        Token::Int(i) => Value::from(i),
+        Token::Real(x) => Value::from(x),
+        Token::Str(text) => Value::from(text),
+    }
+}
+
+/// `shape` without pointers (facet-solver `deref_pointer`).
+fn see_through_pointer(mut shape: &'static Shape) -> &'static Shape {
+    while let Def::Pointer(def) = shape.def {
+        match def.pointee() {
+            Some(pointee) => shape = pointee,
+            None => break,
+        }
+    }
+    shape
+}
+
+/// An enum of unit variants only, which facet reads from a scalar (facet-solver
+/// `is_unit_enum_shape`).
+fn is_unit_enum(shape: &'static Shape) -> bool {
+    match shape.ty {
+        Type::User(UserType::Enum(en)) => en.variants.iter().all(|v| v.data.fields.is_empty()),
+        _ => false,
     }
 }
 
@@ -387,7 +585,11 @@ fn walk_value(
         _ => {}
     }
     if let Some(ty) = shape.scalar_type() {
-        if let Some(kind) = misreading(ty, json) {
+        if let Some(rules) = cursor.rules {
+            judge_scalar(ty, json, rules, cursor);
+        } else if cursor.tell_misread
+            && let Some(kind) = misreading(ty, json)
+        {
             cursor.misread.push(Misread {
                 path: cursor.path.to_json_path(),
                 kind,
@@ -399,10 +601,20 @@ fn walk_value(
         // A `null` the typed parse took for a struct is a struct of defaults: another value
         // than the document writes (an `Option` above reads it as none).
         Type::User(UserType::Struct(_)) if json.is_null() => {
-            cursor.misread.push(Misread {
-                path: cursor.path.to_json_path(),
-                kind: Misreading::WrongType,
-            });
+            if cursor.rules.is_some() {
+                cursor.scalars.push(ScalarCall {
+                    path: cursor.path.clone(),
+                    verdict: Verdict::Converted,
+                    declared: None,
+                    arm: false,
+                    list: None,
+                });
+            } else if cursor.tell_misread {
+                cursor.misread.push(Misread {
+                    path: cursor.path.to_json_path(),
+                    kind: Misreading::WrongType,
+                });
+            }
         }
         Type::User(UserType::Struct(st)) => {
             let fields = typed.and_then(|t| t.into_struct().ok());
@@ -616,6 +828,15 @@ fn walk_enum(
     // The typed value's fields when `index` is its variant.
     let typed_payload = |index: usize| typed_enum.filter(|_| active == Some(index));
     if shape.is_untagged() {
+        if active.is_none()
+            && let Some(rules) = cursor.rules
+            && let Some(token) = Token::of(json)
+        {
+            if let Some(index) = scalar_arm(variants, token, rules, cursor) {
+                walk_variant(index, &variants[index], json, None, cursor, out);
+            }
+            return;
+        }
         if let Some(index) = active.or_else(|| untagged_arm(variants, json)) {
             walk_variant(
                 index,
@@ -1460,7 +1681,7 @@ mod tests {
             let found = match how {
                 How::Entry => keep_unknown_members(&mut typed, &json).len(),
                 How::OnThisStack => {
-                    walk_on_this_stack(T::SHAPE, &json, Some(Peek::new(&typed)), true)
+                    walk_on_this_stack(T::SHAPE, &json, Some(Peek::new(&typed)), true, None, true)
                         .unknowns
                         .len()
                 }

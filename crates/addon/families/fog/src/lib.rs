@@ -837,7 +837,7 @@ mod reading_table {
                 missing version: rejected: Fixed("Invalid 'format_version' in fog settings JSON")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.16.100..=1.26.20 (0..=3): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.16.100..=1.26.20 (0..=3): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
             "#,
         );
     }

@@ -940,7 +940,7 @@ fn component_rules(
             drop(report, "minecraft:transformation", text, &["rotation"]);
         }
         if let Some(DestructibleByExplosion::Params(p)) = map.get::<DestructibleByExplosion>()
-            && p.explosion_resistance.0 < 0.0
+            && p.explosion_resistance < 0.0
         {
             drop(
                 report,

@@ -153,7 +153,16 @@ pub(crate) fn parse_without<'a, T: Facet<'a>>(
     slice: JsonSlice<'a>,
     absent: &[MemberPath],
 ) -> Result<T, SliceError> {
-    parse_read(slice, absent).map_err(|failure| {
+    parse_planned(slice, &super::read::Plan::absent(absent))
+}
+
+/// [`parse_at`] reading `slice` as `plan` says (members read as not written, scalars read as
+/// other tokens); a failure is reported against the text as written.
+pub(crate) fn parse_planned<'a, T: Facet<'a>>(
+    slice: JsonSlice<'a>,
+    plan: &super::read::Plan,
+) -> Result<T, SliceError> {
+    parse_read(slice, plan).map_err(|failure| {
         let (span, members, error) = *failure;
         SliceError {
             span,
@@ -168,19 +177,15 @@ pub(crate) fn parse_without<'a, T: Facet<'a>>(
 pub(crate) fn parse_in<'a, T: Facet<'a>>(
     slice: JsonSlice<'a>,
 ) -> Result<T, Box<(Span, MemberPath, DeserializeError)>> {
-    parse_read(slice, &[])
+    parse_read(slice, &super::read::Plan::default())
 }
 
-/// [`parse_in`], with the members `absent` names read as not written when `null`.
+/// [`parse_in`], read as `plan` says.
 fn parse_read<'a, T: Facet<'a>>(
     slice: JsonSlice<'a>,
-    absent: &[MemberPath],
+    plan: &super::read::Plan,
 ) -> Result<T, Box<(Span, MemberPath, DeserializeError)>> {
-    let read = if absent.is_empty() {
-        crate::json::from_str_borrowed_jsonc::<T>(slice.text)
-    } else {
-        super::read::from_str_borrowed_jsonc_without::<T>(slice.text, absent)
-    };
+    let read = super::read::from_str_borrowed_jsonc_planned::<T>(slice.text, plan);
     let value = read.map_err(|error| {
         let members = members_of(&error, slice.text);
         // The span follows the members: where they are not the place facet's span lies in

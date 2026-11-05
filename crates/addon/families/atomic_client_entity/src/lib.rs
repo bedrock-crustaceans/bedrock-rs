@@ -660,7 +660,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Info
-                beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             ",
         );
     }

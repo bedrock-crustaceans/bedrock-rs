@@ -134,14 +134,20 @@ pub fn null_members(shape: &'static Shape, json: &Value) -> Vec<JsonPath> {
 }
 
 /// [`null_members`] as the walk names them.
-fn member_paths(shape: &'static Shape, json: &Value) -> Vec<MemberPath> {
+pub(crate) fn member_paths(shape: &'static Shape, json: &Value) -> Vec<MemberPath> {
     walk_whole(shape, json, None, false).null_members
 }
 
 /// Removes from `json` the members [`null_members`] finds, and returns their paths.
 pub fn remove_null_members(shape: &'static Shape, json: &mut Value) -> Vec<JsonPath> {
     let found = member_paths(shape, json);
-    for path in &found {
+    remove_members(json, &found);
+    found.iter().map(MemberPath::to_json_path).collect()
+}
+
+/// Removes from `json` the struct members at `found` ([`member_paths`]).
+pub(crate) fn remove_members(json: &mut Value, found: &[MemberPath]) {
+    for path in found {
         let Some((Member::Key(key), within)) = path.steps().split_last() else {
             continue;
         };
@@ -156,7 +162,6 @@ pub fn remove_null_members(shape: &'static Shape, json: &mut Value) -> Vec<JsonP
             object.remove(key);
         }
     }
-    found.iter().map(MemberPath::to_json_path).collect()
 }
 
 /// [`parse_at`](super::parse_at) under rule N1 ([`NullRule::Absent`]): every struct member

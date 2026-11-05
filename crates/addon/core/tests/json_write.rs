@@ -235,6 +235,45 @@ fn a_strict_f32_behind_a_transparent_newtype_is_written_shortest() {
     assert_eq!(compact(&vec![Transparent(StrictFloat(0.6))]), "[0.6]");
 }
 
+/// A plain `f32` behind a transparent newtype, as a component payload holds it once its
+/// wrapper goes.
+#[derive(Debug, Facet)]
+#[facet(transparent)]
+struct PlainTransparent(f32);
+
+/// Plain floats in every place a member holds one.
+#[derive(Debug, Facet)]
+struct PlainFloats {
+    member: f32,
+    #[facet(default)]
+    optional: Option<f32>,
+    list: Vec<f32>,
+    newtype: PlainTransparent,
+    #[facet(default)]
+    optional_newtype: Option<PlainTransparent>,
+    wide: f64,
+}
+
+#[test]
+fn a_declared_f32_is_written_shortest_wherever_it_is_held() {
+    assert_eq!(
+        compact(&PlainFloats {
+            member: 0.1,
+            optional: Some(2.0),
+            list: vec![0.3, 1e20],
+            newtype: PlainTransparent(0.4),
+            optional_newtype: Some(PlainTransparent(0.6)),
+            wide: 0.1,
+        }),
+        r#"{"member":0.1,"optional":2.0,"list":[0.3,1e20],"newtype":0.4,"optional_newtype":0.6,"wide":0.1}"#
+    );
+    assert_eq!(compact(&PlainTransparent(2.0)), "2.0");
+    assert_eq!(
+        not_representable(&PlainTransparent(f32::NAN)),
+        Unrepresentable::NaN
+    );
+}
+
 #[test]
 fn a_value_keeps_its_number_tags_and_member_order() {
     let value: Value =

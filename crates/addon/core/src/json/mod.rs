@@ -42,6 +42,7 @@ mod null;
 mod path;
 mod prepared;
 mod read; // the only caller of facet-json's parsers
+mod scalar;
 mod slice;
 mod stack;
 mod strict;
@@ -72,11 +73,15 @@ pub use read::{
     document_json_refusal, from_slice_jsonc, from_str, from_str_borrowed_jsonc, from_str_jsonc,
     scan, trailing_content, trailing_content_finding,
 };
+pub use scalar::{
+    BeyondWidth, Declared, JsonType, Refusal, Respelt, ScalarFailure, ScalarRead, ScalarRules,
+    ScalarShape, Scalars, StrictError, Token, Verdict, judge, parse_with_rules,
+};
 #[doc(hidden)]
 pub use slice::{JsonSlice, SliceError, parse_at, span_at};
 pub use strict::{
-    JsonType, ReaderMode, ScalarShape, StrictBool, StrictError, StrictFloat, StrictFloatType,
-    StrictInt, StrictIntType, StrictString, with_reader_mode,
+    ReaderMode, StrictBool, StrictFloat, StrictFloatType, StrictInt, StrictIntType, StrictString,
+    with_reader_mode,
 };
 pub use text::MAX_JSON_DEPTH;
 #[doc(hidden)]

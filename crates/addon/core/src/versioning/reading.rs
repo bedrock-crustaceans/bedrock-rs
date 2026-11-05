@@ -2,10 +2,13 @@
 //! [`Family::reading`](super::Family::reading). The part a family fixes once, because it runs
 //! before a struct is selected, is in `Family::ENVELOPE` ([`Envelope`](super::Envelope)).
 //!
-//! Nothing acts on [`Scalars::Coercing`] or on a [`MemberFailure`] other than `Refuse` yet.
+//! A [`MemberFailure`] is acted on by the scalar pre-pass (`DefaultAndTell` defaults a refused
+//! scalar's member and tells it, [`Reading::scalar_rules`]; every other failure fails the read
+//! there) and by a derived `Schema::check` (`schema::SchemaCx`).
 
 use super::{ErrorMask, Family, StructIndex};
 use crate::json::NullRule;
+pub use crate::json::{BeyondWidth, Scalars};
 use crate::load::DocumentSource;
 
 /// The reading the pipeline gives the slice `index` of `F` from `source`: `F::reading`, with an
@@ -42,18 +45,6 @@ impl NullHandling {
             Self::Own => None,
         }
     }
-}
-
-/// How a scalar token is read against the field's declared type.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum Scalars {
-    /// A token of another kind is a type error.
-    Strict,
-    /// The jsoncpp value readers' coercions (a number read as a bool and back, a string read
-    /// as a number). Declared, not acted on: which slices coerce, and by which of the two
-    /// `as_int` rules, is settled against the game first.
-    Coercing,
 }
 
 /// What an unknown member (code `0x4`) or component (code `0x400`) of the payload is.
@@ -94,8 +85,7 @@ pub enum MemberFailure {
 /// its own.
 ///
 /// Built from a profile ([`DOCUMENT`](Self::DOCUMENT), [`NULL_ABSENT`](Self::NULL_ABSENT),
-/// [`OWN`](Self::OWN), [`COERCING`](Self::COERCING)) and at most a tweak or two with the
-/// `with_*` builders.
+/// [`OWN`](Self::OWN)) and at most a tweak or two with the `with_*` builders.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct Reading {
@@ -103,6 +93,8 @@ pub struct Reading {
     pub null: NullHandling,
     /// How a scalar token of another kind is read.
     pub scalars: Scalars,
+    /// What a number beyond the width of its float member does.
+    pub beyond_width: BeyondWidth,
     /// What an unknown member or component of the payload is.
     pub unknown: UnknownMask,
     /// Whether a component that fails to read rejects the document (today's
@@ -113,11 +105,15 @@ pub struct Reading {
 }
 
 impl Reading {
-    /// The document input's cereal slices: `null` is a type error, scalars are strict, an
-    /// unknown member is an error and so is a component that fails to read.
+    /// The document input's cereal slices: `null` is a type error, an unknown member is an
+    /// error and so is a component that fails to read. Scalars are read as a plain member reads
+    /// them ([`Scalars::ConvertAndTell`], a number beyond a float clamped and told), which is
+    /// how every plain member of these slices is read today; a slice whose members are read by
+    /// the strict rule says [`Scalars::Strict`].
     pub const DOCUMENT: Self = Self {
         null: NullHandling::Rejected,
-        scalars: Scalars::Strict,
+        scalars: Scalars::ConvertAndTell,
+        beyond_width: BeyondWidth::ClampAndTell,
         unknown: UnknownMask::Error,
         components_fatal: true,
         on_member_failure: MemberFailure::Refuse,
@@ -126,7 +122,8 @@ impl Reading {
     /// absent, an unknown member a warning.
     pub const NULL_ABSENT: Self = Self {
         null: NullHandling::Absent,
-        scalars: Scalars::Strict,
+        scalars: Scalars::ConvertAndTell,
+        beyond_width: BeyondWidth::ClampAndTell,
         unknown: UnknownMask::Warn,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
@@ -135,18 +132,12 @@ impl Reading {
     /// no null rule, an unknown member a warning.
     pub const OWN: Self = Self {
         null: NullHandling::Own,
-        scalars: Scalars::Strict,
+        scalars: Scalars::ConvertAndTell,
+        beyond_width: BeyondWidth::ClampAndTell,
         unknown: UnknownMask::Warn,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
     };
-    /// The jsoncpp value readers: [`OWN`](Self::OWN) with coercing scalars. No family uses
-    /// it yet and the framework does not act on [`Scalars::Coercing`].
-    pub const COERCING: Self = Self {
-        scalars: Scalars::Coercing,
-        ..Self::OWN
-    };
-
     /// The reading with `null` read as `null`.
     #[must_use]
     pub const fn with_null(self, null: NullHandling) -> Self {
@@ -157,6 +148,15 @@ impl Reading {
     #[must_use]
     pub const fn with_scalars(self, scalars: Scalars) -> Self {
         Self { scalars, ..self }
+    }
+
+    /// The reading with a number beyond its float's width doing `beyond_width`.
+    #[must_use]
+    pub const fn with_beyond_width(self, beyond_width: BeyondWidth) -> Self {
+        Self {
+            beyond_width,
+            ..self
+        }
     }
 
     /// The reading with unknown members `unknown`.
@@ -181,6 +181,19 @@ impl Reading {
             on_member_failure: failure,
             ..self
         }
+    }
+
+    /// The scalar rules the context carries for this reading: its profile, its rule for a
+    /// number beyond its float, and whether a refused member defaults and tells
+    /// ([`MemberFailure::DefaultAndTell`]; every other failure fails the read there).
+    pub const fn scalar_rules(self) -> crate::json::ScalarRules {
+        crate::json::ScalarRules::PLAIN
+            .with_scalars(self.scalars)
+            .with_beyond_width(self.beyond_width)
+            .with_default_and_tell(matches!(
+                self.on_member_failure,
+                MemberFailure::DefaultAndTell
+            ))
     }
 
     /// The null rule the context carries for this reading.

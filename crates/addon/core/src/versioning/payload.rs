@@ -9,24 +9,30 @@ use crate::diagnostic::{
     code_for_deserialize_error_kind,
 };
 use crate::json::{
-    EncodeError, JsonSlice, NullRule, SliceError, Unrepresentable, Value, keep_members, parse_at,
-    parse_at_null_absent, reject_nulls, remove_null_members,
+    EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, SliceError, Unrepresentable,
+    Value, keep_unknown_members, parse_with_rules, reject_nulls,
 };
 
 /// Parses a version struct from `payload` (typed, straight from the text, never from a
 /// `Value`) and keeps its unknown members in the `extra` fields of the structs they belong to,
-/// each reported as an `UnrecognizedField` warning. A failed typed parse is one error (its code
-/// chosen by facet's error kind) at the failing member, and `None`.
+/// each reported as an `UnrecognizedField` warning. Its scalars are read by the slice's scalar
+/// rules (`LoadContext::scalar_rules`, the scalar pre-pass). A failed typed parse is one error
+/// (its code chosen by facet's error kind) at the failing member, and `None`.
 pub fn parse_payload<'a, T: Facet<'a>>(
     payload: JsonSlice<'a>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<T> {
     let rule = cx.load.null_rule;
-    let mut value = match read_with_rule::<T>(payload, rule) {
-        Ok(value) => value,
-        Err(error) => {
-            d.push(slice_error(&error, &cx.at, payload, Severity::Error));
+    let ScalarRead {
+        mut value,
+        told,
+        json,
+        absent,
+    } = match parse_with_rules::<T>(payload, rule, cx.load.scalar_rules) {
+        Ok(read) => read,
+        Err(failure) => {
+            d.push(failure_finding(&failure, &cx.at, payload));
             return None;
         }
     };
@@ -34,14 +40,11 @@ pub fn parse_payload<'a, T: Facet<'a>>(
     if rule == Some(NullRule::Rejected) && reject_nulls(&value, payload, &cx.at, d) {
         return None;
     }
-    if let Ok(mut json) = crate::json::from_str_jsonc::<Value>(payload.text) {
-        if rule == Some(NullRule::Absent) {
-            // Each member read as absent is marked: the write-back writes its default.
-            let absent = remove_null_members(T::SHAPE, &mut json);
-            crate::json::tell_null_members(&absent, &cx.at, d);
-        }
-        let (unknown, misread) = keep_members(&mut value, &json);
-        for (path, _) in unknown {
+    if let Some(json) = json {
+        // Each member read as absent (rule N1; the pre-pass left it out of `json`) is marked:
+        // the write-back writes its default.
+        crate::json::tell_null_members(&absent, &cx.at, d);
+        for (path, _) in keep_unknown_members(&mut value, &json) {
             // The game logs an unknown member at content-log level 2, a warning; a `Strict`
             // slice makes it an error after the parse.
             d.push(Diagnostic::new(
@@ -52,23 +55,23 @@ pub fn parse_payload<'a, T: Facet<'a>>(
             ));
         }
         // A scalar its member read as another value is told where it is.
-        for misread in misread {
-            d.push(misread.finding(&cx.at));
+        for told in told {
+            d.push(told.finding(&cx.at));
         }
     }
     Some(value)
 }
 
-/// The typed read of `slice` under the family's null rule: the `Absent` rule reads a struct
-/// member written as `null` as absent; otherwise the plain read.
-pub(super) fn read_with_rule<'a, T: Facet<'a>>(
-    slice: JsonSlice<'a>,
-    rule: Option<NullRule>,
-) -> Result<T, SliceError> {
-    if rule == Some(NullRule::Absent) {
-        parse_at_null_absent::<T>(slice)
-    } else {
-        parse_at::<T>(slice)
+/// The finding of a read that failed, at `base` followed by the failing member: an error of
+/// facet's kind, or the scalar of an untagged enum no arm took (a type error at the enum).
+pub(super) fn failure_finding(
+    failure: &ScalarFailure,
+    base: &JsonPath,
+    slice: JsonSlice<'_>,
+) -> Diagnostic {
+    match failure {
+        ScalarFailure::Read(error) => slice_error(error, base, slice, Severity::Error),
+        ScalarFailure::Refused(misread) => misread.finding(base),
     }
 }
 

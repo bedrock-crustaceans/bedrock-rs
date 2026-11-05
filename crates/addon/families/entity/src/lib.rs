@@ -50,10 +50,10 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family,
-    Identity, InputKind, Loaded, MissingVersion, OpenBeta, ParseCx, Parsed, Reading, StructIndex,
-    UnknownMask, ValidateCx, VersionChain, VersionStruct, Versioned, finish, member_version,
-    parse_as_written, write_envelope,
+    BETA_VERSION, BeyondWidth, ComponentSection, ComponentTable, DocumentRead, Envelope,
+    EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, ParseCx, Parsed,
+    Reading, Scalars, StructIndex, UnknownMask, ValidateCx, VersionChain, VersionStruct, Versioned,
+    finish, member_version, parse_as_written, write_envelope,
 };
 
 use component::EntityComponent;
@@ -103,11 +103,16 @@ impl Family for Entity {
             // The beta slice is read strictly, as every slice after the legacy one.
             StructIndex::Beta => true,
         };
-        Reading::NULL_ABSENT.with_unknown(if strict {
-            UnknownMask::Error
-        } else {
-            UnknownMask::Warn
-        })
+        // The components' scalars are the strict wrappers', which refuse a number beyond its
+        // float's width.
+        Reading::NULL_ABSENT
+            .with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error)
+            .with_unknown(if strict {
+                UnknownMask::Error
+            } else {
+                UnknownMask::Warn
+            })
     }
 
     type Latest = Entity;
@@ -406,9 +411,9 @@ mod reading_table {
                 missing version: at the floor, told at Info: Some(NoFormatVersionField)
                 below floor: UseFormatVersion
                 empty document: Error
-                1.8.0..=1.21.80 (0..=28): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-                1.21.89..=1.26.60 (29..=41): json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
-                beta: json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+                1.8.0..=1.21.80 (0..=28): json Absent/Strict/Error/Warn/lenient/Refuse, mcb Own/Strict/Error/Warn/lenient/Refuse
+                1.21.89..=1.26.60 (29..=41): json Absent/Strict/Error/Error/lenient/Refuse, mcb Own/Strict/Error/Error/lenient/Refuse
+                beta: json Absent/Strict/Error/Error/lenient/Refuse, mcb Own/Strict/Error/Error/lenient/Refuse
             ",
         );
     }

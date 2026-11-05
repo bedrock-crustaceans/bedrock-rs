@@ -491,8 +491,8 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.19.50..=1.19.50 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
-                1.26.50..=1.26.50 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                1.19.50..=1.19.50 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.26.50..=1.26.50 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             ",
         );
     }
@@ -508,7 +508,7 @@ mod reading_table {
                 missing version: rejected: Fixed("missing required field")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.19.50..=1.19.50 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.19.50..=1.19.50 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
             "#,
         );
     }
@@ -524,7 +524,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.26.0..=1.26.0 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                1.26.0..=1.26.0 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             ",
         );
     }
@@ -540,7 +540,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Error
-                0.0.0..=0.0.0 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                0.0.0..=0.0.0 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             ",
         );
     }

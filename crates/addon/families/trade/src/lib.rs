@@ -310,8 +310,8 @@ mod reading_table {
                 missing version: at the floor, silently
                 below floor: UseFormatVersion
                 empty document: Error
-                0.0.0..=0.0.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-                1.21.30..=1.21.30 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                0.0.0..=0.0.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.21.30..=1.21.30 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             ",
         );
     }

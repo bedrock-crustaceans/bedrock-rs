@@ -486,9 +486,9 @@ mod reading_table {
                 missing version: rejected: Fixed("document's version not found or not readable")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.10.0..=1.26.0 (0..=18): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-                1.26.30..=1.26.50 (19..=20): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
-                beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                1.10.0..=1.26.0 (0..=18): json Absent/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.26.30..=1.26.50 (19..=20): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             "#,
         );
     }

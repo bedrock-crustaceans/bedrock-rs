@@ -200,9 +200,10 @@ pub fn reading_table<F: super::Family>() -> String {
         let one = |source: DocumentSource| {
             let r = slice_reading::<F>(index, source);
             format!(
-                "{:?}/{:?}/{:?}/{}/{:?}",
+                "{:?}/{:?}/{:?}/{:?}/{}/{:?}",
                 r.null,
                 r.scalars,
+                r.beyond_width,
                 r.unknown,
                 if r.components_fatal {
                     "fatal"

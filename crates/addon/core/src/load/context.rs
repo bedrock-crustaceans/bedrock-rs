@@ -72,6 +72,12 @@ pub struct LoadContext {
     /// (each read takes `null` as it does) outside a versioned load and for a family of the
     /// first run's input kind.
     pub null_rule: Option<crate::json::NullRule>,
+    /// How the scalars of the document being read are read: set by the versioning load from
+    /// the slice's `Family::reading` (`Reading::scalar_rules`), read by
+    /// `versioning::parse_payload` and `parse_component` (the scalar pre-pass,
+    /// `json::parse_with_rules`); [`ScalarRules::PLAIN`](crate::json::ScalarRules::PLAIN)
+    /// outside a versioned load.
+    pub scalar_rules: crate::json::ScalarRules,
     /// Whether the document is read by a cereal slice of a Minecraft Document family (the
     /// slice's null rule is N2, whatever the source): `parse_component` then rejects the
     /// document for a component whose typed read fails (a type error) or whose required member
@@ -117,6 +123,7 @@ impl fmt::Debug for LoadContext {
         debug.field("molang", &present(self.molang.is_some()));
         debug
             .field("null_rule", &self.null_rule)
+            .field("scalar_rules", &self.scalar_rules)
             .field("strict_components", &self.strict_components)
             .field("source", &self.source)
             .field("max_json_document_bytes", &self.max_json_document_bytes)
@@ -206,6 +213,7 @@ impl LoadContext {
             #[cfg(feature = "molang")]
             molang: options.molang.clone(),
             null_rule: None,
+            scalar_rules: crate::json::ScalarRules::PLAIN,
             strict_components: false,
             source: DocumentSource::Json,
             max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,

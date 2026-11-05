@@ -35,8 +35,8 @@ use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind,
-    Loaded, Reading, StructIndex, ValidateCx, VersionChain,
+    BeyondWidth, ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family,
+    InputKind, Loaded, Reading, Scalars, StructIndex, ValidateCx, VersionChain,
 };
 use component::BlockComponent;
 use history::{Any, BlockFamily};
@@ -73,13 +73,12 @@ impl Family for BlockFamily {
     // The v1_26_20 and v1_26_60 slices are strict under rule N2: an unknown member or component
     // of a cereal document rejects it. The legacy slice is the hand-written parser's (the crate's
     // legacy reader), which takes `null` itself and does not reject unknown members: its findings
-    // stay as they are.
+    // stay as they are. A cereal document's scalars are the strict reader's; the legacy component
+    // parser reads every cereal-registered description with the non-strict schema reader (a bool
+    // and a number read as each other, an integer by its low bits, a real by its truncation).
+    // Both refuse a number beyond its float's width.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
-        if is_cereal(index) {
-            Reading::DOCUMENT
-        } else {
-            Reading::OWN
-        }
+        reading_of(is_cereal(index))
     }
 
     fn components() -> &'static ComponentTable<Self> {
@@ -108,6 +107,17 @@ impl Family for BlockFamily {
 }
 
 /// Whether `index` names a cereal struct (1.26.20 and later).
+/// The reading of a cereal slice or a legacy one ([`Family::reading`]); the components of a
+/// payload are read by it too (`read::section`), whichever slice the payload is read for.
+pub(crate) fn reading_of(cereal: bool) -> Reading {
+    if cereal {
+        Reading::DOCUMENT.with_scalars(Scalars::Strict)
+    } else {
+        Reading::OWN.with_scalars(Scalars::NonStrict)
+    }
+    .with_beyond_width(BeyondWidth::Error)
+}
+
 fn is_cereal(index: StructIndex) -> bool {
     match index {
         StructIndex::Stable(i) => <Any as VersionChain<BlockFamily>>::VERSIONS
@@ -178,9 +188,33 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: UseFormatVersion
                 empty document: Error
-                1.16.0..=1.26.0 (0..=13): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-                1.26.20..=1.26.60 (14..=15): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                1.16.0..=1.26.0 (0..=13): json Own/NonStrict/Error/Warn/lenient/Refuse, mcb Own/NonStrict/Error/Warn/lenient/Refuse
+                1.26.20..=1.26.60 (14..=15): json Rejected/Strict/Error/Error/fatal/Refuse, mcb Own/Strict/Error/Error/fatal/Refuse
             "#,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::versioning::testing::slice_reading;
+
+    /// The components of a payload are read by the reading of its kind of slice: the slice's
+    /// `Reading` is the one place that says how block reads its scalars.
+    #[test]
+    fn a_slice_reads_its_components_by_its_reading() {
+        let stable = <Any as VersionChain<BlockFamily>>::VERSIONS.len();
+        let indices = (0..stable)
+            .map(StructIndex::Stable)
+            .chain([StructIndex::Beta]);
+        for index in indices {
+            let reading = slice_reading::<BlockFamily>(index, DocumentSource::Json);
+            assert_eq!(
+                reading_of(is_cereal(index)).scalar_rules(),
+                reading.scalar_rules(),
+                "{index:?}"
+            );
+        }
     }
 }

@@ -6,7 +6,7 @@ use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::payload::{join, read_with_rule, slice_error, span_of};
+use super::payload::{failure_finding, join, span_of};
 use super::{
     ComponentTable, ContextArea, ConvertMode, ErrorMask, ExperimentalField, Family, FieldGate,
     FieldMeta,
@@ -15,12 +15,15 @@ use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use crate::document::{ComponentMap, ComponentRef, ComponentSet, CustomComponent};
-use crate::json::{JsonSlice, NullRule, Value, keep_members, reject_nulls, remove_null_members};
+use crate::json::{
+    JsonSlice, NullRule, ScalarRead, Value, keep_unknown_members, parse_with_rules, reject_nulls,
+};
 use crate::load::{Experiment, LoadContext, LoadRequirement};
 use crate::version::FormatVersion;
 
-/// Parses one typed component from its slice: `T` from the text (strict wrappers decide what
-/// coerces, so `mode` is the caller's to honour), its unknown members kept in its `extra` and
+/// Parses one typed component from its slice: `T` from the text (its plain scalars read by the
+/// slice's scalar rules, `LoadContext::scalar_rules`; strict wrappers decide what coerces, so
+/// `mode` is the caller's to honour), its unknown members kept in its `extra` and
 /// reported as `UnrecognizedField` warnings (the strict mask turns them into errors after the
 /// parse). A failed parse (a member of the wrong type, `0x8`, or a required member missing,
 /// `0x80`) is one finding: in a cereal slice of a document-input family
@@ -42,17 +45,17 @@ where
 {
     let _ = mode;
     let rule = cx.null_rule;
-    let mut value = match read_with_rule::<T>(slice, rule) {
-        Ok(value) => value,
-        Err(error) => {
+    let ScalarRead {
+        mut value,
+        told,
+        json,
+        absent,
+    } = match parse_with_rules::<T>(slice, rule, cx.scalar_rules) {
+        Ok(read) => read,
+        Err(failure) => {
             // Both readers fail the slice; `strict_components` only names the input.
             let _ = cx.strict_components;
-            d.push(slice_error(
-                &error,
-                &JsonPath::new(),
-                slice,
-                Severity::Error,
-            ));
+            d.push(failure_finding(&failure, &JsonPath::new(), slice));
             return None;
         }
     };
@@ -61,14 +64,11 @@ where
     if rule == Some(NullRule::Rejected) && reject_nulls(&value, slice, &JsonPath::new(), d) {
         return None;
     }
-    if let Ok(mut json) = crate::json::from_str_jsonc::<Value>(slice.text) {
-        if rule == Some(NullRule::Absent) {
-            // Each member read as absent is marked: the write-back writes its default.
-            let absent = remove_null_members(T::SHAPE, &mut json);
-            crate::json::tell_null_members(&absent, &JsonPath::new(), d);
-        }
-        let (unknown, misread) = keep_members(&mut value, &json);
-        for (path, _) in unknown {
+    if let Some(json) = json {
+        // Each member read as absent (rule N1; the pre-pass left it out of `json`) is marked:
+        // the write-back writes its default.
+        crate::json::tell_null_members(&absent, &JsonPath::new(), d);
+        for (path, _) in keep_unknown_members(&mut value, &json) {
             // The game logs an unknown member at content-log level 2, a warning; a `Strict`
             // slice makes it an error after the parse.
             d.push(Diagnostic::new(
@@ -79,8 +79,8 @@ where
             ));
         }
         // A scalar its member read as another value is told where it is.
-        for misread in misread {
-            d.push(misread.finding(&JsonPath::new()));
+        for told in told {
+            d.push(told.finding(&JsonPath::new()));
         }
     }
     Some(value.into())

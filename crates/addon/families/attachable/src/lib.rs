@@ -1268,7 +1268,7 @@ mod reading_table {
                 missing version: at the floor, told at Warning: Some(Fixed("Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions."))
                 below floor: UseFormatVersion
                 empty document: Error
-                1.8.0..=1.26.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.8.0..=1.26.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
             "#,
         );
     }

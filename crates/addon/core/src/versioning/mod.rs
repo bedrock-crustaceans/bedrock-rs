@@ -46,7 +46,7 @@ pub use pipeline::{
     parse_as_written, parse_file_as_written,
 };
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
-pub use reading::{MemberFailure, NullHandling, Reading, Scalars, UnknownMask};
+pub use reading::{BeyondWidth, MemberFailure, NullHandling, Reading, Scalars, UnknownMask};
 pub use single::Single;
 pub use write::write_envelope;
 

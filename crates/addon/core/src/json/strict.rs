@@ -4,80 +4,12 @@
 //! `null` into the default) and has no option to stop. Each wrapper
 //! is a `#[facet(proxy)]` over [`ScalarShape`], an untagged enum of every JSON scalar shape, and
 //! its conversion accepts only the jsoncpp type. Inside an `Option`, `null` stays `None`.
+//! The scalar vocabulary they are read through ([`ScalarShape`], [`JsonType`], [`StrictError`])
+//! is `json::scalar`'s, which outlives the wrappers.
 
 use facet::Facet;
 
-/// Every JSON scalar shape a deserialiser can offer, so a wrapper can reject the wrong ones:
-/// without the variants a type does not accept, facet's untagged solver would coerce `null` into
-/// a number and a number into a string. Integers have their own variants because the solver
-/// matches an integer token only against integer types; `String` comes first so `"1"` is never
-/// read as a number.
-#[derive(Clone, Debug, PartialEq, Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-pub enum ScalarShape {
-    /// `null`.
-    Null,
-    /// A string.
-    String(String),
-    /// `true` or `false`.
-    Bool(bool),
-    /// An integer token that fits `u64`.
-    UInt(u64),
-    /// A negative integer token that fits `i64`.
-    Int(i64),
-    /// A real token (`1.0`, `1e3`), or an integer outside 64 bits.
-    Number(f64),
-}
-
-/// A JSON value type as jsoncpp's type tests see it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum JsonType {
-    /// `null`.
-    Null,
-    /// A string.
-    String,
-    /// `true` or `false`.
-    Bool,
-    /// An integer token.
-    Integer,
-    /// A real token.
-    Real,
-}
-
-impl ScalarShape {
-    fn json_type(&self) -> JsonType {
-        match self {
-            Self::Null => JsonType::Null,
-            Self::String(_) => JsonType::String,
-            Self::Bool(_) => JsonType::Bool,
-            Self::UInt(_) | Self::Int(_) => JsonType::Integer,
-            Self::Number(_) => JsonType::Real,
-        }
-    }
-}
-
-/// Why a strict wrapper rejected a JSON value.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
-#[non_exhaustive]
-pub enum StrictError {
-    /// The value has a JSON type the field does not take.
-    #[error("expected a JSON {expected}, found a JSON {found:?}")]
-    WrongType {
-        /// What the field takes, in words.
-        expected: &'static str,
-        /// What the document has.
-        found: JsonType,
-    },
-    /// A number of the right type that does not fit the field (`256` for a `u8`, `1e39` for an
-    /// `f32`).
-    #[error("the number does not fit the field's type")]
-    OutOfRange,
-    /// A float that is not finite has no JSON form to write.
-    #[error("a non-finite number has no JSON form")]
-    NonFinite,
-}
+use super::scalar::{ScalarShape, StrictError};
 
 /// Which of the game's scalar readers a typed read stands for.
 ///

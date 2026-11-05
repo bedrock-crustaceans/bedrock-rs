@@ -10,6 +10,9 @@ mod chain;
 #[path = "block/common.rs"]
 mod common;
 
+#[path = "block/explosion_scalars.rs"]
+mod explosion_scalars;
+
 #[path = "block/fallbacks.rs"]
 mod fallbacks;
 

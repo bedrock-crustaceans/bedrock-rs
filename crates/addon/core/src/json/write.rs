@@ -20,7 +20,6 @@ use facet_format::{FormatSerializer, ScalarValue, SerializeError};
 use super::extra::Extra;
 use super::path::MemberPath;
 use super::stack::{is_low, with_stack_for};
-use super::strict::StrictFloat;
 use super::text::MAX_JSON_DEPTH;
 use super::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
 
@@ -672,16 +671,14 @@ impl FormatSerializer for Writer<'_> {
             self.value(json)?;
             return Ok(true);
         }
-        // A strict float reached through a `#[facet(transparent)]` newtype is unwrapped by the
-        // walk only after this hook, and its proxy would then widen an `f32` to `f64`:
-        // look through the newtype here, as the walk does next.
+        // A value read through a proxy whose one field is a declared float (a strict float,
+        // reached through a `#[facet(transparent)]` newtype or not) is written as that float, by
+        // its declared width: its proxy would widen an `f32` to `f64`, and the walk unwraps a
+        // newtype only after this hook. A plain float the walk writes by its type
+        // (`typed_scalar`).
         let scalar = value.innermost_peek();
-        if let Ok(x) = scalar.get::<StrictFloat<f32>>() {
-            self.f32(x.0)?;
-            return Ok(true);
-        }
-        if let Ok(x) = scalar.get::<StrictFloat<f64>>() {
-            self.f64(x.0)?;
+        if let Some((ty, float)) = proxied_float(scalar) {
+            self.typed_scalar(ty, float)?;
             return Ok(true);
         }
         // A Molang constant is written as the token an author writes for it, not as its proxy's
@@ -709,6 +706,25 @@ impl FormatSerializer for Writer<'_> {
     fn format_namespace(&self) -> Option<&'static str> {
         Some("json")
     }
+}
+
+/// The one field of `value`, a proxied struct, when it is declared a float: its scalar type and
+/// its value.
+fn proxied_float<'mem, 'facet>(
+    value: Peek<'mem, 'facet>,
+) -> Option<(ScalarType, Peek<'mem, 'facet>)> {
+    let shape = value.shape();
+    let Type::User(UserType::Struct(st)) = shape.ty else {
+        return None;
+    };
+    if shape.effective_proxy(None).is_none() || st.fields.len() != 1 {
+        return None;
+    }
+    let ty = st.fields[0].shape().scalar_type()?;
+    if !matches!(ty, ScalarType::F32 | ScalarType::F64) {
+        return None;
+    }
+    Some((ty, value.into_struct().ok()?.field(0).ok()?))
 }
 
 /// An integer scalar as facet-format normalises it.

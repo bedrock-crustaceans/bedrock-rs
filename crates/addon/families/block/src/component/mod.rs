@@ -85,7 +85,7 @@ pub enum BlockComponent {
     #[component(name = "minecraft:crafting_table", released = "1.19.50", requires = [LCF], parse = parse_component::<CraftingTable, BlockComponent>)]
     CraftingTable(CraftingTable),
     /// `minecraft:destructible_by_explosion`.
-    #[component(name = "minecraft:destructible_by_explosion", parse = parse_strict::<DestructibleByExplosion>)]
+    #[component(name = "minecraft:destructible_by_explosion", parse = parse_component::<DestructibleByExplosion, BlockComponent>)]
     DestructibleByExplosion(DestructibleByExplosion),
     /// `minecraft:destructible_by_mining`.
     #[component(name = "minecraft:destructible_by_mining", molang, parse = parse_strict::<DestructibleByMining>)]
@@ -373,12 +373,6 @@ impl StrictShape for SelectionBox {
 }
 
 impl StrictShape for DestructibleByMining {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        bool_or_container(json)
-    }
-}
-
-impl StrictShape for DestructibleByExplosion {
     fn wrong_scalar(json: &Value) -> Option<JsonPath> {
         bool_or_container(json)
     }

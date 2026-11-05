@@ -564,8 +564,8 @@ mod reading_table {
                 missing version: rejected: Fixed("The file cannot be processed without a valid format_version")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.21.60..=1.21.60 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
-                1.26.50..=1.26.50 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                1.21.60..=1.21.60 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.26.50..=1.26.50 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
             "#,
         );
     }

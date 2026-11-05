@@ -15,7 +15,8 @@ use bedrock_addon_core::document::{ComponentMap, Document, Extra, Origin, Reject
 use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::{
-    JsonSlice, ReaderMode, Value, keep_unknown_members, parse_at, with_reader_mode,
+    JsonSlice, ReaderMode, ScalarRules, Scalars, Value, keep_unknown_members, parse_at,
+    with_reader_mode,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
@@ -116,6 +117,29 @@ pub(crate) fn parse_block(
     parse_document(payload, cx, d).map(|(block, _)| block)
 }
 
+/// The payload's shell. Its own members (the description's, the custom component order) are
+/// plain types that facet converts and the misread walk tells: read as they always were,
+/// whatever the slice's scalar rules, until they are its rule's too. The components are read
+/// by the slice's (`section`).
+fn parse_shell<'a>(
+    payload: JsonSlice<'a>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+) -> Option<Shell<'a>> {
+    if cx.load.scalar_rules == ScalarRules::PLAIN {
+        return parse_payload(payload, cx, d);
+    }
+    let mut load = cx.load.clone();
+    load.scalar_rules = ScalarRules::PLAIN;
+    let plain = ParseCx {
+        load: &load,
+        written: cx.written,
+        original_version: cx.original_version,
+        at: cx.at.clone(),
+    };
+    parse_payload(payload, &plain, d)
+}
+
 /// [`parse_block`], and the sections (`None` the base, `Some(i)` permutation `i`) whose
 /// `minecraft:collision_box` is one box written as an object (the 1.26.20 alternative, which
 /// the 1.26.20 struct writes back as it).
@@ -125,7 +149,7 @@ pub(crate) fn parse_document(
     d: &mut Diagnostics,
 ) -> Option<(Block, Vec<Option<usize>>)> {
     let start = d.len();
-    let shell: Shell<'_> = parse_payload(payload, cx, d)?;
+    let shell = parse_shell(payload, cx, d)?;
     let cereal = cx.original_version >= CEREAL;
     if cereal {
         unknown_traits(d, start, &cx.at);
@@ -387,23 +411,27 @@ fn section(
     // load. The game logs "Failed to parse block '%s' " and each error at the content log's
     // error level, the component load fails with it, and no block definition is generated:
     // the block is refused, as under the strict slice.
+    // The game's legacy component parser reads every cereal-registered description with
+    // its non-strict schema reader (the strict flag of the component metadata is clear): a bool and a number read as each other, an
+    // integer token by its low bits, a real by its truncation. A cereal document is the strict
+    // reader's. Both refuse a number beyond its float. The strict wrappers read by the reader
+    // mode, plain members by the context's scalar rules: the `Reading` of the document's kind
+    // of slice (`reading_of`), set here too for a read outside a versioned load and for a
+    // legacy document converted by the 1.26.20 step.
+    let scalar_rules = crate::reading_of(rejected.is_some()).scalar_rules();
+    let reader = match scalar_rules.scalars {
+        Scalars::NonStrict => ReaderMode::NonStrict,
+        _ => ReaderMode::Strict,
+    };
     let strict;
-    let load = if cx.load.strict_components {
+    let load = if cx.load.strict_components && cx.load.scalar_rules == scalar_rules {
         cx.load
     } else {
         let mut with_strict = cx.load.clone();
         with_strict.strict_components = true;
+        with_strict.scalar_rules = scalar_rules;
         strict = with_strict;
         &strict
-    };
-    // The game's legacy component parser reads every cereal-registered description with
-    // its non-strict schema reader (the strict flag of the component metadata is clear): a bool and a number read as each other, an
-    // integer token by its low bits, a real by its truncation. A cereal document is the strict
-    // reader's.
-    let reader = if rejected.is_some() {
-        ReaderMode::Strict
-    } else {
-        ReaderMode::NonStrict
     };
     let mut map = with_reader_mode(reader, || {
         parse_component_map::<BlockFamily>(

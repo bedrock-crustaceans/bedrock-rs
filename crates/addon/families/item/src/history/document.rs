@@ -157,12 +157,10 @@ where
     if crate::component::value_is_object(slice.text) {
         return typed::<T>(slice, cx, d);
     }
-    match parse_at::<T::Scalar>(slice) {
-        Ok(mut v) => {
-            crate::component::tell_misread(&mut v, slice, d);
-            Some(T::from_scalar(v).into())
-        }
-        Err(error) => {
+    match crate::component::read_bare::<T::Scalar>(slice, cx, d) {
+        Ok(v) => Some(T::from_scalar(v).into()),
+        Err(bedrock_addon_core::json::ScalarFailure::Refused(_)) => None,
+        Err(bedrock_addon_core::json::ScalarFailure::Read(error)) => {
             // A scalar of another type is a type error: the item is refused (the chain's
             // refusal is `typed`'s).
             d.push(

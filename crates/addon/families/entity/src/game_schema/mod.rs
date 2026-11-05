@@ -596,6 +596,74 @@ mod tests {
     use super::*;
     use bedrock_addon_core::diagnostic::Severity;
 
+    /// The door's `JsonCpp` scalar profile takes, for each scalar type the table names, the
+    /// token types the table's node takes: `int` an integer or real, `float` an integer, real
+    /// or bool, `string` a string, `bool` a bool, with no exception in the table.
+    #[test]
+    fn the_json_cpp_scalar_profile_takes_what_the_table_takes() {
+        use bedrock_addon_core::json::{
+            BeyondWidth, Declared, ScalarRules, Scalars, Token, Verdict, judge,
+        };
+        fn nodes<'a>(members: &'a [Member], out: &mut Vec<&'a Node>) {
+            for member in members {
+                of_options(member.options, out);
+            }
+        }
+        fn of_options<'a>(options: &'a [Node], out: &mut Vec<&'a Node>) {
+            for node in options {
+                out.push(node);
+                nodes(node.members, out);
+                of_options(node.elements, out);
+            }
+        }
+        let rules = ScalarRules::PLAIN
+            .with_scalars(Scalars::JsonCpp)
+            .with_beyond_width(BeyondWidth::Error);
+        let tokens = [
+            (NULL, Token::Null),
+            (INT, Token::Int(-7)),
+            (UINT, Token::UInt(7)),
+            (REAL, Token::Real(7.5)),
+            (STRING, Token::Str("7")),
+            (BOOL, Token::Bool(true)),
+        ];
+        let scalar_kinds = NULL | INT | UINT | REAL | STRING | BOOL;
+        let mut all = Vec::new();
+        for owner in table::COMPONENTS.iter().chain(&table::EVENT_RESPONSES) {
+            nodes(owner.members, &mut all);
+        }
+        let mut counted = [0usize; 4];
+        for node in all {
+            let (slot, declared) = match node.type_name {
+                "int" => (
+                    0,
+                    Declared::Int {
+                        bits: 32,
+                        signed: true,
+                    },
+                ),
+                "float" => (1, Declared::Float { bits: 32 }),
+                "string" => (2, Declared::Text),
+                "bool" => (3, Declared::Bool),
+                _ => continue,
+            };
+            counted[slot] += 1;
+            let takes = tokens
+                .iter()
+                .filter(|(_, token)| !matches!(judge(declared, *token, rules), Verdict::Refused(_)))
+                .fold(0, |mask, (kind, _)| mask | kind);
+            assert_eq!(
+                node.accepts & scalar_kinds,
+                takes,
+                "a `{}` node takes {:#010b}, the profile {takes:#010b}",
+                node.type_name,
+                node.accepts
+            );
+        }
+        // Every scalar node of the table is held: the components' and the event responses'.
+        assert_eq!(counted, [243, 433, 233, 169]);
+    }
+
     /// The version a migrated reader converts below is the crate's first typed version
     /// of the key (the conversion runs in the step that reaches it).
     #[test]

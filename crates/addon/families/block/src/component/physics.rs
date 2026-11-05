@@ -109,8 +109,9 @@ pub enum DestructibleByExplosion {
 /// The object form of [`DestructibleByExplosion`].
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct ExplosionParams {
-    /// JSON `explosion_resistance` (required, `>= 0`).
-    pub explosion_resistance: StrictFloat<f32>,
+    /// JSON `explosion_resistance` (required, `>= 0`). Read by the slice's scalar rules: a
+    /// number under the strict reader, a number or a bool under the legacy one.
+    pub explosion_resistance: f32,
     /// Unknown members.
     #[facet(skip, rename = "\u{0}extra")]
     pub extra: Extra,

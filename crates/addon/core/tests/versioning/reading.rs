@@ -8,8 +8,8 @@ use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::slice_reading;
 use bedrock_addon_core::versioning::{
-    ComponentTable, Envelope, Family, InputKind, Loaded, NullHandling, Reading, Scalars,
-    StructIndex, UnknownMask, VersionInput,
+    BeyondWidth, ComponentTable, Envelope, Family, InputKind, Loaded, NullHandling, Reading,
+    Scalars, StructIndex, UnknownMask, VersionInput,
 };
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
@@ -185,10 +185,14 @@ fn the_envelope_sizes_a_json_text_of_a_document_input_only() {
 }
 
 #[test]
-fn coercing_profile_is_own_with_coercing_scalars() {
-    assert_eq!(Reading::COERCING.scalars, Scalars::Coercing);
+fn a_profile_with_other_scalars_differs_from_own_in_them_alone() {
+    let json_cpp = Reading::OWN.with_scalars(Scalars::JsonCpp);
+    assert_eq!(json_cpp.scalars, Scalars::JsonCpp);
+    assert_eq!(json_cpp.with_scalars(Scalars::ConvertAndTell), Reading::OWN);
+    let error = Reading::OWN.with_beyond_width(BeyondWidth::Error);
+    assert_eq!(error.beyond_width, BeyondWidth::Error);
     assert_eq!(
-        Reading::COERCING.with_scalars(Scalars::Strict),
+        error.with_beyond_width(BeyondWidth::ClampAndTell),
         Reading::OWN
     );
 }
@@ -306,165 +310,165 @@ const TOY_TABLES: &str = r#"
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         Stable
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         Strict
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: rejected: NoValidVersion
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         Quiet
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, silently
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         Uncounted
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Uncounted
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         Texted
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Warning: Some(NoFormatVersionField)
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         TextedInfo
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: Some(NoFormatVersionField)
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         StrictTexted
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: rejected: NoFormatVersionField
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         Mixed
         text: Document, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.1.0 (0..=1): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        1.2.0..=1.2.0 (2..=2): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
-        beta: json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        1.0.0..=1.1.0 (0..=1): json Absent/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        1.2.0..=1.2.0 (2..=2): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
         Masked
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.1.0 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        1.2.0..=1.2.0 (2..=2): json Own/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
-        beta: json Own/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+        1.0.0..=1.1.0 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        1.2.0..=1.2.0 (2..=2): json Own/ConvertAndTell/ClampAndTell/Error/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Error/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/lenient/Refuse
         Document
         text: Document, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
-        beta: json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        1.0.0..=1.2.0 (0..=2): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
         JsonCppToy
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Absent/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Absent/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         DocumentStrict
         text: Document, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
-        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        1.0.0..=1.2.0 (0..=2): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
         LegacyFirst
         text: Document, clamps beyond a double: true, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.0.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        1.1.0..=1.2.0 (1..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
-        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        1.0.0..=1.0.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        1.1.0..=1.2.0 (1..=2): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
         BlockLike
         text: Document, clamps beyond a double: true, duplicates kept in: ["components"]
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.1.0 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        1.2.0..=1.2.0 (2..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
-        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        1.0.0..=1.1.0 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        1.2.0..=1.2.0 (2..=2): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
         EntityLike
         text: Root, clamps beyond a double: true, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.0.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        1.1.0..=1.2.0 (1..=2): json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
-        beta: json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+        1.0.0..=1.0.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        1.1.0..=1.2.0 (1..=2): json Absent/ConvertAndTell/ClampAndTell/Error/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/lenient/Refuse
+        beta: json Absent/ConvertAndTell/ClampAndTell/Error/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/lenient/Refuse
         UnstrictFirst
         text: Document, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.0.0 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
-        1.1.0..=1.2.0 (1..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
-        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        1.0.0..=1.0.0 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+        1.1.0..=1.2.0 (1..=2): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
         ReadByReading
         text: Root, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
-        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        1.0.0..=1.2.0 (0..=2): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+        beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
         DocumentByText
         text: Document, clamps beyond a double: false, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
         ClampsByText
         text: Root, clamps beyond a double: true, duplicates kept in: []
         envelope: Always
         missing version: at the floor, told at Info: None
         below floor: UseFormatVersion
         empty document: Error
-        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
-        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.0.0..=1.2.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+        beta: json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
 "#;
 
 /// The reading table of every toy family that states its reading: pinned, so that a change

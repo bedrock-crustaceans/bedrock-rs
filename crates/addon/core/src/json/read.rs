@@ -776,83 +776,125 @@ where
     })
 }
 
-/// [`from_str_borrowed_jsonc`] reading `text` as if the object members `absent` named were not
-/// written: each of them whose value is `null` is blanked to white space in the copy facet
-/// reads, with the comma that joins it to a neighbour, so offsets stay the file's and what
-/// the read borrows is the file's text (rule N1, `json::null`). A member of `absent` whose
-/// value is not `null` is read as written.
-pub(super) fn from_str_borrowed_jsonc_without<'input, 'facet, T>(
+/// What a typed read hands facet in place of the text as written: the members to read as not
+/// written, and the scalars to read as other tokens. Paths are from the root of the text.
+#[derive(Debug, Default)]
+pub(crate) struct Plan {
+    /// Object members read as not written when their value is `null` (rule N1, `json::null`).
+    pub(crate) absent: Vec<super::path::MemberPath>,
+    /// Object members read as not written whatever their scalar value (a member the scalar
+    /// pre-pass refused and defaults).
+    pub(crate) blank: Vec<super::path::MemberPath>,
+    /// Scalars read as another token: the scalar pre-pass's respellings, and the tokens it
+    /// gives a refused scalar so that facet fails there (`json::scalar`). A path written
+    /// twice is respelt where facet reads it last.
+    pub(crate) fixes: Vec<(super::path::MemberPath, ScalarValue<'static>)>,
+}
+
+impl Plan {
+    /// A plan that blanks the members `absent` names when `null`.
+    pub(crate) fn absent(absent: &[super::path::MemberPath]) -> Self {
+        Self {
+            absent: absent.to_vec(),
+            ..Self::default()
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.absent.is_empty() && self.blank.is_empty() && self.fixes.is_empty()
+    }
+}
+
+/// [`from_str_borrowed_jsonc`] reading `text` as `plan` says: each member it reads as not
+/// written is blanked to white space in the copy facet reads, with the comma that joins it to
+/// a neighbour, so offsets stay the file's and what the read borrows is the file's text (rule
+/// N1, `json::null`; a member of `plan.absent` whose value is not `null` is read as written);
+/// each scalar it respells is handed facet as the other token, at its own offset and span.
+pub(super) fn from_str_borrowed_jsonc_planned<'input, 'facet, T>(
     text: &'input str,
-    absent: &[super::path::MemberPath],
+    plan: &Plan,
 ) -> Result<T, DeserializeError>
 where
     T: Facet<'facet>,
     'input: 'facet,
 {
-    let checked = checked(text, true)?;
-    let read = checked.copy.as_deref().unwrap_or(checked.root);
-    let blanks = null_member_blanks(read, absent);
-    if blanks.is_empty() {
+    if plan.is_empty() {
         return from_str_borrowed_jsonc(text);
     }
-    let mut copy = read.as_bytes().to_vec();
-    for range in blanks {
-        if let Some(part) = copy.get_mut(range) {
-            part.fill(b' ');
-        }
+    let checked = checked(text, true)?;
+    let read = checked.copy.as_deref().unwrap_or(checked.root);
+    let (blanks, fixes) = plan_marks(read, plan);
+    if blanks.is_empty() && fixes.is_empty() {
+        return from_str_borrowed_jsonc(text);
     }
-    // Whole tokens and the white space between them became spaces of the same length.
-    let copy = String::from_utf8(copy).map_err(|_| ended("a text", facet::Span::default()))?;
+    let copy = if blanks.is_empty() {
+        None
+    } else {
+        let mut copy = read.as_bytes().to_vec();
+        for range in blanks {
+            if let Some(part) = copy.get_mut(range) {
+                part.fill(b' ');
+            }
+        }
+        // Whole tokens and the white space between them became spaces of the same length.
+        Some(String::from_utf8(copy).map_err(|_| ended("a text", facet::Span::default()))?)
+    };
     with_stack_for(checked.levels, || {
-        let mut parser = Rehomed::new(&copy, checked.root, true);
+        let mut parser =
+            Rehomed::new(copy.as_deref().unwrap_or(read), checked.root, true).with_fixes(fixes);
         FormatDeserializer::new(&mut parser).deserialize_root()
     })
 }
 
-/// The byte ranges of `text` (no comments left: the copy facet reads) to blank so that each
-/// member `absent` names whose value is `null` is gone: from its key to the next member's
-/// key, or, for the last member of its object, from the end of the last member kept before
-/// it (its comma included) to the end of the `null`.
-fn null_member_blanks(text: &str, absent: &[super::path::MemberPath]) -> Vec<Range<usize>> {
+/// A container the scan of [`plan_marks`] is in.
+enum Frame {
+    Object {
+        /// Where the current member's key starts.
+        key_start: usize,
+        /// Where the value of the last member kept ends.
+        kept_end: Option<usize>,
+        /// A member to blank: its key's start and its value's end.
+        pending: Option<(usize, usize)>,
+    },
+    Array {
+        index: usize,
+    },
+}
+
+/// A value of the innermost container ended at `end`.
+fn value_done(frames: &mut [Frame], path: &mut super::path::MemberPath, end: usize) {
+    match frames.last_mut() {
+        Some(Frame::Object { kept_end, .. }) => {
+            *kept_end = Some(end);
+            path.pop();
+        }
+        Some(Frame::Array { index }) => {
+            *index += 1;
+            path.pop();
+        }
+        None => {}
+    }
+}
+
+/// A value of the innermost container starts: an element gets its index.
+fn value_starts(frames: &[Frame], path: &mut super::path::MemberPath) {
+    if let Some(Frame::Array { index }) = frames.last() {
+        path.push_index(*index);
+    }
+}
+
+/// Where `plan` falls in `text` (no comments left: the copy facet reads): the byte ranges to
+/// blank so that each member it reads as not written is gone (from its key to the next
+/// member's key, or, for the last member of its object, from the end of the last member kept
+/// before it, its comma included, to the end of its value), and the offset of each scalar it
+/// respells with the token facet reads there, sorted by offset.
+fn plan_marks(text: &str, plan: &Plan) -> (Vec<Range<usize>>, Vec<(u32, ScalarValue<'static>)>) {
     use super::path::MemberPath;
-    /// A container the scan is in.
-    enum Frame {
-        Object {
-            /// Where the current member's key starts.
-            key_start: usize,
-            /// Where the value of the last member kept ends.
-            kept_end: Option<usize>,
-            /// A `null` member to blank: its key's start and the `null`'s end.
-            pending: Option<(usize, usize)>,
-        },
-        Array {
-            index: usize,
-        },
-    }
-    /// A value of the innermost container ended at `end`.
-    fn value_done(frames: &mut [Frame], path: &mut MemberPath, end: usize) {
-        match frames.last_mut() {
-            Some(Frame::Object { kept_end, .. }) => {
-                *kept_end = Some(end);
-                path.pop();
-            }
-            Some(Frame::Array { index }) => {
-                *index += 1;
-                path.pop();
-            }
-            None => {}
-        }
-    }
-    /// A value of the innermost container starts: an element gets its index.
-    fn value_starts(frames: &[Frame], path: &mut MemberPath) {
-        if let Some(Frame::Array { index }) = frames.last() {
-            path.push_index(*index);
-        }
-    }
     let mut parser = JsonParser::<true>::new_jsonc(text.as_bytes());
     let mut frames: Vec<Frame> = Vec::new();
     let mut path = MemberPath::default();
     let mut out = Vec::new();
+    let mut fixed: Vec<Option<u32>> = vec![None; plan.fixes.len()];
     while let Ok(Some(event)) = parser.next_event() {
         let start = event.span.offset as usize;
         let end = start + event.span.len as usize;
@@ -898,24 +940,42 @@ fn null_member_blanks(text: &str, absent: &[super::path::MemberPath]) -> Vec<Ran
             }
             ParseEventKind::Scalar(scalar) => {
                 value_starts(&frames, &mut path);
+                let null = matches!(scalar, ScalarValue::Null);
+                let blanked = (null && plan.absent.contains(&path)) || plan.blank.contains(&path);
                 if let (
-                    ScalarValue::Null,
+                    true,
                     Some(Frame::Object {
                         key_start, pending, ..
                     }),
-                ) = (&scalar, frames.last_mut())
-                    && absent.contains(&path)
+                ) = (blanked, frames.last_mut())
                 {
                     *pending = Some((*key_start, end));
                     path.pop();
                     continue;
+                }
+                // The last scalar at the path is the one facet keeps.
+                if let Some(index) = plan.fixes.iter().position(|(at, _)| *at == path) {
+                    fixed[index] = Some(event.span.offset);
                 }
                 value_done(&mut frames, &mut path, end);
             }
             _ => {}
         }
     }
-    out
+    (out, by_offset(plan, fixed))
+}
+
+/// The respellings of `plan` at the offsets `fixed` found for them (a path not found is not
+/// respelt), sorted by offset.
+fn by_offset(plan: &Plan, fixed: Vec<Option<u32>>) -> Vec<(u32, ScalarValue<'static>)> {
+    let mut sorted: Vec<(u32, ScalarValue<'static>)> = plan
+        .fixes
+        .iter()
+        .zip(fixed)
+        .filter_map(|((_, token), at)| Some((at?, token.clone())))
+        .collect();
+    sorted.sort_by_key(|(at, _)| *at);
+    sorted
 }
 
 /// The offset of the first syntax fault of `text` (JSON with comments), where a reader of
@@ -1103,6 +1163,9 @@ struct Rehomed<'copy, 'input> {
     text: &'input str,
     /// Whether every string is handed over as a copy of its own: the owned reads.
     owned: bool,
+    /// The scalars handed over as another token, by the offset of the token written, sorted
+    /// ([`Plan::fixes`]).
+    fixes: Vec<(u32, ScalarValue<'static>)>,
 }
 
 impl<'copy, 'input> Rehomed<'copy, 'input> {
@@ -1122,7 +1185,16 @@ impl<'copy, 'input> Rehomed<'copy, 'input> {
             copy,
             text,
             owned: false,
+            fixes: Vec::new(),
         }
+    }
+
+    /// The same parser handing over, at each offset of `fixes`, its token in place of the
+    /// scalar written there (span and offset stay the written token's, whatever the length of
+    /// the token handed over).
+    fn with_fixes(mut self, fixes: Vec<(u32, ScalarValue<'static>)>) -> Self {
+        self.fixes = fixes;
+        self
     }
 
     /// The same parser for an owned read: it lends nothing. facet's owned deserialiser (rc.7,
@@ -1155,6 +1227,14 @@ impl<'copy, 'input> Rehomed<'copy, 'input> {
         }
     }
 
+    /// The token handed over in place of the scalar at `span` ([`with_fixes`](Self::with_fixes)).
+    fn fixed(&self, span: facet::Span) -> Option<&ScalarValue<'static>> {
+        self.fixes
+            .binary_search_by_key(&span.offset, |(at, _)| *at)
+            .ok()
+            .map(|index| &self.fixes[index].1)
+    }
+
     /// The event with its borrowed text taken from the text; its span stays.
     fn rehome(&self, event: ParseEvent<'copy>) -> Result<ParseEvent<'input>, ParseError> {
         let kind = match event.kind {
@@ -1164,6 +1244,9 @@ impl<'copy, 'input> Rehomed<'copy, 'input> {
             ParseEventKind::SequenceEnd => ParseEventKind::SequenceEnd,
             ParseEventKind::FieldKey(FieldKey::Name(name)) => {
                 ParseEventKind::FieldKey(FieldKey::Name(self.rehome_str(name)))
+            }
+            ParseEventKind::Scalar(_) if self.fixed(event.span).is_some() => {
+                ParseEventKind::Scalar(self.fixed(event.span).cloned().unwrap_or(ScalarValue::Null))
             }
             ParseEventKind::Scalar(scalar) => ParseEventKind::Scalar(match scalar {
                 ScalarValue::Str(text) => ScalarValue::Str(self.rehome_str(text)),
