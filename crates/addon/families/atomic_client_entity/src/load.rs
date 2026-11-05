@@ -236,7 +236,8 @@ fn combine(
     parsed: Vec<Contribution<AtomicClientEntity>>,
     stack: &StackCx<'_>,
 ) -> Registry<AtomicClientEntity> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::LastLoadedWins {
             replaced: Some(Notice {
                 code: DiagnosticCode::AtomicClientEntityShadowed,
@@ -245,11 +246,7 @@ fn combine(
         },
         CombineRule::top_wins(),
         stack.options,
-    );
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `rp.atomic_client_entities()`: `atomic_client_entities/**/*.json` of every

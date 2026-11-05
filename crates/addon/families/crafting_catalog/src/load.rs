@@ -14,9 +14,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::{
-    ENGINE_VERSION, FormatVersion, FormatVersionInput, PickedVersion,
-};
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
     Selection, StructIndex, VersionStruct, Versioned, finish, parse_as_written, select,
@@ -125,10 +123,7 @@ fn below_floor() -> Diagnostic {
 /// (vanilla writes it to a logger it never prints).
 fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
     // The version the game's JSON reader picks from the text.
-    let written = match FormatVersionInput::pick(document.text) {
-        PickedVersion::Version { input, .. } => Some(input),
-        PickedVersion::Absent | PickedVersion::Malformed => None,
-    };
+    let written = FormatVersionInput::pick(document.text).version().copied();
     let floor = written.is_some_and(|w| select::<CatalogFamily>(&w) == Selection::BelowFloor);
     let above_engine = written
         .and_then(|w| w.version)

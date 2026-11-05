@@ -515,12 +515,12 @@ fn identifier_of(bytes: &[u8]) -> Option<EntityId> {
 /// The registry of every pack's entities: a higher pack's definition of an identifier replaces
 /// a lower one's.
 fn combine(parsed: Vec<Contribution<Entity>>, cx: &StackCx<'_>) -> Registry<Entity> {
-    let mut builder =
-        RegistryBuilder::new(CombineRule::top_wins(), CombineRule::top_wins(), cx.options);
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    RegistryBuilder::combine(
+        parsed,
+        CombineRule::top_wins(),
+        CombineRule::top_wins(),
+        cx.options,
+    )
 }
 
 /// The loader of `bp.entities()`.

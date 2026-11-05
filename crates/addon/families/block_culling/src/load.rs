@@ -256,15 +256,12 @@ fn combine_culling(
     parsed: Vec<Contribution<CullingRules>>,
     stack: &StackCx<'_>,
 ) -> Registry<CullingRules> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::top_wins(),
         CombineRule::top_wins(),
         stack.options,
-    );
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `rp.block_culling()`: `block_culling/**/*.json` of every resource pack, the

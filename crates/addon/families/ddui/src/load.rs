@@ -356,7 +356,7 @@ fn stage<F: UiFamily>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
             ),
             text: Some(VanillaText::DocumentMemberCount),
         }))
-    } else if picked == PickedVersion::Malformed {
+    } else if picked.is_malformed() {
         Some(
             Diagnostic::info(DiagnosticCode::MalformedFormatVersion {
                 text: Some(VanillaText::Fixed(MALFORMED_VERSION)),
@@ -367,7 +367,7 @@ fn stage<F: UiFamily>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
         None
     };
     let missing = note.is_some() || envelope.payload(F::PAYLOAD_KEY).is_none();
-    let versioned = matches!(picked, PickedVersion::Version { .. });
+    let versioned = picked.version().is_some();
     if missing || !versioned {
         // This stage is the reader of the root of a file it refuses itself; the chain's
         // parse stage reports the same for every other file.

@@ -13,7 +13,7 @@ use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex,
     ValidateCx, finish, parse_as_written,
@@ -110,9 +110,10 @@ fn malformed() -> Diagnostic {
 /// or higher". The version is the one the document input picked from the text (a number's
 /// token, an array in dotted form).
 fn no_parser_below_floor(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
-    let written = || match FormatVersionInput::pick(document.text) {
-        PickedVersion::Version { written, .. } => written,
-        PickedVersion::Absent | PickedVersion::Malformed => String::new(),
+    let written = || {
+        FormatVersionInput::pick(document.text)
+            .with(|_, written| written.to_owned())
+            .or_absent(String::new())
     };
     let found = std::mem::take(diagnostics);
     for mut finding in found {
@@ -190,17 +191,14 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<VoxelShape
 /// `ShadowedDefinition` at info (the crate's own note; vanilla replaces silently). A file that
 /// failed binds nothing.
 fn combine(parsed: Vec<Contribution<VoxelShape>>, stack: &StackCx<'_>) -> Registry<VoxelShape> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::LastLoadedWins {
             replaced: Some(Notice::shadowed()),
         },
         CombineRule::top_wins(),
         stack.options,
-    );
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `bp.voxel_shapes()`: `shapes/**/*.json` of every behaviour pack, the shape

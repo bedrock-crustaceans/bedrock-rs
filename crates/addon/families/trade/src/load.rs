@@ -15,7 +15,7 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents, ParseCx, Parsed,
     StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
@@ -207,10 +207,9 @@ fn parse_stage(bytes: &[u8], cx: &LoadContext) -> Result<Parsed<TradeFamily>, Bo
 /// Whether the version the game's JSON reader picks from `text` selects the legacy slice (below
 /// 1.21.30).
 fn picks_legacy(text: &str) -> bool {
-    match FormatVersionInput::pick(text) {
-        PickedVersion::Version { input, .. } => input.version.is_some_and(|v| v < CEREAL),
-        PickedVersion::Absent | PickedVersion::Malformed => false,
-    }
+    FormatVersionInput::pick(text)
+        .with(|input, _| input.version.is_some_and(|v| v < CEREAL))
+        .or_absent(false)
 }
 
 /// Whether the text is the JSON value `null`.
@@ -302,11 +301,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileCopy {
 /// The files, the top pack's copy of a path winning; a failing top copy leaves the path
 /// without a file (vanilla looks a table up once, by path).
 fn combine(parsed: Vec<FileCopy>, stack: &StackCx<'_>) -> Files<TradeTable> {
-    let mut builder = FilesBuilder::new(FilesRule::TopWins, stack.options);
-    for (key, copy) in parsed {
-        builder.push(key, copy);
-    }
-    builder.finish()
+    FilesBuilder::combine(parsed, FilesRule::TopWins, stack.options)
 }
 
 /// The loader of `bp.trade_tables()`: `trading/**/*.json` of every behaviour pack, keyed by

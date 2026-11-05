@@ -19,7 +19,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle, pro
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion, known};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
     Loaded, Parsed, StructIndex, finish, no_parser_version, parse_as_written,
@@ -227,9 +227,10 @@ fn vanilla_envelope_texts(diagnostics: &mut Diagnostics, document: JsonSlice<'_>
     let envelope = probe_envelope(JsonSlice::new(&cleaned)).ok();
     // The version as the game read it (the first textual `"format_version"`), as the game's
     // "no parser available" text prints it.
-    let written = || match FormatVersionInput::pick(document.text) {
-        PickedVersion::Version { input, written } => no_parser_version(&input, &written),
-        _ => String::new(),
+    let written = || {
+        FormatVersionInput::pick(document.text)
+            .with(no_parser_version)
+            .or_absent(String::new())
     };
     // In place, as `Diagnostics::locate`.
     for finding in diagnostics.iter_mut() {
@@ -307,17 +308,14 @@ fn combine(
     parsed: Vec<Contribution<ParticleEffect>>,
     stack: &StackCx<'_>,
 ) -> Registry<ParticleEffect> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::LastLoadedWins {
             replaced: Some(Notice::shadowed()),
         },
         CombineRule::top_wins(),
         stack.options,
-    );
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `rp.particles()`: `particles/**/*.json` of every resource pack, the effect

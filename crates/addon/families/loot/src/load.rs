@@ -70,11 +70,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileCopy {
 /// without a table (vanilla loads the one file the pack stack resolves the path to, and caches
 /// nothing when it is invalid).
 fn combine(parsed: Vec<FileCopy>, stack: &StackCx<'_>) -> Files<LootTable> {
-    let mut builder = FilesBuilder::new(FilesRule::TopWins, stack.options);
-    for (key, copy) in parsed {
-        builder.push(key, copy);
-    }
-    builder.finish()
+    FilesBuilder::combine(parsed, FilesRule::TopWins, stack.options)
 }
 
 /// The loader of `bp.loot_tables()`: `loot_tables/**/*.json` of every behaviour pack, keyed by

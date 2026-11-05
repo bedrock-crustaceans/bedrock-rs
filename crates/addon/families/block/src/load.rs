@@ -311,15 +311,12 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Block> {
 
 /// The registry, top pack wins.
 fn combine(parsed: Vec<Contribution<Block>>, stack: &StackCx<'_>) -> Registry<Block> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::top_wins(),
         CombineRule::top_wins(),
         stack.options,
-    );
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `bp.blocks()`: `blocks/**/*.json` of every behaviour pack, combined top pack

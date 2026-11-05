@@ -370,3 +370,55 @@ fn a_stack_load_asks_for_the_json_files_only() {
         );
     }
 }
+
+/// Two definitions of one name in the top pack and one below, keeping the shadowed ones:
+/// which definitions the registry lists for the name, and its findings in order.
+#[test]
+fn the_layers_of_a_name_defined_twice_in_a_pack() {
+    let a = cow("Geometry.a");
+    let b = cow("Geometry.b");
+    let c = cow("Geometry.c");
+    let set = super::common::stacks_with(
+        &[
+            &[
+                ("render_controllers/a.json", a.as_str()),
+                ("render_controllers/b.json", b.as_str()),
+            ],
+            &[("render_controllers/c.json", c.as_str())],
+        ],
+        true,
+    );
+    let registry = set.resource.render_controllers();
+    let layers: Vec<(Option<usize>, &str)> = registry
+        .layers(&id("controller.render.cow"))
+        .map(|d| (d.origin().pack.index(), d.origin().path.as_str()))
+        .collect();
+    // Today the earlier file of the top pack is left out before the registry sees it.
+    assert_eq!(
+        layers,
+        [
+            (Some(0), "render_controllers/b.json"),
+            (Some(1), "render_controllers/c.json"),
+        ]
+    );
+    let shadowed: Vec<(Option<usize>, &str)> =
+        found(registry, "RenderControllerShadowed", Severity::Info)
+            .into_iter()
+            .map(|f| {
+                (
+                    f.location
+                        .pack
+                        .as_ref()
+                        .and_then(bedrock_addon::pack::PackRef::index),
+                    f.location.path.as_ref().unwrap().as_str(),
+                )
+            })
+            .collect();
+    assert_eq!(
+        shadowed,
+        [
+            (Some(0), "render_controllers/a.json"),
+            (Some(1), "render_controllers/c.json"),
+        ]
+    );
+}

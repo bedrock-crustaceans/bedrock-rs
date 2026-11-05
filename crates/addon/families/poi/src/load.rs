@@ -21,7 +21,7 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::load::{Experiment, Reported};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents, Parsed,
     StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
@@ -284,11 +284,10 @@ fn parse_stage<F: PoiFamily>(text: &str, cx: &LoadContext) -> Parsed<F> {
 /// one the document reader picked from the text (a number's token too), printed as the game
 /// prints a parsed version: `1.26` is `1.26.0`.
 fn no_parser_below_floor(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
-    let written = || match FormatVersionInput::pick(document.text) {
-        PickedVersion::Version { input, written } => {
-            bedrock_addon_core::versioning::no_parser_version(&input, &written)
-        }
-        PickedVersion::Absent | PickedVersion::Malformed => String::new(),
+    let written = || {
+        FormatVersionInput::pick(document.text)
+            .with(bedrock_addon_core::versioning::no_parser_version)
+            .or_absent(String::new())
     };
     let found = std::mem::take(diagnostics);
     for mut finding in found {

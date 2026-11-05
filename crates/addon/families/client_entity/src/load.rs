@@ -470,7 +470,12 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
             _ => EngineVersionDecision::Replace,
         }
     };
-    let mut builder = RegistryBuilder::new(
+    let contributions = parsed.into_iter().filter_map(|outcome| match outcome {
+        FileOutcome::Entity(contribution) => Some(*contribution),
+        FileOutcome::Attachable => None,
+    });
+    RegistryBuilder::combine(
+        contributions,
         CombineRule::EngineVersionMerge {
             decide: Box::new(decide),
             merge: |earlier, mut later| {
@@ -479,13 +484,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
         },
         CombineRule::top_wins(),
         stack.options,
-    );
-    for outcome in parsed {
-        if let FileOutcome::Entity(contribution) = outcome {
-            builder.push(*contribution);
-        }
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `rp.client_entities()`: `entity/**/*.json` of every resource pack and the

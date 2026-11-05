@@ -206,15 +206,12 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Function> 
 
 /// The registry of the stack's functions.
 fn combine(parsed: Vec<Contribution<Function>>, stack: &StackCx<'_>) -> Registry<Function> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::top_wins(),
         CombineRule::top_wins(),
         stack.options,
-    );
-    for contribution in parsed {
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `bp.functions()`: `functions/**/*.mcfunction` of every behaviour pack, by
