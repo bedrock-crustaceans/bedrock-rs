@@ -18,8 +18,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, FilesBuilder, FilesRule, NoBeta,
-    Notice, Origin, Placed, RegistryBuilder, Rejected, VersionInfo, default_path,
+    CombineRule, Content, Contribution, Definition, Document, FilesBuilder, FilesRule, JsonContent,
+    NoBeta, Notice, Origin, Placed, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::{Id, Kind, kind};
 use bedrock_addon_core::json::{
@@ -35,9 +35,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents,
-    Parsed, Selection, StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
-    select,
+    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents, Parsed, Selection,
+    StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written, select,
 };
 
 /// `worldgen/structures`: `minecraft:jigsaw` documents.
@@ -99,10 +98,6 @@ macro_rules! json_family {
                 ErrorMask::Unstrict
             }
 
-            fn components() -> &'static ComponentTable<Self> {
-                &ComponentTable::EMPTY
-            }
-
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
                     $validate(value, &cx.at, cx.diagnostics);
@@ -124,6 +119,8 @@ macro_rules! json_family {
 
         impl bedrock_addon_core::__private::Sealed for $root {}
 
+        impl JsonContent for $root {}
+
         impl Content for $root {
             const NAME: &'static str = $name;
             const SIDES: &'static [PackSide] = &[PackSide::Behavior];
@@ -138,12 +135,6 @@ macro_rules! json_family {
 
             fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
                 write_document::<$family>(self, out, style)
-            }
-
-            fn to_json(&self) -> Result<String, EncodeError> {
-                let mut out = Vec::new();
-                write_document::<$family>(self, &mut out, WriteStyle::default())?;
-                Ok(String::from_utf8(out).unwrap_or_default())
             }
         }
 
@@ -253,10 +244,6 @@ impl Family for MetadataFamily {
     type Beta = Infallible;
     type Component = NoComponents;
     type Any = MetadataAny;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 }
 
 // ---- one JSON file -------------------------------------------------------------------------

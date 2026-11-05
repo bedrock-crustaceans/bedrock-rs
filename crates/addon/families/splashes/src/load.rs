@@ -7,11 +7,13 @@ use indexmap::IndexMap;
 
 use super::{SPLASHES_PATH, SplashClient, Splashes};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
+};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, file_finding, finding, json_string, json_text, lone, malformed,
-    origin, reject, root_file,
+    Authored, FileCopy, document, file_finding, finding, json_text, lone, malformed, origin,
+    reject, root_file,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -62,11 +64,9 @@ impl Content for Splashes {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&self.to_value())
-    }
 }
+
+impl JsonContent for Splashes {}
 
 impl Placed for Splashes {
     /// `splashes.json`.

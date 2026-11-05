@@ -73,13 +73,9 @@ impl Content for BlocksJson {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for BlocksJson {}
 
 impl Definition for ClientBlock {
     type Kind = kind::Block;

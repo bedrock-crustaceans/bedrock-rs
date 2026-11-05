@@ -8,7 +8,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    Content, Document, Files, FilesBuilder, FilesRule, Origin, Rejected, VersionInfo,
+    Content, Document, Files, FilesBuilder, FilesRule, JsonContent, Origin, Rejected, VersionInfo,
 };
 use bedrock_addon_core::json::{
     EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, NullRule, Value, WriteStyle,
@@ -22,8 +22,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents,
-    ParseCx, Parsed, StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
+    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents, ParseCx, Parsed,
+    StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
 };
 
 /// The pack directory of trade tables.
@@ -69,10 +69,6 @@ impl Family for TradeFamily {
         }
     }
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()
     }
@@ -97,13 +93,9 @@ impl Content for TradeTable {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for TradeTable {}
 
 impl TradeTable {
     /// Parses one trade-table file without upgrading it: the struct its `format_version`

@@ -143,12 +143,6 @@ fn json_text(value: &Value, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), 
     write_json(value, out, style)
 }
 
-fn json_string(value: &Value) -> Result<String, EncodeError> {
-    let mut out = Vec::new();
-    json_text(value, &mut out, WriteStyle::default())?;
-    Ok(String::from_utf8(out).unwrap_or_default())
-}
-
 /// A lint of the crate's own about one file: an information, because the game says nothing about it.
 fn lint(code: DiagnosticCode, path: &[&str]) -> Diagnostic {
     Diagnostic::new(
@@ -191,11 +185,9 @@ impl Content for UiFile {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&write::file_value(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&write::file_value(self))
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for UiFile {}
 
 impl Content for UiDefsList {
     const NAME: &'static str = "ui definition list";
@@ -246,11 +238,9 @@ impl Content for UiDefsList {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&write::defs_list_value(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&write::defs_list_value(self))
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for UiDefsList {}
 
 /// The paths of a `ui_defs` array: each element through `asString("")`.
 pub(super) fn listed(paths: &[Value]) -> Vec<String> {
@@ -289,11 +279,9 @@ impl Content for GlobalVariables {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&write::globals_value(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&write::globals_value(self))
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for GlobalVariables {}
 
 impl Placed for GlobalVariables {
     /// `ui/_global_variables.json`: the one path the game reads the variables from.

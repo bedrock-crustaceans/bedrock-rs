@@ -18,8 +18,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{FeatureId, kind};
 use bedrock_addon_core::json::{
@@ -32,8 +32,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentTable, Family, InputKind, Loaded, MissingVersion, NoComponents, Parsed, ValidateCx,
-    VersionChain, VersionStruct, file_version, finish, load, parse_as_written,
+    Family, InputKind, Loaded, MissingVersion, NoComponents, Parsed, ValidateCx, VersionChain,
+    VersionStruct, file_version, finish, load, parse_as_written,
 };
 
 /// Format 1.13.0, the initial release (`[1.13.0, 1.21.10)`) and the floor of every feature
@@ -133,10 +133,6 @@ impl<T: FeatureType> Family for Fam<T> {
     // member, and rule N1 holds (a member written as `null` is absent);
     // `parse::parse_strict_with` reads under the selected version's rule.
     const INPUT: InputKind = InputKind::JsonCpp;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable(&[])
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -852,6 +848,8 @@ pub(crate) fn upgrade_document(
 
 impl bedrock_addon_core::__private::Sealed for Feature {}
 
+impl JsonContent for Feature {}
+
 impl Content for Feature {
     const NAME: &'static str = "feature";
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
@@ -871,12 +869,6 @@ impl Content for Feature {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         let document = self.dispatch(Envelope)?;
         write_json(&document, out, style)
-    }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
     }
 }
 

@@ -6,8 +6,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{AtomicClientEntityId, kind};
 use bedrock_addon_core::json::{
@@ -21,8 +21,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, ComponentTable, ErrorMask, Family, InputKind, Loaded,
-    MissingVersion, NoComponents, NoStable, StructIndex, load,
+    BETA_VERSION, BetaPermission, ErrorMask, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, NoStable, StructIndex, load,
 };
 
 use super::AtomicClientEntity;
@@ -74,10 +74,6 @@ impl Family for AtomicFamily {
     // reader applies that rule itself).
     const INPUT: InputKind = InputKind::Document;
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     // The one slice is registered with the strict error mask, so every cereal finding is fatal.
     // The reader reports unknown members and components as errors itself; the mask says the
     // same.
@@ -106,13 +102,9 @@ impl Content for AtomicClientEntity {
         );
         write_json(&Value::from(root), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for AtomicClientEntity {}
 
 impl Definition for AtomicClientEntity {
     type Kind = kind::AtomicClientEntity;

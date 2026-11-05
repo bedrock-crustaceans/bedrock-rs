@@ -4,7 +4,7 @@
 use super::parse;
 use super::{Animation, AnimationFile};
 use bedrock_addon_core::document::{
-    Content, Definition, Document, NoBeta, Notice, Origin, Placed, Registry, Rejected,
+    Content, Definition, Document, JsonContent, NoBeta, Notice, Origin, Placed, Registry, Rejected,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -41,13 +41,9 @@ impl Content for AnimationFile {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         bedrock_addon_core::json::write_json(&self.to_value()?, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for AnimationFile {}
 
 impl Definition for Animation {
     type Kind = kind::Animation;

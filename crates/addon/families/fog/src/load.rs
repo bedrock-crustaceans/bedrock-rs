@@ -13,8 +13,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::{FogId, kind};
 use bedrock_addon_core::json::{
@@ -29,8 +29,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents, ParseCx,
-    Parsed, RangeModel, StructIndex, VersionChain, finish, parse_as_written,
+    EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
+    RangeModel, StructIndex, VersionChain, finish, parse_as_written,
 };
 use indexmap::IndexSet;
 
@@ -52,10 +52,6 @@ impl Family for FogFamily {
     const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(LATEST);
     const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
     const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::Fixed(INVALID_VERSION));
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 }
 
 /// The payload's path in the file.
@@ -308,6 +304,8 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
 
 impl bedrock_addon_core::__private::Sealed for FogSettings {}
 
+impl JsonContent for FogSettings {}
+
 impl Content for FogSettings {
     const NAME: &'static str = "fog settings";
     const SIDES: &'static [PackSide] = &[PackSide::Resource];
@@ -318,12 +316,6 @@ impl Content for FogSettings {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
-    }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
     }
 }
 

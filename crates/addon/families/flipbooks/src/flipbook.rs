@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{
-    Content, Document, Extra, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+    Content, Document, Extra, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
 };
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
@@ -461,13 +461,9 @@ impl Content for Flipbooks {
         }
         write_json(&root.into_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Flipbooks {}
 
 impl Placed for Flipbooks {
     /// `textures/flipbook_textures.json`.

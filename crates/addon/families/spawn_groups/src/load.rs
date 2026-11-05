@@ -5,7 +5,7 @@ use super::SpawnGroup;
 use super::history::{GroupAny, GroupFamily};
 use super::validate;
 use bedrock_addon_core::document::{
-    Content, Definition, Document, NoBeta, Placed, Registry, Rejected, default_path,
+    Content, Definition, Document, JsonContent, NoBeta, Placed, Registry, Rejected, default_path,
 };
 use bedrock_addon_core::id::{SpawnGroupId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
@@ -16,8 +16,7 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
-    ValidateCx,
+    EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
 };
 use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -47,10 +46,6 @@ impl Family for GroupFamily {
     // A missing version is an error, as in vanilla ("no valid version passed by the caller or
     // found in the input").
     const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(group) = v {
@@ -97,13 +92,9 @@ impl Content for SpawnGroup {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for SpawnGroup {}
 
 impl Definition for SpawnGroup {
     type Kind = kind::SpawnGroup;

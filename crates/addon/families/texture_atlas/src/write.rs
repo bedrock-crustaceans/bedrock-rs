@@ -9,7 +9,7 @@ use super::atlas::{
 };
 use super::atlas_read::read_atlas;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
-use bedrock_addon_core::document::{Content, Document, Extra, Placed, Rejected};
+use bedrock_addon_core::document::{Content, Document, Extra, JsonContent, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
@@ -54,13 +54,9 @@ impl Content for TextureAtlas {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&atlas_json(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for TextureAtlas {}
 
 impl Placed for TextureAtlas {
     /// `textures/terrain_texture.json` or `textures/item_texture.json`, by the kind.

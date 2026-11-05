@@ -9,8 +9,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, NoBeta,
-    Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+    CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
+    NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::{BehaviorTreeId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -39,13 +39,9 @@ impl Content for BehaviorTree {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for BehaviorTree {}
 
 impl Definition for BehaviorTree {
     type Kind = kind::BehaviorTree;

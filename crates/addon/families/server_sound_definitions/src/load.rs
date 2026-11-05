@@ -8,8 +8,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected,
 };
 use bedrock_addon_core::id::{SoundEventName, kind};
 use bedrock_addon_core::json::{
@@ -119,7 +119,7 @@ impl Content for SoundMetadataFile {
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        let text = self.to_json()?;
+        let text = MetadataAny::V1_26_60(self.clone()).to_json()?;
         // The document is written once and laid out in `style`.
         if let Ok(document) =
             bedrock_addon_core::json::from_str::<bedrock_addon_core::json::Value>(&text)
@@ -130,11 +130,9 @@ impl Content for SoundMetadataFile {
             Ok(())
         }
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        MetadataAny::V1_26_60(self.clone()).to_json()
-    }
 }
+
+impl JsonContent for SoundMetadataFile {}
 
 impl Placed for SoundMetadataFile {
     /// `sounds/sound_definitions.json` of the behaviour pack: the one path the server reads.

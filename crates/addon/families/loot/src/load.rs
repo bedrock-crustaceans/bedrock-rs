@@ -4,7 +4,8 @@ use super::LootTable;
 use super::parse::parse_table;
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{
-    Content, Document, Files, FilesBuilder, FilesRule, FiniteText, Origin, Rejected, VersionInfo,
+    Content, Document, Files, FilesBuilder, FilesRule, FiniteText, JsonContent, Origin, Rejected,
+    VersionInfo,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
@@ -27,13 +28,9 @@ impl Content for LootTable {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for LootTable {}
 
 /// The version information of every loot table: vanilla reads no version, so
 /// none is written, effective or parsed.

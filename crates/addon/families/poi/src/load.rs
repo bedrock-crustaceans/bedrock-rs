@@ -28,8 +28,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
-    ComponentTable, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
+    ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents, Parsed,
+    StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
 };
 use indexmap::IndexMap;
 
@@ -79,10 +79,6 @@ macro_rules! document {
                 ErrorMask::Strict
             }
 
-            fn components() -> &'static ComponentTable<Self> {
-                &ComponentTable::EMPTY
-            }
-
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
                     $validate(value, &cx.at, cx.diagnostics);
@@ -113,13 +109,9 @@ macro_rules! document {
             fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
                 write_document::<$family>(self, out, style)
             }
-
-            fn to_json(&self) -> Result<String, EncodeError> {
-                let mut out = Vec::new();
-                write_document::<$family>(self, &mut out, WriteStyle::default())?;
-                Ok(String::from_utf8(out).unwrap_or_default())
-            }
         }
+
+        impl bedrock_addon_core::document::JsonContent for $root {}
 
         impl Definition for $root {
             type Kind = $kind;

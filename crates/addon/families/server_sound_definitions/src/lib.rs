@@ -27,8 +27,8 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, ParseCx, StructIndex, ValidateCx, VersionStruct, Versioned, write_payload,
+    EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, ParseCx,
+    StructIndex, ValidateCx, VersionStruct, Versioned, write_payload,
 };
 
 /// The version of the one struct, and of the one slice: the game's document format is
@@ -348,10 +348,6 @@ impl Family for MetadataFamily {
     // text, and `null` members rejected.
     const INPUT: InputKind = InputKind::Document;
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     // The slice is registered with the strict error mask: any parse error rejects the file.
     fn error_mask(_: StructIndex) -> ErrorMask {
         ErrorMask::Strict
@@ -468,6 +464,32 @@ mod tests {
     use bedrock_addon_core::versioning::{
         ErrorMask, InputKind, Selection, StructIndex, VersionChain, select,
     };
+
+    /// The `to_json` the family once wrote by hand, the chain's text as is, equals `Content`'s
+    /// default, which lays that text out again: reals included.
+    #[test]
+    fn the_default_to_json_is_the_chain_text_as_is() {
+        use bedrock_addon_core::document::Content;
+        use bedrock_addon_core::load::LoadContext;
+        use bedrock_addon_core::pack_identity::PackPath;
+        let text = r#"{"format_version": "1.26.60", "minecraft:server_sound_definitions": [
+            {"sound_event_name": "demo:x", "duration_info": {"mode": "real_time", "seconds": 1.2345},
+             "broadcast_range": 64.0},
+            {"sound_event_name": "demo:y", "duration_info": {"mode": "game_time", "seconds": 0.1},
+             "broadcast_range": 16.5}
+        ]}"#;
+        let document = <SoundMetadataFile as Content>::parse(
+            &PackPath::from_static("sounds/sound_definitions.json"),
+            text.as_bytes(),
+            &LoadContext::detached(),
+        )
+        .expect("loads");
+        let file = document.value();
+        assert_eq!(
+            file.to_json().unwrap(),
+            MetadataAny::V1_26_60(file.clone()).to_json().unwrap()
+        );
+    }
 
     #[test]
     fn the_chain_is_the_stable_struct_alone() {

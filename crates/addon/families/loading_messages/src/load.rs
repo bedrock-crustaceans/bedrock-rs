@@ -7,11 +7,12 @@ use indexmap::IndexMap;
 
 use super::{LOADING_MESSAGES_PATH, LoadingMessages, MessageList};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
+};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, finding, json_string, json_text, lone, malformed, origin, reject,
-    root_file,
+    Authored, FileCopy, document, finding, json_text, lone, malformed, origin, reject, root_file,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -63,11 +64,9 @@ impl Content for LoadingMessages {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&self.to_value())
-    }
 }
+
+impl JsonContent for LoadingMessages {}
 
 impl Placed for LoadingMessages {
     /// `loading_messages.json`.

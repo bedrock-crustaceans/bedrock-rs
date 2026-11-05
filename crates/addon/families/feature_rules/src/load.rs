@@ -9,8 +9,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{FeatureRuleId, kind};
 use bedrock_addon_core::json::{
@@ -22,8 +22,8 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::versioning::{
-    ComponentTable, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    StructIndex, ValidateCx, finish, parse_as_written,
+    ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex, ValidateCx,
+    finish, parse_as_written,
 };
 use bedrock_addon_support::puv::{puv_below_floor, shadowed};
 
@@ -67,10 +67,6 @@ impl Family for FeatureRuleFamily {
         ErrorMask::Unstrict
     }
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rule) = v {
             validate::validate(rule, cx);
@@ -91,13 +87,9 @@ impl Content for FeatureRule {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for FeatureRule {}
 
 impl Definition for FeatureRule {
     type Kind = kind::FeatureRule;

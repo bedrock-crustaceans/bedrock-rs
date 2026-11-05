@@ -8,8 +8,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected, VersionInfo,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::{DialogueSceneTag, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -26,6 +26,8 @@ const DIRECTORY: &str = "dialogue";
 
 impl bedrock_addon_core::__private::Sealed for DialogueFile {}
 impl bedrock_addon_core::__private::Sealed for DialogueScene {}
+
+impl JsonContent for DialogueFile {}
 
 impl Content for DialogueFile {
     const NAME: &'static str = "dialogue";
@@ -89,12 +91,6 @@ impl Content for DialogueFile {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
-    }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
     }
 }
 

@@ -16,11 +16,13 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
+};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, finding, json_string, json_text, lone, malformed, origin, reject,
+    Authored, FileCopy, document, finding, json_text, lone, malformed, origin, reject,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -131,11 +133,9 @@ impl Content for FontMetadata {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&self.to_value())
-    }
 }
+
+impl JsonContent for FontMetadata {}
 
 impl Placed for FontMetadata {
     /// `font/font_metadata.json`.
@@ -157,11 +157,9 @@ impl Content for EmoticonList {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&self.to_value())
-    }
 }
+
+impl JsonContent for EmoticonList {}
 
 impl Placed for EmoticonList {
     /// `font/emoticons.json`.

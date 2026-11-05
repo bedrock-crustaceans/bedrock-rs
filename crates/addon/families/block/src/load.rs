@@ -9,8 +9,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::NullRule;
@@ -114,6 +114,8 @@ fn is_cereal(index: StructIndex) -> bool {
 
 impl bedrock_addon_core::__private::Sealed for Block {}
 
+impl JsonContent for Block {}
+
 impl Content for Block {
     const NAME: &'static str = "block";
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
@@ -124,12 +126,6 @@ impl Content for Block {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
-    }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
     }
 }
 

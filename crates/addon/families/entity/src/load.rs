@@ -6,8 +6,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected, VersionInfo, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::{EntityId, kind};
 use bedrock_addon_core::json::{
@@ -456,13 +456,9 @@ impl Content for Entity {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write::document(self, Self::VERSION, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Entity {}
 
 impl Definition for Entity {
     type Kind = kind::Entity;
@@ -499,13 +495,9 @@ impl Content for Beta {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write::document(&self.0, BETA_VERSION, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Beta {}
 
 impl Definition for Beta {
     type Kind = kind::Entity;

@@ -19,8 +19,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    ComponentTable, Family, Identity, Loaded, MissingVersion, NoComponents, Parsed, RangeModel,
-    finish,
+    Family, Identity, Loaded, MissingVersion, NoComponents, Parsed, RangeModel, finish,
 };
 use bedrock_addon_support::texture::document::{detached, locate, rejected};
 use bedrock_addon_support::texture::files::{
@@ -44,10 +43,6 @@ impl Family for TextureSetFamily {
     const ENVELOPE_WARN_MISSING_VERSION: bool = false;
     const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn identity(_: bedrock_addon_core::json::JsonSlice<'_>) -> Identity {
         Identity::default()
     }
@@ -68,13 +63,9 @@ impl Content for TextureSet {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for TextureSet {}
 
 impl TextureSet {
     /// Parses one texture-set file without upgrading it: the struct its `format_version`

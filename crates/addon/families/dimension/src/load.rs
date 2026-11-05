@@ -9,8 +9,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, default_path_flat,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, Registry, RegistryBuilder, Rejected, default_path_flat,
 };
 use bedrock_addon_core::id::{DimensionId, kind};
 use bedrock_addon_core::json::{
@@ -23,9 +23,9 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, ParseCx, Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish,
-    parse_as_written, write_payload,
+    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
+    ParseCx, Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish, parse_as_written,
+    write_payload,
 };
 use bedrock_addon_support::puv::{puv_below_floor, shadowed};
 use indexmap::IndexMap;
@@ -57,10 +57,6 @@ impl Family for DimensionFamily {
     /// The game reads every slice leniently: an unknown member is a warning.
     fn error_mask(_: StructIndex) -> ErrorMask {
         ErrorMask::Unstrict
-    }
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
     }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
@@ -153,13 +149,9 @@ impl Content for Dimension {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.write()?, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Dimension {}
 
 impl Definition for Dimension {
     type Kind = kind::Dimension;

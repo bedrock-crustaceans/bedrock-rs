@@ -14,7 +14,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::{BiomeId, FogId};
 use bedrock_addon_core::json::{
@@ -222,13 +222,9 @@ impl Content for LegacyClientBiomes {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.merged, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for LegacyClientBiomes {}
 
 impl Placed for LegacyClientBiomes {
     /// `biomes_client.json`, at the pack root.

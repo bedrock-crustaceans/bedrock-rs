@@ -16,8 +16,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{CameraListId, CameraPresetId, Id, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
@@ -29,8 +29,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, StructIndex, ValidateCx, VersionStruct, Versioned,
+    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
+    StructIndex, ValidateCx, VersionStruct, Versioned,
 };
 use bedrock_addon_support::chain_file::{
     self as file, FileFamily, FileOutcome, closing_line, puv_below_floor,
@@ -82,10 +82,6 @@ impl Family for PresetFamily {
             StructIndex::Stable(0) => ErrorMask::Unstrict,
             _ => ErrorMask::Strict,
         }
-    }
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
     }
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
@@ -141,10 +137,6 @@ impl Family for ListFamily {
     ));
     // The game reads a list without a document input: the input kind stays the first run's,
     // and the shape check rejects a `null` and an unknown member itself.
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
         file::identity(payload, "identifier")
@@ -206,10 +198,6 @@ impl Family for SplineFamily {
         ErrorMask::Strict
     }
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()
     }
@@ -251,10 +239,6 @@ impl Family for EntityFamily {
     /// One slice, read strictly.
     fn error_mask(_: StructIndex) -> ErrorMask {
         ErrorMask::Strict
-    }
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
     }
 }
 
@@ -300,13 +284,9 @@ macro_rules! content {
             fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
                 write_json(&<$family as FileFamily>::document(self)?, out, style)
             }
-
-            fn to_json(&self) -> Result<String, EncodeError> {
-                let mut out = Vec::new();
-                self.write_json(&mut out, WriteStyle::default())?;
-                Ok(String::from_utf8(out).unwrap_or_default())
-            }
         }
+
+        impl JsonContent for $root {}
 
         impl $root {
             /// Parses one file without upgrading it: the struct its `format_version` selects.

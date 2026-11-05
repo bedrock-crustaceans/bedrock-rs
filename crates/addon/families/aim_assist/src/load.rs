@@ -7,7 +7,7 @@ use super::history::{Any, CategoriesAny, CategoriesFamily, PresetFamily};
 use super::{AimAssist, AimAssistCategories, AimAssistCategory, AimAssistPreset, parse};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Placed,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Placed,
     RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{Id, kind};
@@ -20,8 +20,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, StructIndex, ValidateCx, VersionStruct, Versioned,
+    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
+    StructIndex, ValidateCx, VersionStruct, Versioned,
 };
 use bedrock_addon_support::chain_file::{self as file, FileFamily, FileOutcome, puv_below_floor};
 
@@ -57,10 +57,6 @@ impl Family for PresetFamily {
     /// file.
     fn error_mask(_: StructIndex) -> ErrorMask {
         ErrorMask::Strict
-    }
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
     }
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
@@ -110,10 +106,6 @@ impl Family for CategoriesFamily {
         ErrorMask::Strict
     }
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()
     }
@@ -145,6 +137,8 @@ macro_rules! content {
     ($root:ty, $family:ty, $any:ty, name = $name:literal) => {
         impl bedrock_addon_core::__private::Sealed for $root {}
 
+        impl JsonContent for $root {}
+
         impl Content for $root {
             const NAME: &'static str = $name;
             const SIDES: &'static [PackSide] = &[PackSide::Behavior];
@@ -166,12 +160,6 @@ macro_rules! content {
 
             fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
                 write_json(&<$family as FileFamily>::document(self)?, out, style)
-            }
-
-            fn to_json(&self) -> Result<String, EncodeError> {
-                let mut out = Vec::new();
-                self.write_json(&mut out, WriteStyle::default())?;
-                Ok(String::from_utf8(out).unwrap_or_default())
             }
         }
 

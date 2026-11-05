@@ -194,13 +194,9 @@ impl Content for MaterialFile {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&file_json(self)?, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for MaterialFile {}
 
 impl bedrock_addon_core::__private::Sealed for MaterialList {}
 
@@ -236,13 +232,9 @@ impl Content for MaterialList {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&list_json(self)?, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for MaterialList {}
 
 impl Placed for MaterialList {
     /// `materials/common.json`, `fancy.json`, `sad.json` or `gameface.json`, by the kind.

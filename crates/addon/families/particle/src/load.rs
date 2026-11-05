@@ -93,12 +93,7 @@ impl Content for ParticleEffect {
         parse_file(PackRef::app_data(), PackSide::Resource, path, bytes, cx)
     }
 
-    /// The effect as a 1.20.80 document ([`to_json`](Self::to_json) in `style`).
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        self.write_into(out, style)
-    }
-
-    /// The effect as a 1.20.80 document: `format_version` and `particle_effect`, with
+    /// The effect as a 1.20.80 document, in `style`: `format_version` and `particle_effect`, with
     /// `description` and `components` always (the 1.20.80 reader requires them) and every
     /// other member only where the value has it.
     ///
@@ -108,12 +103,12 @@ impl Content for ParticleEffect {
     /// the file had none, and what the parser never reached (components, curves, events
     /// after the stop) is not. The text loads again to an equal value, without the warning
     /// the first load gave, since the written file has the members that warning was about.
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        self.write_into(out, style)
     }
 }
+
+impl bedrock_addon_core::document::JsonContent for ParticleEffect {}
 
 impl Definition for ParticleEffect {
     type Kind = kind::Particle;

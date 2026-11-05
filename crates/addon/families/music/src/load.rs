@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use super::{MusicDefinitions, replace_predicate};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{
-    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
 };
 use bedrock_addon_core::id::MusicDefinitionId;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
@@ -15,8 +15,8 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_support::sound::fork;
 use bedrock_addon_support::sound::merge::{
-    SoundCopy, detached_origin, document_text, layers, located, not_json, parse_copy, path_member,
-    read_json, readable, unversioned, walk, write_document,
+    SoundCopy, detached_origin, layers, located, not_json, parse_copy, path_member, read_json,
+    readable, unversioned, walk, write_document,
 };
 
 /// Where a pack keeps its music definitions.
@@ -106,11 +106,9 @@ impl Content for MusicDefinitions {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_document(&self.json, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        document_text(&self.json)
-    }
 }
+
+impl JsonContent for MusicDefinitions {}
 
 impl Placed for MusicDefinitions {
     /// `sounds/music_definitions.json`: the one path the client reads.

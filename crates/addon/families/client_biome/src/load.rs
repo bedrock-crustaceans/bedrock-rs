@@ -17,8 +17,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, ComponentMap, Content, Contribution, Definition, Document, NoBeta, Notice, Origin,
-    Placed, Registry, RegistryBuilder, Rejected, default_path_flat_for_vanilla,
+    CombineRule, ComponentMap, Content, Contribution, Definition, Document, JsonContent, NoBeta,
+    Notice, Origin, Placed, Registry, RegistryBuilder, Rejected, default_path_flat_for_vanilla,
 };
 use bedrock_addon_core::id::{BiomeId, kind};
 use bedrock_addon_core::json::NullRule;
@@ -130,13 +130,9 @@ impl Content for ClientBiome {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for ClientBiome {}
 
 impl Definition for ClientBiome {
     type Kind = kind::Biome;
@@ -175,13 +171,9 @@ impl Content for Beta {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Beta {}
 
 impl Definition for Beta {
     type Kind = kind::Biome;

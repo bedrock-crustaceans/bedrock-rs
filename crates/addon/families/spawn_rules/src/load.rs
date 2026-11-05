@@ -8,7 +8,7 @@ use super::validate;
 use super::{SimplifiedSpawnRules, SpawnRules, StandardSpawnRules};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::{
-    Content, Definition, Document, NoBeta, Placed, Registry, Rejected, default_path,
+    Content, Definition, Document, JsonContent, NoBeta, Placed, Registry, Rejected, default_path,
 };
 use bedrock_addon_core::id::{SpawnRulesId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
@@ -19,8 +19,8 @@ use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
-    ValidateCx, file_version,
+    EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
+    file_version,
 };
 use bedrock_addon_support::spawn::legacy::{RULES_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -50,10 +50,6 @@ impl Family for SpawnFamily {
     // errors).
     const MISSING_VERSION: MissingVersion = MissingVersion::Floor;
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
         !SimplifiedFamily::selected(file, cx)
     }
@@ -82,10 +78,6 @@ impl Family for SimplifiedFamily {
     type Any = SimplifiedAny;
     // Every routed document is checked as a modern envelope, from 1.8.0 on.
     const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Always;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 
     /// The experiment is on and the file says 1.21.60 or newer.
     fn selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
@@ -159,13 +151,9 @@ impl Content for SpawnRules {
             }
         }
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for SpawnRules {}
 
 impl Definition for SpawnRules {
     type Kind = kind::SpawnRules;

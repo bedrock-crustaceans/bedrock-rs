@@ -249,11 +249,9 @@ impl Content for PieceMetadata {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        bedrock_addon_core::json::to_json(&self.to_value())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for PieceMetadata {}
 
 impl Content for PieceStoreInfo {
     const NAME: &'static str = "persona piece store info";
@@ -275,11 +273,9 @@ impl Content for PieceStoreInfo {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        bedrock_addon_core::json::to_json(&self.to_value())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for PieceStoreInfo {}
 
 impl PersonaPiece {
     /// Loads the pieces of one pack as the client does.

@@ -7,8 +7,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, NoBeta,
-    Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
+    NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{AttachableId, ItemId, kind};
 use bedrock_addon_core::json::{
@@ -22,8 +22,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, Family, Identity, Loaded, NoComponents, Parsed, ValidateCx,
-    finish, parse_as_written,
+    EnvelopeCheck, Family, Identity, Loaded, NoComponents, Parsed, ValidateCx, finish,
+    parse_as_written,
 };
 use bedrock_addon_core::visual::{MergeStep, SharedDescription, merge_slots, merge_step};
 use indexmap::IndexMap;
@@ -70,10 +70,6 @@ impl Family for AttachableFamily {
     // `missing_version_severity`.
     const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::Fixed(VERSION_NOT_GIVEN));
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(attachable) = v {
             validate::validate(attachable, cx);
@@ -112,13 +108,9 @@ impl Content for Attachable {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Attachable {}
 
 impl Definition for Attachable {
     type Kind = kind::Attachable;

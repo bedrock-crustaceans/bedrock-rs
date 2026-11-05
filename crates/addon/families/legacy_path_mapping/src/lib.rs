@@ -5,7 +5,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
-use bedrock_addon_core::document::{Content, Document, Placed, Rejected};
+use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
@@ -59,13 +59,9 @@ impl Content for LegacyPathMapping {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.json, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for LegacyPathMapping {}
 
 impl Placed for LegacyPathMapping {
     /// `texture_backwards_compatibility_mapping.json`, at the root.

@@ -4,7 +4,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use super::read::{codes_json, names_json, read_languages, read_names};
 use super::{Language, LanguageNames, Languages};
-use bedrock_addon_core::document::{Content, Document, Merge, Placed, Rejected};
+use bedrock_addon_core::document::{Content, Document, JsonContent, Merge, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_support::text::document::{document, origin, reject};
@@ -37,13 +37,9 @@ impl Content for Languages {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&codes_json(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Languages {}
 
 impl Placed for Languages {
     /// `texts/languages.json`.
@@ -69,13 +65,9 @@ impl Content for LanguageNames {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&names_json(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for LanguageNames {}
 
 impl Placed for LanguageNames {
     /// `texts/language_names.json`.

@@ -8,8 +8,8 @@ use super::parse::{Parsed, parse_document};
 use super::{Recipe, RecipeNamespace, Recipes};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{RecipeId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -34,13 +34,9 @@ impl Content for Recipe {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for Recipe {}
 
 impl Definition for Recipe {
     type Kind = kind::Recipe;

@@ -22,8 +22,8 @@ use bedrock_addon_core::diagnostic::{
     Span, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    RegistryBuilder, Rejected, VersionInfo, default_path_flat_for_vanilla,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, RegistryBuilder, Rejected, VersionInfo, default_path_flat_for_vanilla,
 };
 use bedrock_addon_core::id::{Id, kind};
 use bedrock_addon_core::json::{
@@ -35,9 +35,9 @@ use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, ComponentTable, ErrorMask, Family, Identity, InputKind, Loaded,
-    MissingVersion, NoComponents, NoStable, ParseCx, Parsed, RangeModel, StructIndex, ValidateCx,
-    VersionStruct, Versioned, finish, no_parser_version, parse_as_written,
+    BETA_VERSION, BetaPermission, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, NoStable, ParseCx, Parsed, RangeModel, StructIndex, ValidateCx, VersionStruct,
+    Versioned, finish, no_parser_version, parse_as_written,
 };
 
 /// `ddui/root`: `minecraft:ui-root` documents.
@@ -97,10 +97,6 @@ impl Family for RootFamily {
     // input reads it, and rule N2 holds.
     const INPUT: InputKind = InputKind::Document;
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     // The one version is read under the strict error mask: unknown members and type errors
     // refuse the file.
     fn error_mask(_: StructIndex) -> ErrorMask {
@@ -143,10 +139,6 @@ impl Family for CompositionFamily {
     const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
     // The same document input as for roots: the version as it reads it, and rule N2.
     const INPUT: InputKind = InputKind::Document;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 
     // The strict error mask, as for roots.
     fn error_mask(_: StructIndex) -> ErrorMask {
@@ -198,10 +190,6 @@ impl Family for StyleFamily {
     const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
     // The same document input as for roots: the version as it reads it, and rule N2.
     const INPUT: InputKind = InputKind::Document;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 
     // The strict error mask, as for roots.
     fn error_mask(_: StructIndex) -> ErrorMask {
@@ -661,13 +649,9 @@ macro_rules! content {
             fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
                 write_json(&<$family as UiFamily>::document(self)?, out, style)
             }
-
-            fn to_json(&self) -> Result<String, EncodeError> {
-                let mut out = Vec::new();
-                self.write_json(&mut out, WriteStyle::default())?;
-                Ok(String::from_utf8(out).unwrap_or_default())
-            }
         }
+
+        impl JsonContent for $root {}
 
         impl $root {
             /// Parses one file without upgrading it: the struct its `format_version` selects.

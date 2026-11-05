@@ -7,7 +7,8 @@ use super::parse::{self, V1_8_0, V1_10_0};
 use super::{AnimationController, AnimationControllerFile};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon_core::document::{
-    Content, Definition, Document, NoBeta, Notice, Origin, Placed, Registry, Rejected, VersionInfo,
+    Content, Definition, Document, JsonContent, NoBeta, Notice, Origin, Placed, Registry, Rejected,
+    VersionInfo,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -51,13 +52,9 @@ impl Content for AnimationControllerFile {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         bedrock_addon_core::json::write_json(&self.to_value()?, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for AnimationControllerFile {}
 
 impl Definition for AnimationController {
     type Kind = kind::Animation;

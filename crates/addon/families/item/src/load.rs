@@ -974,13 +974,9 @@ impl bedrock_addon_core::document::Content for Item {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         super::write::write_item(self, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for Item {}
 
 impl bedrock_addon_core::document::Content for Beta {
     const NAME: &'static str = "item (beta)";
@@ -1005,13 +1001,9 @@ impl bedrock_addon_core::document::Content for Beta {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         super::write::write_beta(self, out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl bedrock_addon_core::document::JsonContent for Beta {}
 
 impl Definition for Item {
     type Kind = kind::Item;

@@ -5,11 +5,9 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 use super::{UiTextureInfo, write};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::{Content, Document, Origin, Rejected};
+use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
-use bedrock_addon_support::fixed_path::{
-    document, finding, json_string, json_text, lone, malformed, reject,
-};
+use bedrock_addon_support::fixed_path::{document, finding, json_text, lone, malformed, reject};
 use bedrock_addon_support::jsoncpp::read;
 
 impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}
@@ -56,8 +54,6 @@ impl Content for UiTextureInfo {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         json_text(&write::texture_info_value(self), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        json_string(&write::texture_info_value(self))
-    }
 }
+
+impl JsonContent for UiTextureInfo {}

@@ -10,8 +10,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::{RenderControllerId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -97,13 +97,9 @@ impl Content for RenderControllerFile {
         out.extend(super::fold::protect(&text));
         Ok(())
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for RenderControllerFile {}
 
 impl Definition for RenderController {
     type Kind = kind::RenderController;

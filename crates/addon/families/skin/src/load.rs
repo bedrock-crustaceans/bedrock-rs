@@ -11,7 +11,9 @@ use super::{GEOMETRY_PATH, SKINS_PATH, SkinPack};
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Content, Document, Origin, Placed, Rejected, VersionInfo};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Origin, Placed, Rejected, VersionInfo,
+};
 use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, last_wins, strip_bom, write_json,
 };
@@ -96,11 +98,9 @@ impl Content for SkinPack {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.to_value(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        bedrock_addon_core::json::to_json(&self.to_value())
-    }
 }
+
+impl JsonContent for SkinPack {}
 
 /// `SkinPack::parse`, with the place in the file of each skin held.
 fn parse_placed(

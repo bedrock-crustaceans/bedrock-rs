@@ -10,7 +10,7 @@ use super::{CraftingCatalog, PATH, V1_21_60, V1_26_50};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Content, Document, Origin, Placed, Rejected};
+use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Placed, Rejected};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
 };
@@ -19,9 +19,8 @@ use bedrock_addon_core::version::{
     ENGINE_VERSION, FormatVersion, FormatVersionInput, PickedVersion,
 };
 use bedrock_addon_core::versioning::{
-    ComponentTable, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    ParseCx, Parsed, Selection, StructIndex, VersionStruct, Versioned, finish, parse_as_written,
-    select,
+    ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
+    Selection, StructIndex, VersionStruct, Versioned, finish, parse_as_written, select,
 };
 
 /// Vanilla's one text for a file without a valid `format_version`, and for one below 1.21.60.
@@ -65,10 +64,6 @@ impl Family for CatalogFamily {
             _ => ErrorMask::Strict,
         }
     }
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 }
 
 impl Versioned for CraftingCatalog {
@@ -98,13 +93,9 @@ impl Content for CraftingCatalog {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         write_json(&self.document(), out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for CraftingCatalog {}
 
 impl Placed for CraftingCatalog {
     /// `item_catalog/crafting_item_catalog.json`: the one path vanilla reads.

@@ -8,8 +8,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
-    RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{
@@ -23,8 +23,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BetaPermission, ComponentTable, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents,
-    RangeModel, ValidateCx, finish, parse_as_written,
+    BetaPermission, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
+    ValidateCx, finish, parse_as_written,
 };
 
 /// The directory vanilla walks.
@@ -53,10 +53,6 @@ impl Family for CullingFamily {
     // A missing version is 0.0.0, below the floor: the file is skipped.
     const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(document) = v {
             validate::check(document, cx.load.is_base_game_pack, &cx.at, cx.diagnostics);
@@ -77,13 +73,9 @@ impl Content for CullingRules {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for CullingRules {}
 
 impl Definition for CullingRules {
     type Kind = kind::CullingRules;

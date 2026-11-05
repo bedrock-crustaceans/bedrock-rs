@@ -16,8 +16,9 @@ use bedrock_addon_core::diagnostic::{
     VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, FilesBuilder, FilesRule, Merge,
-    Merged, NoBeta, Notice, Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, FilesBuilder, FilesRule, JsonContent,
+    Merge, Merged, NoBeta, Notice, Origin, Placed, Registry, RegistryBuilder, Rejected,
+    default_path,
 };
 use bedrock_addon_core::id::{BlockId, CubemapSettingsId, Id, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
@@ -29,7 +30,7 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx, Versioned,
+    Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx, Versioned,
 };
 
 /// `lighting`: `minecraft:lighting_settings` documents.
@@ -126,10 +127,6 @@ macro_rules! payload {
             type Any = history::$module::Any;
             const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
 
-            fn components() -> &'static ComponentTable<Self> {
-                &ComponentTable::EMPTY
-            }
-
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
                     file::unnamed::<Self>(value, cx);
@@ -148,6 +145,8 @@ macro_rules! payload {
 
         impl bedrock_addon_core::__private::Sealed for $latest {}
 
+        impl JsonContent for $latest {}
+
         impl Content for $latest {
             const NAME: &'static str = $name;
             const SIDES: &'static [PackSide] = &[PackSide::Resource];
@@ -162,12 +161,6 @@ macro_rules! payload {
 
             fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
                 write_json(&file::document::<history::$module::Family>(self)?, out, style)
-            }
-
-            fn to_json(&self) -> Result<String, EncodeError> {
-                let mut out = Vec::new();
-                self.write_json(&mut out, WriteStyle::default())?;
-                Ok(String::from_utf8(out).unwrap_or_default())
             }
         }
 

@@ -7,8 +7,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, Merge, Merged, NoBeta, Origin,
-    Placed, Registry, RegistryBuilder, Rejected, VersionInfo,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, Merge, Merged, NoBeta,
+    Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::{FunctionPath, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -48,13 +48,6 @@ impl Content for Function {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    /// The function as `.mcfunction` text, not JSON, each line ended by a newline.
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
 
 impl Definition for Function {
@@ -86,13 +79,9 @@ impl Content for TickList {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_into(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for TickList {}
 
 impl Placed for TickList {
     /// `functions/tick.json`.

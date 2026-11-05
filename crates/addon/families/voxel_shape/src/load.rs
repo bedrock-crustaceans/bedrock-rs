@@ -6,8 +6,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{
@@ -20,8 +20,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
-    ComponentTable, EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, StructIndex, ValidateCx, finish, parse_as_written,
+    EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex,
+    ValidateCx, finish, parse_as_written,
 };
 
 /// The voxel-shape family of the version-chain machinery.
@@ -65,10 +65,6 @@ impl Family for VoxelShapeFamily {
         ErrorMask::Strict
     }
 
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
-
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(shape) = v {
             validate::rules(shape, cx.load.is_base_game_pack, &cx.at, cx.diagnostics);
@@ -89,13 +85,9 @@ impl Content for VoxelShape {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
     }
-
-    fn to_json(&self) -> Result<String, EncodeError> {
-        let mut out = Vec::new();
-        self.write_json(&mut out, WriteStyle::default())?;
-        Ok(String::from_utf8(out).unwrap_or_default())
-    }
 }
+
+impl JsonContent for VoxelShape {}
 
 impl Definition for VoxelShape {
     type Kind = kind::VoxelShape;
