@@ -7,7 +7,7 @@ use super::resolve::{self, Applied, FileRead};
 use super::shape::{default_block_shape, is_refused};
 use super::version::BLOCKS_JSON_DEFAULT_VERSION;
 use super::{BlocksJson, ClientBlock, entry};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, NoBeta, Origin, Placed, Registry,
     RegistryBuilder, Rejected, VersionInfo,
@@ -20,16 +20,6 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
 
 /// The one path the client reads.
 const BLOCKS_JSON: &str = "blocks.json";
@@ -54,7 +44,7 @@ impl Content for BlocksJson {
         for application in applied {
             diagnostics.extend(application.diagnostics);
         }
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match file {
             Some(file) => {
                 let version = version_info(&file, effective.version);
@@ -198,7 +188,7 @@ pub(super) fn combine_blocks(
             mut diagnostics,
             applied,
         } = read;
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         let Some(file) = file else {
             builder.push(Contribution::Rejected(
                 None,
@@ -248,7 +238,7 @@ pub(super) fn combine_blocks(
                 Some(key.into()),
                 Vec::new(),
             );
-            locate(&mut diagnostics, &entry_origin);
+            diagnostics.locate(&entry_origin);
             let document = Document::new(block, entry_origin, version.clone(), diagnostics);
             builder.push(Contribution::Stable(id, document));
         }

@@ -167,9 +167,8 @@ fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<&'a str, Rejected> {
         let found = Diagnostic::error(DiagnosticCode::MalformedInput {
             message: message.to_owned(),
             text: None,
-        })
-        .in_file(origin);
-        Rejected::new(origin.clone(), [found].into_iter().collect())
+        });
+        Rejected::located(origin.clone(), [found].into_iter().collect())
     };
     let text = std::str::from_utf8(bytes).map_err(|_| malformed("the file is not UTF-8"))?;
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("the JSON nests too deeply"))?;
@@ -179,21 +178,18 @@ fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<&'a str, Rejected> {
 /// The findings of a load, placed in the file of `origin`. A document above the engine gets
 /// vanilla's resource-pack text.
 fn place(mut found: Diagnostics, version: &VersionInfo, origin: &Origin) -> Diagnostics {
-    let above_engine = version.written.filter(|v| *v > ENGINE_VERSION);
-    // In place: the list keeps where the members of the entity are in the file.
-    for diagnostic in found.iter_mut() {
-        if let Some(written) = above_engine
-            && let DiagnosticCode::UnsupportedVersion { text } = &mut diagnostic.code
-        {
-            *text = Some(VanillaText::ActorAboveEngine {
-                version: written.to_string(),
-                engine: ENGINE_VERSION,
-            });
+    if let Some(written) = version.written.filter(|v| *v > ENGINE_VERSION) {
+        for diagnostic in found.iter_mut() {
+            if let DiagnosticCode::UnsupportedVersion { text } = &mut diagnostic.code {
+                *text = Some(VanillaText::ActorAboveEngine {
+                    version: written.to_string(),
+                    engine: ENGINE_VERSION,
+                });
+            }
         }
-        diagnostic.location.pack = Some(origin.pack.clone());
-        diagnostic.location.path = Some(origin.path.clone());
     }
-    found
+    // In place: the list keeps where the members of the entity are in the file.
+    found.located(origin)
 }
 
 /// The line the game writes when the load of an entity carries errors; the definition is not

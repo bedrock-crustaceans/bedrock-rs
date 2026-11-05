@@ -5,7 +5,7 @@ use bedrock_addon_family_structure::{Contents, Layout, Palette, Structure};
 use indexmap::IndexMap;
 use nbtx::Value;
 
-use super::common::{fails_with, fixture, loads};
+use super::common::{fails_with, fixture, loads, rejects};
 
 /// A raw block palette entry `{name, states: {}, version}`.
 pub fn block(name: &str, version: i32) -> nbtx::Compound {
@@ -463,4 +463,25 @@ fn indices_are_checked_against_the_default_palette_only() {
     assert!(infos(&loads(&fixture("s01_vanilla_1x1x1"))).is_empty());
     // s24: no palettes at all, so nothing is checked.
     assert!(infos(&loads(&fixture("s24_palette_empty"))).is_empty());
+}
+
+#[test]
+fn every_finding_of_a_structure_file_carries_its_pack_and_path() {
+    use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+    let path = PackPath::from_static("structures/demo/test.mcstructure");
+    let check = |found: &bedrock_addon_core::diagnostic::Diagnostics| {
+        assert!(!found.is_empty());
+        for finding in found {
+            assert_eq!(
+                finding.location.pack,
+                Some(PackRef::app_data()),
+                "{finding:#?}"
+            );
+            assert_eq!(finding.location.path.as_ref(), Some(&path), "{finding:#?}");
+        }
+    };
+    // Loaded with an information.
+    check(loads(&fixture("n09_negative_indices")).diagnostics());
+    // Rejected: no NBT at all.
+    check(&rejects(b"not nbt"));
 }

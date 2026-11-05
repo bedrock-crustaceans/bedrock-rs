@@ -121,16 +121,6 @@ fn malformed() -> Diagnostic {
     })
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// The file stem vanilla matches identifiers against: the text after the last `/` or `\` and
 /// before the last `.` (the whole name without a `.`).
 fn stem(path: &PackPath) -> &str {
@@ -191,20 +181,19 @@ pub(crate) fn parse_file(
     let Some(text) = text(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
-        locate(&mut diagnostics, &origin);
-        return Err(Rejected::new(origin, diagnostics));
+        return Err(Rejected::located(origin, diagnostics));
     };
     let parsed = parse_as_written::<FeatureRuleFamily>(JsonSlice::new(text), cx);
     let written = parsed.version.written;
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     puv_below_floor(&mut diagnostics, written);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(rule)) => {
             let mut found = Diagnostics::default();
             identifier_checks(&rule, path, &mut found);
-            locate(&mut found, &origin);
+            found.locate(&origin);
             diagnostics.extend(found);
             Ok(Document::new(rule, origin, outcome.version, diagnostics))
         }

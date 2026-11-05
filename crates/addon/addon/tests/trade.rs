@@ -12,3 +12,6 @@ mod stack;
 
 #[path = "trade/link.rs"]
 mod link;
+
+#[path = "trade/located.rs"]
+mod located;

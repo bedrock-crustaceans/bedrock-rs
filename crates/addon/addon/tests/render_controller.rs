@@ -30,3 +30,6 @@ mod rows;
 
 #[path = "render_controller/stack.rs"]
 mod stack;
+
+#[path = "render_controller/located.rs"]
+mod located;

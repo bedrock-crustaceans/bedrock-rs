@@ -231,23 +231,18 @@ fn reject(origin: &Origin, found: Diagnostic) -> Rejected {
 }
 
 /// Gives every finding the document's pack and file, and vanilla's texts the file's path.
-fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
-    found
-        .into_iter()
-        .map(|mut finding| {
-            if let DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Formatted { args, .. }),
-            } = &mut finding.code
-            {
-                for arg in args.iter_mut().filter(|arg| *arg == validate::FILE) {
-                    origin.path.as_str().clone_into(arg);
-                }
+fn place(mut found: Diagnostics, origin: &Origin) -> Diagnostics {
+    for finding in found.iter_mut() {
+        if let DiagnosticCode::InvalidValue {
+            text: Some(VanillaText::Formatted { args, .. }),
+        } = &mut finding.code
+        {
+            for arg in args.iter_mut().filter(|arg| *arg == validate::FILE) {
+                origin.path.as_str().clone_into(arg);
             }
-            finding.location.pack = Some(origin.pack.clone());
-            finding.location.path = Some(origin.path.clone());
-            finding
-        })
-        .collect()
+        }
+    }
+    found.located(origin)
 }
 
 /// The file's text when vanilla's loader would go on to the schema: UTF-8 within the nesting

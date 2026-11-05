@@ -445,16 +445,6 @@ fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     }
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// Gives every finding that names a member and no place in the file the place of that member
 /// (the validators see the value, not the text). A file has a handful of them at most.
 fn place(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
@@ -503,7 +493,7 @@ fn parse_file<F: UiFamily>(
     let origin = Origin::file(pack, PackSide::Resource, path.clone());
     let Some(text) = text(bytes) else {
         let mut diagnostics = unreadable::<F>();
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         return FileOutcome {
             identifier: None,
             result: Err(Rejected::new(origin, diagnostics)),
@@ -534,14 +524,13 @@ fn parse_file<F: UiFamily>(
         version.parsed_as = BETA_VERSION;
     }
     let result = if let Some(value) = outcome.value.and_then(F::take) {
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         Ok(Document::new(value, origin, version, diagnostics))
     } else {
         if typed {
             diagnostics.push(failed_to_load());
         }
-        locate(&mut diagnostics, &origin);
-        Err(Rejected::new(origin, diagnostics))
+        Err(Rejected::located(origin, diagnostics))
     };
     FileOutcome {
         identifier,
@@ -561,7 +550,7 @@ fn as_written<F: UiFamily>(
     let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
     let Some(text) = text(bytes) else {
         let mut diagnostics = unreadable::<F>();
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         return Err(Rejected::new(origin, diagnostics));
     };
     let cleaned = last_wins(text);
@@ -570,14 +559,13 @@ fn as_written<F: UiFamily>(
     let mut diagnostics = parsed.diagnostics;
     place(&mut diagnostics, document);
     if let Some(value) = parsed.value {
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         Ok(Document::new(value, origin, parsed.version, diagnostics))
     } else {
         if typed {
             diagnostics.push(failed_to_load());
         }
-        locate(&mut diagnostics, &origin);
-        Err(Rejected::new(origin, diagnostics))
+        Err(Rejected::located(origin, diagnostics))
     }
 }
 

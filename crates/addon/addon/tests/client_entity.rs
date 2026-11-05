@@ -33,3 +33,6 @@ mod stack;
 
 #[path = "client_entity/steps.rs"]
 mod steps;
+
+#[path = "client_entity/located.rs"]
+mod located;

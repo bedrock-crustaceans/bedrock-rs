@@ -248,20 +248,9 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// A file that did not load, with its findings placed.
-fn reject(origin: Origin, mut diagnostics: Diagnostics) -> Rejected {
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+fn reject(origin: Origin, diagnostics: Diagnostics) -> Rejected {
+    Rejected::located(origin, diagnostics)
 }
 
 /// What loading one file gives: the identifier it names, when the payload has one, and the
@@ -335,7 +324,7 @@ fn finish_file<F: PoiFamily>(
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     if let Some(Loaded::Stable(value)) = outcome.value {
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         Ok(Document::new(value, origin, outcome.version, diagnostics))
     } else {
         diagnostics.push(failed_to_load());
@@ -420,7 +409,7 @@ fn as_written<F: PoiFamily>(
     let mut diagnostics = parsed.diagnostics;
     match parsed.value {
         Some(value) => {
-            locate(&mut diagnostics, &origin);
+            diagnostics.locate(&origin);
             Ok(Document::new(value, origin, parsed.version, diagnostics))
         }
         None => Err(reject(origin, diagnostics)),

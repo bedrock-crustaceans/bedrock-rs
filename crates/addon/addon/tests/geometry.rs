@@ -21,6 +21,8 @@ mod deviations;
 mod gates;
 #[path = "geometry/generated.rs"]
 mod generated;
+#[path = "geometry/located.rs"]
+mod located;
 #[path = "geometry/molang.rs"]
 mod molang;
 #[path = "geometry/round_trip.rs"]

@@ -8,3 +8,6 @@ mod texts;
 
 #[path = "block/upgrade_steps.rs"]
 mod upgrade_steps;
+
+#[path = "block/places.rs"]
+mod places;

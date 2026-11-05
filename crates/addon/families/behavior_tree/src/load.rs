@@ -92,15 +92,7 @@ fn parse_file(
     let finite = bedrock_addon_core::document::FiniteText::of(bytes);
     let parsed = parse_document(finite.bytes());
     // Every finding is about this file of this pack.
-    let mut diagnostics: Diagnostics = parsed
-        .diagnostics
-        .into_iter()
-        .map(|mut finding| {
-            finding.location.pack = Some(origin.pack.clone());
-            finding.location.path = Some(origin.path.clone());
-            finding
-        })
-        .collect();
+    let mut diagnostics = parsed.diagnostics.located(&origin);
     finite.settle(&mut diagnostics, Some(&origin));
     let result = match parsed.tree {
         // The reader gives a tree only when it raised no error.

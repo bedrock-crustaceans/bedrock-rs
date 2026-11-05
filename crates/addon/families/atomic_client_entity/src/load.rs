@@ -130,8 +130,6 @@ fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
             // A missing payload gets the game's text.
             finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
         }
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
         let location = finding.location.clone();
         placed.push(finding);
         if malformed {
@@ -143,7 +141,7 @@ fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
             placed.push(missing);
         }
     }
-    placed
+    placed.located(origin)
 }
 
 /// The envelope's member-count rule for a root without `format_version`: a root that holds

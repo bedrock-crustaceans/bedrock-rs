@@ -58,3 +58,6 @@ mod upgrade_steps;
 
 #[path = "attachable/write_back.rs"]
 mod write_back;
+
+#[path = "attachable/located.rs"]
+mod located;

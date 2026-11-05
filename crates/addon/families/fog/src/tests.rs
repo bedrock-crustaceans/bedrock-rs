@@ -187,3 +187,47 @@ fn settings_that_break_a_rule_of_the_schema_are_not_written() {
         "minecraft:fog_settings/volumetric/density/air"
     );
 }
+
+/// Every finding of `found` is in the app-data pack's file `path`.
+fn assert_located(found: &Diagnostics, path: &'static str) {
+    use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+    assert!(!found.is_empty(), "no finding to place");
+    for finding in found {
+        assert_eq!(
+            finding.location.pack,
+            Some(PackRef::app_data()),
+            "{finding:?}"
+        );
+        assert_eq!(
+            finding.location.path,
+            Some(PackPath::from_static(path)),
+            "{finding:?}"
+        );
+    }
+}
+
+#[test]
+fn findings_carry_the_file_and_pack() {
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::PackPath;
+    const PATH: &str = "fogs/x.json";
+    let path = PackPath::from_static(PATH);
+    let cx = LoadContext::detached();
+    let fog = |version: &str, start: &str| {
+        format!(
+            r#"{{"format_version": "{version}", "minecraft:fog_settings": {{"description": {{"identifier": "demo:x"}}, "distance": {{"air": {{"fog_start": {start}, "fog_end": 1, "fog_color": [1, 1, 1], "render_distance_type": "fixed"}}}}}}}}"#
+        )
+    };
+    // A loaded file with an information: a pre-release of the newest version.
+    let document = super::FogSettings::parse(&path, fog("1.26.20-beta.1", "1").as_bytes(), &cx)
+        .expect("loads");
+    assert_located(document.diagnostics(), PATH);
+    // Refused by a rule after the parse, and by the gates.
+    for bytes in [fog("1.16.100", "7").into_bytes(), b"{".to_vec()] {
+        let rejected = super::FogSettings::parse(&path, &bytes, &cx)
+            .map(|_| ())
+            .expect_err("refused");
+        assert_located(&rejected.diagnostics, PATH);
+    }
+}

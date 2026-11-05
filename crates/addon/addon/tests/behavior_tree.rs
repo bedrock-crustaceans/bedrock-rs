@@ -31,3 +31,6 @@ mod round_trip;
 
 #[path = "behavior_tree/link.rs"]
 mod link;
+
+#[path = "behavior_tree/located.rs"]
+mod located;

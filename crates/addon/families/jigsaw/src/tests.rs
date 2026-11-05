@@ -357,3 +357,44 @@ fn the_four_json_families_read_a_document_input_under_the_unstrict_mask() {
         assert_eq!(mask, ErrorMask::Unstrict);
     }
 }
+
+/// Every finding of `found` is in the app-data pack's file `path`.
+fn assert_located(found: &bedrock_addon_core::diagnostic::Diagnostics, path: &'static str) {
+    assert!(!found.is_empty(), "no finding to place");
+    for finding in found {
+        assert_eq!(
+            finding.location.pack,
+            Some(PackRef::app_data()),
+            "{finding:?}"
+        );
+        assert_eq!(
+            finding.location.path,
+            Some(PackPath::from_static(path)),
+            "{finding:?}"
+        );
+    }
+}
+
+#[test]
+fn findings_carry_the_file_and_pack() {
+    use super::TemplatePool;
+    use bedrock_addon_core::document::Content;
+    const POOL: &str = "worldgen/template_pools/x.json";
+    const METADATA: &str = "worldgen/metadata/x.dat";
+    let cx = LoadContext::detached();
+    let pool = PackPath::from_static(POOL);
+    // A loaded pool with a warning (an unknown member), and a pool that is no JSON.
+    let text = r#"{"format_version": "1.21.20", "minecraft:template_pool": {"description": {"identifier": "demo:start"}, "elements": [], "fallback": "minecraft:empty", "x": 1}}"#;
+    let document = TemplatePool::parse(&pool, text.as_bytes(), &cx).expect("the pool loads");
+    assert_located(document.diagnostics(), POOL);
+    let rejected = TemplatePool::parse(&pool, b"{", &cx).expect_err("the pool is refused");
+    assert_located(&rejected.diagnostics, POOL);
+    // A metadata file with its information, and one without a leading string.
+    let metadata = PackPath::from_static(METADATA);
+    let mut bytes = vec![7];
+    bytes.extend_from_slice(b"1.21.50");
+    let document = JigsawMetadata::parse(&metadata, &bytes, &cx).expect("the metadata loads");
+    assert_located(document.diagnostics(), METADATA);
+    let rejected = JigsawMetadata::parse(&metadata, b"", &cx).expect_err("the metadata is refused");
+    assert_located(&rejected.diagnostics, METADATA);
+}

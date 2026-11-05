@@ -676,16 +676,6 @@ fn rejected_load(diagnostics: Diagnostics) -> ItemLoad {
     }
 }
 
-/// Every finding placed at `pack` and `path`.
-fn locate(mut diagnostics: Diagnostics, pack: &PackRef, path: &PackPath) -> Diagnostics {
-    // In place: the list keeps the places of its lists for the link pass.
-    for diagnostic in diagnostics.iter_mut() {
-        diagnostic.location.pack = Some(pack.clone());
-        diagnostic.location.path = Some(path.clone());
-    }
-    diagnostics
-}
-
 /// One file's contribution to the item registry.
 pub(crate) fn contribution(
     pack: &PackRef,
@@ -699,7 +689,7 @@ pub(crate) fn contribution(
         identifier,
     } = load_item(bytes, cx);
     let origin = Origin::file(pack.clone(), side, path.clone());
-    let diagnostics = locate(outcome.diagnostics, pack, path);
+    let diagnostics = outcome.diagnostics.located(&origin);
     let id = identifier.map(ItemId::parse);
     match outcome.value {
         Some(Loaded::Stable(item)) => {
@@ -987,16 +977,13 @@ impl Item {
         let text = match prepare(bytes) {
             Ok(text) => text,
             Err(early) => {
-                return Err(Rejected::new(
-                    origin.clone(),
-                    locate(early, &origin.pack, path),
-                ));
+                return Err(Rejected::located(origin.clone(), early));
             }
         };
         let mut parsed = versioning::parse_as_written::<ItemFamily>(JsonSlice::new(text), cx);
         parsed.diagnostics.extend(numeric_version(text));
         json_path_texts(&mut parsed.diagnostics, text, cx);
-        let diagnostics = locate(parsed.diagnostics, &origin.pack, path);
+        let diagnostics = parsed.diagnostics.located(&origin);
         match parsed.value {
             Some(any) if !diagnostics.has_errors() => {
                 Ok(Document::new(any, origin, parsed.version, diagnostics))
@@ -1042,7 +1029,7 @@ impl Any {
             diagnostics,
         );
         let outcome = versioning::finish::<ItemFamily>(parsed, cx);
-        let diagnostics = locate(outcome.diagnostics, &origin.pack, &origin.path);
+        let diagnostics = outcome.diagnostics.located(&origin);
         match outcome.value {
             Some(Loaded::Stable(item)) => {
                 Ok(Document::new(item, origin, outcome.version, diagnostics))

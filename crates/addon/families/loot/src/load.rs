@@ -2,7 +2,6 @@
 
 use super::LootTable;
 use super::parse::parse_table;
-use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{
     Content, Document, Files, FilesBuilder, FilesRule, FiniteText, JsonContent, Origin, Rejected,
     VersionInfo,
@@ -52,19 +51,10 @@ pub(crate) fn parse_file(
     let finite = FiniteText::of(bytes);
     let (table, mut diagnostics) = parse_table(path, finite.bytes(), cx);
     finite.settle(&mut diagnostics, None);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match table {
         Some(table) => Ok(Document::new(table, origin, unversioned(), diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),
-    }
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    // In place: the list keeps the places of its lists for the link pass.
-    for finding in diagnostics.iter_mut() {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
     }
 }
 

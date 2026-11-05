@@ -187,7 +187,7 @@ impl Dimension {
         let parsed = parse_as_written::<DimensionFamily>(JsonSlice::new(text), cx);
         let mut diagnostics = parsed.diagnostics;
         puv_below_floor(&mut diagnostics, parsed.version.written);
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
             None => Err(Rejected::new(origin, diagnostics)),
@@ -255,7 +255,7 @@ pub(crate) fn upgrade_document(
     );
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(dimension)) => Ok(Document::new(
             dimension,
@@ -281,18 +281,7 @@ fn reject(origin: Origin) -> Rejected {
         message: "not UTF-8 JSON within the nesting limit".to_owned(),
         text: None,
     }));
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
+    Rejected::located(origin, diagnostics)
 }
 
 /// Loads one dimension file of `pack`.
@@ -313,7 +302,7 @@ pub(crate) fn parse_file(
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     puv_below_floor(&mut diagnostics, written);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(dimension)) => Ok(Document::new(
             dimension,

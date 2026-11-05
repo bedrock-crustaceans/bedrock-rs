@@ -94,3 +94,39 @@ fn a_pre_release_engine_version_maps_below_its_release() {
     assert_eq!(command_version(Some(&pre("1.8.0-beta"))), 8);
     assert_eq!(command_version(Some(&pre("1.26.10-beta"))), 45);
 }
+
+/// Every finding of `found` is in the app-data pack's file `path`.
+fn assert_located(found: &bedrock_addon_core::diagnostic::Diagnostics, path: &'static str) {
+    use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+    assert!(!found.is_empty(), "no finding to place");
+    for finding in found {
+        assert_eq!(
+            finding.location.pack,
+            Some(PackRef::app_data()),
+            "{finding:?}"
+        );
+        assert_eq!(
+            finding.location.path,
+            Some(PackPath::from_static(path)),
+            "{finding:?}"
+        );
+    }
+}
+
+#[test]
+fn findings_carry_the_file_and_pack() {
+    use super::DialogueFile;
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::PackPath;
+    const PATH: &str = "dialogue/a.json";
+    let cx = LoadContext::detached();
+    let path = PackPath::from_static(PATH);
+    // A loaded file with an information (an unknown root member) and a scene a rule drops.
+    let text = r#"{"format_version": "1.14.0", "x": 1, "minecraft:npc_dialogue": {"scenes": [{"scene_tag": "a", "text": "x"}, {"text": "y"}]}}"#;
+    let document = DialogueFile::parse(&path, text.as_bytes(), &cx).expect("the file loads");
+    assert_located(document.diagnostics(), PATH);
+    // A file that is no JSON.
+    let rejected = DialogueFile::parse(&path, b"{", &cx).expect_err("the file is skipped");
+    assert_located(&rejected.diagnostics, PATH);
+}

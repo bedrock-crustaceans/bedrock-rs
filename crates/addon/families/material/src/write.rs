@@ -34,32 +34,21 @@ fn detached(path: &PackPath) -> Origin {
     Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
 }
 
-/// Gives every finding the document's pack and file.
-pub(super) fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// A document of an unversioned file: no `format_version` is read on any path.
 pub(super) fn unversioned<T>(
     value: T,
     origin: Origin,
     mut diagnostics: Diagnostics,
 ) -> Document<T> {
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let none = FormatVersion::new(0, 0, 0);
     let version = VersionInfo::new(None, false, none, none, false);
     Document::new(value, origin, version, diagnostics)
 }
 
 /// A rejection of the file `origin` with its findings.
-pub(super) fn rejected(origin: Origin, mut diagnostics: Diagnostics) -> Rejected {
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+pub(super) fn rejected(origin: Origin, diagnostics: Diagnostics) -> Rejected {
+    Rejected::located(origin, diagnostics)
 }
 
 /// The finding for the copy at `path` that is no JSON.

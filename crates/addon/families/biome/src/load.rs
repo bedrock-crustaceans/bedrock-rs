@@ -181,8 +181,7 @@ impl Content for Beta {
                 diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                     text: None,
                 }));
-                locate(&mut diagnostics, &origin);
-                Err(Rejected::new(origin, diagnostics))
+                Err(Rejected::located(origin, diagnostics))
             }
         }
     }
@@ -225,7 +224,7 @@ impl Biome {
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
         let (_, parsed) = parse(&origin, bytes, cx)?;
         let mut diagnostics = parsed.diagnostics;
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
             None => Err(Rejected::new(origin, diagnostics)),
@@ -265,7 +264,7 @@ pub(crate) fn upgrade_document(
     let outcome = finish(parsed, cx);
     let mut diagnostics = found;
     let mut more = outcome.diagnostics;
-    locate(&mut more, &origin);
+    more.locate(&origin);
     diagnostics.extend(more);
     match outcome.value {
         Some(Loaded::Stable(biome)) => {
@@ -376,7 +375,7 @@ fn load(
     };
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let result = match outcome.value {
         Some(value) => Ok((
             value,
@@ -488,23 +487,12 @@ fn beta_rejected(parts: Parts) -> Rejected {
 fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding);
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+    Rejected::located(origin, diagnostics)
 }
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
 }
 
 // ---- the collection ----------------------------------------------------------------------

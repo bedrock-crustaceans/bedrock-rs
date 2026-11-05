@@ -27,5 +27,8 @@ mod loader;
 #[path = "json_ui/lint.rs"]
 mod lint;
 
+#[path = "json_ui/located.rs"]
+mod located;
+
 #[path = "json_ui/content.rs"]
 mod content;

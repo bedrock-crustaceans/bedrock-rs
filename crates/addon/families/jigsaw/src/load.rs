@@ -269,16 +269,6 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// Below 1.21.20 vanilla has no slice at all: the game says "no parser available",
 /// where the generic floor check says "To use …, use json format version … or higher".
 fn no_parser_below_floor(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
@@ -345,8 +335,7 @@ pub(crate) fn parse_file<F: JsonFamily>(
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         failure_line::<F>(&mut diagnostics, path);
-        locate(&mut diagnostics, &origin);
-        return (None, Err(Rejected::new(origin, diagnostics)));
+        return (None, Err(Rejected::located(origin, diagnostics)));
     };
     let parsed = parse_stage::<F>(text, cx);
     let identifier = parsed.identity.identifier.clone().map(Id::parse);
@@ -362,12 +351,11 @@ fn finish_file<F: JsonFamily>(
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     if let Some(Loaded::Stable(value)) = outcome.value {
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         Ok(Document::new(value, origin, outcome.version, diagnostics))
     } else {
         failure_line::<F>(&mut diagnostics, &origin.path);
-        locate(&mut diagnostics, &origin);
-        Err(Rejected::new(origin, diagnostics))
+        Err(Rejected::located(origin, diagnostics))
     }
 }
 
@@ -383,18 +371,16 @@ fn as_written<F: JsonFamily>(
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         failure_line::<F>(&mut diagnostics, path);
-        locate(&mut diagnostics, &origin);
-        return Err(Rejected::new(origin, diagnostics));
+        return Err(Rejected::located(origin, diagnostics));
     };
     let parsed = parse_stage::<F>(text, cx);
     let mut diagnostics = parsed.diagnostics;
     if let Some(value) = parsed.value {
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         Ok(Document::new(value, origin, parsed.version, diagnostics))
     } else {
         failure_line::<F>(&mut diagnostics, path);
-        locate(&mut diagnostics, &origin);
-        Err(Rejected::new(origin, diagnostics))
+        Err(Rejected::located(origin, diagnostics))
     }
 }
 
@@ -482,8 +468,7 @@ pub(crate) fn parse_metadata(
     let mut diagnostics = Diagnostics::default();
     let reject = |mut diagnostics: Diagnostics, finding: Diagnostic| {
         diagnostics.push(finding);
-        locate(&mut diagnostics, &origin);
-        Err(Rejected::new(origin.clone(), diagnostics))
+        Err(Rejected::located(origin.clone(), diagnostics))
     };
     let Some((written, body)) = leading_string(bytes) else {
         return reject(diagnostics, bad_leading_string(path));
@@ -517,7 +502,7 @@ pub(crate) fn parse_metadata(
             .copied()
             .unwrap_or(effective);
     diagnostics.push(Diagnostic::info(DiagnosticCode::SkippedCacheDocument));
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let value = JigsawMetadata {
         format_version: written.to_owned(),
         body: body.to_vec(),

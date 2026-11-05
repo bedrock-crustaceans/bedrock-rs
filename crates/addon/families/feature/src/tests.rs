@@ -224,3 +224,52 @@ fn every_feature_type_is_read_from_a_jsoncpp_input() {
         );
     }
 }
+
+/// Every finding of `found` is in the app-data pack's file `path`.
+fn assert_located(found: &bedrock_addon_core::diagnostic::Diagnostics, path: &'static str) {
+    use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+    assert!(!found.is_empty(), "no finding to place");
+    for finding in found {
+        assert_eq!(
+            finding.location.pack,
+            Some(PackRef::app_data()),
+            "{finding:?}"
+        );
+        assert_eq!(
+            finding.location.path,
+            Some(PackPath::from_static(path)),
+            "{finding:?}"
+        );
+    }
+}
+
+#[test]
+fn findings_carry_the_file_and_pack() {
+    use super::Feature;
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::PackPath;
+    const PATH: &str = "features/x.json";
+    let cx = LoadContext::detached();
+    let path = PackPath::from_static(PATH);
+    let ore = |member: &str| {
+        format!(
+            r#"{{"format_version": "1.13.0", "minecraft:ore_feature": {{"description": {{"identifier": "demo:vein"}}, "count": 2{member}}}}}"#
+        )
+    };
+    // A loaded file with a finding (a member written as null).
+    let document = Feature::parse(
+        &path,
+        ore(r#", "discard_chance_on_air_exposure": null"#).as_bytes(),
+        &cx,
+    )
+    .expect("the file loads");
+    assert_located(document.diagnostics(), PATH);
+    // Refused by its schema (an unknown member), and a file that is no JSON.
+    for bytes in [ore(r#", "x": 1"#).into_bytes(), b"{".to_vec()] {
+        let rejected = Feature::parse(&path, &bytes, &cx)
+            .map(|_| ())
+            .expect_err("the file is refused");
+        assert_located(&rejected.diagnostics, PATH);
+    }
+}

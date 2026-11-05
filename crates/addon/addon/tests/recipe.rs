@@ -30,3 +30,6 @@ mod link;
 
 #[path = "recipe/wide_data.rs"]
 mod wide_data;
+
+#[path = "recipe/located.rs"]
+mod located;

@@ -19,8 +19,7 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_support::animation::load::{
-    FileContribution, combine, file_path, is_json, locate, side_of, split, version_info,
-    walk_origin, whole,
+    FileContribution, combine, file_path, is_json, side_of, split, version_info, walk_origin, whole,
 };
 
 impl bedrock_addon_core::__private::Sealed for AnimationControllerFile {}
@@ -84,7 +83,7 @@ impl AnimationControllerFile {
     ) -> Result<Document<Any>, Rejected> {
         let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
         let (any, written, diagnostics) = parse::parse_as_written(bytes, cx);
-        let diagnostics = locate(diagnostics, &origin);
+        let diagnostics = diagnostics.located(&origin);
         match (any, written) {
             (Some(any), Some(written)) => {
                 let as_ = any.parsed_version();
@@ -114,7 +113,7 @@ pub(crate) fn upgrade_document(
     let upgraded = matches!(document.value(), Any::V1_8_0(_));
     let file = parse::upgrade(document.into_value(), &written, cx, &mut diagnostics)
         .and_then(|file| parse::finish(file, &written, cx, &mut diagnostics));
-    let diagnostics = locate(diagnostics, &origin);
+    let diagnostics = diagnostics.located(&origin);
     let info = VersionInfo::new(
         version.written,
         false,

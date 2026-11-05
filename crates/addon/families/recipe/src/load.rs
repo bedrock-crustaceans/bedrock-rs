@@ -6,7 +6,7 @@ use std::fmt;
 
 use super::parse::{Parsed, parse_document};
 use super::{Recipe, RecipeNamespace, Recipes};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
     Registry, RegistryBuilder, Rejected, default_path,
@@ -86,7 +86,7 @@ pub(super) fn parse_file(
     // An ingredient's `data` reports a number beyond `f32` itself, at the number's own path, so
     // the clamp is not reported a second time.
     finite.settle_unless_said(&mut diagnostics, None);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let result = match value {
         Some(value) if !diagnostics.has_errors() => {
             Ok(Document::new(value, origin, version, diagnostics))
@@ -98,15 +98,6 @@ pub(super) fn parse_file(
         path: path.clone(),
         parsed,
         result,
-    }
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    // In place: the list keeps the places of its lists for the link pass.
-    for finding in diagnostics.iter_mut() {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
     }
 }
 

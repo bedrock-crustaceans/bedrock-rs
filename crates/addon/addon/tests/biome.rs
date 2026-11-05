@@ -24,3 +24,6 @@ mod rules;
 
 #[path = "biome/stack.rs"]
 mod stack;
+
+#[path = "biome/located.rs"]
+mod located;

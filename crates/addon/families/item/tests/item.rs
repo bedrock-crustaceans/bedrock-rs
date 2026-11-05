@@ -18,6 +18,9 @@ mod upgrade;
 #[path = "item/replaced.rs"]
 mod replaced;
 
+#[path = "item/located.rs"]
+mod located;
+
 #[path = "item/molang.rs"]
 mod molang;
 

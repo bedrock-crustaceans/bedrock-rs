@@ -68,3 +68,39 @@ fn a_1_8_particle_effects_script_is_carried_as_molang_text() {
     let script = effects[0].pre_effect_script.as_ref().expect("the script");
     assert_eq!(script.source().expect("Molang text").as_str(), "v.x = 1;");
 }
+
+/// Every finding of reading a file as written and of its upgrade names no pack (the file was
+/// read on its own) and the file.
+#[test]
+fn every_finding_of_the_reading_and_the_step_carries_its_pack_and_path() {
+    use bedrock_addon::diagnostic::Diagnostics;
+    use bedrock_addon::families::animation_controller::history::upgrade;
+    use bedrock_addon::pack::PackRef;
+    use bedrock_addon::storage::PackPath;
+    let cx = super::common::rp(1, 16, 0);
+    let path = PackPath::from_static("animation_controllers/x.json");
+    let check = |found: &Diagnostics| {
+        assert!(!found.is_empty());
+        for finding in found {
+            assert_eq!(
+                finding.location.pack,
+                Some(PackRef::app_data()),
+                "{finding:#?}"
+            );
+            assert_eq!(finding.location.path.as_ref(), Some(&path), "{finding:#?}");
+        }
+    };
+    // Not JSON: rejected while read.
+    let rejected = AnimationControllerFile::parse_as_written(&path, b"{", &cx).unwrap_err();
+    check(&rejected.diagnostics);
+    // Members in another case: an information each while read.
+    let cased = r#"{"format_version": "1.10.0", "animation_controllers": {"Controller.Animation.Pig": {"States": {"a": {"Animations": ["x"]}}}}}"#;
+    let read = AnimationControllerFile::parse_as_written(&path, cased.as_bytes(), &cx).unwrap();
+    check(read.diagnostics());
+    // An input no curve reads: an information of the step.
+    let old = r#"{"format_version": "1.8.0", "animation_controllers": {"controller.animation.x": {"states": {"default": {"parameters": ["q.x", "q.y"]}}}}}"#;
+    let read = AnimationControllerFile::parse_as_written(&path, old.as_bytes(), &cx).unwrap();
+    assert!(read.diagnostics().is_empty(), "{:#?}", read.diagnostics());
+    let upgraded = upgrade(read, &cx).unwrap();
+    check(upgraded.diagnostics());
+}

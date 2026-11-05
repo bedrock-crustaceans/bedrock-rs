@@ -147,7 +147,7 @@ impl ParticleEffect {
         let parsed = parse_as_written::<ParticleFamily>(document, cx);
         let mut diagnostics = parsed.diagnostics;
         vanilla_envelope_texts(&mut diagnostics, document);
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
             None => Err(Rejected::new(origin, diagnostics)),
@@ -193,7 +193,7 @@ pub(crate) fn upgrade_document(
     );
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(effect)) => {
             Ok(Document::new(effect, origin, outcome.version, diagnostics))
@@ -230,15 +230,6 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    // In place: the list keeps where the members of the effect are in the file.
-    for finding in diagnostics.iter_mut() {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-    }
-}
-
 /// The envelope findings as the particle loader words them, where the shared stage words them
 /// otherwise: below 1.10.0 there is no slice, so the game says that no parser is available
 /// for the version as written, not "To use …, use json format version … or higher"; from
@@ -255,7 +246,7 @@ fn vanilla_envelope_texts(diagnostics: &mut Diagnostics, document: JsonSlice<'_>
         PickedVersion::Version { input, written } => no_parser_version(&input, &written),
         _ => String::new(),
     };
-    // In place, as `locate`.
+    // In place, as `Diagnostics::locate`.
     for finding in diagnostics.iter_mut() {
         match &mut finding.code {
             DiagnosticCode::UnsupportedVersion {
@@ -295,7 +286,7 @@ pub(crate) fn parse_file(
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     vanilla_envelope_texts(&mut diagnostics, document);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(effect)) => {
             Ok(Document::new(effect, origin, outcome.version, diagnostics))

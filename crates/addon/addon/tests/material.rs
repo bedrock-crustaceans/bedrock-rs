@@ -16,6 +16,8 @@ mod generated;
 mod link;
 #[path = "material/lists.rs"]
 mod lists;
+#[path = "material/located.rs"]
+mod located;
 #[path = "material/requests.rs"]
 mod requests;
 #[path = "material/resolve.rs"]

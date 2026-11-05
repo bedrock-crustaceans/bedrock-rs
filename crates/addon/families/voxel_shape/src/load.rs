@@ -118,16 +118,6 @@ fn malformed() -> Diagnostic {
     })
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// Below 1.21.110 vanilla has no slice at all: the game says "no parser available" with the
 /// version as written, where core's floor check says "To use …, use json format version …
 /// or higher". The version is the one the document input picked from the text (a number's
@@ -177,15 +167,14 @@ pub(crate) fn parse_file(
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());
         failure_line(&mut diagnostics, path);
-        locate(&mut diagnostics, &origin);
-        return Err(Rejected::new(origin, diagnostics));
+        return Err(Rejected::located(origin, diagnostics));
     };
     let document = JsonSlice::new(text);
     let outcome = finish(parse_as_written::<VoxelShapeFamily>(document, cx), cx);
     let mut diagnostics = outcome.diagnostics;
     no_parser_below_floor(&mut diagnostics, document);
     failure_line(&mut diagnostics, path);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(shape)) => {
             Ok(Document::new(shape, origin, outcome.version, diagnostics))

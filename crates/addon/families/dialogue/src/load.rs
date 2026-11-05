@@ -37,9 +37,8 @@ impl Content for DialogueFile {
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path, None);
         let file = match read(&stem(path), bytes, cx) {
             Ok(file) => file,
-            Err(mut diagnostics) => {
-                locate(&mut diagnostics, &origin);
-                return Err(Rejected::new(origin, diagnostics));
+            Err(diagnostics) => {
+                return Err(Rejected::located(origin, diagnostics));
             }
         };
         let mut diagnostics = file.diagnostics;
@@ -77,7 +76,7 @@ impl Content for DialogueFile {
                 SceneOutcome::Untagged(found) => diagnostics.extend(found),
             }
         }
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         let version = version_info(&file.format_version);
         let value = DialogueFile {
             format_version: file.format_version,
@@ -141,16 +140,6 @@ pub(crate) fn stem(path: &PackPath) -> String {
 /// The origin of a file of `pack`, or of the scene `key` in it.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath, key: Option<&str>) -> Origin {
     Origin::new(pack, side, path.clone(), key.map(Into::into), Vec::new())
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
 }
 
 // ---- the collection ----------------------------------------------------------------------
@@ -221,17 +210,16 @@ fn combine(parsed: Vec<Parsed>, stack: &StackCx<'_>) -> Registry<DialogueScene> 
         };
         let file = match read {
             Ok(file) => file,
-            Err(mut diagnostics) => {
-                locate(&mut diagnostics, &file_origin);
+            Err(diagnostics) => {
                 builder.push(Contribution::Rejected(
                     None,
-                    Rejected::new(file_origin, diagnostics),
+                    Rejected::located(file_origin, diagnostics),
                 ));
                 continue;
             }
         };
         let mut file_diagnostics = file.diagnostics;
-        locate(&mut file_diagnostics, &file_origin);
+        file_diagnostics.locate(&file_origin);
         for finding in file_diagnostics {
             builder.push_diagnostic(finding);
         }
@@ -267,7 +255,7 @@ fn push_scene(
                 &file.path,
                 Some(scene.scene_tag.as_str()),
             );
-            locate(&mut diagnostics, &origin);
+            diagnostics.locate(&origin);
             let tag = scene.scene_tag.clone();
             // The game rejects a tag that is already stored with a message; with the stack
             // walked lowest priority first, the lower pack's scene stays.
@@ -296,16 +284,15 @@ fn push_scene(
                 }
             }
         }
-        SceneOutcome::Dropped(tag, mut diagnostics) => {
+        SceneOutcome::Dropped(tag, diagnostics) => {
             let origin = origin(file.pack.clone(), file.side, &file.path, tag.as_deref());
-            locate(&mut diagnostics, &origin);
             builder.push(Contribution::Rejected(
                 tag.map(DialogueSceneTag::parse),
-                Rejected::new(origin, diagnostics),
+                Rejected::located(origin, diagnostics),
             ));
         }
         SceneOutcome::Untagged(mut diagnostics) => {
-            locate(&mut diagnostics, file);
+            diagnostics.locate(file);
             for finding in diagnostics {
                 builder.push_diagnostic(finding);
             }

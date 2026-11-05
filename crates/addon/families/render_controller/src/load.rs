@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 
 use super::read::{self, Parsed, group_by_controller};
 use super::{RenderController, RenderControllerFile};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
     Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
@@ -25,17 +25,6 @@ impl bedrock_addon_core::__private::Sealed for RenderController {}
 
 /// The one struct's version: every accepted file is parsed as it.
 const PARSED_AS: FormatVersion = FormatVersion::new(1, 8, 0);
-
-/// Gives every finding the file's pack and path.
-fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
-    let mut out = Diagnostics::default();
-    for mut finding in diagnostics {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        out.push(finding);
-    }
-    out
-}
 
 fn version_info(written: Option<&SemVersion>) -> VersionInfo {
     let written = written.map(SemVersion::format_version);
@@ -68,7 +57,7 @@ impl Content for RenderControllerFile {
         for (_, findings) in dropped {
             diagnostics.extend(findings);
         }
-        let diagnostics = locate(diagnostics, &origin);
+        let diagnostics = diagnostics.located(&origin);
         match file {
             Some(file) => Ok(Document::new(
                 file,
@@ -168,7 +157,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
         return FileContribution {
             contributions: vec![Contribution::Rejected(
                 None,
-                Rejected::new(origin.clone(), locate(diagnostics, &origin)),
+                Rejected::located(origin.clone(), diagnostics),
             )],
             findings: Vec::new(),
         };
@@ -193,7 +182,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
                 controller,
                 origin.clone(),
                 version.clone(),
-                locate(mine, &origin),
+                mine.located(&origin),
             ),
         ));
     }
@@ -201,7 +190,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
         let origin = keyed(&key);
         contributions.push(Contribution::Rejected(
             Some(RenderControllerId::parse(key)),
-            Rejected::new(origin.clone(), locate(findings, &origin)),
+            Rejected::located(origin.clone(), findings),
         ));
     }
     // Nothing is left grouped: every key the grouping accepted was a controller's.
@@ -210,7 +199,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
     }
     FileContribution {
         contributions,
-        findings: locate(rest, &origin).into_iter().collect(),
+        findings: rest.located(&origin).into_iter().collect(),
     }
 }
 

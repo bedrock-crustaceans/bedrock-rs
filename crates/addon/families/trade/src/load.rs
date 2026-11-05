@@ -114,7 +114,7 @@ impl TradeTable {
             Err(finding) => return Err(reject(origin, *finding)),
         };
         let mut diagnostics = parsed.diagnostics;
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
             None => Err(Rejected::new(origin, diagnostics)),
@@ -186,15 +186,6 @@ fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    // In place: the list keeps where the members of the upgraded table are in the file.
-    for finding in diagnostics.iter_mut() {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-    }
 }
 
 /// The parse stage of one file: the struct its version selects, not upgraded. `Err` is a
@@ -283,7 +274,7 @@ fn finished(
 ) -> Result<Document<TradeTable>, Rejected> {
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(table)) => {
             Ok(Document::new(table, origin, outcome.version, diagnostics))

@@ -18,3 +18,6 @@ mod rules;
 mod stack;
 #[path = "client_biome/steps.rs"]
 mod steps;
+
+#[path = "client_biome/located.rs"]
+mod located;

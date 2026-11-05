@@ -108,16 +108,6 @@ impl Placed for CullingRules {
     }
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// A closing line of vanilla's for a culling file that was skipped.
 fn closing(template: &'static str, path: &PackPath, phase: Phase) -> Diagnostic {
     Diagnostic::error(DiagnosticCode::DocumentRejected {
@@ -223,7 +213,7 @@ pub(crate) fn parse_culling(
             text: None,
         }));
         vanilla_lines(&mut diagnostics, None, path);
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         return Err(Rejected::new(origin, diagnostics));
     };
     let document = JsonSlice::new(text);
@@ -231,12 +221,12 @@ pub(crate) fn parse_culling(
     let mut diagnostics = outcome.diagnostics;
     match outcome.value {
         Some(Loaded::Stable(rules)) if !diagnostics.has_errors() => {
-            locate(&mut diagnostics, &origin);
+            diagnostics.locate(&origin);
             Ok(Document::new(rules, origin, outcome.version, diagnostics))
         }
         _ => {
             vanilla_lines(&mut diagnostics, Some(document), path);
-            locate(&mut diagnostics, &origin);
+            diagnostics.locate(&origin);
             Err(Rejected::new(origin, diagnostics))
         }
     }
@@ -315,5 +305,52 @@ pub const fn load_culling_rules()
         combine: combine_culling,
         needs: &[],
         then: None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every finding of loading `text` as `block_culling/a.json` of no pack, which must be
+    /// rejected.
+    fn rejected_findings(text: &str) -> Diagnostics {
+        let path = PackPath::from_static("block_culling/a.json");
+        match CullingRules::parse(&path, text.as_bytes(), &LoadContext::detached()) {
+            Ok(document) => panic!("loaded: {:#?}", document.diagnostics()),
+            Err(rejected) => rejected.diagnostics,
+        }
+    }
+
+    #[test]
+    fn every_finding_of_a_rejected_file_carries_its_pack_and_path() {
+        let payload = |description: &str, rule: &str| {
+            format!(
+                r#"{{"format_version": "1.21.80", "minecraft:block_culling_rules": {{"description": {{"identifier": "{description}"}}, "rules": [{rule}]}}}}"#
+            )
+        };
+        let path = PackPath::from_static("block_culling/a.json");
+        for text in [
+            // Not JSON: rejected before the chain runs.
+            "{".to_owned(),
+            // A member no struct has: rejected by the chain.
+            payload(
+                "test:a",
+                r#"{"geometry_part": {"bone": "x"}, "direction": "up", "what": 2}"#,
+            ),
+            // The vanilla namespace in a user pack: rejected by the checks.
+            payload("minecraft:a", ""),
+        ] {
+            let found = rejected_findings(&text);
+            assert!(!found.is_empty(), "{text}");
+            for finding in &found {
+                assert_eq!(
+                    finding.location.pack,
+                    Some(PackRef::app_data()),
+                    "{finding:#?}"
+                );
+                assert_eq!(finding.location.path.as_ref(), Some(&path), "{finding:#?}");
+            }
+        }
     }
 }

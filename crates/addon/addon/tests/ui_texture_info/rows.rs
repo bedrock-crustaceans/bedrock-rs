@@ -425,3 +425,59 @@ fn su01_the_active_subpack_s_copies_are_used() {
     assert_eq!(codes(infos.diagnostics()), []);
     assert_eq!(infos.iter().count(), 1);
 }
+
+#[test]
+fn every_finding_names_its_pack_and_file() {
+    // A slice size of another shape is the crate's own information; the file loads.
+    let stack = stack_of(&[&[
+        ("textures/ui/a.png", ""),
+        ("textures/ui/a.json", r#"{ "nineslice_size": "x" }"#),
+        ("textures/ui/b.png", ""),
+        ("textures/ui/b.json", "{"),
+    ]]);
+    let name = stack
+        .ui_texture_infos()
+        .diagnostics()
+        .next()
+        .map(|finding| {
+            finding
+                .location
+                .pack
+                .as_ref()
+                .map(|p| p.name().to_owned())
+                .unwrap_or_default()
+        });
+    assert_in_files(
+        stack.ui_texture_infos().diagnostics(),
+        name.as_deref().unwrap_or("a pack"),
+        &["textures/ui/a.json", "textures/ui/b.json"],
+    );
+}
+
+/// Every finding of `findings` names the pack `pack` and one of `files`, and each of `files`
+/// has one: the loader gives each finding its document's pack and file (phase 1 step 4 pin).
+fn assert_in_files<'a>(
+    findings: impl IntoIterator<Item = &'a bedrock_addon::diagnostic::Diagnostic>,
+    pack: &str,
+    files: &[&str],
+) {
+    let mut named = Vec::new();
+    for finding in findings {
+        let in_pack = finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name);
+        assert_eq!(in_pack, Some(pack), "{finding:?}");
+        let path = finding
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str);
+        assert!(path.is_some_and(|p| files.contains(&p)), "{finding:?}");
+        named.extend(path.map(str::to_owned));
+    }
+    for file in files {
+        assert!(named.iter().any(|p| p == file), "no finding names {file}");
+    }
+}

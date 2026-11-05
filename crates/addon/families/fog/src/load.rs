@@ -203,17 +203,6 @@ fn finish_parsed(
     (settings, version, diagnostics)
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
-    let mut out = Diagnostics::default();
-    for mut finding in diagnostics {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        out.push(finding);
-    }
-    out
-}
-
 /// Loads one fog file of `pack`.
 pub(crate) fn parse_file(
     pack: PackRef,
@@ -226,12 +215,12 @@ pub(crate) fn parse_file(
     let text = match gates(bytes) {
         Ok(text) => text,
         Err(diagnostics) => {
-            return Err(Rejected::new(origin.clone(), locate(diagnostics, &origin)));
+            return Err(Rejected::located(origin, diagnostics));
         }
     };
     let parsed = as_written(&text, cx);
     let (settings, version, diagnostics) = finish_parsed(parsed, cx);
-    let diagnostics = locate(diagnostics, &origin);
+    let diagnostics = diagnostics.located(&origin);
     match settings {
         Some(settings) => Ok(Document::new(settings, origin, version, diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),
@@ -337,7 +326,7 @@ impl FogSettings {
         let text = match gates(bytes) {
             Ok(text) => text,
             Err(diagnostics) => {
-                return Err(Rejected::new(origin.clone(), locate(diagnostics, &origin)));
+                return Err(Rejected::located(origin, diagnostics));
             }
         };
         let parsed = as_written(&text, cx);
@@ -347,13 +336,13 @@ impl FogSettings {
                 any,
                 origin.clone(),
                 parsed.version,
-                locate(diagnostics, &origin),
+                diagnostics.located(&origin),
             ));
         }
         if !parsed.version.beta {
             failed_to_validate(&mut diagnostics);
         }
-        Err(Rejected::new(origin.clone(), locate(diagnostics, &origin)))
+        Err(Rejected::located(origin, diagnostics))
     }
 }
 
@@ -393,7 +382,7 @@ pub fn upgrade_document(
     );
     let (settings, version, diagnostics) = finish_parsed(parsed, cx);
     // The findings the document carried are located already; the new ones are not.
-    let diagnostics = locate(diagnostics, &origin);
+    let diagnostics = diagnostics.located(&origin);
     match settings {
         Some(settings) => Ok(Document::new(settings, origin, version, diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),

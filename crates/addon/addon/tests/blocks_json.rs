@@ -12,6 +12,8 @@ mod fields;
 mod keys;
 #[path = "blocks_json/link.rs"]
 mod link;
+#[path = "blocks_json/located.rs"]
+mod located;
 #[path = "pack/common.rs"]
 mod pack_common;
 #[path = "blocks_json/round_trip.rs"]

@@ -14,7 +14,7 @@ use indexmap::IndexMap;
 use super::UiTextureInfo;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::{Content, Document, Files, FilesBuilder, FilesRule, Rejected};
-use bedrock_addon_support::fixed_path::{below, document, file_finding, locate, origin};
+use bedrock_addon_support::fixed_path::{below, document, file_finding, origin};
 
 /// The directory whose images have side files.
 const DIRECTORY: &str = "textures/ui";
@@ -39,11 +39,7 @@ fn parse(file: &WalkFile, cx: &LoadContext) -> SideFileCopy {
             let diagnostics = read.diagnostics().clone();
             Ok(document(read.into_value(), origin, diagnostics))
         }
-        Err(rejected) => {
-            let mut diagnostics = rejected.diagnostics;
-            locate(&mut diagnostics, &origin);
-            Err(Rejected::new(origin, diagnostics))
-        }
+        Err(rejected) => Err(Rejected::located(origin, rejected.diagnostics)),
     };
     (file.key.clone(), copy)
 }

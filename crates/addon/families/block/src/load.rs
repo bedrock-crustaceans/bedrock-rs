@@ -159,7 +159,7 @@ impl Block {
         };
         let parsed = parse_as_written::<BlockFamily>(JsonSlice::new(text), cx);
         let mut diagnostics = parsed.diagnostics;
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
             None => Err(Rejected::new(origin, diagnostics)),
@@ -199,7 +199,7 @@ pub(crate) fn upgrade_document(
     );
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(block)) => {
             Ok(Document::new(block, origin, outcome.version, diagnostics))
@@ -269,15 +269,6 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    // In place: the list keeps the places of its lists for the link pass.
-    for finding in diagnostics.iter_mut() {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-    }
-}
-
 /// Loads one block file: the identifier it names (when the payload has one) and the document or
 /// its rejection.
 pub(crate) fn parse_file(
@@ -307,7 +298,7 @@ pub(crate) fn parse_file(
         .map(|id| BlockId::parse(id.to_owned()));
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let result = match outcome.value {
         Some(Loaded::Stable(block)) => {
             Ok(Document::new(block, origin, outcome.version, diagnostics))

@@ -1275,3 +1275,48 @@ fn a06_a_document_with_the_three_components_round_trips() {
     assert_eq!(components, &expected);
     round_trip(&document, |text| atomic(text, &cx()));
 }
+
+#[test]
+fn every_finding_names_its_pack_and_file() {
+    let unknown = r#"{"format_version": "beta", "minecraft:atomic_client_entity": {"description": {"identifier": "a:b"}, "unknown": 1}}"#;
+    let malformed = r#"{"format_version": "x", "minecraft:atomic_client_entity": {"description": {"identifier": "a:c"}}}"#;
+    let files = [
+        ("atomic_client_entities/unknown.json", unknown),
+        ("atomic_client_entities/malformed.json", malformed),
+        ("atomic_client_entities/broken.json", "{"),
+    ];
+    let set = stack(&[pack(&files)]);
+    assert_in_files(
+        set.resource.atomic_client_entities().diagnostics(),
+        "pack 1",
+        &files.map(|(path, _)| path),
+    );
+}
+
+/// Every finding of `findings` names the pack `pack` and one of `files`, and each of `files`
+/// has one: the loader gives each finding its document's pack and file (phase 1 step 4 pin).
+fn assert_in_files<'a>(
+    findings: impl IntoIterator<Item = &'a bedrock_addon::diagnostic::Diagnostic>,
+    pack: &str,
+    files: &[&str],
+) {
+    let mut named = Vec::new();
+    for finding in findings {
+        let in_pack = finding
+            .location
+            .pack
+            .as_ref()
+            .map(bedrock_addon::pack::PackRef::name);
+        assert_eq!(in_pack, Some(pack), "{finding:?}");
+        let path = finding
+            .location
+            .path
+            .as_ref()
+            .map(bedrock_addon::storage::PackPath::as_str);
+        assert!(path.is_some_and(|p| files.contains(&p)), "{finding:?}");
+        named.extend(path.map(str::to_owned));
+    }
+    for file in files {
+        assert!(named.iter().any(|p| p == file), "no finding names {file}");
+    }
+}

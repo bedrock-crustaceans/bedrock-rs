@@ -35,17 +35,6 @@ const DUPLICATE: &str =
 impl bedrock_addon_core::__private::Sealed for SoundMetadataFile {}
 impl bedrock_addon_core::__private::Sealed for SoundMetadata {}
 
-/// Gives every finding the file's pack and path.
-fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
-    let mut out = Diagnostics::default();
-    for mut finding in diagnostics {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        out.push(finding);
-    }
-    out
-}
-
 /// Gives a version below the one slice this loader's text: the versioned loader has no parser below
 /// its first slice, so a version below 1.26.60 is "no parser
 /// available" like one above it, not the "use json format version … or higher" of a floor.
@@ -87,15 +76,12 @@ fn parse_file(
             message: "not UTF-8 JSON within the nesting limit".to_owned(),
             text: None,
         }));
-        return Err(Rejected::new(origin.clone(), locate(diagnostics, &origin)));
+        return Err(Rejected::located(origin, diagnostics));
     };
     let text = bedrock_addon_core::json::last_wins(text);
     let document = JsonSlice::new(&text);
     let outcome = load::<MetadataFamily>(document, cx);
-    let diagnostics = locate(
-        vanilla_texts(outcome.diagnostics, outcome.version.written),
-        &origin,
-    );
+    let diagnostics = vanilla_texts(outcome.diagnostics, outcome.version.written).located(&origin);
     match outcome.value {
         Some(Loaded::Stable(file)) => Ok(Document::new(file, origin, outcome.version, diagnostics)),
         _ => Err(Rejected::new(origin, diagnostics)),

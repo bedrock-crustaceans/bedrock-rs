@@ -448,22 +448,6 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
-/// A rejection with these findings.
-fn reject(origin: &Origin, mut diagnostics: Diagnostics) -> Rejected {
-    locate(&mut diagnostics, origin);
-    Rejected::new(origin.clone(), diagnostics)
-}
-
 /// What the loader stage gives a type's parse: the text, its identifier and context.
 struct Stage<'a> {
     text: &'a str,
@@ -683,7 +667,7 @@ pub(crate) fn parse_file(
     let origin = origin(pack, side, path);
     let (text, root, identifier) = match identify(bytes, path, source) {
         Ok(found) => found,
-        Err(d) => return (None, Err(reject(&origin, d))),
+        Err(d) => return (None, Err(Rejected::located(origin, d))),
     };
     let key = payload_key(&root);
     let stage = Stage {
@@ -696,9 +680,9 @@ pub(crate) fn parse_file(
         d.push(Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
             name: key.clone(),
         }));
-        return (Some(identifier), Err(reject(&origin, d)));
+        return (Some(identifier), Err(Rejected::located(origin, d)));
     };
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let result = match value {
         Some(feature) => Ok(Document::new(feature, origin, version, diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),
@@ -716,7 +700,7 @@ pub(crate) fn parse_file_as_written(
     let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
     let (text, root, _) = match identify(bytes, path, FileSource::Pack) {
         Ok(found) => found,
-        Err(d) => return Err(reject(&origin, d)),
+        Err(d) => return Err(Rejected::located(origin, d)),
     };
     let key = payload_key(&root);
     let stage = Stage {
@@ -729,9 +713,9 @@ pub(crate) fn parse_file_as_written(
         d.push(Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
             name: key.clone(),
         }));
-        return Err(reject(&origin, d));
+        return Err(Rejected::located(origin, d));
     };
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match value {
         Some(value) => Ok(Document::new(value, origin, version, diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),
@@ -821,13 +805,10 @@ pub(crate) fn upgrade_document(
     };
     match with_type(key, upgrade) {
         Some(Ok((feature, version, mut diagnostics))) => {
-            locate(&mut diagnostics, &origin);
+            diagnostics.locate(&origin);
             Ok(Document::new(feature, origin, version, diagnostics))
         }
-        Some(Err(mut diagnostics)) => {
-            locate(&mut diagnostics, &origin);
-            Err(Rejected::new(origin, diagnostics))
-        }
+        Some(Err(diagnostics)) => Err(Rejected::located(origin, diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),
     }
 }

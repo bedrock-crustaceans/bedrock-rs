@@ -1548,3 +1548,30 @@ fn a_legacy_look_time_string_is_read_as_parse_range_reads_it() {
     );
     has(&found, &format!("ValueRewritten Info {at}"));
 }
+
+/// Where in the file a member a step moved is, as the loaded document's findings answer it
+/// after the loader gave each finding its file (phase 1 step 4 pin): the `look_time` range the
+/// 1.21.130 step builds is at the `min_look_time` the file has; a member nothing moved is
+/// where it is.
+#[test]
+fn the_document_answers_where_a_moved_member_is_in_the_file() {
+    use bedrock_addon_core::diagnostic::JsonPath;
+    let text = doc(
+        "1.21.120",
+        r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:behavior.look_at_player": {"priority": 1, "min_look_time": 3}}}"#,
+    );
+    let document = super::common::parse(&text).expect("the entity loads");
+    let goal = [
+        "minecraft:entity",
+        "components",
+        "minecraft:behavior.look_at_player",
+    ];
+    let at = |member: &[&str]| JsonPath::new().with(&goal).with(member);
+    let found = document.diagnostics();
+    assert_eq!(
+        found.place_of(&at(&["look_time", "min"])),
+        at(&["min_look_time"])
+    );
+    assert_eq!(found.place_of(&at(&["look_time"])), at(&["min_look_time"]));
+    assert_eq!(found.place_of(&at(&["priority"])), at(&["priority"]));
+}

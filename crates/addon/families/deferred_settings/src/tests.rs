@@ -749,3 +749,35 @@ fn the_files_of_a_stack_are_combined_in_near_linear_time() {
         );
     });
 }
+
+/// Every finding of `found` is in the app-data pack's file `path`.
+fn assert_located(found: &bedrock_addon_core::diagnostic::Diagnostics, path: &'static str) {
+    assert!(!found.is_empty(), "no finding to place");
+    for finding in found {
+        assert_eq!(
+            finding.location.pack,
+            Some(PackRef::app_data()),
+            "{finding:?}"
+        );
+        assert_eq!(
+            finding.location.path,
+            Some(PackPath::from_static(path)),
+            "{finding:?}"
+        );
+    }
+}
+
+#[test]
+fn findings_carry_the_file_and_pack() {
+    const PATH: &str = "lighting/x.json";
+    let cx = LoadContext::detached();
+    let path = PackPath::from_static(PATH);
+    // A loaded file with a finding (an unknown member), and one that is no JSON.
+    let text = r#"{"format_version": "1.26.0", "minecraft:lighting_settings": {"description": {"identifier": "demo:day"}, "x": 1}}"#;
+    let document = LightingSettings::parse(&path, text.as_bytes(), &cx).expect("the file loads");
+    assert_located(document.diagnostics(), PATH);
+    let rejected = LightingSettings::parse(&path, b"\xff", &cx).expect_err("the file is refused");
+    assert_located(&rejected.diagnostics, PATH);
+    let rejected = LightingSettings::parse(&path, b"{", &cx).expect_err("the file is refused");
+    assert_located(&rejected.diagnostics, PATH);
+}

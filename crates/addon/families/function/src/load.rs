@@ -108,16 +108,6 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
     Origin::file(pack, side, path.clone())
 }
 
-/// Gives every finding the file's pack and path.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// Neither file kind has a `format_version`: the version is the engine's.
 fn unversioned(cx: &LoadContext) -> VersionInfo {
     VersionInfo::new(None, false, cx.engine_version, cx.engine_version, false)
@@ -139,7 +129,7 @@ fn parse_function_file(
         diagnostics.push(Diagnostic::error(DiagnosticCode::IgnoredFile {
             text: None,
         }));
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         return (None, Err(Rejected::new(origin, diagnostics)));
     };
     let name = FunctionPath::parse(name);
@@ -150,7 +140,7 @@ fn parse_function_file(
         .as_ref()
         .map(MinEngineVersion::command_version);
     let (function, mut diagnostics) = parse_function(name.clone(), bytes, version);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let result = if diagnostics.has_errors() {
         Err(Rejected::new(origin, diagnostics))
     } else {
@@ -184,7 +174,7 @@ fn parse_tick_file(
     let parsed = parse_tick(finite.bytes(), version);
     let mut diagnostics = parsed.diagnostics;
     finite.settle(&mut diagnostics, None);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let result = match parsed.list {
         Some(list) if !diagnostics.has_errors() => {
             Ok(Document::new(list, origin, unversioned(cx), diagnostics))

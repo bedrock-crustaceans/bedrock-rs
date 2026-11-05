@@ -10,6 +10,8 @@ mod chain;
 mod common;
 #[path = "particle/cost.rs"]
 mod cost;
+#[path = "particle/located.rs"]
+mod located;
 #[path = "particle/molang.rs"]
 mod molang;
 #[path = "particle/rows.rs"]

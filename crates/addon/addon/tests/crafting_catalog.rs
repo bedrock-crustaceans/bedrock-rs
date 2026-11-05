@@ -27,3 +27,6 @@ mod stacks;
 
 #[path = "crafting_catalog/vanilla_1_26_50.rs"]
 mod vanilla_1_26_50;
+
+#[path = "crafting_catalog/located.rs"]
+mod located;

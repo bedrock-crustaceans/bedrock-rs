@@ -22,7 +22,7 @@ use super::read::{
     report_in_file, unwrap_copy,
 };
 use super::span;
-use super::write::{locate, parse_error, rejected, stem_of, unversioned, wrong_root};
+use super::write::{parse_error, rejected, stem_of, unversioned, wrong_root};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
@@ -157,7 +157,7 @@ fn parse_copy(file: &WalkFile) -> FileCopy {
             None
         }
     };
-    locate(&mut findings, &origin);
+    findings.locate(&origin);
     span::fill_all(&file.bytes, &mut findings);
     FileCopy {
         origin,

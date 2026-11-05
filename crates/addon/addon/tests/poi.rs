@@ -16,6 +16,9 @@ mod deviations;
 #[path = "poi/link.rs"]
 mod link;
 
+#[path = "poi/located.rs"]
+mod located;
+
 #[path = "poi/pins.rs"]
 mod pins;
 

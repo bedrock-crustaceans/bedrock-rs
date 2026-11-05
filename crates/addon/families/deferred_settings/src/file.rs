@@ -41,16 +41,6 @@ fn text(bytes: &[u8]) -> Option<&str> {
     std::str::from_utf8(bytes).ok()
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// The rejection of a file that is no text.
 fn unreadable(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
@@ -58,8 +48,7 @@ fn unreadable(origin: Origin) -> Rejected {
         message: "not UTF-8 JSON within the nesting limit".to_owned(),
         text: None,
     }));
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+    Rejected::located(origin, diagnostics)
 }
 
 /// The member that holds the version.
@@ -442,7 +431,7 @@ fn finish_file<F: Payload>(
 ) -> Result<Document<F::Latest>, Rejected> {
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(value)) => {
             Ok(Document::new(value, origin, outcome.version, diagnostics))
@@ -465,7 +454,7 @@ pub(crate) fn as_written<F: Payload>(
     };
     let parsed = parse_stage::<F>(JsonSlice::new(text), cx);
     let mut diagnostics = parsed.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match parsed.value {
         Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),

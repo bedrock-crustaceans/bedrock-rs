@@ -392,17 +392,6 @@ fn load_as(path: &PackPath, bytes: &[u8], cx: &LoadContext, keyed: bool) -> Load
     }
 }
 
-/// Gives every finding the file's pack and path.
-fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
-    let mut out = Diagnostics::default();
-    for mut finding in diagnostics {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        out.push(finding);
-    }
-    out
-}
-
 fn detached_origin(path: &PackPath) -> Origin {
     Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
 }
@@ -428,7 +417,7 @@ pub fn load_file(
 ) -> Result<Document<GeometryFile>, Rejected> {
     let origin = detached_origin(path);
     let loaded = load(path, bytes, cx);
-    let diagnostics = locate(loaded.diagnostics, &origin);
+    let diagnostics = loaded.diagnostics.located(&origin);
     match loaded.finished {
         Some(finished) if !diagnostics.has_errors() => Ok(Document::new(
             finished.file,
@@ -461,7 +450,7 @@ pub fn load_keyed_file(
 ) -> Result<Document<GeometryFile>, Rejected> {
     let origin = detached_origin(path);
     let loaded = load_as(path, bytes, cx, true);
-    let diagnostics = locate(loaded.diagnostics, &origin);
+    let diagnostics = loaded.diagnostics.located(&origin);
     match loaded.finished {
         Some(finished) if !diagnostics.has_errors() => Ok(Document::new(
             finished.file,
@@ -530,7 +519,7 @@ impl GeometryFile {
                 text: None,
             }));
         }
-        let diagnostics = locate(diagnostics, &origin);
+        let diagnostics = diagnostics.located(&origin);
         match outcome {
             Outcome::Loaded(written) => {
                 let parsed_as = written.any.parsed_version();
@@ -559,7 +548,7 @@ pub(crate) fn upgrade_document(
         cx,
         &mut diagnostics,
     );
-    let diagnostics = locate(diagnostics, &origin);
+    let diagnostics = diagnostics.located(&origin);
     match finished {
         Some(finished) if !diagnostics.has_errors() => {
             Ok(Document::new(finished.file, origin, version, diagnostics))
@@ -614,7 +603,7 @@ fn parse_walked(file: &WalkFile, cx: &LoadContext) -> FileContribution {
     };
     // The gates read the directory from the path without a subpack folder.
     let loaded = load(&file.key, &file.bytes, cx);
-    let diagnostics = locate(loaded.diagnostics, &origin);
+    let diagnostics = loaded.diagnostics.located(&origin);
     let Some(finished) = loaded.finished else {
         if loaded.empty {
             out.findings.extend(diagnostics);
@@ -924,7 +913,7 @@ fn apply(
             let mut found = Diagnostics::default();
             // A file's registered geometries are its first contributions, in file order.
             missing_bone_parents(&geometry, slot.1, &unknown, &mut found);
-            diagnostics.extend(locate(found, &origin));
+            diagnostics.extend(found.located(&origin));
             Contribution::Stable(id, Document::new(geometry, origin, version, diagnostics))
         });
     }

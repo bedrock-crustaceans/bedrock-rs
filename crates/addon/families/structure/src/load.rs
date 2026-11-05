@@ -50,16 +50,6 @@ fn version() -> VersionInfo {
     VersionInfo::new(None, false, one, one, false)
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// Loads one structure file of `pack`.
 pub(crate) fn parse_file(
     pack: PackRef,
@@ -70,7 +60,7 @@ pub(crate) fn parse_file(
 ) -> Result<Document<Structure>, Rejected> {
     let origin = Origin::file(pack, side, path.clone());
     let (value, mut diagnostics) = parse::read(bytes, cx);
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match value {
         Some(structure) => Ok(Document::new(structure, origin, version(), diagnostics)),
         None => Err(Rejected::new(origin, diagnostics)),

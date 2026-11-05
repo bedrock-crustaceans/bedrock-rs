@@ -112,16 +112,6 @@ fn text(bytes: &[u8]) -> Option<&str> {
     std::str::from_utf8(bytes).ok()
 }
 
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// The error of a file without a valid `format_version`.
 fn no_valid_version() -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MissingFormatVersion {
@@ -221,7 +211,7 @@ impl CraftingCatalog {
             vanilla_checks(&mut parsed.diagnostics, document);
         }
         let mut diagnostics = parsed.diagnostics;
-        locate(&mut diagnostics, &origin);
+        diagnostics.locate(&origin);
         match parsed.value {
             Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
             None => Err(Rejected::new(origin, diagnostics)),
@@ -276,8 +266,7 @@ fn unreadable(origin: Origin) -> Rejected {
         text: None,
     }));
     diagnostics.push(no_valid_version());
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+    Rejected::located(origin, diagnostics)
 }
 
 /// Loads the catalogue file of `pack`.
@@ -300,7 +289,7 @@ pub(crate) fn parse_file(
     }
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     match outcome.value {
         Some(Loaded::Stable(catalog)) => {
             Ok(Document::new(catalog, origin, outcome.version, diagnostics))

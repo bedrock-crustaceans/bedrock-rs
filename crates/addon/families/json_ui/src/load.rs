@@ -84,7 +84,7 @@ fn lone(path: &PackPath) -> Origin {
 
 /// A document of this unversioned family: no file carries a `format_version`.
 fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Document<T> {
-    locate(&mut diagnostics, &origin);
+    diagnostics.locate(&origin);
     let none = FormatVersion::new(0, 0, 0);
     Document::new(
         value,
@@ -101,18 +101,7 @@ fn reject(origin: Origin, message: String) -> Rejected {
         message,
         text: None,
     }));
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
+    Rejected::located(origin, diagnostics)
 }
 
 /// The root object of a file, or the rejection.
