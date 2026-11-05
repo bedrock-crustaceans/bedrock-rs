@@ -277,7 +277,7 @@ fn check_blocks(component: &BiomeComponent, base: &[&str], cx: &mut ValidateCx<'
 /// `minecraft:climate`: the snow cover's minimum must not exceed its maximum.
 fn climate(c: &Climate, base: &[&str], cx: &mut ValidateCx<'_>) {
     if let Some([min, max]) = c.snow_accumulation
-        && min.0 > max.0
+        && min > max
     {
         cx.diagnostics.push(
             Diagnostic::error(DiagnosticCode::InvalidValue {
@@ -292,7 +292,7 @@ fn climate(c: &Climate, base: &[&str], cx: &mut ValidateCx<'_>) {
 /// `minecraft:creature_spawn_probability`: `[0.0, 0.75]`.
 fn spawn_probability(c: &CreatureSpawnProbability, base: &[&str], cx: &mut ValidateCx<'_>) {
     if let Some(p) = c.probability
-        && !(0.0..=0.75).contains(&p.0)
+        && !(0.0..=0.75).contains(&p)
     {
         cx.diagnostics.push(
             Diagnostic::error(constraint())
@@ -398,7 +398,7 @@ fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], cx: &mu
             noise_frequency_scale,
             ..
         } = replacement;
-        let dimension = dimension.0.as_str();
+        let dimension = dimension.as_str();
         dimensions.insert(dimension);
         let accepted = dimension == OVERWORLD || (!before_1_26_0 && dimension == NETHER);
         if !accepted {
@@ -414,10 +414,10 @@ fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], cx: &mu
             );
         }
         for target in targets {
-            if !pairs.insert((dimension, target.0.as_str())) {
+            if !pairs.insert((dimension, target.as_str())) {
                 cx.diagnostics.push(
                     Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: text(DUPLICATE_PAIR, &[dimension, &target.0]),
+                        text: text(DUPLICATE_PAIR, &[dimension, target]),
                     })
                     .at(child(&cx.at, &at("targets")))
                     .phase(Phase::Validate),
@@ -431,14 +431,14 @@ fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], cx: &mu
                     .phase(Phase::Validate),
             );
         }
-        if !(amount.0 > 0.0 && amount.0 <= 1.0) {
+        if !(*amount > 0.0 && *amount <= 1.0) {
             cx.diagnostics.push(
                 Diagnostic::error(constraint())
                     .at(child(&cx.at, &at("amount")))
                     .phase(Phase::Validate),
             );
         }
-        if !(noise_frequency_scale.0 > 0.0 && noise_frequency_scale.0 <= 100.0) {
+        if !(*noise_frequency_scale > 0.0 && *noise_frequency_scale <= 100.0) {
             cx.diagnostics.push(
                 Diagnostic::error(constraint())
                     .at(child(&cx.at, &at("noise_frequency_scale")))
@@ -465,7 +465,7 @@ fn surface_builder(builder: &Builder, base_game: bool, base: &[&str], cx: &mut V
     let depth = |value: i32| (0..=127).contains(&value);
     match builder {
         Builder::Overworld(s) | Builder::FrozenOcean(s) => {
-            if !depth(s.sea_floor_depth.0) {
+            if !depth(s.sea_floor_depth) {
                 cx.diagnostics.push(
                     Diagnostic::error(constraint())
                         .at(child(&cx.at, &at("sea_floor_depth")))
@@ -474,7 +474,7 @@ fn surface_builder(builder: &Builder, base_game: bool, base: &[&str], cx: &mut V
             }
         }
         Builder::Swamp(s) => {
-            if !depth(s.sea_floor_depth.0) {
+            if !depth(s.sea_floor_depth) {
                 cx.diagnostics.push(
                     Diagnostic::error(constraint())
                         .at(child(&cx.at, &at("sea_floor_depth")))
@@ -482,7 +482,7 @@ fn surface_builder(builder: &Builder, base_game: bool, base: &[&str], cx: &mut V
                 );
             }
             // The puddle depth has the same closed bounds, 0 to 127.
-            if !depth(s.max_puddle_depth_below_sea_level.0) {
+            if !depth(s.max_puddle_depth_below_sea_level) {
                 cx.diagnostics.push(
                     Diagnostic::error(constraint())
                         .at(child(&cx.at, &at("max_puddle_depth_below_sea_level")))
@@ -491,7 +491,7 @@ fn surface_builder(builder: &Builder, base_game: bool, base: &[&str], cx: &mut V
             }
         }
         Builder::Mesa(s) => {
-            if !depth(s.sea_floor_depth.0) {
+            if !depth(s.sea_floor_depth) {
                 cx.diagnostics.push(
                     Diagnostic::error(constraint())
                         .at(child(&cx.at, &at("sea_floor_depth")))
@@ -560,7 +560,7 @@ fn noise_gradient(
             path
         };
         if let Some(noise) = &specifier.noise
-            && let Some(code) = noise_constraint(&noise.0, base_game)
+            && let Some(code) = noise_constraint(noise, base_game)
         {
             cx.diagnostics.push(
                 Diagnostic::error(code)
@@ -661,7 +661,7 @@ fn adjustments(c: &SurfaceMaterialAdjustments, base: &[&str], cx: &mut ValidateC
             ..
         } = adjustment;
         if let Some([low, high]) = noise_range
-            && high.0 <= low.0
+            && high <= low
         {
             cx.diagnostics.push(
                 Diagnostic::error(DiagnosticCode::InvalidValue {
@@ -808,7 +808,7 @@ fn multinoise(identifier: &BiomeId, cx: &mut ValidateCx<'_>) {
 fn nether(components: &ComponentMap<BiomeComponent>, cx: &mut ValidateCx<'_>) {
     let replaces_nether = components
         .get::<ReplaceBiomes>()
-        .is_some_and(|r| r.replacements.iter().any(|x| x.dimension.0 == NETHER));
+        .is_some_and(|r| r.replacements.iter().any(|x| x.dimension == NETHER));
     if !replaces_nether {
         return;
     }

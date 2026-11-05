@@ -3,8 +3,7 @@
 use super::v1_21_40::Component;
 use super::{change, find, has, insert, legacy_document, v1_21_100};
 use crate::component::GrassAppearance;
-use bedrock_addon_core::document::{Component as _, Extra};
-use bedrock_addon_core::json::StrictBool;
+use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
@@ -34,7 +33,7 @@ impl Upgrade for ClientBiome {
         if cx.original_version < GRASS_SHADE_UPGRADE_BEFORE
             && self.description.identifier.as_str() == SHADED
         {
-            let shaded = Some(StrictBool(true));
+            let shaded = Some(true);
             match find::<GrassAppearance>(&components) {
                 Some((mut grass, synthesized)) => {
                     grass.grass_is_shaded = shaded;
@@ -46,7 +45,6 @@ impl Upgrade for ClientBiome {
                     GrassAppearance {
                         color: None,
                         grass_is_shaded: shaded,
-                        extra: Extra::default(),
                     },
                     cx,
                 ),

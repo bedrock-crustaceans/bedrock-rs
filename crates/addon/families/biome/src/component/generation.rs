@@ -5,106 +5,79 @@
 use facet::Facet;
 use facet_value::VArray;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::ValueExt;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictString, Value};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{BlockSpecifier, ShapeErrorKind};
 
 /// `minecraft:mountain_parameters`: steep-slope materials and the top slide of mountain
 /// terrain. Every member is optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MountainParameters {
     /// The block on steep slopes and the sides it covers (JSON `steep_material_adjustment`).
-    #[facet(default)]
     pub steep_material_adjustment: Option<SteepMaterialAdjustment>,
     /// The density reduction near the world's top (JSON `top_slide`).
-    #[facet(default)]
     pub top_slide: Option<TopSlide>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `mountain_parameters.steep_material_adjustment`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SteepMaterialAdjustment {
     /// The block placed on steep slopes (JSON `material`).
-    #[facet(default)]
     pub material: Option<BlockSpecifier>,
     /// Slopes facing north (JSON `north_slopes`).
-    #[facet(default)]
-    pub north_slopes: Option<StrictBool>,
+    pub north_slopes: Option<bool>,
     /// Slopes facing south (JSON `south_slopes`).
-    #[facet(default)]
-    pub south_slopes: Option<StrictBool>,
+    pub south_slopes: Option<bool>,
     /// Slopes facing west (JSON `west_slopes`).
-    #[facet(default)]
-    pub west_slopes: Option<StrictBool>,
+    pub west_slopes: Option<bool>,
     /// Slopes facing east (JSON `east_slopes`).
-    #[facet(default)]
-    pub east_slopes: Option<StrictBool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub east_slopes: Option<bool>,
 }
 
 /// `mountain_parameters.top_slide`.
 // Required members: no `Default`, or facet would default them.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TopSlide {
     /// Whether the top slide applies (JSON `enabled`, required).
-    pub enabled: StrictBool,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub enabled: bool,
 }
 
 /// `minecraft:multinoise_generation_rules`: where the biome lands in the multi-noise climate
 /// space. The game applies it only to biomes in the `minecraft` namespace.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MultinoiseGenerationRules {
     /// JSON `target_temperature`.
-    #[facet(default)]
-    pub target_temperature: Option<StrictFloat<f32>>,
+    pub target_temperature: Option<f32>,
     /// JSON `target_humidity`.
-    #[facet(default)]
-    pub target_humidity: Option<StrictFloat<f32>>,
+    pub target_humidity: Option<f32>,
     /// JSON `target_altitude`.
-    #[facet(default)]
-    pub target_altitude: Option<StrictFloat<f32>>,
+    pub target_altitude: Option<f32>,
     /// JSON `target_weirdness`.
-    #[facet(default)]
-    pub target_weirdness: Option<StrictFloat<f32>>,
+    pub target_weirdness: Option<f32>,
     /// JSON `weight`.
-    #[facet(default)]
-    pub weight: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub weight: Option<f32>,
 }
 
 /// `minecraft:overworld_generation_rules`: the legacy overworld generator's transformations
 /// and climates.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct OverworldGenerationRules {
     /// The biomes that replace this one as hills (JSON `hills_transformation`).
-    #[facet(default)]
     pub hills_transformation: Option<WeightedBiomes>,
     /// The biomes that replace this one as its mutated variant (JSON `mutate_transformation`).
-    #[facet(default)]
     pub mutate_transformation: Option<WeightedBiomes>,
     /// The climates and weights the biome generates for (JSON `generate_for_climates`).
-    #[facet(default)]
     pub generate_for_climates: Option<Vec<WeightedClimate>>,
     /// The biomes along its rivers (JSON `river_transformation`).
-    #[facet(default)]
     pub river_transformation: Option<WeightedBiomes>,
     /// The biomes along its shores (JSON `shore_transformation`).
-    #[facet(default)]
     pub shore_transformation: Option<WeightedBiomes>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A transformation target: one biome name, or a list of names, each with an optional weight.
@@ -337,21 +310,17 @@ impl From<&WeightedClimate> for Value {
 
 /// `minecraft:overworld_height`: the legacy generator's terrain height, as a preset or as
 /// `[depth, scale]`, not both.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct OverworldHeight {
     /// A height preset (JSON `noise_type`).
-    #[facet(default)]
     pub noise_type: Option<NoiseType>,
     /// `[depth, scale]` (JSON `noise_params`).
-    #[facet(default)]
-    pub noise_params: Option<[StrictFloat<f32>; 2]>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub noise_params: Option<[f32; 2]>,
 }
 
 /// A terrain-height preset; the game numbers the fifteen presets 0 to 14 in the order listed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -401,30 +370,30 @@ impl NoiseType {
 
 /// `minecraft:replace_biomes`: replaces vanilla biomes, by noise, with this one.
 // Required members: no `Default`, or facet would default them.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ReplaceBiomes {
     /// The replacements (JSON `replacements`, required, at least one).
     pub replacements: Vec<BiomeReplacement>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of `replace_biomes.replacements`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct BiomeReplacement {
     /// The dimension: `minecraft:overworld`, or from format 1.26.0 also `minecraft:nether`
     /// (JSON `dimension`, required).
-    pub dimension: StrictString,
+    pub dimension: String,
     /// The vanilla biomes to replace, by name without namespace (JSON `targets`, required, at
     /// least one).
-    pub targets: Vec<StrictString>,
+    pub targets: Vec<String>,
     /// How much of the targets to replace, in `(0, 1]` (JSON `amount`, required).
-    pub amount: StrictFloat<f32>,
+    pub amount: f32,
     /// The scale of the replacement noise, in `(0, 100]` (JSON `noise_frequency_scale`,
     /// required).
-    pub noise_frequency_scale: StrictFloat<f32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub noise_frequency_scale: f32,
 }
+
+// Read through their proxies, which judge their own form.
+bedrock_addon_core::impl_schema_leaf!(WeightedBiomes, WeightedClimate);
+bedrock_addon_core::impl_no_molang!(WeightedBiomes, WeightedClimate);

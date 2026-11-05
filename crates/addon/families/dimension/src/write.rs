@@ -36,7 +36,6 @@ impl VersionStruct for Dimension {
             description: inner.description,
             components: inner.components,
             source_format_version: cx.original_version,
-            root_extra: root.extra,
         })
     }
 

@@ -116,7 +116,7 @@ fn jmeta01_typed_use_legacy_rotation_true_upgrades_without_it_with_a_dropped_fie
     };
     assert!(outcome.version.upgraded);
     let entry = &registry.metadata["42"];
-    assert_eq!(entry.size.map(|n| n.0), [1, 2, 3]);
+    assert_eq!(entry.size, [1, 2, 3]);
     assert_eq!(entry.markers.len(), 1);
     let dropped: Vec<_> = outcome
         .diagnostics

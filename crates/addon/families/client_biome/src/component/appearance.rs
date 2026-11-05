@@ -10,9 +10,10 @@ use crate::color::{Color255Rgb, clamped_channels, is_rgb};
 use crate::texts::{COLOR, WATER_EMPTY, fixed};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
-use bedrock_addon_core::document::{Extra, UnknownMembers};
-use bedrock_addon_core::json::{StrictBool, StrictFloat, Value};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::JsonType;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::ShapeErrorKind;
 
 /// The member that names a colour map.
@@ -90,6 +91,10 @@ color_or_map! {
     /// The colour of grass: a fixed colour or a grass colour map.
     GrassColor, GrassColorMap
 }
+
+// The colours are read through their proxies, which judge their own form.
+bedrock_addon_core::impl_schema_leaf!(FoliageColor, GrassColor);
+bedrock_addon_core::impl_no_molang!(FoliageColor, GrassColor);
 
 /// A foliage colour map (JSON `color_map` of `minecraft:foliage_appearance`); the game knows
 /// six, numbered 0 to 5 in the order listed.
@@ -169,93 +174,67 @@ impl GrassColorMap {
 }
 
 /// `minecraft:foliage_appearance`: the colour of the biome's leaves.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct FoliageAppearance {
     /// JSON `color`; absent leaves the game's colour.
-    #[facet(default)]
     pub color: Option<FoliageColor>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:grass_appearance`: the colour of the biome's grass.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct GrassAppearance {
     /// JSON `color`; absent leaves the game's colour.
-    #[facet(default)]
     pub color: Option<GrassColor>,
     /// JSON `grass_is_shaded` (format 1.21.100); read it through
     /// [`grass_is_shaded`](Self::grass_is_shaded).
-    #[facet(default)]
-    pub grass_is_shaded: Option<StrictBool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl GrassAppearance {
-    /// Whether grass is darkened as under a dense canopy; `false` when the member is absent
-    /// (the game fills an absent member with zero).
-    pub fn grass_is_shaded(&self) -> bool {
-        self.grass_is_shaded.is_some_and(|shaded| shaded.0)
-    }
+    /// Absent, grass is not darkened as under a dense canopy (the game fills an absent member
+    /// with zero).
+    #[facet(schema::fallback = false)]
+    pub grass_is_shaded: Option<bool>,
 }
 
 /// `minecraft:dry_foliage_color`: the colour of leaf litter and other dry foliage.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DryFoliageColor {
     /// JSON `color`.
     pub color: Color255Rgb,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:sky_color`: the colour of the sky.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SkyColor {
     /// JSON `sky_color`.
     pub sky_color: Color255Rgb,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:water_appearance`: the colour and opacity of the water's surface. At least one
 /// member is needed.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct WaterAppearance {
     /// JSON `surface_color`.
-    #[facet(default)]
     pub surface_color: Option<Color255Rgb>,
     /// JSON `surface_opacity`, from 0 to 1.
-    #[facet(default)]
-    pub surface_opacity: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub surface_opacity: Option<f32>,
 }
 
 /// `minecraft:precipitation`: the particles that fall in the biome and how dense they are. At
 /// most one member may be present.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Precipitation {
     /// JSON `ash`.
-    #[facet(default)]
-    pub ash: Option<StrictFloat<f32>>,
+    pub ash: Option<f32>,
     /// JSON `blue_spores`.
-    #[facet(default)]
-    pub blue_spores: Option<StrictFloat<f32>>,
+    pub blue_spores: Option<f32>,
     /// JSON `red_spores`.
-    #[facet(default)]
-    pub red_spores: Option<StrictFloat<f32>>,
+    pub red_spores: Option<f32>,
     /// JSON `white_ash`.
-    #[facet(default)]
-    pub white_ash: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub white_ash: Option<f32>,
 }
 
 /// The member `key` of `json` as an RGB colour: another form is vanilla's error; an array

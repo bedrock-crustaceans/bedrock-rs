@@ -6,8 +6,8 @@ use crate::{
 };
 use crate::{RootV1, bounds_constraints, parse_root, slice_null_rule};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictInt, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, write_payload,
@@ -27,23 +27,19 @@ pub struct Dimension {
     pub components: Components,
     /// The document's `format_version` (the floor when absent); written as `format_version`.
     pub source_format_version: FormatVersion,
-    /// The root members beside `format_version` and `minecraft:dimension`.
-    pub root_extra: Extra,
 }
 
 /// `minecraft:dimension/components` of `[1.18.0, 1.26.50)`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Components {
     /// The lowest and highest y (JSON `minecraft:dimension_bounds`); vanilla reads an absent
     /// member as `{0, 0}`.
-    #[facet(rename = "minecraft:dimension_bounds", default)]
+    #[facet(rename = "minecraft:dimension_bounds")]
     pub dimension_bounds: Option<DimensionBounds>,
     /// The generator (JSON `minecraft:generation`).
     #[facet(rename = "minecraft:generation")]
     pub generation: Generation,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Components {
@@ -79,7 +75,6 @@ impl VersionStruct for Dimension {
             description: inner.description,
             components: inner.components,
             source_format_version: cx.original_version,
-            root_extra: root.extra,
         })
     }
 
@@ -113,7 +108,6 @@ impl Upgrade for Dimension {
         // reads the bounds here and does not know the name): the height is the step's, and
         // the file's member is not carried under the newest format's name, where it would
         // be read as the height. The crate notes it where it is, as an information.
-        let extra = self.components.extra;
         let components = JsonPath::of_keys(["minecraft:dimension", "components"]);
         // `minecraft:dimension_bounds` is not carried: what it held besides its members goes.
         cx.diagnostics
@@ -142,10 +136,8 @@ impl Upgrade for Dimension {
                 default_biome: None,
                 clouds: None,
                 generation: self.components.generation,
-                extra,
             },
             source_format_version: self.source_format_version,
-            root_extra: self.root_extra,
         }
     }
 }
@@ -166,10 +158,9 @@ fn dropped(name: &str) -> Diagnostic {
     reason = "the game keeps the low sixteen bits of each"
 )]
 fn bounds_to_height(bounds: &DimensionBounds) -> DimensionHeight {
-    let (min, max) = (bounds.min.0, bounds.max.0);
+    let (min, max) = (bounds.min, bounds.max);
     DimensionHeight {
-        min_y: StrictInt(min as i16),
-        height_range: StrictInt(max.wrapping_sub(min) as i16),
-        extra: Extra::default(),
+        min_y: min as i16,
+        height_range: max.wrapping_sub(min) as i16,
     }
 }

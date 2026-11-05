@@ -7,51 +7,44 @@ use facet::Facet;
 use super::{Clouds, DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight};
 use crate::history::v1_18_0::Components as ComponentsV1;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
-    JsonSlice, NullRule, Value, keep_unknown_members, parse_at, reject_nulls,
+    JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
+    reject_nulls,
 };
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::ParseCx;
 
 /// The whole document of `[1.18.0, 1.26.50)` (vanilla `v1_21_60::DimensionDocument`).
-#[derive(Facet)]
+#[derive(Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub(crate) struct RootV1 {
     #[facet(rename = "minecraft:dimension")]
     pub(crate) dimension: InnerV1,
-    // A skipped field still takes the JSON member of its name in facet rc.7: a NUL-prefixed
-    // name no document has keeps a root member `extra` an unknown member.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub(crate) extra: Extra,
 }
 
 /// `minecraft:dimension` of `[1.18.0, 1.26.50)`.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub(crate) struct InnerV1 {
     pub(crate) description: DimensionDescription,
     pub(crate) components: ComponentsV1,
-    #[facet(skip, rename = "\u{0}extra")]
-    pub(crate) extra: Extra,
 }
 
 /// The whole document from 1.26.50 (vanilla `v1_26_50::DimensionDocument`).
-#[derive(Facet)]
+#[derive(Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub(crate) struct RootLatest {
     #[facet(rename = "minecraft:dimension")]
     pub(crate) dimension: InnerLatest,
-    // A skipped field still takes the JSON member of its name in facet rc.7: a NUL-prefixed
-    // name no document has keeps a root member `extra` an unknown member.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub(crate) extra: Extra,
 }
 
 /// `minecraft:dimension` from 1.26.50.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub(crate) struct InnerLatest {
     pub(crate) description: DimensionDescription,
     pub(crate) components: DimensionComponents,
-    #[facet(skip, rename = "\u{0}extra")]
-    pub(crate) extra: Extra,
 }
 
 /// The root member the envelope reads: the crate does not report it as an unknown member of the
@@ -81,13 +74,21 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
     rule: Option<NullRule>,
     d: &mut Diagnostics,
 ) -> Option<R> {
-    let value = match parse_at::<R>(text) {
-        Ok(value) => value,
-        Err(error) => {
+    // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
+    // its integer a type error).
+    let ScalarRead { value, .. } = match parse_with_rules::<R>(text, rule, cx.load.scalar_rules) {
+        Ok(read) => read,
+        Err(ScalarFailure::Read(error)) => {
             d.push(error.into_diagnostic(&cx.at, |code, _| code));
             return None;
         }
+        Err(ScalarFailure::Refused(misread)) => {
+            d.push(misread.finding(&cx.at));
+            return None;
+        }
     };
+    // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
+    // a `null` read as a struct, which the typed read never reported (the null rule does).
     if rule == Some(NullRule::Rejected) && reject_nulls(&value, text, &cx.at, d) {
         return None;
     }
@@ -154,8 +155,8 @@ pub(crate) fn bounds_constraints(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> bool {
-    let min = constraint(bounds.min.0, (-512, 512), Some(16), at.child("min"), d);
-    let max = constraint(bounds.max.0, (-512, 512), Some(16), at.child("max"), d);
+    let min = constraint(bounds.min, (-512, 512), Some(16), at.child("min"), d);
+    let max = constraint(bounds.max, (-512, 512), Some(16), at.child("max"), d);
     min && max
 }
 
@@ -167,14 +168,14 @@ pub(crate) fn height_constraints(
     d: &mut Diagnostics,
 ) -> bool {
     let min_y = constraint(
-        i32::from(height.min_y.0),
+        i32::from(height.min_y),
         (-512, 512),
         None,
         at.child("min_y"),
         d,
     );
     let range = constraint(
-        i32::from(height.height_range.0),
+        i32::from(height.height_range),
         (16, 1024),
         Some(16),
         at.child("height_range"),
@@ -186,7 +187,7 @@ pub(crate) fn height_constraints(
 /// The bind constraint of `minecraft:clouds`: `height` in `[-512, 512]`.
 pub(crate) fn clouds_constraint(clouds: &Clouds, at: &JsonPath, d: &mut Diagnostics) -> bool {
     constraint(
-        i32::from(clouds.height.0),
+        i32::from(clouds.height),
         (-512, 512),
         None,
         at.child("height"),

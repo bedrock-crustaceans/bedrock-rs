@@ -160,7 +160,7 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
     d.unknown_mut().left_out(&at.child("structures"), &places);
     // The spacing must be more than twice the separation.
     let placement = &value.placement;
-    if u32::from(placement.spacing.0) <= 2 * u32::from(placement.separation.0) {
+    if u32::from(placement.spacing) <= 2 * u32::from(placement.separation) {
         d.push(Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Formatted {
                     template: "Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.",

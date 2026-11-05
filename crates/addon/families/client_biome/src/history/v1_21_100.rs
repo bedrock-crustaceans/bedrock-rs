@@ -3,8 +3,7 @@
 use super::v1_21_40::Component;
 use super::{change, find, has, insert, legacy_document, v1_21_110};
 use crate::component::{BiomeMusic, Precipitation};
-use bedrock_addon_core::document::{Component as _, Extra};
-use bedrock_addon_core::json::{StrictBool, StrictFloat};
+use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
@@ -22,7 +21,7 @@ const PARTICLES_AND_UNDERWATER_MUSIC_BEFORE: FormatVersion = known::V1_21_110;
 /// carried before 1.21.110. Only the one member is written: of the four densities (`ash`,
 /// `blue_spores`, `red_spores`, `white_ash`) the game writes each only when it is not 0.
 fn precipitation(identifier: &str) -> Option<Precipitation> {
-    let density = |value: f32| Some(StrictFloat(value));
+    let density = |value: f32| Some(value);
     let mut particles = Precipitation::default();
     match identifier {
         "minecraft:basalt_deltas" => particles.white_ash = density(2.0),
@@ -68,7 +67,7 @@ impl Upgrade for ClientBiome {
             insert(&mut components, particles, cx);
         }
         if early && UNDERWATER_MUSIC.contains(&identifier) {
-            let underwater = Some(StrictBool(true));
+            let underwater = Some(true);
             match find::<BiomeMusic>(&components) {
                 Some((mut music, synthesized)) => {
                     music.underwater_music = underwater;
@@ -81,7 +80,6 @@ impl Upgrade for ClientBiome {
                         volume_multiplier: None,
                         music_definition: None,
                         underwater_music: underwater,
-                        extra: Extra::default(),
                     },
                     cx,
                 ),

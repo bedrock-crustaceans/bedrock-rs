@@ -5,9 +5,9 @@ use facet::Facet;
 use super::{Checked, child};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{MusicDefinitionId, SoundEventName};
-use bedrock_addon_core::json::{StrictBool, StrictFloat, Value};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// The chance of an addition that names none: the game stores 1.0.
 const DEFAULT_CHANCE: f32 = 1.0;
@@ -17,29 +17,22 @@ const DEFAULT_CHANCE: f32 = 1.0;
 ///
 /// A member the document leaves out is `None`; the accessor of its name gives the game's
 /// default (no sound). Every member is optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct AmbientSounds {
     /// JSON `addition`: a sound played now and then.
-    #[facet(default)]
     pub addition: Option<SoundAddition>,
     /// JSON `loop`: the sound that plays all the time.
-    #[facet(default, rename = "loop")]
+    #[facet(rename = "loop")]
     pub loop_sound: Option<SoundEventName>,
     /// JSON `mood`: the sound played in dark, enclosed places.
-    #[facet(default)]
     pub mood: Option<SoundEventName>,
     /// JSON `underwater_addition` (format 1.21.120).
-    #[facet(default)]
     pub underwater_addition: Option<SoundAddition>,
     /// JSON `underwater_loop` (format 1.21.120).
-    #[facet(default)]
     pub underwater_loop: Option<SoundEventName>,
     /// JSON `underwater_mood` (format 1.21.120).
-    #[facet(default)]
     pub underwater_mood: Option<SoundEventName>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl AmbientSounds {
@@ -97,15 +90,13 @@ impl AmbientSounds {
 
 /// A sound played now and then: `{"asset": "<sound>", "chance": 0.0111}`. Both members are
 /// required; `asset` is not empty and `chance` lies in `[0, 1]`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SoundAddition {
     /// JSON `asset`: the sound event, not empty.
     pub asset: SoundEventName,
     /// JSON `chance`: how likely the sound is each tick, from 0 to 1.
-    pub chance: StrictFloat<f32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub chance: f32,
 }
 
 impl SoundAddition {
@@ -113,37 +104,25 @@ impl SoundAddition {
     fn none() -> Self {
         Self {
             asset: SoundEventName::parse(""),
-            chance: StrictFloat(DEFAULT_CHANCE),
-            extra: Extra::default(),
+            chance: DEFAULT_CHANCE,
         }
     }
 }
 
 /// `minecraft:biome_music`: the music of the biome. Every member is optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct BiomeMusic {
     /// JSON `volume_multiplier`, from 0 to 1.
-    #[facet(default)]
-    pub volume_multiplier: Option<StrictFloat<f32>>,
+    pub volume_multiplier: Option<f32>,
     /// JSON `music_definition` (format 1.21.70): a music definition of
     /// `sounds/music_definitions.json`.
-    #[facet(default)]
     pub music_definition: Option<MusicDefinitionId>,
     /// JSON `underwater_music` (format 1.21.110); read it through
     /// [`underwater_music`](Self::underwater_music).
-    #[facet(default)]
-    pub underwater_music: Option<StrictBool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl BiomeMusic {
-    /// Whether the underwater music plays in the biome's water; `false` when the member is
-    /// absent (the game fills an absent member with zero).
-    pub fn underwater_music(&self) -> bool {
-        self.underwater_music.is_some_and(|underwater| underwater.0)
-    }
+    /// Absent, the underwater music does not play (the game fills an absent member with zero).
+    #[facet(schema::fallback = false)]
+    pub underwater_music: Option<bool>,
 }
 
 /// A [`SoundAddition`]'s constraints on the member `key`: `asset` is not empty and `chance`

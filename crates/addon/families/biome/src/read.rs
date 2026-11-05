@@ -9,9 +9,10 @@ use indexmap::IndexMap;
 use super::component::{BiomeComponent, Builder, SubsurfaceBuilder, SurfaceBuilder, child};
 use super::{Description, EnvironmentAttributes};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_payload};
@@ -26,22 +27,19 @@ pub(crate) const V1_26_30: FormatVersion = known::V1_26_30;
 
 /// A stable payload: components as raw slices, parsed one at a time.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell<'a> {
     description: Description,
     components: IndexMap<String, RawJson<'a>>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// The beta payload.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct BetaShell<'a> {
     description: Description,
     components: IndexMap<String, RawJson<'a>>,
-    #[facet(default)]
     environment_attributes: Option<EnvironmentAttributes>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What a payload object holds.

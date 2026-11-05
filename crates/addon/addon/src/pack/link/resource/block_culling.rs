@@ -65,7 +65,7 @@ pub(super) fn culled<'a>(cx: &LinkCx<'a>) -> Vec<Culled<'a>> {
             let Some(Geometry::Params(geometry)) = components.get::<Geometry>() else {
                 continue;
             };
-            let Some(culling) = geometry.culling.as_ref().map(String::as_str) else {
+            let Some(culling) = geometry.culling.as_deref() else {
                 continue;
             };
             if culling.is_empty() {

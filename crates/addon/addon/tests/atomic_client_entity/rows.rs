@@ -9,7 +9,6 @@ use bedrock_addon::families::atomic_client_entity::{
     Components, VisibilityBoundary,
 };
 use bedrock_addon::id::AtomicClientEntityId;
-use bedrock_addon::json::{StrictFloat, StrictInt};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::version::FormatVersion;
 use bedrock_addon::versioning::BETA_VERSION;
@@ -244,7 +243,7 @@ fn s01_full() {
     );
     let scripts = d.scripts.as_ref().unwrap();
     assert_eq!(scripts.initialize.as_deref(), Some(&[][..]));
-    assert_eq!(scripts.animate.as_ref().unwrap()[0].0, "idle");
+    assert_eq!(scripts.animate.as_ref().unwrap()[0], "idle");
     assert_eq!(
         d.render_controllers.as_ref().unwrap()[0]
             .controller()
@@ -590,7 +589,7 @@ fn r08_scripts_not_compiled() {
     let document = loaded(atomic(&wisp(members, ""), &cx()));
     silent(document.diagnostics());
     let scripts = document.description.scripts.as_ref().unwrap();
-    assert_eq!(scripts.pre_animation.as_ref().unwrap()[1].0, "1 +");
+    assert_eq!(scripts.pre_animation.as_ref().unwrap()[1], "1 +");
 }
 
 #[test]
@@ -1262,16 +1261,16 @@ fn a06_a_document_with_the_three_components_round_trips() {
         ])),
         companion_block_clipping: Some(CompanionBlockClipping {
             reveal_boundary: Some(VisibilityBoundary {
-                margin: Some(StrictFloat(0.25)),
+                margin: Some(0.25),
                 ..VisibilityBoundary::default()
             }),
-            hide_transition_seconds: Some(StrictFloat(0.5)),
+            hide_transition_seconds: Some(0.5),
             ..CompanionBlockClipping::default()
         }),
     };
     let mut expected = expected;
     if let Some(avoidance) = &mut expected.companion_block_avoidance {
-        avoidance.anchor_switch_cooldown = Some(StrictInt(100));
+        avoidance.anchor_switch_cooldown = Some(100);
     }
     assert_eq!(components, &expected);
     round_trip(&document, |text| atomic(text, &cx()));

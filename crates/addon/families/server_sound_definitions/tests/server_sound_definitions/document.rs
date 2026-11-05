@@ -36,9 +36,9 @@ fn ssd02_full_definition() {
     assert_eq!(tags["demo:area"].values(), ["arena"]);
     assert_eq!(tags["demo:phase"].values(), ["one", "two"]);
     let music = theme.music_info.as_ref().unwrap();
-    assert_eq!(music.title.as_ref().unwrap().0, "Boss Theme");
-    assert_eq!(music.genres.as_ref().unwrap()[0].0, "orchestral");
-    assert_eq!(theme.broadcast_range.unwrap().0, 64.0);
+    assert_eq!(music.title.as_ref().unwrap(), "Boss Theme");
+    assert_eq!(music.genres.as_ref().unwrap()[0], "orchestral");
+    assert_eq!(theme.broadcast_range.unwrap(), 64.0);
 }
 
 #[test]
@@ -298,7 +298,7 @@ fn ssd09_an_unknown_member_rejects_the_file_and_is_reported() {
 fn ssd10_broadcast_range_needs_a_1_26_50_engine_deviation() {
     // Ours: the member is accepted from engine 1.26.50; retail 1.26.45 does not bind it.
     let text = file(r#"{"sound_event_name": "demo:x", "broadcast_range": 32}"#);
-    assert_eq!(loads(&text).0[0].broadcast_range.unwrap().0, 32.0);
+    assert_eq!(loads(&text).0[0].broadcast_range.unwrap(), 32.0);
     let mut old = context(true, false);
     old.engine_version = FormatVersion::new(1, 26, 45);
     let refused = parse_with(&text, &old).unwrap_err();

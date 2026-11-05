@@ -69,9 +69,9 @@ fn b04_1_21_110_floor() {
     let biome = document.value();
     assert_eq!(biome.description.identifier.as_str(), "minecraft:plains");
     let climate = biome.components.get::<Climate>().expect("climate");
-    assert_eq!(climate.downfall.map(|d| d.0), Some(0.4));
+    assert_eq!(climate.downfall, Some(0.4));
     assert_eq!(
-        climate.snow_accumulation.map(|[a, b]| (a.0, b.0)),
+        climate.snow_accumulation.map(|[a, b]| (a, b)),
         Some((0.0, 0.125))
     );
     assert_eq!(
@@ -86,7 +86,7 @@ fn b04_1_21_110_floor() {
     else {
         panic!("an overworld builder")
     };
-    assert_eq!(surface.sea_floor_depth.0, 7);
+    assert_eq!(surface.sea_floor_depth, 7);
     assert_eq!(surface.top_material.name.as_str(), "minecraft:grass_block");
     assert!(
         biome
@@ -294,7 +294,7 @@ pub fn tags(document: &Biome) -> Vec<String> {
     document
         .components
         .get::<Tags>()
-        .map(|t| t.tags.iter().map(|t| t.0.clone()).collect())
+        .map(|t| t.tags.clone())
         .unwrap_or_default()
 }
 
@@ -625,7 +625,7 @@ fn b15_beta_environment_attributes() {
         .as_ref()
         .and_then(|a| a.experimental_float_attr_1.as_ref())
         .expect("the attribute");
-    assert_eq!(attribute.value.0, 1.0);
+    assert_eq!(attribute.value, 1.0);
     assert_eq!(
         attribute.operation,
         bedrock_addon::families::biome::FloatOperation::Add

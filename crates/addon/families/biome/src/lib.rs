@@ -19,7 +19,7 @@ pub use environment::{
     FloatAttribute, FloatOperation,
 };
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;
 
 use component::BiomeComponent;
@@ -54,16 +54,19 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::json::{PrepareError, Prepared};
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString};
-use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Walk};
+use bedrock_addon_core::load::{
+    self, CollectionLoader, DocumentSource, LoadContext, StackCx, Walk,
+};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::BlockSpecifier;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BelowFloor, ComponentSection, ComponentTable, DocumentRead, Envelope,
-    EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, Parsed,
-    ValidateCx, VersionStruct, finish, member_version, parse_as_written, write_envelope,
+    BETA_VERSION, BelowFloor, BeyondWidth, ComponentSection, ComponentTable, DocumentRead,
+    Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, Parsed,
+    Reading, Scalars, StructIndex, ValidateCx, VersionStruct, finish, member_version,
+    parse_as_written, write_envelope,
 };
 
 /// A server biome (`minecraft:biome`), at the newest format version.
@@ -82,14 +85,12 @@ pub struct Biome {
 }
 
 /// `minecraft:biome/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The biome's identifier, `namespace:name` in lower case (JSON `identifier`, matching
     /// `^[a-z0-9._%+-]+:[a-z0-9._%+-]+$`).
     pub identifier: BiomeId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A beta biome (`"format_version": "beta"`): the newest components plus
@@ -114,6 +115,17 @@ const FLOOR: FormatVersion = known::V1_21_110;
 const WORLD_GATE_VERSION: SemVersion = SemVersion::new(1, 21, 110);
 /// The first experimental format the below-floor hint names.
 const EXPERIMENTAL_FORMATS: FormatVersion = FormatVersion::new(1, 13, 0);
+
+/// How every biome document is read: the document-input profile, its scalars strictly (a member
+/// takes its own JSON type alone, and a number beyond its float is a type error). The
+/// components read by it too, also outside a versioned load.
+pub(crate) fn reading() -> Reading {
+    BiomeFamily::ENVELOPE
+        .input
+        .profile()
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Error)
+}
 
 impl Family for BiomeFamily {
     const NAME: &'static str = "biome";
@@ -140,6 +152,11 @@ impl Family for BiomeFamily {
     type Beta = Beta;
     type Component = BiomeComponent;
     type Any = Any;
+
+    /// [`reading`] for every slice.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        reading()
+    }
 
     fn components() -> &'static ComponentTable<Self> {
         BiomeComponent::TABLE
@@ -623,10 +640,7 @@ pub const LOADER: CollectionLoader<Registry<Biome>, Contribution<Biome>> = Colle
 impl Description {
     /// The description of `identifier`.
     pub fn new(identifier: BiomeId) -> Self {
-        Self {
-            identifier,
-            extra: Extra::default(),
-        }
+        Self { identifier }
     }
 }
 
@@ -656,10 +670,7 @@ impl Beta {
 impl Humidity {
     /// `minecraft:humidity` with `is_humid`.
     pub fn new(is_humid: bool) -> Self {
-        Self {
-            is_humid: StrictBool(is_humid),
-            extra: Extra::default(),
-        }
+        Self { is_humid }
     }
 }
 
@@ -667,8 +678,7 @@ impl Tags {
     /// `minecraft:tags` with `tags`, in order.
     pub fn new<S: Into<String>>(tags: impl IntoIterator<Item = S>) -> Self {
         Self {
-            tags: tags.into_iter().map(|t| StrictString(t.into())).collect(),
-            extra: Extra::default(),
+            tags: tags.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -676,20 +686,14 @@ impl Tags {
 impl TopSlide {
     /// `top_slide` with `enabled`.
     pub fn new(enabled: bool) -> Self {
-        Self {
-            enabled: StrictBool(enabled),
-            extra: Extra::default(),
-        }
+        Self { enabled }
     }
 }
 
 impl ReplaceBiomes {
     /// `minecraft:replace_biomes` with `replacements`.
     pub fn new(replacements: Vec<BiomeReplacement>) -> Self {
-        Self {
-            replacements,
-            extra: Extra::default(),
-        }
+        Self { replacements }
     }
 }
 
@@ -703,14 +707,10 @@ impl BiomeReplacement {
         noise_frequency_scale: f32,
     ) -> Self {
         Self {
-            dimension: StrictString(dimension.into()),
-            targets: targets
-                .into_iter()
-                .map(|t| StrictString(t.into()))
-                .collect(),
-            amount: StrictFloat(amount),
-            noise_frequency_scale: StrictFloat(noise_frequency_scale),
-            extra: Extra::default(),
+            dimension: dimension.into(),
+            targets: targets.into_iter().map(Into::into).collect(),
+            amount,
+            noise_frequency_scale,
         }
     }
 }
@@ -721,7 +721,6 @@ impl MapTints {
         Self {
             grass,
             foliage: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -729,20 +728,14 @@ impl MapTints {
 impl SurfaceBuilder {
     /// `minecraft:surface_builder` with `builder`.
     pub fn new(builder: Builder) -> Self {
-        Self {
-            builder,
-            extra: Extra::default(),
-        }
+        Self { builder }
     }
 }
 
 impl SubsurfaceBuilder {
     /// `minecraft:subsurface_builder` with `builder`.
     pub fn new(builder: Builder) -> Self {
-        Self {
-            builder,
-            extra: Extra::default(),
-        }
+        Self { builder }
     }
 }
 
@@ -758,13 +751,12 @@ impl OverworldSurface {
         sea_material: BlockSpecifier,
     ) -> Self {
         Self {
-            sea_floor_depth: StrictInt(sea_floor_depth),
+            sea_floor_depth,
             sea_floor_material,
             foundation_material,
             mid_material,
             top_material,
             sea_material,
-            extra: Extra::default(),
         }
     }
 }
@@ -779,8 +771,7 @@ impl SwampSurface {
             mid_material: surface.mid_material,
             top_material: surface.top_material,
             sea_material: surface.sea_material,
-            max_puddle_depth_below_sea_level: StrictInt(max_puddle_depth_below_sea_level),
-            extra: surface.extra,
+            max_puddle_depth_below_sea_level,
         }
     }
 }
@@ -799,7 +790,6 @@ impl CappedSurface {
             sea_material,
             foundation_material,
             beach_material: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -823,9 +813,8 @@ impl MesaSurface {
             sea_material: surface.sea_material,
             clay_material,
             hard_clay_material,
-            bryce_pillars: StrictBool(bryce_pillars),
-            has_forest: StrictBool(has_forest),
-            extra: surface.extra,
+            bryce_pillars,
+            has_forest,
         }
     }
 }
@@ -841,7 +830,6 @@ impl NoiseGradientSurface {
             noise_descriptor,
             non_replaceable_blocks: None,
             noise_block_specifiers,
-            extra: Extra::default(),
         }
     }
 }
@@ -850,10 +838,9 @@ impl NoiseDescriptor {
     /// The noise `name` from `first_octave` with one amplitude per octave.
     pub fn new(name: impl Into<String>, first_octave: i32, amplitudes: Vec<f32>) -> Self {
         Self {
-            name: StrictString(name.into()),
-            first_octave: StrictInt(first_octave),
-            amplitudes: amplitudes.into_iter().map(StrictFloat).collect(),
-            extra: Extra::default(),
+            name: name.into(),
+            first_octave,
+            amplitudes: amplitudes.into_iter().collect(),
         }
     }
 }
@@ -866,7 +853,6 @@ impl NoiseBlockSpecifier {
             threshold: None,
             range: None,
             block,
-            extra: Extra::default(),
         }
     }
 }
@@ -879,7 +865,6 @@ impl Adjustment {
             noise_range: None,
             height_range: None,
             noise_frequency_scale: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -887,33 +872,21 @@ impl Adjustment {
 impl BoolAttribute {
     /// `value`, combined by `operation`.
     pub fn new(value: bool, operation: BoolOperation) -> Self {
-        Self {
-            value: StrictBool(value),
-            operation,
-            extra: Extra::default(),
-        }
+        Self { value, operation }
     }
 }
 
 impl ColorAttribute {
     /// `value`, combined by `operation`.
     pub fn new(value: ColorRgba, operation: ColorOperation) -> Self {
-        Self {
-            value,
-            operation,
-            extra: Extra::default(),
-        }
+        Self { value, operation }
     }
 }
 
 impl FloatAttribute {
     /// `value`, combined by `operation`.
     pub fn new(value: f32, operation: FloatOperation) -> Self {
-        Self {
-            operation,
-            value: StrictFloat(value),
-            extra: Extra::default(),
-        }
+        Self { operation, value }
     }
 }
 
@@ -925,7 +898,6 @@ mod tests {
         NoiseBlockSpecifier, NoiseDescriptor, NoiseGradientSurface, OverworldSurface,
         ReplaceBiomes, SwampSurface, TheEndSurface,
     };
-    use bedrock_addon_core::document::Extra;
     use bedrock_addon_core::id::BlockId;
     use bedrock_addon_core::json::JsonSlice;
     use bedrock_addon_core::load::LoadContext;
@@ -934,7 +906,7 @@ mod tests {
     /// Writes `component` and reads it back with its row parser: the same value, no finding.
     #[track_caller]
     fn reads_back(name: &str, component: BiomeComponent) {
-        let json = crate::component::write_component(&component).expect("writes");
+        let json = component.write_component().expect("writes");
         let text = bedrock_addon_core::json::to_facet_json(&json).expect("text");
         let row = BiomeComponent::TABLE.get(name).expect("a row");
         let mut found = bedrock_addon_core::diagnostic::Diagnostics::default();
@@ -987,10 +959,7 @@ mod tests {
         );
         reads_back(
             "minecraft:map_tints",
-            MapTints::new(GrassTint::Noise {
-                extra: Extra::default(),
-            })
-            .into(),
+            MapTints::new(GrassTint::Noise {}).into(),
         );
         for builder in [
             Builder::Overworld(overworld()),
@@ -1030,7 +999,6 @@ mod tests {
                     top_material: Some(block("minecraft:sand")),
                     ..Default::default()
                 })]),
-                ..Default::default()
             }
             .into(),
         );
@@ -1071,8 +1039,8 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.21.110..=1.26.30 (0..=3): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                1.21.110..=1.26.30 (0..=3): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
+                beta: json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
     }

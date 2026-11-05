@@ -27,8 +27,6 @@ pub type PoiTypeAny = Single<PoiTypeFamily>;
 /// tag struct (format 1.26.40 and later).
 pub type PoiTagAny = Single<PoiTagFamily>;
 
-bedrock_addon_core::impl_no_molang!(PoiType, PoiTag);
-
 /// Runs the rest of the load on a document [`PoiType::parse_as_written`] gave: the same result
 /// `Content::parse` gives for its file.
 ///

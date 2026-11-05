@@ -8,7 +8,7 @@ use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::poi::history::{upgrade_tag, upgrade_type};
 use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
-use bedrock_addon::json::{StrictInt, Value, WriteStyle};
+use bedrock_addon::json::{Value, WriteStyle};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
 use bedrock_addon::versioning::Single;
@@ -145,8 +145,8 @@ fn a_built_value_is_written_in_bind_order_at_1_26_40() {
     let hall = loads::<PoiType>(&shuffled);
     assert_eq!(hall.version().written, Some(FormatVersion::new(1, 26, 50)));
     let built = PoiType {
-        tickets: Some(StrictInt(3)),
-        usable_distance: Some(StrictInt(4)),
+        tickets: Some(3),
+        usable_distance: Some(4),
         tags: Some(vec![PoiTagId::from_static("test:civic")]),
         ..PoiType::new(
             PoiTypeId::from_static("test:hall"),

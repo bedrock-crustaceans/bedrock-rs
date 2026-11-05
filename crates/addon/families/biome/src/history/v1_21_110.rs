@@ -11,9 +11,10 @@ use crate::read::payload;
 use crate::texts::INVALID_BIOME_FILE;
 use crate::write::object;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
-use bedrock_addon_core::document::{ComponentMap, Extra};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
+use bedrock_addon_core::document::ComponentMap;
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
@@ -34,12 +35,11 @@ pub struct Biome {
 
 /// The document's root.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Root<'a> {
-    format_version: StrictString,
+    format_version: String,
     #[facet(rename = "minecraft:biome")]
     biome: RawJson<'a>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 impl Versioned for Biome {
@@ -87,7 +87,7 @@ fn read(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Optio
     };
     let payload = payload(slice, Biome::VERSION, &inner, d)?;
     Some(Biome {
-        format_version: root.format_version.0,
+        format_version: root.format_version,
         description: payload.description,
         components: payload.components,
     })

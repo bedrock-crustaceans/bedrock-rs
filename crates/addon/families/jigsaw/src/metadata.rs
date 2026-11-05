@@ -3,8 +3,7 @@
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictInt, StrictString};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A jigsaw structure metadata file (`worldgen/metadata/*.dat`): a precomputed cache of the
 /// size and jigsaw blocks of each structure template a pool element places.
@@ -37,56 +36,50 @@ impl std::fmt::Debug for JigsawMetadata {
 
 /// The typed body of a metadata file at 1.21.80 and later, the payload of
 /// `minecraft:jigsaw_structure_metadata`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MetadataRegistry {
     /// The metadata of each structure element, by the element's 64-bit metadata key written in
     /// decimal (JSON `metadata`).
     pub metadata: IndexMap<String, StructureMetadata>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The metadata of one generated structure template.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct StructureMetadata {
     /// The template's bounding size (JSON `size`).
-    pub size: [StrictInt<i32>; 3],
+    pub size: [i32; 3],
     /// The jigsaw blocks in the template (JSON `markers`).
     pub markers: Vec<JigsawBlockMetadata>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One jigsaw block of a template.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct JigsawBlockMetadata {
     /// The name another jigsaw block's `target` refers to (JSON `name`).
-    pub name: StrictString,
+    pub name: String,
     /// The template pool to generate from (JSON `pool`).
-    pub pool: StrictString,
+    pub pool: String,
     /// The name of the jigsaw block to attach to (JSON `target`).
-    pub target: StrictString,
+    pub target: String,
     /// The block's serialisation id before generation (JSON `block`).
-    pub block: StrictString,
+    pub block: String,
     /// The serialisation id the jigsaw block turns into (JSON `final_block`).
-    pub final_block: StrictString,
+    pub final_block: String,
     /// The joint made with `target` (JSON `joint_type`).
     pub joint_type: JointType,
     /// The block's position (JSON `pos`).
-    pub pos: [StrictInt<i32>; 3],
+    pub pos: [i32; 3],
     /// The priority in target selection (JSON `selection_priority`).
-    pub selection_priority: StrictInt<i32>,
+    pub selection_priority: i32,
     /// The priority in placement (JSON `placement_priority`).
-    pub placement_priority: StrictInt<i32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub placement_priority: i32,
 }
 
 /// The joint a jigsaw block makes with its target (`joint_type`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]

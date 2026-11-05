@@ -5,8 +5,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
 use bedrock_addon_core::json::{
-    ClampedText, EncodeError, JsonSlice, NullRule, Value, Width, clamp_text, parse_at,
-    reject_nulls, unknown_members,
+    ClampedText, EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, Width,
+    clamp_text, parse_with_rules, reject_nulls, unknown_members,
 };
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -107,9 +107,20 @@ impl VersionStruct for AtomicClientEntity {
             text: &clamped.text,
             offset: payload.offset,
         });
-        let entity = match parse_at::<Self>(payload) {
-            Ok(entity) => entity,
-            Err(mut error) => {
+        // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
+        // its float a type error).
+        let read = parse_with_rules::<Self>(payload, cx.load.null_rule, cx.load.scalar_rules);
+        let entity = match read {
+            Ok(ScalarRead { value, .. }) => {
+                // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
+                // a `null` read as a struct, which the typed read never reported (the null rule does).
+                value
+            }
+            Err(ScalarFailure::Refused(misread)) => {
+                d.push(misread.finding(&cx.at));
+                return None;
+            }
+            Err(ScalarFailure::Read(mut error)) => {
                 // The parse read the clamped text; the finding is of the file as written.
                 if let Some(clamped) = &clamped {
                     error.span = clamped.written_span(error.span, payload.offset);
@@ -199,8 +210,8 @@ fn not_negative(entity: &AtomicClientEntity) -> Vec<(Vec<&'static str>, f32)> {
         return found;
     };
     if let Some(aabb) = &components.aabb_dimensions {
-        found.push((vec!["components", AABB, "width"], aabb.width.0));
-        found.push((vec!["components", AABB, "height"], aabb.height.0));
+        found.push((vec!["components", AABB, "width"], aabb.width));
+        found.push((vec!["components", AABB, "height"], aabb.height));
     }
     if let Some(clipping) = &components.companion_block_clipping {
         for (name, value) in [
@@ -210,7 +221,7 @@ fn not_negative(entity: &AtomicClientEntity) -> Vec<(Vec<&'static str>, f32)> {
             ("hide_transition_seconds", clipping.hide_transition_seconds),
         ] {
             if let Some(value) = value {
-                found.push((vec!["components", CLIPPING, name], value.0));
+                found.push((vec!["components", CLIPPING, name], value));
             }
         }
         for (boundary, written) in [
@@ -224,7 +235,7 @@ fn not_negative(entity: &AtomicClientEntity) -> Vec<(Vec<&'static str>, f32)> {
                 ("lookahead_max", written.lookahead_max),
             ] {
                 if let Some(value) = value {
-                    found.push((vec!["components", CLIPPING, boundary, name], value.0));
+                    found.push((vec!["components", CLIPPING, boundary, name], value));
                 }
             }
         }

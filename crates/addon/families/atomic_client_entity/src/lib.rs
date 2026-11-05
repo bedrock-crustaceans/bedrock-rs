@@ -5,6 +5,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod read;
+#[cfg(test)]
+mod tests;
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
@@ -22,13 +24,14 @@ use bedrock_addon_core::id::{
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, Envelope, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, NoStable, load, write_envelope,
+    BETA_VERSION, BetaPermission, BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, NoStable, Reading, Scalars, StructIndex, load, write_envelope,
 };
 use bedrock_addon_core::visual::{ControllerUse, HasVisuals, Visuals};
 use facet::Facet;
@@ -62,7 +65,6 @@ pub struct AtomicClientEntity {
     /// `description`: the identifier and what the client draws.
     pub description: AtomicDescription,
     /// `components`: the entity's components.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub components: Option<Components>,
 }
 
@@ -74,72 +76,49 @@ pub struct AtomicDescription {
     pub identifier: AtomicClientEntityId,
     /// `materials`: slot name → material. `None`, here and in the members below, is a
     /// description without the member; an empty one the author wrote is kept.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub materials: Option<IndexMap<String, MaterialId>>,
     /// `textures`: slot name → texture path.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub textures: Option<IndexMap<String, TexturePath>>,
     /// `geometry`: slot name → geometry.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub geometry: Option<IndexMap<String, GeometryId>>,
     /// `animations`: short name → animation or animation controller.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub animations: Option<IndexMap<String, AnimationRef>>,
     /// `particle_effects`: short name → particle effect.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `sound_effects`: short name → sound event.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `scripts`: the Molang the client runs and the animations it plays.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub scripts: Option<AtomicScripts>,
     /// `render_controllers`: the render controllers that draw the entity, in order. Names
     /// only: every entry is [`ControllerUse::Always`], and the `{ name: condition }` form is an
     /// error.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub render_controllers: Option<Vec<ControllerUse>>,
 }
 
 /// `scripts` of an atomic client entity: three lists of plain strings. The Molang statements
 /// are kept as text; nothing compiles them when the document loads.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AtomicScripts {
     /// `initialize`: Molang statements run once.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub initialize: Option<Vec<StrictString>>,
+    pub initialize: Option<Vec<String>>,
     /// `pre_animation`: Molang statements run before the animations.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub pre_animation: Option<Vec<StrictString>>,
+    pub pre_animation: Option<Vec<String>>,
     /// `animate`: the animations to play, by their `animations` short name; names only.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub animate: Option<Vec<StrictString>>,
+    pub animate: Option<Vec<String>>,
 }
 
 /// `components` of an atomic client entity. The engine knows three components; any other key
 /// is an error (the behaviour-pack entity's `minecraft:collision_box` among them).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Components {
     /// `minecraft:aabb_dimensions`.
-    #[facet(
-        default,
-        rename = "minecraft:aabb_dimensions",
-        skip_serializing_if = Option::is_none
-    )]
+    #[facet(rename = "minecraft:aabb_dimensions")]
     pub aabb_dimensions: Option<AabbDimensions>,
     /// `minecraft:companion_block_avoidance`.
-    #[facet(
-        default,
-        rename = "minecraft:companion_block_avoidance",
-        skip_serializing_if = Option::is_none
-    )]
+    #[facet(rename = "minecraft:companion_block_avoidance")]
     pub companion_block_avoidance: Option<CompanionBlockAvoidance>,
     /// `minecraft:companion_block_clipping`.
-    #[facet(
-        default,
-        rename = "minecraft:companion_block_clipping",
-        skip_serializing_if = Option::is_none
-    )]
+    #[facet(rename = "minecraft:companion_block_clipping")]
     pub companion_block_clipping: Option<CompanionBlockClipping>,
 }
 
@@ -149,12 +128,12 @@ pub struct Components {
 /// box to Molang as `variable.aabb_dimension`, `variable.aabb_dimension_x` and
 /// `variable.aabb_dimension_y`.
 #[doc(alias = "minecraft:aabb_dimensions")]
-#[derive(Clone, Copy, Debug, PartialEq, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
 pub struct AabbDimensions {
     /// `width`: at least 0.
-    pub width: StrictFloat<f32>,
+    pub width: f32,
     /// `height`: at least 0.
-    pub height: StrictFloat<f32>,
+    pub height: f32,
 }
 
 /// An alias of [`AabbDimensions`], the box a `minecraft:aabb_dimensions` component holds.
@@ -163,10 +142,7 @@ pub type CollisionBox = AabbDimensions;
 impl AabbDimensions {
     /// A box `width` wide and deep and `height` high.
     pub fn new(width: f32, height: f32) -> Self {
-        Self {
-            width: StrictFloat(width),
-            height: StrictFloat(height),
-        }
+        Self { width, height }
     }
 
     /// The box around the entity's position as vanilla builds it: `(min, max)` corners, half
@@ -174,9 +150,9 @@ impl AabbDimensions {
     pub fn bounds(&self) -> ([f32; 3], [f32; 3]) {
         // Half the width is the extent to each side; each corner is the component-wise minimum
         // and maximum of the two signed extents.
-        let half = 0.5 * self.width.0;
+        let half = 0.5 * self.width;
         let (low, high) = (half.min(-half), half.max(-half));
-        let (bottom, top) = (self.height.0.min(0.0), self.height.0.max(0.0));
+        let (bottom, top) = (self.height.min(0.0), self.height.max(0.0));
         ([low, bottom, low], [high, top, high])
     }
 }
@@ -185,16 +161,16 @@ impl AabbDimensions {
 /// primary companion follow target clips into blocks."). A member left out is `None` and the
 /// client holds its default (the accessors); the write-back leaves it out.
 #[doc(alias = "minecraft:companion_block_avoidance")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct CompanionBlockAvoidance {
     /// `backup_anchor_offsets`: the fallback offsets, each `[x, y, z]`; required.
-    pub backup_anchor_offsets: Vec<[StrictFloat<f32>; 3]>,
+    pub backup_anchor_offsets: Vec<[f32; 3]>,
     /// `require_hidden_before_fallback`: default false.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub require_hidden_before_fallback: Option<StrictBool>,
+    #[facet(schema::fallback = Self::DEFAULT_REQUIRE_HIDDEN_BEFORE_FALLBACK)]
+    pub require_hidden_before_fallback: Option<bool>,
     /// `anchor_switch_cooldown`: an unsigned 16-bit count, default 200.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub anchor_switch_cooldown: Option<StrictInt<u16>>,
+    #[facet(schema::fallback = Self::DEFAULT_ANCHOR_SWITCH_COOLDOWN)]
+    pub anchor_switch_cooldown: Option<u16>,
 }
 
 impl CompanionBlockAvoidance {
@@ -206,10 +182,7 @@ impl CompanionBlockAvoidance {
     /// A component with `offsets` and every other member left out.
     pub fn new(offsets: Vec<[f32; 3]>) -> Self {
         Self {
-            backup_anchor_offsets: offsets
-                .into_iter()
-                .map(|offset| offset.map(StrictFloat))
-                .collect(),
+            backup_anchor_offsets: offsets,
             require_hidden_before_fallback: None,
             anchor_switch_cooldown: None,
         }
@@ -217,24 +190,7 @@ impl CompanionBlockAvoidance {
 
     /// The offsets as floats.
     pub fn to_offsets(&self) -> Vec<[f32; 3]> {
-        self.backup_anchor_offsets
-            .iter()
-            .map(|offset| offset.map(|value| value.0))
-            .collect()
-    }
-
-    /// `require_hidden_before_fallback` as the client holds it.
-    pub fn require_hidden_before_fallback(&self) -> bool {
-        self.require_hidden_before_fallback
-            .map_or(Self::DEFAULT_REQUIRE_HIDDEN_BEFORE_FALLBACK, |value| {
-                value.0
-            })
-    }
-
-    /// `anchor_switch_cooldown` as the client holds it.
-    pub fn anchor_switch_cooldown(&self) -> u16 {
-        self.anchor_switch_cooldown
-            .map_or(Self::DEFAULT_ANCHOR_SWITCH_COOLDOWN, |value| value.0)
+        self.backup_anchor_offsets.clone()
     }
 }
 
@@ -242,26 +198,26 @@ impl CompanionBlockAvoidance {
 /// transition effects, and hysteresis controls."). Every member may be left out; the
 /// accessors give what the client holds. Each float is at least 0.
 #[doc(alias = "minecraft:companion_block_clipping")]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
 pub struct CompanionBlockClipping {
     /// `reveal_boundary`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::fallback = VisibilityBoundary::default())]
     pub reveal_boundary: Option<VisibilityBoundary>,
     /// `hide_boundary`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::fallback = VisibilityBoundary::default())]
     pub hide_boundary: Option<VisibilityBoundary>,
     /// `min_hidden_seconds`: default 2.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub min_hidden_seconds: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_MIN_HIDDEN_SECONDS)]
+    pub min_hidden_seconds: Option<f32>,
     /// `min_visible_seconds`: default 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub min_visible_seconds: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_MIN_VISIBLE_SECONDS)]
+    pub min_visible_seconds: Option<f32>,
     /// `hide_delay_seconds`: default 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub hide_delay_seconds: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_HIDE_DELAY_SECONDS)]
+    pub hide_delay_seconds: Option<f32>,
     /// `hide_transition_seconds`: default 0.25.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub hide_transition_seconds: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_HIDE_TRANSITION_SECONDS)]
+    pub hide_transition_seconds: Option<f32>,
 }
 
 // The defaults the client holds for a component that writes none: the reveal and the hide
@@ -275,56 +231,22 @@ impl CompanionBlockClipping {
     pub const DEFAULT_HIDE_DELAY_SECONDS: f32 = 0.0;
     /// `hide_transition_seconds` of a component that writes none.
     pub const DEFAULT_HIDE_TRANSITION_SECONDS: f32 = 0.25;
-
-    /// `reveal_boundary` as the client holds it.
-    pub fn reveal_boundary(&self) -> VisibilityBoundary {
-        self.reveal_boundary.unwrap_or_default()
-    }
-
-    /// `hide_boundary` as the client holds it.
-    pub fn hide_boundary(&self) -> VisibilityBoundary {
-        self.hide_boundary.unwrap_or_default()
-    }
-
-    /// `min_hidden_seconds` as the client holds it.
-    pub fn min_hidden_seconds(&self) -> f32 {
-        self.min_hidden_seconds
-            .map_or(Self::DEFAULT_MIN_HIDDEN_SECONDS, |value| value.0)
-    }
-
-    /// `min_visible_seconds` as the client holds it.
-    pub fn min_visible_seconds(&self) -> f32 {
-        self.min_visible_seconds
-            .map_or(Self::DEFAULT_MIN_VISIBLE_SECONDS, |value| value.0)
-    }
-
-    /// `hide_delay_seconds` as the client holds it.
-    pub fn hide_delay_seconds(&self) -> f32 {
-        self.hide_delay_seconds
-            .map_or(Self::DEFAULT_HIDE_DELAY_SECONDS, |value| value.0)
-    }
-
-    /// `hide_transition_seconds` as the client holds it.
-    pub fn hide_transition_seconds(&self) -> f32 {
-        self.hide_transition_seconds
-            .map_or(Self::DEFAULT_HIDE_TRANSITION_SECONDS, |value| value.0)
-    }
 }
 
 /// A companion visibility boundary (`minecraft:companion_visibility_boundary`): the
 /// `reveal_boundary` and `hide_boundary` of [`CompanionBlockClipping`]. Every member may be
 /// left out; each is at least 0.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
 pub struct VisibilityBoundary {
     /// `margin`: default 0.5.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub margin: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_MARGIN)]
+    pub margin: Option<f32>,
     /// `lookahead_per_speed`: default 0.1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub lookahead_per_speed: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_LOOKAHEAD_PER_SPEED)]
+    pub lookahead_per_speed: Option<f32>,
     /// `lookahead_max`: default 1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub lookahead_max: Option<StrictFloat<f32>>,
+    #[facet(schema::fallback = Self::DEFAULT_LOOKAHEAD_MAX)]
+    pub lookahead_max: Option<f32>,
 }
 
 // The defaults the client holds for a boundary that writes none: a margin of 0.5, a lookahead
@@ -336,23 +258,6 @@ impl VisibilityBoundary {
     pub const DEFAULT_LOOKAHEAD_PER_SPEED: f32 = 0.1;
     /// `lookahead_max` of a boundary that writes none.
     pub const DEFAULT_LOOKAHEAD_MAX: f32 = 1.0;
-
-    /// `margin` as the client holds it.
-    pub fn margin(&self) -> f32 {
-        self.margin.map_or(Self::DEFAULT_MARGIN, |value| value.0)
-    }
-
-    /// `lookahead_per_speed` as the client holds it.
-    pub fn lookahead_per_speed(&self) -> f32 {
-        self.lookahead_per_speed
-            .map_or(Self::DEFAULT_LOOKAHEAD_PER_SPEED, |value| value.0)
-    }
-
-    /// `lookahead_max` as the client holds it.
-    pub fn lookahead_max(&self) -> f32 {
-        self.lookahead_max
-            .map_or(Self::DEFAULT_LOOKAHEAD_MAX, |value| value.0)
-    }
 }
 
 impl AtomicClientEntity {
@@ -458,6 +363,17 @@ impl Family for AtomicFamily {
     };
     // An empty file is skipped silently.
     const EMPTY_DOCUMENT: Severity = Severity::Info;
+
+    /// The document-input profile, its scalars read strictly: a member takes its own JSON type
+    /// alone, and a number beyond its float is a type error (the floats with a minimum are
+    /// clamped in the text before the read).
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        AtomicFamily::ENVELOPE
+            .input
+            .profile()
+            .with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error)
+    }
 }
 
 // The quartet is hand-written: the family is beta-only (`Latest = NoStable`), so the struct is
@@ -661,7 +577,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Info
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                beta: json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
     }

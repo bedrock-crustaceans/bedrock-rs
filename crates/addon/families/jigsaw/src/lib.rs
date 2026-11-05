@@ -61,8 +61,8 @@ use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, W
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, Envelope, Family, InputKind, Loaded, NoComponents, Reading, Single, StructIndex,
-    UnknownMask, ValidateCx,
+    BelowFloor, BeyondWidth, Envelope, Family, InputKind, Loaded, NoComponents, Reading, Scalars,
+    Single, StructIndex, UnknownMask, ValidateCx,
 };
 use history::{
     MetadataAny, MetadataFamily, PoolFamily, ProcessorListFamily, StructureFamily,
@@ -148,7 +148,10 @@ const JSON_ENVELOPE: Envelope = Envelope {
 
 /// The game's four slices (processor list, template pool, structure, structure set) are not
 /// strict: unknown members are warnings.
-const JSON_READING: Reading = Reading::DOCUMENT.with_unknown(UnknownMask::Warn);
+pub(crate) const JSON_READING: Reading = Reading::DOCUMENT
+    .with_unknown(UnknownMask::Warn)
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error);
 
 impl Family for StructureFamily {
     const NAME: &'static str = "jigsaw structure";
@@ -362,6 +365,16 @@ impl Family for MetadataFamily {
     type Beta = Infallible;
     type Component = NoComponents;
     type Any = MetadataAny;
+
+    /// The first-run profile, its scalars read strictly: a member takes its own JSON type alone,
+    /// and a number beyond its type is a type error.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        MetadataFamily::ENVELOPE
+            .input
+            .profile()
+            .with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error)
+    }
 }
 
 // ---- one JSON file -------------------------------------------------------------------------
@@ -752,7 +765,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Error/Warn/reports/fatal/Refuse, mcb Own/Strict/Error/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -768,7 +781,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Error/Warn/reports/fatal/Refuse, mcb Own/Strict/Error/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -784,7 +797,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Error/Warn/reports/fatal/Refuse, mcb Own/Strict/Error/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -800,7 +813,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Error/Warn/reports/fatal/Refuse, mcb Own/Strict/Error/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -816,7 +829,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: UseFormatVersion
                 empty document: Error
-                1.21.50..=1.21.80 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+                1.21.50..=1.21.80 (0..=1): json Own/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             ",
         );
     }

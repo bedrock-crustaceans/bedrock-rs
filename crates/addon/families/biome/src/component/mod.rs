@@ -33,12 +33,12 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Misreading, Value, keep_members, parse_at, unknown_members,
+    EncodeError, JsonSlice, Misreading, ScalarFailure, ScalarRead, Value, keep_members,
+    parse_with_rules, unknown_members,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
-    MolangFieldSpec, MolangFields, MolangVersion, MolangVersionSource, MolangVisitor, ReaderKind,
-    Step,
+    Molang, MolangFieldSpec, MolangVersion, MolangVersionSource, MolangVisitor, ReaderKind,
 };
 use bedrock_addon_core::versioning::{ConvertMode, write_payload};
 
@@ -50,7 +50,7 @@ use bedrock_addon_core::versioning::{ConvertMode, write_payload};
 /// One component of a biome: the closed set of `minecraft:` components the 1.26.30 document
 /// declares.
 #[derive(Clone, Debug, PartialEq, Components)]
-#[component(family = BiomeFamily)]
+#[component(family = BiomeFamily, write_with = written)]
 #[non_exhaustive]
 pub enum BiomeComponent {
     /// `minecraft:climate`.
@@ -120,9 +120,23 @@ where
     let unrecognized = |path: JsonPath| {
         Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
     };
-    let value = match parse_at::<T>(slice) {
-        Ok(value) => value,
-        Err(error) => {
+    // The scalars are read by the family's rules (`crate::reading`: strict, a number beyond its
+    // float a type error), in a versioned load and outside one alike.
+    let read = parse_with_rules::<T>(slice, None, crate::reading().scalar_rules());
+    let value = match read {
+        Ok(ScalarRead { value, .. }) => {
+            // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
+            // a `null` read as a struct, which the typed read never reported (the null rule does).
+            value
+        }
+        Err(ScalarFailure::Refused(misread)) => {
+            d.push(misread.finding(&JsonPath::new()));
+            for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {
+                d.push(unrecognized(path));
+            }
+            return None;
+        }
+        Err(ScalarFailure::Read(error)) => {
             let code = error.code_with_path(error.has_path());
             d.push(
                 Diagnostic::error(code)
@@ -178,28 +192,6 @@ fn without_variant_index(path: &JsonPath) -> JsonPath {
     out
 }
 
-/// One typed component as JSON.
-pub(crate) fn write_component(component: &BiomeComponent) -> Result<Value, EncodeError> {
-    use BiomeComponent as C;
-    match component {
-        C::Climate(c) => written(c),
-        C::CreatureSpawnProbability(c) => written(c),
-        C::Humidity(c) => written(c),
-        C::MapTints(c) => written(c),
-        C::MountainParameters(c) => written(c),
-        C::MultinoiseGenerationRules(c) => written(c),
-        C::OverworldGenerationRules(c) => written(c),
-        C::OverworldHeight(c) => written(c),
-        C::PartiallyFrozen(c) => written(c),
-        C::ReplaceBiomes(c) => written(c),
-        C::SubsurfaceBuilder(c) => written(c),
-        C::SurfaceBuilder(c) => written(c),
-        C::SurfaceMaterialAdjustments(c) => written(c),
-        C::Tags(c) => written(c),
-        C::VillageType(c) => written(c),
-    }
-}
-
 /// One component's JSON, without a member written `null`: an absent `Option` has no JSON
 /// (a tagged builder's alternative writes it as `null`), and a `null` member refuses the
 /// biome on the next read.
@@ -214,7 +206,7 @@ pub(crate) fn write_components(map: &ComponentMap<BiomeComponent>) -> Result<Val
     let mut object = facet_value::VObject::new();
     for entry in map.iter() {
         let (name, json) = match entry {
-            ComponentRef::Typed { name, value, .. } => (name.to_owned(), write_component(value)?),
+            ComponentRef::Typed { name, value, .. } => (name.to_owned(), value.write_component()?),
             ComponentRef::Custom(c) => (c.name.clone(), c.parameters.clone()),
             ComponentRef::Dynamic { name, json } | ComponentRef::Unknown { name, json } => {
                 (name.to_owned(), json.clone())
@@ -238,23 +230,12 @@ pub(crate) const HEIGHT_RANGE: MolangFieldSpec = MolangFieldSpec::REJECTING
     .world_gen()
     .compile_empty();
 
-impl MolangFields for SurfaceMaterialAdjustments {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        let Some(adjustments) = &mut self.adjustments else {
-            return;
-        };
-        visitor.enter(Step::from("adjustments"));
-        for (index, adjustment) in adjustments.iter_mut().enumerate() {
-            if let Some([low, high]) = &mut adjustment.height_range {
-                visitor.enter(Step::Index(index));
-                visitor.enter(Step::from("height_range"));
-                visitor.field(0, &HEIGHT_RANGE, low);
-                visitor.field(1, &HEIGHT_RANGE, high);
-                visitor.leave();
-                visitor.leave();
-            }
-        }
-        visitor.leave();
+/// The walk of one adjustment's `height_range`: both ends under [`HEIGHT_RANGE`]
+/// (`schema::molang_with` on [`Adjustment::height_range`]).
+pub(crate) fn height_range(range: &mut Option<[Molang; 2]>, visitor: &mut MolangVisitor<'_>) {
+    if let Some([low, high]) = range {
+        visitor.field(0, &HEIGHT_RANGE, low);
+        visitor.field(1, &HEIGHT_RANGE, high);
     }
 }
 
@@ -263,6 +244,7 @@ pub(crate) use bedrock_addon_support::biome_json::child;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::json::parse_at;
 
     /// An absent `Option` is written as no member, never as `null`: the game refuses a `null`
     /// member, so a written `null` would refuse the biome on the next read.
@@ -270,7 +252,9 @@ mod tests {
     fn an_absent_option_is_written_as_no_member() {
         let text = r#"{"builder": {"type": "minecraft:noise_gradient", "noise_descriptor": {"name": "test:gradient", "first_octave": -4, "amplitudes": [1.0]}, "noise_block_specifiers": [{"range": {"min": 0.5, "max": 0.7}, "block": "minecraft:calcite"}]}}"#;
         let builder = parse_at::<SubsurfaceBuilder>(JsonSlice::new(text)).expect("parses");
-        let written = write_component(&BiomeComponent::SubsurfaceBuilder(builder)).unwrap();
+        let written = BiomeComponent::SubsurfaceBuilder(builder)
+            .write_component()
+            .unwrap();
         let written = bedrock_addon_core::json::to_json(&written).unwrap();
         assert!(!written.contains("null"), "{written}");
     }

@@ -3,15 +3,11 @@
 use super::{SoundMetadataFile, V1_26_60};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, NullRule, Value, keep_unknown_members, parse_at, reject_nulls,
+    EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members,
+    parse_with_rules, reject_nulls,
 };
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-
-impl MolangFields for SoundMetadataFile {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
 
 impl Versioned for SoundMetadataFile {
     const VERSION: FormatVersion = V1_26_60;
@@ -64,13 +60,22 @@ impl VersionStruct for SoundMetadataFile {
             }
             return None;
         }
-        let value: Self = match parse_at::<Self>(payload) {
-            Ok(value) => value,
-            Err(error) => {
-                d.push(error.into_diagnostic(&cx.at, |code, _| code));
-                return None;
-            }
-        };
+        // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
+        // its float a type error).
+        let ScalarRead { value, .. } =
+            match parse_with_rules::<Self>(payload, cx.load.null_rule, cx.load.scalar_rules) {
+                Ok(read) => read,
+                Err(ScalarFailure::Read(error)) => {
+                    d.push(error.into_diagnostic(&cx.at, |code, _| code));
+                    return None;
+                }
+                Err(ScalarFailure::Refused(misread)) => {
+                    d.push(misread.finding(&cx.at));
+                    return None;
+                }
+            };
+        // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
+        // a `null` read as a struct, which the typed read never reported (the null rule does).
         // A member written as `null` is present and fails its type: the game reads the file
         // with null members rejected.
         if cx.load.null_rule == Some(NullRule::Rejected) && reject_nulls(&value, payload, &cx.at, d)

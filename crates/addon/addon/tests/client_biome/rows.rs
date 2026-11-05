@@ -72,7 +72,7 @@ fn cb01_plains_1_21_40_oracle() {
     assert_eq!(loaded.description.identifier.as_str(), "minecraft:plains");
     let sounds = loaded.components.get::<AmbientSounds>().unwrap();
     assert_eq!(sounds.addition().asset.as_str(), "");
-    assert_eq!(sounds.addition().chance.0, 1.0);
+    assert_eq!(sounds.addition().chance, 1.0);
     assert_eq!(sounds.underwater_mood(), "");
     assert!(loaded.version().upgraded);
     assert_eq!(
@@ -1045,7 +1045,7 @@ fn cb18_all_vanilla_1_21_40() {
         }
         let sounds = loaded.components.get::<AmbientSounds>().expect(name);
         assert_eq!(sounds.underwater_loop(), "ambient.underwater.loop");
-        assert_eq!(sounds.underwater_addition().chance.0, 0.01);
+        assert_eq!(sounds.underwater_addition().chance, 0.01);
         // What the chain gave is a document the newest struct reads back unchanged.
         let again = loads(&loaded.to_json().unwrap(), &base_game());
         assert_eq!(written(&again), written(&loaded), "{name}");
@@ -1144,12 +1144,7 @@ fn cb23_beta_literal_deviation() {
         assert!(!loaded.version().upgraded);
         let attributes = loaded.environment_attributes.as_ref().unwrap();
         assert_eq!(
-            attributes
-                .experimental_float_attr_1
-                .as_ref()
-                .unwrap()
-                .value
-                .0,
+            attributes.experimental_float_attr_1.as_ref().unwrap().value,
             1.0
         );
         // Unchanged: written back as read, and read back equal.
@@ -1268,7 +1263,7 @@ fn cb23b_1_26_stamps() {
         assert!(!loaded.version().upgraded);
         if name.starts_with("dappled_forest") {
             let water = loaded.components.get::<WaterAppearance>().unwrap();
-            assert_eq!(water.surface_opacity.map(|o| o.0), Some(1.0));
+            assert_eq!(water.surface_opacity, Some(1.0));
         }
     }
 }

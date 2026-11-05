@@ -150,7 +150,7 @@ fn targets(
 ) {
     for (index, replacement) in replace.replacements.iter().enumerate() {
         for (position, target) in replacement.targets.iter().enumerate() {
-            let name = target.0.as_str();
+            let name = target.as_str();
             let id = BiomeId::parse(name);
             let mut path = at.clone();
             path.push("replacements");

@@ -7,7 +7,7 @@ use crate::component::{
     AtmosphereIdentifier, BiomeMusic, ColorGradingIdentifier, LightingIdentifier, WaterIdentifier,
 };
 use bedrock_addon_core::diagnostic::DiagnosticCode;
-use bedrock_addon_core::document::{Component as _, Extra};
+use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::id::{
     AtmosphereSettingsId, BiomeId, ColorGradingSettingsId, LightingSettingsId, MusicDefinitionId,
     WaterSettingsId,
@@ -205,7 +205,6 @@ impl Upgrade for ClientBiome {
                         music_definition: Some(definition),
                         volume_multiplier: None,
                         underwater_music: None,
-                        extra: Extra::default(),
                     },
                     cx,
                 ),

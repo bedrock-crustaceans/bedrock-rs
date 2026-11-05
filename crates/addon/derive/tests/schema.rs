@@ -691,3 +691,34 @@ fn check_and_triggers_walk_into_fixed_arrays_past_identifiers_and_shared_values(
         .collect();
     assert_eq!(at, ["corners/1/x"]);
 }
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Shared {
+    pub filter: Option<bedrock_addon_core::shared::Filter>,
+    pub block: bedrock_addon_core::shared::BlockSpecifier,
+    pub range: Option<bedrock_addon_core::shared::FloatRange>,
+    pub inner: Inner,
+}
+
+#[test]
+fn filters_block_specifiers_and_ranges_are_leaves_of_the_walk() {
+    assert_eq!(Shared::triggers(), ["inner.on_y"]);
+    let mut shared = Shared {
+        filter: None,
+        block: bedrock_addon_core::shared::BlockSpecifier::new(
+            bedrock_addon_core::id::BlockId::parse("minecraft:stone"),
+        ),
+        range: None,
+        inner: Inner {
+            x: 12,
+            on_y: None,
+            on_spawn: None,
+        },
+    };
+    let (out, _) = check(&mut shared, MemberFailure::Refuse);
+    let at: Vec<String> = out
+        .iter()
+        .map(|d| d.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["inner/x"]);
+}

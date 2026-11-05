@@ -8,3 +8,6 @@ mod steps;
 
 #[path = "biome/texts.rs"]
 mod texts;
+
+#[path = "biome/scalars.rs"]
+mod scalars;

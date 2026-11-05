@@ -32,13 +32,13 @@ fn jig01_each_payload_at_1_21_20() {
         .get(&structure("demo:ruin"))
         .expect("the structure");
     assert_eq!(ruin.step, GenerationStep::SurfaceStructures);
-    assert_eq!(ruin.max_depth.0, 4);
+    assert_eq!(ruin.max_depth, 4);
     assert!(matches!(
         ruin.start_height,
         HeightProvider::Constant {
             value: VerticalAnchor::Absolute(a),
             ..
-        } if a.0 == 0
+        } if a == 0
     ));
     assert_eq!(
         ruin.version().parsed_as,
@@ -57,14 +57,14 @@ fn jig01_each_payload_at_1_21_20() {
         .structure_sets
         .get(&StructureSetId::from_static("demo:ruins"))
         .expect("the set");
-    assert_eq!(set.placement.spacing.0, 12);
+    assert_eq!(set.placement.spacing, 12);
     let list = jigsaw
         .processors
         .get(&ProcessorListId::from_static("demo:ruin_rot"))
         .expect("the processor list");
     assert!(matches!(
         &list.processors[0],
-        Processor::ProtectedBlocks { value, .. } if value.0 == "minecraft:features_cannot_replace"
+        Processor::ProtectedBlocks { value, .. } if value == "minecraft:features_cannot_replace"
     ));
 }
 
@@ -148,10 +148,7 @@ fn jig04_vanilla_test_inputs_load_with_their_defaults() {
         .structure_sets
         .get(&StructureSetId::from_static("minecraft:trail_ruins"))
         .expect("the set");
-    assert_eq!(
-        (set.placement.separation.0, set.placement.spacing.0),
-        (8, 34)
-    );
+    assert_eq!((set.placement.separation, set.placement.spacing), (8, 34));
     assert_eq!(set.placement.spread_type(), SpreadType::Triangular);
     let roads = jigsaw
         .processors
@@ -180,7 +177,7 @@ fn jig04_vanilla_test_inputs_load_with_their_defaults() {
     };
     assert!(matches!(
         &rules[0].input_predicate,
-        Some(BlockPredicate::RandomBlockMatch { probability, .. }) if (probability.0 - 0.2).abs() < 1e-6
+        Some(BlockPredicate::RandomBlockMatch { probability, .. }) if (*probability - 0.2).abs() < 1e-6
     ));
     let tower = jigsaw
         .pools
@@ -221,7 +218,7 @@ fn jig06_max_depth() {
         .structures
         .get(&structure("demo:deep"))
         .expect("max_depth 20 loads");
-    assert_eq!(deep.max_depth.0, 20);
+    assert_eq!(deep.max_depth, 20);
 }
 
 #[test]
@@ -258,10 +255,10 @@ fn jig09_duplicate_first_wins() {
         .structures
         .get(&structure("demo:ruin"))
         .expect("kept");
-    assert_eq!(ruin.max_depth.0, 7, "the high-priority pack's");
+    assert_eq!(ruin.max_depth, 7, "the high-priority pack's");
     assert_eq!(ruin.origin().pack.index(), Some(0));
     let dup = jigsaw.structures.get(&structure("demo:dup")).expect("kept");
-    assert_eq!(dup.max_depth.0, 1, "the first file of the pack");
+    assert_eq!(dup.max_depth, 1, "the first file of the pack");
     assert!(
         jigsaw.pools.contains(&pool("demo:ruin")),
         "families are separate"
@@ -295,12 +292,12 @@ fn jig11_processor_types() {
     assert!(matches!(limits[0], IntProvider::Value(2)));
     assert!(matches!(
         limits[1],
-        IntProvider::Constant { value, .. } if value.0 == 2
+        IntProvider::Constant { value, .. } if *value == 2
     ));
     assert!(matches!(
         limits[2],
         IntProvider::Uniform { min_inclusive, max_inclusive, .. }
-            if (min_inclusive.0, max_inclusive.0) == (1, 3)
+            if (*min_inclusive, *max_inclusive) == (1, 3)
     ));
 }
 

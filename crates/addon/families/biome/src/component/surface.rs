@@ -3,30 +3,25 @@
 
 use facet::Facet;
 
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString};
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{BlockSpecifier, FloatRange};
 
 /// `minecraft:surface_builder`: how the biome's surface is built.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SurfaceBuilder {
     /// The builder, chosen by its `type` (JSON `builder`, required).
     pub builder: Builder,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:subsurface_builder` (format 1.26.30): a second builder of the same shape that
 /// shapes the ground below the surface.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SubsurfaceBuilder {
     /// The builder, chosen by its `type` (JSON `builder`, required).
     pub builder: Builder,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A surface builder, chosen by `type`. Every member of every builder is required unless it is
@@ -80,10 +75,11 @@ impl Builder {
 }
 
 /// The members of the `minecraft:overworld` and `minecraft:frozen_ocean` builders.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct OverworldSurface {
     /// How deep the sea floor material goes, in `[0, 127]` (JSON `sea_floor_depth`).
-    pub sea_floor_depth: StrictInt<i32>,
+    pub sea_floor_depth: i32,
     /// The sea floor (JSON `sea_floor_material`).
     pub sea_floor_material: BlockSpecifier,
     /// The deepest layer (JSON `foundation_material`).
@@ -94,16 +90,14 @@ pub struct OverworldSurface {
     pub top_material: BlockSpecifier,
     /// The fluid of the sea (JSON `sea_material`).
     pub sea_material: BlockSpecifier,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The members of the `minecraft:swamp` builder.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SwampSurface {
     /// How deep the sea floor material goes, in `[0, 127]` (JSON `sea_floor_depth`).
-    pub sea_floor_depth: StrictInt<i32>,
+    pub sea_floor_depth: i32,
     /// The sea floor (JSON `sea_floor_material`).
     pub sea_floor_material: BlockSpecifier,
     /// The deepest layer (JSON `foundation_material`).
@@ -116,14 +110,12 @@ pub struct SwampSurface {
     pub sea_material: BlockSpecifier,
     /// How far below sea level puddles reach, in `[0, 127]` (JSON
     /// `max_puddle_depth_below_sea_level`).
-    pub max_puddle_depth_below_sea_level: StrictInt<i32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub max_puddle_depth_below_sea_level: i32,
 }
 
 /// The members of the `minecraft:capped` builder.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct CappedSurface {
     /// The floor blocks, at least one (JSON `floor_materials`).
     pub floor_materials: Vec<BlockSpecifier>,
@@ -134,26 +126,20 @@ pub struct CappedSurface {
     /// The deepest layer (JSON `foundation_material`).
     pub foundation_material: BlockSpecifier,
     /// The beach (JSON `beach_material`).
-    #[facet(default)]
     pub beach_material: Option<BlockSpecifier>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The `minecraft:the_end` builder (no members).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct TheEndSurface {
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+pub struct TheEndSurface {}
 
 /// The members of the `minecraft:mesa` builder.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MesaSurface {
     /// How deep the sea floor material goes, in `[0, 127]` (JSON `sea_floor_depth`).
-    pub sea_floor_depth: StrictInt<i32>,
+    pub sea_floor_depth: i32,
     /// The sea floor (JSON `sea_floor_material`).
     pub sea_floor_material: BlockSpecifier,
     /// The deepest layer (JSON `foundation_material`).
@@ -169,73 +155,56 @@ pub struct MesaSurface {
     /// The hardened clay (JSON `hard_clay_material`).
     pub hard_clay_material: BlockSpecifier,
     /// Whether bryce pillars generate (JSON `bryce_pillars`).
-    pub bryce_pillars: StrictBool,
+    pub bryce_pillars: bool,
     /// Whether the plateau has a forest (JSON `has_forest`).
-    pub has_forest: StrictBool,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub has_forest: bool,
 }
 
 /// The members of the `minecraft:noise_gradient` builder (format 1.26.30).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct NoiseGradientSurface {
     /// The noise the gradient reads (JSON `noise_descriptor`).
     pub noise_descriptor: NoiseDescriptor,
     /// Blocks the builder never replaces (JSON `non_replaceable_blocks`).
-    #[facet(default)]
     pub non_replaceable_blocks: Option<Vec<BlockSpecifier>>,
     /// The block of each noise range, at least one (JSON `noise_block_specifiers`).
     pub noise_block_specifiers: Vec<NoiseBlockSpecifier>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A noise: its name, first octave and octave amplitudes.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct NoiseDescriptor {
     /// The noise's seed name (JSON `name`).
-    pub name: StrictString,
+    pub name: String,
     /// The first octave (JSON `first_octave`).
-    pub first_octave: StrictInt<i32>,
+    pub first_octave: i32,
     /// The amplitude of each octave, 1 to 100 of them (JSON `amplitudes`).
-    pub amplitudes: Vec<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub amplitudes: Vec<f32>,
 }
 
 /// One block of a noise gradient and the noise range it covers.
 /// `noise`, `threshold` and `range` are optional; `block` is required.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct NoiseBlockSpecifier {
     /// A namespaced noise name (JSON `noise`; `""` when absent).
-    #[facet(default)]
-    pub noise: Option<StrictString>,
-    /// The threshold (JSON `threshold`; `0` when absent).
-    #[facet(default)]
-    pub threshold: Option<StrictFloat<f32>>,
+    pub noise: Option<String>,
+    /// The threshold (JSON `threshold`; `0` when absent: [`NoiseBlockSpecifier::threshold`]).
+    #[facet(schema::fallback = 0.0)]
+    pub threshold: Option<f32>,
     /// The closed noise range `{min, max}` the block covers (JSON `range`; `{0, 0}` when
     /// absent).
-    #[facet(default)]
     pub range: Option<FloatRange>,
     /// The block (JSON `block`).
     pub block: BlockSpecifier,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl NoiseBlockSpecifier {
     /// The noise name, `""` when absent.
     pub fn noise(&self) -> &str {
-        self.noise.as_ref().map_or("", |noise| noise.0.as_str())
-    }
-
-    /// The threshold, `0` when absent.
-    pub fn threshold(&self) -> f32 {
-        self.threshold.map_or(0.0, |t| t.0)
+        self.noise.as_deref().unwrap_or_default()
     }
 
     /// The range's ends as written, `(0, 0)` when absent (an absent end is `0`).
@@ -253,56 +222,46 @@ impl NoiseBlockSpecifier {
 
 /// `minecraft:surface_material_adjustments`: material changes applied, in order, where noise
 /// and height ranges match.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SurfaceMaterialAdjustments {
     /// The adjustments (JSON `adjustments`).
-    #[facet(default)]
     pub adjustments: Option<Vec<Adjustment>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of `surface_material_adjustments.adjustments`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Adjustment {
     /// The materials it sets (JSON `materials`, required).
     pub materials: AdjustmentMaterials,
     /// The noise range `[min, max]` it applies in; the maximum must exceed the minimum (JSON
     /// `noise_range`).
-    #[facet(default)]
-    pub noise_range: Option<[StrictFloat<f32>; 2]>,
+    pub noise_range: Option<[f32; 2]>,
     /// The height range `[min, max]` it applies in, each a number, bool or Molang expression
     /// compiled at Molang version 1 with the `world_gen` queries (JSON `height_range`).
-    #[facet(default)]
+    #[facet(schema::molang_with = super::height_range)]
     pub height_range: Option<[Molang; 2]>,
     /// The scale of the adjustment noise (JSON `noise_frequency_scale`).
-    #[facet(default)]
-    pub noise_frequency_scale: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub noise_frequency_scale: Option<f32>,
 }
 
 /// `adjustments[].materials`: every member optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct AdjustmentMaterials {
     /// JSON `top_material`.
-    #[facet(default)]
     pub top_material: Option<BlockSpecifier>,
     /// JSON `mid_material`.
-    #[facet(default)]
     pub mid_material: Option<BlockSpecifier>,
     /// JSON `sea_floor_material`.
-    #[facet(default)]
     pub sea_floor_material: Option<BlockSpecifier>,
     /// JSON `foundation_material`.
-    #[facet(default)]
     pub foundation_material: Option<BlockSpecifier>,
     /// JSON `sea_material`.
-    #[facet(default)]
     pub sea_material: Option<BlockSpecifier>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
+
+// The builder is a data enum: its alternatives' members are checked by hand (`validate.rs`).
+bedrock_addon_core::impl_schema_leaf!(Builder);
+bedrock_addon_core::impl_no_molang!(Builder);

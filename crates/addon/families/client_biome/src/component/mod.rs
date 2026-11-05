@@ -25,10 +25,11 @@ use facet::Facet;
 use super::history::ClientBiomeFamily;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Value, keep_unknown_members, parse_at, unknown_members,
+    JsonSlice, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
+    unknown_members,
 };
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::versioning::{ConvertMode, write_payload};
+use bedrock_addon_core::versioning::ConvertMode;
 
 // Every component is released with the first format version whose document declares it:
 // 1.21.40 declares seven, 1.21.70 adds five (the atmosphere, colour-grading, lighting and
@@ -40,7 +41,7 @@ use bedrock_addon_core::versioning::{ConvertMode, write_payload};
 /// One component of a client biome: the closed set of `minecraft:` components the 1.21.130
 /// document declares.
 #[derive(Clone, Debug, PartialEq, Components)]
-#[component(family = ClientBiomeFamily)]
+#[component(family = ClientBiomeFamily, write)]
 #[non_exhaustive]
 #[allow(
     clippy::large_enum_variant,
@@ -133,9 +134,22 @@ where
             return None;
         }
     }
-    let value = match parse_at::<T>(slice) {
-        Ok(value) => value,
-        Err(error) => {
+    // The scalars are read by the family's rules (`crate::reading`: strict, a number beyond its
+    // float a type error), in a versioned load and outside one alike.
+    let value = match parse_with_rules::<T>(slice, None, crate::reading().scalar_rules()) {
+        Ok(ScalarRead { value, .. }) => {
+            // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
+            // a `null` read as a struct, which the typed read never reported (the null rule does).
+            value
+        }
+        Err(ScalarFailure::Refused(misread)) => {
+            d.push(misread.finding(&JsonPath::new()));
+            for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {
+                d.push(unrecognized(path));
+            }
+            return None;
+        }
+        Err(ScalarFailure::Read(error)) => {
             d.push(error.into_diagnostic(&JsonPath::new(), |code, _| code));
             // The members no field takes are reported also when the component fails, so a
             // document of another era names what it has that the struct does not.
@@ -176,27 +190,6 @@ where
         return None;
     }
     Some(value.into())
-}
-
-/// One typed component as JSON.
-pub(crate) fn write_component(component: &ClientBiomeComponent) -> Result<Value, EncodeError> {
-    use ClientBiomeComponent as C;
-    match component {
-        C::AmbientSounds(c) => write_payload(c),
-        C::AtmosphereIdentifier(c) => write_payload(c),
-        C::BiomeMusic(c) => write_payload(c),
-        C::ColorGradingIdentifier(c) => write_payload(c),
-        C::CubemapIdentifier(c) => write_payload(c),
-        C::DryFoliageColor(c) => write_payload(c),
-        C::FogAppearance(c) => write_payload(c),
-        C::FoliageAppearance(c) => write_payload(c),
-        C::GrassAppearance(c) => write_payload(c),
-        C::LightingIdentifier(c) => write_payload(c),
-        C::Precipitation(c) => write_payload(c),
-        C::SkyColor(c) => write_payload(c),
-        C::WaterAppearance(c) => write_payload(c),
-        C::WaterIdentifier(c) => write_payload(c),
-    }
 }
 
 pub(crate) use bedrock_addon_support::biome_json::child;

@@ -373,8 +373,8 @@ fn a_value_the_writer_refuses_is_an_error_of_validate_not_silence() {
         false,
     );
     let extreme = PoiType {
-        tickets: Some(bedrock_addon_core::json::StrictInt(u8::MAX)),
-        usable_distance: Some(bedrock_addon_core::json::StrictInt(0)),
+        tickets: Some(u8::MAX),
+        usable_distance: Some(0),
         tags: Some(Vec::new()),
         ..PoiType::new(
             PoiTypeId::from_static("test:forge"),
@@ -443,3 +443,97 @@ fn a_walked_file_implements_debug() {
     fn assert_debug<T: std::fmt::Debug>() {}
     assert_debug::<super::PoiFile>();
 }
+
+/// `tickets` and `usable_distance` read from every JSON type: each line pins what the load
+/// says (code, severity, path, span) and, when the document loads, the payload written back.
+/// The members were strict wrappers behind the family's own type check; this table is what
+/// they read, and the oracle of the change that makes them plain.
+#[test]
+fn the_byte_members_read_every_scalar_as_pinned() {
+    use std::fmt::Write as _;
+    let options = options();
+    let cx = LoadContext::for_pack(
+        &options,
+        uuid::Uuid::from_u128(7),
+        PackType::Behavior,
+        None,
+        false,
+    );
+    let path = PackPath::from_static("poi/blocks/forge.json");
+    let mut table = String::new();
+    for member in ["tickets", "usable_distance"] {
+        for value in [
+            "3", "\"3\"", "3.0", "0.5", "-1", "256", "true", "null", "1e39", "[]", "{}",
+        ] {
+            let text = format!(
+                r#"{{"format_version": "1.26.40", "minecraft:poi_block": {{"description": {{"identifier": "test:forge"}}, "blocks": ["minecraft:anvil"], "{member}": {value}}}}}"#
+            );
+            let (loaded, diagnostics) =
+                match <PoiType as Content>::parse(&path, text.as_bytes(), &cx) {
+                    Ok(document) => (
+                        format!(
+                            "loaded {}",
+                            document
+                                .to_json()
+                                .unwrap_or_default()
+                                .lines()
+                                .map(str::trim)
+                                .collect::<String>()
+                        ),
+                        document.diagnostics().clone(),
+                    ),
+                    Err(rejected) => ("rejected".to_owned(), rejected.diagnostics),
+                };
+            let findings: Vec<String> = diagnostics
+                .iter()
+                .map(|d| {
+                    let span = d
+                        .location
+                        .span
+                        .map_or("-".to_owned(), |s| format!("{}+{}", s.offset, s.len));
+                    format!(
+                        "{} {:?} {} {span}",
+                        d.code.name(),
+                        d.severity,
+                        d.location.json_path
+                    )
+                })
+                .collect();
+            let _ = writeln!(
+                table,
+                "{member} {value} => {loaded} [{}]",
+                findings.join("; ")
+            );
+        }
+    }
+    assert!(
+        table == BYTE_MEMBERS,
+        "--- actual ---
+{table}--- end ---"
+    );
+}
+
+/// The table as the strict wrappers read it.
+const BYTE_MEMBERS: &str = r#"tickets 3 => loaded {"format_version": "1.26.40","minecraft:poi_block": {"description": {"identifier": "test:forge"},"tickets": 3,"blocks": ["minecraft:anvil"]}} []
+tickets "3" => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets 3.0 => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets 0.5 => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets -1 => rejected [InvalidValue Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets 256 => rejected [InvalidValue Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets true => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets null => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets 1e39 => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets [] => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets {} => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+usable_distance 3 => loaded {"format_version": "1.26.40","minecraft:poi_block": {"description": {"identifier": "test:forge"},"usable_distance": 3,"blocks": ["minecraft:anvil"]}} []
+usable_distance "3" => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance 3.0 => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance 0.5 => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance -1 => rejected [InvalidValue Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance 256 => rejected [InvalidValue Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance true => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance null => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance 1e39 => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance [] => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance {} => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+"#;

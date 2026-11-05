@@ -5,3 +5,6 @@
 
 #[path = "jigsaw/texts.rs"]
 mod texts;
+
+#[path = "jigsaw/scalars.rs"]
+mod scalars;

@@ -6,6 +6,7 @@ use super::validate::rules;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::id::VoxelShapeId;
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 
 /// A voxel shape (`minecraft:voxel_shape`): a named set of boxes, in pixels, that a block's
@@ -30,7 +31,7 @@ pub struct VoxelShape {
 }
 
 /// `minecraft:voxel_shape/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Description {
     /// The shape's identifier, `namespace:name` or a bare name, at most 256 bytes (JSON
     /// `identifier`). The `minecraft` namespace is the base game's: a base-game pack must use
@@ -39,7 +40,7 @@ pub struct Description {
 }
 
 /// `minecraft:voxel_shape/shape`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Shape {
     /// The boxes, 1 to 32 of them; they may overlap each other (JSON `boxes`).
     pub boxes: Vec<ShapeBox>,
@@ -50,7 +51,7 @@ pub struct Shape {
 ///
 /// JSON: `{"min": [x, y, z], "max": [x, y, z]}`; a corner may also be written `{"x", "y", "z"}`
 /// with absent members 0, and is written back as the array.
-#[derive(Clone, Copy, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, facet::Facet, Schema)]
 pub struct ShapeBox {
     /// The corner with the smallest coordinates, each below `max`'s and at least -14 (JSON
     /// `min`).

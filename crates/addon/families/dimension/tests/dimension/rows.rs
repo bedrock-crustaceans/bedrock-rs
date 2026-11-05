@@ -28,7 +28,7 @@ fn dim01_the_vanilla_unit_test_input_loads_at_1_18_0() {
         "minecraft:overworld"
     );
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (-64, 384));
+    assert_eq!((height.min_y, height.height_range), (-64, 384));
     assert_eq!(
         document.components.generation.generator(),
         Some(GeneratorType::Void)
@@ -112,7 +112,7 @@ fn dim05_nether_and_the_end_take_no_custom_height() {
             // The step makes a height {0, 0} of absent bounds, which passes.
             let document = loads(&dimension(version, identifier, VOID));
             let height = document.components.dimension_height.as_ref().unwrap();
-            assert_eq!((height.min_y.0, height.height_range.0), (0, 0));
+            assert_eq!((height.min_y, height.height_range), (0, 0));
             assert!(above_info(document.diagnostics()).is_empty());
         }
     }
@@ -216,11 +216,11 @@ fn dim15_the_1_26_50_step_turns_bounds_into_a_height() {
         &bounds(-64, 320),
     ));
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (-64, 384));
+    assert_eq!((height.min_y, height.height_range), (-64, 384));
     assert!(document.components.default_biome.is_none());
     let document = loads(&dimension("1.21.60", "minecraft:nether", VOID));
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (0, 0));
+    assert_eq!((height.min_y, height.height_range), (0, 0));
     assert!(document.components.default_biome.is_none());
 }
 

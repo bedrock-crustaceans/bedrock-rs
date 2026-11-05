@@ -41,17 +41,13 @@ pub(crate) fn check_components(components: &ComponentMap<ClientBiomeComponent>) 
     let cx = &mut found;
     // The music volume is between 0 and 1.
     if let Some(music) = components.get::<BiomeMusic>()
-        && music
-            .volume_multiplier
-            .is_some_and(|volume| !unit(volume.0))
+        && music.volume_multiplier.is_some_and(|volume| !unit(volume))
     {
         fail::<BiomeMusic>(VOLUME, Some("volume_multiplier"), cx);
     }
     // The water opacity is between 0 and 1.
     if let Some(water) = components.get::<WaterAppearance>()
-        && water
-            .surface_opacity
-            .is_some_and(|opacity| !unit(opacity.0))
+        && water.surface_opacity.is_some_and(|opacity| !unit(opacity))
     {
         fail::<WaterAppearance>(OPACITY, Some("surface_opacity"), cx);
     }

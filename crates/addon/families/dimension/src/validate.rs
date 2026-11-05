@@ -65,7 +65,7 @@ fn height_rules(dimension: &Dimension, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     let height = dimension.components.dimension_height.as_ref();
     let failure = match dimension.description.identifier.as_str() {
         "minecraft:nether" | "minecraft:the_end" => height
-            .is_some_and(|h| h.min_y.0 | h.height_range.0 != 0)
+            .is_some_and(|h| h.min_y | h.height_range != 0)
             .then_some(
                 "Dimension height range: nether and the end do not support custom height values",
             ),

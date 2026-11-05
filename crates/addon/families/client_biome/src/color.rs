@@ -196,3 +196,7 @@ mod tests {
         assert_eq!(set.len(), 1);
     }
 }
+
+// The colours are read through their proxies, which judge their own form.
+bedrock_addon_core::impl_schema_leaf!(Color255Rgb, Color255Rgba);
+bedrock_addon_core::impl_no_molang!(Color255Rgb, Color255Rgba);

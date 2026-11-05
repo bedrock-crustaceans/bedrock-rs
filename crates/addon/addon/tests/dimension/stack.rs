@@ -44,10 +44,7 @@ fn dim11_the_file_walked_first_from_the_last_stack_entry_wins_deviation() {
     let dimensions = stack.dimensions();
     assert_eq!(dimensions.len(), 1);
     let kept = dimensions.get(&overworld()).unwrap();
-    assert_eq!(
-        kept.components.dimension_height.as_ref().unwrap().min_y.0,
-        0
-    );
+    assert_eq!(kept.components.dimension_height.as_ref().unwrap().min_y, 0);
     assert_eq!(shadowed(&stack), [(Severity::Info, "bp 1".to_owned())]);
     assert!(std::ptr::eq(dimensions, stack.dimensions()));
 }

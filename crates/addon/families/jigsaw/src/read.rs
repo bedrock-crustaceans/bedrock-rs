@@ -18,12 +18,13 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, Unknown, VersionInfo};
+use bedrock_addon_core::document::{Document, Origin, Rejected, Unknown, VersionInfo};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, NullRule, StrictFloat, Value, keep_unknown_members, parse_at,
-    reject_nulls,
+    EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members,
+    parse_with_rules, reject_nulls,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema, SchemaCx};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
@@ -59,16 +60,20 @@ fn parse_typed<'a, T: Facet<'a>>(
     {
         return None;
     }
-    match parse_at::<T>(payload) {
+    // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
+    // its type a type error).
+    match parse_with_rules::<T>(payload, cx.load.null_rule, cx.load.scalar_rules) {
         // A `null` where the struct reads a value is an
         // `InvalidType` error that rejects the document.
-        Ok(value)
+        Ok(ScalarRead { value, .. })
             if cx.load.null_rule == Some(NullRule::Rejected)
                 && reject_nulls(&value, payload, &cx.at, d) =>
         {
             None
         }
-        Ok(value) => {
+        Ok(ScalarRead { value, .. }) => {
+            // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
+            // a `null` read as a struct, which the typed read never reported (the null rule does).
             if let Some(json) = &json {
                 let mut kept = Unknown::new();
                 for (path, _) in keep_unknown_members(&value, json, &mut kept) {
@@ -82,19 +87,40 @@ fn parse_typed<'a, T: Facet<'a>>(
             }
             Some(value)
         }
-        Err(error) => {
-            d.push(error.into_diagnostic(&cx.at, |code, error| {
-                if matches!(code, DiagnosticCode::InvalidType { .. })
-                    && error.describes(UNKNOWN_TAG)
-                {
-                    DiagnosticCode::InvalidEnumValue { text: None }
-                } else {
-                    code
-                }
-            }));
+        // A scalar no arm of an untagged enum takes (`-1` for `dimension_padding`'s integer) is
+        // reported as the typed read reports it, which is what the file was told before the
+        // pre-pass judged it.
+        Err(ScalarFailure::Refused(misread)) => {
+            match bedrock_addon_core::json::parse_at::<T>(payload) {
+                Err(error) => d.push(read_failure(error, cx)),
+                Ok(_) => d.push(misread.finding(&cx.at)),
+            }
+            None
+        }
+        Err(ScalarFailure::Read(error)) => {
+            d.push(read_failure(error, cx));
             None
         }
     }
+}
+
+/// The finding of a failed typed read: an internally tagged enum's unknown tag is
+/// `InvalidEnumValue`, as vanilla's enum binds report it (facet calls it a type mismatch).
+fn read_failure(error: bedrock_addon_core::json::SliceError, cx: &ParseCx<'_>) -> Diagnostic {
+    error.into_diagnostic(&cx.at, |code, error| {
+        if matches!(code, DiagnosticCode::InvalidType { .. }) && error.describes(UNKNOWN_TAG) {
+            DiagnosticCode::InvalidEnumValue { text: None }
+        } else {
+            code
+        }
+    })
+}
+
+/// The bind constraints `value` states as its bounds (`Schema::check`), at `at`: each member
+/// outside its bound is an `InvalidValue` error, which fails the file as the game's parse does.
+/// The slice's `Refuse` resets nothing, so the value is as read afterwards.
+fn bounds<T: Schema>(value: &mut T, at: &JsonPath, d: &mut Diagnostics) {
+    value.check(&mut SchemaCx::new(crate::JSON_READING, at.clone(), d));
 }
 
 /// A bind constraint that failed: a member outside its bound, which fails the file as the game's parse does.
@@ -136,7 +162,7 @@ impl Versioned for JigsawStructure {
 
 impl VersionStruct for JigsawStructure {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let structure: Self = parse_typed(payload, cx, d, |json, d| {
+        let mut structure: Self = parse_typed(payload, cx, d, |json, d| {
             let padding = integer_or_object(
                 member(json, "dimension_padding"),
                 cx.at.child("dimension_padding"),
@@ -160,11 +186,9 @@ impl VersionStruct for JigsawStructure {
 
 impl JigsawStructure {
     /// The bind constraints and the filter's findings.
-    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
-        // `max_depth` is bound to 0 to 20.
-        if self.max_depth.0 > 20 {
-            violation(at.child("max_depth"), d);
-        }
+    fn check(&mut self, at: &JsonPath, d: &mut Diagnostics) {
+        // `max_depth` is bound to 0 to 20: the struct's own bounds.
+        bounds(self, at, d);
         // `horizontal` is bound to 1 to 128 and `vertical` to 1 or more.
         let distance = at.child("max_distance_from_center");
         match &self.max_distance_from_center {
@@ -176,10 +200,10 @@ impl JigsawStructure {
                 vertical,
                 ..
             }) => {
-                if !(1..=128).contains(&horizontal.0) {
+                if !(1..=128).contains(horizontal) {
                     violation(distance.child("horizontal"), d);
                 }
-                if vertical.is_some_and(|v| v.0 < 1) {
+                if vertical.is_some_and(|v| v < 1) {
                     violation(distance.child("vertical"), d);
                 }
             }
@@ -199,7 +223,7 @@ impl Versioned for TemplatePool {
 
 impl VersionStruct for TemplatePool {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let pool: Self = parse_typed(payload, cx, d, |_, _| true)?;
+        let mut pool: Self = parse_typed(payload, cx, d, |_, _| true)?;
         pool.check(&cx.at, d);
         Some(pool)
     }
@@ -211,14 +235,12 @@ impl VersionStruct for TemplatePool {
 
 impl TemplatePool {
     /// The bind constraints.
-    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
+    fn check(&mut self, at: &JsonPath, d: &mut Diagnostics) {
         let elements = at.child("elements");
-        for (i, entry) in self.elements.iter().enumerate() {
+        for (i, entry) in self.elements.iter_mut().enumerate() {
             let at = elements.index(i);
-            // `weight` is bound to 1 to 200.
-            if entry.weight.is_some_and(|w| !(1..=200).contains(&w.0)) {
-                violation(at.child("weight"), d);
-            }
+            // `weight` is bound to 1 to 200: the entry's own bounds.
+            bounds(entry, &at, d);
             if let PoolElement::Single { location, .. } = &entry.element
                 && location.as_str().len() > MAX_FILE_REFERENCE
             {
@@ -236,7 +258,7 @@ impl Versioned for StructureSet {
 
 impl VersionStruct for StructureSet {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let set: Self = parse_typed(payload, cx, d, |_, _| true)?;
+        let mut set: Self = parse_typed(payload, cx, d, |_, _| true)?;
         set.check(&cx.at, d);
         Some(set)
     }
@@ -247,18 +269,10 @@ impl VersionStruct for StructureSet {
 }
 
 impl StructureSet {
-    /// The bind constraints: `spacing` at least 1, each weight 1 to 200.
-    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
-        // `spacing` is bound to 1 or more.
-        if self.placement.spacing.0 < 1 {
-            violation(at.child("placement").child("spacing"), d);
-        }
-        let structures = at.child("structures");
-        for (i, entry) in self.structures.iter().enumerate() {
-            if !(1..=200).contains(&entry.weight.0) {
-                violation(structures.index(i).child("weight"), d);
-            }
-        }
+    /// The bind constraints: `spacing` at least 1, each weight 1 to 200 (the struct's own
+    /// bounds).
+    fn check(&mut self, at: &JsonPath, d: &mut Diagnostics) {
+        bounds(self, at, d);
     }
 }
 
@@ -349,12 +363,12 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             let at = at.child("position_predicate");
             // The chances are bound to `[0, 1)` and the distances to 0 or more.
             for (key, chance) in [("min_chance", min_chance), ("max_chance", max_chance)] {
-                if chance.is_some_and(|c| !(0.0..1.0).contains(&c.0)) {
+                if chance.is_some_and(|c| !(0.0..1.0).contains(&c)) {
                     violation(at.child(key), d);
                 }
             }
             for (key, distance) in [("min_dist", min_dist), ("max_dist", max_dist)] {
-                if distance.is_some_and(|v| v.0 < 0) {
+                if distance.is_some_and(|v| v < 0) {
                     violation(at.child(key), d);
                 }
             }
@@ -371,9 +385,9 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
 
 /// The constraints of a block predicate at `at`: `probability` in `[0, 1]`.
 fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diagnostics) {
-    let probability = |p: &StrictFloat<f32>, d: &mut Diagnostics| {
+    let probability = |p: &f32, d: &mut Diagnostics| {
         // The probability is bound to `[0, 1]`.
-        if !within(f64::from(p.0), 0.0, 1.0) {
+        if !within(f64::from(*p), 0.0, 1.0) {
             violation(at.child("probability"), d);
         }
     };
@@ -399,18 +413,17 @@ fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diag
 /// What a registry payload is read into: its entries as raw slices, each parsed from its own
 /// slice so that the unknown members inside an entry are kept.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct RegistryShell<'a> {
     metadata: IndexMap<String, RawJson<'a>>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
-/// The entries and the payload's unknown members of a registry at `payload`.
+/// The entries of a registry at `payload` (the payload's unknown members go to the table).
 fn parse_registry<T: for<'f> Facet<'f>>(
     payload: JsonSlice<'_>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
-) -> Option<(IndexMap<String, T>, Extra)> {
+) -> Option<IndexMap<String, T>> {
     let shell: RegistryShell<'_> = parse_payload(payload, cx, d)?;
     let mut entries = IndexMap::with_capacity(shell.metadata.len());
     for (key, raw) in &shell.metadata {
@@ -422,7 +435,7 @@ fn parse_registry<T: for<'f> Facet<'f>>(
         let entry: T = parse_typed(slice, &entry_cx, d, |_, _| true)?;
         entries.insert(key.clone(), entry);
     }
-    Some((entries, shell.extra))
+    Some(entries)
 }
 
 impl Versioned for MetadataRegistry {
@@ -431,8 +444,8 @@ impl Versioned for MetadataRegistry {
 
 impl VersionStruct for MetadataRegistry {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let (metadata, extra) = parse_registry(payload, cx, d)?;
-        Some(Self { metadata, extra })
+        let metadata = parse_registry(payload, cx, d)?;
+        Some(Self { metadata })
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -442,8 +455,8 @@ impl VersionStruct for MetadataRegistry {
 
 impl VersionStruct for v1_21_50::MetadataRegistry {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let (metadata, extra) = parse_registry(payload, cx, d)?;
-        Some(Self { metadata, extra })
+        let metadata = parse_registry(payload, cx, d)?;
+        Some(Self { metadata })
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

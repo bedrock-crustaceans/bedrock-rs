@@ -11,6 +11,8 @@ pub mod history;
 mod color;
 mod environment;
 mod read;
+#[cfg(test)]
+mod tests;
 mod texts;
 mod validate;
 mod write;
@@ -21,7 +23,7 @@ pub use environment::{
     FloatAttribute, FloatOperation,
 };
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;
 
 use component::ClientBiomeComponent;
@@ -47,16 +49,18 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::id::kind;
-use bedrock_addon_core::json::StrictFloat;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded,
-    MissingVersion, Parsed, finish, parse_as_written,
+    BeyondWidth, ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity,
+    InputKind, Loaded, MissingVersion, Parsed, Reading, Scalars, StructIndex, finish,
+    parse_as_written,
 };
 
 /// A client biome (`minecraft:client_biome`), at the newest format version.
@@ -76,15 +80,13 @@ pub struct ClientBiome {
 }
 
 /// `minecraft:client_biome/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The biome's identifier (JSON `identifier`): `namespace:name` in lower case from format
     /// 1.21.90 (matching `^[a-z0-9._%+-]+:[a-z0-9._%+-]+$`); an older document may name a
     /// vanilla biome without its namespace, which the upgrade adds.
     pub identifier: BiomeId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A beta client biome (`"format_version": "beta"`): the newest components plus
@@ -111,6 +113,17 @@ const LEGACY_SLICE: FormatVersion = FormatVersion::new(1, 0, 0);
 /// The last struct of the legacy range.
 const LAST_LEGACY: FormatVersion = known::V1_21_120;
 
+/// How every client-biome document is read: the document-input profile, its scalars strictly
+/// (a member takes its own JSON type alone, and a number beyond its float is a type error).
+/// The components read by it too, also outside a versioned load.
+pub(crate) fn reading() -> Reading {
+    ClientBiomeFamily::ENVELOPE
+        .input
+        .profile()
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Error)
+}
+
 impl Family for ClientBiomeFamily {
     const NAME: &'static str = "client_biome";
     const PAYLOAD_KEY: &'static str = PAYLOAD_KEY;
@@ -134,6 +147,11 @@ impl Family for ClientBiomeFamily {
         missing: MissingVersion::REJECT,
         ..Envelope::DEFAULT
     };
+
+    /// [`reading`] for every slice.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        reading()
+    }
 
     fn components() -> &'static ComponentTable<Self> {
         ClientBiomeComponent::TABLE
@@ -722,10 +740,7 @@ pub const LOADER: CollectionLoader<Registry<ClientBiome>, Contribution<ClientBio
 impl Description {
     /// The description of `identifier`.
     pub fn new(identifier: BiomeId) -> Self {
-        Self {
-            identifier,
-            extra: Extra::default(),
-        }
+        Self { identifier }
     }
 }
 
@@ -751,7 +766,7 @@ impl ClientBiome {
             .and_then(Color255Rgb::rgb)
             .map(|[r, g, b]| [r, g, b].map(|channel| f32::from(channel) / 255.0))
             .map(|[r, g, b]| [r, g, b, 1.0]);
-        (color, water.surface_opacity.map(|opacity| opacity.0))
+        (color, water.surface_opacity)
     }
 }
 
@@ -769,31 +784,21 @@ impl Beta {
 impl SkyColor {
     /// `minecraft:sky_color` with `sky_color`.
     pub fn new(sky_color: Color255Rgb) -> Self {
-        Self {
-            sky_color,
-            extra: Extra::default(),
-        }
+        Self { sky_color }
     }
 }
 
 impl DryFoliageColor {
     /// `minecraft:dry_foliage_color` with `color`.
     pub fn new(color: Color255Rgb) -> Self {
-        Self {
-            color,
-            extra: Extra::default(),
-        }
+        Self { color }
     }
 }
 
 impl SoundAddition {
     /// The sound `asset` at `chance` (from 0 to 1).
     pub fn new(asset: SoundEventName, chance: f32) -> Self {
-        Self {
-            asset,
-            chance: StrictFloat(chance),
-            extra: Extra::default(),
-        }
+        Self { asset, chance }
     }
 }
 
@@ -814,8 +819,8 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Error
-                1.21.40..=1.21.130 (0..=6): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                1.21.40..=1.21.130 (0..=6): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
+                beta: json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
     }

@@ -11,3 +11,6 @@ mod common;
 
 #[path = "server_sound_definitions/document.rs"]
 mod document;
+
+#[path = "server_sound_definitions/scalars.rs"]
+mod scalars;

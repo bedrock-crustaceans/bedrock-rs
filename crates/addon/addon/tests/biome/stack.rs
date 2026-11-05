@@ -44,7 +44,6 @@ fn temperature(stack: &PackStack<Behavior>) -> Option<f32> {
         .components
         .get::<bedrock_addon::families::biome::component::Climate>()?
         .temperature
-        .map(|t| t.0)
 }
 
 /// `b12_duplicate_identifier`: two packs define `test:biome`; the first loaded (the higher

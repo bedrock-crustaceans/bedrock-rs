@@ -470,7 +470,7 @@ fn set_stack(sets: &[Option<(u16, u16)>]) -> PackStack<Behavior> {
 fn effective_set(stack: &PackStack<Behavior>) -> Option<(Option<usize>, u16)> {
     let id = bedrock_addon::id::Id::parse("minecraft:trail_ruins");
     let set = stack.jigsaw().structure_sets.get(&id)?;
-    Some((set.origin().pack.index(), set.placement.spacing.0))
+    Some((set.origin().pack.index(), set.placement.spacing))
 }
 
 /// The pack indexes of the findings named `code` at `severity`.

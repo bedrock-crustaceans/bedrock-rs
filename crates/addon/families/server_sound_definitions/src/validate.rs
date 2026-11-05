@@ -55,7 +55,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
     };
     let pattern = || bedrock_addon_core::diagnostic::cereal::string_mismatch(NO_WHITESPACE_REGEX);
     for (index, definition) in file.0.iter().enumerate() {
-        let name = definition.sound_event_name.0.as_str();
+        let name = definition.sound_event_name.as_str();
         if let Some(text) = namespace_text(name) {
             push(
                 DiagnosticCode::NamespaceRule { text: Some(text) },
@@ -73,7 +73,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
             }
         }
         if let Some(duration) = &definition.duration_info {
-            let seconds = duration.seconds.0;
+            let seconds = duration.seconds;
             if !seconds.is_finite() || seconds <= 0.0 {
                 // The crate's own information: vanilla converts any value without a check.
                 push(
@@ -93,7 +93,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
                     index,
                     &["broadcast_range"],
                 );
-            } else if range.0 <= 0.0 {
+            } else if *range <= 0.0 {
                 // The crate's own information: the game binds any number without a check.
                 push(
                     DiagnosticCode::InvalidValue { text: None },

@@ -3,15 +3,14 @@
 use facet::Facet;
 use indexmap::IndexMap;
 
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::json::{StrictFloat, StrictString};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A behaviour pack's server sound definitions file, `sounds/sound_definitions.json`
 /// (`#[doc(alias)]` `server_sound_definitions`): the payload is the array itself.
 #[doc(alias = "server_sound_definitions")]
 #[doc(alias = "sound_definitions.json")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[facet(transparent)]
 pub struct SoundMetadataFile(pub Vec<SoundMetadata>);
 
@@ -19,11 +18,12 @@ pub struct SoundMetadataFile(pub Vec<SoundMetadata>);
 /// music it is, the tags scripts filter on, and how far a broadcast reaches. The audio itself
 /// is the resource pack's.
 #[doc(alias = "server_sound_definitions")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SoundMetadata {
     /// `sound_event_name`: the namespaced sound event this is the metadata of. No whitespace;
     /// a namespace other than `minecraft` is required.
-    pub sound_event_name: StrictString,
+    pub sound_event_name: String,
     /// `duration_info`: how long the sound lasts, so the server knows when it ends.
     pub duration_info: Option<DurationInfo>,
     /// `music_info`.
@@ -33,16 +33,13 @@ pub struct SoundMetadata {
     pub tags: Option<IndexMap<String, TagValueList>>,
     /// `broadcast_range`: how far from the sound a broadcast play reaches a player (from
     /// engine 1.26.50; an older engine rejects the file).
-    pub broadcast_range: Option<StrictFloat<f32>>,
-    /// Unknown members, each of which rejects the file.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub broadcast_range: Option<f32>,
 }
 
 impl SoundMetadata {
     /// The sound event name as an identifier.
     pub fn id(&self) -> SoundEventName {
-        SoundEventName::parse(self.sound_event_name.0.as_str())
+        SoundEventName::parse(self.sound_event_name.as_str())
     }
 
     /// The duration as the server stores it; `None` without `duration_info`.
@@ -52,15 +49,13 @@ impl SoundMetadata {
 }
 
 /// `duration_info`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DurationInfo {
     /// `mode`: what the duration counts in.
     pub mode: DurationMode,
     /// `seconds`.
-    pub seconds: StrictFloat<f32>,
-    /// Unknown members, each of which rejects the file.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub seconds: f32,
 }
 
 impl DurationInfo {
@@ -76,7 +71,7 @@ impl DurationInfo {
     pub fn duration(&self) -> SoundDuration {
         match self.mode {
             DurationMode::GameTime => {
-                let ticks = self.seconds.0 * 20.0_f32;
+                let ticks = self.seconds * 20.0_f32;
                 // 2^31 is exact in f32; anything at or past it, or NaN, is out of range.
                 SoundDuration::Ticks(if (-2_147_483_648.0..2_147_483_648.0).contains(&ticks) {
                     ticks as i32
@@ -85,7 +80,7 @@ impl DurationInfo {
                 })
             }
             DurationMode::RealTime => {
-                let millis = self.seconds.0 * 1000.0_f32;
+                let millis = self.seconds * 1000.0_f32;
                 SoundDuration::Millis(
                     if (-9_223_372_036_854_775_808.0..9_223_372_036_854_775_808.0).contains(&millis)
                     {
@@ -100,7 +95,7 @@ impl DurationInfo {
 }
 
 /// What a duration counts in.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[non_exhaustive]
 #[repr(u8)]
 pub enum DurationMode {
@@ -123,19 +118,17 @@ pub enum SoundDuration {
 }
 
 /// `music_info`: free-form music metadata, every member optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MusicInfo {
     /// `genres`.
-    pub genres: Option<Vec<StrictString>>,
+    pub genres: Option<Vec<String>>,
     /// `moods`.
-    pub moods: Option<Vec<StrictString>>,
+    pub moods: Option<Vec<String>>,
     /// `artist`: display text or a translation key.
-    pub artist: Option<StrictString>,
+    pub artist: Option<String>,
     /// `title`: display text or a translation key.
-    pub title: Option<StrictString>,
-    /// Unknown members, each of which rejects the file.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub title: Option<String>,
 }
 
 /// The value of one tag: one string or a list of strings.
@@ -158,3 +151,6 @@ impl TagValueList {
         }
     }
 }
+
+bedrock_addon_core::impl_schema_leaf!(TagValueList);
+bedrock_addon_core::impl_no_molang!(TagValueList);

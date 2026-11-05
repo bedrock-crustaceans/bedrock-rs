@@ -40,7 +40,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         if !cx.sound_definition(id).is_missing() {
             continue;
         }
-        let name = document.value().sound_event_name.0.as_str();
+        let name = document.value().sound_event_name.as_str();
         // The registry keeps the first definition of a name in a file, so the first element
         // with the name is this one. Without the file's bytes the index is the definition's
         // place among the ones the registry kept of that file, which is the file's index
@@ -69,9 +69,5 @@ fn names_as_written(cx: &LinkCx<'_>, origin: &Origin, out: &mut Findings) -> Opt
     let bytes = cx.bytes(PackSide::Behavior, &origin.pack, &origin.path, out)?;
     let file = SoundMetadataFile::parse(&origin.path, &bytes, &pack.context).ok()?;
     let names = file.value().0.iter();
-    Some(
-        names
-            .map(|entry| entry.sound_event_name.0.clone())
-            .collect(),
-    )
+    Some(names.map(|entry| entry.sound_event_name.clone()).collect())
 }

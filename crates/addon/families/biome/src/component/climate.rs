@@ -5,64 +5,51 @@
 use facet::Facet;
 use facet_value::VArray;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::ValueExt;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictString, Value};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::ShapeErrorKind;
 
 /// `minecraft:climate`: temperature, downfall and snow cover. Every member is optional; an
 /// absent one leaves the game's built-in value.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Climate {
     /// How much precipitation falls (JSON `downfall`); below `2^-23` the biome gets no rain.
-    #[facet(default)]
-    pub downfall: Option<StrictFloat<f32>>,
+    pub downfall: Option<f32>,
     /// The minimum and maximum snow cover, each multiple of 0.125 one snow layer (JSON
     /// `snow_accumulation`, `[min, max]`; the minimum must not exceed the maximum).
-    #[facet(default)]
-    pub snow_accumulation: Option<[StrictFloat<f32>; 2]>,
+    pub snow_accumulation: Option<[f32; 2]>,
     /// The temperature (JSON `temperature`).
-    #[facet(default)]
-    pub temperature: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub temperature: Option<f32>,
 }
 
 /// `minecraft:creature_spawn_probability`: the chance that creatures spawn while chunks
 /// generate.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct CreatureSpawnProbability {
     /// The probability, in `[0.0, 0.75]` (JSON `probability`).
-    #[facet(default)]
-    pub probability: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub probability: Option<f32>,
 }
 
 /// `minecraft:humidity`: whether the biome counts as humid (fire spread, farmland).
 // Required members: no `Default`, or facet would default them.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Humidity {
     /// Humid or dry (JSON `is_humid`, required).
-    pub is_humid: StrictBool,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub is_humid: bool,
 }
 
 /// `minecraft:map_tints`: the colours a map draws the biome's grass and foliage with.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MapTints {
     /// The grass colour (JSON `grass`, required).
     pub grass: GrassTint,
     /// The foliage colour (JSON `foliage`).
-    #[facet(default)]
     pub foliage: Option<Color>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:map_tints.grass`: a fixed colour or the noise-based one, chosen by `type`.
@@ -72,20 +59,15 @@ pub struct MapTints {
 pub enum GrassTint {
     /// `{"type": "tint", "tint": <colour>}`: one colour.
     #[facet(rename = "tint")]
+    #[facet(schema::unknown = "keep")]
     Tint {
         /// The colour (JSON `tint`, required).
         tint: Color,
-        /// Unknown members.
-        #[facet(skip, rename = "\u{0}extra")]
-        extra: Extra,
     },
     /// `{"type": "noise"}`: the colour the game picks by noise.
     #[facet(rename = "noise")]
-    Noise {
-        /// Unknown members.
-        #[facet(skip, rename = "\u{0}extra")]
-        extra: Extra,
-    },
+    #[facet(schema::unknown = "keep")]
+    Noise {},
 }
 
 /// An opaque RGB colour: `"#RRGGBB"` or `[r, g, b]` with integer
@@ -187,54 +169,44 @@ impl From<&ColorRgba> for Value {
 }
 
 /// `minecraft:partially_frozen`: the biome is partly frozen by noise (no members).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct PartiallyFrozen {
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+pub struct PartiallyFrozen {}
 
 /// `minecraft:tags`: the biome's tags, which features, spawn rules and Molang queries test.
 // Required members: no `Default`, or facet would default them.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Tags {
     /// The tags (JSON `tags`, required).
-    pub tags: Vec<StrictString>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub tags: Vec<String>,
 }
 
 impl Tags {
     /// Whether the biome has `tag`.
     pub fn contains(&self, tag: &str) -> bool {
-        self.tags.iter().any(|t| t.0 == tag)
+        self.tags.iter().any(|t| t == tag)
     }
 }
 
 /// `minecraft:village_type` (format 1.26.0): which village style generates in the biome.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct VillageType {
     /// The style (JSON `type`, required).
     #[facet(rename = "type")]
     pub kind: VillageKind,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl VillageType {
     /// The component with `kind` and no unknown members.
     pub fn new(kind: VillageKind) -> Self {
-        Self {
-            kind,
-            extra: Extra::default(),
-        }
+        Self { kind }
     }
 }
 
 /// A village style; the game numbers the five styles 0 to 4 in the order listed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -246,3 +218,8 @@ pub enum VillageKind {
     Taiga,
     Default,
 }
+
+// The colours are read through their proxies, which judge their own form; the tint is a data
+// enum, its members checked by hand (`validate.rs`).
+bedrock_addon_core::impl_schema_leaf!(Color, ColorRgba, GrassTint);
+bedrock_addon_core::impl_no_molang!(Color, ColorRgba, GrassTint);

@@ -170,7 +170,7 @@ mod tests {
         let tip = LoadingMessage::Text("tips.a".to_owned());
         let messages = LoadingMessages {
             beginner_loading_messages: Some(vec![tip.clone()]),
-            written: Some(written),
+            written: Some(written).into(),
             ..LoadingMessages::default()
         };
         let list = MessageList::Beginner;

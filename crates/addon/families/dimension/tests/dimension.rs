@@ -14,3 +14,6 @@ mod engine;
 
 #[path = "dimension/rows.rs"]
 mod rows;
+
+#[path = "dimension/scalars.rs"]
+mod scalars;

@@ -8,7 +8,7 @@
 
 pub mod v1_21_50;
 
-use super::{JigsawStructure, MetadataRegistry, ProcessorList, StructureSet, TemplatePool};
+use super::MetadataRegistry;
 
 /// The `minecraft:jigsaw` family of the version-chain machinery (hidden: only the loaders
 /// name it).
@@ -37,7 +37,6 @@ pub struct ProcessorListFamily;
 pub struct MetadataFamily;
 
 // The four JSON families have one struct each: their chain is `Single` (`Family::Any`).
-bedrock_addon_core::impl_no_molang!(JigsawStructure, TemplatePool, StructureSet, ProcessorList);
 
 bedrock_addon_core::version_chain! {
     family = MetadataFamily;
@@ -49,5 +48,4 @@ bedrock_addon_core::version_chain! {
         /// 1.21.80 and later: the newest registry.
         V1_21_80(MetadataRegistry),
     }
-    molang = none;
 }

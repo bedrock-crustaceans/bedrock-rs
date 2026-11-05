@@ -4,13 +4,12 @@
 
 use std::fmt::Debug;
 
-use bedrock_addon::document::{Content, Extra};
+use bedrock_addon::document::Content;
 use bedrock_addon::families::jigsaw::{
     GenerationStep, HeightProvider, JigsawStructure, ProcessorList, StructureSet, TemplatePool,
     VerticalAnchor,
 };
 use bedrock_addon::id::{JigsawStructureId, TemplatePoolId};
-use bedrock_addon::json::StrictInt;
 
 use super::common::{fixture, loads};
 
@@ -112,8 +111,7 @@ fn members_left_out_are_not_written() {
         TemplatePoolId::from_static("demo:start"),
         3,
         HeightProvider::Constant {
-            value: VerticalAnchor::AboveBottom(StrictInt(5)),
-            extra: Extra::default(),
+            value: VerticalAnchor::AboveBottom(5),
         },
     );
     assert_eq!(
@@ -152,13 +150,12 @@ fn a_built_document_validates_through_the_loader() {
         TemplatePoolId::from_static("demo:start"),
         21,
         HeightProvider::Constant {
-            value: VerticalAnchor::Absolute(StrictInt(0)),
-            extra: Extra::default(),
+            value: VerticalAnchor::Absolute(0),
         },
     );
     let d = structure.validate(&super::common::context());
     assert!(d.iter().any(|f| f.code.name() == "InvalidValue"), "{d:?}");
-    structure.max_depth = StrictInt(20);
+    structure.max_depth = 20;
     assert!(structure.validate(&super::common::context()).is_empty());
 }
 

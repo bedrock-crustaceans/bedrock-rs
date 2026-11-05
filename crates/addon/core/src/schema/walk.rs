@@ -241,6 +241,7 @@ crate::impl_schema_leaf!(
     crate::molang::Molang,
     crate::molang::MolangSource,
     crate::molang::MolangList,
+    crate::shared::BlockSpecifier,
 );
 
 /// A number a bound compares: the derive converts the value and the limit with `to_f64` for

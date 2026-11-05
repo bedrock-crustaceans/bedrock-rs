@@ -5,10 +5,9 @@ use super::v1_21_40::{AmbientSounds as OlderAmbientSounds, Component};
 use super::{insert, legacy_document, note_component, v1_21_120};
 use crate::component::{AmbientSounds, ClientBiomeComponent, SoundAddition};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
-use bedrock_addon_core::document::{Component as _, ComponentMap, ComponentRef, Extra};
+use bedrock_addon_core::document::{Component as _, ComponentMap, ComponentRef};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::id::syntax::split_namespace;
-use bedrock_addon_core::json::StrictFloat;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
@@ -45,17 +44,12 @@ fn convert(older: OlderAmbientSounds) -> AmbientSounds {
         underwater_addition: None,
         underwater_loop: None,
         underwater_mood: None,
-        extra: older.extra,
     }
 }
 
 /// `{asset, chance}`.
 fn addition(asset: SoundEventName, chance: f32) -> SoundAddition {
-    SoundAddition {
-        asset,
-        chance: StrictFloat(chance),
-        extra: Extra::default(),
-    }
+    SoundAddition { asset, chance }
 }
 
 /// Whether the identifier's namespace is exactly `minecraft`.

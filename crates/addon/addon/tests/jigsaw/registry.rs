@@ -67,7 +67,7 @@ fn j1_a_pack_s_trial_chambers_set_stays_and_the_game_s_record_is_refused_with_th
         .structure_sets
         .get(&StructureSetId::parse("minecraft:trial_chambers"))
         .expect("the pack's set is effective");
-    assert_eq!(chambers.placement.spacing.0, 34);
+    assert_eq!(chambers.placement.spacing, 34);
     assert!(jigsaw.structure_sets.rejected().is_empty());
     let found = j1(&stack);
     assert_eq!(found.len(), 1);
@@ -103,7 +103,7 @@ fn j1_two_pack_files_of_one_identifier_are_no_collision_the_first_stays_silently
             .jigsaw()
             .structure_sets
             .get(&StructureSetId::parse("demo:ruins"))
-            .map(|set| set.placement.spacing.0);
+            .map(|set| set.placement.spacing);
         assert_eq!(ruins, Some(12));
     }
 }

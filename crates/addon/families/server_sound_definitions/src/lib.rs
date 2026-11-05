@@ -20,14 +20,16 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{SoundEventName, kind};
 use bedrock_addon_core::json::Prepared;
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{
     self, Accept, CollectionLoader, FileCopy, LoadContext, StackCx, Walk,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, Single, ValidateCx, parse_document, parse_document_as_written,
+    BelowFloor, BeyondWidth, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind, Loaded,
+    MissingVersion, NoComponents, Reading, Scalars, Single, StructIndex, ValidateCx,
+    parse_document, parse_document_as_written,
 };
 
 pub use types::{
@@ -76,6 +78,16 @@ impl Family for MetadataFamily {
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Single<Self>;
+
+    /// The document-input profile, its scalars read strictly: a member takes its own JSON type
+    /// alone, and a number beyond its float is a type error.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        MetadataFamily::ENVELOPE
+            .input
+            .profile()
+            .with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error)
+    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         let Loaded::Stable(file) = v else { return };
@@ -195,7 +207,7 @@ fn combine(
                 .child(MetadataFamily::PAYLOAD_KEY)
                 .index(index);
             let unknown = rows.take_below(&at);
-            let name = definition.sound_event_name.0.clone();
+            let name = definition.sound_event_name.clone();
             let id = SoundEventName::parse(name.as_str());
             let entry = Origin::new(
                 origin.pack.clone(),
@@ -424,7 +436,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.26.60..=1.26.60 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                1.26.60..=1.26.60 (0..=0): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
     }

@@ -315,7 +315,6 @@ mod absent_only {
     };
     use bedrock_addon::families::client_biome::{Color255Rgb, Description};
     use bedrock_addon::id::Id;
-    use bedrock_addon::json::StrictFloat;
     use bedrock_addon::load::LoadContext;
     use bedrock_addon::vanilla::ActorType;
     use bedrock_addon::version::FormatVersion;
@@ -414,7 +413,7 @@ mod absent_only {
     #[test]
     fn the_1_21_110_step_keeps_a_precipitation() {
         let own = Precipitation {
-            ash: Some(StrictFloat(9.0)),
+            ash: Some(9.0),
             ..Precipitation::default()
         };
         let step = v1_21_100::ClientBiome {

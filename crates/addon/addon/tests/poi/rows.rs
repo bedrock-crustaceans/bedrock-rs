@@ -4,7 +4,6 @@
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText};
 use bedrock_addon::families::poi::{PoiDescription, PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
-use bedrock_addon::json::StrictInt;
 use bedrock_addon::pack::PackOrigin;
 use bedrock_addon::version::ENGINE_VERSION;
 
@@ -56,8 +55,8 @@ fn poi02_block_full_loads_with_every_member_as_given() {
             description: PoiDescription {
                 identifier: PoiTypeId::from_static("test:guild_hall"),
             },
-            tickets: Some(StrictInt(3)),
-            usable_distance: Some(StrictInt(4)),
+            tickets: Some(3),
+            usable_distance: Some(4),
             blocks: vec![
                 BlockId::from_static("minecraft:lectern"),
                 BlockId::from_static("minecraft:bell"),

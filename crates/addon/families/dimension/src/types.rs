@@ -1,9 +1,9 @@
 //! The dimension document's types and their inherent items.
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
-use bedrock_addon_core::document::{Document, Extra};
+use bedrock_addon_core::document::Document;
 use bedrock_addon_core::id::{BiomeId, DimensionId};
-use bedrock_addon_core::json::{StrictInt, StrictString};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 
 /// A dimension document (`minecraft:dimension`), at the newest format version.
@@ -23,59 +23,50 @@ pub struct Dimension {
     /// The document's `format_version` (the floor when absent). Not a JSON member; the writer
     /// writes it as `format_version` when it is 1.26.50 or newer.
     pub source_format_version: FormatVersion,
-    /// The root members beside `format_version` and `minecraft:dimension` (vanilla reads the
-    /// whole document as one struct, so they are unknown members, not an envelope error).
-    pub root_extra: Extra,
 }
 
 /// `minecraft:dimension/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DimensionDescription {
     /// The dimension (JSON `identifier`): one of the three vanilla dimensions, exactly, or a
     /// custom dimension `namespace:name`.
     pub identifier: DimensionId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:dimension/components` from format 1.26.50: a fixed set of members, not a
 /// component registry.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DimensionComponents {
     /// The height (JSON `minecraft:dimension_height`).
-    #[facet(rename = "minecraft:dimension_height", default)]
+    #[facet(rename = "minecraft:dimension_height")]
     pub dimension_height: Option<DimensionHeight>,
     /// The biome generated where no other is (JSON `minecraft:default_biome`).
-    #[facet(rename = "minecraft:default_biome", default)]
+    #[facet(rename = "minecraft:default_biome")]
     pub default_biome: Option<DefaultBiome>,
     /// The cloud height (JSON `minecraft:clouds`; a custom dimension's only).
-    #[facet(rename = "minecraft:clouds", default)]
+    #[facet(rename = "minecraft:clouds")]
     pub clouds: Option<Clouds>,
     /// The generator (JSON `minecraft:generation`).
     #[facet(rename = "minecraft:generation")]
     pub generation: Generation,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:dimension_height`: where the dimension starts and how tall it is.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DimensionHeight {
     /// The lowest y (JSON `min_y`), in `[-512, 512]`.
-    pub min_y: StrictInt<i16>,
+    pub min_y: i16,
     /// The height (JSON `height_range`), in `[16, 1024]` and a multiple of 16.
-    pub height_range: StrictInt<i16>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub height_range: i16,
 }
 
 impl DimensionHeight {
     /// `(min_y, height_range)`.
     pub(crate) fn pair(&self) -> (i16, i16) {
-        (self.min_y.0, self.height_range.0)
+        (self.min_y, self.height_range)
     }
 
     /// Whether the newest format can write this height: not `{0, 0}`, the height the upgrade
@@ -87,35 +78,29 @@ impl DimensionHeight {
 }
 
 /// `minecraft:default_biome`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DefaultBiome {
     /// JSON `biome`.
     pub biome: BiomeId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:clouds`: "Defines the cloud height in the custom dimension."
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Clouds {
     /// "The Y coordinate at which clouds are rendered in the custom dimension. Defaults to 128
     /// if this component is omitted." (JSON `height`, required), in `[-512, 512]`.
-    pub height: StrictInt<i16>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub height: i16,
 }
 
 /// `minecraft:generation`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Generation {
     /// The generator as written (JSON `generator_type`); only `void` names one (see
     /// [`Generation::generator`]), any other text is a warning and the document loads.
-    pub generator_type: StrictString,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub generator_type: String,
 }
 
 impl Dimension {
@@ -154,7 +139,7 @@ impl Dimension {
         self.components
             .clouds
             .as_ref()
-            .map_or(Self::DEFAULT_CLOUD_HEIGHT, |clouds| clouds.height.0)
+            .map_or(Self::DEFAULT_CLOUD_HEIGHT, |clouds| clouds.height)
     }
 }
 
@@ -163,30 +148,24 @@ impl Generation {
     /// (case-sensitive) names none.
     // The game's table of generator names holds the single entry `void`.
     pub fn generator(&self) -> Option<GeneratorType> {
-        (self.generator_type.0 == "void").then_some(GeneratorType::Void)
+        (self.generator_type == "void").then_some(GeneratorType::Void)
     }
 }
 
 /// `minecraft:dimension_bounds` of a document below 1.26.50: the lowest and highest y.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DimensionBounds {
     /// JSON `min`, in `[-512, 512]` and a multiple of 16.
-    pub min: StrictInt<i32>,
+    pub min: i32,
     /// JSON `max`, in `[-512, 512]` and a multiple of 16.
-    pub max: StrictInt<i32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub max: i32,
 }
 
 impl DimensionBounds {
     /// Bounds `[min, max]`.
     pub fn new(min: i32, max: i32) -> Self {
-        Self {
-            min: StrictInt(min),
-            max: StrictInt(max),
-            extra: Extra::default(),
-        }
+        Self { min, max }
     }
 }
 

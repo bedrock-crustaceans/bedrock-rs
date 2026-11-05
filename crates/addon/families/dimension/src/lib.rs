@@ -24,8 +24,8 @@ use bedrock_addon_core::load::{self, CollectionLoader, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    Reading, StructIndex, UnknownMask, ValidateCx,
+    BelowFloor, BeyondWidth, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, Reading, Scalars, StructIndex, UnknownMask, ValidateCx,
 };
 use bedrock_addon_support::puv::shadowed;
 use history::{Any, DimensionFamily};
@@ -66,9 +66,13 @@ impl Family for DimensionFamily {
         ..Envelope::DEFAULT
     };
 
-    /// The game reads every slice leniently: an unknown member is a warning, not an error.
+    /// The game reads every slice leniently: an unknown member is a warning, not an error. A
+    /// scalar member takes its own JSON type alone.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+        Reading::DOCUMENT
+            .with_unknown(UnknownMask::Warn)
+            .with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error)
     }
     type Latest = Dimension;
     type Beta = NoBeta<kind::Dimension>;
@@ -207,7 +211,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.18.0..=1.26.50 (0..=1): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.18.0..=1.26.50 (0..=1): json Rejected/Strict/Error/Warn/reports/fatal/Refuse, mcb Own/Strict/Error/Warn/reports/fatal/Refuse
             ",
         );
     }

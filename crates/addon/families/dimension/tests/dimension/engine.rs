@@ -65,8 +65,6 @@ fn the_version_is_read_as_minecraft_document_input_reads_it() {
 
 /// The height the step makes of `bounds` (`None`: no bounds written), on the struct.
 fn upgraded_height(identifier: &str, bounds: Option<(i32, i32)>) -> Option<(i16, i16)> {
-    use bedrock_addon_core::document::Extra;
-    use bedrock_addon_core::json::StrictString;
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
     use bedrock_addon_family_dimension::history::v1_18_0::{Components, Dimension};
@@ -75,18 +73,14 @@ fn upgraded_height(identifier: &str, bounds: Option<(i32, i32)>) -> Option<(i16,
     let old = Dimension {
         description: DimensionDescription {
             identifier: bedrock_addon_core::id::DimensionId::parse(identifier.to_owned()),
-            extra: Extra::default(),
         },
         components: Components {
             dimension_bounds: bounds.map(|(min, max)| DimensionBounds::new(min, max)),
             generation: Generation {
-                generator_type: StrictString("void".to_owned()),
-                extra: Extra::default(),
+                generator_type: "void".to_owned(),
             },
-            extra: Extra::default(),
         },
         source_format_version: FormatVersion::new(1, 21, 60),
-        root_extra: Extra::default(),
     };
     let mut diagnostics = bedrock_addon_core::diagnostic::Diagnostics::default();
     let new = old.upgrade(&mut UpgradeCx {
@@ -100,7 +94,7 @@ fn upgraded_height(identifier: &str, bounds: Option<(i32, i32)>) -> Option<(i16,
     assert!(diagnostics.is_empty(), "{diagnostics:#?}");
     new.components
         .dimension_height
-        .map(|h| (h.min_y.0, h.height_range.0))
+        .map(|h| (h.min_y, h.height_range))
 }
 
 #[test]
@@ -130,11 +124,11 @@ fn the_engine_s_1_21_60_inputs_upgrade_to_a_height() {
     // main-1: the overworld's bounds {0, 16}.
     let document = loads(&engine("main-1.json"));
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (0, 16));
+    assert_eq!((height.min_y, height.height_range), (0, 16));
     // The nether without bounds: a present height {0, 0}.
     let document = loads(&render("case-9", &["1.21.60", "minecraft:nether"]));
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (0, 0));
+    assert_eq!((height.min_y, height.height_range), (0, 0));
     assert!(above_info(document.diagnostics()).is_empty());
 }
 
@@ -290,7 +284,7 @@ fn part_b_custom_dimensions_load() {
     assert_eq!(biome.biome.as_str(), "test:my_biome");
     let document = loads(&engine("case-10.json"));
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (-32, 128));
+    assert_eq!((height.min_y, height.height_range), (-32, 128));
 }
 
 #[test]
@@ -394,10 +388,7 @@ fn clouds_in_range_load_and_set_the_cloud_height() {
             &["test:custom_dimension", &height.to_string()],
         ));
         assert!(above_info(document.diagnostics()).is_empty(), "{height}");
-        assert_eq!(
-            document.components.clouds.as_ref().unwrap().height.0,
-            height
-        );
+        assert_eq!(document.components.clouds.as_ref().unwrap().height, height);
         assert_eq!(document.runtime_cloud_height(), height);
     }
 }
@@ -548,7 +539,7 @@ fn loader_perf_tests_2_the_perf_dimension_loads_and_round_trips() {
         document.diagnostics()
     );
     let height = document.components.dimension_height.as_ref().unwrap();
-    assert_eq!((height.min_y.0, height.height_range.0), (0, 16));
+    assert_eq!((height.min_y, height.height_range), (0, 16));
     let written = document.to_json().unwrap();
     let again = loads(&written);
     assert_eq!(again.value().components, document.value().components);

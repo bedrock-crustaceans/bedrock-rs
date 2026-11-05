@@ -9,13 +9,13 @@ use crate::color::Color255Rgb;
 use crate::component::{
     Checked, ClientBiomeComponent, DryFoliageColor, FoliageAppearance, FoliageColor,
     FoliageColorMap, GrassAppearance, GrassColor, GrassColorMap, child, parse_typed,
-    write_component,
 };
 use crate::read::ComponentEra;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra, UnknownMembers};
+use bedrock_addon_core::document::{ComponentMap, ComponentSet, UnknownMembers};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, write_payload};
 
@@ -66,27 +66,23 @@ impl ComponentEra for Component {
     fn write(&self) -> Result<Value, EncodeError> {
         match self {
             Self::AmbientSounds(sounds) => write_payload(sounds),
-            Self::Newest(component) => write_component(component),
+            Self::Newest(component) => component.write_component(),
         }
     }
 }
 
 /// `minecraft:ambient_sounds` of formats `[1.21.40, 1.21.120)`: three sounds by name, every
 /// member optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct AmbientSounds {
     /// JSON `addition`: a sound played now and then.
-    #[facet(default)]
     pub addition: Option<SoundEventName>,
     /// JSON `loop`: the sound that plays all the time.
-    #[facet(default, rename = "loop")]
+    #[facet(rename = "loop")]
     pub loop_sound: Option<SoundEventName>,
     /// JSON `mood`: the sound played in dark, enclosed places.
-    #[facet(default)]
     pub mood: Option<SoundEventName>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Checked for AmbientSounds {
@@ -210,12 +206,7 @@ impl Upgrade for ClientBiome {
             from_table(
                 &mut components,
                 &identifier,
-                |id| {
-                    foliage(id).map(|color| FoliageAppearance {
-                        color: Some(color),
-                        extra: Extra::default(),
-                    })
-                },
+                |id| foliage(id).map(|color| FoliageAppearance { color: Some(color) }),
                 cx,
             );
             from_table(
@@ -227,7 +218,6 @@ impl Upgrade for ClientBiome {
                     grass(id).map(|color| GrassAppearance {
                         color: Some(color),
                         grass_is_shaded: None,
-                        extra: Extra::default(),
                     })
                 },
                 cx,
@@ -238,12 +228,7 @@ impl Upgrade for ClientBiome {
             from_table(
                 &mut components,
                 &identifier,
-                |id| {
-                    dry_foliage(id).map(|color| DryFoliageColor {
-                        color,
-                        extra: Extra::default(),
-                    })
-                },
+                |id| dry_foliage(id).map(|color| DryFoliageColor { color }),
                 cx,
             );
         }

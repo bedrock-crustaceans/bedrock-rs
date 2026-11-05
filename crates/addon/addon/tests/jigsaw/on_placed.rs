@@ -3,7 +3,6 @@
 //! name of a callback the game reserves a token for; absent is `""` and nothing is written; any name loads.
 
 use bedrock_addon::families::jigsaw::JigsawStructure;
-use bedrock_addon::json::StrictString;
 
 use super::common::{fixture, loads, rejected};
 
@@ -33,10 +32,10 @@ fn the_parser_test_s_structure_reads_its_on_placed_callback() {
     let loaded = loads::<JigsawStructure>("worldgen/structures/a.json", &text);
     assert_eq!(
         loaded.on_placed,
-        Some(StrictString("test:on_trail_ruins_placed".to_owned()))
+        Some("test:on_trail_ruins_placed".to_owned())
     );
     assert_eq!(loaded.on_placed(), "test:on_trail_ruins_placed");
-    assert_eq!(loaded.max_depth.0, 7);
+    assert_eq!(loaded.max_depth, 7);
     let written = round_trip(&text);
     assert!(
         written.contains(r#""on_placed": "test:on_trail_ruins_placed""#),

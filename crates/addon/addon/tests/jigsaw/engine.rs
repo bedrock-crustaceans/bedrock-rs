@@ -70,7 +70,7 @@ fn the_parser_test_s_structure_sets_load() {
             &payload(name, "minecraft:structure_set"),
         );
         assert_eq!(
-            (set.placement.spacing.0, set.placement.separation.0),
+            (set.placement.spacing, set.placement.separation),
             (34, 8),
             "{name}"
         );
@@ -105,7 +105,7 @@ fn the_parser_test_s_max_distance_forms_load() {
 #[test]
 fn the_parser_test_s_trail_ruins_loads() {
     let ruins = round_trips::<JigsawStructure>(STRUCTURE, &payload("parser-8", "minecraft:jigsaw"));
-    assert_eq!(ruins.max_depth.0, 7);
+    assert_eq!(ruins.max_depth, 7);
 }
 
 /// `…BlockRulesJsonInvalidVersion_ValidateBlockRules_ValidationFails` (-6, a whole document):

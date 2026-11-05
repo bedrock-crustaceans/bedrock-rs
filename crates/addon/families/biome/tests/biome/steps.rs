@@ -68,7 +68,7 @@ fn tags(identifiers: &[&str], tags: &[&str]) {
         let created: Vec<&str> = created
             .components
             .get::<Tags>()
-            .map(|t| t.tags.iter().map(|t| t.0.as_str()).collect())
+            .map(|t| t.tags.iter().map(String::as_str).collect())
             .unwrap_or_default();
         let wanted: Vec<&str> = tags.to_vec();
         assert!(
@@ -79,14 +79,7 @@ fn tags(identifiers: &[&str], tags: &[&str]) {
             identifier,
             &format!(r#""minecraft:tags": {{"tags": ["own", "{}"]}}"#, tags[0]),
         );
-        let present: Vec<String> = present
-            .components
-            .get::<Tags>()
-            .unwrap()
-            .tags
-            .iter()
-            .map(|t| t.0.clone())
-            .collect();
+        let present: Vec<String> = present.components.get::<Tags>().unwrap().tags.clone();
         assert!(present[0] == "own", "the author's tags stay first");
         assert!(
             present.iter().filter(|t| *t == tags[0]).count() == 1,

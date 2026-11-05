@@ -2,53 +2,45 @@
 
 use super::validate::validate_detached;
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{FeatureId, ProcessorListId, StructureId, TemplatePoolId};
-use bedrock_addon_core::json::StrictInt;
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A template pool: a weighted list of structure templates (or features) a jigsaw block draws
 /// from (`minecraft:template_pool`, in `worldgen/template_pools/`).
 ///
 /// JSON: `{"format_version": "1.21.20", "minecraft:template_pool": {"description", "elements",
 /// "fallback"?}}`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:template_pool")]
 #[doc(alias = "JigsawStructureTemplatePool")]
+#[facet(schema::unknown = "keep")]
 pub struct TemplatePool {
     /// The pool's identifier (JSON `description`).
     pub description: PoolDescription,
     /// The weighted elements; may be empty (JSON `elements`).
     pub elements: Vec<TemplatePoolElement>,
     /// The pool used when no element fits (JSON `fallback`, default `minecraft:empty`).
-    #[facet(default)]
     pub fallback: Option<TemplatePoolId>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:template_pool/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct PoolDescription {
     /// The pool's identifier, `namespace:name` (JSON `identifier`).
     pub identifier: TemplatePoolId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One weighted entry of a template pool (`elements[]`).
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TemplatePoolElement {
     /// What the entry places (JSON `element`).
     pub element: PoolElement,
-    /// The entry's weight, 1 to 200 (JSON `weight`, default 1).
-    #[facet(default)]
-    pub weight: Option<StrictInt<u8>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    /// The entry's weight, 1 to 200 (JSON `weight`, default 1: [`TemplatePoolElement::weight`]).
+    #[facet(schema::fallback = 1, schema::min = 1, schema::max = 200)]
+    pub weight: Option<u8>,
 }
 
 /// What a template pool entry places, by its `element_type`.
@@ -59,13 +51,11 @@ pub struct TemplatePoolElement {
 pub enum PoolElement {
     /// Nothing (JSON `minecraft:empty_pool_element`).
     #[facet(rename = "minecraft:empty_pool_element")]
-    Empty {
-        /// Unknown members.
-        #[facet(skip, rename = "\u{0}extra")]
-        extra: Extra,
-    },
+    #[facet(schema::unknown = "keep")]
+    Empty {},
     /// A structure template (JSON `minecraft:single_pool_element`).
     #[facet(rename = "minecraft:single_pool_element")]
+    #[facet(schema::unknown = "keep")]
     Single {
         /// The structure file, relative to the pack's `structures/` folder, at most 256 bytes
         /// (JSON `location`).
@@ -76,23 +66,18 @@ pub enum PoolElement {
         /// How the template follows the terrain (JSON `projection`, default `rigid`).
         #[facet(default, skip_serializing_if = Option::is_none)]
         projection: Option<Projection>,
-        /// Unknown members.
-        #[facet(skip, rename = "\u{0}extra")]
-        extra: Extra,
     },
     /// A feature (JSON `minecraft:feature_pool_element`, engine 1.26.20).
     #[facet(rename = "minecraft:feature_pool_element")]
+    #[facet(schema::unknown = "keep")]
     Feature {
         /// The feature to place (JSON `feature`).
         feature: FeatureId,
-        /// Unknown members.
-        #[facet(skip, rename = "\u{0}extra")]
-        extra: Extra,
     },
 }
 
 /// How a template follows the terrain (`projection`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -111,13 +96,9 @@ impl TemplatePool {
     /// A pool without elements, falling back to `minecraft:empty`.
     pub fn new(identifier: TemplatePoolId) -> TemplatePool {
         TemplatePool {
-            description: PoolDescription {
-                identifier,
-                extra: Extra::default(),
-            },
+            description: PoolDescription { identifier },
             elements: Vec::new(),
             fallback: None,
-            extra: Extra::default(),
         }
     }
 
@@ -139,13 +120,7 @@ impl TemplatePoolElement {
         TemplatePoolElement {
             element,
             weight: None,
-            extra: Extra::default(),
         }
-    }
-
-    /// The entry's weight; 1 when absent.
-    pub fn weight(&self) -> u8 {
-        self.weight.map_or(1, |w| w.0)
     }
 }
 
@@ -171,3 +146,7 @@ impl PoolElement {
         }
     }
 }
+
+// The data enums walk nothing: their bounds and members are checked by hand (`read.rs`).
+bedrock_addon_core::impl_schema_leaf!(PoolElement);
+bedrock_addon_core::impl_no_molang!(PoolElement);

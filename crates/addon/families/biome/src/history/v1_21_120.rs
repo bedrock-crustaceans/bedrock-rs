@@ -8,7 +8,7 @@ use crate::read::payload;
 use crate::write::object;
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::ComponentMap;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -148,21 +148,14 @@ fn add_missing_components(components: &mut ComponentMap<BiomeComponent>, identif
             continue;
         }
         if !components.contains::<Tags>() {
-            components.insert_typed(
-                Tags {
-                    tags: Vec::new(),
-                    extra: bedrock_addon_core::document::Extra::default(),
-                }
-                .into(),
-                true,
-            );
+            components.insert_typed(Tags { tags: Vec::new() }.into(), true);
         }
         if let Some(present) = components.get_mut::<Tags>() {
             for tag in tags {
                 // The crate does not append a tag that is already present; vanilla appends it
                 // again without checking for a duplicate.
                 if !present.contains(tag) {
-                    present.tags.push(StrictString((*tag).to_owned()));
+                    present.tags.push((*tag).to_owned());
                 }
             }
         }

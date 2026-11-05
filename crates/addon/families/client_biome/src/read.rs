@@ -6,15 +6,16 @@ use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::component::{ClientBiomeComponent, child, write_component};
+use super::component::{ClientBiomeComponent, child};
 use super::texts::{IDENTIFIER_NAMESPACE, IDENTIFIER_UPPER, INVALID_FILE, fixed};
 use super::{Description, EnvironmentAttributes};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
+use bedrock_addon_core::document::{ComponentMap, ComponentSet};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
@@ -94,39 +95,35 @@ pub(crate) trait ComponentEra: ComponentSet + From<ClientBiomeComponent> {
 
 impl ComponentEra for ClientBiomeComponent {
     fn write(&self) -> Result<Value, EncodeError> {
-        write_component(self)
+        self.write_component()
     }
 }
 
 /// A stable payload: components as raw slices, parsed one at a time.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell<'a> {
     description: Description,
     components: IndexMap<String, RawJson<'a>>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// The beta payload.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct BetaShell<'a> {
     description: Description,
     components: IndexMap<String, RawJson<'a>>,
-    #[facet(default)]
     environment_attributes: Option<EnvironmentAttributes>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// The root of a document below 1.21.130: one strict struct of two members, `format_version`
 /// and `minecraft:client_biome`, both required.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Root<'a> {
-    format_version: StrictString,
+    format_version: String,
     #[facet(rename = "minecraft:client_biome")]
     client_biome: RawJson<'a>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What a payload object holds.
@@ -213,7 +210,7 @@ pub(crate) fn whole<C: ComponentEra>(
     };
     let payload = payload(slice, version, &inner, d)?;
     Some(Whole {
-        format_version: root.format_version.0,
+        format_version: root.format_version,
         payload,
     })
 }

@@ -5,7 +5,6 @@ use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severit
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
-use bedrock_addon::json::StrictInt;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::version::ENGINE_VERSION;
 
@@ -424,7 +423,7 @@ fn b7_tickets_is_an_integer_from_0_to_255() {
     for (value, expected) in [("0", 0), ("1", 1), ("255", 255)] {
         let loaded = loads::<PoiType>(&forge_with(&format!(r#""tickets": {value}"#)));
         assert_eq!(loaded.tickets(), expected);
-        assert_eq!(loaded.tickets, Some(StrictInt(expected)));
+        assert_eq!(loaded.tickets, Some(expected));
         assert!(loaded.diagnostics().is_empty());
     }
     for value in ["256", "-1", "1000", "-256", "4294967296"] {
@@ -448,7 +447,7 @@ fn b8_usable_distance_is_an_integer_from_0_to_255() {
     for (value, expected) in [("0", 0), ("1", 1), ("255", 255)] {
         let loaded = loads::<PoiType>(&forge_with(&format!(r#""usable_distance": {value}"#)));
         assert_eq!(loaded.usable_distance(), expected);
-        assert_eq!(loaded.usable_distance, Some(StrictInt(expected)));
+        assert_eq!(loaded.usable_distance, Some(expected));
         assert!(loaded.diagnostics().is_empty());
     }
     for value in ["256", "300", "-1"] {
@@ -740,8 +739,8 @@ fn a_new_type_has_the_documented_defaults() {
         (None, None, None)
     );
     let set = PoiType {
-        tickets: Some(StrictInt(7)),
-        usable_distance: Some(StrictInt(0)),
+        tickets: Some(7),
+        usable_distance: Some(0),
         tags: Some(vec![PoiTagId::from_static("test:civic")]),
         ..forge
     };
