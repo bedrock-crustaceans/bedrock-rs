@@ -16,10 +16,9 @@ use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::StackPack;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    Family, Identity, Loaded, MissingVersion, NoComponents, Parsed, RangeModel, finish,
+    Envelope, Family, Identity, Loaded, MissingVersion, NoComponents, Parsed, RangeModel, finish,
 };
 use bedrock_addon_support::texture::document::{detached, locate, rejected};
 use bedrock_addon_support::texture::files::{
@@ -30,7 +29,6 @@ use bedrock_addon_support::texture::texts::fixed;
 impl Family for TextureSetFamily {
     const NAME: &'static str = "texture_set";
     const PAYLOAD_KEY: &'static str = PAYLOAD;
-    const DIRECTORIES: &'static [&'static str] = &["textures"];
     const FLOOR: FormatVersion = V1_16_100;
     // The client compares the version with `==` against each schema's own: no range, no
     // closest lower struct, and the ceiling is the newest struct's version.
@@ -39,9 +37,11 @@ impl Family for TextureSetFamily {
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // A missing version is an error here ("Invalid 'format_version' in JSON file").
-    const ENVELOPE_WARN_MISSING_VERSION: bool = false;
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
+    const ENVELOPE: Envelope = Envelope {
+        // A missing version is an error here ("Invalid 'format_version' in JSON file").
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
 
     fn identity(_: bedrock_addon_core::json::JsonSlice<'_>) -> Identity {
         Identity::default()
@@ -123,16 +123,7 @@ fn parsed(value: Any, version: VersionInfo, diagnostics: Diagnostics) -> Parsed<
         beta_literal: false,
         prerelease: false,
     };
-    Parsed::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        payload_at(),
-        diagnostics,
-    )
+    Parsed::from_value(Some(value), version, written, payload_at(), diagnostics)
 }
 
 /// The rest of the load: the upgrade step and the document.
@@ -300,5 +291,52 @@ pub(super) fn capability_lints(packs: &[LintPack<'_>], d: &mut Diagnostics) {
             // The game has no sentence for this lint; the text is core's.
             d.push(at_manifest(DiagnosticCode::CapabilityHint { text: None }));
         }
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn texture_set_reads_as_pinned() {
+        assert_reading_table(
+            "TextureSetFamily",
+            &reading_table::<super::TextureSetFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Error
+                1.16.100..=1.21.30 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn texture_set_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::TextureSetFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed = parse_as_written::<super::TextureSetFamily>(
+            JsonSlice::new(&text),
+            &LoadContext::detached(),
+        );
+        assert_eq!(parsed.identity, Identity::default());
     }
 }

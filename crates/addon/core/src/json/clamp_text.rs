@@ -383,7 +383,7 @@ pub fn clamp_beyond_double(
 
 /// [`clamp_beyond_double`] for a reader that keeps the FIRST copy of a member written twice
 /// inside the object value of a member named in `first_kept_in` ([`clamp_tokens`]): the
-/// versioned load's, with `Family::DUPLICATES_KEPT_IN`.
+/// versioned load's, with `Envelope::duplicates_kept_in`.
 pub fn clamp_beyond_double_first_kept(
     slice: JsonSlice<'_>,
     first_kept_in: &[&str],
@@ -401,7 +401,7 @@ pub fn clamp_beyond_double_first_kept(
 /// holds one. Every number beyond the width `width` gives for its path is replaced.
 /// The warning is given for the copy a reader keeps: the last of a member written twice,
 /// but the FIRST inside the object value of a member named in `first_kept_in`,
-/// whose duplicates the family reads itself (`Family::DUPLICATES_KEPT_IN`: a legacy block's
+/// whose duplicates the family reads itself (`Envelope::duplicates_kept_in`: a legacy block's
 /// `components`, of which it keeps the first). A number in a copy that is not kept is
 /// replaced without a word: no reader holds it.
 ///

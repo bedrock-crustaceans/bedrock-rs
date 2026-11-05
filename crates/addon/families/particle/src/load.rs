@@ -14,63 +14,56 @@ use bedrock_addon_core::document::{
     Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::kind;
-use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle, probe_envelope};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    BelowFloor, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
-    InputKind, Loaded, Parsed, StructIndex, finish, parse_as_written,
+    BelowFloor, ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity,
+    InputKind, Loaded, Parsed, Reading, StructIndex, finish, parse_as_written,
 };
 
 impl Family for ParticleFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "particle";
     const PAYLOAD_KEY: &'static str = PAYLOAD_KEY;
-    const DIRECTORIES: &'static [&'static str] = &["particles"];
     // The legacy slice is the only one below 1.20.80, and data-driven particles start with
     // it.
     const FLOOR: FormatVersion = known::V1_10_0;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a particle file as a document at every version, taking the version
+        // from the first textual `"format_version"`.
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // Below 1.20.80 the game hands the legacy parser the raw text; from 1.20.80 the envelope
+        // is checked and has exactly two members.
+        check: EnvelopeCheck::From(CEREAL),
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+
+    /// The legacy slice `[1.10.0, 1.20.80)` is a hand-written parser, which reads the input
+    /// itself (`null` as its readers take it), and its unknown-component line is a content-log
+    /// warning that no strict rule acts on. A 1.20.80 document is read by the family's own
+    /// reader (`parse.rs`), which refuses a `null` where it reads a value, and an unknown member
+    /// or component refuses it: the game loads that format strictly.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        match index {
+            StructIndex::Stable(0) => Reading::OWN,
+            _ => Reading::DOCUMENT,
+        }
+    }
     type Latest = ParticleEffect;
     // Particles have no experimental-build struct, so there is no second text to read.
     type Beta = std::convert::Infallible;
     type Component = ParticleComponent;
     type Any = Any;
-    // Below 1.20.80 the game hands the legacy parser the raw text; from 1.20.80 the envelope
-    // is checked and has exactly two members.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(CEREAL);
-    // The game reads a particle file as a document at every version, taking the version
-    // from the first textual `"format_version"`.
-    const INPUT: InputKind = InputKind::Document;
 
     fn components() -> &'static ComponentTable<Self> {
         ParticleComponent::TABLE
-    }
-
-    /// The legacy slice `[1.10.0, 1.20.80)` is a hand-written parser, which reads the input
-    /// itself (`null` as its readers take it). A 1.20.80 document is read by the family's
-    /// own reader (`parse.rs`), which refuses a `null` where it reads a value.
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
-        match index {
-            StructIndex::Stable(0) => None,
-            _ => Some(NullRule::Rejected),
-        }
-    }
-
-    /// An unknown member or component of a 1.20.80 document refuses it: the game loads
-    /// that format strictly. The legacy parser's unknown-component line is a content-log
-    /// warning that no strict rule acts on, so its slice keeps the warning.
-    fn error_mask(index: StructIndex) -> ErrorMask {
-        match index {
-            StructIndex::Stable(0) => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
-        }
     }
 
     fn component_sections(v: &mut ParticleEffect) -> Vec<ComponentSection<'_, ParticleComponent>> {
@@ -176,16 +169,9 @@ pub(crate) fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<ParticleFamily>::new(
-        Some(value),
-        version,
-        written,
-        identity,
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed =
+        Parsed::<ParticleFamily>::from_value(Some(value), version, written, at, diagnostics)
+            .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     diagnostics.locate(&origin);
@@ -222,7 +208,7 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
 /// game words as "The payload of the Minecraft Document is missing"; and from 1.20.80, a
 /// payload under another key is refused at that key, a finding of the crate's own because the
 /// game checks the name only in development builds. (Below 1.10.0 there is no slice: the
-/// pipeline says no parser is available, `BELOW_FLOOR`.)
+/// pipeline says no parser is available, `ENVELOPE.below_floor`.)
 fn vanilla_envelope_texts(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
     let cleaned = bedrock_addon_core::json::last_wins(document.text);
     let envelope = probe_envelope(JsonSlice::new(&cleaned)).ok();
@@ -422,5 +408,29 @@ mod tests {
             .filter(|d| matches!(d.code, DiagnosticCode::ShadowedDefinition { .. }))
             .count();
         assert_eq!(shadowed, 2);
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn particle_reads_as_pinned() {
+        assert_reading_table(
+            "ParticleFamily",
+            &reading_table::<super::ParticleFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 20, patch: 80 })
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.10.0..=1.10.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.20.80..=1.20.80 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
     }
 }

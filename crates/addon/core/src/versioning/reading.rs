@@ -1,15 +1,24 @@
 //! How a slice reads its text: [`Reading`], chosen per `(family, struct, source)` by
-//! [`Family::reading`](super::Family::reading), and [`TextReading`], the part a family fixes
-//! once because it runs before a struct is selected.
+//! [`Family::reading`](super::Family::reading). The part a family fixes once, because it runs
+//! before a struct is selected, is in `Family::ENVELOPE` ([`Envelope`](super::Envelope)).
 //!
-//! `load` reads both: the defaults are built from the old knobs (`INPUT`, `null_rule`,
-//! `error_mask`, `CLAMPS_BEYOND_DOUBLE`, `DUPLICATES_KEPT_IN`), which stay the way a family
-//! states its values for now, so every family's reading equals what it did before. Nothing
-//! acts on [`Scalars::Coercing`] or on a [`MemberFailure`] other than `Refuse` yet.
+//! Nothing acts on [`Scalars::Coercing`] or on a [`MemberFailure`] other than `Refuse` yet.
 
-use super::{ErrorMask, InputKind, VersionInput};
+use super::{ErrorMask, Family, StructIndex};
 use crate::json::NullRule;
 use crate::load::DocumentSource;
+
+/// The reading the pipeline gives the slice `index` of `F` from `source`: `F::reading`, with an
+/// MCB source read under no null rule (the binary reader's), whatever the family says. Reached
+/// from outside the crate as [`testing::slice_reading`](super::testing::slice_reading).
+#[must_use]
+pub fn slice_reading<F: Family>(index: StructIndex, source: DocumentSource) -> Reading {
+    let reading = F::reading(index, source);
+    match source {
+        DocumentSource::Mcb => reading.with_null(NullHandling::Own),
+        DocumentSource::Json => reading,
+    }
+}
 
 /// How a member written as `null` is read.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -31,15 +40,6 @@ impl NullHandling {
             Self::Rejected => Some(NullRule::Rejected),
             Self::Absent => Some(NullRule::Absent),
             Self::Own => None,
-        }
-    }
-
-    /// The handling of a context's null rule.
-    pub const fn from_rule(rule: Option<NullRule>) -> Self {
-        match rule {
-            Some(NullRule::Rejected) => Self::Rejected,
-            Some(NullRule::Absent) => Self::Absent,
-            None => Self::Own,
         }
     }
 }
@@ -67,14 +67,6 @@ pub enum UnknownMask {
 }
 
 impl UnknownMask {
-    /// The mask of an [`ErrorMask`].
-    pub const fn from_error_mask(mask: ErrorMask) -> Self {
-        match mask {
-            ErrorMask::Strict => Self::Error,
-            ErrorMask::Unstrict => Self::Warn,
-        }
-    }
-
     /// The [`ErrorMask`] of the mask.
     pub const fn error_mask(self) -> ErrorMask {
         match self {
@@ -199,68 +191,5 @@ impl Reading {
     /// The error mask of this reading.
     pub const fn error_mask(self) -> ErrorMask {
         self.unknown.error_mask()
-    }
-
-    /// The reading the old knobs give a slice: the null rule of `index` (none for an MCB
-    /// source, which the binary reader reads), its error mask, and components fatal where
-    /// the slice rejects `null`, as `load` derives them today.
-    pub const fn from_knobs(
-        null_rule: Option<NullRule>,
-        error_mask: ErrorMask,
-        source: DocumentSource,
-    ) -> Self {
-        let null = match source {
-            DocumentSource::Mcb => NullHandling::Own,
-            _ => NullHandling::from_rule(null_rule),
-        };
-        Self {
-            null,
-            scalars: Scalars::Strict,
-            unknown: UnknownMask::from_error_mask(error_mask),
-            // The derivation ignores the source, as `load` does.
-            components_fatal: matches!(null_rule, Some(NullRule::Rejected)),
-            on_member_failure: MemberFailure::Refuse,
-        }
-    }
-}
-
-/// The reading a family fixes for every file, because it runs on the text before a struct is
-/// selected: where the version is read from (and so whether the JSON size check applies),
-/// the clamp of numbers beyond a double and the members whose duplicates are kept. The
-/// duplicates live here and not on [`Reading`]: the pipeline keeps or blanks a duplicate
-/// before any slice is chosen.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct TextReading {
-    /// Where the version is read from; [`VersionInput::Document`] also sizes a JSON text.
-    pub version_input: VersionInput,
-    /// Whether a number no double holds is read as the largest finite double of its sign
-    /// (`Family::CLAMPS_BEYOND_DOUBLE`).
-    pub clamps_beyond_double: bool,
-    /// Members whose object value keeps the members written twice in it
-    /// (`Family::DUPLICATES_KEPT_IN`).
-    pub duplicates_kept_in: &'static [&'static str],
-}
-
-impl TextReading {
-    /// The text reading of a family with the old knobs `input`, `clamps_beyond_double` and
-    /// `duplicates_kept_in`.
-    pub const fn from_knobs(
-        input: InputKind,
-        clamps_beyond_double: bool,
-        duplicates_kept_in: &'static [&'static str],
-    ) -> Self {
-        Self {
-            version_input: input.version_input(),
-            clamps_beyond_double,
-            duplicates_kept_in,
-        }
-    }
-
-    /// Whether a text from `source` gets the JSON size check: a document input read from
-    /// JSON (an MCB source is a binary input).
-    pub const fn sizes_json(self, source: DocumentSource) -> bool {
-        matches!(self.version_input, VersionInput::Document)
-            && matches!(source, DocumentSource::Json)
     }
 }

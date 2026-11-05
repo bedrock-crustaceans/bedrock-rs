@@ -257,14 +257,12 @@ fn the_chain_is_two_structs_closed_at_the_newest() {
     );
     assert_eq!(CullingFamily::FLOOR, FormatVersion::new(1, 20, 60));
     assert_eq!(CullingFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
-    assert_eq!(
-        CullingFamily::CEILING,
-        None,
-        "derived: the newest struct's version"
-    );
     assert_eq!(CullingFamily::PAYLOAD_KEY, "minecraft:block_culling_rules");
     assert_eq!(CullingFamily::PAYLOAD_KEY.len(), 29);
-    assert_eq!(CullingFamily::DIRECTORIES, ["block_culling"]);
+    assert_eq!(
+        bedrock_addon_family_block_culling::LOADER.walk.directories,
+        ["block_culling"]
+    );
     assert_eq!(CullingRules::FORMAT_VERSION, FormatVersion::new(1, 21, 80));
     bedrock_addon_core::versioning::check_chain::<CullingFamily>().expect("a contiguous chain");
 }

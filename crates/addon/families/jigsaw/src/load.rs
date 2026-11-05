@@ -25,15 +25,15 @@ use bedrock_addon_core::id::{Id, Kind, kind};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Prepared, Unrepresentable, Value, WriteStyle, write_json,
 };
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents,
-    Parsed, Selection, StructIndex, ValidateCx, VersionStruct, Versioned, finish_file,
-    parse_as_written, parse_file_as_written, select,
+    BelowFloor, Envelope, Family, InputKind, Loaded, NoComponents, Parsed, Reading, Selection,
+    StructIndex, UnknownMask, ValidateCx, VersionStruct, Versioned, finish_file, parse_as_written,
+    parse_file_as_written, select,
 };
 
 /// `worldgen/structures`: `minecraft:jigsaw` documents.
@@ -69,42 +69,39 @@ macro_rules! json_family {
         failed = $failed:literal, validate = $validate:path $(,)?
     ) => {
         impl Family for $family {
-            // What the document does not read is kept for write-back: a number no double holds is
-            // the largest finite one, with a finding at it.
-            const CLAMPS_BEYOND_DOUBLE: bool = true;
             const NAME: &'static str = $name;
             const PAYLOAD_KEY: &'static str = $key;
-            const DIRECTORIES: &'static [&'static str] = &[$dir];
             const FLOOR: FormatVersion = V1_21_20;
-            // Below the first slice the versioned loader has no parser at all.
-            const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+            const ENVELOPE: Envelope = Envelope {
+                // The game reads all four documents as Minecraft documents: the version as the
+                // JSON reader takes it, the size limits, and `null` as a member of the wrong
+                // type.
+                input: InputKind::Document,
+                // What the document does not read is kept for write-back: a number no double holds
+                // is the largest finite one, with a finding at it.
+                clamps_beyond_double: true,
+                // Below the first slice the versioned loader has no parser at all.
+                below_floor: BelowFloor::NoParser,
+                // The default checks the envelope always. The game checks the member count of
+                // a document from 1.21.20 only; below it no struct exists, so checking always
+                // changes only which text rejects a three-member file below 1.21.20.
+                ..Envelope::DEFAULT
+            };
+
+            /// The game's four slices (processor list, template pool, structure, structure set) are
+            /// not strict: unknown members are warnings.
+            fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+                Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+            }
             type Latest = $root;
             type Beta = Infallible;
             type Component = NoComponents;
             type Any = $any;
-            // The game checks the member count of a document from 1.21.20 only; below it no
-            // struct exists, so checking always changes only which text rejects a
-            // three-member file below 1.21.20.
-            const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Always;
-            // The game reads all four documents as Minecraft documents: the version as the
-            // JSON reader takes it, the size limits, and `null` as a member of the wrong
-            // type.
-            const INPUT: InputKind = InputKind::Document;
-
-            /// The game's four slices (processor list, template pool, structure, structure
-            /// set) are not strict: unknown members are warnings.
-            fn error_mask(_: StructIndex) -> ErrorMask {
-                ErrorMask::Unstrict
-            }
 
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
                     $validate(value, &cx.at, cx.diagnostics);
                 }
-            }
-
-            fn actor_type(_: &Identity) -> ActorType {
-                ActorType::Mob
             }
 
             fn close(
@@ -248,7 +245,6 @@ json_family!(
 impl Family for MetadataFamily {
     const NAME: &'static str = "jigsaw structure metadata";
     const PAYLOAD_KEY: &'static str = "minecraft:jigsaw_structure_metadata";
-    const DIRECTORIES: &'static [&'static str] = &[METADATA];
     const FLOOR: FormatVersion = V1_21_50;
     type Latest = MetadataRegistry;
     type Beta = Infallible;
@@ -371,16 +367,7 @@ fn upgrade<F: JsonFamily>(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<F>::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<F>::from_value(Some(value), version, written, at, diagnostics);
     finished::<F>(parsed, origin, cx)
 }
 
@@ -611,7 +598,8 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> JigsawFile {
 }
 
 /// One family's registry while the group combines: the highest-priority pack wins, and inside
-/// one pack the first file in walk order; a dropped definition is a `ShadowedDefinition` information.
+/// one pack the first file in walk order; a dropped definition is a `ShadowedDefinition`
+/// information.
 ///
 /// A document that parsed holds its identifier whether or not it is registered afterwards:
 /// vanilla drops every later document of that identifier while it loads the packs, and runs
@@ -775,9 +763,9 @@ const GAME_RECORDED_SET: &str = "minecraft:trial_chambers";
 /// The game's registry keeps the set already recorded under a name and logs "Structure set
 /// '%s' has already been registered" at the content log's error level for the later one. The
 /// packs' sets reach it first, already one per identifier (a later file of an identifier is
-/// dropped silently, which is the first-wins rule of the registry above), so the one collision is a pack's `minecraft:trial_chambers` against
-/// the game's own: the pack's set stays effective and the game's record is refused with the
-/// text. The finding is placed at the pack's file.
+/// dropped silently, which is the first-wins rule of the registry above), so the one collision is a
+/// pack's `minecraft:trial_chambers` against the game's own: the pack's set stays effective and the
+/// game's record is refused with the text. The finding is placed at the pack's file.
 fn game_record_refused(document: &Document<StructureSet>) -> Option<Diagnostic> {
     (document.description.identifier.as_str() == GAME_RECORDED_SET).then(|| {
         Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
@@ -860,5 +848,92 @@ pub const LOADER: CollectionLoader<Jigsaw, JigsawFile> = CollectionLoader {
 impl Reported for Jigsaw {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
         Box::new(self.diagnostics())
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn structure_reads_as_pinned() {
+        assert_reading_table(
+            "StructureFamily",
+            &reading_table::<super::StructureFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn pool_reads_as_pinned() {
+        assert_reading_table(
+            "PoolFamily",
+            &reading_table::<super::PoolFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn structure_set_reads_as_pinned() {
+        assert_reading_table(
+            "StructureSetFamily",
+            &reading_table::<super::StructureSetFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn processor_list_reads_as_pinned() {
+        assert_reading_table(
+            "ProcessorListFamily",
+            &reading_table::<super::ProcessorListFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.21.20..=1.21.20 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn metadata_reads_as_pinned() {
+        assert_reading_table(
+            "jigsaw::MetadataFamily",
+            &reading_table::<super::MetadataFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: at the floor, told at Info: None
+                below floor: UseFormatVersion
+                empty document: Error
+                1.21.50..=1.21.80 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
     }
 }

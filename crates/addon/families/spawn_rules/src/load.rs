@@ -17,8 +17,8 @@ use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
-    ValidateCx, file_version,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Loaded, NoComponents, RangeModel, ValidateCx,
+    file_version,
 };
 use bedrock_addon_support::spawn::legacy::{RULES_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -29,30 +29,27 @@ use bedrock_addon_support::spawn::load::{
 const RULES_DIRECTORY: &str = "spawn_rules";
 
 impl Family for SpawnFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "spawn rules";
     const PAYLOAD_KEY: &'static str = RULES_KEY;
-    const DIRECTORIES: &'static [&'static str] = &[RULES_DIRECTORY];
     const FLOOR: FormatVersion = V1_8_0;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game reads the raw text and never checks the envelope.
+        check: EnvelopeCheck::Never,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        // The default parses a missing version at 1.8.0 with an information (the crate's own
+        // leniency; vanilla errors).
+        ..Envelope::DEFAULT
+    };
     // The legacy slice covers `[1.8.0, engine version]`, both ends included.
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToEngine;
     type Latest = StandardSpawnRules;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // The game reads the raw text and never checks the envelope.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Never;
-    // A missing version is parsed at 1.8.0 with a warning (the crate's own leniency; vanilla
-    // errors).
-    const MISSING_VERSION: MissingVersion = MissingVersion::Floor;
-
-    fn selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
-        !SimplifiedFamily::selected(file, cx)
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rules) = v {
@@ -62,15 +59,18 @@ impl Family for SpawnFamily {
 }
 
 impl Family for SimplifiedFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "spawn rules";
     const PAYLOAD_KEY: &'static str = RULES_KEY;
-    const DIRECTORIES: &'static [&'static str] = &[RULES_DIRECTORY];
     const FLOOR: FormatVersion = V1_21_60;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        // The default checks every routed document as a modern envelope, from 1.8.0 on.
+        ..Envelope::DEFAULT
+    };
     // The simplified slice covers `[1.21.60, engine version)`: the engine version itself has no
     // parser.
     const RANGE_MODEL: RangeModel = RangeModel::HalfOpenToEngine;
@@ -78,20 +78,18 @@ impl Family for SimplifiedFamily {
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = SimplifiedAny;
-    // Every routed document is checked as a modern envelope, from 1.8.0 on.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Always;
-
-    /// The experiment is on and the file says 1.21.60 or newer.
-    fn selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
-        cx.experiments.contains(Experiment::SimplifiedSpawnRules)
-            && file.is_some_and(|v| v >= V1_21_60)
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rules) = v {
             validate::simplified(rules, cx);
         }
     }
+}
+
+/// Whether the simplified family takes a file of version `file`: the experiment is on and the
+/// file says 1.21.60 or newer. The standard family takes every other file.
+fn simplified_selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
+    cx.experiments.contains(Experiment::SimplifiedSpawnRules) && file.is_some_and(|v| v >= V1_21_60)
 }
 
 /// Loads one spawn-rules file, routed by the experiment and its version.
@@ -105,7 +103,7 @@ pub(crate) fn parse_rules(
     let origin = origin(pack, side, path);
     let (identifier, result) = load_file(&origin, bytes, texts::FAILED_RULES, |text, origin| {
         let version = file_version(JsonSlice::new(text));
-        if SimplifiedFamily::selected(version, cx) {
+        if simplified_selected(version, cx) {
             load_family::<SimplifiedFamily, _>(text, cx, origin, SpawnRules::Simplified)
         } else {
             load_family::<SpawnFamily, _>(text, cx, origin, SpawnRules::Standard)
@@ -188,3 +186,42 @@ pub const LOADER: CollectionLoader<Registry<SpawnRules>, Parsed<SpawnRules>> = C
     needs: &[],
     then: None,
 };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn spawn_reads_as_pinned() {
+        assert_reading_table(
+            "SpawnFamily",
+            &reading_table::<super::SpawnFamily>(),
+            r"
+                text: Root, clamps beyond a double: true, duplicates kept in: []
+                envelope: Never
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.8.0..=1.8.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn simplified_reads_as_pinned() {
+        assert_reading_table(
+            "SimplifiedFamily",
+            &reading_table::<super::SimplifiedFamily>(),
+            r"
+                text: Root, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: at the floor, told at Info: None
+                below floor: NoParser
+                empty document: Error
+                1.21.60..=1.21.60 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+}

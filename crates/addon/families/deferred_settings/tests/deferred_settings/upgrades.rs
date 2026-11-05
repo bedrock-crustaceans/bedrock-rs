@@ -293,12 +293,17 @@ where
 {
     check_chain::<F>().expect(key);
     assert_eq!(F::PAYLOAD_KEY, key);
-    assert_eq!(F::DIRECTORIES, [directory]);
+    assert!(
+        bedrock_addon_family_deferred_settings::LOADER
+            .walk
+            .directories
+            .contains(&directory),
+        "{directory}"
+    );
     assert_eq!(F::FLOOR, floor);
     assert_eq!(F::RANGE_MODEL, RangeModel::ExactOnly);
-    assert_eq!(F::CEILING, None);
-    assert_eq!(F::MISSING_VERSION, MissingVersion::Reject);
-    assert_eq!(F::ENVELOPE, EnvelopeCheck::Always);
+    assert!(matches!(F::ENVELOPE.missing, MissingVersion::Reject { .. }));
+    assert_eq!(F::ENVELOPE.check, EnvelopeCheck::Always);
     let has_beta = <F::Any as VersionChain<F>>::HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
     for (index, version) in versions.iter().enumerate() {

@@ -9,14 +9,13 @@ use crate::diagnostic::{
 };
 use crate::document::{Document, Origin, Rejected};
 use crate::json::{
-    Envelope, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, check_depth, probe_envelope, strip_bom,
+    EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, RootProbe, check_depth, probe_envelope, strip_bom,
 };
 use crate::load::LoadContext;
 use crate::version::{FormatVersion, FormatVersionInput};
 use crate::versioning::{
-    BelowFloor, BetaPermission, ComponentTable, EnvelopeCheck, Family, Identity, Loaded,
-    MissingVersion, NoComponents, RangeModel, Selection, ValidateCx, Versioned, finish,
-    parse_as_written, select,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents,
+    RangeModel, Selection, ValidateCx, Versioned, finish, parse_as_written, select,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
@@ -32,29 +31,23 @@ const FLOOR: FormatVersion = FormatVersion::new(1, 21, 100);
 impl Family for PackSettingsFamily {
     const NAME: &'static str = "pack_settings";
     const PAYLOAD_KEY: &'static str = "minecraft:pack_settings";
-    // Not pack content: the world file and the global file.
-    const DIRECTORIES: &'static [&'static str] = &[];
     const FLOOR: FormatVersion = FLOOR;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // Below 1.21.100 (or without a version) the text is kept raw and no envelope check runs.
+        check: EnvelopeCheck::From(FLOOR),
+        // The caller passes an empty version: the game's message is "no valid version passed by the
+        // caller or found in the input".
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     // The loader's last range is the newest struct's version exactly.
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = SavedSettings;
     type Beta = Infallible;
-    // No beta struct, and no pack whose trust could permit one: `"beta"` is a version without
-    // a parser, not a missing toggle.
-    const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
     type Component = NoComponents;
     type Any = Any;
-    // Below 1.21.100 (or without a version) the text is kept raw and no envelope check runs.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(FLOOR);
-    // The caller passes an empty version: the game's message is "no valid version passed by the
-    // caller or found in the input".
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-
-    fn components() -> &'static ComponentTable<Self> {
-        &ComponentTable::EMPTY
-    }
 
     /// The document has no `description`.
     fn identity(_: JsonSlice<'_>) -> Identity {
@@ -301,7 +294,7 @@ impl ForeignKey {
 /// not named `minecraft:pack_settings`, under a version whose envelope is checked (the literal
 /// `"beta"`, or a version of at least 1.21.100; below it the text is read raw and the name is
 /// never looked at).
-fn foreign_payload_key(envelope: &Envelope<'_>, text: &str) -> Option<ForeignKey> {
+fn foreign_payload_key(envelope: &RootProbe<'_>, text: &str) -> Option<ForeignKey> {
     let version = written_version(&envelope.format_version)?;
     let checked = version.beta_literal || version.version.is_some_and(|v| v >= FLOOR);
     if !checked || envelope.members.len() != 1 {
@@ -456,4 +449,51 @@ fn malformed(message: String) -> DiagnosticCode {
 /// A file-level parse error.
 fn error(code: DiagnosticCode) -> Diagnostic {
     Diagnostic::error(code)
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn pack_settings_reads_as_pinned() {
+        assert_reading_table(
+            "PackSettingsFamily",
+            &reading_table::<super::PackSettingsFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 100 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.100..=1.26.40 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn pack_settings_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::PackSettingsFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed = parse_as_written::<super::PackSettingsFamily>(
+            JsonSlice::new(&text),
+            &LoadContext::detached(),
+        );
+        assert_eq!(parsed.identity, Identity::default());
+    }
 }

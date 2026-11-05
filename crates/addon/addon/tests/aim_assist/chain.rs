@@ -121,26 +121,28 @@ fn the_chains_are_the_plans() {
         CategoriesFamily::PAYLOAD_KEY,
         "minecraft:aim_assist_categories"
     );
-    assert_eq!(PresetFamily::DIRECTORIES, ["aim_assist/presets"]);
-    assert_eq!(CategoriesFamily::DIRECTORIES, ["aim_assist/categories"]);
+    assert_eq!(
+        bedrock_addon::families::aim_assist::LOADER.walk.directories,
+        ["aim_assist/categories", "aim_assist/presets"]
+    );
     for (floor, model, envelope, missing) in [
         (
             PresetFamily::FLOOR,
             PresetFamily::RANGE_MODEL,
-            PresetFamily::ENVELOPE,
-            PresetFamily::MISSING_VERSION,
+            PresetFamily::ENVELOPE.check,
+            PresetFamily::ENVELOPE.missing,
         ),
         (
             CategoriesFamily::FLOOR,
             CategoriesFamily::RANGE_MODEL,
-            CategoriesFamily::ENVELOPE,
-            CategoriesFamily::MISSING_VERSION,
+            CategoriesFamily::ENVELOPE.check,
+            CategoriesFamily::ENVELOPE.missing,
         ),
     ] {
         assert_eq!(floor, FormatVersion::new(1, 21, 50));
         assert_eq!(model, RangeModel::ClosedToEngine);
         assert_eq!(envelope, EnvelopeCheck::Never);
-        assert_eq!(missing, MissingVersion::Reject);
+        assert!(matches!(missing, MissingVersion::Reject { .. }));
     }
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");

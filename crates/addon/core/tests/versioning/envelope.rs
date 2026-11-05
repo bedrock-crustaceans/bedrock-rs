@@ -9,9 +9,10 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::{DocumentSource, Experiment};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, ComponentTable, EnvelopeCheck, ErrorMask, ExperimentalField,
-    Family, InputKind, LoadOutcome, Loaded, MissingVersion, ParseCx, StructIndex, VersionStruct,
-    Versioned, check_experimental_fields, file_version, load, parse_payload, write_payload,
+    BETA_VERSION, BetaPermission, ComponentTable, Envelope, EnvelopeCheck, ExperimentalField,
+    Family, InputKind, LoadOutcome, Loaded, MissingVersion, ParseCx, Reading, StructIndex,
+    UnknownMask, VersionStruct, Versioned, check_experimental_fields, file_version, load,
+    parse_payload, write_payload,
 };
 use facet::Facet;
 
@@ -65,7 +66,6 @@ macro_rules! toy_variant {
         impl Family for $name {
             const NAME: &'static str = "toy";
             const PAYLOAD_KEY: &'static str = "minecraft:toy";
-            const DIRECTORIES: &'static [&'static str] = &["toys"];
             const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
             type Latest = Toy120;
             type Beta = $beta;
@@ -80,10 +80,48 @@ macro_rules! toy_variant {
 }
 
 toy_variant!(Strict, strict, beta = ToyBeta, {
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
+    const ENVELOPE: Envelope = Envelope {
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
 });
 toy_variant!(Quiet, quiet, beta = ToyBeta, {
-    const ENVELOPE_WARN_MISSING_VERSION: bool = false;
+    const ENVELOPE: Envelope = Envelope {
+        missing: MissingVersion::Floor {
+            text: None,
+            severity: None,
+        },
+        ..Envelope::DEFAULT
+    };
+});
+toy_variant!(Texted, texted, beta = ToyBeta, {
+    const ENVELOPE: Envelope = Envelope {
+        // Client entity, attachable: the game's text, logged at level 2.
+        missing: MissingVersion::Floor {
+            text: Some(VanillaText::NoFormatVersionField),
+            severity: Some(Severity::Warning),
+        },
+        ..Envelope::DEFAULT
+    };
+});
+toy_variant!(TextedInfo, texted_info, beta = ToyBeta, {
+    const ENVELOPE: Envelope = Envelope {
+        // Entity: the crate's own text, and the game is silent.
+        missing: MissingVersion::Floor {
+            text: Some(VanillaText::NoFormatVersionField),
+            severity: Some(Severity::Info),
+        },
+        ..Envelope::DEFAULT
+    };
+});
+toy_variant!(StrictTexted, strict_texted, beta = ToyBeta, {
+    const ENVELOPE: Envelope = Envelope {
+        // Item, fog, the catalog: rejected with the family's own text.
+        missing: MissingVersion::Reject {
+            text: Some(VanillaText::NoFormatVersionField),
+        },
+        ..Envelope::DEFAULT
+    };
 });
 toy_variant!(Open, open, beta = ToyBeta, {
     const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
@@ -92,23 +130,35 @@ toy_variant!(ToggleOnly, toggle_only, beta = ToyBeta, {
     const BETA_PERMISSION: BetaPermission = BetaPermission::BetaApis;
 });
 toy_variant!(Uncounted, uncounted, beta = ToyBeta, {
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Uncounted;
+    const ENVELOPE: Envelope = Envelope {
+        check: EnvelopeCheck::Uncounted,
+        ..Envelope::DEFAULT
+    };
 });
 toy_variant!(Mixed, mixed, beta = ToyBeta, {
     // The item's split: the whole file a `MinecraftDocumentInput`, a JsonCpp chain below
     // the first modern slice (N1: a `null` member reads as absent), cereal slices from it (N2: a
     // `null` member is rejected); the beta struct is N2.
-    const INPUT: InputKind = InputKind::Document;
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        ..Envelope::DEFAULT
+    };
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(i) if i < 2 => Some(NullRule::Absent),
-            _ => Some(NullRule::Rejected),
+            StructIndex::Stable(i) if i < 2 => Reading::NULL_ABSENT,
+            _ => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
         }
     }
 });
 toy_variant!(Sourced, sourced, beta = ToyBeta, {
     // The item's split: JSON gates on the toggle alone, MCB meets the game's own gate.
-    const INPUT: InputKind = InputKind::Document;
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        ..Envelope::DEFAULT
+    };
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+    }
     fn beta_permission(_: JsonSlice<'_>, cx: &LoadContext) -> BetaPermission {
         match cx.source {
             DocumentSource::Mcb => BetaPermission::BetaApisOrBaseGame,
@@ -119,24 +169,33 @@ toy_variant!(Sourced, sourced, beta = ToyBeta, {
 toy_variant!(Masked, masked, beta = ToyBeta, {
     // The legacy actor's split: unstrict below 1.2.0, strict from it (the strict mask turns unknown
     // members and components into errors).
-    fn error_mask(index: StructIndex) -> ErrorMask {
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(i) if i < 2 => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(i) if i < 2 => Reading::OWN,
+            _ => Reading::OWN.with_unknown(UnknownMask::Error),
         }
     }
 });
 toy_variant!(Document, document, beta = ToyBeta, {
-    const INPUT: InputKind = InputKind::Document;
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        ..Envelope::DEFAULT
+    };
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+    }
 });
 toy_variant!(JsonCppToy, json_cpp_toy, beta = ToyBeta, {
-    const INPUT: InputKind = InputKind::JsonCpp;
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::JsonCpp,
+        ..Envelope::DEFAULT
+    };
 });
 toy_variant!(DocumentStrict, document_strict, beta = ToyBeta, {
-    const INPUT: InputKind = InputKind::Document;
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        ..Envelope::DEFAULT
+    };
 });
 
 /// A family without a beta struct.
@@ -156,7 +215,6 @@ pub mod stable {
 impl Family for Stable {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
     type Latest = Toy120;
     type Beta = std::convert::Infallible;
@@ -219,9 +277,11 @@ macro_rules! raw_family {
         impl Family for $name {
             const NAME: &'static str = "raw toy";
             const PAYLOAD_KEY: &'static str = "minecraft:toy";
-            const DIRECTORIES: &'static [&'static str] = &["toys"];
             const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
-            const ENVELOPE: EnvelopeCheck = $check;
+            const ENVELOPE: Envelope = Envelope {
+                check: $check,
+                ..Envelope::DEFAULT
+            };
             type Latest = RawRoot;
             type Beta = std::convert::Infallible;
             type Component = ToyComponent;
@@ -640,6 +700,59 @@ fn a_missing_version_is_an_error_in_a_rejecting_family() {
         code,
         DiagnosticCode::MissingFormatVersion {
             text: Some(VanillaText::NoValidVersion)
+        }
+    );
+}
+
+/// A family with a text of the game for the missing version is told it as a warning.
+#[test]
+fn a_missing_version_with_the_family_s_text_is_a_warning() {
+    let outcome = load_with::<Texted>(
+        r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
+        &LoadContext::detached(),
+    );
+    assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
+    assert_eq!(
+        codes(&outcome),
+        [(
+            DiagnosticCode::MissingFormatVersion {
+                text: Some(VanillaText::NoFormatVersionField)
+            },
+            Severity::Warning
+        )]
+    );
+    assert_eq!(outcome.version.effective, FormatVersion::new(1, 0, 0));
+}
+
+/// The family's text at the severity the family names.
+#[test]
+fn a_missing_version_with_the_family_s_text_takes_its_severity() {
+    let outcome = load_with::<TextedInfo>(
+        r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
+        &LoadContext::detached(),
+    );
+    assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
+    assert_eq!(
+        codes(&outcome),
+        [(
+            DiagnosticCode::MissingFormatVersion {
+                text: Some(VanillaText::NoFormatVersionField)
+            },
+            Severity::Info
+        )]
+    );
+}
+
+#[test]
+fn a_missing_version_is_rejected_with_the_family_s_text() {
+    let code = the_only_error(&load_with::<StrictTexted>(
+        r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
+        &LoadContext::detached(),
+    ));
+    assert_eq!(
+        code,
+        DiagnosticCode::MissingFormatVersion {
+            text: Some(VanillaText::NoFormatVersionField)
         }
     );
 }
@@ -1390,7 +1503,6 @@ pub mod gated {
 impl Family for Gated {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
     type Latest = Toy120;
     type Beta = GatedBeta;

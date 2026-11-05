@@ -306,8 +306,8 @@ fn components<C: ComponentEra>(
             d.push(Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None }).at(path));
             continue;
         };
-        // Not core's `check_released`: that judges the typed entries of a finished map, and
-        // a component the struct of `version` does not bind is never read into one.
+        // Here, not on the finished map: a component the struct of `version` does not bind is
+        // never read into one.
         if let Some(released) = meta.released.filter(|released| version < *released) {
             d.push(Diagnostic::error(use_version("component", key, released)).at(path));
             continue;

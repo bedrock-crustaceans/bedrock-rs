@@ -18,7 +18,6 @@ fn version(text: &str) -> FormatVersionInput {
 fn one_struct_from_1_26_40_to_the_engine<F: Family>() {
     assert_eq!(F::RANGE_MODEL, RangeModel::ClosedToEngine);
     assert_eq!(F::FLOOR, FormatVersion::new(1, 26, 40));
-    assert_eq!(F::CEILING, None, "the engine version");
     assert_eq!(
         <F::Any as VersionChain<F>>::VERSIONS,
         [FormatVersion::new(1, 26, 40)]
@@ -73,11 +72,17 @@ fn the_payload_keys_and_the_envelope_are_the_modern_documents() {
     assert_eq!(PoiTypeFamily::PAYLOAD_KEY, "minecraft:poi_block");
     assert_eq!(PoiTagFamily::PAYLOAD_KEY, "minecraft:poi_tag");
     for (envelope, missing) in [
-        (PoiTypeFamily::ENVELOPE, PoiTypeFamily::MISSING_VERSION),
-        (PoiTagFamily::ENVELOPE, PoiTagFamily::MISSING_VERSION),
+        (
+            PoiTypeFamily::ENVELOPE.check,
+            PoiTypeFamily::ENVELOPE.missing,
+        ),
+        (PoiTagFamily::ENVELOPE.check, PoiTagFamily::ENVELOPE.missing),
     ] {
         assert_eq!(envelope, EnvelopeCheck::Always, "exactly two root members");
-        assert_eq!(missing, MissingVersion::Reject, "no version, no load");
+        assert!(
+            matches!(missing, MissingVersion::Reject { .. }),
+            "no version, no load"
+        );
     }
     assert!(PoiTypeFamily::components().0.is_empty());
     assert!(PoiTagFamily::components().0.is_empty());
@@ -86,8 +91,10 @@ fn the_payload_keys_and_the_envelope_are_the_modern_documents() {
 #[test]
 fn types_are_read_from_poi_blocks_and_tags_from_poi_tags() {
     // `PoiTypeLoader::loadResources`, `PoiTagLoader::loadResources`.
-    assert_eq!(PoiTypeFamily::DIRECTORIES, ["poi/blocks"]);
-    assert_eq!(PoiTagFamily::DIRECTORIES, ["poi/tags"]);
+    assert_eq!(
+        bedrock_addon_family_poi::LOADER.walk.directories,
+        ["poi/blocks", "poi/tags"]
+    );
 }
 
 #[test]

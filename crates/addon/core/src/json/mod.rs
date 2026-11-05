@@ -2,7 +2,7 @@
 //! strict scalar wrappers component members are made of ([`StrictInt`], [`StrictFloat`],
 //! [`StrictBool`], [`StrictString`], with the scalar shape they are read through,
 //! [`ScalarShape`], and their error, [`StrictError`]), the nesting limit ([`MAX_JSON_DEPTH`]),
-//! the envelope of a versioned document ([`Envelope`], [`EnvelopeVersion`],
+//! the envelope of a versioned document ([`RootProbe`], [`EnvelopeVersion`],
 //! [`probe_envelope`]), the write style and the encode error. Parsing is facet's; the crate
 //! adds no JSON tree of its own.
 //!
@@ -41,7 +41,6 @@ mod null;
 mod path;
 mod prepared;
 mod read; // the only caller of facet-json's parsers
-mod root_member;
 mod slice;
 mod stack;
 mod strict;
@@ -57,7 +56,7 @@ pub use clamp_text::{
 pub use coerce::{Coerce, Coercing, IsIntRule, WideInt};
 #[doc(hidden)]
 pub use duplicates::{last_wins, last_wins_except};
-pub use envelope::{Envelope, EnvelopeVersion, probe_envelope};
+pub use envelope::{EnvelopeVersion, RootProbe, probe_envelope};
 #[doc(hidden)]
 pub use finite::{Clamped, clamp_non_finite, clamp_non_finite_warned};
 #[doc(hidden)]
@@ -72,8 +71,6 @@ pub use read::{
     document_json_refusal, from_slice_jsonc, from_str, from_str_borrowed_jsonc, from_str_jsonc,
     scan, trailing_content, trailing_content_finding,
 };
-#[doc(hidden)]
-pub use root_member::take_root_member;
 #[doc(hidden)]
 pub use slice::{JsonSlice, SliceError, parse_at, span_at};
 pub use strict::{

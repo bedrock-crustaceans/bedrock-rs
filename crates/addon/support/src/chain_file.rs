@@ -12,7 +12,6 @@ use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::json::{JsonSlice, Prepared, Value, parse_at, probe_envelope};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
     Family, Identity, Loaded, ParseCx, Parsed, finish_file, parse_as_written, parse_file_as_written,
@@ -157,16 +156,7 @@ pub fn upgrade<F: FileFamily>(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<F>::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<F>::from_value(Some(value), version, written, at, diagnostics);
     finished::<F>(parsed, None, origin, cx)
 }
 

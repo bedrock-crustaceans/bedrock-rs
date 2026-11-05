@@ -727,7 +727,6 @@ pub mod history {
 impl Family for Toy {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
     const SKIP_UPGRADES_KEY: Option<&'static str> = Some("do_not_upgrade");
     type Latest = Toy120;

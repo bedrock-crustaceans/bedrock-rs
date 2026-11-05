@@ -27,7 +27,8 @@ use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, W
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BelowFloor, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx, Versioned,
+    BelowFloor, Envelope, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
+    Versioned,
 };
 
 /// `lighting`: `minecraft:lighting_settings` documents.
@@ -106,17 +107,20 @@ versions! {
 macro_rules! payload {
     (
         $latest:ident, history::$module:ident,
-        name = $name:literal, key = $key:literal, directory = $directory:expr,
+        name = $name:literal, key = $key:literal,
         floor = $floor:expr $(, payload_required = $required:expr)?;
         identifier = |$value:ident| $identifier:expr $(, named = $named:expr)?
     ) => {
         impl Family for history::$module::Family {
             const NAME: &'static str = $name;
             const PAYLOAD_KEY: &'static str = $key;
-            const DIRECTORIES: &'static [&'static str] = &[$directory];
             const FLOOR: FormatVersion = $floor;
-            // Below the first slice the versioned loader has no parser at all.
-            const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+            const ENVELOPE: Envelope = Envelope {
+                missing: MissingVersion::REJECT,
+                // Below the first slice the versioned loader has no parser at all.
+                below_floor: BelowFloor::NoParser,
+                ..Envelope::DEFAULT
+            };
             // Every struct's parser takes exactly its own version, so its range is
             // `[VERSION, VERSION]`.
             const RANGE_MODEL: RangeModel = RangeModel::ExactOnly;
@@ -124,7 +128,6 @@ macro_rules! payload {
             type Beta = Infallible;
             type Component = NoComponents;
             type Any = history::$module::Any;
-            const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
 
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
@@ -184,26 +187,26 @@ macro_rules! payload {
 
 payload! {
     LightingSettings, history::lighting,
-    name = "lighting settings", key = "minecraft:lighting_settings", directory = LIGHTING,
+    name = "lighting settings", key = "minecraft:lighting_settings",
     floor = V1_21_40;
     identifier = |value| value.description.as_ref().map(|d| d.identifier.as_str())
 }
 payload! {
     AtmosphereSettings, history::atmosphere,
     name = "atmosphere settings", key = "minecraft:atmosphere_settings",
-    directory = ATMOSPHERICS, floor = V1_21_40, payload_required = V1_26_20;
+    floor = V1_21_40, payload_required = V1_26_20;
     identifier = |value| value.description.as_ref().map(|d| d.identifier.as_str())
 }
 payload! {
     WaterSettings, history::water,
-    name = "water settings", key = "minecraft:water_settings", directory = WATER,
+    name = "water settings", key = "minecraft:water_settings",
     floor = V1_21_40, payload_required = V1_26_20;
     identifier = |value| value.description.as_ref().map(|d| d.identifier.as_str())
 }
 payload! {
     ColorGradingSettings, history::color_grading,
     name = "color grading settings", key = "minecraft:color_grading_settings",
-    directory = COLOR_GRADING, floor = V1_21_40;
+    floor = V1_21_40;
     identifier = |value| value
         .description
         .as_ref()
@@ -212,26 +215,26 @@ payload! {
 }
 payload! {
     CubemapSettings, history::cubemap,
-    name = "cubemap settings", key = "minecraft:cubemap_settings", directory = CUBEMAPS,
+    name = "cubemap settings", key = "minecraft:cubemap_settings",
     floor = V1_21_130;
     identifier = |value| value.description.as_ref().map(|d| d.identifier.as_str())
 }
 payload! {
     ShadowSettings, history::shadows,
-    name = "shadow settings", key = "minecraft:shadow_settings", directory = SHADOWS,
+    name = "shadow settings", key = "minecraft:shadow_settings",
     floor = V1_21_80;
     identifier = |_value| None, named = false
 }
 payload! {
     PbrFallbackSettings, history::pbr_fallback,
-    name = "PBR fallback settings", key = "minecraft:pbr_fallback_settings", directory = PBR,
+    name = "PBR fallback settings", key = "minecraft:pbr_fallback_settings",
     floor = V1_21_40;
     identifier = |_value| None, named = false
 }
 payload! {
     LocalLightSettings, history::local_lighting,
     name = "local light settings", key = "minecraft:local_light_settings",
-    directory = LOCAL_LIGHTING, floor = V1_21_120;
+    floor = V1_21_120;
     identifier = |_value| None, named = false
 }
 
@@ -839,5 +842,140 @@ mod tests {
         fn assert_traits<T: std::fmt::Debug + Clone>() {}
         assert_traits::<Walked<LightingSettings>>();
         assert_traits::<SettingsFile>();
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn lighting_reads_as_pinned() {
+        assert_reading_table(
+            "history::lighting::Family",
+            &reading_table::<super::history::lighting::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.40..=1.26.0 (0..=4): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn atmosphere_reads_as_pinned() {
+        assert_reading_table(
+            "history::atmosphere::Family",
+            &reading_table::<super::history::atmosphere::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.40..=1.26.20 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn water_reads_as_pinned() {
+        assert_reading_table(
+            "history::water::Family",
+            &reading_table::<super::history::water::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.40..=1.26.20 (0..=4): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn color_grading_reads_as_pinned() {
+        assert_reading_table(
+            "history::color_grading::Family",
+            &reading_table::<super::history::color_grading::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.40..=1.21.90 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn cubemap_reads_as_pinned() {
+        assert_reading_table(
+            "history::cubemap::Family",
+            &reading_table::<super::history::cubemap::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.130..=1.21.130 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn shadows_reads_as_pinned() {
+        assert_reading_table(
+            "history::shadows::Family",
+            &reading_table::<super::history::shadows::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.80..=1.21.80 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn pbr_fallback_reads_as_pinned() {
+        assert_reading_table(
+            "history::pbr_fallback::Family",
+            &reading_table::<super::history::pbr_fallback::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.40..=1.21.40 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn local_lighting_reads_as_pinned() {
+        assert_reading_table(
+            "history::local_lighting::Family",
+            &reading_table::<super::history::local_lighting::Family>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.120..=1.21.120 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
     }
 }

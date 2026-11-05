@@ -10,7 +10,7 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion};
 use bedrock_addon_core::versioning::{
     ComponentSection, FieldGate, FieldMeta, LoadOutcome, Loaded, check_fields_released,
-    check_fields_since_engine, check_released, validate_components,
+    check_fields_since_engine, validate_components,
 };
 
 use crate::envelope::{codes, load_toy, load_with};
@@ -358,7 +358,7 @@ fn a_field_newer_than_the_packs_engine_is_reported_when_present() {
     );
 }
 
-// ---- `released` as a gate of its own, and the format-version field gate ----
+// ---- a released row without requirements, and the format-version field gate ----
 
 /// For a family that does not ask for it, a row with `released` and an empty
 /// `requires` is no gate at all.
@@ -367,77 +367,6 @@ fn a_released_row_without_requirements_is_no_gate_by_default() {
     let outcome = load_toy(&with_components("1.1.0", r#"{"toy:fresh": {"on": true}}"#));
     assert!(latest(&outcome).components.contains::<Fresh>());
     assert!(outcome.diagnostics.is_empty(), "{:?}", outcome.diagnostics);
-}
-
-/// What the gate finds in a map holding `toy:fresh` (released 1.2.0, nothing unlocks it),
-/// `toy:gated` (released 1.2.0, unlocked by a toggle: not this gate's) and `toy:glow`.
-fn released_gate(version: FormatVersion, optional: bool) -> (bool, Diagnostics) {
-    let mut map = ComponentMap::<ToyComponent>::new();
-    map.insert_typed(ToyComponent::Fresh(Fresh { on: true }), false);
-    map.insert_typed(ToyComponent::Gated(Gated { on: true }), false);
-    map.insert_typed(ToyComponent::Glow(Glow::default()), false);
-    let mut at = JsonPath::new();
-    at.push("minecraft:toy");
-    at.push("components");
-    let mut d = Diagnostics::default();
-    let passed = check_released::<Toy>(&map, optional, version, &at, &mut d);
-    (passed, d)
-}
-
-#[test]
-fn a_component_below_its_release_is_refused_where_released_is_the_gate() {
-    let (passed, d) = released_gate(FormatVersion::new(1, 1, 0), false);
-    assert!(!passed);
-    let found: Vec<_> = d
-        .iter()
-        .map(|f| {
-            (
-                f.code.clone(),
-                f.severity,
-                f.location.json_path.to_string(),
-                f.code.to_string(),
-            )
-        })
-        .collect();
-    assert_eq!(
-        found,
-        [(
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UseFormatVersion {
-                    what: "component",
-                    name: "toy:fresh".to_owned(),
-                    version: FormatVersion::new(1, 2, 0),
-                }),
-            },
-            Severity::Error,
-            "minecraft:toy/components/toy:fresh".to_owned(),
-            "To use component 'toy:fresh', use json format version 1.2.0 or higher".to_owned(),
-        )]
-    );
-    // In an optional section too: an error, as in the main section.
-    let (passed, d) = released_gate(FormatVersion::new(1, 1, 0), true);
-    assert!(!passed);
-    assert_eq!(
-        d.iter().map(|f| f.severity).collect::<Vec<_>>(),
-        [Severity::Error]
-    );
-    // At its release, and above, nothing.
-    for version in [FormatVersion::new(1, 2, 0), FormatVersion::new(1, 3, 0)] {
-        let (passed, d) = released_gate(version, false);
-        assert!(passed && d.is_empty(), "{version}: {d:?}");
-    }
-    // A synthesized entry was not written by the author: not judged.
-    let mut map = ComponentMap::<ToyComponent>::new();
-    map.insert_typed(ToyComponent::Fresh(Fresh { on: true }), true);
-    let mut d = Diagnostics::default();
-    assert!(check_released::<Toy>(
-        &map,
-        false,
-        FormatVersion::new(1, 1, 0),
-        &JsonPath::new(),
-        &mut d
-    ));
-    assert!(d.is_empty());
 }
 
 #[test]

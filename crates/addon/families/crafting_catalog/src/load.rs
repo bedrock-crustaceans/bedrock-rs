@@ -13,11 +13,12 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
-use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
-    Selection, StructIndex, VersionStruct, Versioned, finish, parse_as_written, select,
+    Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, ParseCx, Parsed, Reading,
+    Selection, StructIndex, UnknownMask, VersionStruct, Versioned, finish, parse_as_written,
+    select,
 };
 
 /// Vanilla's one text for a file without a valid `format_version`, and for one below 1.21.60.
@@ -33,32 +34,35 @@ const PAYLOAD_TEXT: &str =
 pub struct CatalogFamily;
 
 impl Family for CatalogFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "crafting item catalog";
     const PAYLOAD_KEY: &'static str = "minecraft:crafting_items_catalog";
-    const DIRECTORIES: &'static [&'static str] = &["item_catalog"];
     // The game registers no slice below the first struct's version.
     const FLOOR: FormatVersion = V1_21_60;
     type Latest = CraftingCatalog;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = CatalogAny;
-    // Vanilla's loader checks the version itself, before the versioned parse.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::Fixed(VERSION_TEXT));
-    // The game reads the file as a whole document: the version is the one its JSON reader picks
-    // from the text, the size limits apply, and a `null` where a value is read counts as the
-    // wrong JSON type (the hand reader below refuses it).
-    const INPUT: InputKind = InputKind::Document;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the file as a whole document: the version is the one its JSON reader picks
+        // from the text, the size limits apply, and a `null` where a value is read counts as the
+        // wrong JSON type (the hand reader below refuses it).
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // Vanilla's loader checks the version itself, before the versioned parse.
+        missing: MissingVersion::Reject {
+            text: Some(VanillaText::Fixed(VERSION_TEXT)),
+        },
+        ..Envelope::DEFAULT
+    };
 
     /// An unknown member is a warning below 1.26.50, where the game reads the file leniently,
     /// and an error that skips the file from 1.26.50 on, where it reads it strictly.
-    fn error_mask(index: StructIndex) -> ErrorMask {
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            _ => Reading::DOCUMENT,
         }
     }
 }
@@ -221,16 +225,8 @@ pub(crate) fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<CatalogFamily>::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed =
+        Parsed::<CatalogFamily>::from_value(Some(value), version, written, at, diagnostics);
     let outcome = finish(parsed, cx);
     match outcome.value {
         Some(Loaded::Stable(catalog)) => Ok(Document::new(
@@ -281,5 +277,29 @@ pub(crate) fn parse_file(
             Ok(Document::new(catalog, origin, outcome.version, diagnostics))
         }
         _ => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn crafting_catalog_reads_as_pinned() {
+        assert_reading_table(
+            "CatalogFamily",
+            &reading_table::<super::CatalogFamily>(),
+            r#"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: Fixed("The file cannot be processed without a valid format_version")
+                below floor: UseFormatVersion
+                empty document: Error
+                1.21.60..=1.21.60 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+                1.26.50..=1.26.50 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            "#,
+        );
     }
 }

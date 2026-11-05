@@ -19,7 +19,7 @@ use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
 };
 use crate::document::VersionInfo;
-use crate::json::{Envelope, EnvelopeVersion, JsonSlice, Value, probe_envelope};
+use crate::json::{EnvelopeVersion, JsonSlice, RootProbe, Value, probe_envelope};
 use crate::load::LoadContext;
 use crate::molang::{MolangContext, MolangFields, not_checked};
 use crate::pack_identity::PackPath;
@@ -88,8 +88,8 @@ pub fn finish_file<F: Family>(
 
 /// A document parsed by the struct its `format_version` selects, not upgraded: what
 /// [`parse_as_written`] gives and [`finish`] takes. The typed `parse_as_written` and
-/// `history::Any::upgrade` of a family's document are built on the pair.
-#[non_exhaustive]
+/// `history::Any::upgrade` of a family's document are built on the pair. Another crate builds
+/// one with [`from_value`](Self::from_value).
 pub struct Parsed<F: Family> {
     /// The chain value, or `None` when the document was rejected (then `diagnostics` says why).
     pub value: Option<F::Any>,
@@ -116,17 +116,15 @@ pub struct Parsed<F: Family> {
 }
 
 impl<F: Family> Parsed<F> {
-    /// A parse result from its parts (the struct is `#[non_exhaustive]`, so other crates build
-    /// it here).
-    #[doc(hidden)]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    /// The parse of a document a family read by hand: its chain value, what the file said
+    /// about its version, the version its Molang fields take, the payload's path and the
+    /// findings so far. The identity is empty, the actor type `Mob` and the skip key absent
+    /// until [`with_identity`](Self::with_identity) and [`with_actor`](Self::with_actor) say
+    /// otherwise.
+    pub fn from_value(
         value: Option<F::Any>,
         version: VersionInfo,
         written: FormatVersionInput,
-        identity: Identity,
-        actor_type: ActorType,
-        skip_upgrades: bool,
         at: JsonPath,
         diagnostics: Diagnostics,
     ) -> Self {
@@ -134,12 +132,29 @@ impl<F: Family> Parsed<F> {
             value,
             version,
             written,
-            identity,
-            actor_type,
-            skip_upgrades,
+            identity: Identity::default(),
+            actor_type: ActorType::Mob,
+            skip_upgrades: false,
             at,
             diagnostics,
             clamp: Diagnostics::default(),
+        }
+    }
+
+    /// The parse with the payload's identity (`Family::identity`).
+    #[must_use]
+    pub fn with_identity(self, identity: Identity) -> Self {
+        Self { identity, ..self }
+    }
+
+    /// The parse with the actor type the steps see and whether the payload has the skip key
+    /// (`Family::SKIP_UPGRADES_KEY`).
+    #[must_use]
+    pub fn with_actor(self, actor_type: ActorType, skip_upgrades: bool) -> Self {
+        Self {
+            actor_type,
+            skip_upgrades,
+            ..self
         }
     }
 
@@ -170,25 +185,18 @@ where
 }
 
 /// Parses one modern document of family `F` without upgrading it: the envelope checks, the
-/// version (envelope, else `Family::payload_version`, else `MISSING_VERSION`), the beta
+/// version (envelope, else `Family::payload_version`, else `ENVELOPE.missing`), the beta
 /// permission, struct selection by the range model and `Family::route`, the parse with Molang
 /// pass 1, and the identity, actor type and skip key the steps need.
 pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<F> {
     let mut told = Diagnostics::default();
     // The game's document input sizes the text first. An MCB source is a binary input, so it
     // gets no JSON size check.
-    let json_document = F::TEXT.sizes_json(cx.source);
+    let json_document = F::ENVELOPE.sizes_json(cx.source);
     let too_large = json_document
         && (size_finding(document.text.len(), cx.max_json_document_bytes, &mut told)
             || rapidjson_refuses::<F>(document, &mut told));
-    // A root member the family reads beside the version is read, and taken out, before the
-    // envelope is counted; without the family's leave the document ends here.
-    let members = if too_large {
-        None
-    } else {
-        F::root_members(document.text, cx, &mut told)
-    };
-    let Some(text) = members else {
+    if too_large {
         let identity = Identity::default();
         return Parsed {
             value: None,
@@ -205,14 +213,10 @@ pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) ->
             diagnostics: told,
             clamp: Diagnostics::default(),
         };
-    };
-    let document = JsonSlice {
-        text: &text,
-        offset: document.offset,
-    };
+    }
     // Of a member written twice the last value stands, whole, at every level; the earlier
     // copies are blanked so offsets stay.
-    let cleaned = crate::json::last_wins_except(document.text, F::TEXT.duplicates_kept_in);
+    let cleaned = crate::json::last_wins_except(document.text, F::ENVELOPE.duplicates_kept_in);
     let cleaned = JsonSlice {
         text: &cleaned,
         offset: document.offset,
@@ -222,10 +226,10 @@ pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) ->
     let mut beyond = Diagnostics::default();
     // Every copy of a member written twice is clamped; the warning is for the copy the
     // family keeps.
-    let mut clamped = if F::TEXT.clamps_beyond_double {
+    let mut clamped = if F::ENVELOPE.clamps_beyond_double {
         crate::json::clamp_beyond_double_first_kept(
             cleaned,
-            F::TEXT.duplicates_kept_in,
+            F::ENVELOPE.duplicates_kept_in,
             &JsonPath::new(),
             &mut beyond,
         )
@@ -343,13 +347,13 @@ fn clamp_floats<F: Family>(
         if floats.contains(&at) {
             Some(Width::Float)
         } else {
-            F::TEXT.clamps_beyond_double.then_some(Width::Double)
+            F::ENVELOPE.clamps_beyond_double.then_some(Width::Double)
         }
     };
     let text = crate::json::clamp_tokens(
         cleaned,
         &width,
-        F::TEXT.duplicates_kept_in,
+        F::ENVELOPE.duplicates_kept_in,
         &JsonPath::new(),
         &mut told,
     )?;
@@ -517,7 +521,7 @@ pub(super) fn molang_context(written: &FormatVersionInput, cx: &LoadContext) -> 
 
 /// The version an envelope gives, without loading it: `None` when absent, unreadable, `"beta"`
 /// or the text is not an object. What a caller routing between two families of one payload
-/// key passes to `Family::selected`.
+/// key routes by.
 pub fn file_version(document: JsonSlice<'_>) -> Option<FormatVersion> {
     let envelope = probe_envelope(document).ok()?;
     read_version(&envelope.format_version).ok()??.version
@@ -598,7 +602,7 @@ impl Run {
         cx: &LoadContext,
     ) -> Option<F::Any> {
         let envelope = self.envelope::<F>(document)?;
-        let (read, as_written) = match F::TEXT.version_input {
+        let (read, as_written) = match F::ENVELOPE.input.version_input() {
             VersionInput::Root => (
                 read_version(&envelope.format_version),
                 envelope.format_version.clone(),
@@ -632,7 +636,7 @@ impl Run {
         // `parse_payload` and `parse_component` (a rule the caller's context carries does not
         // leak in; an MCB source is read by the binary reader, so by default it has none), and
         // so does whether a component that fails to read is fatal.
-        let reading = F::reading(index, cx.source);
+        let reading = super::reading::slice_reading::<F>(index, cx.source);
         let rule = reading.null_rule();
         let strict_components = reading.components_fatal;
         let scoped;
@@ -684,10 +688,10 @@ impl Run {
     fn payload<'a, F: Family>(
         &mut self,
         document: JsonSlice<'a>,
-        envelope: &Envelope<'a>,
+        envelope: &RootProbe<'a>,
         written: Option<&FormatVersionInput>,
     ) -> Option<(JsonSlice<'a>, JsonPath)> {
-        let raw = match F::ENVELOPE {
+        let raw = match F::ENVELOPE.check {
             EnvelopeCheck::Always | EnvelopeCheck::Uncounted => false,
             EnvelopeCheck::Never => true,
             // `minimum-beta.n` sorts below `minimum`, as it does in `select`.
@@ -703,7 +707,7 @@ impl Run {
         // Vanilla checks the shape only for a document whose version is not below the
         // loader's minimum; an absent version is below every minimum, so such a
         // document is not counted and its payload is read from under the key.
-        let counted = F::ENVELOPE != EnvelopeCheck::Uncounted;
+        let counted = F::ENVELOPE.check != EnvelopeCheck::Uncounted;
         if counted && written.is_some() && envelope.member_count() != 2 {
             self.diagnostics.push(error(
                 DiagnosticCode::MalformedInput {
@@ -754,7 +758,7 @@ impl Run {
     }
 
     /// The struct that parses the document, and the version its Molang fields take: an absent
-    /// version from `F::payload_version`, else per `F::MISSING_VERSION`; the beta literal per
+    /// version from `F::payload_version`, else per `F::ENVELOPE.missing`; the beta literal per
     /// the beta permission; a stable version per the range model. Records the version
     /// information on the way.
     fn struct_index<F: Family>(
@@ -779,26 +783,29 @@ impl Run {
         let identity = self.identity.clone();
         match written {
             None => {
-                let text = F::MISSING_VERSION_TEXT;
-                if F::MISSING_VERSION == MissingVersion::Reject {
-                    self.diagnostics.push(error(
-                        DiagnosticCode::MissingFormatVersion {
-                            text: Some(text.unwrap_or(VanillaText::NoValidVersion)),
-                        },
-                        JsonPath::new(),
-                        None,
-                    ));
-                    return None;
+                match F::ENVELOPE.missing {
+                    MissingVersion::Reject { text } => {
+                        self.diagnostics.push(error(
+                            DiagnosticCode::MissingFormatVersion {
+                                text: Some(text.unwrap_or(VanillaText::NoValidVersion)),
+                            },
+                            JsonPath::new(),
+                            None,
+                        ));
+                        return None;
+                    }
+                    MissingVersion::Floor { text, severity } => {
+                        if let Some(severity) = severity {
+                            self.diagnostics.push(Diagnostic::new(
+                                DiagnosticCode::MissingFormatVersion { text },
+                                severity,
+                                Phase::Parse,
+                                Location::new(None, None, JsonPath::new(), None),
+                            ));
+                        }
+                    }
                 }
-                if F::ENVELOPE_WARN_MISSING_VERSION {
-                    self.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::MissingFormatVersion { text },
-                        F::missing_version_severity(),
-                        Phase::Parse,
-                        Location::new(None, None, JsonPath::new(), None),
-                    ));
-                }
-                let effective = F::effective_version(None, cx);
+                let effective = F::FLOOR;
                 self.version.effective = effective;
                 let written = FormatVersionInput {
                     version: Some(effective),
@@ -840,7 +847,7 @@ impl Run {
             Some(written) => {
                 let text = written_text(&as_written);
                 self.version.written = written.version;
-                self.version.effective = F::effective_version(written.version, cx);
+                self.version.effective = written.version.unwrap_or(F::FLOOR);
                 let index = self.stable::<F>(&written, &text, payload, &identity, cx)?;
                 if written.prerelease {
                     self.diagnostics.push(Diagnostic::new(
@@ -856,7 +863,7 @@ impl Run {
     }
 
     /// The envelope probe; a document that is no JSON object is rejected here.
-    fn envelope<'a, F: Family>(&mut self, document: JsonSlice<'a>) -> Option<Envelope<'a>> {
+    fn envelope<'a, F: Family>(&mut self, document: JsonSlice<'a>) -> Option<RootProbe<'a>> {
         match probe_envelope(document) {
             Ok(envelope) => Some(envelope),
             Err(failure) => {
@@ -870,10 +877,11 @@ impl Run {
                     return None;
                 }
                 let message = failure.error.kind.to_string();
-                let text =
-                    (F::ENVELOPE != EnvelopeCheck::Never).then(|| VanillaText::DocumentJson {
+                let text = (F::ENVELOPE.check != EnvelopeCheck::Never).then(|| {
+                    VanillaText::DocumentJson {
                         message: message.clone(),
-                    });
+                    }
+                });
                 self.diagnostics.push(error(
                     DiagnosticCode::MalformedInput { message, text },
                     JsonPath::new(),
@@ -885,8 +893,8 @@ impl Run {
     }
 
     /// The stable struct `written` selects, or the rejection: below the floor, the line
-    /// `Family::BELOW_FLOOR` names (`UseFormatVersion` or `NoParser`), or above every range
-    /// ("no parser available").
+    /// `Family::ENVELOPE.below_floor` names (`UseFormatVersion` or `NoParser`), or above every
+    /// range ("no parser available").
     fn stable<F: Family>(
         &mut self,
         written: &FormatVersionInput,
@@ -903,7 +911,7 @@ impl Run {
                 Some(StructIndex::Stable(routed.unwrap_or(i)))
             }
             Selection::BelowFloor => {
-                self.diagnostics.push(match F::BELOW_FLOOR {
+                self.diagnostics.push(match F::ENVELOPE.below_floor {
                     // No slice below the first: the text above the engine has, the version
                     // rendered the same way.
                     BelowFloor::NoParser => unsupported(&no_parser_version(written, text), at),
@@ -989,7 +997,7 @@ fn rapidjson_refuses<F: Family>(document: JsonSlice<'_>, told: &mut Diagnostics)
     let Some(mut refusal) = crate::json::document_json_refusal(document) else {
         return false;
     };
-    if F::ENVELOPE == EnvelopeCheck::Never
+    if F::ENVELOPE.check == EnvelopeCheck::Never
         && let DiagnosticCode::MalformedInput { text, .. } = &mut refusal.code
     {
         *text = None;

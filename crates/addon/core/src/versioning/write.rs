@@ -55,7 +55,7 @@ pub fn write_document<F: Family>(version: FormatVersion, payload: Value, extras:
 /// Whether a document of `version` is read on the raw-text path, where the payload is the
 /// whole document and no envelope is checked.
 pub(crate) fn raw_text<F: Family>(version: FormatVersion) -> bool {
-    match F::ENVELOPE {
+    match F::ENVELOPE.check {
         EnvelopeCheck::Always | EnvelopeCheck::Uncounted => false,
         EnvelopeCheck::Never => true,
         EnvelopeCheck::From(minimum) => version < minimum,

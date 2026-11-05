@@ -23,17 +23,15 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
+    Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
     RangeModel, StructIndex, VersionChain, finish, parse_as_written,
 };
 
 impl Family for FogFamily {
     const NAME: &'static str = "fog";
     const PAYLOAD_KEY: &'static str = "minecraft:fog_settings";
-    const DIRECTORIES: &'static [&'static str] = &["fogs"];
     const FLOOR: FormatVersion = FLOOR;
     // The cereal parser is built with the 2-argument `CerealParserBase(ctx, VERSION)`: exactly
     // 1.26.20, whatever the engine.
@@ -42,12 +40,16 @@ impl Family for FogFamily {
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // Below 1.26.20 the strict schema root reads the whole document (a third root member is an
-    // unknown member of it); from 1.26.20 `MinecraftDocumentInput` wants exactly two members.
-    // A pre-release of 1.26.20 sorts below it.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(LATEST);
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::Fixed(INVALID_VERSION));
+    const ENVELOPE: Envelope = Envelope {
+        // Below 1.26.20 the strict schema root reads the whole document (a third root member is an
+        // unknown member of it); from 1.26.20 `MinecraftDocumentInput` wants exactly two members.
+        // A pre-release of 1.26.20 sorts below it.
+        check: EnvelopeCheck::From(LATEST),
+        missing: MissingVersion::Reject {
+            text: Some(VanillaText::Fixed(INVALID_VERSION)),
+        },
+        ..Envelope::DEFAULT
+    };
 }
 
 /// The payload's path in the file.
@@ -264,13 +266,10 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
         &mut diagnostics,
     )
     .filter(|_| !diagnostics.has_errors());
-    Parsed::new(
+    Parsed::from_value(
         value,
         VersionInfo::new(Some(LATEST), false, LATEST, parsed_as, false),
         input,
-        Identity::default(),
-        ActorType::Mob,
-        false,
         JsonPath::new(),
         diagnostics,
     )
@@ -368,13 +367,10 @@ pub fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<FogFamily>::new(
+    let parsed = Parsed::<FogFamily>::from_value(
         Some(document.into_value()),
         version,
         written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
         at,
         diagnostics,
     );
@@ -429,3 +425,26 @@ pub const LOADER: CollectionLoader<Registry<FogSettings>, Contribution<FogSettin
         needs: &[],
         then: None,
     };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn fog_reads_as_pinned() {
+        assert_reading_table(
+            "FogFamily",
+            &reading_table::<super::FogFamily>(),
+            r#"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 26, patch: 20 })
+                missing version: rejected: Fixed("Invalid 'format_version' in fog settings JSON")
+                below floor: UseFormatVersion
+                empty document: Error
+                1.16.100..=1.26.20 (0..=3): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            "#,
+        );
+    }
+}

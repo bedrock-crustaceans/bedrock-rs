@@ -17,8 +17,8 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, ErrorMask, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, NoStable, StructIndex, load,
+    BETA_VERSION, BetaPermission, Envelope, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, NoStable, load,
 };
 
 use super::AtomicClientEntity;
@@ -48,7 +48,6 @@ bedrock_addon_core::version_chain! {
 impl Family for AtomicFamily {
     const NAME: &'static str = "atomic_client_entity";
     const PAYLOAD_KEY: &'static str = PAYLOAD;
-    const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     // Unused: there is no stable struct, so every version but `"beta"` has no parser.
     const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = NoStable;
@@ -60,22 +59,18 @@ impl Family for AtomicFamily {
     // stable struct only, which this family does not have.
     type Component = NoComponents;
     type Any = Any;
-    // A document without a version fails with "no valid version passed by the caller or found in
-    // the input".
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the file through the document-input reader of the cereal-based families:
+        // the version is read from the document, and a member written `null` fails its type (the
+        // reader applies that rule itself).
+        input: InputKind::Document,
+        // A document without a version fails with "no valid version passed by the caller or found
+        // in the input".
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
     // An empty file is skipped silently.
     const EMPTY_DOCUMENT: Severity = Severity::Info;
-    // The game reads the file through the document-input reader of the cereal-based families:
-    // the version is read from the document, and a member written `null` fails its type (the
-    // reader applies that rule itself).
-    const INPUT: InputKind = InputKind::Document;
-
-    // The one slice is registered with the strict error mask, so every cereal finding is fatal.
-    // The reader reports unknown members and components as errors itself; the mask says the
-    // same.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 }
 
 impl Sealed for AtomicClientEntity {}
@@ -259,3 +254,26 @@ pub const LOADER: CollectionLoader<Registry<AtomicClientEntity>, Contribution<At
         needs: &[],
         then: None,
     };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn atomic_client_entity_reads_as_pinned() {
+        assert_reading_table(
+            "AtomicFamily",
+            &reading_table::<super::AtomicFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Info
+                beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+}

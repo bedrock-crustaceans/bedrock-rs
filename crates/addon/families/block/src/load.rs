@@ -11,15 +11,14 @@ use bedrock_addon_core::document::{
     Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{BlockId, kind};
-use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
-    Loaded, Parsed, StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
+    ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded,
+    Parsed, Reading, StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
 };
 
 /// The floor: below 1.16.0 the game's upgrades discard most components, so the crate rejects the
@@ -27,42 +26,39 @@ use bedrock_addon_core::versioning::{
 const FLOOR: FormatVersion = FormatVersion::new(1, 16, 0);
 
 impl Family for BlockFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with an information at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "block";
     const PAYLOAD_KEY: &'static str = "minecraft:block";
-    const DIRECTORIES: &'static [&'static str] = &["blocks"];
     const FLOOR: FormatVersion = FLOOR;
     type Latest = Block;
     type Beta = std::convert::Infallible;
     type Component = BlockComponent;
     type Any = Any;
-    // The game reads a block file as a versioned document: the raw text below 1.26.20, exactly
-    // two members from it.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(CEREAL);
-    // Rule 11 reads a component written twice ("Duplicate component … found"); every other
-    // member written twice keeps its last value.
-    const DUPLICATES_KEPT_IN: &'static [&'static str] = &["components"];
-    // Every block file is read as a document whose version path and size limits are the
-    // file's own.
-    const INPUT: InputKind = InputKind::Document;
+    const ENVELOPE: Envelope = Envelope {
+        // Every block file is read as a document whose version path and size limits are the
+        // file's own.
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with an information at it.
+        clamps_beyond_double: true,
+        // Rule 11 reads a component written twice ("Duplicate component … found"); every other
+        // member written twice keeps its last value.
+        duplicates_kept_in: &["components"],
+        // The game reads a block file as a versioned document: the raw text below 1.26.20, exactly
+        // two members from it.
+        check: EnvelopeCheck::From(CEREAL),
+        ..Envelope::DEFAULT
+    };
 
-    // The v1_26_20 and v1_26_60 slices are strict: an unknown member or component of a cereal
-    // document rejects it. The legacy slice is the hand-written parser's, which does not
-    // reject unknown members: the crate's legacy reader keeps its findings as they are.
-    fn error_mask(index: StructIndex) -> ErrorMask {
+    // The v1_26_20 and v1_26_60 slices are strict under rule N2: an unknown member or component
+    // of a cereal document rejects it. The legacy slice is the hand-written parser's (the crate's
+    // legacy reader), which takes `null` itself and does not reject unknown members: its findings
+    // stay as they are.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         if is_cereal(index) {
-            ErrorMask::Strict
+            Reading::DOCUMENT
         } else {
-            ErrorMask::Unstrict
+            Reading::OWN
         }
-    }
-
-    // Rule N2 for the cereal slices; the legacy slice's `null` is its hand-written parser's
-    // (the crate's legacy reader), with no framework rule.
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
-        is_cereal(index).then_some(NullRule::Rejected)
     }
 
     fn components() -> &'static ComponentTable<Self> {
@@ -87,10 +83,6 @@ impl Family for BlockFamily {
         if let Loaded::Stable(block) = v {
             validate::validate(block, cx);
         }
-    }
-
-    fn actor_type(_: &Identity) -> ActorType {
-        ActorType::Mob
     }
 }
 
@@ -180,16 +172,8 @@ pub(crate) fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<BlockFamily>::new(
-        Some(value),
-        version,
-        written,
-        identity,
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<BlockFamily>::from_value(Some(value), version, written, at, diagnostics)
+        .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     diagnostics.locate(&origin);
@@ -328,3 +312,27 @@ pub const LOADER: CollectionLoader<Registry<Block>, Contribution<Block>> = Colle
     needs: &[], // reads no other collection
     then: None, // a single walk stage
 };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn block_reads_as_pinned() {
+        assert_reading_table(
+            "BlockFamily",
+            &reading_table::<super::BlockFamily>(),
+            r#"
+                text: Document, clamps beyond a double: true, duplicates kept in: ["components"]
+                envelope: From(FormatVersion { major: 1, minor: 26, patch: 20 })
+                missing version: at the floor, told at Info: None
+                below floor: UseFormatVersion
+                empty document: Error
+                1.16.0..=1.26.0 (0..=13): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.26.20..=1.26.60 (14..=15): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            "#,
+        );
+    }
+}

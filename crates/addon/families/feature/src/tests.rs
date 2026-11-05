@@ -5,6 +5,7 @@ use super::{
     MultiBlockFeature, OreFeature, ScatterFeature, SingleBlockFeature, SnapToSurfaceFeature,
 };
 use bedrock_addon_core::json::NullRule;
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     Family, InputKind, Selection, StructIndex, VersionChain, check_chain, select,
@@ -207,8 +208,9 @@ struct Input;
 
 impl TypeFn<(InputKind, Option<NullRule>)> for Input {
     fn call<T: FeatureType>(self) -> (InputKind, Option<NullRule>) {
-        let rule = <Fam<T> as Family>::null_rule(StructIndex::Stable(0));
-        (<Fam<T> as Family>::INPUT, rule)
+        let rule =
+            <Fam<T> as Family>::reading(StructIndex::Stable(0), DocumentSource::Json).null_rule();
+        (<Fam<T> as Family>::ENVELOPE.input, rule)
     }
 }
 

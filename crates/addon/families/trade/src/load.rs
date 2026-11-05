@@ -10,15 +10,15 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, NullRule, Value, WriteStyle, probe_envelope,
+    EncodeError, EnvelopeVersion, JsonSlice, Value, WriteStyle, probe_envelope,
 };
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, NoComponents, ParseCx, Parsed,
-    StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
+    Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
+    ParseCx, Parsed, Reading, StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
 };
 
 /// The pack directory of trade tables.
@@ -29,38 +29,34 @@ impl Family for TradeFamily {
     // The document is `{"format_version"?, "tiers": [...]}`; the game binds the table to the
     // `tiers` member alone, so the payload is the array.
     const PAYLOAD_KEY: &'static str = "tiers";
-    const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     // The legacy slice starts at 0.0.0.
     const FLOOR: FormatVersion = v0::VERSION;
     type Latest = TradeTable;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // The legacy parser reads the whole document and ignores other root members; the strict
-    // cereal slice (1.21.30 on) checks the envelope.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(CEREAL);
-    // A missing `format_version` is 0.0.0 with no log entry.
-    const ENVELOPE_WARN_MISSING_VERSION: bool = false;
-    // The game reads a table as a whole document: the version is the one its JSON reader picks
-    // from the text, the size limits apply, and rule N2 holds at the cereal slice.
-    const INPUT: InputKind = InputKind::Document;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a table as a whole document: the version is the one its JSON reader picks
+        // from the text, the size limits apply, and rule N2 holds at the cereal slice.
+        input: InputKind::Document,
+        // The legacy parser reads the whole document and ignores other root members; the strict
+        // cereal slice (1.21.30 on) checks the envelope.
+        check: EnvelopeCheck::From(CEREAL),
+        // A missing `format_version` is 0.0.0 with no log entry.
+        missing: MissingVersion::Floor {
+            text: None,
+            severity: None,
+        },
+        ..Envelope::DEFAULT
+    };
 
-    /// The legacy slice `[0.0.0, 1.21.30)` is a hand-written parser: its `null` handling is the
-    /// family's own, so no rule.
-    /// The cereal slice takes rule N2.
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
+    /// The legacy slice `[0.0.0, 1.21.30)` is a hand-written parser with no cereal mask: its
+    /// `null` handling is the family's own. The game reads the cereal slice strictly, under rule
+    /// N2: an unknown member is an error there.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => None,
-            _ => Some(NullRule::Rejected),
-        }
-    }
-
-    /// The game reads the cereal slice strictly, so an unknown member is an error there; the
-    /// legacy slice is a hand parser with no cereal mask.
-    fn error_mask(index: StructIndex) -> ErrorMask {
-        match index {
-            StructIndex::Stable(0) => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(0) => Reading::OWN,
+            _ => Reading::DOCUMENT,
         }
     }
 
@@ -137,16 +133,7 @@ pub(crate) fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<TradeFamily>::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<TradeFamily>::from_value(Some(value), version, written, at, diagnostics);
     finished(parsed, origin, cx)
 }
 
@@ -240,13 +227,10 @@ fn legacy(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<TradeFamily> {
         &mut diagnostics,
     )
     .filter(|_| !diagnostics.has_errors());
-    Parsed::new(
+    Parsed::from_value(
         value,
         VersionInfo::new(None, false, effective, v0::VERSION, false),
         written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
         JsonPath::new(),
         diagnostics,
     )
@@ -313,3 +297,49 @@ pub const LOADER: CollectionLoader<Files<TradeTable>, FileCopy> = CollectionLoad
     needs: &[],
     then: None,
 };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn trade_reads_as_pinned() {
+        assert_reading_table(
+            "TradeFamily",
+            &reading_table::<super::TradeFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 30 })
+                missing version: at the floor, silently
+                below floor: UseFormatVersion
+                empty document: Error
+                0.0.0..=0.0.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.21.30..=1.21.30 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn trade_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::TradeFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed =
+            parse_as_written::<super::TradeFamily>(JsonSlice::new(&text), &LoadContext::detached());
+        assert_eq!(parsed.identity, Identity::default());
+    }
+}

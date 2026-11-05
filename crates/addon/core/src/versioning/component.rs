@@ -186,8 +186,7 @@ impl<'a, C: ComponentSet> ComponentSection<'a, C> {
 /// `synthesized` ones bypass the table.
 ///
 /// - Gates: allowed when `released` is `Some(r)` and `original_version >= r`; otherwise every
-///   entry of `requires` must be satisfied, and an empty `requires` is no gate at all, unless
-///   the family says `released` is one (`Family::RELEASED_IS_A_GATE`, [`check_released`]). A
+///   entry of `requires` must be satisfied, and an empty `requires` is no gate at all. A
 ///   failed requirement is `MissingToggles` with the text of its kind, an error (the document
 ///   is not loaded) for a base section, a warning for an optional one; the function then
 ///   returns `false`.
@@ -224,9 +223,7 @@ pub fn validate_components<F: Family>(
         ErrorMask::Strict => Severity::Error,
         ErrorMask::Unstrict => Severity::Warning,
     };
-    // A family whose `released` is a gate of its own.
-    let mut passed =
-        !F::RELEASED_IS_A_GATE || check_released::<F>(map, optional, original_version, &at, d);
+    let mut passed = true;
     let mut dropped: Vec<String> = Vec::new();
     for entry in map.iter() {
         let name = match entry {
@@ -301,55 +298,6 @@ pub fn validate_components<F: Family>(
     }
     for name in &dropped {
         map.remove_named(name);
-    }
-    passed
-}
-
-/// `released` as a gate of its own, for a family whose loaders bind components per
-/// format version (`Family::RELEASED_IS_A_GATE`; [`validate_components`] runs it then): a
-/// component of `map` whose table row has `released` above `original_version` and an empty
-/// `requires` is an `UnsupportedVersion` finding with "To use %s '%s', use json format version
-/// %s or higher" at its key below `at`: an error (the document is not loaded), a warning for
-/// an `optional` section. `false` when one was found. `Custom`, unknown and synthesized
-/// entries are not judged, and a row with requirements is [`validate_components`]' own.
-pub fn check_released<F: Family>(
-    map: &ComponentMap<F::Component>,
-    optional: bool,
-    original_version: FormatVersion,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
-    let table = table::<F>();
-    // As `validate_components`' gate: an optional section's refuses the document too.
-    let _ = optional;
-    let severity = Severity::Error;
-    let mut passed = true;
-    for entry in map.iter() {
-        let name = match entry {
-            ComponentRef::Typed {
-                synthesized: true, ..
-            }
-            | ComponentRef::Custom(_)
-            | ComponentRef::Unknown { .. } => continue,
-            ComponentRef::Typed { name, .. } | ComponentRef::Dynamic { name, .. } => name,
-        };
-        let Some(meta) = table.get(name) else {
-            continue;
-        };
-        let Some(released) = meta.released.filter(|r| original_version < *r) else {
-            continue;
-        };
-        if !meta.requires.is_empty() {
-            continue;
-        }
-        passed = false;
-        let mut path = at.clone();
-        path.push(name);
-        d.push(finding(
-            use_format_version(F::COMPONENT_NOUN, name, released),
-            severity,
-            path,
-        ));
     }
     passed
 }
@@ -555,7 +503,7 @@ fn unknown_mask<F: Family>(
     };
     match super::range::select::<F>(&input) {
         super::range::Selection::Struct(i) => {
-            F::reading(super::StructIndex::Stable(i), source).error_mask()
+            super::reading::slice_reading::<F>(super::StructIndex::Stable(i), source).error_mask()
         }
         _ => ErrorMask::Unstrict,
     }

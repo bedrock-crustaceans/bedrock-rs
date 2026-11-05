@@ -17,10 +17,13 @@ fn the_chain_is_1_16_100_to_1_26_20_closed_at_its_newest_struct() {
     assert_eq!(versions, ["1.16.100", "1.21.0", "1.21.90", "1.26.20"]);
     assert_eq!(FogFamily::FLOOR, FLOOR);
     assert_eq!(FogFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
-    assert_eq!(FogFamily::MISSING_VERSION, MissingVersion::Reject);
-    assert_eq!(FogFamily::ENVELOPE, EnvelopeCheck::From(LATEST));
+    assert!(matches!(
+        FogFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
+    assert_eq!(FogFamily::ENVELOPE.check, EnvelopeCheck::From(LATEST));
     assert_eq!(FogFamily::PAYLOAD_KEY, "minecraft:fog_settings");
-    assert_eq!(FogFamily::DIRECTORIES, ["fogs"]);
+    assert_eq!(super::LOADER.walk.directories, ["fogs"]);
     let has_beta = <<FogFamily as Family>::Any as VersionChain<FogFamily>>::HAS_BETA;
     assert_eq!(has_beta, std::hint::black_box(false));
 }

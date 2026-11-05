@@ -1,6 +1,6 @@
 //! The text a document below a chain's floor is told: the one rendering of
-//! `Family::BELOW_FLOOR`, pinned per family for the version spellings that once rendered apart
-//! (two parts, three integers, a pre-release, a bare number). The families with
+//! `Family::ENVELOPE.below_floor`, pinned per family for the version spellings that once rendered
+//! apart (two parts, three integers, a pre-release, a bare number). The families with
 //! `BelowFloor::NoParser` (the camera preset and spline, both aim-assist files, POI, feature
 //! rules, voxel shape, the jigsaw structure, template pool, structure set and processor list,
 //! spawn rules and spawn groups, the lighting settings of `deferred_settings`, biome,

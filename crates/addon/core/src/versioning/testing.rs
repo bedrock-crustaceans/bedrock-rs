@@ -155,3 +155,114 @@ where
         diagnostics: out,
     })
 }
+
+/// The reading table of `F`: what the family fixes for every file (the version input, the
+/// clamp beyond a double, the duplicates kept, the envelope check, what an absent
+/// `format_version` does, the line below the floor, the severity of an empty document) and
+/// the reading of each of its structs from each source, one line per run of structs that read
+/// alike. A family crate pins it with
+/// [`assert_reading_table`], so a change to how a family declares its reading cannot change
+/// what the pipeline reads.
+#[must_use]
+pub fn reading_table<F: super::Family>() -> String {
+    use std::fmt::Write as _;
+
+    use super::{MissingVersion, StructIndex, VersionChain};
+    use crate::diagnostic::VanillaText;
+    use crate::load::DocumentSource;
+
+    let mut out = String::new();
+    let envelope = F::ENVELOPE;
+    let _ = writeln!(
+        out,
+        "text: {:?}, clamps beyond a double: {}, duplicates kept in: {:?}",
+        envelope.input.version_input(),
+        envelope.clamps_beyond_double,
+        envelope.duplicates_kept_in,
+    );
+    let _ = writeln!(out, "envelope: {:?}", envelope.check);
+    let missing = match envelope.missing {
+        MissingVersion::Reject { text } => format!(
+            "rejected: {:?}",
+            text.unwrap_or(VanillaText::NoValidVersion)
+        ),
+        MissingVersion::Floor {
+            text,
+            severity: Some(severity),
+        } => format!("at the floor, told at {severity:?}: {text:?}"),
+        MissingVersion::Floor { severity: None, .. } => "at the floor, silently".to_owned(),
+    };
+    let _ = writeln!(out, "missing version: {missing}");
+    let _ = writeln!(out, "below floor: {:?}", envelope.below_floor);
+    let _ = writeln!(out, "empty document: {:?}", F::EMPTY_DOCUMENT);
+
+    let reading = |index: StructIndex| {
+        let one = |source: DocumentSource| {
+            let r = slice_reading::<F>(index, source);
+            format!(
+                "{:?}/{:?}/{:?}/{}/{:?}",
+                r.null,
+                r.scalars,
+                r.unknown,
+                if r.components_fatal {
+                    "fatal"
+                } else {
+                    "lenient"
+                },
+                r.on_member_failure,
+            )
+        };
+        format!(
+            "json {}, mcb {}",
+            one(DocumentSource::Json),
+            one(DocumentSource::Mcb)
+        )
+    };
+    let versions = <F::Any as VersionChain<F>>::VERSIONS;
+    let mut start = 0;
+    while start < versions.len() {
+        let line = reading(StructIndex::Stable(start));
+        let mut end = start;
+        while end + 1 < versions.len() && reading(StructIndex::Stable(end + 1)) == line {
+            end += 1;
+        }
+        let _ = writeln!(
+            out,
+            "{}..={} ({start}..={end}): {line}",
+            versions[start], versions[end]
+        );
+        start = end + 1;
+    }
+    if <F::Any as VersionChain<F>>::HAS_BETA {
+        let _ = writeln!(out, "beta: {}", reading(StructIndex::Beta));
+    }
+    out
+}
+
+pub use super::reading::slice_reading;
+
+/// Asserts that `actual`, a [`reading_table`] (or several, joined), is `expected`, a table
+/// written one line per line with any indentation and blank lines around it (no line of a
+/// table starts with a space); on a mismatch the panic prints the actual table whole, between
+/// marker lines, for review.
+///
+/// # Panics
+///
+/// When the tables differ.
+#[track_caller]
+pub fn assert_reading_table(name: &str, actual: &str, expected: &str) {
+    let mut table = String::new();
+    for line in expected
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+    {
+        table.push_str(line);
+        table.push('\n');
+    }
+    let expected = table;
+    assert!(
+        actual == expected,
+        "the reading table of {name} changed\n--- actual reading table of {name} ---\n{actual}--- end ---"
+    );
+}

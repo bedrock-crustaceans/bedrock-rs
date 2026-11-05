@@ -160,20 +160,26 @@ fn the_chain_is_the_plans() {
         <ParticleFamily as Family>::FLOOR,
         FormatVersion::new(1, 10, 0)
     );
-    assert_eq!(<ParticleFamily as Family>::CEILING, None);
     assert_eq!(<ParticleFamily as Family>::NAME, "particle");
     assert_eq!(<ParticleFamily as Family>::PAYLOAD_KEY, "particle_effect");
-    assert_eq!(<ParticleFamily as Family>::DIRECTORIES, &["particles"]);
     assert_eq!(
-        <ParticleFamily as Family>::MISSING_VERSION,
-        MissingVersion::Floor
+        bedrock_addon::families::particle::LOADER.walk.directories,
+        ["particles"]
     );
+    assert!(matches!(
+        <ParticleFamily as Family>::ENVELOPE.missing,
+        MissingVersion::Floor { .. }
+    ));
     assert_eq!(
-        <ParticleFamily as Family>::ENVELOPE,
+        <ParticleFamily as Family>::ENVELOPE.check,
         EnvelopeCheck::From(FormatVersion::new(1, 20, 80))
     );
     assert_eq!(<ParticleFamily as Family>::SKIP_UPGRADES_KEY, None);
-    assert!(<ParticleFamily as Family>::DUPLICATES_KEPT_IN.is_empty());
+    assert!(
+        <ParticleFamily as Family>::ENVELOPE
+            .duplicates_kept_in
+            .is_empty()
+    );
 }
 
 #[test]

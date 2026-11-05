@@ -55,13 +55,18 @@ fn the_chain_is_contiguous_and_ends_at_1_21_130_with_a_beta_struct() {
         <ClientBiomeFamily as Family>::PAYLOAD_KEY,
         "minecraft:client_biome"
     );
-    assert_eq!(<ClientBiomeFamily as Family>::DIRECTORIES, &["biomes"]);
     assert_eq!(
-        <ClientBiomeFamily as Family>::MISSING_VERSION,
-        MissingVersion::Reject
+        bedrock_addon::families::client_biome::LOADER
+            .walk
+            .directories,
+        ["biomes"]
     );
+    assert!(matches!(
+        <ClientBiomeFamily as Family>::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
     assert_eq!(
-        <ClientBiomeFamily as Family>::ENVELOPE,
+        <ClientBiomeFamily as Family>::ENVELOPE.check,
         EnvelopeCheck::From(FormatVersion::new(1, 21, 130))
     );
     assert_eq!(<ClientBiomeFamily as Family>::SKIP_UPGRADES_KEY, None);

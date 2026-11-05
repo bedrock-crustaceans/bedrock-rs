@@ -1,5 +1,5 @@
 //! The per-collection loader signature the accessor macro calls: a toy family's
-//! `load_registry` driven the way the loaders drive it, a walk's matching rules and an
+//! `LOADER` driven the way the loaders drive it, a walk's matching rules and an
 //! accessor line of the shape the families use.
 
 use bedrock_addon_core::__private::Sealed;
@@ -115,16 +115,15 @@ mod ruby {
         builder.finish()
     }
 
-    /// The function an accessor line names.
-    pub const fn load_registry() -> CollectionLoader<Registry<Ruby>, Vec<Contribution<Ruby>>> {
+    /// The loader an accessor line names.
+    pub const LOADER: CollectionLoader<Registry<Ruby>, Vec<Contribution<Ruby>>> =
         CollectionLoader {
             walk: WALK,
             parse: parse_file,
             combine,
             needs: &[],
             then: None,
-        }
-    }
+        };
 }
 
 /// A toy collection that only looks at the stack: its ceiling and how many packs it has.
@@ -141,26 +140,24 @@ mod ceiling {
         (stack.full_stack_min_engine_version(), stack.packs.len())
     }
 
-    pub const fn load() -> CollectionLoader<(SemVersion, usize), ()> {
-        CollectionLoader {
-            walk: Walk {
-                directories: &[],
-                depth: ListDepth::Children,
-                accept: Accept::Fn(none),
-                order: WalkOrder::BottomUp,
-                directory_major: false,
-                app_data: &[],
-                app_data_place: AppDataPlace::After,
-                in_pack: None,
-                shadowed: None,
-                read_error: None,
-            },
-            parse,
-            combine,
-            needs: &[],
-            then: None,
-        }
-    }
+    pub const LOADER: CollectionLoader<(SemVersion, usize), ()> = CollectionLoader {
+        walk: Walk {
+            directories: &[],
+            depth: ListDepth::Children,
+            accept: Accept::Fn(none),
+            order: WalkOrder::BottomUp,
+            directory_major: false,
+            app_data: &[],
+            app_data_place: AppDataPlace::After,
+            in_pack: None,
+            shadowed: None,
+            read_error: None,
+        },
+        parse,
+        combine,
+        needs: &[],
+        then: None,
+    };
 }
 
 #[test]
@@ -352,21 +349,21 @@ fn drive<C, P>(
     (loader.combine)(parsed, &StackCx::new(&options, packs))
 }
 
-/// The accessor macro's line shape, `name: Collection = loader;`, expanding to a function
+/// The accessor macro's line shape, `name: Collection = family::LOADER;`, expanding to a function
 /// that drives the named loader.
 macro_rules! accessors {
     ($($name:ident : $collection:ty = $loader:path;)*) => {
         $(
             fn $name(packs: &[StackPack], files: &[(usize, &'static str, &'static str)]) -> $collection {
-                drive($loader(), packs, files)
+                drive($loader, packs, files)
             }
         )*
     };
 }
 
 accessors! {
-    rubies: Registry<Ruby> = ruby::load_registry;
-    stack_ceiling: (SemVersion, usize) = ceiling::load;
+    rubies: Registry<Ruby> = ruby::LOADER;
+    stack_ceiling: (SemVersion, usize) = ceiling::LOADER;
 }
 
 fn id(text: &'static str) -> BlockId {
@@ -514,7 +511,7 @@ mod setting {
             .collect()
     }
 
-    pub const fn load() -> CollectionLoader<Vec<(String, Answer, Answer)>, Vec<String>> {
+    pub const LOADER: CollectionLoader<Vec<(String, Answer, Answer)>, Vec<String>> =
         CollectionLoader {
             walk: Walk {
                 directories: &["settings"],
@@ -532,13 +529,12 @@ mod setting {
             combine,
             needs: &[<kind::Block as bedrock_addon_core::id::Kind>::NAME],
             then: None,
-        }
-    }
+        };
 }
 
 /// A collection that registers a kind for the others needs none itself: that is what keeps
 /// the needs of a stack free of cycles, and it is a compile-time fact of each loader.
-const _: () = assert!(ruby::load_registry().needs.is_empty());
+const _: () = assert!(ruby::LOADER.needs.is_empty());
 
 #[test]
 fn a_combine_asks_the_stack_which_pack_registered_an_identifier() {
@@ -554,7 +550,7 @@ fn a_combine_asks_the_stack_which_pack_registered_an_identifier() {
             "demo:ruby\ndemo:gem\ndemo:glass\ngem",
         ),
     ];
-    let loader = setting::load();
+    let loader = setting::LOADER;
     assert_eq!(loader.needs, ["block"]);
     // The loaders combine the collection that registers the kind first …
     let rubies = rubies(&packs, &files);

@@ -97,7 +97,6 @@
 /// impl Family for Glow {
 ///     const NAME: &'static str = "glow";
 ///     const PAYLOAD_KEY: &'static str = "demo:glow";
-///     const DIRECTORIES: &'static [&'static str] = &["glows"];
 ///     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
 ///     type Latest = GlowDoc;
 ///     type Beta = std::convert::Infallible;

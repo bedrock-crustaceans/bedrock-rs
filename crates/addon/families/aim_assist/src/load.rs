@@ -17,8 +17,8 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, StructIndex, ValidateCx, VersionStruct, Versioned,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, ValidateCx, VersionStruct, Versioned,
 };
 use bedrock_addon_support::chain_file::{self as file, FileFamily, FileOutcome};
 
@@ -37,26 +37,22 @@ impl Family for PresetFamily {
     // The game's loader passes the categories key here and never checks it; the struct binds the
     // real key.
     const PAYLOAD_KEY: &'static str = "minecraft:aim_assist_preset";
-    const DIRECTORIES: &'static [&'static str] = &[PRESETS];
     const FLOOR: FormatVersion = V1_21_50;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a preset through the document-input reader of the cereal-based families.
+        input: InputKind::Document,
+        // An invalid minimum version: the text stays raw and the strict root struct reads the whole
+        // document.
+        check: EnvelopeCheck::Never,
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     type Latest = AimAssistPreset;
     type Beta = Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // An invalid minimum version: the text stays raw and the strict root struct reads the whole
-    // document.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Never;
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The game reads a preset through the document-input reader of the cereal-based families.
-    const INPUT: InputKind = InputKind::Document;
-
-    /// Both slices are read with the strict mask: an unknown member or a wrong type rejects the
-    /// file.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
         file::identity(payload, "identifier")
@@ -78,25 +74,21 @@ impl FileFamily for PresetFamily {
 impl Family for CategoriesFamily {
     const NAME: &'static str = "aim assist categories";
     const PAYLOAD_KEY: &'static str = "minecraft:aim_assist_categories";
-    const DIRECTORIES: &'static [&'static str] = &[CATEGORIES];
     const FLOOR: FormatVersion = V1_21_50;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a categories file through the document-input reader of the cereal-based
+        // families.
+        input: InputKind::Document,
+        check: EnvelopeCheck::Never,
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     type Latest = AimAssistCategories;
     type Beta = Infallible;
     type Component = NoComponents;
     type Any = CategoriesAny;
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Never;
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The game reads a categories file through the document-input reader of the cereal-based
-    // families.
-    const INPUT: InputKind = InputKind::Document;
-
-    /// The one slice is read with the strict mask: an unknown member or a wrong type rejects the
-    /// file.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()
@@ -320,4 +312,67 @@ impl Versioned for AimAssistPreset {
 
 impl Versioned for AimAssistCategories {
     const VERSION: FormatVersion = V1_21_50;
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn preset_reads_as_pinned() {
+        assert_reading_table(
+            "aim_assist::PresetFamily",
+            &reading_table::<super::PresetFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.50..=1.21.120 (0..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn categories_reads_as_pinned() {
+        assert_reading_table(
+            "CategoriesFamily",
+            &reading_table::<super::CategoriesFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.50..=1.21.50 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn categories_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::CategoriesFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed = parse_as_written::<super::CategoriesFamily>(
+            JsonSlice::new(&text),
+            &LoadContext::detached(),
+        );
+        assert_eq!(parsed.identity, Identity::default());
+    }
 }

@@ -582,13 +582,20 @@ fn the_chain_is_two_structs_from_the_floor() {
     assert_eq!(<CraftingCatalog as Versioned>::VERSION, super::V1_26_50);
     {
         use bedrock_addon_core::json::NullRule;
+        use bedrock_addon_core::load::DocumentSource;
         use bedrock_addon_core::versioning::{ErrorMask, InputKind, StructIndex};
         type F = super::load::CatalogFamily;
-        assert_eq!(F::INPUT, InputKind::Document);
-        assert_eq!(F::error_mask(StructIndex::Stable(0)), ErrorMask::Unstrict);
-        assert_eq!(F::error_mask(StructIndex::Stable(1)), ErrorMask::Strict);
+        assert_eq!(F::ENVELOPE.input, InputKind::Document);
         assert_eq!(
-            F::null_rule(StructIndex::Stable(1)),
+            F::reading(StructIndex::Stable(0), DocumentSource::Json).error_mask(),
+            ErrorMask::Unstrict
+        );
+        assert_eq!(
+            F::reading(StructIndex::Stable(1), DocumentSource::Json).error_mask(),
+            ErrorMask::Strict
+        );
+        assert_eq!(
+            F::reading(StructIndex::Stable(1), DocumentSource::Json).null_rule(),
             Some(NullRule::Rejected)
         );
     }
@@ -597,10 +604,9 @@ fn the_chain_is_two_structs_from_the_floor() {
         super::load::CatalogFamily::RANGE_MODEL,
         RangeModel::ClosedToEngine
     );
-    assert_eq!(super::load::CatalogFamily::CEILING, None);
     assert_eq!(
         super::load::CatalogFamily::PAYLOAD_KEY,
         "minecraft:crafting_items_catalog"
     );
-    assert_eq!(super::load::CatalogFamily::DIRECTORIES, ["item_catalog"]);
+    assert_eq!(super::LOADER.walk.directories, ["item_catalog"]);
 }

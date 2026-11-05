@@ -20,11 +20,10 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, Value, WriteSty
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::load::{Experiment, Reported};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BelowFloor, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish_file, parse_as_written,
+    BelowFloor, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Parsed,
+    ValidateCx, VersionStruct, Versioned, finish_file, parse_as_written,
 };
 use indexmap::IndexMap;
 
@@ -54,27 +53,23 @@ macro_rules! document {
         impl Family for $family {
             const NAME: &'static str = $name;
             const PAYLOAD_KEY: &'static str = $key;
-            const DIRECTORIES: &'static [&'static str] = &[$dir];
             const FLOOR: FormatVersion = V1_26_40;
-            // Below the first slice the versioned loader has no parser at all.
-            const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+            const ENVELOPE: Envelope = Envelope {
+                // Both loaders read a document input: the version is read as that input reads it,
+                // size limits apply, and a `null` where a value is read rejects the file.
+                input: InputKind::Document,
+                // The game's versioned loader does not check the version itself, so a missing
+                // version is rejected with "no valid version passed by the caller or found in the
+                // input".
+                missing: MissingVersion::REJECT,
+                // Below the first slice the versioned loader has no parser at all.
+                below_floor: BelowFloor::NoParser,
+                ..Envelope::DEFAULT
+            };
             type Latest = $root;
             type Beta = Infallible;
             type Component = NoComponents;
             type Any = $any;
-            // The game's versioned loader does not check the version itself, so a missing
-            // version is rejected with "no valid version passed by the caller or found in the
-            // input".
-            const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-            // Both loaders read a document input: the version is read as that input reads it,
-            // size limits apply, and a `null` where a value is read rejects the file.
-            const INPUT: InputKind = InputKind::Document;
-
-            /// The one slice of each document is read strictly: an unknown member rejects the
-            /// file.
-            fn error_mask(_: StructIndex) -> ErrorMask {
-                ErrorMask::Strict
-            }
 
             fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
                 if let Loaded::Stable(value) = v {
@@ -401,16 +396,7 @@ fn upgrade<F: PoiFamily>(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<F>::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<F>::from_value(Some(value), version, written, at, diagnostics);
     finished::<F>(parsed, origin, cx)
 }
 
@@ -624,5 +610,44 @@ pub const LOADER: CollectionLoader<Poi, PoiFile> = CollectionLoader {
 impl Reported for Poi {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
         Box::new(self.diagnostics())
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn poi_type_reads_as_pinned() {
+        assert_reading_table(
+            "PoiTypeFamily",
+            &reading_table::<super::PoiTypeFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.26.40..=1.26.40 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn poi_tag_reads_as_pinned() {
+        assert_reading_table(
+            "PoiTagFamily",
+            &reading_table::<super::PoiTagFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.26.40..=1.26.40 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
     }
 }

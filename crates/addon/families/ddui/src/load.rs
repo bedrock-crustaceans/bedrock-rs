@@ -30,12 +30,11 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BelowFloor, BetaPermission, ErrorMask, Family, Identity, InputKind, Loaded,
-    MissingVersion, NoComponents, NoStable, ParseCx, Parsed, RangeModel, StructIndex, ValidateCx,
-    VersionStruct, Versioned, finish, no_parser_version, parse_as_written,
+    BETA_VERSION, BelowFloor, BetaPermission, Envelope, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, NoStable, ParseCx, Parsed, RangeModel, ValidateCx, VersionStruct, Versioned,
+    finish, no_parser_version, parse_as_written,
 };
 
 /// `ddui/root`: `minecraft:ui-root` documents.
@@ -79,29 +78,25 @@ pub(crate) trait UiFamily: Family {
 impl Family for RootFamily {
     const NAME: &'static str = "data-driven UI root";
     const PAYLOAD_KEY: &'static str = "minecraft:ui-root";
-    const DIRECTORIES: &'static [&'static str] = &[ROOTS];
     // The loader reads exactly one version, so the range is closed at both ends:
     // [1.21.130, 1.21.130].
     const FLOOR: FormatVersion = FORMAT_VERSION;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The loader reads a roots file through the document input: it takes the version as that
+        // input reads it, and rule N2 holds.
+        input: InputKind::Document,
+        // The loader never reaches a document without a version; `stage` reports it with the
+        // loader's own text.
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = UiRoot;
     type Beta = Infallible;
     type Component = NoComponents;
     type Any = RootAny;
-    // The loader never reaches a document without a version; `stage` reports it with the
-    // loader's own text.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The loader reads a roots file through the document input: it takes the version as that
-    // input reads it, and rule N2 holds.
-    const INPUT: InputKind = InputKind::Document;
-
-    // The one version is read under the strict error mask: unknown members and type errors
-    // refuse the file.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(root) = v {
@@ -128,24 +123,21 @@ impl UiFamily for RootFamily {
 impl Family for CompositionFamily {
     const NAME: &'static str = "data-driven UI composition";
     const PAYLOAD_KEY: &'static str = "minecraft:ui-composition";
-    const DIRECTORIES: &'static [&'static str] = &[COMPOSITIONS];
     // Exactly one version is read, as for roots.
     const FLOOR: FormatVersion = FORMAT_VERSION;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The same document input as for roots: the version as it reads it, and rule N2.
+        input: InputKind::Document,
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = UiComposition;
     type Beta = Infallible;
     type Component = NoComponents;
     type Any = CompositionAny;
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The same document input as for roots: the version as it reads it, and rule N2.
-    const INPUT: InputKind = InputKind::Document;
-
-    // The strict error mask, as for roots.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(composition) = v {
@@ -180,7 +172,6 @@ impl UiFamily for CompositionFamily {
 impl Family for StyleFamily {
     const NAME: &'static str = "data-driven UI style";
     const PAYLOAD_KEY: &'static str = "minecraft:ui-style";
-    const DIRECTORIES: &'static [&'static str] = &[STYLES];
     // Unused: there is no stable struct, so every version but `"beta"` has no parser.
     const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = NoStable;
@@ -189,14 +180,12 @@ impl Family for StyleFamily {
     const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
     type Component = NoComponents;
     type Any = StyleAny;
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The same document input as for roots: the version as it reads it, and rule N2.
-    const INPUT: InputKind = InputKind::Document;
-
-    // The strict error mask, as for roots.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
+    const ENVELOPE: Envelope = Envelope {
+        // The same document input as for roots: the version as it reads it, and rule N2.
+        input: InputKind::Document,
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         // Styles follow the namespace rule of roots and compositions, with the same two texts.
@@ -297,7 +286,7 @@ fn failed_to_load() -> Diagnostic {
 
 /// A document the envelope stage refused, with its findings.
 fn refused<F: Family>(diagnostics: Diagnostics) -> Parsed<F> {
-    Parsed::new(
+    Parsed::from_value(
         None,
         VersionInfo::new(None, false, F::FLOOR, F::FLOOR, false),
         FormatVersionInput {
@@ -305,9 +294,6 @@ fn refused<F: Family>(diagnostics: Diagnostics) -> Parsed<F> {
             beta_literal: false,
             prerelease: false,
         },
-        Identity::default(),
-        ActorType::Mob,
-        false,
         JsonPath::new(),
         diagnostics,
     )
@@ -417,7 +403,7 @@ fn stage<F: UiFamily>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
 
 /// The loader has one closed range and no beta version: every version outside it, the beta
 /// literal included, is "no parser available for version …" (below the range the pipeline says
-/// so, `BELOW_FLOOR`), where the generic check asks for the Beta APIs toggle.
+/// so, `ENVELOPE.below_floor`), where the generic check asks for the Beta APIs toggle.
 fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
@@ -891,5 +877,60 @@ pub const LOADER: CollectionLoader<DataDrivenUi, UiFile> = CollectionLoader {
 impl Reported for DataDrivenUi {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
         Box::new(self.diagnostics())
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn root_reads_as_pinned() {
+        assert_reading_table(
+            "RootFamily",
+            &reading_table::<super::RootFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.130..=1.21.130 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn composition_reads_as_pinned() {
+        assert_reading_table(
+            "CompositionFamily",
+            &reading_table::<super::CompositionFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.130..=1.21.130 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn style_reads_as_pinned() {
+        assert_reading_table(
+            "StyleFamily",
+            &reading_table::<super::StyleFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Error
+                beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
     }
 }

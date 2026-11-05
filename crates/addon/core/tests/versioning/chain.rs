@@ -11,8 +11,9 @@ use bedrock_addon_core::molang::format_molang_version;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BetaPermission, ChainError, ComponentSection, ComponentTable, Family, Loaded, MissingVersion,
-    NoComponents, NoStable, VersionChain, check_chain, file_version, validate_components,
+    BetaPermission, ChainError, ComponentSection, ComponentTable, Envelope, Family, Loaded,
+    MissingVersion, NoComponents, NoStable, VersionChain, check_chain, file_version,
+    validate_components,
 };
 
 use crate::envelope::{codes, load_toy, load_with};
@@ -141,7 +142,6 @@ pub mod routed {
 impl Family for Routed {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = V100;
     type Latest = Toy120;
     type Beta = ToyBeta;
@@ -152,9 +152,6 @@ impl Family for Routed {
     }
     fn route(payload: JsonSlice<'_>, _: FormatVersionInput, _: &LoadContext) -> Option<usize> {
         payload.text.contains("\"speed\"").then_some(1)
-    }
-    fn effective_version(file: Option<FormatVersion>, _: &LoadContext) -> FormatVersion {
-        file.unwrap_or(V110)
     }
 }
 
@@ -199,25 +196,10 @@ fn section_a_is_skipped_at_the_engine_version() {
 }
 
 #[test]
-fn the_effective_version_of_a_missing_one_is_the_familys() {
-    let outcome = load_with::<Routed>(
-        r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
-        &LoadContext::detached(),
-    );
-    assert_eq!(outcome.version.effective, V110);
-    assert_eq!(outcome.original_version, V110);
-    assert_eq!(outcome.version.parsed_as, V110);
-}
-
-#[test]
-fn selected_routes_between_families_by_the_file_version() {
+fn file_version_reads_the_envelope_s_version_for_routing() {
     let text = document("1.1.0", "{}");
     let version = file_version(JsonSlice::new(&text));
     assert_eq!(version, Some(V110));
-    assert!(
-        Toy::selected(version, &LoadContext::detached()),
-        "the default takes every file"
-    );
 }
 
 /// Pass 1 runs inside the parse: a string `condition` gets the document's version.
@@ -398,10 +380,12 @@ pub mod beta_only {
 impl Family for BetaOnly {
     const NAME: &'static str = "beta toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["beta_toys"];
     const FLOOR: FormatVersion = V100;
     const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
+    const ENVELOPE: Envelope = Envelope {
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
     type Latest = NoStable;
     type Beta = ToyBeta;
     type Component = NoComponents;
@@ -420,7 +404,6 @@ pub struct ForgotTable;
 impl Family for ForgotTable {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = V100;
     type Latest = Toy120;
     type Beta = std::convert::Infallible;
@@ -503,7 +486,6 @@ pub struct FloorAbove;
 impl Family for FloorAbove {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = V110;
     type Latest = Toy120;
     type Beta = std::convert::Infallible;

@@ -1,7 +1,9 @@
 //! Molang in items: `repair_amount`, descriptor `tags`. The version of every item expression is the item's
 //! `format_version` window; block descriptor `tags` compile at a constant 13.
 
-use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion, RawVersion};
+#[cfg(feature = "molang")]
+use bedrock_addon_core::molang::MolangSource;
+use bedrock_addon_core::molang::{Molang, MolangVersion, RawVersion};
 use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_family_item::component::{Digger, Repairable};
 

@@ -27,8 +27,8 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    ParseCx, StructIndex, ValidateCx, VersionStruct, Versioned, write_payload,
+    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    ParseCx, ValidateCx, VersionStruct, Versioned, write_payload,
 };
 
 /// The version of the one struct, and of the one slice: the game's document format is
@@ -305,31 +305,27 @@ impl VersionStruct for SoundMetadataFile {
 impl Family for MetadataFamily {
     const NAME: &'static str = "server_sound_definitions";
     const PAYLOAD_KEY: &'static str = "minecraft:server_sound_definitions";
-    // One fixed file per behaviour pack; the loader's walk names it.
-    const DIRECTORIES: &'static [&'static str] = &[];
     // The one slice covers `[1.26.60, end]`, where the end is the larger of the slice's version
     // and the game's current version, which is 1.26.60: the engine version closes it.
     const FLOOR: FormatVersion = V1_26_60;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The loader reads the document as JSON input: the version as the game reads it from the
+        // text, and `null` members rejected.
+        input: InputKind::Document,
+        // The envelope is checked only at or above `minModernVersion`, the slice's version.
+        check: EnvelopeCheck::From(V1_26_60),
+        // The game's loader is given no caller version, so a file without `format_version` is
+        // rejected.
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     type Latest = SoundMetadataFile;
     // No Beta slice: `"beta"` has no parser.
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = MetadataAny;
-    // The game's loader is given no caller version, so a file without `format_version` is
-    // rejected.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The envelope is checked only at or above `minModernVersion`, the slice's version.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(V1_26_60);
-    // The loader reads the document as JSON input: the version as the game reads it from the
-    // text, and `null` members rejected.
-    const INPUT: InputKind = InputKind::Document;
-
-    // The slice is registered with the strict error mask: any parse error rejects the file.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         let Loaded::Stable(file) = v else { return };
@@ -433,6 +429,7 @@ fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
 mod tests {
     use super::*;
     use bedrock_addon_core::json::NullRule;
+    use bedrock_addon_core::load::DocumentSource;
     use bedrock_addon_core::version::FormatVersionInput;
     use bedrock_addon_core::versioning::{
         ErrorMask, InputKind, Selection, StructIndex, VersionChain, select,
@@ -473,13 +470,13 @@ mod tests {
             [FormatVersion::new(1, 26, 60)]
         );
         const { assert!(!<MetadataAny as VersionChain<MetadataFamily>>::HAS_BETA) };
-        assert_eq!(MetadataFamily::INPUT, InputKind::Document);
+        assert_eq!(MetadataFamily::ENVELOPE.input, InputKind::Document);
         assert_eq!(
-            MetadataFamily::null_rule(StructIndex::Stable(0)),
+            MetadataFamily::reading(StructIndex::Stable(0), DocumentSource::Json).null_rule(),
             Some(NullRule::Rejected)
         );
         assert_eq!(
-            MetadataFamily::error_mask(StructIndex::Stable(0)),
+            MetadataFamily::reading(StructIndex::Stable(0), DocumentSource::Json).error_mask(),
             ErrorMask::Strict
         );
         assert_eq!(
@@ -541,5 +538,28 @@ mod tests {
         ] {
             assert!(!no_whitespace(bad), "{bad:?}");
         }
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn server_sound_definitions_reads_as_pinned() {
+        assert_reading_table(
+            "server_sound_definitions::MetadataFamily",
+            &reading_table::<super::MetadataFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 26, patch: 60 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.26.60..=1.26.60 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
     }
 }

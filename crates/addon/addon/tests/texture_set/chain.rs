@@ -54,17 +54,22 @@ fn the_chain_is_v1_16_100_then_v1_21_30_with_no_beta() {
 
 #[test]
 fn the_family_parameters_are_the_plan_s() {
-    const WARN: bool = TextureSetFamily::ENVELOPE_WARN_MISSING_VERSION;
     assert_eq!(TextureSetFamily::NAME, "texture_set");
     assert_eq!(TextureSetFamily::PAYLOAD_KEY, "minecraft:texture_set");
-    assert_eq!(TextureSetFamily::DIRECTORIES, ["textures"]);
+    // The sets are found from the pack root: a `*.texture_set.json` anywhere below it.
+    assert_eq!(
+        bedrock_addon::families::texture_set::LOADER
+            .walk
+            .directories,
+        [""]
+    );
     assert_eq!(TextureSetFamily::FLOOR, V16);
     assert_eq!(TextureSetFamily::RANGE_MODEL, RangeModel::ExactOnly);
-    // The ceiling is the newest struct's version, derived from the range model.
-    assert_eq!(TextureSetFamily::CEILING, None);
-    assert_eq!(TextureSetFamily::MISSING_VERSION, MissingVersion::Reject);
-    let warn = WARN;
-    assert!(!warn, "a missing version is an error, not a warning");
+    // A missing version is an error, not a warning.
+    assert!(matches!(
+        TextureSetFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
 }
 
 /// What `version` selects.

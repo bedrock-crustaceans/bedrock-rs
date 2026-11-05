@@ -156,7 +156,6 @@ use syn::{DeriveInput, parse_macro_input};
 ///     // …
 /// #   const NAME: &'static str = "item";
 /// #   const PAYLOAD_KEY: &'static str = "minecraft:item";
-/// #   const DIRECTORIES: &'static [&'static str] = &["items"];
 /// #   const FLOOR: FormatVersion = FormatVersion { major: 1, minor: 10, patch: 0 };
 /// #   type Latest = NoStable;
 /// #   type Beta = Infallible;

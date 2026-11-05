@@ -12,47 +12,50 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{DimensionId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, Value, WriteStyle, write_json};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, ParseCx, Parsed, StructIndex, ValidateCx, VersionStruct, Versioned, finish,
-    parse_as_written, write_payload,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, ParseCx, Parsed, Reading, StructIndex, UnknownMask, ValidateCx, VersionStruct,
+    Versioned, finish, parse_as_written, write_payload,
 };
 use bedrock_addon_support::puv::shadowed;
 use indexmap::IndexMap;
 
 impl Family for DimensionFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "dimension";
     const PAYLOAD_KEY: &'static str = "minecraft:dimension";
-    const DIRECTORIES: &'static [&'static str] = &["dimensions"];
     const FLOOR: FormatVersion = FLOOR;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the file as a whole document: the version is the one its JSON reader picks
+        // from the text, and a `null` where a value is read counts as the wrong JSON type in the
+        // cereal slices (the legacy parser below 1.21.60 keeps its own reading:
+        // `parse::slice_null_rule`).
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game reads the document with no minimum version, so the raw text is read at every
+        // version.
+        check: EnvelopeCheck::Never,
+        // The game passes no version of its own, so a file without `format_version` is rejected
+        // with "no valid version passed by the caller or found in the input".
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+
+    /// The game reads every slice leniently: an unknown member is a warning, not an error.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+    }
     type Latest = Dimension;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // The game reads the document with no minimum version, so the raw text is read at every
-    // version.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Never;
-    // The game reads the file as a whole document: the version is the one its JSON reader picks
-    // from the text, and a `null` where a value is read counts as the wrong JSON type in the
-    // cereal slices (the legacy parser below 1.21.60 keeps its own reading:
-    // `parse::slice_null_rule`).
-    const INPUT: InputKind = InputKind::Document;
-    // The game passes no version of its own, so a file without `format_version` is rejected
-    // with "no valid version passed by the caller or found in the input".
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-
-    /// The game reads every slice leniently: an unknown member is a warning.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Unstrict
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(dimension) = v {
@@ -228,19 +231,17 @@ pub(crate) fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<DimensionFamily>::new(
+    let parsed = Parsed::<DimensionFamily>::from_value(
         Some(value),
         version,
         written,
-        Identity {
-            identifier: Some(identifier),
-            runtime_identifier: None,
-        },
-        bedrock_addon_core::vanilla::ActorType::Mob,
-        false,
         JsonPath::new(),
         diagnostics,
-    );
+    )
+    .with_identity(Identity {
+        identifier: Some(identifier),
+        runtime_identifier: None,
+    });
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     diagnostics.locate(&origin);
@@ -405,3 +406,26 @@ pub const LOADER: CollectionLoader<Registry<Dimension>, Contribution<Dimension>>
         needs: &[],
         then: None,
     };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn dimension_reads_as_pinned() {
+        assert_reading_table(
+            "DimensionFamily",
+            &reading_table::<super::DimensionFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.18.0..=1.26.50 (0..=1): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
+    }
+}

@@ -13,6 +13,7 @@ use bedrock_addon_core::id::{EntityId, kind};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, strip_bom,
 };
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::molang::{
     MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, OpsRule, PROPERTY_DEFAULT_QUERIES,
@@ -22,9 +23,10 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
-    InputKind, Loaded, ParseCx, Parsed, StructIndex, ValidateCx, VersionChain, VersionStruct,
-    Versioned, finish, load, member_version, parse_as_written,
+    BETA_VERSION, ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity,
+    InputKind, Loaded, MissingVersion, ParseCx, Parsed, Reading, StructIndex, UnknownMask,
+    ValidateCx, VersionChain, VersionStruct, Versioned, finish, load, member_version,
+    parse_as_written,
 };
 
 use super::component::EntityComponent;
@@ -37,30 +39,50 @@ const DIRECTORY: &str = "entities";
 pub(crate) const STRICT_SLICES: FormatVersion = FormatVersion::new(1, 21, 89);
 
 impl Family for Entity {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "entity";
     const PAYLOAD_KEY: &'static str = "minecraft:entity";
-    const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     // 1.8.0, the first version with `description.identifier`.
     const FLOOR: FormatVersion = known::V1_8_0;
     const SKIP_UPGRADES_KEY: Option<&'static str> = Some("do_not_upgrade");
-    // The text is the crate's own; the game reads an absent version as 0.0.0 silently.
-    const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::NoFormatVersionField);
+    const ENVELOPE: Envelope = Envelope {
+        // A jsoncpp input: the version from the root member, and
+        // rule N1, a member written as `null` is absent.
+        input: InputKind::JsonCpp,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game takes `format_version` and `minecraft:entity` out of the root and reads nothing
+        // else there: it never counts the root's members, so a root member beside the two is
+        // passed over and the entity loads.
+        check: EnvelopeCheck::Uncounted,
+        // The text is the crate's own and the game is silent (it reads an absent version as
+        // 0.0.0): an information.
+        missing: MissingVersion::Floor {
+            text: Some(VanillaText::NoFormatVersionField),
+            severity: Some(Severity::Info),
+        },
+        ..Envelope::DEFAULT
+    };
 
-    /// The text is the crate's own and the game is silent: an information.
-    fn missing_version_severity() -> Severity {
-        Severity::Info
+    /// A `null` member is absent at every slice (rule N1). The game reads a document below
+    /// 1.21.89 with the unstrict error codes and every slice from 1.21.89 on with the strict
+    /// ones, the beta struct included.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        let strict = match index {
+            StructIndex::Stable(i) => {
+                let versions = <history::Any as VersionChain<Entity>>::VERSIONS;
+                versions.get(i).is_some_and(|v| *v >= STRICT_SLICES)
+            }
+            // The beta slice is read strictly, as every slice after the legacy one.
+            StructIndex::Beta => true,
+        };
+        Reading::NULL_ABSENT.with_unknown(if strict {
+            UnknownMask::Error
+        } else {
+            UnknownMask::Warn
+        })
     }
 
-    // A jsoncpp input: the version from the root member, and
-    // rule N1, a member written as `null` is absent.
-    const INPUT: InputKind = InputKind::JsonCpp;
-    // The game takes `format_version` and `minecraft:entity` out of the root and reads nothing
-    // else there: it never counts the root's members, so a root member beside the two is
-    // passed over and the entity loads.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Uncounted;
     type Latest = Entity;
     type Beta = Beta;
     type Component = EntityComponent;
@@ -68,23 +90,6 @@ impl Family for Entity {
 
     fn components() -> &'static ComponentTable<Self> {
         EntityComponent::TABLE
-    }
-
-    /// The game reads a document below 1.21.89 with the unstrict error codes and every slice
-    /// from 1.21.89 on with the strict ones, the beta struct included.
-    fn error_mask(index: StructIndex) -> ErrorMask {
-        match index {
-            StructIndex::Stable(i) => {
-                let versions = <history::Any as VersionChain<Entity>>::VERSIONS;
-                if versions.get(i).is_some_and(|v| *v >= STRICT_SLICES) {
-                    ErrorMask::Strict
-                } else {
-                    ErrorMask::Unstrict
-                }
-            }
-            // The beta slice is read strictly, as every slice after the legacy one.
-            StructIndex::Beta => ErrorMask::Strict,
-        }
     }
 
     /// without a root `format_version`, the pre-1.8 in-payload one.
@@ -356,13 +361,10 @@ impl Entity {
             prerelease: false,
         };
         let actor_type = <Entity as Family>::actor_type(&identity);
-        let parsed = Parsed::<Entity>::new(
+        let parsed = Parsed::<Entity>::from_value(
             Some(any),
             version,
             input,
-            identity,
-            actor_type,
-            skip_upgrades,
             at,
             // What the reader moved, without its findings: what the steps and the checks
             // tell is at the member the file has, as in a load of the file.
@@ -371,7 +373,9 @@ impl Entity {
                 moved.retain(|_| false);
                 moved
             },
-        );
+        )
+        .with_identity(identity)
+        .with_actor(actor_type, skip_upgrades);
         let outcome = finish(parsed, cx);
         let mut diagnostics = found;
         diagnostics.append(place(outcome.diagnostics, &outcome.version, &origin));
@@ -725,6 +729,31 @@ mod tests {
                 assert_eq!(found.2, 0);
                 found
             },
+        );
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn entity_reads_as_pinned() {
+        assert_reading_table(
+            "Entity",
+            &reading_table::<super::Entity>(),
+            r"
+                text: Root, clamps beyond a double: true, duplicates kept in: []
+                envelope: Uncounted
+                missing version: at the floor, told at Info: Some(NoFormatVersionField)
+                below floor: UseFormatVersion
+                empty document: Error
+                1.8.0..=1.21.80 (0..=28): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.21.89..=1.26.60 (29..=41): json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+                beta: json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+            ",
         );
     }
 }

@@ -60,7 +60,6 @@ mod by_macro {
     impl Family for GlintChain {
         const NAME: &'static str = "glint";
         const PAYLOAD_KEY: &'static str = "demo:glint";
-        const DIRECTORIES: &'static [&'static str] = &["glints"];
         const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
         type Latest = Glint;
         type Beta = NoBeta<kind::Block>;
@@ -107,7 +106,7 @@ fn a_family_without_a_beta_struct_names_no_beta_and_its_value_clones() {
 /// whole document there.
 mod raw_below_2 {
     use super::*;
-    use bedrock_addon_core::versioning::EnvelopeCheck;
+    use bedrock_addon_core::versioning::{Envelope, EnvelopeCheck};
 
     pub struct RawGlintChain;
 
@@ -121,9 +120,11 @@ mod raw_below_2 {
     impl Family for RawGlintChain {
         const NAME: &'static str = "raw glint";
         const PAYLOAD_KEY: &'static str = "demo:glint";
-        const DIRECTORIES: &'static [&'static str] = &["glints"];
         const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
-        const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(FormatVersion::new(2, 0, 0));
+        const ENVELOPE: Envelope = Envelope {
+            check: EnvelopeCheck::From(FormatVersion::new(2, 0, 0)),
+            ..Envelope::DEFAULT
+        };
         type Latest = Glint;
         type Beta = NoBeta<kind::Block>;
         type Component = NoComponents;
@@ -231,7 +232,6 @@ mod single {
     impl Family for GlintFamily {
         const NAME: &'static str = "glint";
         const PAYLOAD_KEY: &'static str = "demo:glint";
-        const DIRECTORIES: &'static [&'static str] = &["glints"];
         const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
         type Latest = Glint;
         type Beta = NoBeta<kind::Block>;
@@ -408,7 +408,6 @@ pub struct EmberFamily;
 impl Family for EmberFamily {
     const NAME: &'static str = "ember";
     const PAYLOAD_KEY: &'static str = "demo:ember";
-    const DIRECTORIES: &'static [&'static str] = &[];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
     type Latest = Ember;
     type Beta = NoBeta<kind::Block>;

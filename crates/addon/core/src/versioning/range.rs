@@ -61,7 +61,7 @@ pub fn ranges(
 /// selects no stable struct and is `Unsupported` here).
 pub fn select<F: Family>(input: &FormatVersionInput) -> Selection {
     let versions = <F::Any as VersionChain<F>>::VERSIONS;
-    select_versions(versions, F::FLOOR, F::RANGE_MODEL, F::CEILING, input)
+    select_versions(versions, F::FLOOR, F::RANGE_MODEL, None, input)
 }
 
 /// [`select`] over explicit parts: a chain's `versions`, its floor, range model and ceiling.
@@ -161,7 +161,7 @@ pub fn check_chain<F: Family>() -> Result<(), ChainError> {
         }
     }
     if F::RANGE_MODEL != RangeModel::ExactOnly {
-        let ranges = ranges(versions, F::FLOOR, F::RANGE_MODEL, F::CEILING);
+        let ranges = ranges(versions, F::FLOOR, F::RANGE_MODEL, None);
         if let Some(index) = ranges
             .windows(2)
             .position(|pair| pair[0].max_inclusive || pair[0].max != pair[1].min)

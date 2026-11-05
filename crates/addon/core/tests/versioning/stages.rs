@@ -160,7 +160,6 @@ pub mod payload_versioned {
 impl Family for PayloadVersioned {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = V100;
     type Latest = Toy120;
     type Beta = ToyBeta;
@@ -365,4 +364,37 @@ fn molang_pass_two_runs_with_a_check() {
     );
     assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
     assert!(outcome.diagnostics.is_empty(), "{:?}", outcome.diagnostics);
+}
+
+/// A family that reads a file by hand builds its parse from the value: the identity, the actor
+/// type and the skip key take their defaults until it says otherwise, and `finish` takes it as
+/// it takes the pipeline's own.
+#[test]
+fn a_parse_built_from_its_value_finishes_as_the_pipeline_s() {
+    use bedrock_addon_core::diagnostic::Diagnostics;
+    use bedrock_addon_core::versioning::{Identity, Parsed};
+    let cx = LoadContext::detached();
+    let text = document("1.1.0", r#"{"description": {"identifier": "demo:x"}}"#);
+    let own = parse_as_written::<Toy>(JsonSlice::new(&text), &cx);
+    let built = Parsed::<Toy>::from_value(
+        own.value.clone(),
+        own.version.clone(),
+        own.written,
+        own.at.clone(),
+        Diagnostics::default(),
+    );
+    assert_eq!(built.identity, Identity::default());
+    assert_eq!(built.actor_type, ActorType::Mob);
+    assert!(!built.skip_upgrades);
+    let identity = own.identity.clone();
+    let built = built
+        .with_identity(identity.clone())
+        .with_actor(ActorType::Mob, true);
+    assert_eq!(built.identity, identity);
+    assert!(built.skip_upgrades);
+    let built = built.with_actor(own.actor_type, own.skip_upgrades);
+    let (own, built) = (finish(own, &cx), finish(built, &cx));
+    assert_eq!(built.value, own.value);
+    assert_eq!(built.version, own.version);
+    assert_eq!(built.original_version, own.original_version);
 }

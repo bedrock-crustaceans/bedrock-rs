@@ -19,12 +19,11 @@ use bedrock_addon_core::load::{
     AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    EnvelopeCheck, Family, Identity, Loaded, NoComponents, Parsed, ValidateCx, finish,
-    parse_as_written,
+    Envelope, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents, Parsed,
+    ValidateCx, finish, parse_as_written,
 };
 use bedrock_addon_core::visual::{MergeStep, SharedDescription, merge_slots, merge_step};
 
@@ -52,19 +51,23 @@ const NOTHING_TO_PARSE: &str = "nothing to parse in";
 impl Family for ClientEntityFamily {
     const NAME: &'static str = "client_entity";
     const PAYLOAD_KEY: &'static str = read::PAYLOAD;
-    const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     const FLOOR: FormatVersion = FLOOR;
     type Latest = ClientEntity;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // Vanilla's root schema declares `format_version`, `minecraft:client_entity` and
-    // `minecraft:attachable`; a third member is "child '%s' not valid here.", not an envelope
-    // error, so each struct reads the whole document.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Never;
-    // The game logs this at level 2, the class the pack report shows as a warning: the default
-    // `missing_version_severity`.
-    const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::Fixed(VERSION_NOT_GIVEN));
+    const ENVELOPE: Envelope = Envelope {
+        // Vanilla's root schema declares `format_version`, `minecraft:client_entity` and
+        // `minecraft:attachable`; a third member is "child '%s' not valid here.", not an envelope
+        // error, so each struct reads the whole document.
+        check: EnvelopeCheck::Never,
+        // The game logs this at level 2, the class the pack report shows as a warning.
+        missing: MissingVersion::Floor {
+            text: Some(VanillaText::Fixed(VERSION_NOT_GIVEN)),
+            severity: Some(Severity::Warning),
+        },
+        ..Envelope::DEFAULT
+    };
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(entity) = v {
@@ -164,16 +167,14 @@ pub(crate) fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<ClientEntityFamily>::new(
+    let parsed = Parsed::<ClientEntityFamily>::from_value(
         Some(value),
         version,
         written,
-        identity,
-        ActorType::Mob,
-        false,
         JsonPath::new(),
         Diagnostics::default(),
-    );
+    )
+    .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut found = diagnostics;
     found.extend(place(outcome.diagnostics, &origin));
@@ -580,5 +581,28 @@ mod tests {
         // identifier up once, so four times the documents take about four times the time. A
         // combine that scanned what it had seen on every collision would take sixteen times.
         assert_linear_timed_at("client entity combine", 4_000, combine_colliding);
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn client_entity_reads_as_pinned() {
+        assert_reading_table(
+            "ClientEntityFamily",
+            &reading_table::<super::ClientEntityFamily>(),
+            r#"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Never
+                missing version: at the floor, told at Warning: Some(Fixed("Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions."))
+                below floor: UseFormatVersion
+                empty document: Error
+                1.8.0..=1.26.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            "#,
+        );
     }
 }

@@ -47,7 +47,6 @@ impl VersionChain<Toy> for ToyAny {
 impl Family for Toy {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = version(1, 16, 0);
     type Latest = NoStable;
     type Beta = Infallible;
@@ -472,7 +471,6 @@ impl VersionChain<Lit> for LitAny {
 impl Family for Lit {
     const NAME: &'static str = "lit";
     const PAYLOAD_KEY: &'static str = "minecraft:lit";
-    const DIRECTORIES: &'static [&'static str] = &["lits"];
     const FLOOR: FormatVersion = version(1, 16, 0);
     type Latest = NoStable;
     type Beta = Infallible;

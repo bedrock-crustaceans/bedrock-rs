@@ -19,11 +19,13 @@ fn the_chain_is_one_struct_from_1_21_110_to_the_engine() {
     assert!(!has_beta);
     assert_eq!(VoxelShapeFamily::FLOOR, FLOOR);
     assert_eq!(VoxelShapeFamily::RANGE_MODEL, RangeModel::ClosedToEngine);
-    assert_eq!(VoxelShapeFamily::CEILING, None);
     assert_eq!(VoxelShapeFamily::PAYLOAD_KEY, "minecraft:voxel_shape");
-    assert_eq!(VoxelShapeFamily::DIRECTORIES, ["shapes"]);
-    assert_eq!(VoxelShapeFamily::MISSING_VERSION, MissingVersion::Reject);
-    assert_eq!(VoxelShapeFamily::ENVELOPE, EnvelopeCheck::From(FLOOR));
+    assert_eq!(super::LOADER.walk.directories, ["shapes"]);
+    assert!(matches!(
+        VoxelShapeFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
+    assert_eq!(VoxelShapeFamily::ENVELOPE.check, EnvelopeCheck::From(FLOOR));
 }
 
 #[test]
@@ -98,11 +100,18 @@ fn an_extent_is_printed_with_six_significant_digits() {
 #[test]
 fn the_family_reads_a_minecraft_document_input_under_the_strict_mask() {
     use bedrock_addon_core::json::NullRule;
+    use bedrock_addon_core::load::DocumentSource;
     use bedrock_addon_core::versioning::{ErrorMask, Family, InputKind, StructIndex};
     // The game reads a shape through the document-input reader, and the one slice is registered
     // with the strict error mask.
     let slice = StructIndex::Stable(0);
-    assert_eq!(VoxelShapeFamily::INPUT, InputKind::Document);
-    assert_eq!(VoxelShapeFamily::null_rule(slice), Some(NullRule::Rejected));
-    assert_eq!(VoxelShapeFamily::error_mask(slice), ErrorMask::Strict);
+    assert_eq!(VoxelShapeFamily::ENVELOPE.input, InputKind::Document);
+    assert_eq!(
+        VoxelShapeFamily::reading(slice, DocumentSource::Json).null_rule(),
+        Some(NullRule::Rejected)
+    );
+    assert_eq!(
+        VoxelShapeFamily::reading(slice, DocumentSource::Json).error_mask(),
+        ErrorMask::Strict
+    );
 }

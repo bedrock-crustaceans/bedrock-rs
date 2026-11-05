@@ -29,8 +29,6 @@ fn the_chains_are_contiguous_closed_at_their_one_struct_and_without_beta() {
     assert_eq!(CompositionFamily::FLOOR, FORMAT_VERSION);
     assert_eq!(RootFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
     assert_eq!(CompositionFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
-    assert_eq!(RootFamily::CEILING, None);
-    assert_eq!(CompositionFamily::CEILING, None);
     let beta = [
         <<RootFamily as Family>::Any as VersionChain<RootFamily>>::HAS_BETA,
         <<CompositionFamily as Family>::Any as VersionChain<CompositionFamily>>::HAS_BETA,
@@ -38,8 +36,10 @@ fn the_chains_are_contiguous_closed_at_their_one_struct_and_without_beta() {
     assert_eq!(beta, [false, false]);
     assert_eq!(RootFamily::PAYLOAD_KEY, "minecraft:ui-root");
     assert_eq!(CompositionFamily::PAYLOAD_KEY, "minecraft:ui-composition");
-    assert_eq!(RootFamily::DIRECTORIES, ["ddui/root"]);
-    assert_eq!(CompositionFamily::DIRECTORIES, ["ddui/composition"]);
+    assert_eq!(
+        bedrock_addon_family_ddui::LOADER.walk.directories,
+        ["ddui/root", "ddui/composition", "ddui/styling"]
+    );
 }
 
 /// Exactly 1.21.130: the ceiling is the struct's version, not the engine's.

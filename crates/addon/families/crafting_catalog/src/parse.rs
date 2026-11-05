@@ -2,7 +2,7 @@
 //! JSON type checked on the token: vanilla's cereal reader fails the file on a wrong type, a
 //! missing required member, an unknown category or a constraint, and tells every unknown member
 //! as an `UnrecognizedField` warning, which the strict 1.26.50 slice turns into the error that
-//! skips the file (`Family::error_mask`).
+//! skips the file (`Family::reading`).
 
 use facet_json::RawJson;
 use indexmap::IndexMap;

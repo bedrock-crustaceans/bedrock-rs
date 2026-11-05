@@ -34,7 +34,7 @@ pub mod __macro;
 
 pub use component::{
     ComponentSection, check_experimental_fields, check_fields_released, check_fields_since_engine,
-    check_released, parse_component, parse_component_map, validate_components,
+    parse_component, parse_component_map, validate_components,
 };
 pub use document::{parse_document, parse_document_as_written};
 pub use file::{BelowFloor, FileFamily};
@@ -44,7 +44,7 @@ pub use pipeline::{
     parse_as_written, parse_file_as_written,
 };
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
-pub use reading::{MemberFailure, NullHandling, Reading, Scalars, TextReading, UnknownMask};
+pub use reading::{MemberFailure, NullHandling, Reading, Scalars, UnknownMask};
 pub use single::Single;
 pub use write::write_document;
 
@@ -101,7 +101,7 @@ pub struct ParseCx<'a> {
     /// The version the envelope gave (for a missing one, the effective version); the Molang
     /// fields whose version is the document's take it from here.
     pub written: FormatVersionInput,
-    /// The version gates compare against (`Family::effective_version`).
+    /// The version gates compare against: the file's, the family's floor when absent.
     pub original_version: FormatVersion,
     /// Where the payload is in the file: the payload key, or the root on the raw-text path.
     /// Findings of the parse are reported below it.
@@ -120,8 +120,8 @@ pub struct UpgradeCx<'a> {
     /// Vanilla's actor type of the identifier (`Mob` for a custom entity and for every
     /// family other than entity).
     pub actor_type: ActorType,
-    /// Suppress the version-gated upgrade ops (`Family::SKIP_UPGRADES_KEY` present in the payload, or
-    /// `original_version >= ENGINE_VERSION`).
+    /// Suppress the version-gated upgrade ops (`Family::SKIP_UPGRADES_KEY` present in the payload,
+    /// or `original_version >= ENGINE_VERSION`).
     pub skip_section_a: bool,
     /// Where the step reports.
     pub diagnostics: &'a mut Diagnostics,
@@ -270,14 +270,99 @@ pub struct Identity {
     pub runtime_identifier: Option<String>,
 }
 
-/// What a family does with a document whose envelope has no `format_version`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// What a family does with a document whose envelope has no `format_version` (and whose
+/// payload gives none, `Family::payload_version`).
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MissingVersion {
-    /// Parse at the family's effective version (the floor by default), with a
-    /// `MissingFormatVersion` warning unless `ENVELOPE_WARN_MISSING_VERSION` is `false`.
-    Floor,
+    /// Parse the document at the family's floor, telling a `MissingFormatVersion` with `text`
+    /// at `severity`; `None` tells nothing (trading). The default tells the crate's own
+    /// information, with no text of the game.
+    Floor {
+        /// The text of the finding; `None` for none of the game's.
+        text: Option<VanillaText>,
+        /// The severity of the finding; `None` for no finding, and then `text` is not read:
+        /// `Floor { text: Some(..), severity: None }` tells nothing, like `text: None`.
+        severity: Option<Severity>,
+    },
     /// Reject the document with a `MissingFormatVersion` error.
-    Reject,
+    Reject {
+        /// The error's text; `None` gives the game's version-check text ("no valid version
+        /// passed by the caller or found in the input", `VanillaText::NoValidVersion`).
+        text: Option<VanillaText>,
+    },
+}
+
+impl MissingVersion {
+    /// The default: parsed at the floor with the crate's own information.
+    pub const FLOOR: Self = Self::Floor {
+        text: None,
+        severity: Some(Severity::Info),
+    };
+    /// Rejected with the game's version-check text.
+    pub const REJECT: Self = Self::Reject { text: None };
+}
+
+/// What a family fixes about each of its files, before a struct is selected: the input kind,
+/// whether the envelope's shape is checked, what an absent `format_version` does, what a
+/// version below the floor is told, the clamp beyond a double and the duplicates kept.
+/// `Family::ENVELOPE`; a family states the fields it changes and takes the rest from
+/// [`DEFAULT`](Self::DEFAULT):
+///
+/// ```ignore
+/// const ENVELOPE: Envelope = Envelope {
+///     check: EnvelopeCheck::Never,
+///     missing: MissingVersion::REJECT,
+///     ..Envelope::DEFAULT
+/// };
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Envelope {
+    /// The input kind of the family's files: where the version is read from, whether a JSON
+    /// text is sized, and the default reading of every slice. Default [`InputKind::FirstRun`].
+    pub input: InputKind,
+    /// Whether the envelope's shape is checked. Default [`EnvelopeCheck::Always`].
+    pub check: EnvelopeCheck,
+    /// What an absent `format_version` does. Default [`MissingVersion::FLOOR`].
+    pub missing: MissingVersion,
+    /// What a document below [`Family::FLOOR`] is told. Default
+    /// [`BelowFloor::UseFormatVersion`].
+    pub below_floor: BelowFloor,
+    /// Whether a number of the document that no double holds (`1e999`, an integer of 400
+    /// digits) is read as the largest finite double of its sign, with an `InvalidValue`
+    /// warning at the number (`json::clamp_beyond_double`). For a family that keeps what it
+    /// does not read (unknown members, members held as JSON) for write-back: an infinity kept
+    /// there has no JSON spelling, and the loaded document could not be written. Default
+    /// `false`, which leaves the number to the family's readers.
+    pub clamps_beyond_double: bool,
+    /// Members whose object value keeps the members written twice in it, at any depth: the
+    /// family's own rule reads them (block: `components`). Everywhere else the last value of a
+    /// member written twice stands, whole. Default none.
+    pub duplicates_kept_in: &'static [&'static str],
+}
+
+impl Envelope {
+    /// Every field at its default.
+    pub const DEFAULT: Self = Self {
+        input: InputKind::FirstRun,
+        check: EnvelopeCheck::Always,
+        missing: MissingVersion::FLOOR,
+        below_floor: BelowFloor::UseFormatVersion,
+        clamps_beyond_double: false,
+        duplicates_kept_in: &[],
+    };
+
+    /// Whether a text from `source` gets the JSON size check: a document input
+    /// ([`VersionInput::Document`]) read from JSON (an MCB source is a binary input).
+    pub const fn sizes_json(&self, source: crate::load::DocumentSource) -> bool {
+        matches!(self.input.version_input(), VersionInput::Document)
+            && matches!(source, crate::load::DocumentSource::Json)
+    }
+}
+
+impl Default for Envelope {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
 }
 
 /// Whether the envelope's shape is checked: vanilla checks it only when the
@@ -332,9 +417,8 @@ pub enum ErrorMask {
 }
 
 /// The input kind the game builds for a family's files, in one place: it says where the
-/// version is read from ([`VersionInput`]) and how a member written as `null` is read
-/// ([`NullRule`](crate::json::NullRule)) by [`parse_payload`] and [`parse_component`]. A
-/// family declares it once, as `Family::INPUT`.
+/// version is read from ([`VersionInput`]) and, by default, how each slice reads
+/// ([`profile`](Self::profile)). A family declares it once, as `Family::ENVELOPE.input`.
 ///
 /// `JsonCpp` is entity, features and the item's legacy component chain; `Document` is every
 /// other Cereal family (block, the modern item, biome, client biome, dimension, cameras, aim
@@ -367,13 +451,14 @@ impl InputKind {
         }
     }
 
-    /// The default of `Family::null_rule`: the null rule of every slice of a family of this
-    /// kind; `None` for `FirstRun`.
-    pub const fn null_rule(self) -> Option<crate::json::NullRule> {
+    /// How every slice of a family of this kind reads, the default of `Family::reading`:
+    /// [`Reading::OWN`] for `FirstRun`, [`Reading::NULL_ABSENT`] for `JsonCpp`,
+    /// [`Reading::DOCUMENT`] for `Document`.
+    pub const fn profile(self) -> Reading {
         match self {
-            Self::FirstRun => None,
-            Self::JsonCpp => Some(crate::json::NullRule::Absent),
-            Self::Document => Some(crate::json::NullRule::Rejected),
+            Self::FirstRun => Reading::OWN,
+            Self::JsonCpp => Reading::NULL_ABSENT,
+            Self::Document => Reading::DOCUMENT,
         }
     }
 }
@@ -387,20 +472,16 @@ pub enum StructIndex {
     Beta,
 }
 
-/// A versioned family: one chain of structs, its payload key, directories, floor and range model.
+/// A versioned family: one chain of structs, its payload key, floor and range model.
 pub trait Family: Sized + 'static {
     /// `"item"`: used in messages.
     const NAME: &'static str;
     /// `"minecraft:item"`; one `Family` per feature type.
     const PAYLOAD_KEY: &'static str;
-    /// The pack directories the family's files live in.
-    const DIRECTORIES: &'static [&'static str];
     /// The oldest version the chain parses: the first struct's range starts here.
     const FLOOR: FormatVersion;
     /// How `VERSIONS` become version ranges.
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToEngine;
-    /// `None` = derived from `RANGE_MODEL`; explicit only for non-chain ceilings.
-    const CEILING: Option<FormatVersion> = None;
     /// The newest stable struct; [`NoStable`] for beta-only families.
     type Latest: VersionStruct;
     /// The beta struct; `Infallible` when the family has no beta struct.
@@ -422,11 +503,6 @@ pub trait Family: Sized + 'static {
     type Any: VersionChain<Self>;
     /// What a gated component is called in "To use %s '%s' …" (`"item component"`).
     const COMPONENT_NOUN: &'static str = "component";
-    /// Whether a component row's `released` is a gate of its own: with an empty `requires`,
-    /// a component used below `released` is refused ("To use %s '%s', use json format version
-    /// %s or higher"). `false` (an empty `requires` is no gate at all) unless the family's
-    /// loaders bind components per format version.
-    const RELEASED_IS_A_GATE: bool = false;
     /// The family's component table (`<Enum>::TABLE` of `#[derive(Components)]`). The empty
     /// table by default, for a family without components (`type Component = NoComponents`); a
     /// family with components overrides it, or its documents read no component at all.
@@ -440,106 +516,33 @@ pub trait Family: Sized + 'static {
     /// here on the newest struct, because its failure rules are the family's.
     #[allow(unused_variables)]
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {}
-    /// The version gates compare against: the file's, or the family's default when absent.
-    #[allow(unused_variables)]
-    fn effective_version(file: Option<FormatVersion>, cx: &LoadContext) -> FormatVersion {
-        file.unwrap_or(Self::FLOOR)
-    }
     /// A payload member that suppresses the version-gated upgrade ops (entity:
     /// `do_not_upgrade`).
     const SKIP_UPGRADES_KEY: Option<&'static str> = None;
-    /// Members whose object value keeps the members written twice in it, at any depth: the
-    /// family's own rule reads them (block: `components`). Everywhere else the last value of a
-    /// member written twice stands, whole.
-    const DUPLICATES_KEPT_IN: &'static [&'static str] = &[];
-    /// Whether a number of the document that no double holds (`1e999`, an integer of 400
-    /// digits) is read as the largest finite double of its sign, with an `InvalidValue`
-    /// warning at the number (`json::clamp_beyond_double`). For a family that keeps
-    /// what it does not read (unknown members, members held as JSON) for write-back: an
-    /// infinity kept there has no JSON spelling, and the loaded document could not be
-    /// written. `false` leaves the number to the family's readers.
-    const CLAMPS_BEYOND_DOUBLE: bool = false;
-    /// Warn when the envelope has no `format_version` (trading sets `false`).
-    const ENVELOPE_WARN_MISSING_VERSION: bool = true;
-    /// What an absent `format_version` does.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Floor;
-    /// The text of `MissingFormatVersion`; `None` gives the game's version-check text ("no
-    /// valid version passed by the caller or found in the input") when the document is
-    /// rejected and no text when it is parsed at the floor.
-    const MISSING_VERSION_TEXT: Option<VanillaText> = None;
-
-    /// The severity of the `MissingFormatVersion` finding of a document parsed at the floor
-    /// the crate's own information where the family names no text of the game; a family with
-    /// a text keeps a warning unless it says otherwise, because the game logs that line at
-    /// level 2 (client entity, attachable, client item).
-    fn missing_version_severity() -> Severity {
-        if Self::MISSING_VERSION_TEXT.is_some() {
-            Severity::Warning
-        } else {
-            Severity::Info
-        }
-    }
-    /// Whether the envelope's shape is checked.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Always;
-    /// What a document below [`FLOOR`](Self::FLOOR) is told. Default
-    /// [`BelowFloor::UseFormatVersion`].
-    const BELOW_FLOOR: BelowFloor = BelowFloor::UseFormatVersion;
-    /// The error mask of the slice that parses a document. Default
-    /// [`ErrorMask::Unstrict`]; a family opts in per slice, e.g. entity: `Unstrict` for the
-    /// legacy structs below 1.21.89, `Strict` from `Legacy::ActorDocumentCorrected` on and
-    /// for the beta struct.
-    #[allow(unused_variables)]
-    fn error_mask(index: StructIndex) -> ErrorMask {
-        ErrorMask::Unstrict
-    }
-    /// The input kind of the family's files: the version path and the size check, and the
-    /// default of [`null_rule`](Self::null_rule).
-    const INPUT: InputKind = InputKind::FirstRun;
-    /// The null rule of the slice that parses a document, applied by
-    /// [`parse_payload`] and [`parse_component`] once the slice is selected. Default
-    /// `INPUT.null_rule()`. A family whose slices read `null` apart says so here: item
-    /// (`Document`): `Absent` below 1.26.30 (the `JsonCpp` `ComponentItemData_*` chain),
-    /// `Rejected` from it and for the beta struct; block, manifest, particle, trade: `None`
-    /// for the legacy slice (a hand-written parser, the family's own), `Rejected` for the
-    /// cereal slices.
-    #[allow(unused_variables)]
-    fn null_rule(index: StructIndex) -> Option<crate::json::NullRule> {
-        Self::INPUT.null_rule()
-    }
-    /// What the family fixes for every file before a struct is selected: the version path
-    /// and the JSON size check, the clamp beyond a double and the members whose duplicates are
-    /// kept. Default built from [`INPUT`](Self::INPUT),
-    /// [`CLAMPS_BEYOND_DOUBLE`](Self::CLAMPS_BEYOND_DOUBLE) and
-    /// [`DUPLICATES_KEPT_IN`](Self::DUPLICATES_KEPT_IN). The pipeline reads the text by it, not
-    /// by those knobs; they stay the way a family states its values until they are folded in.
-    const TEXT: TextReading = TextReading::from_knobs(
-        Self::INPUT,
-        Self::CLAMPS_BEYOND_DOUBLE,
-        Self::DUPLICATES_KEPT_IN,
-    );
-    /// How the slice `index` reads a document from `source`. Default built from
-    /// [`null_rule`](Self::null_rule), [`error_mask`](Self::error_mask) and the
-    /// `strict_components` derivation (`null_rule(index)` rejects `null`), with an MCB source
-    /// read under no null rule. The pipeline reads each slice by it, not by those knobs: the
-    /// null rule and `strict_components` it puts on the context, and the error mask of the
-    /// parse and of the validate phase's component checks.
+    /// The envelope rules of the family's files, fixed before a struct is selected: the
+    /// input kind, the shape check, what an absent `format_version` does, what a version below
+    /// [`FLOOR`](Self::FLOOR) is told, the clamp beyond a double and the members whose
+    /// duplicates are kept. Default [`Envelope::DEFAULT`].
+    const ENVELOPE: Envelope = Envelope::DEFAULT;
+    /// How the slice `index` reads a document from `source`: the null rule and whether a
+    /// component that fails to read is fatal, which the pipeline puts on the context of the
+    /// parse, and the error mask of the parse and of the validate phase's component checks. The
+    /// default is the profile of [`ENVELOPE.input`](Envelope::input)
+    /// ([`InputKind::profile`]). An MCB source is read by the binary reader: the pipeline
+    /// reads it under no null rule whatever this says, and a family does not state that.
     ///
-    /// The default does not express four local overrides the families make today, outside
-    /// the knobs it is built from:
+    /// Four local overrides the families make stay in their readers, outside this:
     ///
     /// - block's legacy slice forces strict components and reads scalars non-strictly
-    ///   (`families/block/src/parse.rs:388-400`);
+    ///   (`families/block/src/parse.rs`);
     /// - item's legacy slice forces strict components for the parse but grades its range
-    ///   members by the unforced flag (`families/item/src/history/document.rs:134-146`);
+    ///   members by the unforced flag (`families/item/src/history/document.rs`);
     /// - camera preset's slice 0 coerces scalars through `typed_unstrict`;
     /// - dimension filters its null rule by `original_version`
-    ///   (`families/dimension/src/parse.rs:68-75`).
-    ///
-    /// Each family states its override with the `with_*` builders when it migrates onto
-    /// `reading`; item goes first, and its range-member severity then reads
-    /// [`Reading::unknown`].
+    ///   (`families/dimension/src/parse.rs`).
+    #[allow(unused_variables)]
     fn reading(index: StructIndex, source: crate::load::DocumentSource) -> Reading {
-        Reading::from_knobs(Self::null_rule(index), Self::error_mask(index), source)
+        Self::ENVELOPE.input.profile()
     }
     /// The post-parse hook a file's load closes with: rewrites the generic findings of a
     /// parse into the family's vanilla texts and, when the file `failed`, adds the family's
@@ -559,27 +562,6 @@ pub trait Family: Sized + 'static {
     }
     /// The severity of `EmptyDocument` for an empty file (it is never loaded).
     const EMPTY_DOCUMENT: Severity = Severity::Error;
-    /// Whether this family takes the file (`spawn` and `spawn_simplified` share a payload
-    /// key): the caller routes with it before calling [`load`], reading the version with
-    /// [`file_version`].
-    #[allow(unused_variables)]
-    fn selected(file: Option<FormatVersion>, cx: &LoadContext) -> bool {
-        true
-    }
-    /// The text the envelope is read from, for a family whose files may hold a root member
-    /// beside the version and the payload (entity: `use_beta_features`): the family reads the
-    /// member here and gives the text without it, every offset kept; what it tells of the
-    /// member goes to `diagnostics`. `None` refuses the document, with the error in
-    /// `diagnostics`. Every versioned load of the family goes through it
-    /// ([`parse_as_written`], and so [`load`]); the default takes nothing out.
-    #[allow(unused_variables)]
-    fn root_members<'a>(
-        document: &'a str,
-        cx: &LoadContext,
-        diagnostics: &mut Diagnostics,
-    ) -> Option<std::borrow::Cow<'a, str>> {
-        Some(std::borrow::Cow::Borrowed(document))
-    }
     /// A content-sensitive routing hook: the index into `VERSIONS` of the struct that parses
     /// `payload`, for a version the range model accepts; `None` = version-only dispatch.
     #[allow(unused_variables)]
@@ -588,7 +570,7 @@ pub trait Family: Sized + 'static {
     }
     /// The version a payload gives when the envelope has none (entity: the payload's own
     /// `format_version`, read with [`member_version`]); `None` by default. Consulted before
-    /// `MISSING_VERSION`.
+    /// `ENVELOPE.missing`.
     #[allow(unused_variables)]
     fn payload_version(payload: JsonSlice<'_>) -> Option<FormatVersionInput> {
         None

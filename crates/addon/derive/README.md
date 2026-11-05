@@ -115,7 +115,6 @@ impl VersionChain<Block> for BlockAny {
 impl Family for Block {
     const NAME: &'static str = "block";
     const PAYLOAD_KEY: &'static str = "minecraft:block";
-    const DIRECTORIES: &'static [&'static str] = &["blocks"];
     const FLOOR: FormatVersion = FormatVersion { major: 1, minor: 10, patch: 0 };
     type Latest = NoStable;
     type Beta = Infallible;

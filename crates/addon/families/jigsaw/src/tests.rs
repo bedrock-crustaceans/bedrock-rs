@@ -325,30 +325,31 @@ fn processor_blocks_and_loot_tables_are_reported_once_per_member() {
 fn the_four_json_families_read_a_document_input_under_the_unstrict_mask() {
     use super::history::{PoolFamily, ProcessorListFamily, StructureFamily, StructureSetFamily};
     use bedrock_addon_core::json::NullRule;
+    use bedrock_addon_core::load::DocumentSource;
     use bedrock_addon_core::versioning::{ErrorMask, Family, InputKind, StructIndex};
     // The game registers each of the four slices as not strict: unknown members are
     // warnings.
     let slice = StructIndex::Stable(0);
     let declared = [
         (
-            StructureFamily::INPUT,
-            StructureFamily::null_rule(slice),
-            StructureFamily::error_mask(slice),
+            StructureFamily::ENVELOPE.input,
+            StructureFamily::reading(slice, DocumentSource::Json).null_rule(),
+            StructureFamily::reading(slice, DocumentSource::Json).error_mask(),
         ),
         (
-            PoolFamily::INPUT,
-            PoolFamily::null_rule(slice),
-            PoolFamily::error_mask(slice),
+            PoolFamily::ENVELOPE.input,
+            PoolFamily::reading(slice, DocumentSource::Json).null_rule(),
+            PoolFamily::reading(slice, DocumentSource::Json).error_mask(),
         ),
         (
-            StructureSetFamily::INPUT,
-            StructureSetFamily::null_rule(slice),
-            StructureSetFamily::error_mask(slice),
+            StructureSetFamily::ENVELOPE.input,
+            StructureSetFamily::reading(slice, DocumentSource::Json).null_rule(),
+            StructureSetFamily::reading(slice, DocumentSource::Json).error_mask(),
         ),
         (
-            ProcessorListFamily::INPUT,
-            ProcessorListFamily::null_rule(slice),
-            ProcessorListFamily::error_mask(slice),
+            ProcessorListFamily::ENVELOPE.input,
+            ProcessorListFamily::reading(slice, DocumentSource::Json).null_rule(),
+            ProcessorListFamily::reading(slice, DocumentSource::Json).error_mask(),
         ),
     ];
     for (input, rule, mask) in declared {

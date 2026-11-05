@@ -19,8 +19,8 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BetaPermission, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
-    ValidateCx, load_file,
+    Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
+    load_file,
 };
 
 /// The directory vanilla walks.
@@ -32,22 +32,22 @@ const CULLING_FLOOR: FormatVersion = FormatVersion::new(1, 20, 60);
 impl Family for CullingFamily {
     const NAME: &'static str = "block culling";
     const PAYLOAD_KEY: &'static str = "minecraft:block_culling_rules";
-    const DIRECTORIES: &'static [&'static str] = &[CULLING_DIRECTORY];
     const FLOOR: FormatVersion = CULLING_FLOOR;
     // The game's loader registers its last parser up to 1.21.80: the ceiling is 1.21.80,
     // below the engine's version.
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
     type Latest = CullingRules;
     type Beta = std::convert::Infallible;
-    // No beta slice: `"beta"` is a version without a parser, not a missing toggle.
-    const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
     type Component = NoComponents;
     type Any = Any;
-    // The game reads the document with the floor 1.20.60:
-    // below it (or without a version) the text is kept raw and the envelope is never looked at
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(CULLING_FLOOR);
-    // A missing version is 0.0.0, below the floor: the file is skipped.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the document with the floor 1.20.60:
+        // below it (or without a version) the text is kept raw and the envelope is never looked at
+        check: EnvelopeCheck::From(CULLING_FLOOR),
+        // A missing version is 0.0.0, below the floor: the file is skipped.
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(document) = v {
@@ -323,5 +323,28 @@ mod tests {
                 assert_eq!(finding.location.path.as_ref(), Some(&path), "{finding:#?}");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn block_culling_reads_as_pinned() {
+        assert_reading_table(
+            "CullingFamily",
+            &reading_table::<super::CullingFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 20, patch: 60 })
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Error
+                1.20.60..=1.21.80 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
     }
 }

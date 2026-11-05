@@ -21,7 +21,6 @@ use bedrock_addon_core::document::{
     Registry, RegistryBuilder, Rejected, default_path_flat_for_vanilla,
 };
 use bedrock_addon_core::id::{BiomeId, kind};
-use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
@@ -29,8 +28,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    BelowFloor, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
-    InputKind, Loaded, MissingVersion, Parsed, StructIndex, ValidateCx, finish, member_version,
+    BelowFloor, ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity,
+    InputKind, Loaded, MissingVersion, Parsed, ValidateCx, finish, member_version,
     parse_as_written,
 };
 
@@ -44,41 +43,30 @@ const WORLD_GATE_VERSION: SemVersion = SemVersion::new(1, 21, 110);
 const EXPERIMENTAL_FORMATS: FormatVersion = FormatVersion::new(1, 13, 0);
 
 impl Family for BiomeFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "biome";
     const PAYLOAD_KEY: &'static str = "minecraft:biome";
-    const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     const FLOOR: FormatVersion = FLOOR;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads every file as a document: the version is the first textual
+        // `format_version` (a number is read as its text) and the size limits apply.
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // Below 1.21.120 the game reads the raw text of the whole document; from 1.21.120 the
+        // envelope has exactly two members, `format_version` and `minecraft:biome`.
+        check: EnvelopeCheck::From(CEREAL),
+        // A file without a `format_version` is rejected: "no valid version passed by the caller or
+        // found in the input".
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     type Latest = Biome;
     type Beta = Beta;
     type Component = BiomeComponent;
     type Any = Any;
-    // Below 1.21.120 the game reads the raw text of the whole document; from 1.21.120 the
-    // envelope has exactly two members, `format_version` and `minecraft:biome`.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(CEREAL);
-    // A file without a `format_version` is rejected: "no valid version passed by the caller or
-    // found in the input".
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-
-    // Every format version reads with the strict error mask, the beta document included: an
-    // unknown member or component refuses the document.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
-
-    // The game reads every file as a document: the version is the first textual
-    // `format_version` (a number is read as its text) and the size limits apply.
-    const INPUT: InputKind = InputKind::Document;
-
-    // On every format version the game's reader tests no member for `null`, so a member
-    // written `null` is present and fails its type.
-    fn null_rule(_: StructIndex) -> Option<NullRule> {
-        Some(NullRule::Rejected)
-    }
 
     fn components() -> &'static ComponentTable<Self> {
         BiomeComponent::TABLE
@@ -251,16 +239,14 @@ pub(crate) fn upgrade_document(
         beta_literal: version.beta,
         prerelease: false,
     };
-    let parsed = Parsed::<BiomeFamily>::new(
+    let parsed = Parsed::<BiomeFamily>::from_value(
         Some(value),
         version,
         written,
-        identity,
-        bedrock_addon_core::vanilla::ActorType::Mob,
-        false,
         at,
         Diagnostics::default(),
-    );
+    )
+    .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut diagnostics = found;
     let mut more = outcome.diagnostics;
@@ -394,7 +380,8 @@ fn load(
 }
 
 /// Below the floor vanilla has no parser ("unsupported version: no parser available for
-/// version %s", `BELOW_FLOOR`): the crate's own hint for the old formats follows that finding.
+/// version %s", `ENVELOPE.below_floor`): the crate's own hint for the old formats follows that
+/// finding.
 fn floor_hint(parsed: &mut Parsed<BiomeFamily>, text: &str) {
     let Some(written) = parsed.version.written.filter(|v| *v < FLOOR) else {
         return;
@@ -595,3 +582,27 @@ pub const LOADER: CollectionLoader<Registry<Biome>, Contribution<Biome>> = Colle
     needs: &[],
     then: None,
 };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn biome_reads_as_pinned() {
+        assert_reading_table(
+            "BiomeFamily",
+            &reading_table::<super::BiomeFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 120 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.110..=1.26.30 (0..=3): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+}

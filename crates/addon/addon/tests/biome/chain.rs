@@ -265,10 +265,10 @@ fn the_version_is_read_as_minecraft_document_input_reads_it() {
 /// warn-and-floor default of.
 #[test]
 fn a_missing_format_version_is_an_error_deviation() {
-    assert_eq!(
-        <BiomeFamily as Family>::MISSING_VERSION,
-        MissingVersion::Reject
-    );
+    assert!(matches!(
+        <BiomeFamily as Family>::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
     let found = rejected(
         r#"{"minecraft:biome": {"description": {"identifier": "test:x"}, "components": {}}}"#,
         &context(),

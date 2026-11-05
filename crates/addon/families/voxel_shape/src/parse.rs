@@ -117,7 +117,7 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
 
 /// Reports every member of `payload` no schema type binds, in document order (the corners are
 /// read on their own), each an `UnrecognizedField` warning that the slice's strict mask makes
-/// the error that fails the file (`Family::error_mask`).
+/// the error that fails the file (`Family::reading`).
 fn unknown_members(payload: JsonSlice<'_>, at: &JsonPath, d: &mut Diagnostics) {
     let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) else {
         return;

@@ -92,25 +92,38 @@ fn the_chains_are_the_plans() {
     assert_eq!(ListFamily::PAYLOAD_KEY, "minecraft:camera_list");
     assert_eq!(SplineFamily::PAYLOAD_KEY, "minecraft:camera_custom_splines");
     assert_eq!(EntityFamily::PAYLOAD_KEY, "minecraft:camera_entity");
-    assert_eq!(PresetFamily::DIRECTORIES, ["cameras/presets"]);
-    assert_eq!(ListFamily::DIRECTORIES, ["cameras/lists"]);
-    assert_eq!(SplineFamily::DIRECTORIES, ["cameras/splines"]);
+    assert_eq!(
+        bedrock_addon::families::camera::LOADER.walk.directories,
+        ["cameras/presets", "cameras/lists", "cameras/splines"]
+    );
     assert_eq!(PresetFamily::FLOOR, FormatVersion::new(1, 19, 50));
     assert_eq!(ListFamily::FLOOR, FormatVersion::new(1, 19, 50));
     assert_eq!(SplineFamily::FLOOR, FormatVersion::new(1, 26, 0));
     assert_eq!(EntityFamily::FLOOR, FormatVersion::new(0, 0, 0));
     assert_eq!(PresetFamily::RANGE_MODEL, RangeModel::ClosedToEngine);
-    assert_eq!(PresetFamily::ENVELOPE, EnvelopeCheck::Never);
-    assert_eq!(ListFamily::ENVELOPE, EnvelopeCheck::Never);
+    assert_eq!(PresetFamily::ENVELOPE.check, EnvelopeCheck::Never);
+    assert_eq!(ListFamily::ENVELOPE.check, EnvelopeCheck::Never);
     assert_eq!(
-        SplineFamily::ENVELOPE,
+        SplineFamily::ENVELOPE.check,
         EnvelopeCheck::From(FormatVersion::new(1, 26, 0))
     );
-    assert_eq!(EntityFamily::ENVELOPE, EnvelopeCheck::Always);
-    assert_eq!(PresetFamily::MISSING_VERSION, MissingVersion::Reject);
-    assert_eq!(ListFamily::MISSING_VERSION, MissingVersion::Reject);
-    assert_eq!(SplineFamily::MISSING_VERSION, MissingVersion::Reject);
-    assert_eq!(EntityFamily::MISSING_VERSION, MissingVersion::Reject);
+    assert_eq!(EntityFamily::ENVELOPE.check, EnvelopeCheck::Always);
+    assert!(matches!(
+        PresetFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
+    assert!(matches!(
+        ListFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
+    assert!(matches!(
+        SplineFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
+    assert!(matches!(
+        EntityFamily::ENVELOPE.missing,
+        MissingVersion::Reject { .. }
+    ));
     let has_beta = HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
 }

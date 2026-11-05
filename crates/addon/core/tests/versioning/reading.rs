@@ -1,17 +1,15 @@
-//! `Family::reading` and `Family::TEXT`: the per-slice reading and the family's text reading,
-//! each equal to what the old knobs (`INPUT`, `null_rule`, `error_mask`,
-//! `CLAMPS_BEYOND_DOUBLE`, `DUPLICATES_KEPT_IN`) give, over toy families that cover every
-//! combination of those knobs the families use. It covers what core derives from the knobs,
-//! not the local overrides a family makes outside them (block's and item's forced strict
-//! components, camera's coerced slice 0, dimension's version-filtered null rule): those are
-//! listed on `Family::reading` and each family states them when it migrates.
+//! `Family::reading` and `Family::ENVELOPE`'s text reading: the per-slice reading and the
+//! family's text reading, over toy families that cover every combination the families use,
+//! pinned in one reading table. It covers what the pipeline reads by, not the local overrides a
+//! family makes in its readers (block's and item's forced strict components, camera's coerced
+//! slice 0, dimension's version-filtered null rule): those are listed on `Family::reading`.
 
-use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::testing::slice_reading;
 use bedrock_addon_core::versioning::{
-    ComponentTable, ErrorMask, Family, InputKind, Loaded, MemberFailure, NullHandling, Reading,
-    Scalars, StructIndex, TextReading, UnknownMask, VersionChain, VersionInput,
+    ComponentTable, Envelope, Family, InputKind, Loaded, NullHandling, Reading, Scalars,
+    StructIndex, UnknownMask, VersionInput,
 };
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
@@ -42,7 +40,6 @@ macro_rules! reading_toy {
         impl Family for $name {
             const NAME: &'static str = "toy";
             const PAYLOAD_KEY: &'static str = "minecraft:toy";
-            const DIRECTORIES: &'static [&'static str] = &["toys"];
             const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
             type Latest = Toy120;
             type Beta = ToyBeta;
@@ -59,143 +56,63 @@ macro_rules! reading_toy {
 // Particle and trade: a hand-written legacy slice (no null rule, unstrict), cereal slices
 // after it; particle also clamps.
 reading_toy!(LegacyFirst, legacy_first, {
-    const INPUT: InputKind = InputKind::Document;
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        clamps_beyond_double: true,
+        ..Envelope::DEFAULT
+    };
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => None,
-            _ => Some(NullRule::Rejected),
-        }
-    }
-    fn error_mask(index: StructIndex) -> ErrorMask {
-        match index {
-            StructIndex::Stable(0) => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(0) => Reading::OWN,
+            _ => Reading::DOCUMENT,
         }
     }
 });
 
 // Block: duplicates kept in `components`, the legacy slice its own, cereal slices strict.
 reading_toy!(BlockLike, block_like, {
-    const INPUT: InputKind = InputKind::Document;
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
-    const DUPLICATES_KEPT_IN: &'static [&'static str] = &["components"];
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        clamps_beyond_double: true,
+        duplicates_kept_in: &["components"],
+        ..Envelope::DEFAULT
+    };
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(i) if i < 2 => None,
-            _ => Some(NullRule::Rejected),
-        }
-    }
-    fn error_mask(index: StructIndex) -> ErrorMask {
-        match index {
-            StructIndex::Stable(i) if i < 2 => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(i) if i < 2 => Reading::OWN,
+            _ => Reading::DOCUMENT,
         }
     }
 });
 
 // Entity: `JsonCpp`, strict from a slice on and for the beta struct.
 reading_toy!(EntityLike, entity_like, {
-    const INPUT: InputKind = InputKind::JsonCpp;
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
-    fn error_mask(index: StructIndex) -> ErrorMask {
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::JsonCpp,
+        clamps_beyond_double: true,
+        ..Envelope::DEFAULT
+    };
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(i) if i < 1 => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(i) if i < 1 => Reading::NULL_ABSENT,
+            _ => Reading::NULL_ABSENT.with_unknown(UnknownMask::Error),
         }
     }
 });
 
 // Catalog and the camera preset: cereal throughout, the first slice unstrict.
 reading_toy!(UnstrictFirst, unstrict_first, {
-    const INPUT: InputKind = InputKind::Document;
-    fn error_mask(index: StructIndex) -> ErrorMask {
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        ..Envelope::DEFAULT
+    };
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => ErrorMask::Unstrict,
-            _ => ErrorMask::Strict,
+            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            _ => Reading::DOCUMENT,
         }
     }
 });
-
-/// Every struct a reading is asked for: each stable index, and the beta struct if any.
-fn indices<F: Family>() -> Vec<StructIndex> {
-    let versions = <F::Any as VersionChain<F>>::VERSIONS.len();
-    let mut out: Vec<_> = (0..versions).map(StructIndex::Stable).collect();
-    if <F::Any as VersionChain<F>>::HAS_BETA {
-        out.push(StructIndex::Beta);
-    }
-    out
-}
-
-const SOURCES: [DocumentSource; 2] = [DocumentSource::Json, DocumentSource::Mcb];
-
-/// What `load` derives from the old knobs for a slice today: the null rule on the context
-/// (none for an MCB source), `strict_components` (the slice rejects `null`, whatever the
-/// source), and the error mask.
-fn old_knobs<F: Family>(
-    index: StructIndex,
-    source: DocumentSource,
-) -> (Option<NullRule>, bool, ErrorMask) {
-    let rule = match source {
-        DocumentSource::Mcb => None,
-        _ => F::null_rule(index),
-    };
-    let strict_components = F::null_rule(index) == Some(NullRule::Rejected);
-    (rule, strict_components, F::error_mask(index))
-}
-
-/// `F::reading` and `F::TEXT` reproduce the old knobs for every slice and source.
-fn reproduces_the_knobs<F: Family>(family: &str) {
-    for index in indices::<F>() {
-        for source in SOURCES {
-            let reading = F::reading(index, source);
-            assert_eq!(
-                (
-                    reading.null_rule(),
-                    reading.components_fatal,
-                    reading.error_mask()
-                ),
-                old_knobs::<F>(index, source),
-                "{family} {index:?} {source:?}: the reading differs from the old knobs",
-            );
-            assert_eq!(
-                reading.scalars,
-                Scalars::Strict,
-                "{family}: nothing coerces yet"
-            );
-            assert_eq!(reading.on_member_failure, MemberFailure::Refuse, "{family}");
-        }
-    }
-    let text = F::TEXT;
-    assert_eq!(
-        (
-            text.version_input,
-            text.clamps_beyond_double,
-            text.duplicates_kept_in
-        ),
-        (
-            F::INPUT.version_input(),
-            F::CLAMPS_BEYOND_DOUBLE,
-            F::DUPLICATES_KEPT_IN
-        ),
-        "{family}: the text reading differs from the old knobs",
-    );
-}
-
-#[test]
-fn reading_reproduces_the_old_knobs_of_every_toy_family() {
-    reproduces_the_knobs::<Toy>("Toy");
-    reproduces_the_knobs::<Stable>("Stable");
-    reproduces_the_knobs::<Mixed>("Mixed");
-    reproduces_the_knobs::<Masked>("Masked");
-    reproduces_the_knobs::<Document>("Document");
-    reproduces_the_knobs::<JsonCppToy>("JsonCppToy");
-    reproduces_the_knobs::<DocumentStrict>("DocumentStrict");
-    reproduces_the_knobs::<LegacyFirst>("LegacyFirst");
-    reproduces_the_knobs::<BlockLike>("BlockLike");
-    reproduces_the_knobs::<EntityLike>("EntityLike");
-    reproduces_the_knobs::<UnstrictFirst>("UnstrictFirst");
-}
 
 /// The JSON reading of `F`'s slice `index`.
 fn json<F: Family>(index: StructIndex) -> Reading {
@@ -249,24 +166,22 @@ fn reading_names_each_toy_by_its_profile() {
     );
     // An MCB source has no null rule; its components stay as the slice reads them.
     assert_eq!(
-        DocumentStrict::reading(StructIndex::Stable(0), DocumentSource::Mcb),
+        slice_reading::<DocumentStrict>(StructIndex::Stable(0), DocumentSource::Mcb),
         Reading::DOCUMENT.with_null(NullHandling::Own)
     );
 }
 
 #[test]
-fn text_reading_follows_input_clamp_and_duplicates() {
-    assert_eq!(Toy::TEXT.version_input, VersionInput::Root);
-    assert!(!Toy::TEXT.sizes_json(DocumentSource::Json));
-    assert_eq!(Document::TEXT.version_input, VersionInput::Document);
-    assert!(Document::TEXT.sizes_json(DocumentSource::Json));
-    assert!(!Document::TEXT.sizes_json(DocumentSource::Mcb));
+fn the_envelope_sizes_a_json_text_of_a_document_input_only() {
+    assert_eq!(Toy::ENVELOPE.input.version_input(), VersionInput::Root);
+    assert!(!Toy::ENVELOPE.sizes_json(DocumentSource::Json));
     assert_eq!(
-        BlockLike::TEXT.clamps_beyond_double,
-        BlockLike::CLAMPS_BEYOND_DOUBLE
+        Document::ENVELOPE.input.version_input(),
+        VersionInput::Document
     );
-    assert_eq!(BlockLike::TEXT.duplicates_kept_in, &["components"]);
-    assert!(!EntityLike::TEXT.sizes_json(DocumentSource::Json));
+    assert!(Document::ENVELOPE.sizes_json(DocumentSource::Json));
+    assert!(!Document::ENVELOPE.sizes_json(DocumentSource::Mcb));
+    assert!(!EntityLike::ENVELOPE.sizes_json(DocumentSource::Json));
 }
 
 #[test]
@@ -282,27 +197,36 @@ fn coercing_profile_is_own_with_coercing_scalars() {
 fn below_floor_defaults_to_the_generic_floor_line() {
     use bedrock_addon_core::versioning::BelowFloor;
     // What `load` raises below the floor today, for every family that does not say otherwise.
-    assert_eq!(Toy::BELOW_FLOOR, BelowFloor::UseFormatVersion);
-    assert_eq!(Document::BELOW_FLOOR, BelowFloor::default());
+    assert_eq!(Toy::ENVELOPE.below_floor, BelowFloor::UseFormatVersion);
+    assert_eq!(Document::ENVELOPE.below_floor, BelowFloor::default());
 }
 
-// ---- the pipeline reads `reading` and `TEXT`, not the knobs ----
+// ---- the pipeline reads `reading` and the envelope's text reading ----
 
-// The knobs left at the first run's defaults; the reading a document input's cereal slice.
+// The first run's input; the reading a document input's cereal slice.
 reading_toy!(ReadByReading, read_by_reading, {
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         Reading::DOCUMENT
     }
 });
 
-// The knobs left at the first run's defaults; the text a document input's.
+// The input a document input's, every slice read as the first run's.
 reading_toy!(DocumentByText, document_by_text, {
-    const TEXT: TextReading = TextReading::from_knobs(InputKind::Document, false, &[]);
+    const ENVELOPE: Envelope = Envelope {
+        input: InputKind::Document,
+        ..Envelope::DEFAULT
+    };
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::OWN
+    }
 });
 
-// The knobs left at the first run's defaults; the text clamps beyond a double.
+// The first run's input; the text clamps beyond a double.
 reading_toy!(ClampsByText, clamps_by_text, {
-    const TEXT: TextReading = TextReading::from_knobs(InputKind::FirstRun, true, &[]);
+    const ENVELOPE: Envelope = Envelope {
+        clamps_beyond_double: true,
+        ..Envelope::DEFAULT
+    };
 });
 
 /// How many `InvalidValue` findings an outcome has.
@@ -370,4 +294,209 @@ fn the_clamp_beyond_a_double_comes_from_text() {
     let unclamped = load_with::<crate::toy::Toy>(text, &LoadContext::detached());
     assert_eq!(invalid_values(&clamped), 1, "{:?}", clamped.diagnostics);
     assert_eq!(invalid_values(&unclamped), 0, "{:?}", unclamped.diagnostics);
+}
+
+// ---- the reading table: what the pipeline reads each toy by ----
+
+/// The reading tables of the toys, in `every_toy_reads_as_pinned`'s order.
+const TOY_TABLES: &str = r#"
+        Toy
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        Stable
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        Strict
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: rejected: NoValidVersion
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        Quiet
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, silently
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        Uncounted
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Uncounted
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        Texted
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Warning: Some(NoFormatVersionField)
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        TextedInfo
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: Some(NoFormatVersionField)
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        StrictTexted
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: rejected: NoFormatVersionField
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        Mixed
+        text: Document, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.1.0 (0..=1): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.2.0..=1.2.0 (2..=2): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        beta: json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        Masked
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.1.0 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.2.0..=1.2.0 (2..=2): json Own/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+        beta: json Own/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+        Document
+        text: Document, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        beta: json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        JsonCppToy
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        DocumentStrict
+        text: Document, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        LegacyFirst
+        text: Document, clamps beyond a double: true, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.0.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.1.0..=1.2.0 (1..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        BlockLike
+        text: Document, clamps beyond a double: true, duplicates kept in: ["components"]
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.1.0 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.2.0..=1.2.0 (2..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        EntityLike
+        text: Root, clamps beyond a double: true, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.0.0 (0..=0): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        1.1.0..=1.2.0 (1..=2): json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+        beta: json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+        UnstrictFirst
+        text: Document, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.0.0 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+        1.1.0..=1.2.0 (1..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        ReadByReading
+        text: Root, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+        DocumentByText
+        text: Document, clamps beyond a double: false, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        ClampsByText
+        text: Root, clamps beyond a double: true, duplicates kept in: []
+        envelope: Always
+        missing version: at the floor, told at Info: None
+        below floor: UseFormatVersion
+        empty document: Error
+        1.0.0..=1.2.0 (0..=2): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+        beta: json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+"#;
+
+/// The reading table of every toy family that states its reading: pinned, so that a change
+/// to how a family declares its reading cannot change what the pipeline reads.
+#[test]
+fn every_toy_reads_as_pinned() {
+    use crate::envelope::{Quiet, Strict, StrictTexted, Texted, TextedInfo, Uncounted};
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+    let tables = [
+        ("Toy", reading_table::<Toy>()),
+        ("Stable", reading_table::<Stable>()),
+        ("Strict", reading_table::<Strict>()),
+        ("Quiet", reading_table::<Quiet>()),
+        ("Uncounted", reading_table::<Uncounted>()),
+        ("Texted", reading_table::<Texted>()),
+        ("TextedInfo", reading_table::<TextedInfo>()),
+        ("StrictTexted", reading_table::<StrictTexted>()),
+        ("Mixed", reading_table::<Mixed>()),
+        ("Masked", reading_table::<Masked>()),
+        ("Document", reading_table::<Document>()),
+        ("JsonCppToy", reading_table::<JsonCppToy>()),
+        ("DocumentStrict", reading_table::<DocumentStrict>()),
+        ("LegacyFirst", reading_table::<LegacyFirst>()),
+        ("BlockLike", reading_table::<BlockLike>()),
+        ("EntityLike", reading_table::<EntityLike>()),
+        ("UnstrictFirst", reading_table::<UnstrictFirst>()),
+        ("ReadByReading", reading_table::<ReadByReading>()),
+        ("DocumentByText", reading_table::<DocumentByText>()),
+        ("ClampsByText", reading_table::<ClampsByText>()),
+    ];
+    let tables = tables.iter().fold(String::new(), |all, (name, table)| {
+        all + name + "\n" + table
+    });
+    assert_reading_table("the toys", &tables, TOY_TABLES);
 }

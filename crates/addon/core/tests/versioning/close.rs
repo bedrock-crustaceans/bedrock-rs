@@ -9,7 +9,7 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, ComponentTable, Family, finish_file, load, load_file, parse_as_written,
+    BelowFloor, ComponentTable, Envelope, Family, finish_file, load, load_file, parse_as_written,
     parse_file_as_written,
 };
 
@@ -37,7 +37,6 @@ const CLOSING_LINE: &str = "Failed to load toy";
 impl Family for Closing {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
     type Latest = Toy120;
     type Beta = ToyBeta;
@@ -114,9 +113,11 @@ pub mod floored {
 impl Family for Floored {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
@@ -261,7 +262,6 @@ pub mod always {
 impl Family for Always {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
-    const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
     type Latest = Toy120;
     type Beta = ToyBeta;

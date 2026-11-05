@@ -87,7 +87,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
     d: &mut Diagnostics,
     texts: &[(&str, &'static str)],
 ) -> Option<T> {
-    // The null rule of the selected version, which the family declares (`Family::INPUT` is
+    // The null rule of the selected version, which the family declares (`ENVELOPE.input` is
     // `JsonCpp`): under rule N1 a member written as `null` is absent.
     let absent = cx.load.null_rule == Some(NullRule::Absent);
     let parsed = if absent {

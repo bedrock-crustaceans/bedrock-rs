@@ -14,13 +14,14 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{
     AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::versioning::{
-    BelowFloor, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex,
-    ValidateCx, finish, parse_as_written,
+    BelowFloor, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Reading,
+    StructIndex, UnknownMask, ValidateCx, finish, parse_as_written,
 };
 
 /// The feature-rule family of the version-chain machinery.
@@ -38,32 +39,34 @@ bedrock_addon_core::version_chain! {
 }
 
 impl Family for FeatureRuleFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "feature rule";
     const PAYLOAD_KEY: &'static str = "minecraft:feature_rules";
-    const DIRECTORIES: &'static [&'static str] = &["feature_rules"];
     const FLOOR: bedrock_addon_core::version::FormatVersion = FLOOR;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the document as JSON input: the version as it reads it from the text, the
+        // size limits, and `null` members rejected (a `null` where a value is read rejects the
+        // rule).
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game passes no caller version, so a file without `format_version` fails with "no
+        // valid version passed by the caller or found in the input" and is skipped.
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+
+    /// The one slice is registered with the unstrict error mask: an unknown member is a warning,
+    /// not an error.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+    }
     type Latest = FeatureRule;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // The game reads the document as JSON input: the version as it reads it from the text, the
-    // size limits, and `null` members rejected (a `null` where a value is read rejects the
-    // rule).
-    const INPUT: InputKind = InputKind::Document;
-    // The game passes no caller version, so a file without `format_version` fails with "no
-    // valid version passed by the caller or found in the input" and is skipped.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-
-    /// The one slice is registered with the unstrict error mask: an unknown member is a
-    /// warning, not an error.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Unstrict
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rule) = v {
@@ -283,3 +286,26 @@ pub const LOADER: CollectionLoader<FeatureRules, Contribution<FeatureRule>> = Co
     needs: &[],
     then: None,
 };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn feature_rules_reads_as_pinned() {
+        assert_reading_table(
+            "FeatureRuleFamily",
+            &reading_table::<super::FeatureRuleFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.12.0..=1.12.0 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
+    }
+}

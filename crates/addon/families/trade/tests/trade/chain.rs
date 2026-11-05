@@ -36,12 +36,23 @@ fn the_family_parameters_are_the_plans() {
     assert_eq!(TradeFamily::FLOOR, FormatVersion::new(0, 0, 0));
     assert_eq!(TradeFamily::RANGE_MODEL, RangeModel::ClosedToEngine);
     assert_eq!(TradeFamily::PAYLOAD_KEY, "tiers");
-    assert_eq!(TradeFamily::DIRECTORIES, ["trading"]);
-    let warn = TradeFamily::ENVELOPE_WARN_MISSING_VERSION;
-    assert!(!warn, "a missing version is 0.0.0 without a message");
-    assert_eq!(TradeFamily::MISSING_VERSION, MissingVersion::Floor);
     assert_eq!(
-        TradeFamily::ENVELOPE,
+        bedrock_addon_family_trade::LOADER.walk.directories,
+        ["trading"]
+    );
+    assert!(
+        matches!(
+            TradeFamily::ENVELOPE.missing,
+            MissingVersion::Floor { severity: None, .. }
+        ),
+        "a missing version is 0.0.0 without a message"
+    );
+    assert!(matches!(
+        TradeFamily::ENVELOPE.missing,
+        MissingVersion::Floor { .. }
+    ));
+    assert_eq!(
+        TradeFamily::ENVELOPE.check,
         EnvelopeCheck::From(FormatVersion::new(1, 21, 30))
     );
 }

@@ -388,15 +388,28 @@ fn a_value_the_writer_refuses_is_an_error_of_validate_not_silence() {
 fn both_documents_read_a_minecraft_document_input_under_the_strict_mask() {
     use super::history::{PoiTagFamily, PoiTypeFamily};
     use bedrock_addon_core::json::NullRule;
+    use bedrock_addon_core::load::DocumentSource;
     use bedrock_addon_core::versioning::{ErrorMask, Family, InputKind, StructIndex};
     // Both loaders read a document input, and the one slice of each is read strictly.
     let slice = StructIndex::Stable(0);
-    assert_eq!(PoiTypeFamily::INPUT, InputKind::Document);
-    assert_eq!(PoiTagFamily::INPUT, InputKind::Document);
-    assert_eq!(PoiTypeFamily::null_rule(slice), Some(NullRule::Rejected));
-    assert_eq!(PoiTagFamily::null_rule(slice), Some(NullRule::Rejected));
-    assert_eq!(PoiTypeFamily::error_mask(slice), ErrorMask::Strict);
-    assert_eq!(PoiTagFamily::error_mask(slice), ErrorMask::Strict);
+    assert_eq!(PoiTypeFamily::ENVELOPE.input, InputKind::Document);
+    assert_eq!(PoiTagFamily::ENVELOPE.input, InputKind::Document);
+    assert_eq!(
+        PoiTypeFamily::reading(slice, DocumentSource::Json).null_rule(),
+        Some(NullRule::Rejected)
+    );
+    assert_eq!(
+        PoiTagFamily::reading(slice, DocumentSource::Json).null_rule(),
+        Some(NullRule::Rejected)
+    );
+    assert_eq!(
+        PoiTypeFamily::reading(slice, DocumentSource::Json).error_mask(),
+        ErrorMask::Strict
+    );
+    assert_eq!(
+        PoiTagFamily::reading(slice, DocumentSource::Json).error_mask(),
+        ErrorMask::Strict
+    );
 }
 
 #[test]

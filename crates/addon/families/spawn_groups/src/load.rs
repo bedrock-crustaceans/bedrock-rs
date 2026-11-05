@@ -14,7 +14,8 @@ use bedrock_addon_core::load::{AppDataPlace, CollectionLoader, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel,
+    ValidateCx,
 };
 use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -27,25 +28,27 @@ const FAILED_GROUPS: &str = "Failed to load spawn groups";
 const GROUPS_DIRECTORY: &str = "definitions/spawn_groups";
 
 impl Family for GroupFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a warning at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "spawn group";
     const PAYLOAD_KEY: &'static str = GROUPS_KEY;
-    const DIRECTORIES: &'static [&'static str] = &[GROUPS_DIRECTORY];
     const FLOOR: FormatVersion = V1_8_0;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The loader reads the raw text, never the cereal path.
+        check: EnvelopeCheck::Never,
+        // A missing version is an error, as in vanilla ("no valid version passed by the caller or
+        // found in the input").
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     const RANGE_MODEL: RangeModel = RangeModel::ClosedToEngine;
     type Latest = SpawnGroup;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = GroupAny;
-    // The loader reads the raw text, never the cereal path.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Never;
-    // A missing version is an error, as in vanilla ("no valid version passed by the caller or
-    // found in the input").
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(group) = v {
@@ -127,3 +130,26 @@ pub const LOADER: CollectionLoader<Registry<SpawnGroup>, Parsed<SpawnGroup>> = C
     needs: &[],
     then: None,
 };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn spawn_groups_reads_as_pinned() {
+        assert_reading_table(
+            "GroupFamily",
+            &reading_table::<super::GroupFamily>(),
+            r"
+                text: Root, clamps beyond a double: true, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.8.0..=1.8.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+}

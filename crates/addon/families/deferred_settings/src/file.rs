@@ -10,10 +10,9 @@ use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{EncodeError, EnvelopeVersion, JsonSlice, Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    Family, Identity, Loaded, Parsed, Selection, VersionChain, VersionStruct, Versioned, finish,
+    Family, Loaded, Parsed, Selection, VersionChain, VersionStruct, Versioned, finish,
     parse_as_written, select,
 };
 
@@ -339,7 +338,7 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
             }
         } else if let DiagnosticCode::UnsupportedVersion { text: Some(text) } = &mut finding.code {
             // Below the first struct the pipeline says no parser is available
-            // (`BELOW_FLOOR`), as above the last; both print the version as shown.
+            // (`ENVELOPE.below_floor`), as above the last; both print the version as shown.
             if let VanillaText::NoParserForVersion { version } = text
                 && let Some(shown) = shown
             {
@@ -358,7 +357,7 @@ fn parse_stage<F: Payload>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<
         Err(finding) => {
             let mut diagnostics = Diagnostics::default();
             diagnostics.push(*finding);
-            return Parsed::new(
+            return Parsed::from_value(
                 None,
                 VersionInfo::new(None, false, F::FLOOR, F::FLOOR, false),
                 FormatVersionInput {
@@ -366,9 +365,6 @@ fn parse_stage<F: Payload>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<
                     beta_literal: false,
                     prerelease: false,
                 },
-                Identity::default(),
-                ActorType::Mob,
-                false,
                 JsonPath::new(),
                 diagnostics,
             );
@@ -455,16 +451,7 @@ pub(crate) fn upgrade<F: Payload>(
         prerelease: false,
     };
     let at = JsonPath::new().child(F::PAYLOAD_KEY);
-    let parsed = Parsed::<F>::new(
-        Some(value),
-        version,
-        written,
-        Identity::default(),
-        ActorType::Mob,
-        false,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<F>::from_value(Some(value), version, written, at, diagnostics);
     finish_file::<F>(parsed, origin, cx)
 }
 

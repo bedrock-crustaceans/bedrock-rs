@@ -6,7 +6,6 @@ use bedrock_addon_core::document::{
     default_path,
 };
 use bedrock_addon_core::id::{ItemId, kind};
-use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle};
 use bedrock_addon_core::load::{
     Accept, CollectionLoader, DocumentSource, LoadContext, LoadRequirement, StackCx, Walk, WalkFile,
@@ -14,8 +13,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    self, BetaPermission, ComponentTable, EnvelopeCheck, ErrorMask, Family, InputKind, LoadOutcome,
-    Loaded, MissingVersion, StructIndex, ValidateCx,
+    self, BetaPermission, ComponentTable, Envelope, EnvelopeCheck, Family, InputKind, LoadOutcome,
+    Loaded, MissingVersion, Reading, StructIndex, ValidateCx,
 };
 use facet_json::RawJson;
 use indexmap::IndexMap;
@@ -35,13 +34,12 @@ pub struct ItemFamily;
 /// 1.16.100: the first component format, and the start of vanilla's data-driven items.
 const V1_16_100: FormatVersion = known::V1_16_100;
 
+/// The directory item files live in.
+const DIRECTORY: &str = "items";
+
 impl Family for ItemFamily {
-    // What the document does not read is kept for write-back: a number no double holds is
-    // the largest finite one, with a finding at it.
-    const CLAMPS_BEYOND_DOUBLE: bool = true;
     const NAME: &'static str = "item";
     const PAYLOAD_KEY: &'static str = "minecraft:item";
-    const DIRECTORIES: &'static [&'static str] = &["items"];
     // The game's item loader passes no minimum version: no floor.
     const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = Item;
@@ -50,38 +48,35 @@ impl Family for ItemFamily {
     type Any = Any;
     const COMPONENT_NOUN: &'static str = "item component";
 
-    // The game builds an item's input from the already parsed document (or, for an MCB item,
-    // without a payload check): neither runs the check that a JSON document holds exactly
-    // two members.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Uncounted;
-    // A JSON item without `format_version` gives no version, and the game drops it; an MCB
-    // document always has one.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    const MISSING_VERSION_TEXT: Option<VanillaText> =
-        Some(VanillaText::Fixed(texts::VERSION_NOT_READABLE));
-    // The modern slices read the parsed document (JSON) or the payload as is (MCB); the legacy
-    // slice's chain reads through the jsoncpp reader, whose null rule `null_rule` gives per
-    // slice.
-    const INPUT: InputKind = InputKind::Document;
+    const ENVELOPE: Envelope = Envelope {
+        // The modern slices read the parsed document (JSON) or the payload as is (MCB); the legacy
+        // slice's chain reads through the jsoncpp reader, whose null rule `reading` gives per
+        // slice.
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a finding at it.
+        clamps_beyond_double: true,
+        // The game builds an item's input from the already parsed document (or, for an MCB item,
+        // without a payload check): neither runs the check that a JSON document holds exactly
+        // two members.
+        check: EnvelopeCheck::Uncounted,
+        // A JSON item without `format_version` gives no version, and the game drops it; an MCB
+        // document always has one.
+        missing: MissingVersion::Reject {
+            text: Some(VanillaText::Fixed(texts::VERSION_NOT_READABLE)),
+        },
+        ..Envelope::DEFAULT
+    };
 
-    /// The modern slices (1.26.30, 1.26.50, beta) read through a strict reader that rejects a
-    /// `null` member; the legacy slice below 1.26.30 reads through the jsoncpp reader, which
-    /// takes it as absent.
-    fn null_rule(index: StructIndex) -> Option<NullRule> {
-        Some(if is_modern(index) {
-            NullRule::Rejected
-        } else {
-            NullRule::Absent
-        })
-    }
-
-    /// The modern slices are registered with the strict error mask (an unknown member or
-    /// component rejects the item); the legacy slice keeps the lenient reading.
-    fn error_mask(index: StructIndex) -> ErrorMask {
+    /// The modern slices (1.26.30, 1.26.50, beta) read through a strict reader registered with
+    /// the strict error mask: a `null` member is rejected, and an unknown member or component
+    /// rejects the item. The legacy slice below 1.26.30 reads through the jsoncpp reader, which
+    /// takes a `null` as absent, and keeps the lenient reading.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         if is_modern(index) {
-            ErrorMask::Strict
+            Reading::DOCUMENT
         } else {
-            ErrorMask::Unstrict
+            Reading::NULL_ABSENT
         }
     }
 
@@ -849,7 +844,7 @@ fn is_json(path: &PackPath) -> bool {
 
 /// The `bp.items()` loader: every `.json` below `items/`, bottom-up.
 pub const LOADER: CollectionLoader<Registry<Item>, ParsedItem> = CollectionLoader {
-    walk: Walk::json_tree_in(ItemFamily::DIRECTORIES).accept(Accept::Fn(is_json)),
+    walk: Walk::json_tree_in(&[DIRECTORY]).accept(Accept::Fn(is_json)),
     parse: parse_file,
     combine,
     needs: &[],
@@ -989,16 +984,14 @@ impl Any {
             prerelease: false,
         };
         let at = JsonPath::new().child(ItemFamily::PAYLOAD_KEY);
-        let parsed = versioning::Parsed::<ItemFamily>::new(
+        let parsed = versioning::Parsed::<ItemFamily>::from_value(
             Some(any),
             version,
             written,
-            identity,
-            bedrock_addon_core::vanilla::ActorType::Mob,
-            false,
             at,
             diagnostics,
-        );
+        )
+        .with_identity(identity);
         let outcome = versioning::finish::<ItemFamily>(parsed, cx);
         let diagnostics = outcome.diagnostics.located(&origin);
         match outcome.value {
@@ -1056,6 +1049,31 @@ mod tests {
         assert_eq!(
             walk.matches(&PackPath::new("items/sword.jsonc").unwrap()),
             None
+        );
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn item_reads_as_pinned() {
+        assert_reading_table(
+            "ItemFamily",
+            &reading_table::<super::ItemFamily>(),
+            r#"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Uncounted
+                missing version: rejected: Fixed("document's version not found or not readable")
+                below floor: UseFormatVersion
+                empty document: Error
+                1.10.0..=1.26.0 (0..=18): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.26.30..=1.26.50 (19..=20): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+                beta: json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            "#,
         );
     }
 }

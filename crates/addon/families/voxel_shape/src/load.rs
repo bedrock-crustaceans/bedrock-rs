@@ -13,8 +13,8 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, EnvelopeCheck, ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    StructIndex, ValidateCx, load_file,
+    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    ValidateCx, load_file,
 };
 
 /// The voxel-shape family of the version-chain machinery.
@@ -35,30 +35,26 @@ bedrock_addon_core::version_chain! {
 impl Family for VoxelShapeFamily {
     const NAME: &'static str = "voxel shape";
     const PAYLOAD_KEY: &'static str = "minecraft:voxel_shape";
-    const DIRECTORIES: &'static [&'static str] = &["shapes"];
     const FLOOR: FormatVersion = FLOOR;
-    // Below the first slice the versioned loader has no parser at all.
-    const BELOW_FLOOR: BelowFloor = BelowFloor::NoParser;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a shape through the document-input reader of the cereal-based families:
+        // the version is read from the document, the size limits apply, and a member written
+        // `null` fails its type.
+        input: InputKind::Document,
+        // The document input takes the raw text below 1.21.110 or without a version, and exactly
+        // two members from 1.21.110 on.
+        check: EnvelopeCheck::From(FLOOR),
+        // Without a version the loader falls back to the caller's, which is none: "no valid version
+        // passed by the caller or found in the input" and the file is skipped.
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
     type Latest = VoxelShape;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
     type Any = Any;
-    // The document input takes the raw text below 1.21.110 or without a version, and exactly
-    // two members from 1.21.110 on.
-    const ENVELOPE: EnvelopeCheck = EnvelopeCheck::From(FLOOR);
-    // Without a version the loader falls back to the caller's, which is none: "no valid version
-    // passed by the caller or found in the input" and the file is skipped.
-    const MISSING_VERSION: MissingVersion = MissingVersion::Reject;
-    // The game reads a shape through the document-input reader of the cereal-based families:
-    // the version is read from the document, the size limits apply, and a member written
-    // `null` fails its type.
-    const INPUT: InputKind = InputKind::Document;
-
-    /// The one slice is registered with the strict error mask: an unknown member rejects the
-    /// file.
-    fn error_mask(_: StructIndex) -> ErrorMask {
-        ErrorMask::Strict
-    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(shape) = v {
@@ -187,3 +183,26 @@ pub const LOADER: CollectionLoader<Registry<VoxelShape>, Contribution<VoxelShape
         needs: &[],
         then: None,
     };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn voxel_shape_reads_as_pinned() {
+        assert_reading_table(
+            "VoxelShapeFamily",
+            &reading_table::<super::VoxelShapeFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 110 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.110..=1.21.110 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+}

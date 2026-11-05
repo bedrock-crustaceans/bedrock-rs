@@ -31,8 +31,10 @@
 //! - **Slice**: `scripts: [ScriptBundle] = script::LOADER, …;` caches the loader's
 //!   `Vec<ScriptBundle>` and returns `&[ScriptBundle]`.
 //!
-//! The list is expanded one line at a time (a recursive macro), so each line costs one level of
-//! the crate's recursion limit (128 by default; a list past ~110 lines raises it in `lib.rs`).
+//! The list is expanded one line at a time (a recursive macro), and each line costs two levels
+//! of the crate's recursion limit (`@munch` takes the line to `@line`, which hands the rest back
+//! to `@munch`). The 58 lines here take some 120 levels; `lib.rs` sets
+//! `recursion_limit = "512"`, room for about 250.
 
 use std::fmt;
 use std::hash::Hash;
@@ -1144,17 +1146,17 @@ pub(crate) fn provider(
 /// because a family never names another. A stack without the `languages` family lists every
 /// code that has a `texts/<code>.lang` file in one of its packs.
 #[cfg(feature = "lang")]
-fn listed_languages<S: Side>(stack: &PackStack<S>) -> Vec<crate::families::lang::Language> {
+fn listed_languages<S: Side>(stack: &PackStack<S>) -> Vec<lang::Language> {
     #[cfg(feature = "languages")]
     {
         stack.languages().value().codes.clone()
     }
     #[cfg(not(feature = "languages"))]
     {
-        let mut codes: Vec<crate::families::lang::Language> = Vec::new();
+        let mut codes: Vec<lang::Language> = Vec::new();
         for pack in stack.stack_packs() {
             for file in pack.files_below("texts") {
-                if let Some(code) = crate::families::lang::language_of(&file.key)
+                if let Some(code) = lang::language_of(&file.key)
                     && !codes.contains(&code)
                 {
                     codes.push(code);

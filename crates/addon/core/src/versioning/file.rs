@@ -22,7 +22,7 @@ pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
     fn document(value: &Self::Latest) -> Result<Value, EncodeError>;
 }
 
-/// What a document below the chain's floor is told (`Family::BELOW_FLOOR`).
+/// What a document below the chain's floor is told (`Family::ENVELOPE.below_floor`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum BelowFloor {

@@ -35,14 +35,14 @@ pub enum EnvelopeVersion {
 
 /// A modern document's root as the probe found it.
 #[derive(Debug)]
-pub struct Envelope<'a> {
+pub struct RootProbe<'a> {
     /// The `format_version` member.
     pub format_version: EnvelopeVersion,
     /// The other root members in document order, each a slice of the text with its file offset.
     pub members: IndexMap<String, JsonSlice<'a>>,
 }
 
-impl<'a> Envelope<'a> {
+impl<'a> RootProbe<'a> {
     /// The number of root members, `format_version` included: vanilla requires exactly two.
     /// A duplicate key counts once, as in jsoncpp's object.
     pub fn member_count(&self) -> usize {
@@ -62,7 +62,7 @@ impl<'a> Envelope<'a> {
 /// # Errors
 ///
 /// Returns `SliceError` when `document` is not valid JSON or its root is not an object.
-pub fn probe_envelope(document: JsonSlice<'_>) -> Result<Envelope<'_>, SliceError> {
+pub fn probe_envelope(document: JsonSlice<'_>) -> Result<RootProbe<'_>, SliceError> {
     let mut shell = parse_at::<EnvelopeShell<'_>>(document)?;
     let format_version = match shell.shift_remove(FORMAT_VERSION) {
         None => EnvelopeVersion::Absent,
@@ -72,7 +72,7 @@ pub fn probe_envelope(document: JsonSlice<'_>) -> Result<Envelope<'_>, SliceErro
         .iter()
         .filter_map(|(key, raw)| Some((key.clone(), document.nested(raw)?)))
         .collect();
-    Ok(Envelope {
+    Ok(RootProbe {
         format_version,
         members,
     })

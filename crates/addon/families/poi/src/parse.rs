@@ -100,7 +100,7 @@ fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
 /// would coerce or cannot report, a `null` included (every member's check takes a `null` for
 /// the wrong type), and the value constraints; it returns `false` when the typed parse cannot
 /// read a member it reported); a member no field takes is an `UnrecognizedField` warning,
-/// which the slice's mask makes an error (`Family::error_mask`), and a failed typed parse is an
+/// which the slice's mask makes an error (`Family::reading`), and a failed typed parse is an
 /// error at the failing member. `None` when anything was an error.
 fn parse_strict<'a, T: Facet<'a>>(
     payload: JsonSlice<'a>,

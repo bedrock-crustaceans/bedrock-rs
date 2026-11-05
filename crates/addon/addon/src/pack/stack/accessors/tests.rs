@@ -159,6 +159,7 @@ fn providers_name_their_loader_s_accessor() {
 /// depend on the side; the side of a file is the stack the walk runs on.
 #[test]
 fn a_both_sides_line_loads_the_same_way_on_both_sides() {
+    let mut seen = 0;
     for collection in super::Collection::ALL {
         let entries: Vec<_> = super::ENTRIES
             .iter()
@@ -179,5 +180,18 @@ fn a_both_sides_line_loads_the_same_way_on_both_sides() {
         );
         assert_eq!(behavior.needs(), resource.needs(), "{collection:?}");
         assert_eq!(behavior.has_then(), resource.has_then(), "{collection:?}");
+        seen += 1;
     }
+    #[cfg(any(
+        feature = "animation",
+        feature = "animation_controller",
+        feature = "lang",
+        feature = "languages",
+        feature = "script"
+    ))]
+    assert!(
+        seen > 0,
+        "a both-sides family is compiled in, so a line was checked"
+    );
+    let _ = seen;
 }
