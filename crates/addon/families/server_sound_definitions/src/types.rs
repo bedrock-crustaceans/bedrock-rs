@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_shared_shapes::OneOrMany;
 
 /// A behaviour pack's server sound definitions file, `sounds/sound_definitions.json`
 /// (`#[doc(alias)]` `server_sound_definitions`): the payload is the array itself.
@@ -131,26 +132,6 @@ pub struct MusicInfo {
     pub title: Option<String>,
 }
 
-/// The value of one tag: one string or a list of strings.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-pub enum TagValueList {
-    /// A single value.
-    One(String),
-    /// A list of values; it may be empty and may repeat a value.
-    Many(Vec<String>),
-}
-
-impl TagValueList {
-    /// The values: a single value is a list of one.
-    pub fn values(&self) -> &[String] {
-        match self {
-            Self::One(value) => std::slice::from_ref(value),
-            Self::Many(values) => values,
-        }
-    }
-}
-
-bedrock_addon_core::impl_schema_leaf!(TagValueList);
-bedrock_addon_core::impl_no_molang!(TagValueList);
+/// The value of one tag: one string or a list of strings (a list may be empty and may repeat
+/// a value).
+pub type TagValueList = OneOrMany<String>;

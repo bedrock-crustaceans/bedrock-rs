@@ -68,7 +68,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
             push(pattern(), Severity::Error, index, &["sound_event_name"]);
         }
         for (key, value) in definition.tags.iter().flatten() {
-            if !no_whitespace(key) || !value.values().iter().all(|value| no_whitespace(value)) {
+            if !no_whitespace(key) || !value.iter().all(|value| no_whitespace(value)) {
                 push(pattern(), Severity::Error, index, &["tags", key.as_str()]);
             }
         }

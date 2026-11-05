@@ -997,7 +997,6 @@ fn the_legacy_collision_reader_logs_its_lines_and_keeps_the_defaults() {
         .events
         .as_ref()
         .unwrap()
-        .events()
         .iter()
         .map(|e| (e.event.as_str(), e.min_speed))
         .collect();
@@ -1843,14 +1842,14 @@ fn lifetime_events_log_their_lines() {
         .as_ref()
         .unwrap()
         .iter()
-        .map(|e| (e.distance, e.effects.names().to_vec()))
+        .map(|e| (e.distance, e.effects.as_slice().to_vec()))
         .collect();
     // A missing distance reads as 0; a distance of exactly 0 is kept.
     assert_eq!(
         kept,
         [(0.0, vec!["b".to_owned()]), (0.0, vec!["c".to_owned()])]
     );
-    assert_eq!(stored.expiration_event.as_ref().unwrap().names(), ["a"]);
+    assert_eq!(stored.expiration_event.as_ref().unwrap().as_slice(), ["a"]);
     let looping = effect_legacy(
         r#""minecraft:emitter_lifetime_events": {"looping_travel_distance_events": {}}"#,
     );

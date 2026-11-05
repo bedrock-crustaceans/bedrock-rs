@@ -33,8 +33,8 @@ fn ssd02_full_definition() {
     );
     let tags = theme.tags.as_ref().unwrap();
     assert_eq!(tags["demo:area"], TagValueList::One("arena".to_owned()));
-    assert_eq!(tags["demo:area"].values(), ["arena"]);
-    assert_eq!(tags["demo:phase"].values(), ["one", "two"]);
+    assert_eq!(tags["demo:area"].as_slice(), ["arena"]);
+    assert_eq!(tags["demo:phase"].as_slice(), ["one", "two"]);
     let music = theme.music_info.as_ref().unwrap();
     assert_eq!(music.title.as_ref().unwrap(), "Boss Theme");
     assert_eq!(music.genres.as_ref().unwrap()[0], "orchestral");

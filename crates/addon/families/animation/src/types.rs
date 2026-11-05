@@ -59,45 +59,8 @@ pub struct Animation {
 }
 
 /// One value, or an array of them, under one key (`particle_effects`, `sound_effects`,
-/// `timeline`).
-#[derive(Clone, Debug, PartialEq)]
-pub enum OneOrMany<T> {
-    /// A single value.
-    One(T),
-    /// An array.
-    Many(Vec<T>),
-}
-
-impl<T> OneOrMany<T> {
-    /// The values, one for [`One`](Self::One), all for [`Many`](Self::Many).
-    #[must_use]
-    pub fn as_slice(&self) -> &[T] {
-        match self {
-            Self::One(one) => std::slice::from_ref(one),
-            Self::Many(many) => many,
-        }
-    }
-
-    /// The values in order.
-    pub fn iter(&self) -> std::slice::Iter<'_, T> {
-        self.as_slice().iter()
-    }
-}
-
-impl<T> From<Vec<T>> for OneOrMany<T> {
-    fn from(many: Vec<T>) -> Self {
-        Self::Many(many)
-    }
-}
-
-impl<'a, T> IntoIterator for &'a OneOrMany<T> {
-    type Item = &'a T;
-    type IntoIter = std::slice::Iter<'a, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
+/// `timeline`): shapes'.
+pub use bedrock_addon_shared_shapes::OneOrMany;
 
 /// What an animation does when it reaches its end.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

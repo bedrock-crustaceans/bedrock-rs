@@ -11,6 +11,7 @@ use super::{
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{Rejected, UnknownMembers};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_shared_shapes::OneOrMany;
 
 /// One `<name>.meta.json`: what a persona piece is, as the file says it.
 ///
@@ -127,35 +128,9 @@ pub struct AnimationSource {
     pub extra: UnknownMembers,
 }
 
-/// `zone` as written: one zone or a list of them.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Zones {
-    /// A single string.
-    One(String),
-    /// An array of strings.
-    Many(Vec<String>),
-}
-
-impl Zones {
-    /// The zones, whichever way they were written.
-    #[must_use]
-    pub fn as_slice(&self) -> &[String] {
-        match self {
-            Self::One(zone) => std::slice::from_ref(zone),
-            Self::Many(zones) => zones,
-        }
-    }
-
-    /// Whether the member is "empty" to the game's reader: an empty list. A string never
-    /// is, whatever it holds.
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        match self {
-            Self::One(_) => false,
-            Self::Many(zones) => zones.is_empty(),
-        }
-    }
-}
+/// `zone` as written: one zone or a list of them. "Empty" to the game's reader
+/// ([`OneOrMany::is_empty`]) is an empty list; a string never is, whatever it holds.
+pub type Zones = OneOrMany<String>;
 
 /// `is_face` as written: the string vanilla's own files use (the type from 1.26.40), or a
 /// boolean in a model built by hand (1.26.20 read one; 1.26.40+ refuses it).

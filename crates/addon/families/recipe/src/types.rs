@@ -7,6 +7,7 @@ use bedrock_addon_core::document::{Document, Registry, Rejected, registry};
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::molang::MolangList;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_shared_shapes::OneOrMany;
 
 /// A recipe file (`minecraft:recipe_*`): one of eight recipe types, each with the members its
 /// type reads.
@@ -121,13 +122,9 @@ pub struct Description {
 
 /// `tags`: the crafting stations that offer the recipe (`crafting_table`, `furnace`,
 /// `smithing_table`, …), as one string or a list.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Tags {
-    /// `"tags": "material_reducer"`.
-    One(String),
-    /// `"tags": ["crafting_table", …]`.
-    Many(Vec<String>),
-}
+///
+/// `"tags": "material_reducer"` or `"tags": ["crafting_table", …]`.
+pub type Tags = OneOrMany<String>;
 
 /// A recipe ingredient or result: an item by name, or an object with `item` or `tag`.
 ///
@@ -188,13 +185,8 @@ pub struct ItemName {
 }
 
 /// `result` (shaped, shapeless) and material-reduction `output`: one item or a list.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Output {
-    /// One item.
-    One(Ingredient),
-    /// A list of items.
-    Many(Vec<Ingredient>),
-}
+/// No item is an empty list ([`OneOrMany::default`]).
+pub type Output = OneOrMany<Ingredient>;
 
 /// `unlock`: what unlocks the recipe in the recipe book.
 #[derive(Clone, Debug, PartialEq)]
@@ -539,26 +531,6 @@ impl RecipeKind {
     }
 }
 
-impl Tags {
-    /// The tags, in order.
-    pub fn as_slice(&self) -> &[String] {
-        match self {
-            Self::One(tag) => std::slice::from_ref(tag),
-            Self::Many(tags) => tags,
-        }
-    }
-}
-
-impl Output {
-    /// The items, in order.
-    pub fn as_slice(&self) -> &[Ingredient] {
-        match self {
-            Self::One(item) => std::slice::from_ref(item),
-            Self::Many(items) => items,
-        }
-    }
-}
-
 impl UnlockContext {
     /// The JSON spelling (`"AlwaysUnlocked"`).
     pub fn as_str(self) -> &'static str {
@@ -630,13 +602,6 @@ impl Default for Description {
         Self {
             identifier: RecipeId::parse(""),
         }
-    }
-}
-
-impl Default for Output {
-    /// No item.
-    fn default() -> Self {
-        Self::Many(Vec::new())
     }
 }
 

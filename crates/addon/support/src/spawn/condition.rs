@@ -15,83 +15,8 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
-/// One descriptor or a list of them, as written. A member that takes either keeps the form, so
-/// writing reproduces it.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum OneOrMany<T> {
-    /// A single value, not in an array.
-    One(T),
-    /// An array.
-    Many(Vec<T>),
-}
-
-impl<T> OneOrMany<T> {
-    /// The values, in document order.
-    pub fn as_slice(&self) -> &[T] {
-        match self {
-            Self::One(value) => std::slice::from_ref(value),
-            Self::Many(values) => values,
-        }
-    }
-
-    /// The values, mutably.
-    pub fn as_mut_slice(&mut self) -> &mut [T] {
-        match self {
-            Self::One(value) => std::slice::from_mut(value),
-            Self::Many(values) => values,
-        }
-    }
-
-    /// The values, in document order.
-    pub fn iter(&self) -> std::slice::Iter<'_, T> {
-        self.as_slice().iter()
-    }
-
-    /// How many values.
-    pub fn len(&self) -> usize {
-        self.as_slice().len()
-    }
-
-    /// No value.
-    pub fn is_empty(&self) -> bool {
-        self.as_slice().is_empty()
-    }
-}
-
-impl<T> From<Vec<T>> for OneOrMany<T> {
-    /// An array.
-    fn from(values: Vec<T>) -> Self {
-        Self::Many(values)
-    }
-}
-
-impl<T> IntoIterator for OneOrMany<T> {
-    type Item = T;
-    type IntoIter = std::vec::IntoIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        match self {
-            Self::One(value) => vec![value].into_iter(),
-            Self::Many(values) => values.into_iter(),
-        }
-    }
-}
-
-impl<'a, T> IntoIterator for &'a OneOrMany<T> {
-    type Item = &'a T;
-    type IntoIter = std::slice::Iter<'a, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
-
-impl<T> Default for OneOrMany<T> {
-    /// An empty array.
-    fn default() -> Self {
-        Self::Many(Vec::new())
-    }
-}
+/// One descriptor or a list of them, as written (shapes').
+pub use bedrock_addon_shared_shapes::OneOrMany;
 
 /// One entry of `conditions`: where, when and how an entity spawns (with the
 /// spawn rules vanilla derives from it).

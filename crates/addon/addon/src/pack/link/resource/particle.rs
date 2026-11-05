@@ -126,7 +126,7 @@ pub(super) fn own_events(cx: &LinkCx<'_>, out: &mut Findings) {
             use crate::families::particle::component::CollisionEvents;
             let mut at = component("minecraft:particle_motion_collision");
             at.push("events");
-            for (index, event) in events.events().iter().enumerate() {
+            for (index, event) in events.iter().enumerate() {
                 let mut name_at = at.clone();
                 // One event is written as an object, a list as an array of objects.
                 if matches!(events, CollisionEvents::Many(_)) {

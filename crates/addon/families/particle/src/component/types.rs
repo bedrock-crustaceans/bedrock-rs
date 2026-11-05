@@ -8,27 +8,12 @@ use crate::texts;
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
+use bedrock_addon_shared_shapes::OneOrMany;
 
 /// The events a component fires: one event name, or a list of them.
 ///
 /// JSON: a string, or an array of strings. The names are keys of the effect's `events`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum VectorEvents {
-    /// One event, written as a string.
-    One(String),
-    /// A list of events, written as an array.
-    Many(Vec<String>),
-}
-
-impl VectorEvents {
-    /// The event names, in order.
-    pub fn names(&self) -> &[String] {
-        match self {
-            Self::One(name) => std::slice::from_ref(name),
-            Self::Many(names) => names,
-        }
-    }
-}
+pub type VectorEvents = OneOrMany<String>;
 
 impl Node for VectorEvents {
     fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {

@@ -9,6 +9,7 @@ use crate::texts;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
+use bedrock_addon_shared_shapes::OneOrMany;
 
 /// A Molang field that is 0 when the document does not write it.
 const ZERO: Molang = Molang::Const(0.0);
@@ -265,23 +266,7 @@ fn collision_event(event: &mut CollisionEvent, m: Members<'_>, r: &mut Reader<'_
 /// `minecraft:particle_motion_collision/events`: one event or a list.
 ///
 /// JSON: an object, or an array of objects.
-#[derive(Clone, Debug, PartialEq)]
-pub enum CollisionEvents {
-    /// One event, written as an object.
-    One(CollisionEvent),
-    /// A list of events, written as an array.
-    Many(Vec<CollisionEvent>),
-}
-
-impl CollisionEvents {
-    /// The events, in order.
-    pub fn events(&self) -> &[CollisionEvent] {
-        match self {
-            Self::One(event) => std::slice::from_ref(event),
-            Self::Many(events) => events,
-        }
-    }
-}
+pub type CollisionEvents = OneOrMany<CollisionEvent>;
 
 impl Node for CollisionEvents {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {

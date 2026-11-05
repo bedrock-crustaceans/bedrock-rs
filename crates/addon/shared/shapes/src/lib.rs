@@ -11,11 +11,13 @@
 //!   document names an item or a block.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
 //!   placement.
+//! - [`one_or_many`]: [`OneOrMany`], one value or an array of them, as written.
 //! - [`png`]: the PNG header ([`png::header`], [`png_size`]).
 
 pub mod color;
 pub mod descriptor;
 pub mod menu;
+pub mod one_or_many;
 pub mod png;
 
 pub use color::{Channels, HexOr};
@@ -23,4 +25,5 @@ pub use descriptor::{
     BlockDescriptor, BlockSpecifier, ItemDescriptor, ItemDescriptorForm, StateValue,
 };
 pub use menu::{CreativeCategory, MenuCategory};
+pub use one_or_many::OneOrMany;
 pub use png::{PNG_SIGNATURE, PngHeader, png_size};

@@ -6,6 +6,7 @@ use indexmap::IndexMap;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_shared_shapes::OneOrMany;
 use bedrock_addon_support::texture::jsoncpp::strtouint32_hex;
 
 /// Which of the two atlas files a [`TextureAtlas`] is.
@@ -213,10 +214,7 @@ impl AtlasItem {
     /// The elements, one per index.
     #[must_use]
     pub fn elements(&self) -> &[TextureElement] {
-        match &self.textures {
-            AtlasTextures::One(element) => std::slice::from_ref(element),
-            AtlasTextures::Many(elements) => elements,
-        }
+        self.textures.as_slice()
     }
 
     /// The number of indices (frames): the length of a `textures` array, 1 for any other form.
@@ -302,14 +300,10 @@ pub struct ResolvedLayer<'a> {
     pub tint_color: [f32; 4],
 }
 
-/// The `textures` member of a tile.
-#[derive(Clone, Debug, PartialEq)]
-pub enum AtlasTextures {
-    /// Any value but an array: index 0.
-    One(TextureElement),
-    /// An array: one element per index. An empty array gives a tile without indices.
-    Many(Vec<TextureElement>),
-}
+/// The `textures` member of a tile: any value but an array is `One`, index 0 (the atlas's
+/// reader decides that, not the type); an array is `Many`, one element per index, and an empty
+/// array gives a tile without indices.
+pub type AtlasTextures = OneOrMany<TextureElement>;
 
 /// One element of `textures`.
 #[derive(Clone, Debug, PartialEq)]

@@ -132,7 +132,7 @@ fn lifetime_events(events: &mut EmitterLifetimeEvents, _: Members<'_>, r: &mut R
             let at = index;
             index += 1;
             if r.legacy() {
-                let usable = entry.distance >= 0.0 && !entry.effects.names().is_empty();
+                let usable = entry.distance >= 0.0 && !entry.effects.is_empty();
                 if !usable {
                     r.index(at, |r| r.warn(texts::LOOPING_ENTRY));
                 }

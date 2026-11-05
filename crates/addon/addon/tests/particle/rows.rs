@@ -548,7 +548,7 @@ fn p20_min_speed_floor_deviation() {
     let collision = r#""minecraft:particle_motion_collision": {"collision_radius": 0.1, "events": [{"event": "e", "min_speed": 0.5}]}"#;
     let speed = |effect: &ParticleEffect| {
         let collision = effect.components.get::<ParticleMotionCollision>().unwrap();
-        collision.events.as_ref().unwrap().events()[0].min_speed
+        collision.events.as_ref().unwrap().as_slice()[0].min_speed
     };
     let legacy = loaded(&effect(LEGACY, collision));
     assert_eq!(speed(&legacy), Some(2.0));
