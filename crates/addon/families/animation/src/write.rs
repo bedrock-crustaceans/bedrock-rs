@@ -104,6 +104,7 @@ fn animation(a: &Animation) -> Result<Value, EncodeError> {
 impl AnimationFile {
     /// The file as an untyped value.
     pub(crate) fn to_value(&self) -> Result<Value, EncodeError> {
+        // Not `write_envelope`: no `Family` reads the file, and the version is as written.
         let mut o = Object::new();
         o.put("format_version", version(self.format_version));
         o.put("animations", map(&self.animations, animation)?);

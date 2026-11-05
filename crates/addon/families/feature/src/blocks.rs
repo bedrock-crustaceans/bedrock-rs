@@ -5,11 +5,11 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::Description;
-use super::load::{Rules, V1_13_0, strict_struct};
-use super::parse::parse_strict_with;
+use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
 use super::walk::{Walk, walk};
+use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{
@@ -635,7 +635,7 @@ impl Versioned for SingleBlockFeature {
 
 impl VersionStruct for SingleBlockFeature {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        super::parse::parse_strict(payload, cx, d)
+        super::read::parse_strict(payload, cx, d)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

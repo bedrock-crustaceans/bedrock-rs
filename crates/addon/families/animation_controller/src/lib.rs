@@ -9,113 +9,166 @@
 
 pub mod history;
 
-mod load;
 mod molang;
-mod new;
-mod parse;
+mod read;
+mod types;
 mod validate;
 mod write;
 
-use indexmap::IndexMap;
-
-use bedrock_addon_core::molang::{Molang, MolangSource};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::document::{
+    Content, Definition, Document, JsonContent, NoBeta, Notice, Origin, Placed, Registry, Rejected,
+    VersionInfo,
+};
+use bedrock_addon_core::id::kind;
+use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
+use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_support::animation::load::{combine, file_path, side_of, version_info, whole};
+use history::Any;
+use read::{V1_8_0, V1_10_0};
 
 pub use bedrock_addon_support::animation::{EventString, ParticleEffect, SoundEffect};
+pub use types::{
+    AnimationController, AnimationControllerFile, BlendTransition, State, StateAnimation,
+    StateVariable, Transition,
+};
+
+impl bedrock_addon_core::__private::Sealed for AnimationControllerFile {}
+impl bedrock_addon_core::__private::Sealed for AnimationController {}
+
+fn controller_parsed_as(written: &SemVersion) -> (FormatVersion, bool) {
+    if *written < V1_10_0 {
+        (known::V1_8_0, true)
+    } else {
+        (known::V1_10_0, false)
+    }
+}
+
+impl Content for AnimationControllerFile {
+    const NAME: &'static str = "animation controller file";
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior, PackSide::Resource];
+
+    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
+        whole(read::parse_file(bytes, cx), origin, controller_parsed_as)
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        bedrock_addon_core::json::write_json(&self.to_value()?, out, style)
+    }
+}
+
+impl JsonContent for AnimationControllerFile {}
+
+impl Definition for AnimationController {
+    type Kind = kind::Animation;
+    type File = AnimationControllerFile;
+    type Beta = NoBeta<kind::Animation>;
+}
+
+impl Placed for AnimationControllerFile {
+    /// `animation_controllers/<name>.json`, after the first controller
+    /// (`controller.animation.<name>`).
+    fn default_path(&self) -> PackPath {
+        file_path(
+            "animation_controllers",
+            "controller.animation.",
+            self.animation_controllers.keys().next(),
+        )
+    }
+}
+
+impl AnimationControllerFile {
+    /// Parses one controller file without upgrading it: the struct its `format_version` selects;
+    /// [`history::upgrade`](history::upgrade) finishes it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+    /// log would print when the bytes cannot be read as this file at all: not JSON, a
+    /// `format_version` with no struct here, or a document that does not fit the struct it selects.
+    pub fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<Any>, Rejected> {
+        let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
+        let (any, written, diagnostics) = read::parse_as_written(bytes, cx);
+        let diagnostics = diagnostics.located(&origin);
+        match (any, written) {
+            (Some(any), Some(written)) => {
+                let as_ = any.parsed_version();
+                Ok(Document::new(
+                    any,
+                    origin,
+                    version_info(&written, as_, false),
+                    diagnostics,
+                ))
+            }
+            _ => Err(Rejected::new(origin, diagnostics)),
+        }
+    }
+}
+
+/// `history::upgrade`: the step and the checks on a document `parse_as_written` gave.
+pub(crate) fn upgrade_document(
+    document: Document<Any>,
+    cx: &LoadContext,
+) -> Result<Document<AnimationControllerFile>, Rejected> {
+    let origin = document.origin().clone();
+    let version = document.version().clone();
+    let mut diagnostics = Diagnostics::default();
+    let written = version
+        .written
+        .map_or(V1_8_0, |v| SemVersion::new(v.major, v.minor, v.patch));
+    let upgraded = matches!(document.value(), Any::V1_8_0(_));
+    let file = read::upgrade(document.into_value(), &written, cx, &mut diagnostics)
+        .and_then(|file| read::finish(file, &written, cx, &mut diagnostics));
+    let diagnostics = diagnostics.located(&origin);
+    let info = VersionInfo::new(
+        version.written,
+        false,
+        version.effective,
+        version.parsed_as,
+        upgraded,
+    );
+    match file {
+        Some(file) => Ok(Document::new(file, origin, info, diagnostics)),
+        None => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+/// `animation_controllers/*.json`, packs bottom-up, sub-folders not read.
+const CONTROLLER_WALK: Walk = Walk::json_children_in(&["animation_controllers"]);
+
+/// The file's controllers, by their keys as written.
+fn controllers(file: AnimationControllerFile) -> Vec<(String, AnimationController)> {
+    file.animation_controllers.into_iter().collect()
+}
+
+fn combine_controllers(
+    parsed: Vec<FileCopy<AnimationControllerFile>>,
+    stack: &StackCx<'_>,
+) -> Registry<AnimationController> {
+    combine(
+        parsed,
+        stack,
+        "animation_controllers",
+        controllers,
+        Notice {
+            code: DiagnosticCode::AnimationControllerShadowed,
+            severity: Severity::Info,
+        },
+    )
+}
+
+/// The loader of `animation_controllers()`, on either stack: `animation_controllers/*.json`,
+/// each file read whole, its controllers combined per identifier, the higher pack winning.
 #[doc(hidden)]
-pub use load::LOADER;
-
-/// An animation controller file (`animation_controllers/*.json`): `{"format_version",
-/// "animation_controllers": {"controller.animation.<name>": {…}}}`, at the newest format
-/// version (1.10.0).
-///
-/// A file from 1.8.0 up to 1.10.0 is upgraded when it loads (its blend curves become state
-/// `variables`); [`history`] has the 1.8 shape. Any undeclared member drops the whole file;
-/// member names match ignoring case.
-#[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "animation_controllers")]
-pub struct AnimationControllerFile {
-    /// `format_version`: as written; `1.10.0` after an upgrade.
-    pub format_version: FormatVersion,
-    /// `animation_controllers`: each controller by its key as written
-    /// (`controller.animation.<name>`); the registry keys it lower-cased.
-    pub animation_controllers: IndexMap<String, AnimationController>,
-}
-
-/// One animation controller: a state machine over animations.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct AnimationController {
-    /// `initial_state`: the state to start in, compared as written with the lower-cased state
-    /// names; absent, the state `default`, else the first state.
-    pub initial_state: Option<String>,
-    /// `states`: each state by its name as written (vanilla lower-cases it).
-    pub states: IndexMap<String, State>,
-    /// Not JSON: the file's `format_version` was below 1.17.30, so vanilla lower-cases every
-    /// transition expression (string literals included) before compiling it.
-    pub lowercase_transitions: bool,
-    /// Not JSON: the file's `format_version` was below 1.18.10, so the initial state's
-    /// `on_entry` events do not fire when the controller starts.
-    pub legacy_event_skipping: bool,
-}
-
-/// One state of an [`AnimationController`].
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct State {
-    /// `variables`: state variables by name (vanilla stores `variable.<lower-cased name>`).
-    pub variables: Option<IndexMap<String, StateVariable>>,
-    /// `animations`: the animations the state plays, by short name, with blend weights.
-    pub animations: Option<Vec<StateAnimation>>,
-    /// `transitions`: the states to move to and their conditions, in order.
-    pub transitions: Option<Vec<Transition>>,
-    /// `blend_transition`: the cross-fade when leaving the state.
-    pub blend_transition: Option<BlendTransition>,
-    /// `blend_via_shortest_path`: blend each Euler axis the short way round; only `true` may be
-    /// written.
-    pub blend_via_shortest_path: Option<bool>,
-    /// `particle_effects`: particles played on entry.
-    pub particle_effects: Option<Vec<ParticleEffect>>,
-    /// `sound_effects`: sounds played on entry.
-    pub sound_effects: Option<Vec<SoundEffect>>,
-    /// `on_entry`: events fired on entering the state.
-    pub on_entry: Option<Vec<EventString>>,
-    /// `on_exit`: events fired on leaving the state.
-    pub on_exit: Option<Vec<EventString>>,
-}
-
-/// A state variable (`variables.<name>`): `input` remapped through `remap_curve`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct StateVariable {
-    /// `input`: the value remapped.
-    pub input: Molang,
-    /// `remap_curve`: input value (key) to output value; absent, the input is stored as is.
-    /// Vanilla evaluates the frames in its own member order (sorted key text), see
-    /// [`StateVariable::frames`].
-    pub remap_curve: Option<IndexMap<String, f32>>,
-}
-
-/// One entry of a state's `animations` array.
-#[derive(Clone, Debug, PartialEq)]
-pub enum StateAnimation {
-    /// A short name, played at weight 1 (vanilla lower-cases it).
-    Name(String),
-    /// Short names with their blend weights (`{"walk": "query.modified_move_speed"}`).
-    Weighted(IndexMap<String, Molang>),
-}
-
-/// One `transitions` entry: `{"<state>": "<condition>"}`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Transition {
-    /// The target state, as written (vanilla lower-cases it).
-    pub target: String,
-    /// The condition, as written (see [`AnimationController::lowercase_transitions`]).
-    pub condition: MolangSource,
-}
-
-/// A state's `blend_transition`.
-#[derive(Clone, Debug, PartialEq)]
-pub enum BlendTransition {
-    /// A number: fade out over this many seconds (0: no blend).
-    Seconds(f32),
-    /// Seconds since the transition (key) to the old state's weight.
-    Curve(IndexMap<String, f32>),
-}
+pub const LOADER: CollectionLoader<
+    Registry<AnimationController>,
+    FileCopy<AnimationControllerFile>,
+> = load::merged::<AnimationControllerFile, _>(CONTROLLER_WALK, combine_controllers);

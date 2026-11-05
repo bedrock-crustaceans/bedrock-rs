@@ -5,8 +5,8 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use super::history::{v0_0_0, v1_8_0};
-use super::new::LATEST;
 use super::schema::has_geometry_name;
+use super::types::LATEST;
 use super::{
     Bone, BoneLegacy, Cube, CubeUv, Description, FaceUv, Faces, Geometry, GeometryFile,
     GeometryLegacy, ItemDisplayTransform, ItemDisplayTransforms, Locator, PolyMesh, Polys,
@@ -191,6 +191,7 @@ pub(crate) fn modern(
     debug: Option<bool>,
     geometries: &[Geometry],
 ) -> Written {
+    // Not `write_envelope`: `debug` sits between version and payload; older shapes differ.
     let mut o = Object::new();
     o.put("format_version", version(format_version));
     o.opt("debug", debug.as_ref(), boolean)?;

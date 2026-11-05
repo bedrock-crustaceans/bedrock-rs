@@ -1,7 +1,7 @@
 //! The findings that are not schema failures: the controller reference stage the game logs
 //! (unknown state names), and the crate's own lints, where the game says nothing.
 
-use super::parse::V1_17_30;
+use super::read::V1_17_30;
 use super::{AnimationControllerFile, State};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::load::LoadContext;

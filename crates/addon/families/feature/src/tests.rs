@@ -1,6 +1,6 @@
 //! Unit tests of the feature module's tables: the payload keys, the chains and their ranges.
 
-use super::load::{Fam, FeatureType, KEYS, TypeFn, with_type};
+use super::{Fam, FeatureType, KEYS, TypeFn, with_type};
 use super::{
     MultiBlockFeature, OreFeature, ScatterFeature, SingleBlockFeature, SnapToSurfaceFeature,
 };
@@ -122,7 +122,7 @@ fn same_pack_duplicates(
     bedrock_addon_core::diagnostic::DiagnosticCode,
     bedrock_addon_core::diagnostic::Severity,
 )> {
-    use bedrock_addon_core::document::Contribution;
+    use bedrock_addon_core::document::{Contribution, Origin};
     use bedrock_addon_core::load::{LoadContext, LoadOptions, StackCx, StackPack};
     use bedrock_addon_core::pack_identity::{
         PackIdVersion, PackOrigin, PackPath, PackRef, PackSide, PackType,
@@ -141,14 +141,12 @@ fn same_pack_duplicates(
         let json = format!(
             r#"{{"format_version": "1.13.0", "minecraft:ore_feature": {{"description": {{"identifier": "demo:vein"}}, "count": {count}}}}}"#
         );
-        match super::load::parse_file(
+        let origin = Origin::file(
             pack.clone(),
             PackSide::Behavior,
-            &PackPath::from_static(path),
-            json.as_bytes(),
-            &cx,
-            super::load::FileSource::Pack,
-        ) {
+            PackPath::from_static(path),
+        );
+        match super::parse_file(origin, json.as_bytes(), &cx, super::FileSource::Pack) {
             (Some(id), Ok(document)) => Contribution::Stable(id, document),
             _ => panic!("the file loads"),
         }
@@ -156,7 +154,7 @@ fn same_pack_duplicates(
     let options = LoadOptions::default();
     let packs = [StackPack::new(pack.clone(), PackOrigin::World, cx.clone())];
     let stack = StackCx::new(&options, &packs);
-    let registry = (super::load::LOADER.combine)(
+    let registry = (super::LOADER.combine)(
         vec![file("features/a.json", 2), file("features/b.json", 3)],
         &stack,
     );

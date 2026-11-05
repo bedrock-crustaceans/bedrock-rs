@@ -1,6 +1,6 @@
 //! What loading an animation file and an animation controller file share: the document of a
-//! parsed file, the per-definition split of a walked file, and the combine rule (per identifier,
-//! the higher pack's definition replaces the lower one whole).
+//! parsed file and the combine both loaders run over the files' copies (each file split into
+//! its definitions; per identifier, the higher pack's definition replaces the lower one whole).
 
 use super::read::Parsed;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
@@ -9,7 +9,7 @@ use bedrock_addon_core::document::{
     Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::{AnimationRef, kind};
-use bedrock_addon_core::load::{LoadContext, StackCx, WalkFile};
+use bedrock_addon_core::load::{FileCopy, LoadContext, StackCx};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
@@ -80,45 +80,66 @@ pub fn file_path(directory: &str, prefix: &str, first: Option<&String>) -> PackP
 
 // ---- the collections --------------------------------------------------------------------------
 
-/// What one walked file gives a registry: its definitions, or its rejection, and the file's
-/// findings that belong to no one definition.
-#[derive(Debug)]
-pub struct FileContribution<T: Definition> {
-    contributions: Vec<Contribution<T>>,
-    findings: Vec<Diagnostic>,
-    /// The file's pack.
-    pack: Option<PackRef>,
-    /// The file came from the pack's active subpack.
-    subpack: bool,
-}
-
-impl<T: Definition> FileContribution<T> {
-    /// The same contribution with the pack and the subpack-ness of `file` set (a file whose path
-    /// differs from its key lies below a subpack).
-    #[must_use]
-    pub fn with_file(mut self, file: &WalkFile) -> Self {
-        self.pack = Some(file.pack.clone());
-        self.subpack = file.path != file.key;
-        self
+/// Combine the files' copies into one registry: each file read whole is split into one
+/// document per definition (`definitions` gives them, `member` is the object they sit under),
+/// and per identifier the higher pack's definition replaces the lower one whole; `shadowed` is
+/// the finding for a replaced one.
+///
+/// Each definition's findings (those below `<member>/<key>`) go with it, the rest of the
+/// file's to the registry; a rejected file is one rejection with no identifier.
+pub fn combine<T: Definition<Kind = kind::Animation>, F>(
+    parsed: Vec<FileCopy<F>>,
+    stack: &StackCx<'_>,
+    member: &str,
+    definitions: fn(F) -> Vec<(String, T)>,
+    shadowed: Notice,
+) -> Registry<T> {
+    // Within a pack, the game visits the active subpack's files before the base pack's, so with
+    // per-identifier last-wins a base-pack definition replaces a subpack one. A file whose path
+    // differs from its key lies below a subpack.
+    let mut group = 0_usize;
+    let mut previous: Option<PackRef> = None;
+    let mut keyed: Vec<(usize, bool, Result<Document<F>, Rejected>)> =
+        Vec::with_capacity(parsed.len());
+    for (key, file) in parsed {
+        let origin = match &file {
+            Ok(document) => document.origin(),
+            Err(rejected) => &rejected.origin,
+        };
+        if previous.as_ref() != Some(&origin.pack) {
+            group += 1;
+            previous = Some(origin.pack.clone());
+        }
+        let base = origin.path == key;
+        keyed.push((group, base, file));
     }
+    keyed.sort_by_key(|(group, base, _)| (*group, *base));
+    let mut builder = RegistryBuilder::new(
+        CombineRule::TopWins {
+            shadowed: Some(shadowed),
+        },
+        CombineRule::top_wins(),
+        stack.options,
+    );
+    for (_, _, file) in keyed {
+        split(file, member, definitions, &mut builder);
+    }
+    builder.finish()
 }
 
-/// Splits a loaded file into one document per definition: each definition's findings (those
-/// below `<member>/<key>`) go with it, the rest to the registry.
-pub fn split<T: Definition<Kind = kind::Animation>, F>(
+/// Splits a loaded file into one document per definition, pushed in file order after the
+/// file's findings that belong to no one definition.
+fn split<T: Definition<Kind = kind::Animation>, F>(
     result: Result<Document<F>, Rejected>,
     member: &str,
-    definitions: impl FnOnce(F) -> Vec<(String, T)>,
-) -> FileContribution<T> {
+    definitions: fn(F) -> Vec<(String, T)>,
+    builder: &mut RegistryBuilder<T>,
+) {
     let document = match result {
         Ok(document) => document,
         Err(rejected) => {
-            return FileContribution {
-                contributions: vec![Contribution::Rejected(None, rejected)],
-                findings: Vec::new(),
-                pack: None,
-                subpack: false,
-            };
+            builder.push(Contribution::Rejected(None, rejected));
+            return;
         }
     };
     let origin = document.origin().clone();
@@ -143,54 +164,10 @@ pub fn split<T: Definition<Kind = kind::Animation>, F>(
             Document::new(value, origin, version.clone(), diagnostics),
         ));
     }
-    FileContribution {
-        contributions,
-        findings: rest,
-        pack: None,
-        subpack: false,
+    for finding in rest {
+        builder.push_diagnostic(finding);
     }
-}
-
-/// The origin of a walked file.
-pub fn walk_origin(file: &WalkFile) -> Origin {
-    bedrock_addon_core::document::unversioned::origin_of(file)
-}
-
-/// Combine the files' contributions into one registry: per identifier the higher pack's definition
-/// replaces the lower one whole; `shadowed` is the finding for a replaced one.
-pub fn combine<T: Definition>(
-    mut parsed: Vec<FileContribution<T>>,
-    stack: &StackCx<'_>,
-    shadowed: Notice,
-) -> Registry<T> {
-    // Within a pack, the game visits the active subpack's files before the base pack's, so with
-    // per-identifier last-wins a base-pack definition replaces a subpack one.
-    let mut group = 0_usize;
-    let mut previous: Option<PackRef> = None;
-    let mut keyed: Vec<(usize, bool, FileContribution<T>)> = Vec::with_capacity(parsed.len());
-    for file in parsed.drain(..) {
-        if file.pack != previous {
-            group += 1;
-            previous.clone_from(&file.pack);
-        }
-        keyed.push((group, !file.subpack, file));
+    for contribution in contributions {
+        builder.push(contribution);
     }
-    keyed.sort_by_key(|(group, base, _)| (*group, *base));
-    let parsed = keyed.into_iter().map(|(_, _, file)| file);
-    let mut builder = RegistryBuilder::new(
-        CombineRule::TopWins {
-            shadowed: Some(shadowed),
-        },
-        CombineRule::top_wins(),
-        stack.options,
-    );
-    for file in parsed {
-        for finding in file.findings {
-            builder.push_diagnostic(finding);
-        }
-        for contribution in file.contributions {
-            builder.push(contribution);
-        }
-    }
-    builder.finish()
 }

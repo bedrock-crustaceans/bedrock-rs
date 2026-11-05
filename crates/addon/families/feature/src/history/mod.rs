@@ -13,7 +13,7 @@
 pub mod v1_13_0;
 
 use super::Feature;
-use super::load::upgrade_document;
+use super::upgrade_document;
 use bedrock_addon_core::document::{Content, Document, Rejected};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::EncodeError;
@@ -95,8 +95,8 @@ impl Any {
 /// The version of a newest struct.
 struct LatestVersion;
 
-impl super::load::FeatureFn<FormatVersion> for LatestVersion {
-    fn call<T: super::load::FeatureType>(self, _: &T) -> FormatVersion {
+impl super::FeatureFn<FormatVersion> for LatestVersion {
+    fn call<T: super::FeatureType>(self, _: &T) -> FormatVersion {
         <T as Versioned>::VERSION
     }
 }

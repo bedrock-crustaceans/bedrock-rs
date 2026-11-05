@@ -6,10 +6,10 @@ use facet::Facet;
 use facet_value::VArray;
 
 use super::Description;
-use super::load::{Rules, V1_13_0, strict_struct};
 use super::validate::Check;
 use super::values::{JsonInt, pair, weight_of, weight_value};
 use super::walk::{WORLD_GEN, Walk, walk};
+use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{StrictError, StrictFloat, Value};

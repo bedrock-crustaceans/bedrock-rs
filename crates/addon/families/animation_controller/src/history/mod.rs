@@ -64,5 +64,5 @@ pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<AnimationControllerFile>, Rejected> {
-    super::load::upgrade_document(document, cx)
+    super::upgrade_document(document, cx)
 }

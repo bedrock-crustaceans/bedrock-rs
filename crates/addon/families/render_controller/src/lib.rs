@@ -6,10 +6,9 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod fold;
-mod load;
 mod molang;
-mod new;
 mod read;
+mod types;
 mod validate;
 mod write;
 
@@ -18,127 +17,263 @@ mod tests;
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::molang::{Molang, MolangSource};
-use bedrock_addon_core::version::FormatVersion;
-
-#[doc(hidden)]
-pub use load::LOADER;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
+use bedrock_addon_core::document::{
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    PackTie, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+};
+use bedrock_addon_core::id::{RenderControllerId, kind};
+use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
+use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use read::{Parsed, group_by_controller};
 
 pub use fold::fold_case;
-pub use new::{ON_FIRE_ALPHA, ON_FIRE_GREEN};
+pub use types::{
+    BonePattern, FilterLighting, ON_FIRE_ALPHA, ON_FIRE_GREEN, RenderController,
+    RenderControllerArrays, RenderControllerFile, Rgba, UvAnim,
+};
 
-/// A render controller file (`render_controllers/*.json`): `{"format_version",
-/// "render_controllers": {"controller.render.<name>": {…}}}`.
+impl bedrock_addon_core::__private::Sealed for RenderControllerFile {}
+impl bedrock_addon_core::__private::Sealed for RenderController {}
+
+/// The one struct's version: every accepted file is parsed as it.
+const PARSED_AS: FormatVersion = known::V1_8_0;
+
+fn version_info(written: Option<&SemVersion>) -> VersionInfo {
+    let written = written.map(SemVersion::format_version);
+    VersionInfo::new(
+        written,
+        false,
+        written.unwrap_or(PARSED_AS),
+        PARSED_AS,
+        false,
+    )
+}
+
+impl Content for RenderControllerFile {
+    const NAME: &'static str = "render controller file";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// The file with the controllers that loaded. A controller the game drops on its own (no
+    /// `textures`, Molang in `geometry`, `textures` or `arrays` that does not compile, or a
+    /// `materials` value written as a number) is kept apart in
+    /// [`dropped`](RenderControllerFile::dropped) and its errors stay in the document's
+    /// findings: the file itself loaded.
+    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
+        let Parsed {
+            file,
+            dropped,
+            written,
+            mut diagnostics,
+        } = read::parse_file(path, bytes, cx);
+        for (_, findings) in dropped {
+            diagnostics.extend(findings);
+        }
+        let diagnostics = diagnostics.located(&origin);
+        match file {
+            Some(file) => Ok(Document::new(
+                file,
+                origin,
+                version_info(written.as_ref()),
+                diagnostics,
+            )),
+            None => Err(Rejected::new(origin, diagnostics)),
+        }
+    }
+
+    /// The file as JSON. A capital the model holds (text the game's case folding did not
+    /// reach) is written as a `\u00XX` escape wherever the folding would lower it, so the game
+    /// and this crate read the written file as the value that was written.
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        let mut text = Vec::new();
+        bedrock_addon_core::json::write_json(&self.to_value()?, &mut text, style)?;
+        out.extend(fold::protect(&text));
+        Ok(())
+    }
+}
+
+impl JsonContent for RenderControllerFile {}
+
+impl Definition for RenderController {
+    type Kind = kind::RenderController;
+    type File = RenderControllerFile;
+    type Beta = NoBeta<kind::RenderController>;
+}
+
+/// The directory of the family.
+const DIRECTORY: &str = "render_controllers";
+
+/// The file name of a file without controllers.
+const EMPTY_FILE: &str = "render_controllers/unnamed.json";
+
+impl Placed for RenderControllerFile {
+    /// `render_controllers/<first key>.json` (`render_controllers/controller.render.cow.json`):
+    /// the first loaded controller's key, or the first dropped one's in a file none of whose
+    /// controllers loaded; a file without controllers is `render_controllers/unnamed.json`.
+    fn default_path(&self) -> PackPath {
+        let mut keys = self.render_controllers.keys().chain(self.dropped.keys());
+        match keys.next() {
+            Some(first) => default_path(
+                "render_controllers",
+                &RenderControllerId::parse(first.as_str()),
+            ),
+            None => PackPath::from_static(EMPTY_FILE),
+        }
+    }
+}
+
+// ---- the collection ----------------------------------------------------------------------------
+
+/// What one walked file gives the registry: its controllers, loaded or dropped, or its
+/// rejection, and the file's findings that belong to no one controller.
+#[derive(Debug)]
+#[doc(hidden)]
+pub struct FileContribution {
+    contributions: Vec<Contribution<RenderController>>,
+    findings: Vec<Diagnostic>,
+}
+
+/// Every `.json` file below `render_controllers/`, packs bottom-up: the game walks its stack
+/// from the last pack to the first and replaces a name's controller by the one it loads last.
+/// A file that is no `.json` file is no file of the walk: `combine` reports it from the
+/// pack's file list, its bytes unread. Sub-folders are read in every pack (the game reads them
+/// recursively except in packs shipped inside the app).
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
+
+fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
+    let Parsed {
+        file: parsed,
+        dropped,
+        written,
+        diagnostics,
+    } = read::parse_file(&file.path, &file.bytes, cx);
+    let Some(parsed) = parsed else {
+        return FileContribution {
+            contributions: vec![Contribution::Rejected(
+                None,
+                Rejected::located(origin.clone(), diagnostics),
+            )],
+            findings: Vec::new(),
+        };
+    };
+    let version = version_info(written.as_ref());
+    let keyed = |key: &str| {
+        let mut origin = origin.clone();
+        origin.key = Some(key.into());
+        origin
+    };
+    let mut contributions = Vec::new();
+    // One pass over the findings, however many controllers the file holds.
+    let (mut by_key, mut rest) = group_by_controller(diagnostics, |key| {
+        parsed.render_controllers.contains_key(key)
+    });
+    for (key, controller) in parsed.render_controllers {
+        let mine = by_key.swap_remove(&key).unwrap_or_default();
+        let origin = keyed(&key);
+        contributions.push(Contribution::Stable(
+            RenderControllerId::parse(key),
+            Document::new(
+                controller,
+                origin.clone(),
+                version.clone(),
+                mine.located(&origin),
+            ),
+        ));
+    }
+    for (key, findings) in dropped {
+        let origin = keyed(&key);
+        contributions.push(Contribution::Rejected(
+            Some(RenderControllerId::parse(key)),
+            Rejected::located(origin.clone(), findings),
+        ));
+    }
+    // Nothing is left grouped: every key the grouping accepted was a controller's.
+    for (_, findings) in by_key {
+        rest.extend(findings);
+    }
+    FileContribution {
+        contributions,
+        findings: rest.located(&origin).into_iter().collect(),
+    }
+}
+
+/// The registry: per name the highest pack's controller; each controller it replaces is noted with
+/// `RenderControllerShadowed` (the crate's own note; the game replaces silently), and a controller
+/// that failed above one that loaded with `RenderControllerFallback`.
+fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<RenderController> {
+    // The crate's own note: the game replaces silently.
+    let shadowed_notice = Notice {
+        code: DiagnosticCode::RenderControllerShadowed,
+        severity: Severity::Info,
+    };
+    let mut builder = RegistryBuilder::new(
+        CombineRule::TopWinsFallback {
+            fallback: Some(Notice {
+                code: DiagnosticCode::RenderControllerFallback,
+                // The game keeps the lower one silently, so this is the crate's own information.
+                severity: Severity::Info,
+            }),
+        }
+        // Inside one pack the controller loaded last replaces the earlier ones of its name (the
+        // walk gives a pack's files in path order), each replaced one noted.
+        .within_pack(PackTie::last(Some(shadowed_notice))),
+        CombineRule::top_wins(),
+        stack.options,
+    );
+    let shadowed = |origin: &Origin| {
+        Diagnostic::info(DiagnosticCode::RenderControllerShadowed)
+            .phase(Phase::Validate)
+            .in_file(origin)
+    };
+    // A file of the directory that is no `.json` file, from the packs' file lists: the game
+    // skips it without a word, so this is the crate's own information.
+    for (pack, ignored) in
+        bedrock_addon_core::load::unread_files(stack, DIRECTORY, PackPath::is_json)
+    {
+        let file = Origin::file(pack.pack.clone(), PackSide::Resource, ignored.path.clone());
+        builder.push_diagnostic(
+            Diagnostic::info(DiagnosticCode::IgnoredFile { text: None }).in_file(&file),
+        );
+    }
+    // The effective definition of each name so far, to note the one a higher pack replaces
+    // (one of the same pack is the tie's to note).
+    let mut effective: IndexMap<RenderControllerId, Origin> = IndexMap::new();
+    for file in parsed {
+        for finding in file.findings {
+            builder.push_diagnostic(finding);
+        }
+        for contribution in file.contributions {
+            if let Contribution::Stable(id, document) = &contribution {
+                let incoming = document.origin().clone();
+                let pack = incoming.pack.index();
+                if let Some(lower) = effective.insert(id.clone(), incoming)
+                    && lower.pack.index() != pack
+                {
+                    builder.push_diagnostic(shadowed(&lower));
+                }
+            }
+            builder.push(contribution);
+        }
+    }
+    builder.finish()
+}
+
+/// The loader of `rp.render_controllers()`: every `.json` file below `render_controllers/` of
+/// every resource pack, the highest pack's controller winning per name.
 ///
-/// One schema serves every `format_version` from 1.8.0 up to 65535.0.0; the version selects
-/// nothing. Before the file is read its whole text is lower-cased outside single-quoted spans
-/// ([`fold_case`]), so every key and every string of the model is lower case except Molang
-/// string literals. Any member the schema does not declare, a missing required member or a
-/// value of the wrong JSON type drops the whole file, as the game does.
-#[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "render_controllers")]
-pub struct RenderControllerFile {
-    /// `format_version`: the version the file was written in (at least 1.8.0).
-    pub format_version: FormatVersion,
-    /// `render_controllers`: each controller by its key (`controller.render.<name>`), case
-    /// folded, in the game's member order (sorted keys).
-    pub render_controllers: IndexMap<String, RenderController>,
-    /// The controllers of the file the game drops when it loads it (no `textures`, Molang in
-    /// `geometry`, `textures` or `arrays` that does not compile, or a `materials` value
-    /// written as a number, which the game reads as the empty text and does not compile
-    /// either), by key, as they were written: the game registers none of them, and the file is written back with them, so a
-    /// written file reads back to the same controllers and the same findings. Empty in a file
-    /// every controller of which loads. A key is in one of the two maps: a file holding one
-    /// key in both is not written (`NotRepresentable` at `render_controllers/<key>`).
-    pub dropped: IndexMap<String, RenderController>,
-}
-
-/// One render controller: which geometry, materials and textures a model is drawn with, which
-/// bones are visible, and how it is tinted and lit.
-///
-/// Only `geometry` and `textures` are required. The absent members have the game's defaults,
-/// which the accessors of the same name give (`color()`, `is_hurt_color()`, …).
-#[derive(Clone, Debug, PartialEq)]
-pub struct RenderController {
-    /// `geometry`: a Molang expression naming the geometry (`geometry.default`, or an
-    /// `array.<name>[…]` lookup).
-    pub geometry: MolangSource,
-    /// `textures`: one expression per texture layer, in order; never empty.
-    pub textures: Vec<MolangSource>,
-    /// `materials`: bone pattern and material expression, in the order the game applies them:
-    /// the elements in array order and, inside one element object, sorted by key. A later entry
-    /// wins for a bone several patterns match. Empty when the member is absent. A JSON bool is
-    /// kept as the text `true` / `false` and a JSON number as the empty text, as the game reads
-    /// them.
-    pub materials: Vec<(BonePattern, MolangSource)>,
-    /// `part_visibility`: bone pattern and visibility, in the same order as `materials`; a
-    /// later entry wins. Empty when the member is absent.
-    pub part_visibility: Vec<(BonePattern, Molang)>,
-    /// `arrays`: the named arrays the expressions index.
-    pub arrays: Option<RenderControllerArrays>,
-    /// `color`: the tint; absent, every channel is `this`.
-    pub color: Option<Rgba>,
-    /// `overlay_color`: the overlay; absent, every channel is `this`.
-    pub overlay_color: Option<Rgba>,
-    /// `on_fire_color`: the overlay while burning; absent, the game's flicker expression.
-    pub on_fire_color: Option<Rgba>,
-    /// `is_hurt_color`: the overlay while hurt; absent, red at a quarter opacity.
-    pub is_hurt_color: Option<Rgba>,
-    /// `uv_anim`: the texture offset and scale.
-    pub uv_anim: Option<UvAnim>,
-    /// `light_color_multiplier`: a factor on the light colour; absent 1.
-    pub light_color_multiplier: Option<Molang>,
-    /// `ignore_lighting`: draw without lighting; absent false.
-    pub ignore_lighting: Option<bool>,
-    /// `filter_lighting`: only `true` may be written; absent false.
-    pub filter_lighting: Option<FilterLighting>,
-    /// `rebuild_animation_matrices`: absent false.
-    pub rebuild_animation_matrices: Option<bool>,
-}
-
-/// The `arrays` of a controller: lists of resource references by name, one map per kind. A
-/// kind written without any array fails the file, so an empty map is an absent kind.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct RenderControllerArrays {
-    /// `geometries`: each `array.<name>` and its geometry references; no list is empty.
-    pub geometries: IndexMap<String, Vec<MolangSource>>,
-    /// `materials`: each `array.<name>` and its material references.
-    pub materials: IndexMap<String, Vec<MolangSource>>,
-    /// `textures`: each `array.<name>` and its texture references.
-    pub textures: IndexMap<String, Vec<MolangSource>>,
-}
-
-/// A colour object (`color`, `overlay_color`, `on_fire_color`, `is_hurt_color`): one Molang
-/// value per channel.
-///
-/// Once the object is written, a channel it leaves out is `this` (which is 0 for a colour), not
-/// the member's default: [`Rgba::channels`] gives the four values the game uses.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Rgba {
-    /// `r`.
-    pub r: Option<Molang>,
-    /// `g`.
-    pub g: Option<Molang>,
-    /// `b`.
-    pub b: Option<Molang>,
-    /// `a`.
-    pub a: Option<Molang>,
-}
-
-/// `uv_anim`: both members are required, each exactly two values (u, v).
-#[derive(Clone, Debug, PartialEq)]
-pub struct UvAnim {
-    /// `offset`: added to the texture coordinates; the game's default is (0, 0).
-    pub offset: [Molang; 2],
-    /// `scale`: multiplied into the texture coordinates; the game's default is (1, 1).
-    pub scale: [Molang; 2],
-}
-
-/// A bone pattern of `materials` and `part_visibility`: letters, digits, `_`, `.`, `:` and
-/// `*`, where `*` stands for any run of bone-name characters.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct BonePattern(pub String);
-
-/// The one value `filter_lighting` may have: `true`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct FilterLighting;
+/// By hand rather than `load::merged`: a file holds several controllers, and each one the game
+/// drops carries its own findings, which the whole-file `Content::parse` folds into the file's.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<RenderController>, FileContribution> =
+    CollectionLoader {
+        walk: WALK,
+        parse: parse_walk_file,
+        combine,
+        needs: &[],
+        then: None,
+    };

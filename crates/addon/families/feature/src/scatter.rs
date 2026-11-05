@@ -4,8 +4,8 @@
 use facet::Facet;
 
 use super::Description;
-use super::load::Rules;
-use super::parse::{formatted, parse_strict, required_child};
+use super::Rules;
+use super::read::{formatted, parse_strict, required_child};
 use super::validate::Check;
 use super::walk::{SCATTER, Walk};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, VanillaText};

@@ -1,7 +1,7 @@
 //! The schema rules a typed parse cannot express (node ranges, array lengths, engine gates) and
 //! the readers' own findings of the shared types, walked member by member.
 
-use super::parse::{
+use super::read::{
     ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, FLOAT_OUT_OF_RANGE, INT_OUT_OF_RANGE, RANGE_MAX_OUT_OF_RANGE,
     RANGE_MIN_OUT_OF_RANGE, formatted, not_valid_here,
 };

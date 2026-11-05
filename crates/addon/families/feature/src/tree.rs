@@ -6,10 +6,10 @@ use facet_value::VObject;
 
 use super::Description;
 use super::blocks::WeightedHeight;
-use super::load::{Rules, V1_13_0, strict_struct};
 use super::validate::Check;
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
 use super::walk::walk;
+use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{JsonType, StrictBool, StrictError, StrictFloat, Value};
@@ -961,8 +961,8 @@ fn intervals(check: &mut ValidateCx<'_>, values: Option<&Vec<JsonInt>>) {
                 let at = check.at.clone();
                 check.diagnostics.push(
                     Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: Some(super::parse::formatted(
-                            super::parse::INT_OUT_OF_RANGE,
+                        text: Some(super::read::formatted(
+                            super::read::INT_OUT_OF_RANGE,
                             &[&value.0, &1, &i32::MAX],
                         )),
                     })
@@ -1442,5 +1442,40 @@ impl Rules for TreeFeature {
             self.mangrove_roots.as_ref(),
             mangrove_roots,
         );
+    }
+}
+
+impl TreeFeature {
+    /// A tree with this identifier and no parts yet.
+    pub fn new(identifier: FeatureId) -> Self {
+        Self {
+            description: super::Description::new(identifier),
+            base_block: None,
+            base_cluster: None,
+            may_grow_on: None,
+            may_replace: None,
+            may_grow_through: None,
+            trunk: None,
+            acacia_trunk: None,
+            cherry_trunk: None,
+            fallen_trunk: None,
+            fancy_trunk: None,
+            mangrove_trunk: None,
+            mega_trunk: None,
+            poplar_trunk: None,
+            canopy: None,
+            acacia_canopy: None,
+            cherry_canopy: None,
+            fancy_canopy: None,
+            mangrove_canopy: None,
+            mega_canopy: None,
+            mega_pine_canopy: None,
+            pine_canopy: None,
+            roofed_canopy: None,
+            spruce_canopy: None,
+            random_spread_canopy: None,
+            poplar_canopy: None,
+            mangrove_roots: None,
+        }
     }
 }

@@ -177,6 +177,7 @@ impl RenderControllerFile {
         for (key, controller) in all {
             controllers.insert(key.as_str(), controller.to_value()?);
         }
+        // Not `write_envelope`: no `Family` reads the file, and the version is as written.
         let mut object = VObject::new();
         object.insert("format_version", self.format_version.to_string());
         object.insert("render_controllers", Value::from(controllers));

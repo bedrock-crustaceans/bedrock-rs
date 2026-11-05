@@ -4,10 +4,10 @@
 use facet::Facet;
 
 use super::Description;
-use super::load::{Rules, V1_13_0, strict_struct};
 use super::validate::Check;
 use super::values::{CarverRange, JsonInt};
 use super::walk::{WORLD_GEN, Walk};
+use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::BlockSpecifier;

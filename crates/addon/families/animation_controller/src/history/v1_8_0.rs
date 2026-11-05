@@ -5,7 +5,7 @@
 
 use indexmap::IndexMap;
 
-use super::super::parse::{V1_8_0, controller_format_version, read_controllers, read_objects};
+use super::super::read::{V1_8_0, controller_format_version, read_controllers, read_objects};
 use super::super::{
     AnimationController as LatestController, AnimationControllerFile as Latest, EventString,
     ParticleEffect as LatestParticleEffect, State as LatestState, StateAnimation, StateVariable,
@@ -552,11 +552,11 @@ impl VersionStruct for Latest {
             cx.original_version.patch,
         );
         let file = Node::of(payload)
-            .and_then(|root| super::super::parse::read_file(&mut walk, root, commands, &written));
+            .and_then(|root| super::super::read::read_file(&mut walk, root, commands, &written));
         let failed = walk.diagnostics.has_errors();
         d.extend(walk.diagnostics);
         let mut file = file.filter(|_| !failed)?;
-        super::super::parse::set_gates(&mut file, &written);
+        super::super::read::set_gates(&mut file, &written);
         Some(file)
     }
 

@@ -4,11 +4,11 @@
 use facet::Facet;
 
 use super::Description;
-use super::load::{Rules, V1_13_0, strict_struct};
-use super::parse::parse_strict_with;
+use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::JsonInt;
 use super::walk::walk;
+use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{
@@ -293,7 +293,7 @@ impl Rules for StructureTemplateFeature {
                         && intersection.block_whitelist.is_none()
                     {
                         let at = check.path("block_allowlist");
-                        check.diagnostics.push(super::parse::required_child(at));
+                        check.diagnostics.push(super::read::required_child(at));
                     }
                     check.descriptors("block_allowlist", intersection.block_allowlist.as_deref());
                     check.descriptors("block_whitelist", intersection.block_whitelist.as_deref());
