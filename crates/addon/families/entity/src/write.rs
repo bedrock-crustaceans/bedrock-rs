@@ -2,32 +2,13 @@
 //! known ones at its level.
 
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra};
-use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
-use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{BETA_VERSION, write_payload};
+use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_core::versioning::write_payload;
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use super::component::EntityComponent;
 use super::{AnimateEntry, Description, Entity, Property, PropertyDefault, Scripts};
-
-/// The whole document: `format_version` (`"beta"` for a beta document) and the payload.
-pub(crate) fn document(
-    entity: &Entity,
-    version: FormatVersion,
-    out: &mut Vec<u8>,
-    style: WriteStyle,
-) -> Result<(), EncodeError> {
-    let written: Value = if version == BETA_VERSION {
-        "beta".into()
-    } else {
-        version.to_string().into()
-    };
-    let mut root = VObject::new();
-    root.insert("format_version", written);
-    root.insert("minecraft:entity", payload(entity)?);
-    write_json(&Value::from(root), out, style)
-}
 
 /// The payload object.
 pub(crate) fn payload(entity: &Entity) -> Result<Value, EncodeError> {

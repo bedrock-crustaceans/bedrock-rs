@@ -2,7 +2,7 @@
 //! `minecraft:collision_box` box, of the base and of each permutation, becomes `min`/`max`.
 
 use crate::component::{CollisionBoundingBox, CollisionBox};
-use crate::parse::{CEREAL, parse_document};
+use crate::read::{CEREAL, parse_document};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};

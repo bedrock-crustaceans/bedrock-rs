@@ -1231,7 +1231,7 @@ fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_
     const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
 
     use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
-    use bedrock_addon::document::Content;
+    use bedrock_addon::document::{Content, JsonDocument};
     use bedrock_addon::families::block::{Block, history};
     use bedrock_addon::load::LoadContext;
     use bedrock_addon::pack::PackType;

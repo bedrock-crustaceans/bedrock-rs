@@ -3,6 +3,7 @@
 //! `history::Any::to_json`; plus construction, `default_path` and the network NBT.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::document::{ComponentRef, Content, Placed};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::pack_identity::PackPath;

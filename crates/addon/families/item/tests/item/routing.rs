@@ -1,6 +1,7 @@
 //! Format routing, the legacy format and versions as written.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangVersion, RawVersion, format_molang_version};
 use bedrock_addon_core::pack_identity::PackPath;

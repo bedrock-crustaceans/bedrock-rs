@@ -68,6 +68,22 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
         Ok(())
     }
 
+    /// The whole document the value writes: by default [`write_envelope`] over
+    /// [`write_version`](Self::write_version), the struct's payload and
+    /// [`write_extras`](Self::write_extras), after [`refuse_write`](Self::refuse_write).
+    ///
+    /// Overridden only by a family that picks the format it writes by what the value holds:
+    /// block and item write a value the newest format cannot hold as an older document, whose
+    /// payload is not [`VersionStruct::write`]. The three hooks above are then the override's
+    /// to call or not.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError` when the value has no text.
+    fn write_root(&self) -> Result<Value, EncodeError> {
+        document_of(self)
+    }
+
     /// Reads the file at `origin`: the stable document, a beta one or the rejection. Default:
     /// [`parse_document`] of the family. [`Content::parse`] (a beta document refused) and
     /// `load::registry` read through it, so a family with a check of its own around the
@@ -176,7 +192,7 @@ impl<T: JsonDocument> Content for T {
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        crate::json::write_json(&document_of(self)?, out, style)
+        crate::json::write_json(&self.write_root()?, out, style)
     }
 }
 

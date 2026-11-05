@@ -9,6 +9,7 @@
 
 mod component;
 mod document;
+mod gates;
 mod steps;
 
 pub use component::{
@@ -23,6 +24,17 @@ pub(crate) use document::{
     SideCarPlace, binding, from_component_map, into_component_map, parse_parts, write_component,
     write_parts,
 };
+#[cfg(test)]
+pub(crate) use gates::{GateRow, gate_with, release_threshold};
+pub(crate) use gates::{HISTORY_ROWS, gate};
+
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::{Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::version::FormatVersionInput;
+use bedrock_addon_core::versioning::{self, Family, Loaded};
+
+use crate::Item;
 
 pub mod v1_10_0;
 pub mod v1_26_30;
@@ -114,8 +126,12 @@ format_module! {
     v1_26_0 = (1, 26, 0)
 }
 
+/// The item family of the version-chain machinery (hidden: only the loaders name it).
+#[doc(hidden)]
+pub struct ItemFamily;
+
 bedrock_addon_core::version_chain! {
-    family = crate::load::ItemFamily;
+    family = ItemFamily;
     /// The struct an item file's `format_version` selected (the legacy item format for a
     /// document that is not component based).
     #[derive(Clone, Debug, PartialEq)]
@@ -165,4 +181,75 @@ bedrock_addon_core::version_chain! {
     }
     beta = /// A beta document.
     Beta(crate::Beta);
+}
+
+impl Any {
+    /// Runs the remaining upgrade steps on a document [`Item::parse_as_written`](JsonDocument::parse_as_written) gave: the
+    /// same result `Item::parse` gives (a beta document is rejected here; it has no stable
+    /// form).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an
+    /// error finding.
+    pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Item>, Rejected> {
+        let origin = document.origin().clone();
+        let version = document.version().clone();
+        let diagnostics = document.diagnostics().clone();
+        let any = document.into_value();
+        let identity = versioning::Identity {
+            identifier: Some(any.identifier().to_owned()),
+            runtime_identifier: None,
+        };
+        let written = FormatVersionInput {
+            version: version.written.or(Some(version.effective)),
+            beta_literal: version.beta,
+            prerelease: false,
+        };
+        let at = JsonPath::new().child(ItemFamily::PAYLOAD_KEY);
+        let parsed = versioning::Parsed::<ItemFamily>::from_value(
+            Some(any),
+            version,
+            written,
+            at,
+            diagnostics,
+        )
+        .with_identity(identity);
+        let outcome = versioning::finish::<ItemFamily>(parsed, cx);
+        let diagnostics = outcome.diagnostics.located(&origin);
+        match outcome.value {
+            Some(Loaded::Stable(item)) => {
+                Ok(Document::new(item, origin, outcome.version, diagnostics))
+            }
+            _ => Err(Rejected::new(origin, diagnostics)),
+        }
+    }
+
+    /// The identifier the document names.
+    pub fn identifier(&self) -> &str {
+        match self {
+            Any::V1_10_0(v) => &v.description.identifier,
+            Any::V1_16_100(v) => &v.description.identifier,
+            Any::V1_19_83(v) => &v.description.identifier,
+            Any::V1_20_0(v) => &v.description.identifier,
+            Any::V1_20_20(v) => &v.description.identifier,
+            Any::V1_20_30(v) => &v.description.identifier,
+            Any::V1_20_40(v) => &v.description.identifier,
+            Any::V1_20_50(v) => &v.description.identifier,
+            Any::V1_20_60(v) => &v.description.identifier,
+            Any::V1_20_80(v) => &v.description.identifier,
+            Any::V1_21_10(v) => &v.description.identifier,
+            Any::V1_21_30(v) => &v.description.identifier,
+            Any::V1_21_40(v) => &v.description.identifier,
+            Any::V1_21_50(v) => &v.description.identifier,
+            Any::V1_21_60(v) => &v.description.identifier,
+            Any::V1_21_80(v) => &v.description.identifier,
+            Any::V1_21_90(v) => &v.description.identifier,
+            Any::V1_21_110(v) => &v.description.identifier,
+            Any::V1_26_0(v) => &v.description.identifier,
+            Any::V1_26_30(v) => v.description.identifier.as_str(),
+            Any::V1_26_50(v) => v.description.identifier.as_str(),
+            Any::Beta(v) => v.description.identifier.as_str(),
+        }
+    }
 }

@@ -296,6 +296,7 @@ fn the_vanilla_1_26_50_blocks_are_upgraded() {
 /// The chain: `[1.26.20, 1.26.60)` is the 1.26.20 struct, `[1.26.60, engine]` the newest.
 #[test]
 fn the_newest_struct_is_1_26_60() {
+    use bedrock_addon::document::JsonDocument;
     use bedrock_addon::families::block::history::BlockFamily;
     use bedrock_addon::version::FormatVersionInput;
     use bedrock_addon::versioning::{Selection, select};

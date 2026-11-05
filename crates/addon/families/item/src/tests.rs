@@ -2,15 +2,19 @@
 //! the stack's override gates.
 
 use bedrock_addon_core::document::Content;
-use bedrock_addon_core::load::{LoadContext, LoadOptions, StackCx, WalkFile};
-use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSide, PackType};
+use bedrock_addon_core::load::{LoadContext, LoadOptions, StackCx, StackPack, WalkFile};
+use bedrock_addon_core::pack_identity::{
+    PackIdVersion, PackOrigin, PackPath, PackRef, PackSide, PackType,
+};
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{RangeModel, Selection, VersionChain, check_chain, select};
 use indexmap::IndexMap;
 
 use super::Item;
+use super::LOADER;
 use super::history::Any;
-use super::load::{GateRow, ItemFamily, LOADER, gate_with, release_threshold};
+use super::history::ItemFamily;
+use super::history::{GateRow, gate_with, release_threshold};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 
@@ -174,19 +178,46 @@ fn pack(index: usize, name: &str) -> PackRef {
     )
 }
 
-/// One parsed file of `pack`.
-fn file(pack: &PackRef, path: &str, json: &str, base_game: bool) -> super::load::ParsedItem {
+/// One parsed file of `pack`, read in its pack's context: a base-game pack's when `base_game`.
+fn file(
+    pack: &PackRef,
+    path: &str,
+    json: &str,
+    base_game: bool,
+) -> bedrock_addon_core::document::Contribution<Item> {
+    (LOADER.parse)(&walked(pack, path, json), &context(base_game))
+}
+
+/// The context a file of a pack is read with: a base-game pack's when `base_game`.
+fn context(base_game: bool) -> LoadContext {
     let mut cx = LoadContext::detached();
     cx.is_base_game_pack = base_game;
+    cx
+}
+
+/// The walked file `path` of `pack`.
+fn walked(pack: &PackRef, path: &str, json: &str) -> WalkFile {
     let path = PackPath::new(path).unwrap();
-    let walk = WalkFile {
+    WalkFile {
         pack: pack.clone(),
         side: PackSide::Behavior,
         path: path.clone(),
         key: path,
         bytes: bytes::Bytes::copy_from_slice(json.as_bytes()),
-    };
-    (LOADER.parse)(&walk, &cx)
+    }
+}
+
+/// The stack of `packs` (each with whether it is a base-game pack), top first: what the
+/// combine reads a pack's base-game flag from.
+fn stack(packs: &[(&PackRef, bool)]) -> Vec<StackPack> {
+    let mut packs: Vec<_> = packs.to_vec();
+    packs.sort_by_key(|(pack, _)| pack.index());
+    packs
+        .into_iter()
+        .map(|(pack, base_game)| {
+            StackPack::new(pack.clone(), PackOrigin::World, context(base_game))
+        })
+        .collect()
 }
 
 fn doc(version: &str, id: &str, components: &str) -> String {
@@ -252,7 +283,8 @@ fn v15_the_vanilla_override_gates() {
         ),
     ];
     let options = LoadOptions::default();
-    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &[]));
+    let packs = stack(&[(&vanilla, true), (&addon, false)]);
+    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &packs));
     let texts: Vec<String> = registry
         .rejected()
         .iter()
@@ -312,7 +344,8 @@ fn v15_the_override_gates_compare_the_version_not_the_format() {
         ),
     ];
     let options = LoadOptions::default();
-    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &[]));
+    let packs = stack(&[(&vanilla, true), (&addon, false)]);
+    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &packs));
     let texts: Vec<String> = registry
         .rejected()
         .iter()
@@ -348,7 +381,8 @@ fn v1_an_item_a_higher_pack_overrides_is_told() {
         file(&high, "items/x.json", &text, false),
     ];
     let options = LoadOptions::default();
-    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &[]));
+    let packs = stack(&[(&low, false), (&base, true), (&high, false)]);
+    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &packs));
     let told: Vec<(
         String,
         Option<String>,

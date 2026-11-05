@@ -14,188 +14,174 @@ pub use states::{
     Connection, MultiBlock, PlacementDirection, PlacementPosition, StateValues, Traits,
 };
 
-mod load;
-mod parse;
+mod read;
 mod states;
+mod types;
 mod validate;
 mod write;
 
 #[cfg(feature = "nbt")]
 mod network;
-mod new;
 
-use indexmap::IndexMap;
+pub use types::{Block, Description, MaterialType, Permutation, VanillaBlockData};
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
-use bedrock_addon_core::id::BlockId;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt};
-use bedrock_addon_core::molang::Molang;
-use bedrock_addon_core::shared::MenuCategory;
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::{
+    Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Origin, Registry, default_path,
+};
+use bedrock_addon_core::id::{BlockId, kind};
+use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind,
+    Loaded, Reading, StructIndex, ValidateCx, VersionChain,
+};
+use component::BlockComponent;
+use history::{Any, BlockFamily};
+use read::{CEREAL, read_file};
 
-use component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitionEvent};
+/// The floor: below 1.16.0 the game's upgrades discard most components, so the crate rejects the
+/// file.
+const FLOOR: FormatVersion = FormatVersion::new(1, 16, 0);
 
+impl Family for BlockFamily {
+    const NAME: &'static str = "block";
+    const PAYLOAD_KEY: &'static str = "minecraft:block";
+    const FLOOR: FormatVersion = FLOOR;
+    type Latest = Block;
+    type Beta = NoBeta<kind::Block>;
+    type Component = BlockComponent;
+    type Any = Any;
+    const ENVELOPE: Envelope = Envelope {
+        // Every block file is read as a document whose version path and size limits are the
+        // file's own.
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with an information at it.
+        clamps_beyond_double: true,
+        // Rule 11 reads a component written twice ("Duplicate component … found"); every other
+        // member written twice keeps its last value.
+        duplicates_kept_in: &["components"],
+        // The game reads a block file as a versioned document: the raw text below 1.26.20, exactly
+        // two members from it.
+        check: EnvelopeCheck::From(CEREAL),
+        ..Envelope::DEFAULT
+    };
+
+    // The v1_26_20 and v1_26_60 slices are strict under rule N2: an unknown member or component
+    // of a cereal document rejects it. The legacy slice is the hand-written parser's (the crate's
+    // legacy reader), which takes `null` itself and does not reject unknown members: its findings
+    // stay as they are.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        if is_cereal(index) {
+            Reading::DOCUMENT
+        } else {
+            Reading::OWN
+        }
+    }
+
+    fn components() -> &'static ComponentTable<Self> {
+        BlockComponent::TABLE
+    }
+
+    fn component_sections(v: &mut Block) -> Vec<ComponentSection<'_, BlockComponent>> {
+        let mut sections = Vec::with_capacity(1 + v.permutations.len());
+        let at = JsonPath::new().child("components");
+        sections.push(ComponentSection::new(at, false, &mut v.components));
+        for (index, permutation) in v.permutations.iter_mut().enumerate() {
+            let at = JsonPath::new()
+                .child("permutations")
+                .index(index)
+                .child("components");
+            sections.push(ComponentSection::new(at, true, &mut permutation.components));
+        }
+        sections
+    }
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(block) = v {
+            validate::validate(block, cx);
+        }
+    }
+}
+
+/// Whether `index` names a cereal struct (1.26.20 and later).
+fn is_cereal(index: StructIndex) -> bool {
+    match index {
+        StructIndex::Stable(i) => <Any as VersionChain<BlockFamily>>::VERSIONS
+            .get(i)
+            .is_some_and(|version| *version >= CEREAL),
+        StructIndex::Beta => false,
+    }
+}
+
+impl JsonDocument for Block {
+    type Family = BlockFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// [`read_file`]: `parse_document`'s steps, with a legacy file's findings at the payload.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<BlockFamily> {
+        read_file(origin, bytes, cx)
+    }
+
+    /// The document of the format the block is written in ([`Block::document`]): a block the
+    /// 1.26.20 format cannot hold is written as a legacy document at its own version, whose
+    /// payload is not [`VersionStruct::write`](bedrock_addon_core::versioning::VersionStruct::write).
+    fn write_root(&self) -> Result<Value, EncodeError> {
+        self.document()
+    }
+}
+
+impl JsonPlaced for Block {
+    /// `blocks/<namespace>/<name>.json`.
+    fn place(&self) -> PackPath {
+        default_path("blocks", &self.description.identifier)
+    }
+}
+
+impl JsonDefinition for Block {
+    type Kind = kind::Block;
+
+    fn identifier(&self) -> &BlockId {
+        &self.description.identifier
+    }
+}
+
+// ---- the collection ----------------------------------------------------------------------
+
+/// `blocks/**/*.json`, packs bottom-up (the higher pack's definition replaces the lower's).
+/// Vanilla's loader takes `.json` only, as written (`Accept::Ext`).
+const WALK: Walk = Walk::json_tree_in(&["blocks"]);
+
+/// The loader of `bp.blocks()`: `blocks/**/*.json` of every behaviour pack, combined top pack
+/// wins.
 #[doc(hidden)]
-pub use load::LOADER;
+pub const LOADER: CollectionLoader<Registry<Block>, Contribution<Block>> =
+    load::registry::<Block>(WALK);
 
-/// A custom block (`minecraft:block`), at the newest format version.
-///
-/// JSON: `{"format_version": "1.26.20", "minecraft:block": {"description", "components",
-/// "permutations"?}}`. The base components always apply; each permutation's components replace
-/// them while its condition holds.
-#[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "minecraft:block")]
-pub struct Block {
-    /// What the block is (JSON `description`).
-    pub description: Description,
-    /// The base components (JSON `components`).
-    pub components: ComponentMap<BlockComponent>,
-    /// Legacy components an upgraded document kept (JSON `deprecated`, the crate's own member; only
-    /// allow-listed packs below 1.26.20 have them).
-    pub deprecated: DeprecatedComponents,
-    /// Component overrides that apply while their condition holds (JSON `permutations`).
-    pub permutations: Vec<Permutation>,
-    /// The legacy events of an allow-listed pack's document below 1.26.20 (JSON
-    /// `deprecated_event_handlers`, the crate's own member; the game's name for them is `events`).
-    pub deprecated_event_handlers: IndexMap<String, DeprecatedDefinitionEvent>,
-    /// The order of the 1.21.60 `minecraft:custom_components` list the base components came from
-    /// (JSON `ordered_v1_custom_components`).
-    pub ordered_v1_custom_components: Vec<String>,
-    /// The document's own `format_version` (the effective one when absent): what the version
-    /// gates of validation and the client's runtime flags compare against. Not a JSON member;
-    /// the writer writes it as `format_version` when it is 1.26.20 or newer.
-    pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:block`.
-    pub extra: Extra,
-    /// Where the file has the members that a rule of 1.26.20 refuses of a block read from a
-    /// file below it, where an upgrade step moved them: `(the member of the block, the
-    /// member of the file)`. The write's refusal names the file's member, so the author sees where to fix it. Not a
-    /// JSON member; empty for every block that is written.
-    #[doc(hidden)]
-    pub(crate) refused_at: Vec<(
-        bedrock_addon_core::diagnostic::JsonPath,
-        bedrock_addon_core::diagnostic::JsonPath,
-    )>,
-}
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
 
-/// `minecraft:block/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct Description {
-    /// The block's identifier, `namespace:name`, never in the `minecraft` namespace outside the
-    /// base game (JSON `identifier`).
-    pub identifier: BlockId,
-    /// Where the block appears in the creative menu (JSON `menu_category`).
-    #[facet(default)]
-    pub menu_category: Option<MenuCategory>,
-    /// The block's own states and their values (JSON `states`).
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub states: IndexMap<String, StateValues>,
-    /// Traits, each of which adds states of its own (JSON `traits`).
-    #[facet(default, skip_serializing_if = Traits::is_empty)]
-    pub traits: Traits,
-    /// Engine data of base-game blocks (JSON `internal_vanilla_data`; base-game packs only,
-    /// an unknown member elsewhere).
-    #[facet(default)]
-    pub internal_vanilla_data: Option<VanillaBlockData>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
 
-/// `description.internal_vanilla_data`: what the engine needs of a base-game block.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
-pub struct VanillaBlockData {
-    /// The legacy numeric block id (JSON `block_id`).
-    #[facet(default)]
-    pub block_id: Option<StrictInt<i32>>,
-    /// The block material (JSON `material`).
-    #[facet(default)]
-    pub material: Option<MaterialType>,
-    /// The archetype, one entry keyed by its name, as written (JSON `block_archetype`).
-    #[facet(default)]
-    pub block_archetype: Option<IndexMap<String, bedrock_addon_core::json::Value>>,
-    /// JSON `translucency`.
-    #[facet(default)]
-    pub translucency: Option<StrictFloat<f32>>,
-    /// JSON `can_dampen_vibrations`.
-    #[facet(default)]
-    pub can_dampen_vibrations: Option<StrictBool>,
-    /// JSON `can_occlude_vibrations`.
-    #[facet(default)]
-    pub can_occlude_vibrations: Option<StrictBool>,
-    /// JSON `requires_correct_tool_for_drops` (engine 1.26.50).
-    #[facet(default)]
-    pub requires_correct_tool_for_drops: Option<StrictBool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl VanillaBlockData {
-    /// The legacy numeric block id: `block_id`, −1 when absent (the game's constructor default).
-    pub fn block_id(&self) -> i32 {
-        self.block_id.map_or(-1, |id| id.0)
+    #[test]
+    fn block_reads_as_pinned() {
+        assert_reading_table(
+            "BlockFamily",
+            &reading_table::<super::BlockFamily>(),
+            r#"
+                text: Document, clamps beyond a double: true, duplicates kept in: ["components"]
+                envelope: From(FormatVersion { major: 1, minor: 26, patch: 20 })
+                missing version: at the floor, told at Info: None
+                below floor: UseFormatVersion
+                empty document: Error
+                1.16.0..=1.26.0 (0..=13): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.26.20..=1.26.60 (14..=15): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            "#,
+        );
     }
-
-    /// The material: `material`, dirt when absent (the game's constructor default).
-    pub fn material(&self) -> MaterialType {
-        self.material.unwrap_or(MaterialType::Dirt)
-    }
-
-    /// `requires_correct_tool_for_drops`, `false` when absent, as the game's block loader
-    /// defaults it.
-    pub fn requires_correct_tool_for_drops(&self) -> bool {
-        self.requires_correct_tool_for_drops.is_some_and(|b| b.0)
-    }
-}
-
-/// One entry of `minecraft:block/permutations`: components that apply while `condition` holds.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Permutation {
-    /// A Molang expression over `query.block_state` (JSON `condition`).
-    pub condition: Molang,
-    /// The components it applies (JSON `components`).
-    pub components: ComponentMap<BlockComponent>,
-    /// Legacy components an upgraded permutation kept (JSON `deprecated`, the crate's own member).
-    pub deprecated: DeprecatedComponents,
-    /// The order of the permutation's 1.21.60 `custom_components` list (JSON
-    /// `ordered_v1_custom_components`).
-    pub ordered_v1_custom_components: Vec<String>,
-    /// Unknown members.
-    pub extra: Extra,
-}
-
-/// A block's material (ids 0..=25), `internal_vanilla_data.material`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
-#[facet(rename_all = "snake_case")]
-#[repr(u8)]
-#[non_exhaustive]
-#[allow(missing_docs, reason = "each variant is its JSON spelling")]
-pub enum MaterialType {
-    Air,
-    Dirt,
-    Wood,
-    Metal,
-    Grate,
-    Water,
-    Lava,
-    Leaves,
-    Plant,
-    SolidPlant,
-    Fire,
-    Glass,
-    Explosive,
-    Ice,
-    PowderSnow,
-    Cactus,
-    Portal,
-    StoneDecoration,
-    Bubble,
-    Barrier,
-    DecorationSolid,
-    ClientRequestPlaceholder,
-    StructureVoid,
-    Solid,
-    NonSolid,
-    Any,
 }

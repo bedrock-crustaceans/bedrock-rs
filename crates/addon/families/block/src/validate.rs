@@ -16,7 +16,7 @@ use super::component::{
     TintMethod, Transformation, UvLock, Vec3, legacy_constraint, write_component,
 };
 use super::history::BlockFamily;
-use super::parse::{CEREAL, NEWEST};
+use super::read::{CEREAL, NEWEST};
 use super::{Block, StateValues};
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::{

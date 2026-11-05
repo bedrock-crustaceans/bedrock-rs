@@ -6,22 +6,28 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitionEvent};
-use super::history::BlockFamily;
+use super::history::{Any, BlockFamily};
 use super::{Block, Description, Permutation};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::{ComponentMap, Document, Extra, Origin, Rejected};
 use bedrock_addon_core::id::syntax::split_namespace;
+use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::{
     JsonSlice, ReaderMode, Value, keep_unknown_members, parse_at, with_reader_mode,
 };
+use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
     BLOCK_STATE_QUERIES, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
     MolangVersion, MolangVersionSource, MolangVisitor, OpsRule, ReaderKind,
 };
+use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_component_map, parse_payload};
+use bedrock_addon_core::versioning::{
+    DocumentRead, Family, Identity, Loaded, Parsed, finish, parse_as_written,
+};
 
 /// The first version vanilla reads with the cereal document.
 pub(crate) const CEREAL: FormatVersion = known::V1_26_20;
@@ -541,10 +547,119 @@ impl MolangFields for Block {
     }
 }
 
+// ---- one file -------------------------------------------------------------------------
+
+/// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
+pub(crate) fn upgrade_document(
+    document: Document<Any>,
+    cx: &LoadContext,
+) -> Result<Document<Block>, Rejected> {
+    let origin = document.origin().clone();
+    let version = document.version().clone();
+    let diagnostics = document.diagnostics().clone();
+    let value = document.into_value();
+    let identity = Identity {
+        identifier: Some(identifier_of(&value)),
+        runtime_identifier: None,
+    };
+    let at = JsonPath::new().child(BlockFamily::PAYLOAD_KEY);
+    let written = FormatVersionInput {
+        version: Some(version.effective),
+        beta_literal: false,
+        prerelease: false,
+    };
+    let parsed = Parsed::<BlockFamily>::from_value(Some(value), version, written, at, diagnostics)
+        .with_identity(identity);
+    let outcome = finish(parsed, cx);
+    let mut diagnostics = outcome.diagnostics;
+    diagnostics.locate(&origin);
+    match outcome.value {
+        Some(Loaded::Stable(block)) => {
+            Ok(Document::new(block, origin, outcome.version, diagnostics))
+        }
+        _ => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+/// The identifier of a parsed document, as written.
+fn identifier_of(value: &Any) -> String {
+    match value {
+        Any::V1_26_60(block) => block.description.identifier.as_str().to_owned(),
+        Any::V1_26_20(b) => b.block.description.identifier.as_str().to_owned(),
+        Any::V1_16_0(b) => legacy_identifier(&b.description),
+        Any::V1_16_100(b) => legacy_identifier(&b.description),
+        Any::V1_18_0(b) => legacy_identifier(&b.description),
+        Any::V1_19_10(b) => legacy_identifier(&b.description),
+        Any::V1_19_20(b) => legacy_identifier(&b.description),
+        Any::V1_19_30(b) => legacy_identifier(&b.description),
+        Any::V1_19_40(b) => legacy_identifier(&b.description),
+        Any::V1_19_80(b) => legacy_identifier(&b.description),
+        Any::V1_20_10(b) => legacy_identifier(&b.description),
+        Any::V1_20_60(b) => legacy_identifier(&b.description),
+        Any::V1_21_30(b) => legacy_identifier(&b.description),
+        Any::V1_21_60(b) => legacy_identifier(&b.description),
+        Any::V1_21_90(b) => legacy_identifier(&b.description),
+        Any::V1_26_0(b) => legacy_identifier(&b.description),
+    }
+}
+
+/// `identifier` of a legacy description.
+fn legacy_identifier(
+    description: &indexmap::IndexMap<String, bedrock_addon_core::json::Value>,
+) -> String {
+    description
+        .get("identifier")
+        .and_then(|v| v.as_string())
+        .map(|s| s.as_str().to_owned())
+        .unwrap_or_default()
+}
+
+/// The finding of an unreadable file.
+fn malformed() -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
+}
+
+/// Reads one block file at `origin`: the document, or its rejection with the identifier its
+/// payload names (when it names one). `parse_document`'s steps, but for the path of a legacy
+/// file's findings.
+pub(crate) fn read_file(
+    origin: Origin,
+    bytes: &[u8],
+    cx: &LoadContext,
+) -> DocumentRead<BlockFamily> {
+    // The BOM is blanked: spans stay offsets into the file as written.
+    let Ok(prepared) = Prepared::new(bytes) else {
+        let mut diagnostics = Diagnostics::default();
+        diagnostics.push(malformed());
+        return DocumentRead::Rejected(None, Rejected::located(origin, diagnostics));
+    };
+    let mut parsed = parse_as_written::<BlockFamily>(prepared.slice(), cx);
+    // A file below 1.26.20 is read whole (its envelope is not checked), so the parse stage
+    // gives the root as its path; the block it becomes is the payload, under its key, where
+    // the legacy reader's findings are: the checks on the upgraded block report there too,
+    // core's component gates and Molang pass 2 as well as the family's rules.
+    if parsed.at.is_empty() {
+        parsed.at.push(BlockFamily::PAYLOAD_KEY);
+    }
+    let identifier = parsed.identity.identifier.clone();
+    let outcome = finish(parsed, cx);
+    let mut diagnostics = outcome.diagnostics;
+    diagnostics.locate(&origin);
+    match outcome.value {
+        Some(Loaded::Stable(block)) => {
+            DocumentRead::Stable(Document::new(block, origin, outcome.version, diagnostics))
+        }
+        _ => DocumentRead::Rejected(identifier, Rejected::new(origin, diagnostics)),
+    }
+}
+
 #[cfg(test)]
 mod spec_tests {
     use crate::component::{BONE_VISIBILITY, DESCRIPTOR_TAGS, ITEM_TAGS, TRIGGER_CONDITION};
-    use crate::parse::{CONDITION, CONDITION_LEGACY, CONDITION_OLD};
+    use crate::read::{CONDITION, CONDITION_LEGACY, CONDITION_OLD};
     use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::molang::{
         Admission, BLOCK_STATE_QUERIES, EmptyRule, MolangFailure, MolangFieldSpec, MolangVersion,

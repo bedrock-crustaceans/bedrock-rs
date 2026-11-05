@@ -5,6 +5,7 @@
 
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::document::Content;
+use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_item::Item;
 

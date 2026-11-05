@@ -7,23 +7,27 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
+use bedrock_addon_core::document::{
+    ComponentMap, ComponentSet, Extra, Origin, Rejected, VersionInfo,
+};
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::{
-    JsonSlice, Misreading, SliceError, Value, keep_members_and_range_members, parse_at,
+    JsonSlice, Misreading, PrepareError, Prepared, SliceError, Value,
+    keep_members_and_range_members, parse_at, strip_bom,
 };
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::MolangSource;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
-use bedrock_addon_core::versioning::{ConvertMode, Family, ParseCx};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
+use bedrock_addon_core::versioning::{ConvertMode, Family, Loaded, ParseCx, load};
 use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
+use super::STRICT_SLICES;
 use super::component::EntityComponent;
 use super::goal;
 use super::history::first_typed;
-use super::load::STRICT_SLICES;
 use super::schema;
 use super::{
     AnimateEntry, Brain, ComponentGroup, DeprecatedData, Description, Entity, EntityVersion, Event,
@@ -1515,6 +1519,283 @@ fn upgrade_entry(
         ));
     }
     Ok(UpgradeEntry { upgrade_to, name })
+}
+
+// ---- one file -------------------------------------------------------------------------
+
+/// The file's text: the byte-order mark blanked (every span stays an offset into the file),
+/// UTF-8, not nested too deeply. A file that is none of these is rejected with a
+/// `MalformedInput` error.
+pub(crate) fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<Prepared<'a>, Rejected> {
+    Prepared::new(bytes).map_err(|error| {
+        let message = match error {
+            PrepareError::NotUtf8(_) => "the file is not UTF-8",
+            // `new` never refuses empty input.
+            PrepareError::TooDeep(_) | PrepareError::Empty => "the JSON nests too deeply",
+        };
+        let found = Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: message.to_owned(),
+            text: None,
+        });
+        Rejected::located(origin.clone(), [found].into_iter().collect())
+    })
+}
+
+/// The findings of a load, placed in the file of `origin`. A document above the engine gets
+/// vanilla's resource-pack text.
+pub(crate) fn place(mut found: Diagnostics, version: &VersionInfo, origin: &Origin) -> Diagnostics {
+    if let Some(written) = version.written.filter(|v| *v > ENGINE_VERSION) {
+        for diagnostic in found.iter_mut() {
+            if let DiagnosticCode::UnsupportedVersion { text } = &mut diagnostic.code {
+                *text = Some(VanillaText::ActorAboveEngine {
+                    version: written.to_string(),
+                    engine: ENGINE_VERSION,
+                });
+            }
+        }
+    }
+    // In place: the list keeps where the members of the entity are in the file.
+    found.located(origin)
+}
+
+/// The line the game writes when the load of an entity carries errors; the definition is not
+/// registered. The second `{}` is a log's prefix and then its first entry's message: the parse
+/// log whenever it has an entry, else the upgrade log, else the validate log.
+const FAILED_TO_LOAD: &str = "ERROR: Entity '{}' failed to load from JSON: {}";
+
+/// A file refused for what its payload holds (an error below
+/// `minecraft:entity`) closes with vanilla's line, the identifier the file names and the first
+/// such error (`<member below the payload>: <its text>`). A refusal of the envelope, the version
+/// or the beta permission is no load of the definition and gets none.
+pub(crate) fn close_refusal(found: &mut Diagnostics, bytes: &[u8]) {
+    let payload = <Entity as Family>::PAYLOAD_KEY;
+    let under = JsonPath::new().child(payload);
+    let logged = |finding: &&Diagnostic| {
+        finding.severity >= Severity::Warning && finding.location.json_path.starts_with(&under)
+    };
+    if !found
+        .iter()
+        .any(|finding| finding.severity == Severity::Error && logged(&finding))
+    {
+        return;
+    }
+    // The game closes with the parse log's first entry whenever that log has one, warnings
+    // included; only an empty parse log falls through to the upgrade log, then the validate
+    // log, each with its prefix.
+    let in_phase = |phases: &[Phase]| {
+        found
+            .iter()
+            .filter(logged)
+            .find(|finding| phases.contains(&finding.phase))
+    };
+    let Some((phase, first)) = [
+        ("parse errors occurred: ", &[Phase::Read, Phase::Parse][..]),
+        ("upgrade errors occurred: ", &[Phase::Upgrade][..]),
+        (
+            "validate errors occurred: ",
+            &[Phase::Validate, Phase::Link][..],
+        ),
+    ]
+    .into_iter()
+    .find_map(|(prefix, phases)| in_phase(phases).map(|finding| (prefix, finding))) else {
+        return;
+    };
+    // The member below the payload, its keys joined as the game's logs join them.
+    let member: Vec<String> = first
+        .location
+        .json_path
+        .segments()
+        .skip(1)
+        .map(|segment| match segment {
+            bedrock_addon_core::diagnostic::JsonPathSegment::Key(key) => key.to_owned(),
+            bedrock_addon_core::diagnostic::JsonPathSegment::Index(index) => index.to_string(),
+        })
+        .collect();
+    let reason = if member.is_empty() {
+        format!("{phase}{}", first.code)
+    } else {
+        format!("{phase}{}: {}", member.join("/"), first.code)
+    };
+    let identifier = identifier_of(bytes).map_or_else(String::new, |id| id.as_str().to_owned());
+    let mut line = Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Formatted {
+            template: FAILED_TO_LOAD,
+            args: vec![identifier, reason],
+        }),
+    });
+    line.location.pack.clone_from(&first.location.pack);
+    line.location.path.clone_from(&first.location.path);
+    found.push(line);
+}
+/// One file through the chain: the document, or its rejection with every finding.
+pub(crate) fn load_document(
+    origin: Origin,
+    bytes: &[u8],
+    cx: &LoadContext,
+) -> Result<(Loaded<Entity>, VersionInfo, Diagnostics, Origin), Rejected> {
+    let text = decode(bytes, &origin)?;
+    let outcome = load::<Entity>(text.slice(), cx);
+    let mut diagnostics = place(outcome.diagnostics, &outcome.version, &origin);
+    if let Some(value) = outcome.value {
+        Ok((value, outcome.version, diagnostics, origin))
+    } else {
+        close_refusal(&mut diagnostics, bytes);
+        Err(Rejected::new(origin, diagnostics))
+    }
+}
+/// The origin of a file read outside a stack.
+pub(crate) fn detached_origin(path: &PackPath) -> Origin {
+    Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone())
+}
+/// The identifier a rejected file names, when it names one.
+pub(crate) fn identifier_of(bytes: &[u8]) -> Option<EntityId> {
+    let text = std::str::from_utf8(strip_bom(bytes)).ok()?;
+    let envelope = bedrock_addon_core::json::probe_envelope(JsonSlice::new(text)).ok()?;
+    let payload = envelope.payload(<Entity as Family>::PAYLOAD_KEY)?;
+    <Entity as Family>::identity(payload)
+        .identifier
+        .map(EntityId::parse)
+}
+
+#[cfg(test)]
+mod file_tests {
+    use super::*;
+    use bedrock_addon_core::diagnostic::Location;
+
+    /// The closing line of a refusal whose first error below the payload is of `phase`.
+    fn closing_line_of(phase: Phase) -> String {
+        let mut at = JsonPath::new();
+        at.push("minecraft:entity");
+        at.push("components");
+        let mut found = Diagnostics::default();
+        found.push(Diagnostic::new(
+            DiagnosticCode::InternalError,
+            Severity::Error,
+            phase,
+            Location::new(None, None, at, None),
+        ));
+        close_refusal(
+            &mut found,
+            br#"{"minecraft:entity": {"description": {"identifier": "test:mob"}}}"#,
+        );
+        found
+            .iter()
+            .last()
+            .expect("the closing line")
+            .code
+            .to_string()
+    }
+
+    /// The prefix follows the parse log, not the error's phase. A file refused in validation
+    /// whose parse also logged a warning closes with the parse prefix and that warning's text.
+    #[test]
+    fn a_parse_warning_takes_the_closing_line_before_a_validation_error() {
+        let at = |key: &str| {
+            let mut at = JsonPath::new();
+            at.push("minecraft:entity");
+            at.push(key);
+            at
+        };
+        let mut found = Diagnostics::default();
+        found.push(Diagnostic::new(
+            DiagnosticCode::UnrecognizedField { text: None },
+            Severity::Warning,
+            Phase::Parse,
+            Location::new(None, None, at("made_up"), None),
+        ));
+        found.push(Diagnostic::new(
+            DiagnosticCode::InternalError,
+            Severity::Error,
+            Phase::Validate,
+            Location::new(None, None, at("components"), None),
+        ));
+        let warning = found.iter().next().unwrap().code.to_string();
+        close_refusal(
+            &mut found,
+            br#"{"minecraft:entity": {"description": {"identifier": "test:mob"}}}"#,
+        );
+        let line = found
+            .iter()
+            .last()
+            .expect("the closing line")
+            .code
+            .to_string();
+        assert_eq!(
+            line,
+            format!(
+                "ERROR: Entity 'test:mob' failed to load from JSON: parse errors occurred: made_up: {warning}"
+            )
+        );
+    }
+
+    /// The second `{}` of the closing line is the failed phase's prefix (parse, upgrade or
+    /// validate) and then the first entry's message.
+    #[test]
+    fn the_closing_line_names_the_phase_that_failed() {
+        for (phase, prefix) in [
+            (Phase::Parse, "parse errors occurred: "),
+            (Phase::Upgrade, "upgrade errors occurred: "),
+            (Phase::Validate, "validate errors occurred: "),
+        ] {
+            let line = closing_line_of(phase);
+            assert!(
+                line.starts_with(&format!(
+                    "ERROR: Entity 'test:mob' failed to load from JSON: {prefix}components: "
+                )),
+                "{phase:?}: {line}"
+            );
+        }
+    }
+
+    /// A newest-format entity of `n` component groups, each with a typed and a marker
+    /// component, and `n` events that each add one group.
+    fn entity_of_groups(n: usize) -> String {
+        let groups: Vec<String> = (0..n)
+            .map(|i| {
+                format!(
+                    r#""g_{i}": {{"minecraft:health": {{"value": 5, "max": 5}}, "minecraft:is_baby": {{}}}}"#
+                )
+            })
+            .collect();
+        let events: Vec<String> = (0..n)
+            .map(|i| format!(r#""e_{i}": {{"add": {{"component_groups": ["g_{i}"]}}}}"#))
+            .collect();
+        format!(
+            r#"{{"format_version": "1.26.50", "minecraft:entity": {{"description": {{"identifier": "demo:groups", "is_spawnable": true, "is_summonable": true}}, "component_groups": {{{}}}, "components": {{}}, "events": {{{}}}}}}}"#,
+            groups.join(","),
+            events.join(",")
+        )
+    }
+
+    /// The document of `text` loaded through the whole chain: its groups, events and findings.
+    fn loaded(text: &str) -> (usize, usize, usize) {
+        let outcome = load::<Entity>(JsonSlice::new(text), &LoadContext::detached());
+        let Some(Loaded::Stable(entity)) = outcome.value else {
+            panic!("the entity is refused: {:#?}", outcome.diagnostics);
+        };
+        (
+            entity.component_groups.len(),
+            entity.events.len(),
+            outcome.diagnostics.len(),
+        )
+    }
+
+    /// Loading time grows linearly with the number of component groups and events: the test
+    /// loads documents of several sizes and checks the cost per group stays flat.
+    #[test]
+    fn one_document_of_n_component_groups_and_n_events_loads_in_n() {
+        assert_eq!(loaded(&entity_of_groups(3)), (3, 3, 0));
+        bedrock_addon_core::test_cost::assert_linear_at(
+            "entity load: one document, n component groups, n events",
+            1_000,
+            entity_of_groups,
+            |text: &String| {
+                let found = loaded(text);
+                assert_eq!(found.2, 0);
+                found
+            },
+        );
+    }
 }
 
 #[cfg(test)]

@@ -631,6 +631,83 @@ fn a_json_document_writes_through_its_overrides() {
     ));
 }
 
+/// A file kind that picks its format on write, as block and item do: a hot cinder is
+/// written as the older document `{"format_version": "0.9.0", "demo:cinder": {"glow": n}}`,
+/// whose payload is not the struct's; any other through the family's envelope.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Cinder {
+    pub heat: u8,
+}
+
+impl Versioned for Cinder {
+    const VERSION: FormatVersion = FormatVersion::new(1, 0, 0);
+}
+
+impl VersionStruct for Cinder {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let json: EmberJson = parse_payload(payload, cx, d)?;
+        Some(Cinder { heat: json.heat })
+    }
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(&EmberJson { heat: self.heat })
+    }
+}
+
+bedrock_addon_core::impl_no_molang!(Cinder);
+
+pub struct CinderFamily;
+
+impl Family for CinderFamily {
+    const NAME: &'static str = "cinder";
+    const PAYLOAD_KEY: &'static str = "demo:cinder";
+    const FLOOR: FormatVersion = FormatVersion::new(0, 9, 0);
+    type Latest = Cinder;
+    type Beta = NoBeta<kind::Block>;
+    type Component = NoComponents;
+    type Any = bedrock_addon_core::versioning::Single<Self>;
+}
+
+impl JsonDocument for Cinder {
+    type Family = CinderFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+    fn write_root(&self) -> Result<Value, EncodeError> {
+        use bedrock_addon_core::versioning::write_envelope;
+        let extras = bedrock_addon_core::document::Extra::default();
+        if self.heat > 9 {
+            let older: Value =
+                bedrock_addon_core::json::from_str_jsonc(&format!(r#"{{"glow": {}}}"#, self.heat))
+                    .unwrap();
+            return Ok(write_envelope::<CinderFamily>(
+                FormatVersion::new(0, 9, 0),
+                older,
+                &extras,
+            ));
+        }
+        Ok(write_envelope::<CinderFamily>(
+            <Self as Versioned>::VERSION,
+            self.write()?,
+            &extras,
+        ))
+    }
+}
+
+#[test]
+fn a_json_document_that_picks_its_format_writes_its_own_root() {
+    let compact = |cinder: Cinder| -> String {
+        let mut out = Vec::new();
+        cinder.write_json(&mut out, WriteStyle::default()).unwrap();
+        String::from_utf8(out).unwrap().split_whitespace().collect()
+    };
+    assert_eq!(
+        compact(Cinder { heat: 4 }),
+        r#"{"format_version":"1.0.0","demo:cinder":{"heat":4}}"#
+    );
+    assert_eq!(
+        compact(Cinder { heat: 12 }),
+        r#"{"format_version":"0.9.0","demo:cinder":{"glow":12}}"#
+    );
+}
+
 fn parse_as_written_glint() -> Document<bedrock_addon_core::versioning::Single<single::GlintFamily>>
 {
     Glint::parse_as_written(&glint_path(), GLINT.as_bytes(), &LoadContext::detached())

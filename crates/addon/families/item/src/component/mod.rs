@@ -42,7 +42,7 @@ use bedrock_addon_core::molang::{MolangFieldSpec, MolangVersionSource};
 use bedrock_addon_core::versioning::{ConvertMode, parse_component};
 use bedrock_addon_derive::Components;
 
-use crate::load::ItemFamily;
+use crate::history::ItemFamily;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 
 /// `LegacyCreatorFeatures`: satisfied only by the ten vanilla pack UUIDs.

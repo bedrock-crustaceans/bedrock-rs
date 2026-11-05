@@ -38,7 +38,7 @@ impl Versioned for Item {
 
 impl VersionStruct for Item {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let n = crate::write::parse_newest(payload, Self::VERSION, cx, d)?;
+        let n = crate::read::parse_newest(payload, Self::VERSION, cx, d)?;
         Some(Item {
             description: n.description,
             components: n.components,

@@ -7,7 +7,7 @@ use super::legacy::{Legacy, component_path, fixed, string, text, to_object};
 use super::ops::{dropped_field, geometry_identifier, is_opaque};
 use super::v1_20_10::FULL_BLOCK;
 use crate::component::BlockComponent;
-use crate::parse::parse_document;
+use crate::read::parse_document;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };

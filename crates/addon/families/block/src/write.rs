@@ -2,16 +2,19 @@
 
 use super::component::write_components;
 use super::history::BlockFamily;
-use super::parse::{CEREAL, NEWEST, parse_block};
+use super::read::{CEREAL, NEWEST, parse_block};
 use super::{Block, Permutation};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, write_json,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang;
 use bedrock_addon_core::version::{FormatVersion, known};
-use bedrock_addon_core::versioning::{Loaded, ParseCx, VersionStruct, Versioned, write_payload};
+use bedrock_addon_core::versioning::{
+    Loaded, ParseCx, VersionStruct, Versioned, write_envelope, write_payload,
+};
 
 impl Versioned for Block {
     const VERSION: FormatVersion = NEWEST;
@@ -212,10 +215,11 @@ impl Block {
                 what: Unrepresentable::Unsupported,
             });
         }
-        let mut object = facet_value::VObject::new();
-        object.insert("format_version", self.written_version().to_string());
-        object.insert("minecraft:block", self.write_at(self.written_version())?);
-        let document = Value::from(object);
+        let document = write_envelope::<BlockFamily>(
+            self.written_version(),
+            self.write_at(self.written_version())?,
+            &Extra::default(),
+        );
         // The cereal slices are strict: a member or component the document does not
         // bind, or one it deprecates, rejects the block. A block that holds one (an unknown
         // member kept from an older file, or set by hand) is not written into a cereal
@@ -345,6 +349,8 @@ impl Block {
         if let Some(payload) = payload.as_object_mut() {
             legacy_shapes(payload, version);
         }
+        // Not `write_envelope`: below 1.26.20 the family reads the raw text
+        // (`EnvelopeCheck::From`), where it writes the payload alone.
         let mut object = facet_value::VObject::new();
         object.insert("format_version", version.to_string());
         object.insert("minecraft:block", payload);
@@ -372,15 +378,6 @@ impl Block {
                 .all(|(read, own)| read.extra == own.extra)
             && read.write().ok().as_ref() == Some(&whole);
         Ok(kept.then_some(document))
-    }
-
-    /// Writes the document into `out`.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        write_json(&self.document()?, out, style)
     }
 }
 

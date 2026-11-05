@@ -3,79 +3,28 @@
 use std::borrow::Cow;
 
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra};
-use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
+    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_envelope, write_payload,
 };
 use facet_value::VObject;
 
 use super::component::ItemComponent;
+use super::history::ItemFamily;
 use super::history::{
     self, CustomComponentEntry, CustomComponents, SideCarPlace, from_component_map,
-    into_component_map, parse_parts, write_component, write_parts,
+    write_component, write_parts,
 };
 use super::legacy::{ItemFormat, LegacyFormatItem};
+use super::read::parse_newest;
 use super::{Beta, Item, ItemDeprecatedData, ItemDescription, LegacyItemData};
 use bedrock_addon_core::diagnostic::Diagnostics;
 
 /// 1.26.50: the newest item format.
 const V1_26_50: FormatVersion = known::V1_26_50;
-
-/// The parts of a modern format (shared by [`Item`], [`Beta`] and the 1.26.30 struct).
-pub(crate) struct Newest {
-    pub(crate) description: ItemDescription,
-    pub(crate) components: ComponentMap<ItemComponent>,
-    pub(crate) deprecated: ItemDeprecatedData,
-    pub(crate) events: Option<Value>,
-    pub(crate) legacy: LegacyItemData,
-    pub(crate) extra: Extra,
-}
-
-/// Parses a modern format: the struct of `version` (1.26.30, 1.26.50, or the beta struct's
-/// version for a beta document, whose members are the same).
-pub(crate) fn parse_newest(
-    payload: JsonSlice<'_>,
-    version: FormatVersion,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<Newest> {
-    let parts = parse_parts(payload, version, cx, d)?;
-    let menu_category_presence =
-        super::MenuCategoryPresence::of(parts.description.menu_category.as_ref());
-    let mut menu_category = parts.description.menu_category.unwrap_or_default();
-    menu_category
-        .category
-        .get_or_insert(CreativeCategory::ItemCommandOnly);
-    let components = into_component_map(parts.components);
-    let mut legacy = parts.legacy;
-    // The legacy reading holds a component it shares with the typed read in the form the
-    // writer writes that component in, so that the written text gives the reading the file
-    // gave (`16` and `{"value": 16}` are one value to both readers).
-    for (key, component) in from_component_map(&components) {
-        if let Some(held) = legacy.shared.get_mut(&key)
-            && let Ok(written) = write_component(&component)
-        {
-            *held = written;
-        }
-    }
-    Some(Newest {
-        description: ItemDescription {
-            identifier: ItemId::parse(parts.description.identifier),
-            menu_category,
-            menu_category_presence,
-            extra: parts.description.extra,
-        },
-        components,
-        deprecated: parts.deprecated,
-        events: parts.events,
-        legacy,
-        extra: parts.extra,
-    })
-}
 
 /// The `description` of the newest format as JSON.
 fn description_value(description: &ItemDescription) -> Result<Value, EncodeError> {
@@ -247,12 +196,9 @@ impl MolangFields for Beta {
     }
 }
 
-/// `{"format_version": version, "minecraft:item": payload}`.
-fn envelope(version: &str, payload: Value) -> Value {
-    let mut root = VObject::new();
-    root.insert("format_version", Value::from(version));
-    root.insert("minecraft:item", payload);
-    Value::from(root)
+/// `{"format_version": version, "minecraft:item": payload}` (`"beta"` for the beta version).
+fn envelope(version: FormatVersion, payload: Value) -> Value {
+    write_envelope::<ItemFamily>(version, payload, &Extra::default())
 }
 
 /// Whether the text the newest format writes of `item` is a component-based document to the
@@ -268,10 +214,10 @@ pub(crate) fn is_component_based_as_written(item: &Item) -> bool {
                 .iter()
                 .filter(|key| item.legacy.shared.contains_key(*key)),
         )
-        .any(|key| super::load::is_registered(key))
+        .any(|key| super::read::is_registered(key))
 }
 
-/// Writes an item: the newest format, or, for an item in the legacy item format, that format
+/// The document of an item: the newest format, or, for an item in the legacy item format, that format
 /// at 1.10.0 (the newest format cannot hold it).
 ///
 /// A document is component-based to the game by a registered component of its `components`;
@@ -282,11 +228,7 @@ pub(crate) fn is_component_based_as_written(item: &Item) -> bool {
 /// (`NotRepresentable` at `components`, where the load told of it); and an empty item with a
 /// `menu_category` to write, which a legacy item does not have (`NotRepresentable` at
 /// `description/menu_category`).
-pub(crate) fn write_item(
-    item: &Item,
-    out: &mut Vec<u8>,
-    style: WriteStyle,
-) -> Result<(), EncodeError> {
+pub(crate) fn item_root(item: &Item) -> Result<Value, EncodeError> {
     let refused = |members: &[&str]| {
         let mut at = bedrock_addon_core::diagnostic::JsonPath::new();
         at.push("minecraft:item");
@@ -333,21 +275,24 @@ pub(crate) fn write_item(
             events: item.events.clone(),
             extra: item.extra.clone(),
         };
-        envelope("1.10.0", legacy.write()?)
+        envelope(V1_10_0, legacy.write()?)
     } else {
         let payload = item.write()?;
         match refuse_what_the_format_refuses(&payload, V1_26_50) {
-            Ok(()) => envelope("1.26.50", payload),
+            Ok(()) => envelope(V1_26_50, payload),
             Err(refused) => written_at_1_26_0(item, payload).ok_or(refused)?,
         }
     };
-    write_json(&root, out, style)
+    Ok(root)
 }
 
 /// 1.26.0: the newest format of the legacy chain (`ComponentItemData_v1_26_0`), whose reader
 /// binds `events` and the side-car `__deprecated_components` and reads an unknown member with
 /// a warning (an unstrict slice).
-const V1_26_0: &str = "1.26.0";
+const V1_26_0: FormatVersion = known::V1_26_0;
+
+/// 1.10.0: the version the legacy item format is written at.
+const V1_10_0: FormatVersion = FormatVersion::new(1, 10, 0);
 
 /// An item the 1.26.50 format refuses (it holds
 /// `events`, the side-car or an unknown member, from an older file) is written as a 1.26.0
@@ -360,7 +305,7 @@ fn written_at_1_26_0(item: &Item, payload: Value) -> Option<Value> {
     let root = envelope(V1_26_0, payload);
     let text = bedrock_addon_core::json::to_facet_json(&root).ok()?;
     let cx = bedrock_addon_core::load::LoadContext::detached();
-    let reread = super::load::load_item(text.as_bytes(), &cx);
+    let reread = super::read::load_item(text.as_bytes(), &cx);
     if reread.outcome.diagnostics.has_errors() {
         return None;
     }
@@ -444,7 +389,7 @@ pub(crate) fn write_beta(
 ) -> Result<(), EncodeError> {
     let payload = beta.write()?;
     refuse_what_the_format_refuses(&payload, BETA_VERSION)?;
-    write_json(&envelope("beta", payload), out, style)
+    write_json(&envelope(BETA_VERSION, payload), out, style)
 }
 
 #[allow(dead_code, reason = "the default menu placement of a new item")]

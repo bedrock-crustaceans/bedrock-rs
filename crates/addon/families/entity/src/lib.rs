@@ -10,10 +10,9 @@ mod dynamic;
 pub use dynamic::DESCRIPTORS;
 pub mod goal;
 pub mod history;
-mod load;
+mod molang;
 #[cfg(feature = "nbt")]
 mod network;
-mod new;
 mod read;
 mod references;
 #[allow(
@@ -21,517 +20,397 @@ mod references;
     reason = "the schema tables hold rows that only some of the readers use"
 )]
 mod schema;
+mod types;
 mod validate;
 mod write;
-#[doc(hidden)]
-pub use load::LOADER;
 #[cfg(feature = "nbt")]
 #[cfg_attr(docsrs, doc(cfg(feature = "nbt")))]
 pub use network::actor_identifiers;
 #[doc(hidden)]
 pub use write::component as component_json;
 
-use std::ops::Deref;
+pub use types::{
+    AnimateEntry, Beta, Brain, ComponentGroup, DeprecatedData, Description, Entity, EntityVersion,
+    Event, InternalMemoryAccess, Memory, MemoryType, Property, PropertyDefault, PropertyType,
+    Scripts, SpawnCategory, UpgradeEntry, Written,
+};
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
-use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::MolangSource;
-use facet::Facet;
-use indexmap::IndexMap;
+use bedrock_addon_core::__private::Sealed;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+};
+use bedrock_addon_core::document::{
+    Content, Contribution, Definition, Document, Extra, JsonContent, JsonDefinition, JsonDocument,
+    JsonPlaced, NoBeta, Origin, Placed, Registry, Rejected, default_path,
+};
+use bedrock_addon_core::id::{EntityId, kind};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
+use bedrock_addon_core::versioning::{
+    BETA_VERSION, ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family,
+    Identity, InputKind, Loaded, MissingVersion, OpenBeta, ParseCx, Parsed, Reading, StructIndex,
+    UnknownMask, ValidateCx, VersionChain, VersionStruct, Versioned, finish, member_version,
+    parse_as_written, write_envelope,
+};
 
 use component::EntityComponent;
+use read::{close_refusal, decode, detached_origin, identifier_of, load_document, place};
 
-/// A behaviour-pack entity definition (`entities/*.json`, payload `minecraft:entity`), in the
-/// newest format version (1.26.60).
-///
-/// Older documents are upgraded to it step by step ([`history`]); a document written with
-/// `"format_version": "beta"` is a [`Beta`] instead.
-///
-/// Built from [`Entity::new`] with struct-update syntax, as from any other crate:
-///
-/// ```
-/// use bedrock_addon_family_entity::{Description, Entity, Scripts};
-/// use bedrock_addon_core::id::EntityId;
-///
-/// let id = EntityId::parse("demo:walker");
-/// let scripts = Scripts {
-///     animate: Vec::new(),
-///     ..Scripts::default()
-/// };
-/// let entity = Entity {
-///     description: Description {
-///         is_spawnable: Some(true),
-///         scripts: Some(scripts),
-///         ..Description::new(id.clone())
-///     },
-///     ..Entity::new(id)
-/// };
-/// assert_eq!(entity.description.identifier.as_str(), "demo:walker");
-/// assert!(entity.components.is_empty());
-/// ```
-#[doc(alias = "minecraft:entity")]
-#[derive(Clone, Debug, PartialEq)]
-pub struct Entity {
-    /// `description`: the identifier and the entity-wide settings.
-    pub description: Description,
-    /// `components`: the components and AI goals the entity always has, in file order.
-    pub components: ComponentMap<EntityComponent>,
-    /// `component_groups`: named sets of components the entity's events add and remove.
-    pub component_groups: IndexMap<String, ComponentGroup>,
-    /// `events`: what the entity does when an event fires, by event name.
-    pub events: IndexMap<String, Event>,
-    /// `brain`: the memories of the Brain Prototype experiment (format 1.21.130 onward).
-    pub brain: Option<Brain>,
-    /// `upgrades`: the handlers `description.entity_version` names, each an event node run
-    /// once when a saved entity of a lower version loads (format 1.26.20 onward).
-    pub upgrades: IndexMap<String, Value>,
-    /// `__deprecated`: what an older document wrote that this version does not read (the
-    /// `aliases` of a document below 1.21.10), kept for write-back.
-    pub deprecated: Option<DeprecatedData>,
-    /// Members the format does not define, kept for write-back.
-    pub extra: Extra,
-    /// Which optional members the document wrote, so an empty one is written back; not part of
-    /// equality. Public only so that struct-update syntax (`..Entity::new(id)`) works outside
-    /// the crate, where a `pub(crate)` field would refuse both a struct literal and the update
-    /// syntax; `Default` records nothing written.
-    #[doc(hidden)]
-    pub written: Written,
-}
+/// The directory entity files live in.
+const DIRECTORY: &str = "entities";
 
-/// Which optional members a document wrote: an empty map keeps the author's
-/// presence. Not part of a value's equality: two entities equal in content are equal however
-/// their documents spelled an empty member. Its flags are the crate's; outside it the record is
-/// only carried along, through struct-update syntax.
-#[doc(hidden)]
-#[derive(Clone, Debug, Default)]
-#[allow(
-    clippy::struct_excessive_bools,
-    reason = "one independent presence flag per optional member"
-)]
-pub struct Written {
-    /// `components`.
-    pub(crate) components: bool,
-    /// `component_groups`.
-    pub(crate) component_groups: bool,
-    /// `events`.
-    pub(crate) events: bool,
-    /// `scripts.animate`.
-    pub(crate) animate: bool,
-    /// The index each held entry of `scripts.animate` has in the file, when the reader left
-    /// an element of the file out of the list; `None` when the list is the file's.
-    pub(crate) animate_places: Option<Box<[usize]>>,
-}
+/// The first slice registered with the strict mask.
+pub(crate) const STRICT_SLICES: FormatVersion = FormatVersion::new(1, 21, 89);
 
-impl PartialEq for Written {
-    fn eq(&self, _: &Self) -> bool {
-        true
+impl Family for Entity {
+    const NAME: &'static str = "entity";
+    const PAYLOAD_KEY: &'static str = "minecraft:entity";
+    // 1.8.0, the first version with `description.identifier`.
+    const FLOOR: FormatVersion = known::V1_8_0;
+    const SKIP_UPGRADES_KEY: Option<&'static str> = Some("do_not_upgrade");
+    const ENVELOPE: Envelope = Envelope {
+        // A jsoncpp input: the version from the root member, and
+        // rule N1, a member written as `null` is absent.
+        input: InputKind::JsonCpp,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game takes `format_version` and `minecraft:entity` out of the root and reads nothing
+        // else there: it never counts the root's members, so a root member beside the two is
+        // passed over and the entity loads.
+        check: EnvelopeCheck::Uncounted,
+        // The text is the crate's own and the game is silent (it reads an absent version as
+        // 0.0.0): an information.
+        missing: MissingVersion::Floor {
+            text: Some(VanillaText::NoFormatVersionField),
+            severity: Some(Severity::Info),
+        },
+        ..Envelope::DEFAULT
+    };
+
+    /// A `null` member is absent at every slice (rule N1). The game reads a document below
+    /// 1.21.89 with the unstrict error codes and every slice from 1.21.89 on with the strict
+    /// ones, the beta struct included.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        let strict = match index {
+            StructIndex::Stable(i) => {
+                let versions = <history::Any as VersionChain<Entity>>::VERSIONS;
+                versions.get(i).is_some_and(|v| *v >= STRICT_SLICES)
+            }
+            // The beta slice is read strictly, as every slice after the legacy one.
+            StructIndex::Beta => true,
+        };
+        Reading::NULL_ABSENT.with_unknown(if strict {
+            UnknownMask::Error
+        } else {
+            UnknownMask::Warn
+        })
     }
-}
 
-/// `description` of an [`Entity`]: its identifier and entity-wide settings. Vanilla reads a
-/// closed set of keys; any other key is kept in `extra`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Description {
-    /// `identifier`: `namespace:name`. A `minecraft:` identifier must override a vanilla
-    /// entity, and from format 1.20.30 the name may not start with a digit.
-    pub identifier: EntityId,
-    /// `runtime_identifier`: the vanilla entity whose hard-coded behaviour a custom entity
-    /// borrows.
-    pub runtime_identifier: Option<EntityId>,
-    /// `is_spawnable`: whether a spawn egg exists for the entity; `false` when absent.
-    pub is_spawnable: Option<bool>,
-    /// `is_summonable`: whether `/summon` may create it; `false` when absent.
-    pub is_summonable: Option<bool>,
-    /// `properties`: the entity's properties, by `namespace:name`.
-    pub properties: IndexMap<String, Property>,
-    /// `animations`: short name → animation or animation controller identifier.
-    pub animations: IndexMap<String, String>,
-    /// `scripts`: the animations the server runs.
-    pub scripts: Option<Scripts>,
-    /// `spawn_category`: the mob cap the entity counts against.
-    pub spawn_category: Option<SpawnCategory>,
-    /// `property_memory_mapping`: Brain memories bound to properties (Brain Prototype
-    /// experiment), kept as written.
-    pub property_memory_mapping: Option<Value>,
-    /// `entity_version`: the upgrade handlers a saved entity runs, by version (format 1.26.20
-    /// onward).
-    pub entity_version: Option<EntityVersion>,
-    /// Members the format does not define (vanilla's own `is_experimental` among them), kept
-    /// for write-back.
-    pub extra: Extra,
-}
+    type Latest = Entity;
+    type Beta = Beta;
+    type Component = EntityComponent;
+    type Any = history::Any;
 
-/// `description.properties.<name>`: one entity property.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Property {
-    /// `type`: what values the property holds.
-    pub kind: PropertyType,
-    /// `default`: the value a new entity starts with.
-    pub default: Option<PropertyDefault>,
-    /// `range`: the smallest and largest value of an `int` or `float` property.
-    pub range: Option<[Value; 2]>,
-    /// `values`: the values of an `enum` property.
-    pub values: Vec<String>,
-    /// `client_sync`: whether the client sees the value; `false` when absent.
-    pub client_sync: Option<bool>,
-    /// Members the format does not define, kept for write-back.
-    pub extra: Extra,
-}
-
-/// `type` of a [`Property`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum PropertyType {
-    /// `"bool"`.
-    Bool,
-    /// `"int"`.
-    Int,
-    /// `"float"`.
-    Float,
-    /// `"enum"`: one of the property's `values`.
-    Enum,
-}
-
-impl std::fmt::Display for PropertyType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
+    fn components() -> &'static ComponentTable<Self> {
+        EntityComponent::TABLE
     }
-}
 
-impl PropertyType {
-    /// The JSON spelling.
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Bool => "bool",
-            Self::Int => "int",
-            Self::Float => "float",
-            Self::Enum => "enum",
+    /// without a root `format_version`, the pre-1.8 in-payload one.
+    fn payload_version(payload: JsonSlice<'_>) -> Option<FormatVersionInput> {
+        member_version(payload, "format_version")
+    }
+
+    fn actor_type(identity: &Identity) -> ActorType {
+        ActorType::for_entity(
+            identity.identifier.as_deref().unwrap_or_default(),
+            identity.runtime_identifier.as_deref(),
+        )
+    }
+
+    fn component_sections(v: &mut Entity) -> Vec<ComponentSection<'_, EntityComponent>> {
+        let mut sections = Vec::with_capacity(1 + v.component_groups.len());
+        let at = JsonPath::new().child("components");
+        sections.push(ComponentSection::new(at, false, &mut v.components));
+        for (name, group) in &mut v.component_groups {
+            let at = JsonPath::new().child("component_groups").child(name);
+            sections.push(ComponentSection::new(at, false, &mut group.components));
+        }
+        sections
+    }
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        not_in_the_schema(cx);
+        match v {
+            Loaded::Stable(entity) => validate::validate(entity, cx),
+            Loaded::Beta(beta) => validate::validate(&mut beta.0, cx),
         }
     }
 }
 
-/// `default` of a [`Property`]: a value, or an expression evaluated when the entity is created.
-#[derive(Clone, Debug, PartialEq)]
-pub enum PropertyDefault {
-    /// A JSON boolean.
-    Bool(bool),
-    /// A JSON integer.
-    Int(i32),
-    /// A JSON number with a fraction.
-    Float(f64),
-    /// A string that is one of an `enum` property's `values`.
-    Enum(String),
-    /// Any other string: a Molang expression that may call only
-    /// `query.had_component_group` and assigns nothing.
-    Expression(MolangSource),
+impl Versioned for Entity {
+    const VERSION: FormatVersion = known::V1_26_60;
 }
 
-/// `description.scripts`: the scripts the server runs. Only `animate` is read server-side.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Scripts {
-    /// `animate`: the animations and controllers the server plays.
-    pub animate: Vec<AnimateEntry>,
-    /// Members the server does not read, kept for write-back.
-    pub extra: Extra,
-    /// Whether the document wrote `animate`, so an empty list is written back; not part of
-    /// equality. Public only so that struct-update syntax (`..Scripts::default()`) works outside
-    /// the crate.
-    #[doc(hidden)]
-    pub written: Written,
-}
+impl VersionStruct for Entity {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        read::entity(payload, cx, d)
+    }
 
-impl Scripts {
-    /// The index the entry at `index` of `animate` has in the file it was read from: `index`
-    /// itself for a list the reader took whole, or one changed since.
-    pub(crate) fn place(&self, index: usize) -> usize {
-        self.written
-            .animate_places
-            .as_deref()
-            .filter(|places| places.len() == self.animate.len())
-            .and_then(|places| places.get(index).copied())
-            .unwrap_or(index)
+    fn write(&self) -> Result<Value, EncodeError> {
+        write::payload(self)
     }
 }
 
-/// One entry of [`Scripts::animate`].
-#[derive(Clone, Debug, PartialEq)]
-pub enum AnimateEntry {
-    /// `"name"`: always played. Vanilla looks the name up lower-cased.
-    Always(String),
-    /// `{ "name": "<expression>" }`: played while the expression is non-zero. Vanilla skips an
-    /// object with more or fewer than one member.
-    Conditional(IndexMap<String, MolangSource>),
+impl Versioned for Beta {
+    const VERSION: FormatVersion = BETA_VERSION;
 }
 
-/// `description.spawn_category`: the mob cap an entity counts against.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum SpawnCategory {
-    /// `"creature"`.
-    Creature,
-    /// `"monster"`.
-    Monster,
-    /// `"ambient"`.
-    Ambient,
-    /// `"water_ambient"`.
-    WaterAmbient,
-    /// `"water_creature"`.
-    WaterCreature,
-    /// `"axolotls"`.
-    Axolotls,
-    /// `"underground_water_creature"`.
-    UndergroundWaterCreature,
-    /// `"misc"`: the default.
-    Misc,
-}
+impl VersionStruct for Beta {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        read::entity(payload, cx, d).map(Beta)
+    }
 
-impl std::fmt::Display for SpawnCategory {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
+    fn write(&self) -> Result<Value, EncodeError> {
+        write::payload(&self.0)
     }
 }
 
-impl SpawnCategory {
-    /// Every category, in vanilla's order.
-    pub const ALL: [Self; 8] = [
-        Self::Creature,
-        Self::Monster,
-        Self::Ambient,
-        Self::WaterAmbient,
-        Self::WaterCreature,
-        Self::Axolotls,
-        Self::UndergroundWaterCreature,
-        Self::Misc,
-    ];
-
-    /// The JSON spelling.
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Creature => "creature",
-            Self::Monster => "monster",
-            Self::Ambient => "ambient",
-            Self::WaterAmbient => "water_ambient",
-            Self::WaterCreature => "water_creature",
-            Self::Axolotls => "axolotls",
-            Self::UndergroundWaterCreature => "underground_water_creature",
-            Self::Misc => "misc",
+/// A component at or past the version its row is deprecated in is no member of the game's actor
+/// schema at that version: cereal reports "this component was found in the input, but is not
+/// present in the Schema", a warning in the legacy slice (below 1.21.89) and an error that
+/// rejects the entity in a strict one. Core's generic deprecation line (the item and block registries' "%s has
+/// been deprecated and is not available in json format %s") is the wrong text for an entity.
+fn not_in_the_schema(cx: &mut ValidateCx<'_>) {
+    // The game logs this at the warning level below 1.21.89 and as an error from it.
+    let severity = if cx.original_version >= STRICT_SLICES {
+        Severity::Error
+    } else {
+        Severity::Warning
+    };
+    for finding in cx.diagnostics.iter_mut() {
+        if matches!(
+            finding.code,
+            DiagnosticCode::DeprecatedMember {
+                text: Some(VanillaText::Deprecated { .. })
+            }
+        ) && finding.phase == Phase::Validate
+        {
+            finding.code = bedrock_addon_core::diagnostic::cereal::component_not_in_schema();
+            finding.severity = severity;
         }
-    }
-
-    /// The category a JSON spelling names.
-    pub fn from_name(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|c| c.as_str() == name)
-    }
-}
-
-/// `description.entity_version`: which upgrade handler a saved entity runs to reach each
-/// version.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct EntityVersion {
-    /// `upgrades`: one entry per version, from 1 upward without gaps.
-    pub upgrades: Vec<UpgradeEntry>,
-}
-
-/// One entry of [`EntityVersion::upgrades`].
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UpgradeEntry {
-    /// `upgrade_to`: the version the handler upgrades to (1 or more).
-    pub upgrade_to: u32,
-    /// `name`: the handler, a key of [`Entity::upgrades`].
-    pub name: String,
-}
-
-/// `component_groups.<name>`: a named set of components the entity's events add and remove.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct ComponentGroup {
-    /// The group's components and AI goals, in file order.
-    pub components: ComponentMap<EntityComponent>,
-}
-
-impl ComponentGroup {
-    /// The group's components and AI goals, in file order.
-    #[must_use]
-    pub fn components(&self) -> &ComponentMap<EntityComponent> {
-        &self.components
-    }
-
-    /// The group's components and AI goals, mutably.
-    pub fn components_mut(&mut self) -> &mut ComponentMap<EntityComponent> {
-        &mut self.components
-    }
-}
-
-/// `events.<name>`: what the entity does when the event fires. The body is kept as written;
-/// load-time validation checks its shape (`add`, `remove`, `sequence`, `randomize`,
-/// `first_valid`, `trigger`, `filters`, `set_property` and the entity responses).
-#[derive(Clone, Debug, PartialEq)]
-pub struct Event {
-    name: String,
-    /// The event's body as written.
-    pub node: Value,
-}
-
-/// `brain`: the Brain Prototype's memories.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct Brain {
-    /// `memories`: the entity's memories, unique by name.
-    pub memories: Vec<Memory>,
-    /// `internal_memory_access_mappings`: memories the engine itself writes.
-    #[facet(default)]
-    pub internal_memory_access_mappings: Option<InternalMemoryAccess>,
-    /// Members the format does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// One entry of [`Brain::memories`].
-#[derive(Clone, Debug, PartialEq, Facet)]
-pub struct Memory {
-    /// `name`: the memory's identifier.
-    pub name: String,
-    /// `type`: what the memory holds.
-    #[facet(rename = "type")]
-    pub kind: MemoryType,
-    /// `persists`: whether the memory is saved with the entity; `false` when absent.
-    #[facet(default)]
-    pub persists: Option<bool>,
-    /// Members the format does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// `type` of a [`Memory`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
-#[facet(rename_all = "snake_case")]
-#[repr(u8)]
-#[non_exhaustive]
-pub enum MemoryType {
-    /// `"bool"`.
-    Bool,
-    /// `"int"`.
-    Int,
-    /// `"float"`.
-    Float,
-    /// `"string"`.
-    String,
-    /// `"entity_ref"`.
-    EntityRef,
-    /// `"block_pos"`.
-    BlockPos,
-    /// `"block_pos_vec"`.
-    BlockPosVec,
-    /// `"poi_memory"`.
-    PoiMemory,
-}
-
-impl MemoryType {
-    /// Every type, in vanilla's order (values 1 to 8).
-    pub const ALL: [Self; 8] = [
-        Self::Bool,
-        Self::Int,
-        Self::Float,
-        Self::String,
-        Self::EntityRef,
-        Self::BlockPos,
-        Self::BlockPosVec,
-        Self::PoiMemory,
-    ];
-
-    /// The JSON spelling.
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Bool => "bool",
-            Self::Int => "int",
-            Self::Float => "float",
-            Self::String => "string",
-            Self::EntityRef => "entity_ref",
-            Self::BlockPos => "block_pos",
-            Self::BlockPosVec => "block_pos_vec",
-            Self::PoiMemory => "poi_memory",
-        }
-    }
-
-    /// The type a JSON spelling names.
-    pub fn from_name(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|t| t.as_str() == name)
-    }
-}
-
-/// `brain.internal_memory_access_mappings`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct InternalMemoryAccess {
-    /// `beehive_has_nectar`: the `bool` memory the engine sets while the bee carries nectar.
-    #[facet(default)]
-    pub beehive_has_nectar: Option<String>,
-    /// Members the format does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// `__deprecated`: the side-car of what an older document wrote and this version does not
-/// read, kept so the entity writes back as loaded.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct DeprecatedData {
-    /// `aliases` of a document below format 1.21.10, which the game still registers.
-    pub aliases: IndexMap<String, Value>,
-}
-
-/// A beta document (`"format_version": "beta"`): the newest struct's shape, read with the beta
-/// component set. Loaded only with the Beta APIs toggle or from a base-game pack.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Beta(pub Entity);
-
-impl Deref for Beta {
-    type Target = Entity;
-
-    fn deref(&self) -> &Entity {
-        &self.0
     }
 }
 
 impl Entity {
-    /// The component group named `name`.
-    pub fn component_group(&self, name: &str) -> Option<&ComponentGroup> {
-        self.component_groups.get(name)
-    }
-
-    /// The entity's properties, by name (`description.properties`).
-    pub fn properties(&self) -> &IndexMap<String, Property> {
-        &self.description.properties
-    }
-
-    /// Whether a spawn egg exists for the entity: `description.is_spawnable`, `false` when
-    /// absent.
-    pub fn is_spawnable(&self) -> bool {
-        self.description.is_spawnable.unwrap_or(false)
-    }
-
-    /// Whether `/summon` may create the entity: `description.is_summonable`, `false` when
-    /// absent.
-    pub fn is_summonable(&self) -> bool {
-        self.description.is_summonable.unwrap_or(false)
+    /// Runs the remaining upgrade steps and the checks on a document
+    /// [`parse_as_written`](JsonDocument::parse_as_written) gave: the same result
+    /// [`Content::parse`] gives for the file.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the upgrade steps and the checks leave no entity to keep, or the
+    /// document is a beta one (which has no stable struct); it carries every finding.
+    // This is `history::Any::upgrade`, placed on `Entity` because only the document has the
+    // origin.
+    pub fn upgrade(
+        written: Document<history::Any>,
+        cx: &LoadContext,
+    ) -> Result<Document<Entity>, Rejected> {
+        let origin = written.origin().clone();
+        let version = written.version().clone();
+        let found = written.diagnostics().clone();
+        let any = written.into_value();
+        let (identity, skip_upgrades) = history::identity(&any);
+        let at = { JsonPath::new().child(<Entity as Family>::PAYLOAD_KEY) };
+        let input = FormatVersionInput {
+            version: if version.beta {
+                None
+            } else {
+                Some(version.written.unwrap_or(version.effective))
+            },
+            beta_literal: version.beta,
+            prerelease: false,
+        };
+        let actor_type = <Entity as Family>::actor_type(&identity);
+        let parsed = Parsed::<Entity>::from_value(
+            Some(any),
+            version,
+            input,
+            at,
+            // What the reader moved, without its findings: what the steps and the checks
+            // tell is at the member the file has, as in a load of the file.
+            {
+                let mut moved = found.clone();
+                moved.retain(|_| false);
+                moved
+            },
+        )
+        .with_identity(identity)
+        .with_actor(actor_type, skip_upgrades);
+        let outcome = finish(parsed, cx);
+        let mut diagnostics = found;
+        diagnostics.append(place(outcome.diagnostics, &outcome.version, &origin));
+        match outcome.value {
+            Some(Loaded::Stable(entity)) => {
+                Ok(Document::new(entity, origin, outcome.version, diagnostics))
+            }
+            Some(Loaded::Beta(_)) => {
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                    text: Some(VanillaText::NoParserForVersion {
+                        version: "beta".to_owned(),
+                    }),
+                }));
+                Err(Rejected::new(origin, diagnostics))
+            }
+            None => Err(Rejected::new(origin, diagnostics)),
+        }
     }
 }
 
-impl Event {
-    /// The event's name, its key in [`Entity::events`].
-    pub fn name(&self) -> &str {
-        &self.name
+impl JsonDocument for Entity {
+    type Family = Entity;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// [`load_document`]: the chain, the above-the-engine text, the closing line of a refused
+    /// file; a beta file is handed back open, a failed one names the identifier its raw text
+    /// gives (even when its envelope or version is unreadable).
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<Entity> {
+        match load_document(origin, bytes, cx) {
+            Ok((Loaded::Stable(entity), version, diagnostics, origin)) => {
+                DocumentRead::Stable(Document::new(entity, origin, version, diagnostics))
+            }
+            Ok((Loaded::Beta(beta), version, diagnostics, origin)) => {
+                let id = beta.0.description.identifier.as_str().to_owned();
+                DocumentRead::Beta(
+                    Some(id),
+                    OpenBeta::new(Document::new(beta, origin, version, diagnostics)),
+                )
+            }
+            Err(rejected) => DocumentRead::Rejected(
+                identifier_of(bytes).map(|id| id.as_str().to_owned()),
+                rejected,
+            ),
+        }
+    }
+
+    /// Parses without upgrading: the struct the file's `format_version` selects, with the
+    /// findings of the parse.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the bytes are not UTF-8, the JSON nests deeper than the limit, or the
+    /// parse leaves no entity to keep; it carries every finding.
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<history::Any>, Rejected> {
+        let origin = detached_origin(path);
+        let text = decode(bytes, &origin)?;
+        let parsed = parse_as_written::<Entity>(text.slice(), cx);
+        let mut diagnostics = place(parsed.diagnostics, &parsed.version, &origin);
+        if let Some(any) = parsed.value {
+            Ok(Document::new(any, origin, parsed.version, diagnostics))
+        } else {
+            close_refusal(&mut diagnostics, bytes);
+            Err(Rejected::new(origin, diagnostics))
+        }
     }
 }
+
+/// `entities/<namespace>/<name>.json`.
+impl JsonPlaced for Entity {
+    fn place(&self) -> PackPath {
+        default_path(DIRECTORY, &self.description.identifier)
+    }
+}
+
+impl JsonDefinition for Entity {
+    type Kind = kind::Entity;
+
+    fn identifier(&self) -> &EntityId {
+        &self.description.identifier
+    }
+}
+
+// The beta struct keeps its hand impls: its family's `Latest` is `Entity`.
+impl Sealed for Beta {}
+
+impl Content for Beta {
+    const NAME: &'static str = "beta entity";
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// Parses one beta entity file (`"format_version": "beta"`); any other version is rejected.
+    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
+        match Entity::read(detached_origin(path), bytes, cx) {
+            DocumentRead::Beta(_, beta) => Ok(beta.keep()),
+            DocumentRead::Stable(document) => {
+                let origin = document.origin().clone();
+                let mut diagnostics = document.diagnostics().clone();
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                    text: None,
+                }));
+                Err(Rejected::new(origin, diagnostics))
+            }
+            DocumentRead::Rejected(_, rejected) => Err(rejected),
+        }
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        let document =
+            write_envelope::<Entity>(BETA_VERSION, write::payload(&self.0)?, &Extra::default());
+        write_json(&document, out, style)
+    }
+}
+
+impl JsonContent for Beta {}
+
+impl Definition for Beta {
+    type Kind = kind::Entity;
+    type File = Beta;
+    type Beta = NoBeta<kind::Entity>;
+}
+
+/// `entities/<namespace>/<name>.json`.
+impl Placed for Beta {
+    fn default_path(&self) -> PackPath {
+        default_path(DIRECTORY, &self.0.description.identifier)
+    }
+}
+
+/// The loader of `bp.entities()`: every `.json` file below `entities/` (vanilla's directory
+/// walk matches `.json` as written), packs bottom-up so a higher pack's definition of an
+/// identifier replaces a lower one's.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<Entity>, Contribution<Entity>> =
+    load::registry::<Entity>(Walk::json_tree_in(&[DIRECTORY]));
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
 
     #[test]
-    fn property_type_and_spawn_category_display_their_json_spelling() {
-        assert_eq!(PropertyType::Enum.to_string(), "enum");
-        assert_eq!(PropertyType::Bool.to_string(), PropertyType::Bool.as_str());
-        for category in SpawnCategory::ALL {
-            assert_eq!(category.to_string(), category.as_str());
-        }
-        assert_eq!(SpawnCategory::WaterAmbient.to_string(), "water_ambient");
+    fn entity_reads_as_pinned() {
+        assert_reading_table(
+            "Entity",
+            &reading_table::<super::Entity>(),
+            r"
+                text: Root, clamps beyond a double: true, duplicates kept in: []
+                envelope: Uncounted
+                missing version: at the floor, told at Info: Some(NoFormatVersionField)
+                below floor: UseFormatVersion
+                empty document: Error
+                1.8.0..=1.21.80 (0..=28): json Absent/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.21.89..=1.26.60 (29..=41): json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+                beta: json Absent/Strict/Error/lenient/Refuse, mcb Own/Strict/Error/lenient/Refuse
+            ",
+        );
     }
 }

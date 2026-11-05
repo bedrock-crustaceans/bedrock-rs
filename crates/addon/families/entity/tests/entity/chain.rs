@@ -2,6 +2,7 @@
 //! floor and the ceiling, beta documents, the in-payload version.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{

@@ -22,6 +22,7 @@ use super::component::{
     CustomComponents, LegacyDigger, LegacyDurability, LegacyFoodComponent, LegacyIcon,
     LegacyRepairable, LegacyStorageItem, OnUse, OnUseOn, RenderOffsets, UseDuration, Weapon,
 };
+use super::gate;
 use crate::component::{
     AllowOffHand, BlockPlacer, BundleInteraction, CanDestroyInCreative, Compostable, Cooldown,
     Damage, DamageAbsorption, Digger, DisplayName, Durability, DurabilitySensor, Dyeable,
@@ -33,7 +34,6 @@ use crate::component::{
 };
 use crate::deprecated::ItemDeprecatedData;
 use crate::legacy::{LegacyItemData, is_legacy_read, read_legacy};
-use crate::load::gate;
 use crate::texts;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,

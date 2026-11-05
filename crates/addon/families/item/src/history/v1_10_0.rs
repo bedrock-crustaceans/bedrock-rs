@@ -18,7 +18,7 @@ use crate::legacy::{
     ItemFormat, LegacyCamera, LegacyEffect, LegacyFood, LegacyFormatItem, LegacyItemData,
     LegacySeed, number, seed_warning,
 };
-use crate::load::is_component_based;
+use crate::read::is_component_based;
 use crate::texts;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,

@@ -80,12 +80,12 @@ bedrock_addon_core::version_chain! {
     }
 }
 
-/// Runs the remaining upgrade steps of a document [`Block::parse_as_written`] gave: the same
+/// Runs the remaining upgrade steps of a document [`Block::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same
 /// result [`Block::parse`](bedrock_addon_core::document::Content::parse) gives for its file (`history::Any::upgrade`, realised over the document, which holds the origin).
 ///
 /// # Errors
 ///
 /// Returns [`Rejected`] when a remaining upgrade step leaves an error finding.
 pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Block>, Rejected> {
-    super::load::upgrade_document(document, cx)
+    super::read::upgrade_document(document, cx)
 }

@@ -2,7 +2,7 @@
 //! trip; history without upgrade; and the deviations the folder lists, each pinned by a test named `deviation`.
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::block::Block;
 use bedrock_addon::families::block::component::{Friction, LightEmission};
 use bedrock_addon::families::block::history::{self, Any, BlockFamily};

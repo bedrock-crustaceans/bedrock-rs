@@ -3,6 +3,7 @@
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
 use bedrock_addon_core::document::ComponentRef;
+use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::versioning::Loaded;
 use bedrock_addon_family_entity::{Entity, PropertyDefault};

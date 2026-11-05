@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::document::{Content, Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
