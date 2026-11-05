@@ -24,6 +24,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, Prepared, Value, blank_bom, check_depth, last_wins,
 };
+use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::SemVersion;
 
 /// The client's text for two keys of one copy with the same name before the first `:`; the
@@ -1083,6 +1084,59 @@ impl Reader<'_> {
         entry.path = path;
         Some(entry)
     }
+}
+
+/// The client's text for a copy that is no JSON: the path, then the reader's messages.
+pub(super) const PARSE_ERROR: &str = "Error parsing {} :\n {}";
+
+/// The finding for the copy at `path` that is no JSON.
+pub(super) fn parse_error(path: &PackPath, message: String) -> Diagnostic {
+    let text = VanillaText::Formatted {
+        template: PARSE_ERROR,
+        args: vec![path.as_str().to_owned(), message.clone()],
+    };
+    let code = DiagnosticCode::MalformedInput {
+        message,
+        text: Some(text),
+    };
+    Diagnostic::error(code)
+}
+
+/// The root of a copy that is no object, or of a list that is no array: nothing is read.
+pub(super) fn wrong_root() -> Diagnostic {
+    let code = DiagnosticCode::InvalidType { text: None };
+    Diagnostic::error(code)
+}
+
+/// The name of the file at `path` without its directory and its extension.
+pub(super) fn stem_of(path: &str) -> &str {
+    let name = path.rsplit_once('/').map_or(path, |(_, name)| name);
+    name.rsplit_once('.').map_or(name, |(stem, _)| stem)
+}
+
+/// The file in the root object `root` of a file named `stem`, as a stack of one pack reads it:
+/// the wrapper gate, then the material map. `rules` are the key rules a merge worked out.
+pub(super) fn read_root(
+    root: &VObject,
+    stem: &str,
+    rules: &dyn Fn(&str) -> Option<KeyRules>,
+    out: &mut Diagnostics,
+) -> MaterialFile {
+    let unwrapped = unwrap_copy(root.clone(), out);
+    // A value being written has no number past the doubles.
+    let clamped = |_: &JsonPath| false;
+    let mut read = read_file(
+        &unwrapped.map,
+        unwrapped.wrapped,
+        stem,
+        rules,
+        &clamped,
+        out,
+    );
+    if let Some(dropped) = unwrapped.dropped {
+        read.file.extra.insert(MATERIALS.to_owned(), dropped);
+    }
+    read.file
 }
 
 #[cfg(test)]

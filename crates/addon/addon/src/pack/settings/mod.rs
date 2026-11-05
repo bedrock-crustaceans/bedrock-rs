@@ -11,10 +11,10 @@ pub mod history;
 // values of one pack, built from its definitions and its saved entry, are `PackSettings`; and
 // `SavedSettings::save` is the game's save algorithm over them.
 
-mod load;
-mod parse;
+mod read;
 mod runtime;
 mod save;
+mod types;
 mod write;
 
 #[cfg(test)]
@@ -23,12 +23,7 @@ mod tests;
 pub use runtime::unmatched_entries;
 pub use runtime::{PackSettings, SetError, SettingValueAndDefault};
 pub use save::{FileState, SaveRefused};
-
-use indexmap::IndexMap;
-use uuid::Uuid;
-
-use crate::document::Extra;
-use crate::pack::PackType;
+pub use types::{SavedSettings, SettingValue, Settings, SettingsFile};
 
 /// The file a world keeps its behaviour packs' setting values in, in the world folder.
 pub const WORLD_FILE: &str = "world_behavior_pack_settings.json";
@@ -38,132 +33,498 @@ pub const GLOBAL_FILE: &str = "global_resource_pack_settings.json";
 /// The most entries a save keeps in the global file: the most recently used ones.
 pub const MAX_GLOBAL_ENTRIES: usize = 128;
 
-/// The saved values of pack settings: one `world_behavior_pack_settings.json` or
-/// `global_resource_pack_settings.json`, at the newest format (1.26.40).
-///
-/// JSON: `{"format_version": "1.21.100", "minecraft:pack_settings": {"settings": [{"pack_id",
-/// "last_used"?, "values"}]}}`. The file holds only the values that differ from their
-/// definition's default. Unknown members, wrong types and a version other than 1.21.100 to
-/// 1.26.40 reject the whole file, and every pack in it falls back to its defaults.
-#[derive(Clone, Debug, Default, PartialEq)]
-#[doc(alias = "minecraft:pack_settings")]
-#[doc(alias = "world_behavior_pack_settings.json")]
-#[doc(alias = "global_resource_pack_settings.json")]
-pub struct SavedSettings {
-    /// One entry per pack (JSON `settings`). The first entry of a pack UUID is the one read and
-    /// the one a save updates; a later one with the same UUID is kept as it is.
-    pub settings: Vec<Settings>,
-}
+use std::collections::HashSet;
+use std::convert::Infallible;
 
-/// The saved values of one pack: one element of `settings`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Settings {
-    /// The pack's header UUID (JSON `pack_id`). A string that is no UUID reads as the nil UUID,
-    /// which matches no pack.
-    pub pack_id: Uuid,
-    /// When the pack's settings were last used (JSON `last_used`): milliseconds of the
-    /// writing client's monotonic clock, comparable only within one session. Only the global
-    /// file carries it; the oldest entries are dropped first when it holds too many.
-    pub last_used: Option<u64>,
-    /// The values by setting name (JSON `values`): the `name` of a slider, toggle, dropdown
-    /// or multiselect definition in the pack's manifest.
-    pub values: IndexMap<String, SettingValue>,
-    /// Unknown members. Always empty after a load: an unknown member rejects the file.
-    pub extra: Extra,
-}
+use crate::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span, VanillaText,
+};
+use crate::document::{Document, Origin, Rejected};
+use crate::json::{
+    EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, RootProbe, check_depth, probe_envelope, strip_bom,
+};
+use crate::load::LoadContext;
+use crate::version::{FormatVersion, FormatVersionInput};
+use crate::versioning::{
+    BelowFloor, Envelope, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents,
+    RangeModel, Selection, ValidateCx, Versioned, finish, parse_as_written, select,
+};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
-/// One saved setting value: what a slider, toggle, dropdown or multiselect holds.
-///
-/// JSON: a number, a boolean, a string or an array of strings. An integer reads as a float.
-#[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
-pub enum SettingValue {
-    /// A slider's value (JSON number).
-    Float(f32),
-    /// A toggle's value (JSON boolean).
-    Bool(bool),
-    /// A dropdown's value: the `name` of an option (JSON string).
-    String(String),
-    /// A multiselect's value: the `name`s of the chosen options (JSON array of strings; format
-    /// 1.26.40, read by the game from 1.26.50).
-    StringList(Vec<String>),
-}
+use history::{Any, PackSettingsFamily};
 
-/// Which of the two settings files holds a pack's values.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum SettingsFile {
-    /// `world_behavior_pack_settings.json`: behaviour packs, per world, without `last_used`.
-    World,
-    /// `global_resource_pack_settings.json`: resource packs, shared by every world, with
-    /// `last_used` and at most [`MAX_GLOBAL_ENTRIES`] entries.
-    Global,
-}
+/// The closing error of a file that failed to load; `{}` is the file's path.
+const LOAD_FAILED: &str = "Pack Settings failed to load [{}]";
 
-impl SettingsFile {
-    /// The file's name.
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::World => WORLD_FILE,
-            Self::Global => GLOBAL_FILE,
-        }
+/// The floor, and the only version the released game reads.
+const FLOOR: FormatVersion = FormatVersion::new(1, 21, 100);
+
+impl Family for PackSettingsFamily {
+    const NAME: &'static str = "pack_settings";
+    const PAYLOAD_KEY: &'static str = "minecraft:pack_settings";
+    const FLOOR: FormatVersion = FLOOR;
+    const ENVELOPE: Envelope = Envelope {
+        // Below 1.21.100 (or without a version) the text is kept raw and no envelope check runs.
+        check: EnvelopeCheck::From(FLOOR),
+        // The caller passes an empty version: the game's message is "no valid version passed by the
+        // caller or found in the input".
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+    // The loader's last range is the newest struct's version exactly.
+    const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
+    type Latest = SavedSettings;
+    type Beta = Infallible;
+    type Component = NoComponents;
+    type Any = Any;
+
+    /// The document has no `description`.
+    fn identity(_: JsonSlice<'_>) -> Identity {
+        Identity::default()
     }
 
-    /// The file a pack of `pack_type` keeps its values in: behaviour packs the world file,
-    /// resource packs the global file; other packs have no saved settings.
-    pub fn for_pack_type(pack_type: PackType) -> Option<Self> {
-        match pack_type {
-            PackType::Behavior => Some(Self::World),
-            PackType::Resource => Some(Self::Global),
-            _ => None,
-        }
-    }
-}
-
-impl From<f32> for SettingValue {
-    fn from(value: f32) -> Self {
-        Self::Float(value)
-    }
-}
-
-impl From<bool> for SettingValue {
-    fn from(value: bool) -> Self {
-        Self::Bool(value)
-    }
-}
-
-impl From<String> for SettingValue {
-    fn from(value: String) -> Self {
-        Self::String(value)
-    }
-}
-
-impl From<&str> for SettingValue {
-    fn from(value: &str) -> Self {
-        Self::String(value.to_owned())
-    }
-}
-
-impl From<Vec<String>> for SettingValue {
-    fn from(value: Vec<String>) -> Self {
-        Self::StringList(value)
-    }
-}
-
-impl Settings {
-    /// An entry for `pack_id` with `values` and no `last_used`.
-    pub fn new(pack_id: Uuid, values: IndexMap<String, SettingValue>) -> Self {
-        Self {
-            pack_id,
-            last_used: None,
-            values,
-            extra: Extra::default(),
+    /// A second entry for a pack UUID: the game reads and updates only the first and carries
+    /// the others along silently. The crate reports it as an information.
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        let Loaded::Stable(saved) = v else {
+            return;
+        };
+        let mut seen = HashSet::new();
+        for (index, entry) in saved.settings.iter().enumerate() {
+            if seen.insert(entry.pack_id) {
+                continue;
+            }
+            let mut at = cx.at.clone();
+            at.push("settings");
+            at.push_index(index);
+            at.push("pack_id");
+            // The game takes the first match and carries the others in silence, so the crate
+            // reports it as an information.
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+                    .at(at)
+                    .phase(Phase::Validate),
+            );
         }
     }
 }
 
 impl SavedSettings {
-    /// The first entry for `pack_id`: the one vanilla reads and updates.
-    pub fn get(&self, pack_id: Uuid) -> Option<&Settings> {
-        self.settings.iter().find(|entry| entry.pack_id == pack_id)
+    /// Parses the bytes of a saved-settings file (the file is read by the caller,
+    /// `bedrock_addon_std::read_saved_settings`), upgraded to the newest struct. The findings
+    /// name the world file ([`WORLD_FILE`]); [`parse_named`](Self::parse_named) names another.
+    ///
+    /// A missing file is no error: it holds no values (`SavedSettings::default()`). A file that
+    /// fails is rejected whole, as the game drops it and every pack in it uses its defaults; its
+    /// last finding is the game's "Pack Settings failed to load \[…\]".
+    ///
+    /// Rejected: no `format_version`, one that is neither a version string nor three integers,
+    /// a version below 1.21.100 or above 1.26.40; at 1.21.100 and above, a root that has not
+    /// exactly `format_version` and one other member; an unknown member, a missing `settings`,
+    /// `pack_id` or `values`, a `pack_id` that is no string, a `last_used` that is no unsigned
+    /// integer, and a value that is not a number, a boolean, a string or (at 1.26.40) an array
+    /// of strings.
+    ///
+    /// Loaded with a finding, each an information: a `pack_id` string that is no UUID (it loads
+    /// as the nil UUID), a second entry for a pack (kept), a payload member not named
+    /// `minecraft:pack_settings`, a version written as three integers, and a version between
+    /// 1.21.100 and 1.26.40, which the released game does not read.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bedrock_addon::pack::settings::{SavedSettings, SettingValue};
+    /// use uuid::Uuid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let text = br#"{
+    ///   "format_version": "1.26.40",
+    ///   "minecraft:pack_settings": {
+    ///     "settings": [
+    ///       { "pack_id": "00000000-0000-0000-0000-000000000001", "values": { "demo:glow": true } }
+    ///     ]
+    ///   }
+    /// }"#;
+    /// let document = SavedSettings::parse(text)?;
+    /// let entry = document.value().get(Uuid::from_u128(1)).ok_or("no entry for the pack")?;
+    /// assert_eq!(entry.values["demo:glow"], SettingValue::Bool(true));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the file is not a valid settings document; the rejection carries every
+    /// finding.
+    pub fn parse(bytes: &[u8]) -> Result<Document<Self>, Rejected> {
+        Self::parse_named(WORLD_FILE, bytes)
+    }
+
+    /// [`parse`](Self::parse) of the file the caller calls `name` (its path as the caller
+    /// shows it, which the closing finding of a rejected file quotes). The document's origin
+    /// is the file's last path segment: the global file ([`GLOBAL_FILE`]) is on the resource
+    /// side, every other file on the behaviour side.
+    ///
+    /// # Errors
+    ///
+    /// [`Rejected`] when the file is not a valid settings document; the rejection carries every
+    /// finding.
+    pub fn parse_named(name: &str, bytes: &[u8]) -> Result<Document<Self>, Rejected> {
+        let origin = origin(name);
+        let mut found = Diagnostics::default();
+        let loaded = load(bytes, &mut found);
+        if found.has_errors() {
+            // Once per file, after the loader's own entries (error level, the packs log area).
+            found.push(error(DiagnosticCode::DocumentRejected {
+                text: Some(VanillaText::Formatted {
+                    template: LOAD_FAILED,
+                    args: vec![name.to_owned()],
+                }),
+            }));
+        }
+        let diagnostics: Diagnostics = found
+            .into_iter()
+            .map(|mut finding| {
+                finding.location.pack = Some(origin.pack.clone());
+                finding.location.path = Some(origin.path.clone());
+                finding
+            })
+            .collect();
+        match loaded {
+            Some((settings, version)) if !diagnostics.has_errors() => {
+                Ok(Document::new(settings, origin, version, diagnostics))
+            }
+            _ => Err(Rejected::new(origin, diagnostics)),
+        }
+    }
+}
+
+/// The text of `bytes` through the chain: the value and its version information, or `None`
+/// (the reason is in `d`).
+fn load(
+    bytes: &[u8],
+    d: &mut Diagnostics,
+) -> Option<(SavedSettings, crate::document::VersionInfo)> {
+    let bytes = &*crate::json::blank_bom(bytes);
+    let bytes = strip_bom(bytes);
+    if let Err(too_deep) = check_depth(bytes, MAX_JSON_DEPTH) {
+        d.push(error(malformed(too_deep.to_string())));
+        return None;
+    }
+    let text = match std::str::from_utf8(bytes) {
+        Ok(text) => text,
+        Err(failure) => {
+            d.push(error(malformed(failure.to_string())));
+            return None;
+        }
+    };
+    let envelope = probe_envelope(JsonSlice::new(text)).ok();
+    let written = envelope
+        .as_ref()
+        .map_or(EnvelopeVersion::Absent, |envelope| {
+            envelope.format_version.clone()
+        });
+    // At or above the first modern version the payload member's name is not enforced (the game
+    // only asserts it): the other member is the payload whatever it is called. The crate loads
+    // it the same way and reports an information.
+    let foreign = envelope
+        .as_ref()
+        .and_then(|envelope| foreign_payload_key(envelope, text));
+    let renamed = foreign.as_ref().map(|key| key.rename(text));
+    let document = JsonSlice::new(renamed.as_deref().unwrap_or(text));
+    if let Some(key) = foreign.as_ref().filter(|key| key.warns) {
+        let mut at = JsonPath::new();
+        at.push(&key.name);
+        // The game only asserts the payload key (in a development build) and the payload
+        // loads, so the crate reports an information.
+        d.push(
+            Diagnostic::info(DiagnosticCode::PayloadKeyMismatch)
+                .at(at)
+                .span(key.span()),
+        );
+    }
+    let cx = LoadContext::detached();
+    let parsed = parse_as_written::<PackSettingsFamily>(document, &cx);
+    let outcome = finish(parsed, &cx);
+    for mut finding in outcome.diagnostics {
+        if let (Some(key), Some(span)) = (&foreign, &mut finding.location.span) {
+            key.restore(span);
+        }
+        d.push(finding);
+    }
+    let value = outcome.value?;
+    // The game reads a version written as three integers too.
+    if matches!(written, EnvelopeVersion::Array(_)) {
+        d.push(info(DiagnosticCode::FormatVersionArray, version_at()));
+    }
+    // The released game's only range is [1.21.100, 1.21.100]; the crate reads up to the newest
+    // struct.
+    let effective = outcome.version.effective;
+    if FLOOR < effective && effective < <SavedSettings as Versioned>::VERSION {
+        d.push(info(DiagnosticCode::VanillaRejectsVersion, version_at()));
+    }
+    match value {
+        Loaded::Stable(settings) => Some((settings, outcome.version)),
+        Loaded::Beta(never) => match never {},
+    }
+}
+
+/// A payload member whose name is not `minecraft:pack_settings`, in a document whose envelope
+/// vanilla checks (a version of at least 1.21.100, exactly two root members).
+struct ForeignKey {
+    /// The member's name.
+    name: String,
+    /// The byte range of its quoted name in the file.
+    start: usize,
+    end: usize,
+    /// Whether the name is reported: the version has a parser.
+    warns: bool,
+}
+
+/// The quoted name of the family's payload key, which replaces a foreign one.
+const PAYLOAD_TOKEN: &str = "\"minecraft:pack_settings\"";
+
+impl ForeignKey {
+    /// The text with the member renamed to the family's payload key.
+    fn rename(&self, text: &str) -> String {
+        let mut renamed = String::with_capacity(text.len() + PAYLOAD_TOKEN.len());
+        renamed.push_str(&text[..self.start]);
+        renamed.push_str(PAYLOAD_TOKEN);
+        renamed.push_str(&text[self.end..]);
+        renamed
+    }
+
+    /// The quoted name's span in the file.
+    fn span(&self) -> Span {
+        Span {
+            offset: u32::try_from(self.start).unwrap_or(u32::MAX),
+            len: u32::try_from(self.end - self.start).unwrap_or(u32::MAX),
+        }
+    }
+
+    /// Moves a span of the renamed text back to the file's offsets.
+    fn restore(&self, span: &mut Span) {
+        let renamed_end = self.start + PAYLOAD_TOKEN.len();
+        let offset = usize::try_from(span.offset).unwrap_or(usize::MAX);
+        let len = usize::try_from(span.len).unwrap_or(usize::MAX);
+        if offset >= renamed_end {
+            // After the name: moved by the difference of the two names.
+            let original = offset - renamed_end + self.end;
+            span.offset = u32::try_from(original).unwrap_or(u32::MAX);
+        } else if offset <= self.start && offset.saturating_add(len) >= renamed_end {
+            // Around the name (the whole document): as long as the file's text.
+            let original = len - PAYLOAD_TOKEN.len() + (self.end - self.start);
+            span.len = u32::try_from(original).unwrap_or(u32::MAX);
+        }
+    }
+}
+
+/// The envelope's foreign payload member, if it has one: one member besides `format_version`,
+/// not named `minecraft:pack_settings`, under a version whose envelope is checked (the literal
+/// `"beta"`, or a version of at least 1.21.100; below it the text is read raw and the name is
+/// never looked at).
+fn foreign_payload_key(envelope: &RootProbe<'_>, text: &str) -> Option<ForeignKey> {
+    let version = written_version(&envelope.format_version)?;
+    let checked = version.beta_literal || version.version.is_some_and(|v| v >= FLOOR);
+    if !checked || envelope.members.len() != 1 {
+        return None;
+    }
+    let (name, value) = envelope.members.first()?;
+    if name == PackSettingsFamily::PAYLOAD_KEY {
+        return None;
+    }
+    let (start, end) = key_token(text, value.offset)?;
+    Some(ForeignKey {
+        name: name.clone(),
+        start,
+        end,
+        // Vanilla finds no parser before it would look at the payload: only a version that
+        // selects a struct gets the finding.
+        warns: matches!(select::<PackSettingsFamily>(&version), Selection::Struct(_)),
+    })
+}
+
+/// The envelope's version as the loader reads it; `None` when absent or malformed.
+fn written_version(version: &EnvelopeVersion) -> Option<FormatVersionInput> {
+    match version {
+        EnvelopeVersion::String(text) => FormatVersionInput::parse(text),
+        EnvelopeVersion::Array([major, minor, patch]) => Some(FormatVersionInput {
+            version: Some(FormatVersion::new(
+                u16::try_from(*major).ok()?,
+                u16::try_from(*minor).ok()?,
+                u16::try_from(*patch).ok()?,
+            )),
+            beta_literal: false,
+            prerelease: false,
+        }),
+        _ => None,
+    }
+}
+
+/// The byte range of the quoted name of the root member whose value starts at `value_offset`:
+/// the root object is walked token by token, over strings, comments and nested values.
+fn key_token(text: &str, value_offset: usize) -> Option<(usize, usize)> {
+    let bytes = text.as_bytes();
+    let mut depth = 0_usize;
+    // The last string at the root level, and the one a colon followed.
+    let mut last = None;
+    let mut named = None;
+    let mut i = 0;
+    loop {
+        i = skip_blank(bytes, i);
+        let byte = *bytes.get(i)?;
+        if let Some(token) = named.take()
+            && i == value_offset
+        {
+            return Some(token);
+        }
+        match byte {
+            b'"' => {
+                let end = string_end(bytes, i)?;
+                last = (depth == 1).then_some((i, end));
+                i = end;
+            }
+            b':' => {
+                if depth == 1 {
+                    named = last.take();
+                }
+                i += 1;
+            }
+            b'{' | b'[' => {
+                depth += 1;
+                last = None;
+                i += 1;
+            }
+            b'}' | b']' => {
+                depth = depth.checked_sub(1)?;
+                last = None;
+                i += 1;
+            }
+            _ => {
+                last = None;
+                i += 1;
+            }
+        }
+    }
+}
+
+/// The index after the whitespace and the `//` and `/* */` comments that start at `i`.
+fn skip_blank(bytes: &[u8], mut i: usize) -> usize {
+    loop {
+        match (bytes.get(i), bytes.get(i + 1)) {
+            (Some(byte), _) if byte.is_ascii_whitespace() => i += 1,
+            (Some(b'/'), Some(b'/')) => {
+                i = bytes[i..]
+                    .iter()
+                    .position(|&b| b == b'\n')
+                    .map_or(bytes.len(), |line| i + line + 1);
+            }
+            (Some(b'/'), Some(b'*')) => {
+                i = bytes[i + 2..]
+                    .windows(2)
+                    .position(|pair| pair == b"*/")
+                    .map_or(bytes.len(), |close| i + 2 + close + 2);
+            }
+            _ => return i,
+        }
+    }
+}
+
+/// The index after the string whose opening quote is at `start`.
+fn string_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let mut i = start + 1;
+    loop {
+        match *bytes.get(i)? {
+            b'"' => return Some(i + 1),
+            b'\\' => i += 2,
+            _ => i += 1,
+        }
+    }
+}
+
+/// The path of the envelope's `format_version`.
+fn version_at() -> JsonPath {
+    let mut at = JsonPath::new();
+    at.push("format_version");
+    at
+}
+
+/// An info-level parse finding.
+fn info(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
+    Diagnostic::info(code).at(at)
+}
+
+/// The document's origin: the app-data layer (the file belongs to no pack), the side of the
+/// packs whose values the file holds, and the file's name.
+fn origin(name: &str) -> Origin {
+    let last = name.rsplit(['/', '\\']).next().unwrap_or(name);
+    let side = if last == GLOBAL_FILE {
+        PackSide::Resource
+    } else {
+        PackSide::Behavior
+    };
+    let path = PackPath::new(last).unwrap_or_else(|_| PackPath::from_static(WORLD_FILE));
+    Origin::file(PackRef::app_data(), side, path)
+}
+
+/// `MalformedInput` without vanilla's text: bytes that are no JSON text at all.
+fn malformed(message: String) -> DiagnosticCode {
+    DiagnosticCode::MalformedInput {
+        message,
+        text: None,
+    }
+}
+
+/// A file-level parse error.
+fn error(code: DiagnosticCode) -> Diagnostic {
+    Diagnostic::error(code)
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn pack_settings_reads_as_pinned() {
+        assert_reading_table(
+            "PackSettingsFamily",
+            &reading_table::<super::PackSettingsFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 100 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.100..=1.26.40 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn pack_settings_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::PackSettingsFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed = parse_as_written::<super::PackSettingsFamily>(
+            JsonSlice::new(&text),
+            &LoadContext::detached(),
+        );
+        assert_eq!(parsed.identity, Identity::default());
     }
 }

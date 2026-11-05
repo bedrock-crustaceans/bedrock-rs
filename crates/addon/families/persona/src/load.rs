@@ -3,25 +3,19 @@
 use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 
-use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSide, PackType};
+use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSide};
 use bytes::Bytes;
 use facet_value::VObject;
-use uuid::Uuid;
 
 use super::piece::{EmoteAnimation, PersonaPiece, PieceAnimation, PieceGeometry};
 use super::read::{read_meta, read_root, read_store_info, written_in};
 use super::text::{self, unresolved, vanilla};
-use super::{BUILTIN_PACK, PieceMetadata, PieceStoreInfo, PieceType, TESTING_PACK};
+use super::{PackKind, PersonaPieces, PieceMetadata, PieceStoreInfo, PieceType};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
-use bedrock_addon_core::document::{Content, Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
-use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::version::known;
-
-impl bedrock_addon_core::__private::Sealed for PieceMetadata {}
-impl bedrock_addon_core::__private::Sealed for PieceStoreInfo {}
+use bedrock_addon_core::document::{Document, Origin, Rejected, unversioned};
+use bedrock_addon_core::json::Value;
 
 /// The files of one pack, as [`PersonaPiece::load_all`] asks for them.
 ///
@@ -53,91 +47,6 @@ pub trait PieceSource {
 /// The model pack at the root of a persona pack, by its exact name.
 const SHARED_GEOMETRY: &str = "geometry.json";
 
-/// What the client does with a pack's piece folders.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum PackKind {
-    /// One of the client's own persona packs ([`BUILTIN_PACK`], [`TESTING_PACK`]): many
-    /// pieces, each identified by its `piece_id`.
-    BuiltIn,
-    /// A pack whose manifest has a `persona_piece` module (a Marketplace or developer piece):
-    /// one piece, identified by the pack's header UUID.
-    PersonaPiece,
-    /// Any other pack: the client never looks for pieces in it.
-    Ordinary,
-}
-
-impl PackKind {
-    /// The kind of the pack with this identity.
-    // The client looks the two built-in UUIDs up; every other piece pack is a persona piece
-    // pack of the Marketplace cache.
-    #[must_use]
-    pub fn of(id: &PackIdVersion) -> PackKind {
-        if id.uuid == BUILTIN_PACK || id.uuid == TESTING_PACK {
-            PackKind::BuiltIn
-        } else if id.pack_type == PackType::PersonaPiece {
-            PackKind::PersonaPiece
-        } else {
-            PackKind::Ordinary
-        }
-    }
-}
-
-/// What [`PersonaPiece::load_all`] found in one pack.
-#[derive(Clone, Debug)]
-#[non_exhaustive]
-pub struct PersonaPieces {
-    /// What the client does with the pack.
-    pub kind: PackKind,
-    /// Every piece that loaded, ordered by directory.
-    pub pieces: Vec<PersonaPiece>,
-    /// The meta files of the pieces the client skips: unreadable, not a JSON object, or
-    /// without an identity.
-    pub rejected: Vec<Rejected>,
-    /// The pack-root `geometry.json` of a persona pack, when the pack has one: models every
-    /// piece of the pack shares. The client hands the file to its geometry loader with a
-    /// minimum engine version of 1.14.0, whatever the manifest says; the load only names it
-    /// (it is a geometry file, for the geometry family's reader) and never asks for its bytes.
-    pub shared_geometry: Option<PackPath>,
-    /// The findings about the pack and its folders: files the client never reads, folders
-    /// without a meta file, pieces that share an identity.
-    pub diagnostics: Diagnostics,
-}
-
-impl PersonaPieces {
-    /// The pieces the client keeps: of several pieces with one identity, the first by
-    /// directory.
-    pub fn kept(&self) -> impl Iterator<Item = &PersonaPiece> + '_ {
-        let mut seen = HashSet::new();
-        self.pieces
-            .iter()
-            .filter(move |piece| seen.insert(piece.id))
-    }
-
-    /// The piece the client keeps under `id`.
-    #[must_use]
-    pub fn get(&self, id: &Uuid) -> Option<&PersonaPiece> {
-        self.pieces.iter().find(|piece| piece.id == *id)
-    }
-
-    /// Every finding of the load: the pack's, each piece's, each skipped file's.
-    pub fn report(&self) -> impl Iterator<Item = &Diagnostic> + '_ {
-        self.diagnostics
-            .iter()
-            .chain(self.pieces.iter().flat_map(PersonaPiece::report))
-            .chain(
-                self.rejected
-                    .iter()
-                    .flat_map(|rejected| rejected.diagnostics.iter()),
-            )
-    }
-}
-
-/// The origin of a file of a pack that is on no stack.
-fn origin_of(pack: &PackRef, path: &PackPath) -> Origin {
-    Origin::file(pack.clone(), PackSide::Resource, path.clone())
-}
-
 /// `findings` as the diagnostics of the file at `origin`.
 fn located(findings: Vec<Diagnostic>, origin: &Origin) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
@@ -153,14 +62,8 @@ fn located(findings: Vec<Diagnostic>, origin: &Origin) -> Diagnostics {
     diagnostics
 }
 
-/// The version record of a file that carries none.
-fn unversioned() -> VersionInfo {
-    let none = known::V0_0_0;
-    VersionInfo::new(None, false, none, none, false)
-}
-
 /// Reads one file of the family on its own.
-fn parse_file<T>(
+pub(super) fn parse_file<T>(
     origin: Origin,
     bytes: &[u8],
     refusal: fn(&PackPath, String) -> Diagnostic,
@@ -195,11 +98,16 @@ fn parse_file<T>(
         return Err(Rejected::new(origin.clone(), located(findings, &origin)));
     }
     let diagnostics = located(findings, &origin);
-    Ok(Document::new(value, origin, unversioned(), diagnostics))
+    Ok(Document::new(
+        value,
+        origin,
+        unversioned::version(),
+        diagnostics,
+    ))
 }
 
 /// A meta file that is not JSON, or whose root is no object.
-fn meta_not_parsed(path: &PackPath, message: String) -> Diagnostic {
+pub(super) fn meta_not_parsed(path: &PackPath, message: String) -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
         message,
         text: vanilla(text::META_NOT_PARSED, [path.as_str()]),
@@ -208,60 +116,12 @@ fn meta_not_parsed(path: &PackPath, message: String) -> Diagnostic {
 
 /// A store-info file that is not JSON, or whose root is no object. The game ignores the
 /// file in silence.
-fn store_info_not_parsed(_: &PackPath, message: String) -> Diagnostic {
+pub(super) fn store_info_not_parsed(_: &PackPath, message: String) -> Diagnostic {
     Diagnostic::error(DiagnosticCode::MalformedInput {
         message,
         text: None,
     })
 }
-
-impl Content for PieceMetadata {
-    const NAME: &'static str = "persona piece metadata";
-    // A persona pack is on neither stack.
-    const SIDES: &'static [PackSide] = &[];
-
-    /// Reads one `<name>.meta.json` on its own, as the 1.26.40+ reader does. A file that is not
-    /// JSON, one whose root is no object, and one the reader finds an error in is rejected:
-    /// the client skips the piece.
-    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        parse_file(
-            origin_of(&PackRef::app_data(), path),
-            bytes,
-            meta_not_parsed,
-            read_meta,
-        )
-    }
-
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        write_json(&self.to_value(), out, style)
-    }
-}
-
-impl bedrock_addon_core::document::JsonContent for PieceMetadata {}
-
-impl Content for PieceStoreInfo {
-    const NAME: &'static str = "persona piece store info";
-    // A persona pack is on neither stack.
-    const SIDES: &'static [PackSide] = &[];
-
-    /// Reads one `<name>.store_info.json` on its own. A file that is not JSON, and one whose
-    /// root is no object, is rejected: the client ignores the file (the piece loads without
-    /// it, which [`PersonaPiece::load_all`] reports as a warning).
-    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        parse_file(
-            origin_of(&PackRef::app_data(), path),
-            bytes,
-            store_info_not_parsed,
-            read_store_info,
-        )
-    }
-
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        write_json(&self.to_value(), out, style)
-    }
-}
-
-impl bedrock_addon_core::document::JsonContent for PieceStoreInfo {}
 
 impl PersonaPiece {
     /// Loads the pieces of one pack as the client does.
@@ -542,7 +402,7 @@ impl<S: PieceSource> Load<'_, S> {
         folder: &Folder<'_>,
         meta_path: &PackPath,
     ) -> Result<PersonaPiece, Rejected> {
-        let origin = origin_of(&self.pack_ref, meta_path);
+        let origin = unversioned::origin(self.pack_ref.clone(), PackSide::Resource, meta_path);
         let bytes = match self.pack.read(meta_path) {
             Ok(bytes) => bytes,
             Err(kind) => {
@@ -712,7 +572,7 @@ impl<S: PieceSource> Load<'_, S> {
                 return None;
             }
         };
-        let origin = origin_of(&self.pack_ref, path);
+        let origin = unversioned::origin(self.pack_ref.clone(), PackSide::Resource, path);
         match parse_file(origin, &bytes, store_info_not_parsed, read_store_info) {
             Ok(store) => {
                 // The thumbnail is named from the pack root, with or without its extension.

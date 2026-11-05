@@ -5,17 +5,26 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod load;
 mod read;
+mod types;
+mod write;
 
-use std::borrow::Cow;
+use std::collections::HashSet;
+use std::fmt::Write as _;
 
-use bedrock_addon_core::pack_identity::PackOrigin;
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Origin, Placed, Rejected, unversioned,
+};
+use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
+use bedrock_addon_core::load::LoadContext;
+use read::read_json;
 
-pub use load::{check_cape, check_texture};
+pub use types::{Skin, SkinPack};
 
 /// The path of the skin list, in a skin pack.
 pub const SKINS_PATH: &str = "skins.json";
@@ -26,136 +35,224 @@ pub const GEOMETRY_PATH: &str = "geometry.json";
 pub const BUILT_IN_GEOMETRIES: [&str; 2] =
     ["geometry.humanoid.custom", "geometry.humanoid.customSlim"];
 
-/// One `skins.json`: the skins of a skin pack.
-///
-/// JSON: `{"serialize_name": "MyPack", "localization_name": "MyPack", "skins":
-/// [{"localization_name": "Hero", "geometry": "geometry.humanoid.custom", "texture":
-/// "hero.png", "type": "free"}]}`. The game reads every string member the way it reads any
-/// value as a string; where a member is written as something else, the typed field is `None`
-/// and the member is kept in `extra` as written (the methods give the game's reading).
-#[derive(Clone, Debug, Default, PartialEq)]
-#[doc(alias = "skins.json")]
-pub struct SkinPack {
-    /// JSON `serialize_name`. The game does not read it; creator tools want it equal to
-    /// `localization_name`.
-    pub serialize_name: Option<String>,
-    /// JSON `localization_name`: the pack's name key is `skinpack.<name>`.
-    pub localization_name: Option<String>,
-    /// JSON `skins`: the entries that are objects, in order (of an object `skins`, its member
-    /// values in key order). `None` when the member is absent.
-    pub skins: Option<Vec<Skin>>,
-    /// The other members, and the members above as written when the field cannot say them.
-    pub extra: Extra,
-    /// The root as the author wrote it, kept when the fields cannot say it (an entry of `skins`
-    /// that is no object, a `skins` that is no array).
-    /// `to_json` writes it for as long as the fields are still the game's reading of it; a
-    /// value that was changed, or built by hand, writes its fields. The entries the game
-    /// skipped are in this root alone, so one edit of any field drops every one of them from
-    /// the written file, not only those beside the edited member. `PartialEq` and `Debug`
-    /// include the root: a loaded value that kept one differs from a hand-built value with
-    /// the same fields.
-    pub written: Option<Value>,
+// The loader's texts.
+/// A pack without `skins.json`.
+const NOT_FOUND: &str = "Failed to load skinpack, skins.json not found";
+/// A `skins.json` that is not JSON.
+const NOT_JSON: &str = "Failed to load skinpack, failed to parse manifest";
+/// A `skins.json` whose root is no object; the literal `/n` and the two spaces are the
+/// game's. The arguments are the pack's name, author and UUID.
+const NOT_OBJECT: &str = "Skin manifest failed to load.  Pack Name: {} /nAuthor: {}, /nUUID: {}";
+/// The start of the content-log line for a skin whose files are missing.
+const INVALID_SKIN: &str = "Trying to add an invalid classic skin.{}";
+
+impl bedrock_addon_core::__private::Sealed for SkinPack {}
+
+fn located(mut diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
+    let found = std::mem::take(&mut diagnostics);
+    for mut finding in found {
+        finding.location.path = Some(origin.path.clone());
+        diagnostics.push(finding);
+    }
+    diagnostics
 }
 
-/// One skin of a skin pack.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Skin {
-    /// JSON `localization_name`: the skin's name key is `skin.<pack>.<name>`.
-    pub localization_name: Option<String>,
-    /// JSON `geometry`: one of [`BUILT_IN_GEOMETRIES`] or a model of the pack's
-    /// `geometry.json`.
-    pub geometry: Option<String>,
-    /// JSON `texture`: the skin image, a file at the pack's root.
-    pub texture: Option<String>,
-    /// JSON `type`: `free` or `paid` by convention; the game compares it with nothing.
-    pub type_: Option<String>,
-    /// JSON `cape`: the cape image, a file of the pack.
-    pub cape: Option<String>,
-    /// JSON `animations`, as written: copied into the skin's resource patch.
-    pub animations: Option<Value>,
-    /// JSON `enable_attachables`, as written.
-    pub enable_attachables: Option<Value>,
-    /// JSON `held_item_ignores_lighting`, as written.
-    pub held_item_ignores_lighting: Option<Value>,
-    /// JSON `hide_armor`, as written.
-    pub hide_armor: Option<Value>,
-    /// The other members, and the string members above as written when they are no strings.
-    pub extra: Extra,
+fn refuse(origin: &Origin, code: DiagnosticCode) -> Rejected {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push(Diagnostic::error(code));
+    Rejected::new(origin.clone(), located(diagnostics, origin))
 }
 
-/// A string member as the game reads it: the typed field, else the written value through
-/// `asString("")` (a boolean is `true` / `false`, anything else empty).
-fn text<'a>(typed: Option<&'a String>, extra: &'a Extra, name: &str) -> Cow<'a, str> {
-    match typed {
-        Some(text) => Cow::Borrowed(text),
-        None => match extra.get(name).and_then(Value::as_bool) {
-            Some(flag) => Cow::Owned(flag.to_string()),
-            None => Cow::Borrowed(""),
-        },
+impl Content for SkinPack {
+    const NAME: &'static str = "skin pack";
+    // A skin pack is on neither stack.
+    const SIDES: &'static [PackSide] = &[];
+
+    /// Reads one `skins.json` on its own. A file that is not JSON, and one whose root is no
+    /// object, is rejected: the game rejects the pack. Every skin entry that is an object is
+    /// held, whether or not the pack has its files ([`SkinPack::load`] checks those).
+    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+        parse_placed(path, bytes).map(|(document, _)| document)
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        write_json(&self.to_value(), out, style)
+    }
+}
+
+impl JsonContent for SkinPack {}
+
+/// `SkinPack::parse`, with the place in the file of each skin held.
+fn parse_placed(
+    path: &PackPath,
+    bytes: &[u8],
+) -> Result<(Document<SkinPack>, Vec<JsonPath>), Rejected> {
+    // A skin pack is on neither stack; the resource side is the nearer of the two.
+    let origin = unversioned::lone(path);
+    let mut root = match read_json(bytes) {
+        Ok(root) => root,
+        Err(error) => {
+            let code = DiagnosticCode::MalformedInput {
+                message: error.to_string(),
+                text: Some(VanillaText::Fixed(NOT_JSON)),
+            };
+            return Err(refuse(&origin, code));
+        }
+    };
+    if !root.is_object() {
+        // The pack's name, author and UUID are the manifest's, which a file read on its own does
+        // not have.
+        let code = DiagnosticCode::InvalidType {
+            text: Some(VanillaText::Formatted {
+                template: NOT_OBJECT,
+                args: vec![String::new(), String::new(), String::new()],
+            }),
+        };
+        return Err(refuse(&origin, code));
+    }
+    let mut diagnostics = Diagnostics::default();
+    // A number no double holds is read as the largest finite one, with a warning.
+    bedrock_addon_core::json::clamp_non_finite_warned(
+        &mut root,
+        None,
+        &JsonPath::new(),
+        &mut diagnostics,
+    );
+    let (pack, places) = SkinPack::from_value_placed(&root, &mut diagnostics);
+    let version = unversioned::version();
+    let diagnostics = located(diagnostics, &origin);
+    Ok((Document::new(pack, origin, version, diagnostics), places))
+}
+
+impl Placed for SkinPack {
+    /// `skins.json`.
+    fn default_path(&self) -> PackPath {
+        PackPath::from_static(SKINS_PATH)
     }
 }
 
 impl SkinPack {
-    /// The pack's name as the game reads `localization_name`; empty when absent.
-    pub fn name(&self) -> Cow<'_, str> {
-        text(
-            self.localization_name.as_ref(),
-            &self.extra,
-            "localization_name",
-        )
-    }
-}
-
-impl Skin {
-    /// The skin's name as the game reads `localization_name`; empty when absent.
-    pub fn name(&self) -> Cow<'_, str> {
-        text(
-            self.localization_name.as_ref(),
-            &self.extra,
-            "localization_name",
-        )
-    }
-
-    /// The model name as the game reads `geometry`.
-    pub fn geometry_name(&self) -> Cow<'_, str> {
-        text(self.geometry.as_ref(), &self.extra, "geometry")
-    }
-
-    /// The path of the skin image as the game reads `texture`. A path too long for the
-    /// game's buffer (1024 bytes and more) reads as empty.
-    pub fn texture_path(&self) -> Cow<'_, str> {
-        fits(text(self.texture.as_ref(), &self.extra, "texture"))
-    }
-
-    /// The path of the cape image as the game reads `cape`; `None` when the skin has no
-    /// `cape` member or its reading is empty.
-    pub fn cape_path(&self) -> Option<Cow<'_, str>> {
-        let written = self.cape.is_some() || self.extra.get("cape").is_some();
-        let path = fits(text(self.cape.as_ref(), &self.extra, "cape"));
-        (written && !path.is_empty()).then_some(path)
-    }
-
-    /// The skin's type for a pack that came from `origin`: `type` as the game reads it, and
-    /// `free` whatever is written for a pack the user or a developer supplied.
-    pub fn effective_type(&self, origin: PackOrigin) -> Cow<'_, str> {
-        if matches!(origin, PackOrigin::User | PackOrigin::Dev) {
-            Cow::Borrowed("free")
-        } else {
-            text(self.type_.as_ref(), &self.extra, "type")
+    /// Loads a skin pack as the game does: `skins_json` is the bytes of the pack's
+    /// `skins.json` (`None` when the pack has none), `geometry_json` those of its
+    /// `geometry.json`, and `paths` names every file of the pack.
+    ///
+    /// A skin whose `texture` is no file of the pack, or whose `cape` is given and is none, is
+    /// left out, with the game's content-log line as a kept error; a skin whose `geometry` is
+    /// neither built-in nor a model of `geometry.json` stays, with an information. A
+    /// `geometry.json` that is not JSON is named once, with an information at that file: the
+    /// pack loads without custom geometry, and no skin is blamed for a name nobody could look
+    /// up.
+    ///
+    /// # Errors
+    ///
+    /// The pack is rejected when it has no `skins.json`, when the file is not JSON and when
+    /// its root is no object.
+    pub fn load<'a>(
+        skins_json: Option<&[u8]>,
+        geometry_json: Option<&[u8]>,
+        paths: impl IntoIterator<Item = &'a str>,
+        _cx: &LoadContext,
+    ) -> Result<Document<SkinPack>, Rejected> {
+        let path = PackPath::from_static(SKINS_PATH);
+        let Some(bytes) = skins_json else {
+            let code = DiagnosticCode::MissingRequiredField {
+                text: Some(VanillaText::Fixed(NOT_FOUND)),
+            };
+            return Err(refuse(&unversioned::lone(&path), code));
+        };
+        let (document, places) = parse_placed(&path, bytes)?;
+        let files: HashSet<&str> = paths.into_iter().collect();
+        // The models of `geometry.json`: the members of its root. `Err` for a file that is
+        // not JSON: no rule rejects the pack for it, so it loads without custom geometry.
+        let models = geometry_json.map(read_json).transpose();
+        let has_model = |name: &str| match &models {
+            Ok(models) => models
+                .as_ref()
+                .and_then(Value::as_object)
+                .is_some_and(|models| models.contains_key(name)),
+            // Nobody could look the name up: the broken file is what is reported.
+            Err(_) => true,
+        };
+        let mut diagnostics = document.diagnostics().clone();
+        let origin = document.origin().clone();
+        let version = document.version().clone();
+        let mut pack = document.into_value();
+        let mut found = Diagnostics::default();
+        if let Some(skins) = pack.skins.take() {
+            let mut kept = Vec::with_capacity(skins.len());
+            for (skin, place) in skins.into_iter().zip(places) {
+                // The entry's place in the file.
+                let mut at = place;
+                let name = skin.name();
+                let mut missing = String::new();
+                if !files.contains(skin.texture_path().as_ref()) {
+                    let _ = write!(missing, " Skin asset is missing from {name}.");
+                }
+                if skin
+                    .cape_path()
+                    .is_some_and(|cape| !files.contains(cape.as_ref()))
+                {
+                    let _ = write!(missing, " Cape is missing from {name}.");
+                }
+                if !missing.is_empty() {
+                    let code = DiagnosticCode::InvalidValue {
+                        text: Some(VanillaText::Formatted {
+                            template: INVALID_SKIN,
+                            args: vec![missing],
+                        }),
+                    };
+                    // The game logs the line at the content log's error level and loads the next
+                    // skin: the skin is dropped while the pack is kept, a kept error.
+                    found.push(Diagnostic::error(code).at(at).into_kept());
+                    continue;
+                }
+                if !skin.uses_built_in_geometry() && !has_model(&skin.geometry_name()) {
+                    // The game falls back without a line, so the crate reports an information.
+                    at.push("geometry");
+                    let code = DiagnosticCode::InvalidValue { text: None };
+                    found.push(Diagnostic::info(code).at(at));
+                }
+                drop(name);
+                kept.push(skin);
+            }
+            pack.skins = Some(kept);
         }
-    }
-
-    /// Whether the skin uses one of the game's own two models.
-    pub fn uses_built_in_geometry(&self) -> bool {
-        BUILT_IN_GEOMETRIES.contains(&self.geometry_name().as_ref())
+        diagnostics.extend(located(found, &origin));
+        if let Err(message) = models {
+            let code = DiagnosticCode::MalformedInput {
+                message: message.to_string(),
+                text: None,
+            };
+            // The game reads the geometry file and tests the parse result only for null, with no
+            // content-log line and no assert, so the game is silent and the crate reports an
+            // information.
+            let mut broken = Diagnostic::info(code);
+            broken.location.path = Some(PackPath::from_static(GEOMETRY_PATH));
+            diagnostics.push(broken);
+        }
+        Ok(Document::new(pack, origin, version, diagnostics))
     }
 }
 
-/// A path as the game's fixed buffer holds it: empty when it is 1024 bytes or longer.
-fn fits(path: Cow<'_, str>) -> Cow<'_, str> {
-    if path.len() > read::MAX_PATH {
-        Cow::Borrowed("")
-    } else {
-        path
+fn creator_rule(bytes: &[u8], sizes: &[(u32, u32)]) -> Diagnostics {
+    let mut diagnostics = Diagnostics::default();
+    if bedrock_addon_core::shared::png_size(bytes).is_some_and(|size| !sizes.contains(&size)) {
+        diagnostics.push(Diagnostic::info(DiagnosticCode::SkinPackCreatorRule));
     }
+    diagnostics
+}
+
+/// Checks a skin image given its bytes: creator tools want 64 by 64 or 128 by 128 pixels
+/// (a `SkinPackCreatorRule` info; the game checks no size). An image that is no PNG is not
+/// judged.
+#[must_use]
+pub fn check_texture(bytes: &[u8]) -> Diagnostics {
+    creator_rule(bytes, &[(64, 64), (128, 128)])
+}
+
+/// Checks a cape image given its bytes: creator tools want 64 by 32 pixels
+/// (a `SkinPackCreatorRule` info).
+#[must_use]
+pub fn check_cape(bytes: &[u8]) -> Diagnostics {
+    creator_rule(bytes, &[(64, 32)])
 }

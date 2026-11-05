@@ -10,7 +10,7 @@ use crate::json::{EncodeError, JsonSlice, Value};
 use crate::version::FormatVersion;
 use crate::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
-use super::super::{parse, write};
+use super::super::{read, write};
 
 /// A saved-settings document of `[1.21.100, 1.26.40)`.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -50,7 +50,7 @@ impl Versioned for SavedSettings {
 
 impl VersionStruct for SavedSettings {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let settings = parse::read(payload, cx, d, parse::Grammar::Scalars)?;
+        let settings = read::read(payload, cx, d, read::Grammar::Scalars)?;
         Some(Self {
             settings: settings.into_iter().map(Settings::from_latest).collect(),
         })

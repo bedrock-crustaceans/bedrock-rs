@@ -144,6 +144,8 @@ pub struct SoundAsset {
 ///
 /// A name resolves to the highest pack that ships `name.fsb`, `name.ogg` or `name.wav`, and
 /// inside that pack to the first of the three. Names compare with case.
+///
+/// Hand-written: it reads the packs' listings and no file's bytes (its walk is `Walk::none()`).
 #[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct SoundFiles {

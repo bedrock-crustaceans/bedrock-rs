@@ -13,7 +13,7 @@
 use std::collections::HashSet;
 
 use super::ingredient::{constant_data, parse_item, potion};
-use super::new::MISSING_VERSION;
+use super::types::MISSING_VERSION;
 use super::{
     BrewingContainer, BrewingMix, Description, Furnace, Ingredient, IngredientObject,
     MaterialReduction, Output, Recipe, RecipeKind, Shaped, Shapeless, SmithingTransform,
@@ -311,7 +311,7 @@ impl<'c> Reader<'c> {
             return (parsed, None, written);
         };
         let root_extra = self.rest(&root_members, &root_path);
-        super::new::each!(&mut recipe, r => {
+        super::types::each!(&mut recipe, r => {
             r.format_version = written;
             r.root_extra = root_extra;
         });
@@ -356,7 +356,7 @@ impl<'c> Reader<'c> {
             RecipeKind::SmithingTrim => self.smithing_trim(&mut members, at, tags.as_ref()),
         };
         let extra = self.rest(&members, at);
-        super::new::each!(&mut recipe, r => {
+        super::types::each!(&mut recipe, r => {
             r.description = description;
             r.tags = tags;
             r.extra = extra;

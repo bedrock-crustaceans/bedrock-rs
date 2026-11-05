@@ -403,6 +403,10 @@ impl Default for ScanOptions {
 /// The engine loads lazily: it reads a file when an import first names it, so a file the
 /// entry does not reach is never read and whatever is wrong in it is harmless. The bundle
 /// follows that: only what the entry reaches raises more than a note.
+///
+/// Hand-written: one walk on each side reads every pack's manifest and script files into one
+/// bundle per pack (the collection is `Vec<ScriptBundle>`), and a script is no versioned JSON
+/// document, so there is no `Family`.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 #[doc(alias = "scripts")]

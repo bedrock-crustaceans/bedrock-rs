@@ -43,7 +43,7 @@ fn closed_to_latest_selects_the_old_struct_below_1_26_40_and_latest_only_at_it()
 
 #[test]
 fn the_load_failed_template_takes_one_argument() {
-    assert_eq!(super::load::LOAD_FAILED.matches("{}").count(), 1);
+    assert_eq!(super::LOAD_FAILED.matches("{}").count(), 1);
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn spans_of_a_renamed_payload_key_move_back_to_the_files_offsets() {
     use crate::diagnostic::Span;
     // The quoted name `"x"` is bytes 9..12.
     let text = r#"{"a": 1, "x": {}}"#;
-    let key = super::load::ForeignKey {
+    let key = super::ForeignKey {
         name: "x".to_owned(),
         start: 9,
         end: 12,

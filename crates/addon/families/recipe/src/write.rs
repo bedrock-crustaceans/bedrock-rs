@@ -22,7 +22,7 @@ impl Recipe {
     /// The document as a JSON value.
     fn to_value(&self) -> Result<Value, EncodeError> {
         let mut payload = VObject::new();
-        super::new::each!(self, r => {
+        super::types::each!(self, r => {
             description(&mut payload, &r.description);
             if let Some(tags) = &r.tags {
                 payload.insert("tags", tags_value(tags));
@@ -109,7 +109,7 @@ impl Recipe {
             }
         }
         let mut root = VObject::new();
-        super::new::each!(self, r => {
+        super::types::each!(self, r => {
             extend(&mut payload, &r.extra);
             if let Some(version) = r.format_version {
                 root.insert("format_version", version.to_string());

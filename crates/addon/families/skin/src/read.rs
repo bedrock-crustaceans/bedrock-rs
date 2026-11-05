@@ -1,11 +1,13 @@
-//! Reading and writing `skins.json`.
+//! Reading `skins.json`.
 
 use super::{Skin, SkinPack};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{
+    MAX_JSON_DEPTH, PrepareError, Prepared, Value, blank_bom, check_depth, last_wins,
+};
 
 /// The longest path the game's fixed buffers hold.
 pub(super) const MAX_PATH: usize = 1023;
@@ -107,24 +109,6 @@ impl Skin {
         skin.extra = fields.finish(&read, diagnostics);
         skin
     }
-
-    fn to_value(&self) -> Value {
-        let text = |text: &Option<String>| text.as_deref().map(Value::from);
-        let mut object = Written::default();
-        object.put("localization_name", text(&self.localization_name));
-        object.put("geometry", text(&self.geometry));
-        object.put("texture", text(&self.texture));
-        object.put("type", text(&self.type_));
-        object.put("cape", text(&self.cape));
-        object.put("animations", self.animations.clone());
-        object.put("enable_attachables", self.enable_attachables.clone());
-        object.put(
-            "held_item_ignores_lighting",
-            self.held_item_ignores_lighting.clone(),
-        );
-        object.put("hide_armor", self.hide_armor.clone());
-        object.finish(&self.extra)
-    }
 }
 
 impl SkinPack {
@@ -144,18 +128,6 @@ impl SkinPack {
             pack.written = Some(root.clone());
         }
         (pack, places)
-    }
-
-    /// The file as it is written: the root as the author wrote it while the fields are still
-    /// the game's reading of it, else the fields.
-    pub(crate) fn to_value(&self) -> Value {
-        if let Some(written) = &self.written {
-            let unchanged = Self::from_value(written, &mut Diagnostics::default()) == *self;
-            if unchanged {
-                return written.clone();
-            }
-        }
-        self.fields_value()
     }
 
     /// The game's reading of the root object, with nothing kept beside it, and the place in
@@ -229,80 +201,93 @@ impl SkinPack {
         };
         (pack, places)
     }
-
-    /// The fields as the JSON object they are written as.
-    fn fields_value(&self) -> Value {
-        let text = |text: &Option<String>| text.as_deref().map(Value::from);
-        let mut object = Written::default();
-        object.put("serialize_name", text(&self.serialize_name));
-        object.put("localization_name", text(&self.localization_name));
-        object.put(
-            "skins",
-            self.skins.as_ref().map(|skins| {
-                let mut array = facet_value::VArray::new();
-                for skin in skins {
-                    array.push(skin.to_value());
-                }
-                array.into_value()
-            }),
-        );
-        object.finish(&self.extra)
-    }
 }
 
-/// An object being written: the typed members, then the members kept as written whose key no
-/// typed member wrote.
-#[derive(Default)]
-struct Written {
-    object: facet_value::VObject,
+/// A JSON file's root the way the game's reader takes it: a BOM skipped, comments accepted,
+/// the last of repeated members kept.
+pub(super) fn read_json(bytes: &[u8]) -> Result<Value, ReadJsonError> {
+    // The nesting is checked before the encoding, as the game's reader does: a text that is
+    // both too deep and not UTF-8 is too deep. `Prepared` checks the encoding first. The
+    // mark is blanked first, or the scan stops at it.
+    let bytes = &*blank_bom(bytes);
+    check_depth(bytes, MAX_JSON_DEPTH).map_err(|deep| ReadJsonError::TooDeep {
+        offset: deep.offset,
+    })?;
+    let prepared = Prepared::new(bytes).map_err(|error| match error {
+        PrepareError::NotUtf8(error) => ReadJsonError::NotUtf8(error),
+        PrepareError::TooDeep(deep) => ReadJsonError::TooDeep {
+            offset: deep.offset,
+        },
+        // `new` never refuses an empty text.
+        PrepareError::Empty => ReadJsonError::NotJson(PrepareError::Empty.to_string()),
+    })?;
+    bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(prepared.as_str()))
+        .map_err(|error| ReadJsonError::NotJson(error.to_string()))
 }
 
-impl Written {
-    fn put(&mut self, name: &str, value: Option<Value>) {
-        if let Some(value) = value {
-            self.object.insert(name, value);
-        }
-    }
-
-    fn finish(mut self, extra: &Extra) -> Value {
-        for (name, value) in extra.iter() {
-            if !self.object.contains_key(name) {
-                self.object.insert(name, value.clone());
-            }
-        }
-        self.object.into_value()
-    }
+/// Why bytes are no JSON value; the display is the message a finding carries.
+#[derive(Debug, thiserror::Error)]
+pub(super) enum ReadJsonError {
+    #[error("nesting too deep at byte {offset}")]
+    TooDeep { offset: usize },
+    #[error(transparent)]
+    NotUtf8(#[from] std::str::Utf8Error),
+    #[error("{0}")]
+    NotJson(String),
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::test_cost::assert_linear_at;
 
-    /// A write of a skin pack that keeps its root reads the kept root again and compares
-    /// (linear in the skins).
     #[test]
-    fn a_kept_skin_pack_is_written_in_linear_time() {
-        let build = |entries: usize| {
-            let skins: Vec<String> = (0..entries)
-                .map(|i| {
-                    format!(
-                        r#"{{ "localization_name": "s{i}", "geometry": "geometry.s{i}", "texture": "s{i}.png", "type": "free" }}"#
-                    )
-                })
-                .collect();
-            // The last entry is no object: the game skips it, the root is kept.
-            let text = format!(
-                r#"{{ "serialize_name": "p", "localization_name": "p", "skins": [{}, 5] }}"#,
-                skins.join(",")
-            );
-            let root = bedrock_addon_core::json::from_str::<Value>(&text).expect("JSON");
-            let pack = SkinPack::from_value(&root, &mut Diagnostics::default());
-            assert!(pack.written.is_some(), "the root is not kept");
-            pack
-        };
-        assert_linear_at("SkinPack::to_value", 2_000, build, |pack| {
-            assert_eq!(Some(pack.to_value()), pack.written);
-        });
+    fn read_json_names_why_the_bytes_are_no_value() {
+        fn assert_error<E: std::error::Error>(_: &E) {}
+        assert_error(&read_json(b"{").unwrap_err());
+        assert!(read_json(b"{}").is_ok());
+        let deep = vec![b'['; 4096];
+        let offset = check_depth(&deep, MAX_JSON_DEPTH).unwrap_err().offset;
+        assert_eq!(
+            read_json(&deep).unwrap_err().to_string(),
+            format!("nesting too deep at byte {offset}")
+        );
+        assert_eq!(
+            read_json(b"\"\xff\"").unwrap_err().to_string(),
+            std::str::from_utf8(core::hint::black_box(b"\"\xff\"" as &[u8]))
+                .unwrap_err()
+                .to_string()
+        );
+        assert!(!read_json(b"{").unwrap_err().to_string().is_empty());
+    }
+
+    #[test]
+    fn a_text_too_deep_and_not_utf8_is_too_deep() {
+        let mut both = vec![b'['; 4096];
+        both.push(0xff);
+        assert!(matches!(
+            read_json(&both),
+            Err(ReadJsonError::TooDeep { .. })
+        ));
+    }
+
+    /// Behind a byte-order mark too, at the offset in the file as written.
+    #[test]
+    fn a_text_too_deep_and_not_utf8_behind_a_bom_is_too_deep() {
+        let mut both = b"\xEF\xBB\xBF".to_vec();
+        both.extend(vec![b'['; 4096]);
+        both.push(0xff);
+        assert!(matches!(
+            read_json(&both),
+            Err(ReadJsonError::TooDeep { offset }) if offset == MAX_JSON_DEPTH + 3
+        ));
+    }
+
+    #[test]
+    fn a_byte_order_mark_is_read_past() {
+        assert!(read_json(b"\xEF\xBB\xBF{}").unwrap().is_object());
+        assert!(matches!(
+            read_json(b"\xEF\xBB\xBF"),
+            Err(ReadJsonError::NotJson(_))
+        ));
     }
 }

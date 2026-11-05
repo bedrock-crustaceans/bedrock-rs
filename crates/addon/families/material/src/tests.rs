@@ -14,10 +14,10 @@ use super::file::{
 };
 use super::group::{FileSource, MaterialGroup, MaterialGroupKind};
 use super::list::ListEntry;
-use super::load::{combine_parsed, parse_bytes};
 use super::patch::patch_with;
 use super::read::{check_duplicates, read_file};
 use super::set::NameSet;
+use super::{combine_parsed, parse_bytes};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackPath;

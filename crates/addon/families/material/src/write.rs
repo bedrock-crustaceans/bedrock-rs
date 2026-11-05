@@ -1,195 +1,17 @@
-//! Reading one material file or list on its own and writing one back: `Content` for
-//! [`MaterialFile`] and [`MaterialList`], `Placed` for the list. A member the value does not
-//! hold is not written, and a value the loader would refuse or read differently is refused.
+//! Writing one material file or list back. A member the value does not hold is not written,
+//! and a value the loader would refuse or read differently is refused.
 
 use facet_value::{VArray, VObject};
 
 use super::file::{
-    KeyRules, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, SamplerState,
-    StencilFace, StencilRefOverride, Variant, VertexField,
+    Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, SamplerState, StencilFace,
+    StencilRefOverride, Variant, VertexField,
 };
-use super::list::{ListEntry, MaterialList, MaterialListKind};
-use super::read::{
-    MATERIALS, check_duplicates, path_in_file, read_copy, read_file, read_list, report_in_file,
-    unwrap_copy,
-};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
-use bedrock_addon_core::document::{Content, Document, Extra, Placed, Rejected, unversioned};
-use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
-};
-use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-
-/// The client's text for a copy that is no JSON: the path, then the reader's messages.
-pub(super) const PARSE_ERROR: &str = "Error parsing {} :\n {}";
-
-/// The finding for the copy at `path` that is no JSON.
-pub(super) fn parse_error(path: &PackPath, message: String) -> Diagnostic {
-    let text = VanillaText::Formatted {
-        template: PARSE_ERROR,
-        args: vec![path.as_str().to_owned(), message.clone()],
-    };
-    let code = DiagnosticCode::MalformedInput {
-        message,
-        text: Some(text),
-    };
-    Diagnostic::error(code)
-}
-
-/// The root of a copy that is no object, or of a list that is no array: nothing is read.
-pub(super) fn wrong_root() -> Diagnostic {
-    let code = DiagnosticCode::InvalidType { text: None };
-    Diagnostic::error(code)
-}
-
-/// The name of the file at `path` without its directory and its extension.
-pub(super) fn stem_of(path: &str) -> &str {
-    let name = path.rsplit_once('/').map_or(path, |(_, name)| name);
-    name.rsplit_once('.').map_or(name, |(stem, _)| stem)
-}
-
-/// The file in the root object `root` of a file named `stem`, as a stack of one pack reads it:
-/// the wrapper gate, then the material map. `rules` are the key rules a merge worked out.
-fn read_root(
-    root: &VObject,
-    stem: &str,
-    rules: &dyn Fn(&str) -> Option<KeyRules>,
-    out: &mut Diagnostics,
-) -> MaterialFile {
-    let unwrapped = unwrap_copy(root.clone(), out);
-    // A value being written has no number past the doubles.
-    let clamped = |_: &JsonPath| false;
-    let mut read = read_file(
-        &unwrapped.map,
-        unwrapped.wrapped,
-        stem,
-        rules,
-        &clamped,
-        out,
-    );
-    if let Some(dropped) = unwrapped.dropped {
-        read.file.extra.insert(MATERIALS.to_owned(), dropped);
-    }
-    read.file
-}
-
-impl bedrock_addon_core::__private::Sealed for MaterialFile {}
-
-/// Keyed by the material's key: `Merged::origin` names the highest pack whose copy writes it.
-impl bedrock_addon_core::document::Merge for MaterialFile {
-    type Key = MaterialKey;
-}
-
-impl Content for MaterialFile {
-    const NAME: &'static str = "material file";
-    const SIDES: &'static [PackSide] = &[PackSide::Resource];
-
-    /// Reads one `.material` file on its own, as a stack of one pack would. Rejected when the
-    /// file is no JSON object or a material carries a keyword the client cannot load.
-    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = unversioned::lone(path);
-        let mut diagnostics = Diagnostics::default();
-        let copy = match read_copy(bytes) {
-            Ok(copy) => copy,
-            Err(message) => {
-                diagnostics.push(parse_error(path, message));
-                return Err(Rejected::located(origin, diagnostics));
-            }
-        };
-        let Some(root) = copy.root.as_object() else {
-            diagnostics.push(wrong_root());
-            return Err(Rejected::located(origin, diagnostics));
-        };
-        let stem = stem_of(path.as_str());
-        // The gate's finding, the clamped numbers, the duplicates of the map, then the
-        // members': each at its path in the file, the wrapper's member included.
-        let unwrapped = unwrap_copy(root.clone(), &mut diagnostics);
-        copy.report_clamped(&mut diagnostics);
-        let wrapped = unwrapped.wrapped.is_some();
-        let mut found = Diagnostics::default();
-        check_duplicates(&unwrapped.map, path.as_str(), &mut found);
-        let no_rules = |_: &str| None;
-        let clamped = |inner: &JsonPath| copy.clamped.contains(&path_in_file(inner, wrapped));
-        let read = read_file(
-            &unwrapped.map,
-            unwrapped.wrapped,
-            stem,
-            &no_rules,
-            &clamped,
-            &mut found,
-        );
-        report_in_file(found, wrapped, &mut diagnostics);
-        // Each finding gets the span of the value its path names in the text.
-        super::span::fill_all(bytes, &mut diagnostics);
-        let mut file = read.file;
-        if let Some(dropped) = unwrapped.dropped {
-            file.extra.insert(MATERIALS.to_owned(), dropped);
-        }
-        if diagnostics.has_errors() {
-            return Err(Rejected::located(origin, diagnostics));
-        }
-        Ok(unversioned::document(file, origin, diagnostics))
-    }
-
-    /// Writes the file in its form. Refused with `NotRepresentable` and the place when the
-    /// text would not read back as this value: a wrapper version other than `1.0.0`, a key
-    /// that splits differently, a keyword the loader rejects, a number that is not finite, a
-    /// member hidden in `extra` that a reader would take, variants nested deeper than the
-    /// loader reads.
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        write_json(&file_json(self)?, out, style)
-    }
-}
-
-impl bedrock_addon_core::document::JsonContent for MaterialFile {}
-
-impl bedrock_addon_core::__private::Sealed for MaterialList {}
-
-impl Content for MaterialList {
-    const NAME: &'static str = "material list";
-    const SIDES: &'static [PackSide] = &[PackSide::Resource];
-
-    /// Reads one list file on its own. The path says which list it is; a path that is none of
-    /// the four is read as the common list. Rejected when the file is no JSON array.
-    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = unversioned::lone(path);
-        let mut diagnostics = Diagnostics::default();
-        let kind = MaterialListKind::from_path(path.as_str()).unwrap_or(MaterialListKind::Common);
-        let copy = match read_copy(bytes) {
-            Ok(copy) => copy,
-            Err(message) => {
-                diagnostics.push(parse_error(path, message));
-                return Err(Rejected::located(origin, diagnostics));
-            }
-        };
-        copy.report_clamped(&mut diagnostics);
-        let list = read_list(kind, &copy.root, &mut diagnostics);
-        super::span::fill_all(bytes, &mut diagnostics);
-        if let Some(list) = list {
-            return Ok(unversioned::document(list, origin, diagnostics));
-        }
-        diagnostics.push(wrong_root());
-        Err(Rejected::located(origin, diagnostics))
-    }
-
-    /// Writes the list as an array of entries. Refused with `NotRepresentable` when an entry
-    /// would read back differently (a member hidden in its `extra` that the reader takes).
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        write_json(&list_json(self)?, out, style)
-    }
-}
-
-impl bedrock_addon_core::document::JsonContent for MaterialList {}
-
-impl Placed for MaterialList {
-    /// `materials/common.json`, `fancy.json`, `sad.json` or `gameface.json`, by the kind.
-    fn default_path(&self) -> PackPath {
-        PackPath::from_static(self.kind.path())
-    }
-}
+use super::list::{ListEntry, MaterialList};
+use super::read::{MATERIALS, path_in_file, read_list, read_root};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 
 /// A refusal at `at`.
 fn refuse(at: &JsonPath, what: Unrepresentable) -> EncodeError {
@@ -522,7 +344,7 @@ fn passes_gate(version: &bedrock_addon_core::version::SemVersion) -> bool {
 }
 
 /// The file as JSON, checked to read back as `file`.
-fn file_json(file: &MaterialFile) -> Result<Value, EncodeError> {
+pub(super) fn file_json(file: &MaterialFile) -> Result<Value, EncodeError> {
     let mut writer = Writer {
         path: JsonPath::new(),
     };
@@ -646,7 +468,7 @@ fn entry_json(entry: &ListEntry) -> Value {
 }
 
 /// The list as JSON, checked to read back as `list`.
-fn list_json(list: &MaterialList) -> Result<Value, EncodeError> {
+pub(super) fn list_json(list: &MaterialList) -> Result<Value, EncodeError> {
     let mut array = VArray::new();
     for entry in &list.entries {
         array.push(entry_json(entry));
