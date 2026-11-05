@@ -65,10 +65,8 @@ fn a_moved_member_is_placed_as_the_file_has_it() {
         "animations",
         "controller__move",
     ]);
-    // Today the loader rebuilds the list when it locates it, so the places are gone and the
-    // held path comes back unchanged.
     assert_eq!(
         document.diagnostics().place_of(&held).to_string(),
-        "minecraft:client_entity/description/animations/controller__move"
+        "minecraft:client_entity/description/animation_controllers/1/move"
     );
 }
