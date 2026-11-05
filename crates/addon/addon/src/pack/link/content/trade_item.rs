@@ -45,14 +45,12 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
                     ];
                     for (key, lists) in [("wants", &trade.wants), ("gives", &trade.gives)] {
                         for (index, list) in lists.iter().enumerate() {
-                            let mut entry = trade_at.clone();
-                            entry.append(&at![key, index]);
+                            let entry = trade_at.join(&at![key, index]);
                             match list {
                                 ItemList::Item(traded) => missing(out, entry, traded),
                                 ItemList::Choice { choice } => {
                                     for (choice_index, traded) in choice.iter().enumerate() {
-                                        let mut member = entry.clone();
-                                        member.append(&at!["choice", choice_index]);
+                                        let member = entry.join(&at!["choice", choice_index]);
                                         missing(out, member, traded);
                                     }
                                 }

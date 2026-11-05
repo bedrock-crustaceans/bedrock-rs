@@ -3,13 +3,11 @@
 //! registries.
 
 use super::texts;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, Origin, Registry, RegistryBuilder, Rejected,
 };
-use bedrock_addon_core::json::{JsonSlice, MAX_JSON_DEPTH, Value, check_depth, strip_bom};
+use bedrock_addon_core::json::{JsonSlice, Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::StackCx;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
@@ -28,17 +26,9 @@ pub struct FileLoad<T> {
     pub registered: bool,
 }
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-pub fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
 /// A rejection finding at the document root.
 pub fn error(code: DiagnosticCode) -> Diagnostic {
-    Diagnostic::new(code, Severity::Error, Phase::Parse, Location::default())
+    Diagnostic::error(code)
 }
 
 /// The first member named `format_version` in the document, depth first in document order:
@@ -75,14 +65,10 @@ pub(crate) fn not_an_object(root: &Value) -> Diagnostic {
 
 /// The text of a rejected document's closing line.
 pub fn closing(text: &'static str) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Fixed(text)),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Fixed(text)),
+    })
+    .phase(Phase::Validate)
 }
 
 /// Gives every finding the document's pack and file. The versioned loader's text replaces
@@ -140,8 +126,6 @@ pub fn load_file<T>(
     closing_text: &'static str,
     load: impl FnOnce(&str, &Origin) -> (Option<String>, Result<Document<T>, Rejected>),
 ) -> (Option<String>, Result<Document<T>, Rejected>) {
-    // The BOM is blanked, not cut, so every offset is an offset into the file as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let reject = |finding: Diagnostic, closes: bool| {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(finding);
@@ -151,13 +135,16 @@ pub fn load_file<T>(
         locate(&mut diagnostics, origin, None);
         Err(Rejected::new(origin.clone(), diagnostics))
     };
-    let Some(text) = text(bytes) else {
+    // The BOM is blanked, not cut, so every offset is an offset into the file as written; a
+    // text that is not UTF-8 or nests too deeply is one finding either way.
+    let Ok(prepared) = Prepared::new(bytes) else {
         let malformed = error(DiagnosticCode::MalformedInput {
             message: "not UTF-8 JSON within the nesting limit".to_owned(),
             text: None,
         });
         return (None, reject(malformed, false));
     };
+    let text = prepared.as_str();
     // A JSON syntax error: vanilla's parser returns an empty document without a message, and no
     // closing line; this crate rejects it with the reader's finding, from the family's load.
     let syntax_error = match bedrock_addon_core::json::from_str_jsonc::<Value>(text) {
@@ -169,17 +156,16 @@ pub fn load_file<T>(
     };
     let (identifier, mut result) = load(text, origin);
     if !syntax_error && let Err(rejected) = &mut result {
-        let mut closing = closing(closing_text);
-        closing.location.pack = Some(origin.pack.clone());
-        closing.location.path = Some(origin.path.clone());
-        rejected.diagnostics.push(closing);
+        rejected
+            .diagnostics
+            .push(closing(closing_text).in_file(origin));
     }
     (identifier, result)
 }
 
 /// The origin of a file of `pack`.
 pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// What one file adds to a registry: a contribution, or the findings of a document vanilla does

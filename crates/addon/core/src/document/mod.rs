@@ -19,9 +19,9 @@ use crate::version::FormatVersion;
 
 mod by_id;
 mod by_path;
-#[cfg(test)]
-mod characterize_moves;
 mod combine;
+#[cfg(test)]
+mod combine_moves;
 mod component;
 pub mod files;
 mod finite;

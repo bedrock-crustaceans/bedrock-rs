@@ -144,13 +144,7 @@ fn identifier_of(
 ) -> Option<BiomeId> {
     let entry = cx.stack_pack(PackSide::Resource, pack)?;
     let bytes = cx.bytes(PackSide::Resource, pack, path, out)?;
-    let origin = Origin::new(
-        pack.clone(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(pack.clone(), PackSide::Resource, path.clone());
     crate::families::client_biome::identifier_in(&origin, &bytes, &entry.context)
 }
 

@@ -65,7 +65,7 @@ fn with_experiment(experiment: Experiment) -> LoadOptions {
 
 // ---- blocks ----------------------------------------------------------------------------------
 
-#[cfg(feature = "block")]
+#[cfg(all(feature = "block", feature = "blocks_json"))]
 #[test]
 fn a_client_block_is_found_by_its_blocks_json_key() {
     let blocks = r#"{"format_version": "1.21.40", "demo:lamp": {"textures": "lamp"}}"#;
@@ -88,7 +88,7 @@ fn a_client_block_is_found_by_its_blocks_json_key() {
     assert_eq!(cx.block(&id("demo:lamp")), MISSING);
 }
 
-#[cfg(feature = "block")]
+#[cfg(all(feature = "block", feature = "voxel_shape"))]
 #[test]
 fn a_voxel_shape_is_found_by_its_identifier() {
     let shape = r#"{"format_version": "1.21.110", "minecraft:voxel_shape": {"description": {"identifier": "demo:half"}, "shape": {"boxes": [{"min": [0, 0, 0], "max": [16, 8, 16]}]}}}"#;
@@ -103,10 +103,11 @@ fn a_voxel_shape_is_found_by_its_identifier() {
     );
     assert_eq!(cx.voxel_shape(&id("demo:whole")), MISSING);
     assert_eq!(cx.voxel_shape(&id("demo:Half")), case("demo:half"));
+    #[cfg(feature = "block_culling")]
     assert_eq!(cx.culling_rules(&id("demo:half")), MISSING);
 }
 
-#[cfg(feature = "block")]
+#[cfg(all(feature = "block", feature = "block_culling"))]
 #[test]
 fn culling_rules_are_found_by_their_identifier() {
     let rules = r#"{"format_version": "1.21.80", "minecraft:block_culling_rules": {"description": {"identifier": "demo:lamp_culling"}, "rules": [{"geometry_part": {"bone": "shade"}, "direction": "up"}]}}"#;
@@ -124,6 +125,7 @@ fn culling_rules_are_found_by_their_identifier() {
         cx.culling_rules(&id("demo:Lamp_Culling")),
         case("demo:lamp_culling")
     );
+    #[cfg(feature = "voxel_shape")]
     assert_eq!(cx.voxel_shape(&id("demo:lamp_culling")), MISSING);
 }
 
@@ -598,6 +600,7 @@ fn a_camera_preset_is_a_packs_the_games_or_missing() {
     assert_eq!(cx.camera_preset(&id("demo:other")), MISSING);
     assert_eq!(cx.camera_preset(&id("demo:Cam")), case("demo:cam"));
     // A camera preset is no aim-assist preset.
+    #[cfg(feature = "aim_assist")]
     assert_eq!(cx.aim_assist_preset(&id("demo:cam")), MISSING);
 }
 

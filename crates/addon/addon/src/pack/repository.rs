@@ -317,13 +317,7 @@ fn parse_list(
         return Ok(Vec::new());
     };
     let reject = |code: DiagnosticCode, json_path: JsonPath, span| {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            side,
-            PackPath::from_static(file),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), side, PackPath::from_static(file));
         let location = Location::new(None, Some(PackPath::from_static(file)), json_path, span);
         let diagnostics = std::iter::once(Diagnostic::new(
             code,

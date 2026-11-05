@@ -96,8 +96,7 @@ impl Reader<'_> {
         let mut read = Vec::with_capacity(entries.len());
         let mut failed = false;
         for (index, raw) in entries.iter().enumerate() {
-            let mut at_entry = at_settings.clone();
-            at_entry.push_index(index);
+            let at_entry = at_settings.index(index);
             match settings.nested(raw) {
                 Some(slice) => match self.entry(slice, &at_entry) {
                     Some(entry) => read.push(entry),
@@ -167,12 +166,11 @@ impl Reader<'_> {
         // UUID. The crate reports an information.
         let id = uuid_from_string(text.as_str());
         if id.is_none() {
-            self.d.push(Diagnostic::new(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                Phase::Parse,
-                Location::new(None, None, at, Some(span_of(slice))),
-            ));
+            self.d.push(
+                Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .at(at)
+                    .span(span_of(slice)),
+            );
         }
         Some(id.unwrap_or(Uuid::nil()))
     }
@@ -232,12 +230,11 @@ impl Reader<'_> {
         if value.is_finite() {
             return SettingValue::Float(value);
         }
-        self.d.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), Some(span_of(slice))),
-        ));
+        self.d.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(at.clone())
+                .span(span_of(slice)),
+        );
         SettingValue::Float(if number < 0.0 { f32::MIN } else { f32::MAX })
     }
 
@@ -315,8 +312,7 @@ impl Reader<'_> {
         let blank = slice.text.trim().is_empty();
         let code =
             code_for_deserialize_error_kind(&failure.error.kind, !failure.path.is_empty(), blank);
-        let mut path = at.clone();
-        path.append(&failure.path);
+        let path = at.join(&failure.path);
         self.push(code, path, Some(failure.span));
     }
 
@@ -349,9 +345,7 @@ fn json(slice: JsonSlice<'_>) -> Option<Value> {
 
 /// `at` followed by the member `key`.
 fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
+    at.child(key)
 }
 
 /// The UUID a string spells, as the game reads it: 36 characters with `-` at 8, 13, 18 and 23

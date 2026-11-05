@@ -13,7 +13,9 @@ use crate::pack_identity::PackPath;
 ///
 /// Its [`close`](Self::close) is the hook the support crate's one-file load closes with; it
 /// delegates to [`Family::close`] by default, so a family states its hook once on either trait.
-/// A family overriding both gets this one from `support::chain_file`.
+/// A family overriding both gets this one from `support::chain_file`, which loads through the
+/// unclosed stages (`parse_as_written`, `finish`) and closes itself: a file is closed once,
+/// never by both.
 pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
     /// Rewrites the generic findings of a parse into the family's vanilla texts and, when the
     /// file `failed`, adds the family's closing line. `document` is the text, when it is one.
@@ -41,11 +43,12 @@ pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
 #[non_exhaustive]
 pub enum BelowFloor {
     /// The generic floor line: "To use … use json format version … or higher"
-    /// (`VanillaText::UseFormatVersion`). The default, and what `load` raises today.
+    /// (`VanillaText::UseFormatVersion`). The default.
     #[default]
     UseFormatVersion,
     /// The game's versioned loader has no slice below its first one: "no parser available"
-    /// (`VanillaText::NoParserForVersion`). Declared, not acted on: the families that need it
-    /// still rewrite the floor finding themselves, each rendering the version its own way.
+    /// (`VanillaText::NoParserForVersion`), the version rendered as the text above the engine
+    /// renders it (`versioning::no_parser_version`: the full triple, a pre-release as
+    /// written).
     NoParser,
 }

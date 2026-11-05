@@ -901,8 +901,7 @@ fn biome_filter(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Fil
             Some(filter)
         }
         Err(error) => {
-            let mut path = at.clone();
-            path.append(&error.path);
+            let path = at.join(&error.path);
             wrong_type(&path, None, d);
             None
         }

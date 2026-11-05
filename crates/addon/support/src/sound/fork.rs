@@ -5,7 +5,7 @@
 //! `asFloat` / `asBool` / `asInt` / `asString`, so the readers of this module work on a
 //! [`Value`] and apply the reader's coercions exactly.
 
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, Value, WideInt};
 use facet_value::VObject;
 
 /// The value the const `operator[]` gives for a missing member or a non-object.
@@ -97,16 +97,9 @@ pub fn as_bool(value: &Value, default: bool) -> bool {
     reason = "the game's float-to-integer conversion saturates, as `as` does, and it reads 32 bits"
 )]
 pub fn as_int(value: &Value, default: i32) -> i32 {
-    match stored(value) {
-        Stored::Null => default,
-        Stored::Bool => i32::from(value.is_true()),
-        Stored::Integer => value
-            .as_number()
-            .and_then(facet_value::VNumber::to_i64)
-            .map_or(0, |n| n as i32),
-        Stored::Real => number(value).unwrap_or(0.0) as i32,
-        Stored::String | Stored::Array | Stored::Object => 0,
-    }
+    // 0 for an integer token past `i64` ([`WideInt::Zero`]); `asInt` reads no `isInt` rule.
+    const PROFILE: Coercing = Coercing::new(IsIntRule::Token, WideInt::Zero);
+    value.as_int(default, PROFILE)
 }
 
 /// `asString()`: a string as is, a bool `"true"` or `"false"`, and `null`, a number, an array

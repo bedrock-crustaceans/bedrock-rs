@@ -244,8 +244,8 @@ impl<T: Definition> Combiner<T> {
     }
 
     fn push(&mut self, id: Id<T::Kind>, document: Document<T>) {
-        self.diagnostics
-            .extend(document.diagnostics().iter().cloned());
+        // With the moves and places an upgrade left, so a member stays named as the file has it.
+        self.diagnostics.append(document.diagnostics().clone());
         let slot = self.entries.entry(id).or_default();
         let Combined { effective, dropped } =
             self.rule
@@ -296,9 +296,7 @@ impl<T: Definition> RegistryBuilder<T> {
                 self.beta.push(id, document);
             }
             Contribution::Rejected(id, rejected) => {
-                self.stable
-                    .diagnostics
-                    .extend(rejected.diagnostics.iter().cloned());
+                self.stable.diagnostics.append(rejected.diagnostics.clone());
                 if let Some(id) = id {
                     let claim = self
                         .claims

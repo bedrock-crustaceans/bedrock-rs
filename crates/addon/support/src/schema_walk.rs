@@ -11,7 +11,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::json::{JsonSlice, Value, parse_at};
 use bedrock_addon_core::molang::{
@@ -249,23 +249,19 @@ impl Walk {
 
     /// A finding at the current path.
     pub fn push(&mut self, code: DiagnosticCode, severity: Severity, span: Option<Span>) {
-        self.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, self.path.clone(), span),
-        ));
+        let mut finding = Diagnostic::error(code)
+            .severity(severity)
+            .at(self.path.clone());
+        finding.location.span = span;
+        self.diagnostics.push(finding);
     }
 
     /// A kept error at the current path: the game logs an error line and goes on loading
     /// the document.
     pub fn push_kept(&mut self, code: DiagnosticCode, span: Option<Span>) {
-        self.diagnostics.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, self.path.clone(), span),
-        ));
+        let mut finding = Diagnostic::error(code).at(self.path.clone());
+        finding.location.span = span;
+        self.diagnostics.push_kept_error(finding);
     }
 
     /// A schema error at the current path.

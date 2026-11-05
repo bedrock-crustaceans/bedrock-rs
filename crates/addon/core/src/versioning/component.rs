@@ -220,7 +220,7 @@ pub fn validate_components<F: Family>(
     let gate_severity = Severity::Error;
     // A deprecated or out-of-area component is reported like a component missing from the
     // schema: level 2 under the unstrict mask, an error under the strict one.
-    let unknown_severity = match unknown_mask::<F>(original_version) {
+    let unknown_severity = match unknown_mask::<F>(original_version, cx.source) {
         ErrorMask::Strict => Severity::Error,
         ErrorMask::Unstrict => Severity::Warning,
     };
@@ -542,16 +542,21 @@ fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnost
     )
 }
 
-/// The error mask of the struct that reads a document written at `version`: the mask the
-/// unknown-component findings of the validate phase follow.
-fn unknown_mask<F: Family>(version: FormatVersion) -> ErrorMask {
+/// The error mask of the struct that reads a document written at `version` from `source`: the
+/// mask the unknown-component findings of the validate phase follow.
+fn unknown_mask<F: Family>(
+    version: FormatVersion,
+    source: crate::load::DocumentSource,
+) -> ErrorMask {
     let input = crate::version::FormatVersionInput {
         version: Some(version),
         beta_literal: false,
         prerelease: false,
     };
     match super::range::select::<F>(&input) {
-        super::range::Selection::Struct(i) => F::error_mask(super::StructIndex::Stable(i)),
+        super::range::Selection::Struct(i) => {
+            F::reading(super::StructIndex::Stable(i), source).error_mask()
+        }
         _ => ErrorMask::Unstrict,
     }
 }

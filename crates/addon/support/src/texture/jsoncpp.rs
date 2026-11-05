@@ -2,7 +2,9 @@
 //! any root, content after the root ignored) and the `Json::Value` accessors whose coercions
 //! the atlas and flipbook readers reproduce on the merged value.
 
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom};
+use bedrock_addon_core::json::{
+    Coerce, Coercing, IsIntRule, MAX_JSON_DEPTH, Value, WideInt, check_depth, last_wins, strip_bom,
+};
 
 use crate::jsoncpp::ReadError;
 
@@ -126,40 +128,10 @@ fn only_trivia(text: &str) -> bool {
 /// real is truncated toward zero and saturates; a bool is 0 or 1; a string, an array or an
 /// object is 0.
 pub fn as_int(value: Option<&Value>, default: i32) -> i32 {
-    let Some(value) = value.filter(|value| !value.is_null()) else {
-        return default;
-    };
-    if let Some(flag) = value.as_bool() {
-        return i32::from(flag);
-    }
-    let Some(number) = value.as_number() else {
-        return 0;
-    };
-    if number.is_float() {
-        return saturating(number.to_f64_lossy());
-    }
-    // An integer token fits 64 bits: past them the reader hands over a real, which took the
-    // branch above.
-    number.to_i64().map_or_else(
-        || low_word(number.to_u64().unwrap_or_default().to_le_bytes()),
-        |wide| low_word(wide.to_le_bytes()),
-    )
-}
-
-/// The low 32 bits of a 64-bit integer, as `asInt` loads them.
-fn low_word(bytes: [u8; 8]) -> i32 {
-    let [a, b, c, d, ..] = bytes;
-    i32::from_le_bytes([a, b, c, d])
-}
-
-/// The game's float-to-integer conversion: toward zero, saturating at the `i32` bounds, NaN
-/// is 0.
-#[allow(
-    clippy::cast_possible_truncation,
-    reason = "a float-to-int `as` saturates, which is the game's conversion"
-)]
-fn saturating(real: f64) -> i32 {
-    real as i32
+    // The low 32 bits of an integer token past `i64` ([`WideInt::LowWord`]); `asInt` reads
+    // no `isInt` rule.
+    const PROFILE: Coercing = Coercing::new(IsIntRule::Integral, WideInt::LowWord);
+    value.map_or(default, |value| value.as_int(default, PROFILE))
 }
 
 /// Whether `asInt` changes what `value` says: it is not `null`, and not an integer that fits

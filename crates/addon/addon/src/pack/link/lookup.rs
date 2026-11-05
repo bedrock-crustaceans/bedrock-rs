@@ -1377,13 +1377,7 @@ impl<'a> LinkCx<'a> {
                             let (file, _) = LangFile::from_bytes(Language::new(code), &bytes);
                             for (key, _) in file.translations().strings {
                                 into.keys.entry(key).or_insert_with(|| {
-                                    Origin::new(
-                                        entry.pack.clone(),
-                                        side,
-                                        path.clone(),
-                                        None,
-                                        Vec::new(),
-                                    )
+                                    Origin::file(entry.pack.clone(), side, path.clone())
                                 });
                             }
                         }

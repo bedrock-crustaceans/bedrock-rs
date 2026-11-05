@@ -3,9 +3,7 @@
 
 use super::types::{ParticleEffect, SoundEffect};
 use super::walk::{Group, Hit, Kind, Node, PARSE_ERROR, Walk, text};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, strip_bom,
 };
@@ -31,15 +29,10 @@ pub struct Parsed<T> {
 /// not UTF-8, or is not valid JSON.
 pub fn text_of(bytes: &[u8]) -> Result<&str, Box<Diagnostic>> {
     let malformed = |message: String| {
-        Box::new(Diagnostic::new(
-            DiagnosticCode::MalformedInput {
-                text: text(PARSE_ERROR, &[&message]),
-                message,
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ))
+        Box::new(Diagnostic::error(DiagnosticCode::MalformedInput {
+            text: text(PARSE_ERROR, &[&message]),
+            message,
+        }))
     };
     let bytes = strip_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("nesting too deep".to_owned()))?;

@@ -108,12 +108,10 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         let origin = if let Some(document) = written {
             document.origin()
         } else {
-            elsewhere = Origin::new(
+            elsewhere = Origin::file(
                 binding.pack.clone(),
                 PackSide::Resource,
                 binding.file.clone(),
-                None,
-                Vec::new(),
             );
             &elsewhere
         };

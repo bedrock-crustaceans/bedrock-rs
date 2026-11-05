@@ -93,7 +93,8 @@ impl<T: Merge, L: Layer> Merged<T, L> {
             match copy {
                 Ok(layer) => {
                     if let Some(findings) = layer.layer_diagnostics() {
-                        diagnostics.extend(findings.iter().cloned());
+                        // With the moves and places an upgrade left.
+                        diagnostics.append(findings.clone());
                     }
                     let mut cx = MergeCx {
                         origin: layer.layer_origin(),
@@ -103,7 +104,7 @@ impl<T: Merge, L: Layer> Merged<T, L> {
                     step(&mut value, &layer, &mut cx);
                     layers.push(layer);
                 }
-                Err(rejected) => diagnostics.extend(rejected.diagnostics),
+                Err(rejected) => diagnostics.append(rejected.diagnostics),
             }
         }
         // Top-first; within one pack the later copy first.

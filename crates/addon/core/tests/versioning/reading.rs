@@ -10,11 +10,16 @@ use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, ErrorMask, Family, InputKind, MemberFailure, NullHandling, Reading, Scalars,
-    StructIndex, UnknownMask, VersionChain, VersionInput,
+    ComponentTable, ErrorMask, Family, InputKind, Loaded, MemberFailure, NullHandling, Reading,
+    Scalars, StructIndex, TextReading, UnknownMask, VersionChain, VersionInput,
 };
 
-use crate::envelope::{Document, DocumentStrict, JsonCppToy, Masked, Mixed, Stable};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::load::LoadContext;
+
+use crate::envelope::{
+    Document, DocumentStrict, JsonCppToy, Masked, Mixed, Stable, codes, load_with,
+};
 use crate::toy::{Toy, Toy120, ToyBeta, ToyComponent, v1_0_0};
 
 /// Toy families for the knob combinations `envelope` has no variant of.
@@ -279,4 +284,90 @@ fn below_floor_defaults_to_the_generic_floor_line() {
     // What `load` raises below the floor today, for every family that does not say otherwise.
     assert_eq!(Toy::BELOW_FLOOR, BelowFloor::UseFormatVersion);
     assert_eq!(Document::BELOW_FLOOR, BelowFloor::default());
+}
+
+// ---- the pipeline reads `reading` and `TEXT`, not the knobs ----
+
+// The knobs left at the first run's defaults; the reading a document input's cereal slice.
+reading_toy!(ReadByReading, read_by_reading, {
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT
+    }
+});
+
+// The knobs left at the first run's defaults; the text a document input's.
+reading_toy!(DocumentByText, document_by_text, {
+    const TEXT: TextReading = TextReading::from_knobs(InputKind::Document, false, &[]);
+});
+
+// The knobs left at the first run's defaults; the text clamps beyond a double.
+reading_toy!(ClampsByText, clamps_by_text, {
+    const TEXT: TextReading = TextReading::from_knobs(InputKind::FirstRun, true, &[]);
+});
+
+/// How many `InvalidValue` findings an outcome has.
+fn invalid_values<F: Family>(outcome: &bedrock_addon_core::versioning::LoadOutcome<F>) -> usize {
+    codes(outcome)
+        .into_iter()
+        .filter(|(code, _)| matches!(code, DiagnosticCode::InvalidValue { .. }))
+        .count()
+}
+
+fn beta_cx() -> LoadContext {
+    let mut cx = LoadContext::detached();
+    cx.beta_apis = true;
+    cx
+}
+
+#[test]
+fn the_slice_s_null_rule_comes_from_reading() {
+    let text = r#"{"format_version": "beta", "minecraft:toy": {"description": {"identifier": "demo:x"}, "beta_only": null}}"#;
+    let rejected = load_with::<ReadByReading>(text, &beta_cx());
+    assert!(rejected.value.is_none(), "{:?}", rejected.diagnostics);
+    assert_eq!(
+        codes(&rejected),
+        [(DiagnosticCode::InvalidType { text: None }, Severity::Error)]
+    );
+    // The knobs alone read it as the first run does.
+    let first_run = load_with::<crate::toy::Toy>(text, &beta_cx());
+    assert!(
+        matches!(first_run.value, Some(Loaded::Beta(ref b)) if b.beta_only.is_none()),
+        "{:?}",
+        first_run.diagnostics
+    );
+}
+
+#[test]
+fn the_slice_s_unknown_mask_comes_from_reading() {
+    let text = r#"{"format_version": "1.2.0", "minecraft:toy": {"description": {"identifier": "demo:x"}, "extra_member": true}}"#;
+    let strict = load_with::<ReadByReading>(text, &LoadContext::detached());
+    assert!(strict.value.is_none(), "{:?}", strict.diagnostics);
+    assert_eq!(
+        codes(&strict),
+        [(
+            DiagnosticCode::UnrecognizedField { text: None },
+            Severity::Error
+        )]
+    );
+}
+
+#[test]
+fn the_version_input_comes_from_text() {
+    // The document input reads a number as its text; the root member's reading refuses it.
+    let text =
+        r#"{"format_version": 1.2, "minecraft:toy": {"description": {"identifier": "demo:x"}}}"#;
+    let outcome = load_with::<DocumentByText>(text, &LoadContext::detached());
+    assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
+    assert_eq!(outcome.version.parsed_as, FormatVersion::new(1, 2, 0));
+    let root = load_with::<crate::toy::Toy>(text, &LoadContext::detached());
+    assert!(root.value.is_none(), "{:?}", root.diagnostics);
+}
+
+#[test]
+fn the_clamp_beyond_a_double_comes_from_text() {
+    let text = r#"{"format_version": "1.2.0", "minecraft:toy": {"description": {"identifier": "demo:x"}, "unread": [1e999]}}"#;
+    let clamped = load_with::<ClampsByText>(text, &LoadContext::detached());
+    let unclamped = load_with::<crate::toy::Toy>(text, &LoadContext::detached());
+    assert_eq!(invalid_values(&clamped), 1, "{:?}", clamped.diagnostics);
+    assert_eq!(invalid_values(&unclamped), 0, "{:?}", unclamped.diagnostics);
 }

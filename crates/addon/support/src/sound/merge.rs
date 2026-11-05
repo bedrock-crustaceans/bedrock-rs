@@ -2,18 +2,15 @@
 //! stack: one pack's copy, the reading of it, the checks on the copies, and the documents of
 //! the files read on their own.
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, ListDepth, LoadContext, Walk, WalkFile, WalkOrder,
-};
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::load::{Accept, LoadContext, Walk, WalkFile};
+use bedrock_addon_core::pack_identity::PackPath;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Origin, RawLayer, Rejected, VersionInfo};
+use bedrock_addon_core::document::{Origin, RawLayer, Rejected, VersionInfo, unversioned};
 use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, strip_bom, write_json,
+    EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, write_json,
 };
 use bedrock_addon_core::version::ENGINE_VERSION;
 
@@ -44,7 +41,8 @@ pub struct SoundCopy {
 pub fn read_json(bytes: &[u8]) -> Result<Value, ReadError> {
     // The BOM is blanked, not cut, so every offset is an offset into the file as written.
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let bytes = strip_bom(bytes);
+    // Depth before UTF-8, as the merge reads: a text both too deep and not UTF-8 is
+    // `TooDeep` (`json::Prepared` would say `NotUtf8`).
     check_depth(bytes, MAX_JSON_DEPTH)?;
     let text = std::str::from_utf8(bytes)?;
     Ok(bedrock_addon_core::json::from_str_jsonc::<Value>(
@@ -54,21 +52,14 @@ pub fn read_json(bytes: &[u8]) -> Result<Value, ReadError> {
 
 /// Moves `found` into `into`, each finding at `origin`'s pack and file.
 pub fn located(found: Diagnostics, origin: &Origin, into: &mut Diagnostics) {
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        into.push(finding);
-    }
+    // Pushed one by one, as the merge always has: the places of the moves `found` held are
+    // not carried over (`Diagnostics::append` would carry them).
+    into.extend(found.located(origin));
 }
 
 /// A finding of the merge itself.
 pub fn merge_finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
+    Diagnostic::error(code).severity(severity).at(path)
 }
 
 /// The copies that are JSON, lowest first, after the checks of the game's merge: a
@@ -135,13 +126,7 @@ pub fn path_member(path: &JsonPath, at: usize) -> Option<String> {
 
 /// The origin of a file parsed outside a stack.
 pub fn detached_origin(path: &PackPath) -> Origin {
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    unversioned::lone(path)
 }
 
 /// The rejection of a file that is no JSON.
@@ -194,13 +179,7 @@ pub fn unversioned() -> VersionInfo {
 /// One pack's copy of the sound document a walked file is: its JSON, or why it is none, and
 /// what reading found.
 pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = unversioned::origin_of(file);
     // The copy is read with the numbers no double holds clamped, so neither its
     // layer nor the merged document keeps an infinity; the warning names this pack's
     // file.
@@ -219,16 +198,5 @@ pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
 /// The walk of one document: the file `accept` takes, in every pack, lowest pack first, as
 /// vanilla collects the copies of a merged file.
 pub const fn walk(accept: fn(&PackPath) -> bool) -> Walk {
-    Walk {
-        directories: &[""],
-        depth: ListDepth::Recursive,
-        accept: Accept::Fn(accept),
-        order: WalkOrder::BottomUp,
-        directory_major: false,
-        app_data: &[],
-        app_data_place: AppDataPlace::After,
-        in_pack: None,
-        shadowed: None,
-        read_error: None,
-    }
+    Walk::json_tree_in(&[""]).accept(Accept::Fn(accept))
 }

@@ -152,13 +152,7 @@ pub fn split<T: Definition<Kind = kind::Animation>, F>(
 
 /// The origin of a walked file.
 pub fn walk_origin(file: &WalkFile) -> Origin {
-    Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    )
+    bedrock_addon_core::document::unversioned::origin_of(file)
 }
 
 /// A `.json` file: vanilla compares the four bytes of the extension as written.

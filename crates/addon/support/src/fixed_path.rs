@@ -3,44 +3,36 @@
 //! lean on, the walk of one file at the pack root, and the document of an unversioned file.
 
 use bedrock_addon_core::load::ListedFile;
-use bedrock_addon_core::load::{Accept, AppDataPlace, ListDepth, StackPack, Walk, WalkOrder};
+use bedrock_addon_core::load::{Accept, StackPack, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, unversioned};
+use bedrock_addon_core::json::{
+    Coerce, Coercing, EncodeError, IsIntRule, Value, WideInt, WriteStyle, write_json,
+};
 
-/// The origin of a file read on its own: no pack.
+/// The origin of a file read on its own: no pack. [`unversioned::lone`].
 pub fn lone(path: &PackPath) -> Origin {
-    origin(PackRef::app_data(), PackSide::Resource, path)
+    unversioned::lone(path)
 }
 
-/// The origin of a file of `pack`.
+/// The origin of a file of `pack`. [`unversioned::origin`].
 pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    unversioned::origin(pack, side, path)
 }
 
 /// A document of an unversioned file: no `format_version` is read on any path.
-pub fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Document<T> {
-    locate(&mut diagnostics, &origin);
-    let none = FormatVersion::new(0, 0, 0);
-    Document::new(
-        value,
-        origin,
-        VersionInfo::new(None, false, none, none, false),
-        diagnostics,
-    )
+/// [`unversioned::document`].
+pub fn document<T>(value: T, origin: Origin, diagnostics: Diagnostics) -> Document<T> {
+    unversioned::document(value, origin, diagnostics)
 }
 
-/// A rejection with one finding.
+/// A rejection with one finding. [`unversioned::reject`].
 pub fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
-    let mut diagnostics = Diagnostics::default();
-    diagnostics.push(finding);
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+    unversioned::reject(origin, finding)
 }
 
 /// Gives every finding the document's pack and file.
@@ -55,12 +47,7 @@ pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
 
 /// A finding at `at` inside a file.
 pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::error(code).severity(severity).at(at)
 }
 
 /// A finding about the file `path` of `pack` as a whole.
@@ -70,17 +57,12 @@ pub fn file_finding(
     pack: &PackRef,
     path: &PackPath,
 ) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(pack.clone()),
-            Some(path.clone()),
-            JsonPath::new(),
-            None,
-        ),
-    )
+    let mut finding = Diagnostic::error(code)
+        .severity(severity)
+        .phase(Phase::Validate);
+    finding.location.pack = Some(pack.clone());
+    finding.location.path = Some(path.clone());
+    finding
 }
 
 /// `InvalidValue` without a vanilla text (a finding of the crate's own).
@@ -104,18 +86,14 @@ pub fn malformed(message: String, text: Option<&'static str>) -> DiagnosticCode 
     }
 }
 
-/// `at` with the member `key` appended.
+/// `at` with the member `key` appended. [`JsonPath::child`].
 pub fn key(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
+    at.child(key)
 }
 
-/// `at` with the element `index` appended.
+/// `at` with the element `index` appended. [`JsonPath::index`].
 pub fn index(at: &JsonPath, index: usize) -> JsonPath {
-    let mut path = at.clone();
-    path.push_index(index);
-    path
+    at.index(index)
 }
 
 /// The member `key` of an object, a `null` included; `None` for a missing member and for
@@ -159,13 +137,9 @@ pub fn iterated<'v>(value: &'v Value, at: &JsonPath) -> Vec<(JsonPath, &'v Value
 }
 
 /// jsoncpp's `isInt` for a member read into an `i32`: a number written without a fraction or
-/// an exponent, in `i32`.
+/// an exponent, in `i32` ([`IsIntRule::Token`]).
 pub fn as_int(value: &Value) -> Option<i32> {
-    let number = value.as_number()?;
-    if number.is_float() {
-        return None;
-    }
-    number.to_i32()
+    value.is_int(Coercing::new(IsIntRule::Token, WideInt::LowWord))
 }
 
 /// jsoncpp's `isDouble`: a number written as a real.
@@ -303,18 +277,7 @@ pub type FileCopy<T> = Result<Document<T>, Rejected>;
 
 /// A walk of the pack root for one fixed file name, lowest pack first, packs only.
 pub const fn root_file(accept: fn(&PackPath) -> bool) -> Walk {
-    Walk {
-        directories: &[""],
-        depth: ListDepth::Children,
-        accept: Accept::Fn(accept),
-        order: WalkOrder::BottomUp,
-        directory_major: false,
-        app_data: &[],
-        app_data_place: AppDataPlace::After,
-        in_pack: None,
-        shadowed: None,
-        read_error: None,
-    }
+    Walk::json_children_in(&[""]).accept(Accept::Fn(accept))
 }
 
 /// The files of `pack` below the directory `directory`.

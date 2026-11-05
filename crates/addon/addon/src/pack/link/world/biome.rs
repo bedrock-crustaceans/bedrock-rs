@@ -110,22 +110,19 @@ fn transformations(
         ("river_transformation", &rules.river_transformation),
         ("shore_transformation", &rules.shore_transformation),
     ] {
-        let mut member = at.clone();
-        member.push(key);
+        let member = at.child(key);
         match transformation {
             None => {}
             Some(WeightedBiomes::One(name)) => check(member, name),
             Some(WeightedBiomes::List(entries)) => {
                 for (index, entry) in entries.iter().enumerate() {
-                    let mut path = member.clone();
-                    path.push_index(index);
+                    let path = member.index(index);
                     match entry {
                         WeightedBiome::Name(name) => check(path, name),
                         WeightedBiome::Pair(pair) => {
                             for (position, element) in pair.iter().enumerate() {
                                 if let NameOrWeight::Name(name) = element {
-                                    let mut path = path.clone();
-                                    path.push_index(position);
+                                    let path = path.index(position);
                                     check(path, name);
                                 }
                             }

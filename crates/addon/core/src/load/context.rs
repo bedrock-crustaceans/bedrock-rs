@@ -67,8 +67,8 @@ pub struct LoadContext {
     #[cfg(feature = "molang")]
     #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
     pub molang: Option<Arc<crate::molang::MolangCheck>>,
-    /// The null rule of the document being read: set by the versioning load from
-    /// `Family::INPUT`, read by `versioning::parse_payload` and `parse_component`; `None`
+    /// The null rule of the document being read: set by the versioning load from the slice's
+    /// `Family::reading`, read by `versioning::parse_payload` and `parse_component`; `None`
     /// (each read takes `null` as it does) outside a versioned load and for a family of the
     /// first run's input kind.
     pub null_rule: Option<crate::json::NullRule>,
@@ -76,7 +76,7 @@ pub struct LoadContext {
     /// slice's null rule is N2, whatever the source): `parse_component` then rejects the
     /// document for a component whose typed read fails (a type error) or whose required member
     /// is missing, under both of the game's log masks. Set by the versioning
-    /// load; `false` outside it, for `JsonCpp` slices and for a family's hand-written slices.
+    /// load from `Reading::components_fatal`; `false` outside it, for `JsonCpp` slices and for a family's hand-written slices.
     pub strict_components: bool,
     /// What the document's bytes were before the loader read them: JSON text, or a
     /// binary `\x7FMCB` document the stack turned into text. The game reads an MCB as a

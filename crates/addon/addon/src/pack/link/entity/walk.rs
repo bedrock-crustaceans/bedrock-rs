@@ -139,8 +139,7 @@ impl<'a> Entities<'a> {
                         ComponentRef::Dynamic { name, json } => (name, Cow::Borrowed(json)),
                         _ => continue,
                     };
-                    let mut at = section.clone();
-                    at.push(key);
+                    let at = section.child(key);
                     components.push(Component {
                         origin: definition.origin,
                         key,
@@ -263,13 +262,11 @@ pub(super) fn members<'v>(
     let Some(member) = object.get(key) else {
         return;
     };
-    let mut member_at = at.clone();
-    member_at.push(key);
+    let member_at = at.child(key);
     match member.as_array() {
         Some(elements) if list => {
             for (index, element) in elements.iter().enumerate() {
-                let mut element_at = member_at.clone();
-                element_at.push_index(index);
+                let element_at = member_at.index(index);
                 members(element, rest, &element_at, found);
             }
         }

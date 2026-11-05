@@ -1,13 +1,12 @@
-//! Characterization: the registry and files builders and [`Merged::merge`] collect a
-//! document's findings with `extend` (`iter().cloned()`, or a rejected copy's by value), which
-//! keeps the findings and drops the places an upgrade's moves left
-//! (`Diagnostics::place_of`). Pinned before the switch to `Diagnostics::append`, the change
-//! that deletes these tests and pins the places kept.
+//! The registry and files builders and [`Merged::merge`] collect a document's findings with
+//! `Diagnostics::append`, which keeps the places an upgrade's moves left
+//! (`Diagnostics::place_of`) along with the findings, for a stable, a rejected and a merged
+//! copy alike. (Before, they collected with `extend`, which dropped the places.)
 //!
-//! The drop is seen only through the collections' own `Diagnostics`, which no public path
+//! The places are seen only through the collections' own `Diagnostics`, which no public path
 //! hands out: `Registry::diagnostics`, `Files::diagnostics` and `Merged::diagnostics` yield
 //! the findings alone, and the link pass's `place_of` calls read each document's own
-//! diagnostics (`Document::diagnostics`), which keep their moves.
+//! diagnostics (`Document::diagnostics`), which keep their moves either way.
 
 use uuid::Uuid;
 
@@ -104,8 +103,8 @@ fn document() -> Document<Moved> {
     )
 }
 
-/// The finding is kept, named as the file has it; the place is not.
-fn dropped(diagnostics: &Diagnostics) {
+/// The finding is kept, named as the file has it, and so is the place.
+fn kept(diagnostics: &Diagnostics) {
     let paths: Vec<_> = diagnostics
         .iter()
         .map(|d| d.location.json_path.clone())
@@ -113,13 +112,13 @@ fn dropped(diagnostics: &Diagnostics) {
     assert_eq!(paths, [path("old")]);
     assert_eq!(
         diagnostics.place_of(&path("new")),
-        path("new"),
-        "today the combine drops the place of the move"
+        path("old"),
+        "the combine keeps the place of the move"
     );
 }
 
 #[test]
-fn registry_builder_drops_the_places_of_a_document_today() {
+fn registry_builder_keeps_the_places_of_a_document() {
     let registry = RegistryBuilder::combine(
         [Contribution::Stable(
             Id::from_static("demo:moved"),
@@ -136,11 +135,11 @@ fn registry_builder_drops_the_places_of_a_document_today() {
         Some(path("old")),
         "the document keeps its own"
     );
-    dropped(registry.held_diagnostics());
+    kept(registry.held_diagnostics());
 }
 
 #[test]
-fn registry_builder_drops_the_places_of_a_rejected_document_today() {
+fn registry_builder_keeps_the_places_of_a_rejected_document() {
     let registry = RegistryBuilder::<Moved>::combine(
         [Contribution::Rejected(
             None,
@@ -150,18 +149,18 @@ fn registry_builder_drops_the_places_of_a_rejected_document_today() {
         CombineRule::top_wins(),
         &LoadOptions::default(),
     );
-    dropped(registry.held_diagnostics());
+    kept(registry.held_diagnostics());
 }
 
 #[test]
-fn files_builder_drops_the_places_of_a_copy_today() {
+fn files_builder_keeps_the_places_of_a_copy() {
     for copy in [Ok(document()), Err(Rejected::new(origin(), upgraded()))] {
         let files = FilesBuilder::combine(
             [(PackPath::from_static("blocks/moved.json"), copy)],
             FilesRule::TopWins,
             &LoadOptions::default(),
         );
-        dropped(files.held_diagnostics());
+        kept(files.held_diagnostics());
     }
 }
 
@@ -170,9 +169,9 @@ impl Merge for Moved {
 }
 
 #[test]
-fn merged_drops_the_places_of_a_layer_and_a_failed_copy_today() {
+fn merged_keeps_the_places_of_a_layer_and_a_failed_copy() {
     for copy in [Ok(document()), Err(Rejected::new(origin(), upgraded()))] {
         let merged = Merged::merge(vec![copy], Moved, |_, _, _| {});
-        dropped(merged.held_diagnostics());
+        kept(merged.held_diagnostics());
     }
 }

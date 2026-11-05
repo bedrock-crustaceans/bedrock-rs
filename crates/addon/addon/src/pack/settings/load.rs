@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::convert::Infallible;
 
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span, VanillaText,
 };
 use crate::document::{Document, Origin, Rejected};
 use crate::json::{
@@ -73,14 +73,13 @@ impl Family for PackSettingsFamily {
             at.push("settings");
             at.push_index(index);
             at.push("pack_id");
-            cx.diagnostics.push(Diagnostic::new(
-                DiagnosticCode::DuplicateIdentifier { text: None },
-                // The game takes the first match and carries the others in silence, so the
-                // crate reports it as an information.
-                Severity::Info,
-                Phase::Validate,
-                Location::new(None, None, at, None),
-            ));
+            // The game takes the first match and carries the others in silence, so the crate
+            // reports it as an information.
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+                    .at(at)
+                    .phase(Phase::Validate),
+            );
         }
     }
 }
@@ -211,14 +210,13 @@ fn load(
     if let Some(key) = foreign.as_ref().filter(|key| key.warns) {
         let mut at = JsonPath::new();
         at.push(&key.name);
-        d.push(Diagnostic::new(
-            DiagnosticCode::PayloadKeyMismatch,
-            // The game only asserts the payload key (in a development build) and the payload
-            // loads, so the crate reports an information.
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, Some(key.span())),
-        ));
+        // The game only asserts the payload key (in a development build) and the payload
+        // loads, so the crate reports an information.
+        d.push(
+            Diagnostic::info(DiagnosticCode::PayloadKeyMismatch)
+                .at(at)
+                .span(key.span()),
+        );
     }
     let cx = LoadContext::detached();
     let parsed = parse_as_written::<PackSettingsFamily>(document, &cx);
@@ -447,12 +445,7 @@ fn version_at() -> JsonPath {
 
 /// An info-level parse finding.
 fn info(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::info(code).at(at)
 }
 
 /// The document's origin: the app-data layer (the file belongs to no pack), the side of the
@@ -465,7 +458,7 @@ fn origin(name: &str) -> Origin {
         PackSide::Behavior
     };
     let path = PackPath::new(last).unwrap_or_else(|_| PackPath::from_static(WORLD_FILE));
-    Origin::new(PackRef::app_data(), side, path, None, Vec::new())
+    Origin::file(PackRef::app_data(), side, path)
 }
 
 /// `MalformedInput` without vanilla's text: bytes that are no JSON text at all.
@@ -478,10 +471,5 @@ fn malformed(message: String) -> DiagnosticCode {
 
 /// A file-level parse error.
 fn error(code: DiagnosticCode) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, JsonPath::new(), None),
-    )
+    Diagnostic::error(code)
 }

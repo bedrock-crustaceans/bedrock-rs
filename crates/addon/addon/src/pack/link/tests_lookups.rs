@@ -184,6 +184,7 @@ fn a_host_is_asked_first_and_believed_yes_or_no() {
     // Yes: a name only the host has, bare or not, by the kind's name.
     assert_eq!(cx.block(&id("minecraft:moon_rock")), Target::BuiltIn);
     assert_eq!(cx.block(&id("moon_rock")), Target::BuiltIn);
+    #[cfg(feature = "voxel_shape")]
     assert_eq!(cx.voxel_shape(&id("minecraft:unit_cube")), Target::BuiltIn);
     // No: the crate's own list is not asked behind the host's back.
     assert_eq!(cx.block(&id("minecraft:stone")), MISSING);
@@ -202,7 +203,9 @@ fn without_a_host_a_kind_without_a_list_misses() {
     let set = empty_set();
     let cx = LinkCx::new(&set, ALL);
     assert!(cx.built_ins().is_none());
+    #[cfg(feature = "voxel_shape")]
     assert_eq!(cx.voxel_shape(&id("minecraft:unit_cube")), MISSING);
+    #[cfg(feature = "block_culling")]
     assert_eq!(cx.culling_rules(&id("minecraft:leaves")), MISSING);
     assert_eq!(cx.block(&id("minecraft:stone")), Target::BuiltIn);
 }
@@ -357,6 +360,7 @@ fn a_legacy_block_name_is_a_block_of_the_game_with_any_host() {
         assert_eq!(cx.block(&id("minecraft:Tallgrass")), MISSING);
         assert_eq!(cx.block(&id("demo:tallgrass")), MISSING);
         // The `blocks.json` entries are another lookup: no legacy name there.
+        #[cfg(feature = "blocks_json")]
         assert_eq!(cx.client_block(&id("minecraft:tallgrass")), MISSING);
     }
     // A host is still believed about every other name: `stone`, and the stonecutter, which

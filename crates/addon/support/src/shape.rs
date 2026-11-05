@@ -9,7 +9,7 @@
 //! 1.26.50, whose scalar reads [`coerce_scalars`] applies before the check.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 
@@ -75,12 +75,7 @@ pub const fn opt(key: &'static str, shape: Shape) -> Member {
 
 /// A parse finding at `at`.
 pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::error(code).severity(severity).at(at)
 }
 
 /// An error-level parse finding at `at`.
@@ -90,16 +85,12 @@ pub fn error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
 
 /// `base` followed by the member `key`.
 pub fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
+    base.child(key)
 }
 
 /// `base` followed by the element `index`.
 pub fn element(base: &JsonPath, index: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(index);
-    path
+    base.index(index)
 }
 
 /// A fixed vanilla text.

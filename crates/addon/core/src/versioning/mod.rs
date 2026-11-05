@@ -35,7 +35,8 @@ pub use component::{
 pub use file::{BelowFloor, FileFamily};
 pub use payload::{parse_payload, write_payload};
 pub use pipeline::{
-    Parsed, file_version, finish, load, member_version, no_parser_version, parse_as_written,
+    Parsed, file_version, finish, finish_file, load, load_file, member_version, no_parser_version,
+    parse_as_written, parse_file_as_written,
 };
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
 pub use reading::{MemberFailure, NullHandling, Reading, Scalars, TextReading, UnknownMask};
@@ -474,7 +475,7 @@ pub trait Family: Sized + 'static {
     /// Whether the envelope's shape is checked.
     const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Always;
     /// What a document below [`FLOOR`](Self::FLOOR) is told. Default
-    /// [`BelowFloor::UseFormatVersion`], what `load` raises; not read by `load` yet.
+    /// [`BelowFloor::UseFormatVersion`].
     const BELOW_FLOOR: BelowFloor = BelowFloor::UseFormatVersion;
     /// The error mask of the slice that parses a document. Default
     /// [`ErrorMask::Unstrict`]; a family opts in per slice, e.g. entity: `Unstrict` for the
@@ -502,7 +503,8 @@ pub trait Family: Sized + 'static {
     /// and the JSON size check, the clamp beyond a double and the members whose duplicates are
     /// kept. Default built from [`INPUT`](Self::INPUT),
     /// [`CLAMPS_BEYOND_DOUBLE`](Self::CLAMPS_BEYOND_DOUBLE) and
-    /// [`DUPLICATES_KEPT_IN`](Self::DUPLICATES_KEPT_IN). Not read by `load` yet.
+    /// [`DUPLICATES_KEPT_IN`](Self::DUPLICATES_KEPT_IN). The pipeline reads the text by it, not
+    /// by those knobs; they stay the way a family states its values until they are folded in.
     const TEXT: TextReading = TextReading::from_knobs(
         Self::INPUT,
         Self::CLAMPS_BEYOND_DOUBLE,
@@ -511,7 +513,9 @@ pub trait Family: Sized + 'static {
     /// How the slice `index` reads a document from `source`. Default built from
     /// [`null_rule`](Self::null_rule), [`error_mask`](Self::error_mask) and the
     /// `strict_components` derivation (`null_rule(index)` rejects `null`), with an MCB source
-    /// read under no null rule, which is what `load` does today. Not read by `load` yet.
+    /// read under no null rule. The pipeline reads each slice by it, not by those knobs: the
+    /// null rule and `strict_components` it puts on the context, and the error mask of the
+    /// parse and of the validate phase's component checks.
     ///
     /// The default does not express four local overrides the families make today, outside
     /// the knobs it is built from:
@@ -533,8 +537,10 @@ pub trait Family: Sized + 'static {
     /// The post-parse hook a file's load closes with: rewrites the generic findings of a
     /// parse into the family's vanilla texts and, when the file `failed`, adds the family's
     /// closing line. `document` is the text, when it is one; `path` is the file's. The
-    /// default does nothing. Nothing calls it yet; the one-file families' write-back
-    /// sub-trait [`FileFamily`] closes through it unless it says otherwise.
+    /// default does nothing. The closed entries ([`load_file`], [`parse_file_as_written`],
+    /// [`finish_file`]) call it once per file, the two-stage path included; the unclosed ones
+    /// never do. The one-file families' write-back sub-trait [`FileFamily`] closes through it
+    /// too.
     #[allow(unused_variables)]
     fn close(
         diagnostics: &mut Diagnostics,

@@ -51,8 +51,7 @@ pub(super) fn component_blocks(
     component: &BiomeComponent,
 ) {
     for (below, block) in block_references(component) {
-        let mut path = at.clone();
-        path.append(&below);
+        let mut path = at.join(&below);
         if let Target::Missing(hint) = cx.block(&block.name) {
             let text = VanillaText::Formatted {
                 template: FAILED_TO_RESOLVE,

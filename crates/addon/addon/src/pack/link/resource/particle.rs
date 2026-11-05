@@ -61,8 +61,7 @@ pub(super) fn each_event_node<'e>(
     events_at.push("events");
     let mut waiting: Vec<(JsonPath, &'e EventNode)> = Vec::new();
     for (name, event) in effect.events.iter().flatten() {
-        let mut at = events_at.clone();
-        at.push(name);
+        let at = events_at.child(name);
         waiting.push((at, event));
         while let Some((at, node)) = waiting.pop() {
             visit(&places.place_of(&at), node);
@@ -108,12 +107,10 @@ pub(super) fn own_events(cx: &LinkCx<'_>, out: &mut Findings) {
             check.keyed(&at, "timeline", events.timeline.as_ref());
             let travelled = events.travel_distance_events.as_ref();
             check.keyed(&at, "travel_distance_events", travelled);
-            let mut looping = at.clone();
-            looping.push("looping_travel_distance_events");
+            let looping = at.child("looping_travel_distance_events");
             let entries = events.looping_travel_distance_events.iter().flatten();
             for (index, entry) in entries.enumerate() {
-                let mut entry_at = looping.clone();
-                entry_at.push_index(index);
+                let entry_at = looping.index(index);
                 check.member(&entry_at, "effects", Some(&entry.effects));
             }
         }
@@ -179,14 +176,12 @@ impl OwnEvents<'_, '_> {
         let Some(events) = events else {
             return;
         };
-        let mut at = parent.clone();
-        at.push(key);
+        let at = parent.child(key);
         match events {
             VectorEvents::One(name) => self.name(&at, name),
             VectorEvents::Many(names) => {
                 for (index, name) in names.iter().enumerate() {
-                    let mut element = at.clone();
-                    element.push_index(index);
+                    let element = at.index(index);
                     self.name(&element, name);
                 }
             }
@@ -200,8 +195,7 @@ impl OwnEvents<'_, '_> {
         key: &str,
         map: Option<&indexmap::IndexMap<String, VectorEvents>>,
     ) {
-        let mut at = parent.clone();
-        at.push(key);
+        let at = parent.child(key);
         for (time, events) in map.into_iter().flatten() {
             self.member(&at, time, Some(events));
         }

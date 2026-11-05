@@ -1,40 +1,24 @@
-//! The documents of the unversioned text files: no `format_version` is read on any path.
+//! The documents of the unversioned text files: no `format_version` is read on any path. The
+//! kit is core's [`unversioned`]; these are its names here.
 
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::Rejected;
-use bedrock_addon_core::document::{Document, Origin, VersionInfo};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::document::{Document, Origin, Rejected, unversioned};
 
-/// The origin of a file of `pack`.
+/// The origin of a file of `pack`. [`unversioned::origin`].
 pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    unversioned::origin(pack, side, path)
 }
 
 /// A document of an unversioned family: no `format_version` is read on any path.
-pub fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Document<T> {
-    locate(&mut diagnostics, &origin);
-    let none = FormatVersion::new(0, 0, 0);
-    let version = VersionInfo::new(None, false, none, none, false);
-    Document::new(value, origin, version, diagnostics)
+/// [`unversioned::document`].
+pub fn document<T>(value: T, origin: Origin, diagnostics: Diagnostics) -> Document<T> {
+    unversioned::document(value, origin, diagnostics)
 }
 
-/// A rejection with one finding.
+/// A rejection with one finding. [`unversioned::reject`].
 pub fn reject(origin: Origin, finding: Box<Diagnostic>) -> Rejected {
-    let mut diagnostics = Diagnostics::default();
-    diagnostics.push(*finding);
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
-}
-
-/// Gives every finding the document's pack and file.
-fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
+    unversioned::reject(origin, finding)
 }

@@ -2,9 +2,10 @@
 //! [`Family::reading`](super::Family::reading), and [`TextReading`], the part a family fixes
 //! once because it runs before a struct is selected.
 //!
-//! Both are data only for now: `load` still reads the old knobs (`INPUT`, `null_rule`,
-//! `error_mask`, `CLAMPS_BEYOND_DOUBLE`, `DUPLICATES_KEPT_IN`), and the defaults here are
-//! built from them, so every family's reading equals what it does today.
+//! `load` reads both: the defaults are built from the old knobs (`INPUT`, `null_rule`,
+//! `error_mask`, `CLAMPS_BEYOND_DOUBLE`, `DUPLICATES_KEPT_IN`), which stay the way a family
+//! states its values for now, so every family's reading equals what it did before. Nothing
+//! acts on [`Scalars::Coercing`] or on a [`MemberFailure`] other than `Refuse` yet.
 
 use super::{ErrorMask, InputKind, VersionInput};
 use crate::json::NullRule;

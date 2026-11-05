@@ -1,37 +1,27 @@
 //! The documents of the texture files: no `format_version` is read on any path of the
-//! unversioned ones, and a finding carries its pack and file.
+//! unversioned ones, and a finding carries its pack and file. The kit is core's
+//! [`document::unversioned`](bedrock_addon_core::document::unversioned); these are its names
+//! here.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
-use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::document::{self, Document, Origin, Rejected};
 use bedrock_addon_core::load::WalkFile;
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::pack_identity::PackPath;
 
-/// The origin of a file read on its own.
+/// The origin of a file read on its own. `unversioned::lone`.
 pub fn detached(path: &PackPath) -> Origin {
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    document::unversioned::lone(path)
 }
 
 /// A document of an unversioned file: no `format_version` is read on any path.
-pub fn unversioned<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Document<T> {
-    locate(&mut diagnostics, &origin);
-    let none = FormatVersion::new(0, 0, 0);
-    let version = VersionInfo::new(None, false, none, none, false);
-    Document::new(value, origin, version, diagnostics)
+/// `unversioned::document`.
+pub fn unversioned<T>(value: T, origin: Origin, diagnostics: Diagnostics) -> Document<T> {
+    document::unversioned::document(value, origin, diagnostics)
 }
 
-/// A rejection of the file `origin` with its findings.
-pub fn rejected(origin: Origin, mut diagnostics: Diagnostics) -> Rejected {
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+/// A rejection of the file `origin` with its findings. `unversioned::rejected`.
+pub fn rejected(origin: Origin, diagnostics: Diagnostics) -> Rejected {
+    document::unversioned::rejected(origin, diagnostics)
 }
 
 /// Gives every finding the document's pack and file.
@@ -56,22 +46,13 @@ pub fn finding_at(
     origin: &Origin,
     path: JsonPath,
 ) -> Diagnostic {
-    let location = Location::new(
-        Some(origin.pack.clone()),
-        Some(origin.path.clone()),
-        path,
-        None,
-    );
-    Diagnostic::new(code, severity, Phase::Parse, location)
+    Diagnostic::error(code)
+        .severity(severity)
+        .at(path)
+        .in_file(origin)
 }
 
-/// The origin of a walked file.
+/// The origin of a walked file. `unversioned::origin_of`.
 pub fn origin_of(file: &WalkFile) -> Origin {
-    Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    )
+    document::unversioned::origin_of(file)
 }

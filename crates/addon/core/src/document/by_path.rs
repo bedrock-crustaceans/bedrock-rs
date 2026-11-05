@@ -150,12 +150,10 @@ impl<T: Content> FilesBuilder<T> {
     /// (relative to the pack's content root, without a subpack folder).
     pub fn push(&mut self, path: PackPath, copy: Result<Document<T>, Rejected>) {
         match &copy {
-            Ok(document) => self
-                .diagnostics
-                .extend(document.diagnostics().iter().cloned()),
+            // With the moves and places an upgrade left.
+            Ok(document) => self.diagnostics.append(document.diagnostics().clone()),
             Err(rejected) => {
-                self.diagnostics
-                    .extend(rejected.diagnostics.iter().cloned());
+                self.diagnostics.append(rejected.diagnostics.clone());
                 self.rejected.push(rejected.clone());
             }
         }

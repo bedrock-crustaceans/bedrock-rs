@@ -144,13 +144,7 @@ fn client_items(cx: &LinkCx<'_>, out: &mut Findings) {
                 continue;
             };
             if let Target::Missing(hint) = cx.item_definition(&ItemId::parse(identifier.as_str())) {
-                let origin = Origin::new(
-                    pack.pack.clone(),
-                    PackSide::Resource,
-                    file.path.clone(),
-                    None,
-                    Vec::new(),
-                );
+                let origin = Origin::file(pack.pack.clone(), PackSide::Resource, file.path.clone());
                 let text = VanillaText::ItemNotInBehaviorPack {
                     identifier: identifier.clone(),
                 };

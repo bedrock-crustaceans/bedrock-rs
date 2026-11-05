@@ -1,9 +1,7 @@
 //! Findings the versioned loaders of feature rules and dimensions give alike: the below-floor text
 //! and the shadowed-definition note.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::version::FormatVersion;
 
@@ -27,15 +25,7 @@ pub fn puv_below_floor(diagnostics: &mut Diagnostics, written: Option<FormatVers
 
 /// `ShadowedDefinition` (info) at a dropped document.
 pub fn shadowed(origin: &Origin) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::ShadowedDefinition { text: None },
-        Severity::Info,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            JsonPath::new(),
-            None,
-        ),
-    )
+    Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+        .phase(Phase::Validate)
+        .in_file(origin)
 }

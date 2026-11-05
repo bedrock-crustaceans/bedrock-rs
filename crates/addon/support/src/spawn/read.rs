@@ -6,19 +6,14 @@
 //! JSON type also gets an `InvalidType` warning at its path (vanilla is silent).
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 
 /// A finding of the spawn readers at `at` (a parse finding without a span: the readers walk a
 /// `Value`, so a finding carries a path and no span).
 pub fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath, d: &mut Diagnostics) {
-    d.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at.clone(), None),
-    ));
+    d.push(Diagnostic::error(code).severity(severity).at(at.clone()));
 }
 
 /// An `InvalidType` information at `at`, with vanilla's text when it has one; without one it is
@@ -31,16 +26,12 @@ pub fn wrong_type(at: &JsonPath, text: Option<VanillaText>, d: &mut Diagnostics)
 
 /// `at` followed by `key`.
 pub fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
+    at.child(key)
 }
 
 /// `at` followed by the element `index`.
 pub fn element(at: &JsonPath, index: usize) -> JsonPath {
-    let mut path = at.clone();
-    path.push_index(index);
-    path
+    at.index(index)
 }
 
 /// The member as jsoncpp's accessors see it: `None` for a missing or `null` member.

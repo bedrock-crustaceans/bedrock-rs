@@ -5,6 +5,8 @@ pub mod animation;
 pub mod biome_json;
 pub mod chain_file;
 pub mod fixed_path;
+#[cfg(test)]
+mod helper_pins;
 pub mod jsoncpp;
 pub mod lossy;
 pub mod puv;

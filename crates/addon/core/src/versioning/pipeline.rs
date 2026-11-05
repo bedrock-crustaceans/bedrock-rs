@@ -11,16 +11,18 @@ use super::component::validate_components;
 use super::payload::span_of;
 use super::range::{Selection, select};
 use super::{
-    BETA_VERSION, BetaPermission, EnvelopeCheck, ErrorMask, Family, Identity, LoadOutcome, Loaded,
-    MissingVersion, ParseCx, StructIndex, UpgradeCx, ValidateCx, VersionChain, VersionInput,
+    BETA_VERSION, BelowFloor, BetaPermission, EnvelopeCheck, ErrorMask, Family, Identity,
+    LoadOutcome, Loaded, MissingVersion, ParseCx, StructIndex, UpgradeCx, ValidateCx, VersionChain,
+    VersionInput,
 };
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
 };
 use crate::document::VersionInfo;
 use crate::json::{Envelope, EnvelopeVersion, JsonSlice, Value, probe_envelope};
-use crate::load::{DocumentSource, LoadContext};
+use crate::load::LoadContext;
 use crate::molang::{MolangContext, MolangFields, not_checked};
+use crate::pack_identity::PackPath;
 use crate::vanilla::ActorType;
 use crate::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, PickedVersion};
 
@@ -33,6 +35,51 @@ const FORMAT_VERSION: &str = "format_version";
 /// holds why (an error, or an `EmptyDocument` at the family's severity).
 pub fn load<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> LoadOutcome<F> {
     finish(parse_as_written::<F>(document, cx), cx)
+}
+
+/// [`load`] of one file at `path`, closed: `Family::close` runs once at the end, told whether
+/// the file failed (no value). The unclosed stages ([`load`], [`parse_as_written`],
+/// [`finish`]) never close.
+pub fn load_file<F: Family>(
+    document: JsonSlice<'_>,
+    path: &PackPath,
+    cx: &LoadContext,
+) -> LoadOutcome<F> {
+    finish_file(
+        parse_as_written::<F>(document, cx),
+        Some(document),
+        path,
+        cx,
+    )
+}
+
+/// [`parse_as_written`] of one file at `path`, the first of two stages: a parse that gives no
+/// value ends the file, and is closed here (`failed`); a parse that gives one is not closed,
+/// since [`finish_file`] closes the file once at its end. Either way a file is closed once.
+pub fn parse_file_as_written<F: Family>(
+    document: JsonSlice<'_>,
+    path: &PackPath,
+    cx: &LoadContext,
+) -> Parsed<F> {
+    let mut parsed = parse_as_written::<F>(document, cx);
+    if parsed.value.is_none() {
+        F::close(&mut parsed.diagnostics, Some(document), path, true);
+    }
+    parsed
+}
+
+/// [`finish`] of one file's parse at `path`, closed with whether the file failed. `document`
+/// is the text, when the parse was of one (`None` for a document rebuilt from a value).
+pub fn finish_file<F: Family>(
+    parsed: Parsed<F>,
+    document: Option<JsonSlice<'_>>,
+    path: &PackPath,
+    cx: &LoadContext,
+) -> LoadOutcome<F> {
+    let mut outcome = finish(parsed, cx);
+    let failed = outcome.value.is_none();
+    F::close(&mut outcome.diagnostics, document, path, failed);
+    outcome
 }
 
 /// A document parsed by the struct its `format_version` selects, not upgraded: what
@@ -126,8 +173,7 @@ pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) ->
     let mut told = Diagnostics::default();
     // The game's document input sizes the text first. An MCB source is a binary input, so it
     // gets no JSON size check.
-    let json_document =
-        F::INPUT.version_input() == VersionInput::Document && cx.source == DocumentSource::Json;
+    let json_document = F::TEXT.sizes_json(cx.source);
     let too_large = json_document
         && (size_finding(document.text.len(), cx.max_json_document_bytes, &mut told)
             || rapidjson_refuses::<F>(document, &mut told));
@@ -162,7 +208,7 @@ pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) ->
     };
     // Of a member written twice the last value stands, whole, at every level; the earlier
     // copies are blanked so offsets stay.
-    let cleaned = crate::json::last_wins_except(document.text, F::DUPLICATES_KEPT_IN);
+    let cleaned = crate::json::last_wins_except(document.text, F::TEXT.duplicates_kept_in);
     let cleaned = JsonSlice {
         text: &cleaned,
         offset: document.offset,
@@ -172,10 +218,10 @@ pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) ->
     let mut beyond = Diagnostics::default();
     // Every copy of a member written twice is clamped; the warning is for the copy the
     // family keeps.
-    let mut clamped = if F::CLAMPS_BEYOND_DOUBLE {
+    let mut clamped = if F::TEXT.clamps_beyond_double {
         crate::json::clamp_beyond_double_first_kept(
             cleaned,
-            F::DUPLICATES_KEPT_IN,
+            F::TEXT.duplicates_kept_in,
             &JsonPath::new(),
             &mut beyond,
         )
@@ -293,13 +339,13 @@ fn clamp_floats<F: Family>(
         if floats.contains(&at) {
             Some(Width::Float)
         } else {
-            F::CLAMPS_BEYOND_DOUBLE.then_some(Width::Double)
+            F::TEXT.clamps_beyond_double.then_some(Width::Double)
         }
     };
     let text = crate::json::clamp_tokens(
         cleaned,
         &width,
-        F::DUPLICATES_KEPT_IN,
+        F::TEXT.duplicates_kept_in,
         &JsonPath::new(),
         &mut told,
     )?;
@@ -548,7 +594,7 @@ impl Run {
         cx: &LoadContext,
     ) -> Option<F::Any> {
         let envelope = self.envelope::<F>(document)?;
-        let (read, as_written) = match F::INPUT.version_input() {
+        let (read, as_written) = match F::TEXT.version_input {
             VersionInput::Root => (
                 read_version(&envelope.format_version),
                 envelope.format_version.clone(),
@@ -578,16 +624,13 @@ impl Run {
             StructIndex::Stable(i) => versions.get(i).copied().unwrap_or(F::FLOOR),
             StructIndex::Beta => BETA_VERSION,
         };
-        // The selected slice's null rule rides on the context into `parse_payload` and
-        // `parse_component`; a rule the caller's context carries does not leak in. An MCB
-        // source is read by the binary reader, so it has no null rule.
-        let rule = match cx.source {
-            DocumentSource::Mcb => None,
-            _ => F::null_rule(index),
-        };
-        // A cereal slice of a document input reads its components strictly; an MCB source is
-        // read by the same slice through the binary reader.
-        let strict_components = F::null_rule(index) == Some(crate::json::NullRule::Rejected);
+        // The selected slice's reading: its null rule rides on the context into
+        // `parse_payload` and `parse_component` (a rule the caller's context carries does not
+        // leak in; an MCB source is read by the binary reader, so by default it has none), and
+        // so does whether a component that fails to read is fatal.
+        let reading = F::reading(index, cx.source);
+        let rule = reading.null_rule();
+        let strict_components = reading.components_fatal;
         let scoped;
         let load = if cx.null_rule == rule && cx.strict_components == strict_components {
             cx
@@ -605,7 +648,7 @@ impl Run {
             at: self.at.clone(),
         };
         let value = F::Any::parse_struct(payload, index, &parse, &mut self.diagnostics);
-        if F::error_mask(index) == ErrorMask::Strict {
+        if reading.error_mask() == ErrorMask::Strict {
             self.unknown_members_are_errors();
         }
         value
@@ -855,17 +898,22 @@ impl Run {
                 Some(StructIndex::Stable(routed.unwrap_or(i)))
             }
             Selection::BelowFloor => {
-                self.diagnostics.push(error(
-                    DiagnosticCode::UnsupportedVersion {
-                        text: Some(VanillaText::UseFormatVersion {
-                            what: F::NAME,
-                            name: identity.identifier.clone().unwrap_or_default(),
-                            version: F::FLOOR,
-                        }),
-                    },
-                    at,
-                    None,
-                ));
+                self.diagnostics.push(match F::BELOW_FLOOR {
+                    // No slice below the first: the text above the engine has, the version
+                    // rendered the same way.
+                    BelowFloor::NoParser => unsupported(&no_parser_version(written, text), at),
+                    _ => error(
+                        DiagnosticCode::UnsupportedVersion {
+                            text: Some(VanillaText::UseFormatVersion {
+                                what: F::NAME,
+                                name: identity.identifier.clone().unwrap_or_default(),
+                                version: F::FLOOR,
+                            }),
+                        },
+                        at,
+                        None,
+                    ),
+                });
                 None
             }
             Selection::Unsupported => {

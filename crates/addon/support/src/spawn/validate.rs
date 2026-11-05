@@ -23,7 +23,7 @@ pub fn molang<T: bedrock_addon_core::molang::MolangFields>(
     document: &mut T,
     cx: &mut ValidateCx<'_>,
 ) {
-    use bedrock_addon_core::diagnostic::{Diagnostic, Location, Phase};
+    use bedrock_addon_core::diagnostic::{Diagnostic, Phase};
     use bedrock_addon_core::molang::{MolangFieldMut, MolangOutcome, visit_fields};
     let failed: Vec<JsonPath> = cx
         .molang_failures
@@ -50,14 +50,13 @@ pub fn molang<T: bedrock_addon_core::molang::MolangFields>(
         });
         // The crate's own information: below Molang 4 an empty text has no parser line ("No
         // tokens found in expression" is logged from version 4 only).
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::InvalidMolang {
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::InvalidMolang {
                 expression: expression.unwrap_or_default(),
-            },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, at, None),
-        ));
+            })
+            .at(at)
+            .phase(Phase::Validate),
+        );
     }
 }
 

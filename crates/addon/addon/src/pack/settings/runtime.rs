@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use crate::document::Document;
 use crate::manifest::{DropdownOption, Manifest, Setting};
@@ -331,12 +331,12 @@ fn report(d: &mut Diagnostics, code: DiagnosticCode, severity: Severity, name: &
     let mut at = JsonPath::new();
     at.push("values");
     at.push(name);
-    d.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+    d.push(
+        Diagnostic::error(code)
+            .severity(severity)
+            .at(at)
+            .phase(Phase::Validate),
+    );
 }
 
 /// The entries of a saved-settings file that name no pack of the world: one
@@ -362,27 +362,18 @@ pub fn unmatched_entries(saved: &Document<SavedSettings>, set: &StackSet) -> Dia
         if entry.pack_id.is_nil() || on_stack.contains(&entry.pack_id) {
             continue;
         }
-        let mut at = JsonPath::new();
-        at.push("minecraft:pack_settings");
-        at.push("settings");
-        at.push_index(index);
-        at.push("pack_id");
-        let mut finding = Diagnostic::new(
-            DiagnosticCode::UnresolvedReference { text: None },
-            Severity::Info,
-            Phase::Link,
-            Location::new(
-                Some(origin.pack.clone()),
-                Some(origin.path.clone()),
-                at,
-                None,
-            ),
-        );
-        finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-            kind: "pack",
-            id: entry.pack_id.hyphenated().to_string(),
-            hint: None,
-        }));
+        let at = JsonPath::of_keys(["minecraft:pack_settings", "settings"])
+            .index(index)
+            .child("pack_id");
+        let finding = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            .at(at)
+            .phase(Phase::Link)
+            .in_file(origin)
+            .detail(DiagnosticDetail::Reference {
+                kind: "pack",
+                id: entry.pack_id.hyphenated().to_string(),
+                hint: None,
+            });
         found.push(finding);
     }
     found

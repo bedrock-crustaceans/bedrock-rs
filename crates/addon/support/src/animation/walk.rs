@@ -11,7 +11,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::json::{JsonSlice, parse_at};
 use bedrock_addon_core::molang::{
@@ -308,12 +308,11 @@ impl Walk {
 
     /// A finding at the current path.
     pub fn push(&mut self, code: DiagnosticCode, severity: Severity, span: Option<Span>) {
-        self.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, self.path.clone(), span),
-        ));
+        let mut finding = Diagnostic::error(code)
+            .severity(severity)
+            .at(self.path.clone());
+        finding.location.span = span;
+        self.diagnostics.push(finding);
     }
 
     /// A schema error at the current path.
@@ -425,8 +424,7 @@ impl Walk {
                 _ => false,
             };
             if spelled_otherwise {
-                let mut at = self.path.clone();
-                at.push(&key);
+                let at = self.path.child(&key);
                 self.non_canonical.push((at, value.span()));
             }
             self.enter(&key);

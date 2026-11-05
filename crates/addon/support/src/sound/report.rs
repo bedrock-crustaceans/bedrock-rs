@@ -2,7 +2,7 @@
 //! at, and the members no reader names.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
@@ -40,9 +40,12 @@ impl<'a> Reporter<'a> {
 
     /// A finding at the current path.
     pub fn here(&mut self, code: DiagnosticCode, severity: Severity) {
-        let location = Location::new(None, None, self.path.clone(), None);
-        self.diagnostics
-            .push(Diagnostic::new(code, severity, Phase::Validate, location));
+        self.diagnostics.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(self.path.clone())
+                .phase(Phase::Validate),
+        );
     }
 
     /// A finding that carries one of vanilla's texts, at the current path.
@@ -52,13 +55,11 @@ impl<'a> Reporter<'a> {
 
     /// A content-log error of vanilla's after which the file loads: a kept error.
     pub fn kept(&mut self, code: DiagnosticCode) {
-        let location = Location::new(None, None, self.path.clone(), None);
-        self.diagnostics.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Validate,
-            location,
-        ));
+        self.diagnostics.push_kept_error(
+            Diagnostic::error(code)
+                .at(self.path.clone())
+                .phase(Phase::Validate),
+        );
     }
 
     /// A finding at the member `key` of the current path.

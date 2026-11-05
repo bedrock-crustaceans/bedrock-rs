@@ -169,13 +169,7 @@ fn remapping(
     if first {
         out.extend(at_file(findings, file));
     }
-    let origin = Origin::new(
-        file.pack.clone(),
-        PackSide::Resource,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), PackSide::Resource, file.path.clone());
     // The pages are in page order.
     let page_of = |page: u8| {
         let found = pages.binary_search_by_key(&page, |held| held.page).ok()?;

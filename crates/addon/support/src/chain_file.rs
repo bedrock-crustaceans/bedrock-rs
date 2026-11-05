@@ -5,13 +5,12 @@ use facet::Facet;
 
 use super::shape::{self, Shape};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
-    VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span, VanillaText,
+    code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::json::{
-    EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, probe_envelope,
-    strip_bom,
+    EnvelopeVersion, JsonSlice, Prepared, Value, parse_at, probe_envelope,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
@@ -22,25 +21,13 @@ use bedrock_addon_core::versioning::{Identity, Loaded, ParseCx, Parsed, finish, 
 /// A family of this module: no beta struct, and its own texts for the generic findings.
 pub use bedrock_addon_core::versioning::FileFamily;
 
-/// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
-/// deep.
-pub fn text(bytes: &[u8]) -> Option<&str> {
-    let bytes = strip_bom(bytes);
-    check_depth(bytes, MAX_JSON_DEPTH).ok()?;
-    std::str::from_utf8(bytes).ok()
-}
-
-/// The finding of an unreadable file.
+/// The finding of an unreadable file: not UTF-8, or nested too deeply (one finding either
+/// way, so the order `Prepared` checks them in does not show).
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// Gives every finding the document's pack and file.
@@ -81,14 +68,9 @@ pub fn puv_below_floor(diagnostics: &mut Diagnostics, document: Option<JsonSlice
 
 /// The closing line `text` of a failed file.
 pub fn closing_line(diagnostics: &mut Diagnostics, text: &'static str) {
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Fixed(text)),
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Fixed(text)),
+    }));
 }
 
 /// What loading one file gives: the identifier its payload names, when it is a string, and the
@@ -103,13 +85,12 @@ pub fn parse_file<F: FileFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> FileOutcome<F::Latest> {
+    let origin = Origin::file(pack, side, path.clone());
     // The BOM is blanked, not cut, so every offset is an offset into the file as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return (None, Err(unreadable::<F>(origin)));
     };
-    let document = JsonSlice::new(text);
+    let document = prepared.slice();
     let parsed = parse_as_written::<F>(document, cx);
     let identifier = parsed.identity.identifier.clone();
     (
@@ -127,7 +108,8 @@ fn unreadable<F: FileFamily>(origin: Origin) -> Rejected {
     Rejected::new(origin, diagnostics)
 }
 
-/// The rest of the load of a parsed file.
+/// The rest of the load of a parsed file. Through core's unclosed `finish`: the close here,
+/// with `FileFamily::close`, is the file's only one.
 fn finish_file<F: FileFamily>(
     parsed: Parsed<F>,
     document: Option<JsonSlice<'_>>,
@@ -160,13 +142,12 @@ pub fn as_written<F: FileFamily>(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
+    let origin = Origin::file(PackRef::app_data(), side, path.clone());
     // The BOM is blanked, not cut, so every offset is an offset into the file as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(PackRef::app_data(), side, path.clone(), None, Vec::new());
-    let Some(text) = text(bytes) else {
+    let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unreadable::<F>(origin));
     };
-    let document = JsonSlice::new(text);
+    let document = prepared.slice();
     let parsed = parse_as_written::<F>(document, cx);
     let mut diagnostics = parsed.diagnostics;
     let failed = parsed.value.is_none();
@@ -358,18 +339,13 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
 /// as the bound one: write-back writes the member's own type there, so nothing is changed in
 /// silence.
 fn coerced_finding(checked: JsonSlice<'_>, at: &JsonPath, place: &JsonPath) -> Diagnostic {
-    let mut path = at.clone();
-    path.append(place);
-    let mut finding = Diagnostic::new(
-        DiagnosticCode::ValueRewritten { text: None },
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, path, Some(span_in(checked, place))),
-    );
-    finding.detail = Some(Box::new(
-        bedrock_addon_core::diagnostic::DiagnosticDetail::Note(shape::SCALAR_READ_AS_BOUND_TYPE),
-    ));
-    finding
+    let path = at.join(place);
+    Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+        .at(path)
+        .span(span_in(checked, place))
+        .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
+            shape::SCALAR_READ_AS_BOUND_TYPE,
+        ))
 }
 
 /// The finding of a failed typed parse: `code` at `base` followed by the failing member.
@@ -379,8 +355,7 @@ fn typed_failure(
     member: &JsonPath,
     span: Span,
 ) -> Diagnostic {
-    let mut path = base.clone();
-    path.append(member);
+    let path = base.join(member);
     let mut finding = shape::error(code, path);
     finding.location.span = Some(span);
     finding
