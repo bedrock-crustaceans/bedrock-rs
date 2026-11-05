@@ -1,0 +1,275 @@
+== link/linked_asset_validator/ReferencedAssetsRP/sounds.json
+{
+  "individual_named_sounds": {
+    "sounds": {
+      "test_sound": {
+        "sound": "test_sound",
+        "volume": 0.7,
+        "pitch": [
+          0.8,
+          1.0
+        ]
+      }
+    }
+  }
+}
+
+== sound/sounds/determinism/resource_pack/sounds.json
+{
+  "block_sounds": {
+    "determinism_stone": {
+      "events": {
+        "break": "determinism.click",
+        "hit": {
+          "sound": "determinism.unknown",
+          "pitch": [
+            0.8,
+            1.2
+          ]
+        }
+      }
+    },
+    "determinism_slab": {
+      "base": "determinism_stone",
+      "events": {
+        "place": "determinism.click"
+      }
+    }
+  },
+  "entity_sounds": {
+    "entities": {
+      "determinism_cat": {
+        "events": {
+          "ambient": "determinism.click"
+        },
+        "variants": {
+          "key": "query.is_baby ? 'baby' : 'adult'",
+          "map": {
+            "baby": {
+              "events": {
+                "ambient": "determinism.click"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "individual_event_sounds": {
+    "events": {
+      "ambient.cave": "determinism.click"
+    }
+  }
+}
+
+== {"block_sounds": {"stone": {"volume": 1, "pitch": [0.8, 1.2], "events": {"break": "dig.stone", "Hit": {"sound": "hit.stone", "volume": "[0.5, 1]", "sounds": 1}}}, "slab": {"base": "stone"}}}
+{
+  "block_sounds": {
+    "stone": {
+      "volume": 1,
+      "pitch": [
+        0.8,
+        1.2
+      ],
+      "events": {
+        "break": "dig.stone",
+        "Hit": {
+          "sound": "hit.stone",
+          "volume": "[0.5, 1]",
+          "sounds": 1
+        }
+      }
+    },
+    "slab": {
+      "base": "stone"
+    }
+  }
+}
+
+== {"individual_event_sounds": {"events": {"ambient.cave": "a", "not_an_event": "b", "hurt": {"sound": "c", "pitch": {"min": 0.5, "max": 0.25}, "x": 1}}, "volume": 0.5}}
+{
+  "individual_event_sounds": {
+    "events": {
+      "ambient.cave": "a",
+      "not_an_event": "b",
+      "hurt": {
+        "sound": "c",
+        "pitch": {
+          "min": 0.5,
+          "max": 0.25
+        },
+        "x": 1
+      }
+    },
+    "volume": 0.5
+  }
+}
+
+== {"individual_named_sounds": {"sounds": {"b": "y", "a": {"sound": "x", "volume": true}}, "pitch": [2, 1]}}
+{
+  "individual_named_sounds": {
+    "sounds": {
+      "b": "y",
+      "a": {
+        "sound": "x",
+        "volume": true
+      }
+    },
+    "pitch": [
+      2,
+      1
+    ]
+  }
+}
+
+== {"entity_sounds": {"defaults": {"events": {"ambient": "mob.pig.say"}, "volume": 0.5}, "entities": {"cat": {"events": {"hurt": 5}, "variants": {"key": "query.is_baby ? 'b' : 'a'", "map": {"b": {"events": {"ambient": "c"}}}}}}}}
+{
+  "entity_sounds": {
+    "defaults": {
+      "events": {
+        "ambient": "mob.pig.say"
+      },
+      "volume": 0.5
+    },
+    "entities": {
+      "cat": {
+        "events": {
+          "hurt": 5
+        },
+        "variants": {
+          "key": "query.is_baby ? 'b' : 'a'",
+          "map": {
+            "b": {
+              "events": {
+                "ambient": "c"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+== {"entity_sounds": {"entities": {"cat": {"__molang_version": 4, "events": {}, "variants": {"key": "'a'", "map": {"a": {"events": {}}}}}}}}
+{
+  "entity_sounds": {
+    "entities": {
+      "cat": {
+        "__molang_version": 4,
+        "events": {},
+        "variants": {
+          "key": "'a'",
+          "map": {
+            "a": {
+              "events": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+== {"interactive_sounds": {"block_sounds": {"stone": {"events": {"fall": {"default": "x"}}}}, "entity_sounds": {"defaults": {"events": {"step": {"default": "s", "stone": {"sound": "t", "pitch": 1.5}}}}, "entities": {"pig": {"events": {}}}}}}
+{
+  "interactive_sounds": {
+    "block_sounds": {
+      "stone": {
+        "events": {
+          "fall": {
+            "default": "x"
+          }
+        }
+      }
+    },
+    "entity_sounds": {
+      "defaults": {
+        "events": {
+          "step": {
+            "default": "s",
+            "stone": {
+              "sound": "t",
+              "pitch": 1.5
+            }
+          }
+        }
+      },
+      "entities": {
+        "pig": {
+          "events": {}
+        }
+      }
+    }
+  }
+}
+
+== {"block_sounds": {"a": {"base": "b"}, "b": {"base": "a"}, "c": {"base": "nope"}, "d": 5}, "stray": [1, 2]}
+{
+  "block_sounds": {
+    "a": {
+      "base": "b"
+    },
+    "b": {
+      "base": "a"
+    },
+    "c": {
+      "base": "nope"
+    },
+    "d": 5
+  },
+  "stray": [
+    1,
+    2
+  ]
+}
+
+== {"block_sounds": {"stone": {"events": {"break": {"sound": "x", "volume": [], "pitch": null}}}}, "entity_sounds": 5, "interactive_sounds": []}
+{
+  "block_sounds": {
+    "stone": {
+      "events": {
+        "break": {
+          "sound": "x",
+          "volume": [],
+          "pitch": null
+        }
+      }
+    }
+  },
+  "entity_sounds": 5,
+  "interactive_sounds": []
+}
+
+== {}
+{}
+
+== []
+[]
+
+== {
+rejected: ["MalformedInput "]
+== STONE, the break sound renamed to "dig.edited" and stone's base set to "slab"
+{
+  "block_sounds": {
+    "stone": {
+      "volume": 1,
+      "pitch": [
+        0.8,
+        1.2
+      ],
+      "events": {
+        "break": "dig.stone",
+        "Hit": {
+          "sound": "hit.stone",
+          "volume": "[0.5, 1]",
+          "sounds": 1
+        }
+      }
+    },
+    "slab": {
+      "base": "stone"
+    }
+  }
+}
+

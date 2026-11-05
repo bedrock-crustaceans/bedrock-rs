@@ -51,24 +51,51 @@ fn unversioned_origin(pack: PackRef, side: PackSide) -> Origin {
 }
 
 #[test]
-fn the_fixed_path_findings_and_paths() {
-    use crate::fixed_path::{file_finding, finding, index, key};
+fn the_fixed_path_file_findings() {
+    use crate::fixed_path::file_finding;
     for severity in [Severity::Info, Severity::Warning, Severity::Error] {
-        same(
-            &finding(code(), severity, at()),
-            &long(severity, Phase::Parse, here(at())),
-        );
         same(
             &file_finding(code(), severity, &pack(), &path()),
             &long(severity, Phase::Validate, in_file(JsonPath::new())),
         );
     }
-    let mut keyed = at();
-    keyed.push("c");
-    assert_eq!(key(&at(), "c"), keyed);
-    let mut indexed = at();
-    indexed.push_index(4);
-    assert_eq!(index(&at(), 4), indexed);
+}
+
+/// The reader of the fixed-path files tells every finding of the kit as an information, at
+/// the member, and fails nothing.
+#[test]
+fn the_fixed_path_reader_tells_information() {
+    use crate::fixed_path::{kept_unknown, reader};
+    use bedrock_addon_core::json::kit::Node;
+    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(r#"{"a": 1, "b": [2]}"#).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = reader(&mut found);
+    let members = read.object(&Node::new(&json, at())).unwrap();
+    let kept = kept_unknown(&mut read, &members, &["a"]);
+    let a = members.get("a").unwrap();
+    assert_eq!(read.string(&a), None);
+    let missing = read.required(&members, "c");
+    assert!(missing.is_none());
+    assert!(!read.failed());
+    assert_eq!(kept.get("b"), Some(&json.as_object().unwrap()["b"]));
+    let info = |code, at: JsonPath| Diagnostic::new(code, Severity::Info, Phase::Parse, here(at));
+    let found: Vec<Diagnostic> = found.iter().cloned().collect();
+    let child = |key: &str| {
+        let mut at = at();
+        at.push(key);
+        at
+    };
+    assert_eq!(
+        found,
+        [
+            info(DiagnosticCode::UnrecognizedField { text: None }, child("b")),
+            info(DiagnosticCode::InvalidType { text: None }, child("a")),
+            info(
+                DiagnosticCode::MissingRequiredField { text: None },
+                child("c")
+            ),
+        ]
+    );
 }
 
 #[test]

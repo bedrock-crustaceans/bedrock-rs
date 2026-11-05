@@ -431,10 +431,11 @@ fn a_list_that_is_no_array_is_iterated_as_the_game_does() {
     );
     // No list; the root is kept as written beside them.
     let kept = LoadingMessages {
-        written: Some(json("[1]")),
+        written: Some(json("[1]")).into(),
         ..LoadingMessages::default()
     };
     assert_eq!(doc.value(), &kept);
+    assert_eq!(*doc.written, kept.written.0);
     assert_eq!(json(&doc.to_json().unwrap()), json("[1]"));
 }
 

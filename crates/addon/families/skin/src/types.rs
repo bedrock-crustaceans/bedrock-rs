@@ -6,6 +6,7 @@ use bedrock_addon_core::pack_identity::PackOrigin;
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::Written;
 
 use super::BUILT_IN_GEOMETRIES;
 
@@ -38,10 +39,10 @@ pub struct SkinPack {
     /// `to_json` writes it for as long as the fields are still the game's reading of it; a
     /// value that was changed, or built by hand, writes its fields. The entries the game
     /// skipped are in this root alone, so one edit of any field drops every one of them from
-    /// the written file, not only those beside the edited member. `PartialEq` and `Debug`
-    /// include the root: a loaded value that kept one differs from a hand-built value with
+    /// the written file, not only those beside the edited member. `Debug` shows the root;
+    /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
-    pub written: Option<Value>,
+    pub written: Written,
 }
 
 /// One skin of a skin pack.

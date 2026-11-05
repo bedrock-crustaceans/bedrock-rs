@@ -466,10 +466,11 @@ fn sp13_a_root_that_is_no_object_replaces_and_adds_nothing() {
         let doc = parse(root);
         // An empty copy; the root is kept as written beside it.
         let kept = Splashes {
-            written: Some(json(root)),
+            written: Some(json(root)).into(),
             ..Splashes::default()
         };
         assert_eq!(doc.value(), &kept, "{root}");
+        assert_eq!(*doc.written, kept.written.0, "{root}");
         assert_eq!(json(&doc.to_json().unwrap()), json(root));
         assert_eq!(
             codes(doc.diagnostics()),

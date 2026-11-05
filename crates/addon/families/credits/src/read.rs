@@ -3,13 +3,12 @@
 
 use super::{Credits, CreditsDiscipline, CreditsSection, CreditsTitle};
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, finding, index, key, raw_member, to_text,
-};
+use bedrock_addon_core::json::kit::Written;
+use bedrock_addon_support::fixed_path::{Authored, Object, array, raw_member, to_text};
 
 // The game's asserts on its own file are developer asserts and write no content-log line, so
 // the crate reports them as informations with the game's texts.
@@ -26,13 +25,12 @@ const TITLE_EMPTY: &str = "The title object should not be empty";
 const NAMES_NOT_ARRAY: &str = "\"names\" must be an array";
 
 fn shape(text: &'static str, at: &JsonPath, diagnostics: &mut Diagnostics) {
-    diagnostics.push(finding(
-        DiagnosticCode::InvalidType {
+    diagnostics.push(
+        Diagnostic::info(DiagnosticCode::InvalidType {
             text: Some(VanillaText::Fixed(text)),
-        },
-        Severity::Info,
-        at.clone(),
-    ));
+        })
+        .at(at.clone()),
+    );
 }
 
 /// The members of an object that are none of `read`.
@@ -58,7 +56,7 @@ fn objects<'v>(
     diagnostics: &mut Diagnostics,
 ) -> Option<Vec<(JsonPath, &'v Value)>> {
     let member = raw_member(parent, name)?;
-    let at = key(at, name);
+    let at = at.child(name);
     let Some(elements) = member.as_array() else {
         shape(not_array, &at, diagnostics);
         return Some(Vec::new());
@@ -74,7 +72,7 @@ fn non_empty<'v>(
 ) -> Vec<(JsonPath, &'v Value)> {
     let mut kept = Vec::new();
     for (i, element) in elements.enumerate() {
-        let at = index(at, i);
+        let at = at.index(i);
         if element.as_object().is_some_and(|object| !object.is_empty()) {
             kept.push((at, element));
         } else {
@@ -115,7 +113,7 @@ impl Authored for Credits {
             .collect();
         Self {
             sections,
-            written: None,
+            written: Written::default(),
         }
     }
 
@@ -164,7 +162,7 @@ fn read_discipline(
                         if let Some(names) = names.as_array() {
                             names.iter().map(to_text).collect()
                         } else {
-                            shape(NAMES_NOT_ARRAY, &key(&at, "names"), diagnostics);
+                            shape(NAMES_NOT_ARRAY, &at.child("names"), diagnostics);
                             Vec::new()
                         }
                     }),
@@ -217,11 +215,10 @@ pub fn check_starter_seeds(bytes: &[u8]) -> Diagnostics {
     let text = text.strip_suffix('\n').unwrap_or(&text);
     for (line, seed) in text.split('\n').enumerate() {
         if seed.trim().is_empty() {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                index(&JsonPath::new(), line),
-            ));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .at(JsonPath::new().index(line)),
+            );
         }
     }
     diagnostics
@@ -262,6 +259,25 @@ mod tests {
 mod kept_root_tests {
     use super::*;
     use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+
+    /// The root kept beside the fields is left out of equality: a loaded value that kept one
+    /// equals the value built by hand with the same fields, and is still written as authored.
+    #[test]
+    fn a_kept_root_is_left_out_of_equality() {
+        let root = bedrock_addon_support::jsoncpp::read(br#"[{"section": "A"}, 5]"#).expect("JSON");
+        let loaded = Credits::from_value(&root, &mut Diagnostics::default());
+        assert_eq!(*loaded.written, Some(root.clone()));
+        let built = Credits {
+            sections: vec![CreditsSection {
+                section: Some("A".to_owned()),
+                ..CreditsSection::default()
+            }],
+            ..Credits::default()
+        };
+        assert_eq!(loaded, built);
+        assert_eq!(loaded.to_value(), root);
+        assert_ne!(built.to_value(), root);
+    }
 
     /// A write of a value that keeps its root is linear in its entries, with one entry the
     /// game skips.

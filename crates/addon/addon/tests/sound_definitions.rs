@@ -21,3 +21,7 @@ mod history;
 mod sound_files;
 #[path = "sound_definitions/streaming.rs"]
 mod streaming;
+#[path = "sound_definitions/written.rs"]
+mod written;
+#[path = "common/written_pins.rs"]
+mod written_pins;

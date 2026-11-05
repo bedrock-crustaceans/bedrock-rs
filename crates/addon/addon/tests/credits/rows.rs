@@ -128,7 +128,7 @@ fn cr02_a_root_object() {
     );
     // No section; the root is kept as written beside them.
     assert_eq!(doc.sections, []);
-    assert_eq!(doc.written, Some(json("{}")));
+    assert_eq!(*doc.written, Some(json("{}")));
     assert_eq!(doc.to_json().unwrap().trim(), "{}");
 }
 

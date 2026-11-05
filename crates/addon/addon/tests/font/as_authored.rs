@@ -42,7 +42,7 @@ fn a_changed_view_writes_itself() {
     let text = r#"[{"name":"a","code":"0xE000"}, 3]"#;
     let document = EmoticonList::parse(&path, text.as_bytes(), &LoadContext::detached()).unwrap();
     let mut list = document.into_value();
-    assert_eq!(list.written, Some(json(text)));
+    assert_eq!(*list.written, Some(json(text)));
     list.emoticons[0].name = "b".to_owned();
     assert_eq!(
         json(&list.to_json().unwrap()),
@@ -51,5 +51,5 @@ fn a_changed_view_writes_itself() {
     // A file the fields say whole keeps nothing beside them.
     let text = r#"[{"name":"a","code":"0xE000"}]"#;
     let document = EmoticonList::parse(&path, text.as_bytes(), &LoadContext::detached()).unwrap();
-    assert_eq!(document.written, None);
+    assert_eq!(*document.written, None);
 }

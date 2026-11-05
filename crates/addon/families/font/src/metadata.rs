@@ -545,7 +545,7 @@ impl Authored for FontMetadata {
             fonts: fonts.map(|fonts| fonts.into_iter().map(|(_, font)| font).collect()),
             font_aliases: None,
             extra: fields.finish(diagnostics),
-            written: None,
+            written: bedrock_addon_core::json::kit::Written::default(),
         };
         // The alias checks run in the order the game registers the aliases.
         let mut aliases = Vec::new();

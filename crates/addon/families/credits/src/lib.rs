@@ -6,10 +6,12 @@
 mod read;
 
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::Written;
 
 use crate::read::{EMPTY_FILE, NOT_JSON};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+};
 use bedrock_addon_core::document::unversioned::{document, lone, reject};
 use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -17,7 +19,7 @@ use bedrock_addon_core::load::{
     self, AppDataPlace, CollectionLoader, FileCopy, LoadContext, StackCx, Walk,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::fixed_path::{Authored, finding, json_string, json_text, malformed};
+use bedrock_addon_support::fixed_path::{Authored, json_string, json_text};
 use bedrock_addon_support::jsoncpp::read;
 use indexmap::IndexMap;
 pub use read::check_starter_seeds;
@@ -51,10 +53,10 @@ pub struct Credits {
     /// `to_json` writes it for as long as the fields are still the game's reading of it; a
     /// value that was changed, or built by hand, writes its fields. The entries the game
     /// skipped are in this root alone, so one edit of any field drops every one of them from
-    /// the written file, not only those beside the edited member. `PartialEq` and `Debug`
-    /// include the root: a loaded value that kept one differs from a hand-built value with
+    /// the written file, not only those beside the edited member. `Debug` shows the root;
+    /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
-    pub written: Option<Value>,
+    pub written: Written,
 }
 
 /// One section of the credits.
@@ -101,10 +103,13 @@ impl Merge for Credits {
 /// that loads, an error for the two that refuse it.
 fn read_credits(origin: Origin, bytes: &[u8]) -> Result<Document<Credits>, Rejected> {
     let refuse = |message: String, text| {
-        let code = malformed(message, Some(text));
+        let code = DiagnosticCode::MalformedInput {
+            message,
+            text: Some(VanillaText::Fixed(text)),
+        };
         Err(reject(
             origin.clone(),
-            finding(code, Severity::Error, JsonPath::new()),
+            Diagnostic::error(code).at(JsonPath::new()),
         ))
     };
     if bytes.is_empty() {

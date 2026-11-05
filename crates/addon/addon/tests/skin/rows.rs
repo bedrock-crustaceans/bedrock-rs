@@ -579,7 +579,7 @@ fn skin_lists_are_written_as_authored() {
         json(&pack.to_json().unwrap()),
         json(r#"{"localization_name":"p","skins":[{"texture":"a.png"}]}"#)
     );
-    assert_eq!(parse(r#"{"skins":[{"texture":"a.png"}]}"#).written, None);
+    assert_eq!(*parse(r#"{"skins":[{"texture":"a.png"}]}"#).written, None);
 }
 
 #[test]

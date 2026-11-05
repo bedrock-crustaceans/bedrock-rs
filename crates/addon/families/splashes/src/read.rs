@@ -5,9 +5,13 @@ use super::{ConditionalSplashes, SplashClient, SplashRequires, Splashes};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
 use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, invalid, iterated, others, raw_member, to_text,
+    Authored, Object, array, iterated, kept_unknown, raw_member, reader, to_text,
 };
+
+/// `InvalidValue` without a vanilla text: a finding of the crate's own.
+const INVALID: DiagnosticCode = DiagnosticCode::InvalidValue { text: None };
 
 const ROOT_KEYS: [&str; 3] = ["canMerge", "splashes", "conditional"];
 const ENTRY_KEYS: [&str; 2] = ["requires", "splashes"];
@@ -27,21 +31,28 @@ fn texts(list: Option<&Value>) -> Vec<String> {
     .unwrap_or_default()
 }
 
-/// The findings of a splash list at `at`: a member that is no array (the crate's
-/// own), and every element that is no string.
-fn check_texts(list: Option<&Value>, at: &JsonPath, diagnostics: &mut Diagnostics) {
-    let Some(list) = list.filter(|list| !list.is_null()) else {
+/// The findings of a splash list: a member that is no array (the crate's own), and every
+/// element that is no string.
+fn check_texts(read: &mut Read<'_>, list: Option<Node<'_>>) {
+    let Some(list) = list.filter(|list| !list.value().is_null()) else {
         return;
     };
-    if !list.is_array() {
-        diagnostics
-            .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
+    if !list.value().is_array() {
+        read.wrong_type(&list);
     }
-    for (at, element) in iterated(list, at) {
+    for (at, element) in iterated(list.value(), list.path()) {
         if !element.is_string() {
-            diagnostics.push(Diagnostic::info(invalid()).at(at));
+            read.push(Diagnostic::info(INVALID).at(at));
         }
     }
+}
+
+/// The members of `node` when it is an object; nothing is told.
+fn members<'v>(read: &mut Read<'_>, node: &Node<'v>) -> Option<Members<'v>> {
+    node.value()
+        .is_object()
+        .then(|| read.object(node))
+        .flatten()
 }
 
 /// Whether a requirement list holds for a client that answers to `have`.
@@ -62,28 +73,28 @@ impl Authored for Splashes {
     /// Reads a copy's root. A root that is no object reads as an empty copy.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let at = JsonPath::new();
-        if !root.is_object() {
+        let mut read = reader(diagnostics);
+        let Some(members) = members(&mut read, &Node::new(root, at.clone())) else {
             // The first member lookup turns the root into `{}`.
-            diagnostics.push(Diagnostic::info(invalid()).at(at));
+            read.push(Diagnostic::info(INVALID).at(at));
             return Self::default();
-        }
+        };
+        let member = |key: &str| members.get(key).map(|node| node.value().clone());
         let splashes = Self {
-            can_merge: raw_member(root, "canMerge").cloned(),
-            splashes: raw_member(root, "splashes").cloned(),
-            conditional: raw_member(root, "conditional").cloned(),
+            can_merge: member("canMerge"),
+            splashes: member("splashes"),
+            conditional: member("conditional"),
             extra: UnknownMembers::default(),
-            written: None,
+            written: Written::default(),
         };
         if splashes.can_merge.as_ref().is_some_and(|v| !v.is_bool()) {
-            diagnostics.push(Diagnostic::info(invalid()).at(at.child("canMerge")));
+            read.push(Diagnostic::info(INVALID).at(at.child("canMerge")));
         }
-        check_texts(
-            splashes.splashes.as_ref(),
-            &at.child("splashes"),
-            diagnostics,
-        );
-        let extra = others(root, &ROOT_KEYS, &at, diagnostics);
-        splashes.check_conditional(&at.child("conditional"), diagnostics);
+        check_texts(&mut read, members.get("splashes"));
+        let extra = kept_unknown(&mut read, &members, &ROOT_KEYS);
+        if let Some(conditional) = members.get("conditional") {
+            check_conditional(&mut read, &conditional);
+        }
         Self { extra, ..splashes }
     }
 
@@ -102,42 +113,48 @@ impl Authored for Splashes {
     }
 }
 
-impl Splashes {
-    /// Checks the `conditional` entries.
-    fn check_conditional(&self, at: &JsonPath, diagnostics: &mut Diagnostics) {
-        let Some(conditional) = self.conditional.as_ref().filter(|v| !v.is_null()) else {
-            return;
-        };
-        let Some(entries) = conditional.as_array() else {
-            diagnostics.push(Diagnostic::info(invalid()).at(at.clone()));
-            return;
-        };
-        for (i, entry) in entries.iter().enumerate() {
-            let at = at.index(i);
-            let requires = raw_member(entry, "requires").filter(|v| v.is_object());
-            let Some(requires) = requires else {
-                diagnostics.push(Diagnostic::info(invalid()).at(at));
-                continue;
-            };
-            check_texts(
-                raw_member(entry, "splashes"),
-                &at.child("splashes"),
-                diagnostics,
-            );
-            others(entry, &ENTRY_KEYS, &at, diagnostics);
-            let at = at.child("requires");
-            for category in CATEGORIES {
-                let only_others = raw_member(requires, category)
-                    .and_then(Value::as_array)
-                    .is_some_and(|list| !list.is_empty() && !list.iter().any(Value::is_string));
-                if only_others {
-                    diagnostics.push(Diagnostic::info(invalid()).at(at.child(category)));
-                }
-            }
-            others(requires, &REQUIRES_KEYS, &at, diagnostics);
-        }
+/// Checks the `conditional` entries. Their members are kept as written in `conditional`,
+/// so the unknown ones are told and nothing more.
+fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
+    if conditional.value().is_null() {
+        return;
     }
+    if !conditional.value().is_array() {
+        read.push(Diagnostic::info(INVALID).at(conditional.path().clone()));
+        return;
+    }
+    let Some(entries) = read.array(conditional) else {
+        return;
+    };
+    for entry in entries.iter() {
+        let entry_members = members(read, &entry);
+        let requires = entry_members
+            .as_ref()
+            .and_then(|members| members.get("requires"))
+            .filter(|requires| requires.value().is_object());
+        let (Some(entry_members), Some(requires)) = (entry_members, requires) else {
+            read.push(Diagnostic::info(INVALID).at(entry.path().clone()));
+            continue;
+        };
+        check_texts(read, entry_members.get("splashes"));
+        read.unknown(&entry_members, &ENTRY_KEYS, Disposition::Keep);
+        let Some(requires) = members(read, &requires) else {
+            continue;
+        };
+        for category in CATEGORIES {
+            let only_others = requires
+                .get(category)
+                .and_then(|list| list.value().as_array())
+                .is_some_and(|list| !list.is_empty() && !list.iter().any(Value::is_string));
+            if only_others {
+                read.push(Diagnostic::info(INVALID).at(requires.node().path().child(category)));
+            }
+        }
+        read.unknown(&requires, &REQUIRES_KEYS, Disposition::Keep);
+    }
+}
 
+impl Splashes {
     /// Whether the copy adds to the lower packs' splashes: only when `canMerge` is the
     /// boolean `true`. Any other copy replaces them.
     pub fn merges(&self) -> bool {
@@ -270,6 +287,18 @@ impl SplashRequires {
 mod kept_root_tests {
     use super::*;
     use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+
+    /// The root kept beside the fields is left out of equality: a loaded value that kept one
+    /// equals the value built by hand with the same fields, and is still written as authored.
+    #[test]
+    fn a_kept_root_is_left_out_of_equality() {
+        let root = bedrock_addon_support::jsoncpp::read(b"[1]").expect("JSON");
+        let loaded = Splashes::from_value(&root, &mut Diagnostics::default());
+        assert_eq!(*loaded.written, Some(root.clone()));
+        assert_eq!(loaded, Splashes::default());
+        assert_eq!(loaded.to_value(), root);
+        assert_ne!(Splashes::default().to_value(), root);
+    }
 
     /// A write of a value that keeps its root is linear in its entries, with one entry the
     /// game skips.

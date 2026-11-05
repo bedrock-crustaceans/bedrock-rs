@@ -1,0 +1,179 @@
+== link/linked_asset_validator/ReferencedAssetsRP/sounds/music_definitions.json
+{
+  "test_music": {
+    "event_name": "music.game.soulsand_valley",
+    "min_delay": 60,
+    "max_delay": 180
+  }
+}
+
+== sound/sounds/determinism/resource_pack/sounds/music_definitions.json
+{
+  "determinism": {
+    "event_name": "music.determinism",
+    "min_delay": 60,
+    "max_delay": 180
+  }
+}
+
+== {"game": {"event_name": "music.game", "min_delay": 60, "max_delay": 180}}
+{
+  "game": {
+    "event_name": "music.game",
+    "min_delay": 60,
+    "max_delay": 180
+  }
+}
+
+== {"menu": {"event_name": "music.menu", "min_delay": 0.5, "max_delay": 1e2, "play_in_order": true, "override_interruptible": [{"name": "hostile"}, {"name": "ui", "note": 1}, 3, {}], "replace": false, "odd": null}}
+{
+  "menu": {
+    "event_name": "music.menu",
+    "min_delay": 0.5,
+    "max_delay": 100.0,
+    "play_in_order": true,
+    "override_interruptible": [
+      {
+        "name": "hostile"
+      },
+      {
+        "name": "ui",
+        "note": 1
+      },
+      3,
+      {}
+    ],
+    "replace": false,
+    "odd": null
+  }
+}
+
+== {"game": {"max_delay": 2, "odd": 1, "event_name": "e", "min_delay": 1}}
+{
+  "game": {
+    "max_delay": 2,
+    "odd": 1,
+    "event_name": "e",
+    "min_delay": 1
+  }
+}
+
+== {"game": {"event_name": 5, "min_delay": "3", "max_delay": [1], "play_in_order": 1, "override_interruptible": "x", "replace": "yes"}}
+{
+  "game": {
+    "event_name": 5,
+    "min_delay": "3",
+    "max_delay": [
+      1
+    ],
+    "play_in_order": 1,
+    "override_interruptible": "x",
+    "replace": "yes"
+  }
+}
+
+== {"game": {"event_name": null, "min_delay": null, "play_in_order": null, "override_interruptible": null, "replace": null}}
+{
+  "game": {
+    "event_name": null,
+    "min_delay": null,
+    "play_in_order": null,
+    "override_interruptible": null,
+    "replace": null
+  }
+}
+
+== {"game": {"event_name": "", "min_delay": 0, "max_delay": 0.0, "play_in_order": false, "override_interruptible": []}}
+{
+  "game": {
+    "event_name": "",
+    "min_delay": 0,
+    "max_delay": 0.0,
+    "play_in_order": false,
+    "override_interruptible": []
+  }
+}
+
+== {"format_version": "1.0.0", "": {"event_name": "x"}, "game": {}, "menu": 5, "end": [], "replace": true}
+{
+  "format_version": "1.0.0",
+  "": {
+    "event_name": "x"
+  },
+  "game": {},
+  "menu": 5,
+  "end": [],
+  "replace": true
+}
+
+== {"game": {"min_delay": 0.1, "max_delay": 16, "event_name": "aé"}, "nether": {"min_delay": -0.0, "max_delay": 1.5e3}}
+{
+  "game": {
+    "min_delay": 0.1,
+    "max_delay": 16,
+    "event_name": "aé"
+  },
+  "nether": {
+    "min_delay": -0.0,
+    "max_delay": 1500.0
+  }
+}
+
+== {"game": {"min_delay": 3.4e38, "max_delay": 1.7976931348623157e308}}
+{
+  "game": {
+    "min_delay": 3.4e38,
+    "max_delay": 1.7976931348623157e308
+  }
+}
+
+== {"game": {"override_interruptible": {"b": {"name": "y"}, "a": {"name": "x"}}}}
+{
+  "game": {
+    "override_interruptible": {
+      "b": {
+        "name": "y"
+      },
+      "a": {
+        "name": "x"
+      }
+    }
+  }
+}
+
+== {"game": {"min_delay": 1, "min_delay": 2}} // a comment
+{
+  "game": {
+    "min_delay": 2
+  }
+}
+
+== {}
+{}
+
+== []
+[]
+
+== 5
+5
+
+== {
+rejected: ["MalformedInput "]
+== GAME, min_delay set to 5 and event_name to "music.edited"
+{
+  "game": {
+    "event_name": "music.game",
+    "min_delay": 60,
+    "max_delay": 180
+  }
+}
+
+== GAME, a definition menu added and game removed
+{
+  "game": {
+    "event_name": "music.game",
+    "min_delay": 60,
+    "max_delay": 180
+  }
+}
+

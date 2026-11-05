@@ -1,5 +1,10 @@
 //! The client's `blocks.json` ([`BlocksJson`], [`ClientBlock`]): what the client draws and plays
 //! for each block, one file at the root of a resource pack.
+//!
+//! The reader stays hand-walked, not on the reader kit (`json::kit`): the client applies each
+//! member of an entry over the block it already has, testing the value's JSON type itself, and
+//! every finding is that apply's (told in `Phase::Validate`, most with the client's text for
+//! the block), where the kit's wrong-type, missing and unknown findings are a parse's.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

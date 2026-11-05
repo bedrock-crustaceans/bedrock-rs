@@ -1,6 +1,7 @@
-//! What the fixed-path files of the menu texts, the fonts and the UI images' side files share:
-//! reading one copy as vanilla's JSON reader does, the `Json::Value` conversions the readers
-//! lean on, and the files of a pack below a directory. Their loaders are core's
+//! What the fixed-path files of the menu texts, the fonts and the UI images' side files share
+//! beyond the reader kit (`json::kit`): the read the kit reads them under ([`reader`]), the
+//! `Json::Value` conversions the readers lean on, the kept root ([`Authored`]), the writers'
+//! objects, and the files of a pack below a directory. Their loaders are core's
 //! (`load::merged`), their documents core's `document::unversioned`.
 
 use bedrock_addon_core::load::{ListedFile, StackPack};
@@ -10,14 +11,11 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::{Disposition, Members, Read};
 use bedrock_addon_core::json::{
     Coerce, Coercing, EncodeError, IsIntRule, Value, WideInt, WriteStyle, write_json,
 };
-
-/// A finding at `at` inside a file.
-pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::error(code).severity(severity).at(at)
-}
+use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
 /// A finding about the file `path` of `pack` as a whole.
 pub fn file_finding(
@@ -55,16 +53,6 @@ pub fn malformed(message: String, text: Option<&'static str>) -> DiagnosticCode 
     }
 }
 
-/// `at` with the member `key` appended. [`JsonPath::child`].
-pub fn key(at: &JsonPath, key: &str) -> JsonPath {
-    at.child(key)
-}
-
-/// `at` with the element `index` appended. [`JsonPath::index`].
-pub fn index(at: &JsonPath, index: usize) -> JsonPath {
-    at.index(index)
-}
-
 /// The member `key` of an object, a `null` included; `None` for a missing member and for
 /// anything but an object.
 pub fn raw_member<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
@@ -91,7 +79,7 @@ pub fn iterated<'v>(value: &'v Value, at: &JsonPath) -> Vec<(JsonPath, &'v Value
         return array
             .iter()
             .enumerate()
-            .map(|(i, element)| (index(at, i), element))
+            .map(|(i, element)| (at.index(i), element))
             .collect();
     }
     let Some(object) = value.as_object() else {
@@ -101,7 +89,7 @@ pub fn iterated<'v>(value: &'v Value, at: &JsonPath) -> Vec<(JsonPath, &'v Value
     members.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     members
         .into_iter()
-        .map(|(name, member)| (key(at, name), member))
+        .map(|(name, member)| (at.child(name), member))
         .collect()
 }
 
@@ -121,28 +109,24 @@ pub fn as_real(value: &Value) -> Option<f64> {
     }
 }
 
-/// Every member of an object that is none of `read`, in file order, and an `UnrecognizedField`
-/// info for each.
-pub fn others(
-    value: &Value,
-    read: &[&str],
-    at: &JsonPath,
-    diagnostics: &mut Diagnostics,
-) -> UnknownMembers {
-    let mut extra = UnknownMembers::default();
-    if let Some(object) = value.as_object() {
-        for (name, member) in object {
-            if !read.contains(&name.as_str()) {
-                diagnostics.push(finding(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Info,
-                    key(at, name.as_str()),
-                ));
-                extra.insert(name.as_str().to_owned(), member.clone());
-            }
-        }
-    }
-    extra
+/// The read of a fixed-path file's root: the game's reader of these files runs its checks
+/// without a content-log line, so every finding of the reader kit (a wrong type, a missing
+/// member, an unknown member) is an information, and none fails what is read.
+pub fn reader(findings: &mut Diagnostics) -> Read<'_> {
+    Read::new(
+        Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
+        findings,
+    )
+    .unknown_severity(Severity::Info)
+}
+
+/// Every member of `members` that is none of `known`, in file order, each told as an
+/// `UnrecognizedField` information by `read` and kept beside the fields.
+pub fn kept_unknown(read: &mut Read<'_>, members: &Members<'_>, known: &[&str]) -> UnknownMembers {
+    read.unknown(members, known, Disposition::Keep)
+        .into_iter()
+        .map(|(key, value)| (key.to_owned(), value.clone()))
+        .collect()
 }
 
 /// An array of values.

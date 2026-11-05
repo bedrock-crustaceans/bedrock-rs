@@ -23,3 +23,7 @@ mod sound_definitions;
 mod stack;
 #[path = "sounds_json/write_back.rs"]
 mod write_back;
+#[path = "sounds_json/written.rs"]
+mod written;
+#[path = "common/written_pins.rs"]
+mod written_pins;

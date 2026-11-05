@@ -2,10 +2,11 @@
 //! or kept as written when the typed field cannot say it, and every other member kept and
 //! reported.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{Object, as_int, as_real, raw_member};
+use bedrock_addon_core::json::kit::{Disposition, Node};
+use bedrock_addon_support::fixed_path::{Object, as_int, as_real, raw_member, reader};
 
 /// What a member turned out to be.
 #[derive(Debug)]
@@ -117,16 +118,20 @@ impl<'v> Fields<'v> {
     /// The members kept as written, then every member not read, each of those with an
     /// `UnrecognizedField` info.
     pub(super) fn finish(mut self, diagnostics: &mut Diagnostics) -> UnknownMembers {
-        if let Some(object) = self.object.as_object() {
-            for (name, member) in object {
-                if !self.known.contains(&name.as_str()) {
-                    diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                            .at(self.at.child(name.as_str())),
-                    );
-                    self.extra.insert(name.as_str().to_owned(), member.clone());
-                }
-            }
+        let mut read = reader(diagnostics);
+        let node = Node::new(self.object, self.at.clone());
+        if let Some(members) = self
+            .object
+            .is_object()
+            .then(|| read.object(&node))
+            .flatten()
+        {
+            let unknown = read.unknown(&members, &self.known, Disposition::Keep);
+            self.extra.extend(
+                unknown
+                    .into_iter()
+                    .map(|(key, value)| (key.to_owned(), value.clone())),
+            );
         }
         self.extra
     }

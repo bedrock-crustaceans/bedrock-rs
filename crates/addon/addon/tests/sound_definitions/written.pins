@@ -1,0 +1,411 @@
+== sound/server_sound_definitions/determinism/behavior_pack/sounds/sound_definitions.json
+{
+  "format_version": "1.26.60",
+  "minecraft:server_sound_definitions": [
+    {
+      "sound_event_name": "determinism:theme",
+      "duration_info": {
+        "mode": "game_time",
+        "seconds": 2.5
+      },
+      "tags": {
+        "determinism:area": [
+          "one",
+          "two"
+        ]
+      }
+    },
+    {
+      "sound_event_name": "determinism:theme"
+    }
+  ]
+}
+
+== sound/sounds/determinism/resource_pack/sounds/sound_definitions.json
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "determinism.click": {
+      "category": "ui",
+      "max_distance": 0.0,
+      "sounds": [
+        "sounds/determinism/click",
+        {
+          "name": "sounds/determinism/missing",
+          "stream": true,
+          "allow_concurrent_streaming": false
+        }
+      ],
+      "min_distance": null
+    },
+    "music.determinism": {
+      "category": "music",
+      "sounds": [
+        "sounds/determinism/click"
+      ],
+      "max_distance": null,
+      "min_distance": null
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"mob.pig.say": {"category": "neutral", "min_distance": 1, "max_distance": 16.0, "subtitle": "s", "sounds": ["a", {"name": "b", "volume": 0.5, "pitch": 2, "weight": 3, "is3D": false, "stream": true, "interruptible": false, "allow_concurrent_streaming": false, "load_on_low_memory": true}, null, 5]}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "mob.pig.say": {
+      "category": "neutral",
+      "min_distance": 1,
+      "max_distance": 16.0,
+      "subtitle": "s",
+      "sounds": [
+        "a",
+        {
+          "name": "b",
+          "volume": 0.5,
+          "pitch": 2,
+          "weight": 3,
+          "is3D": false,
+          "stream": true,
+          "interruptible": false,
+          "allow_concurrent_streaming": false,
+          "load_on_low_memory": true
+        },
+        null,
+        5
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"category": "ui", "external_event_name": "e", "external_event_parameters": [{"parameter": "p", "value": 1}, {"parameter": "q", "value": 0.5, "z": 1}, 3]}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "category": "ui",
+      "external_event_name": "e",
+      "external_event_parameters": [
+        {
+          "parameter": "p",
+          "value": 1
+        },
+        {
+          "parameter": "q",
+          "value": 0.5,
+          "z": 1
+        },
+        3
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"external_event_name": "e", "sounds": ["a"]}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "external_event_name": "e",
+      "sounds": [
+        "a"
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"external_event_name": 5, "sounds": ["a"], "external_event_parameters": [{"parameter": "p"}]}, "y": {"external_event_name": null, "sounds": ["b"]}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "external_event_name": 5,
+      "sounds": [
+        "a"
+      ],
+      "external_event_parameters": [
+        {
+          "parameter": "p"
+        }
+      ]
+    },
+    "y": {
+      "external_event_name": null,
+      "sounds": [
+        "b"
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"actions": [{"action_type": 1, "name": "n", "target": "t", "enabled": true, "param": 0.5, "delay": 1, "o": 2}, 4, {"action_type": 1.5}]}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "actions": [
+        {
+          "action_type": 1,
+          "name": "n",
+          "target": "t",
+          "enabled": true,
+          "param": 0.5,
+          "delay": 1,
+          "o": 2
+        },
+        4,
+        {
+          "action_type": 1.5
+        }
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"category": 5, "min_distance": "3", "max_distance": null, "subtitle": [], "__use_legacy_max_distance": "true", "sounds": "a"}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "category": 5,
+      "min_distance": "3",
+      "max_distance": null,
+      "subtitle": [],
+      "__use_legacy_max_distance": "true",
+      "sounds": "a"
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "stray": 1, "sound_definitions": {"x": 5, "y": {}, "music.z": {"category": "ui", "volume": 1, "pitch": 1}}}
+{
+  "format_version": "1.26.50",
+  "stray": 1,
+  "sound_definitions": {
+    "x": 5,
+    "y": {},
+    "music.z": {
+      "category": "ui",
+      "volume": 1,
+      "pitch": 1
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": 5}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": 5
+}
+
+== {"format_version": "1.26.50", "sound_definitions": null}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": null
+}
+
+== {"format_version": "1.26.50"}
+{
+  "format_version": "1.26.50"
+}
+
+== {"format_version": [1, 26, 50], "sound_definitions": {"x": {"sounds": [{"name": "a", "stream": true}]}}}
+{
+  "format_version": [
+    1,
+    26,
+    50
+  ],
+  "sound_definitions": {
+    "x": {
+      "sounds": [
+        {
+          "name": "a",
+          "stream": true
+        }
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.60", "sound_definitions": {"x": {"sounds": [{"name": "a", "stream": true}, {"name": "b", "stream": true, "allow_concurrent_streaming": true}]}}}
+{
+  "format_version": "1.26.60",
+  "sound_definitions": {
+    "x": {
+      "sounds": [
+        {
+          "name": "a",
+          "stream": true
+        },
+        {
+          "name": "b",
+          "stream": true,
+          "allow_concurrent_streaming": true
+        }
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.20.20", "sound_definitions": {"x": {"sounds": [{"name": "a", "stream": true}], "max_distance": 16}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "sounds": [
+        {
+          "name": "a",
+          "stream": true,
+          "allow_concurrent_streaming": false
+        }
+      ],
+      "max_distance": 16
+    }
+  }
+}
+
+== {"format_version": "1.14.0", "sound_definitions": {"x": {"sounds": [{"name": "a", "pitch": 2}], "max_distance": 16}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "sounds": [
+        {
+          "name": "a",
+          "pitch": 2
+        }
+      ],
+      "max_distance": 0.0,
+      "min_distance": null
+    }
+  }
+}
+
+== {"mob.pig.say": {"category": "neutral", "sounds": ["a"], "max_distance": 16, "min_distance": 2.5}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "mob.pig.say": {
+      "category": "neutral",
+      "sounds": [
+        "a"
+      ],
+      "max_distance": 0.0,
+      "min_distance": 2.5,
+      "__use_legacy_max_distance": "true"
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"sounds": {"b": "y", "a": {"name": "x", "volume": 0.25}}}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "sounds": {
+        "b": "y",
+        "a": {
+          "name": "x",
+          "volume": 0.25
+        }
+      }
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"category": "music", "sounds": ["a", {"name": "b", "is3D": true}, {"name": "c", "is3D": false}]}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "category": "music",
+      "sounds": [
+        "a",
+        {
+          "name": "b",
+          "is3D": true
+        },
+        {
+          "name": "c",
+          "is3D": false
+        }
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.26.50", "sound_definitions": {"x": {"min_distance": 0.1, "max_distance": 1.7976931348623157e308}}}
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "x": {
+      "min_distance": 0.1,
+      "max_distance": 1.7976931348623157e308
+    }
+  }
+}
+
+== []
+[]
+
+== {
+rejected: ["MalformedInput "]
+== PIG, the second entry's volume set to 0.75 and the first's weight to 2, the category to "hostile"
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "mob.pig.say": {
+      "category": "neutral",
+      "min_distance": 1,
+      "max_distance": 16.0,
+      "subtitle": "s",
+      "sounds": [
+        "a",
+        {
+          "name": "b",
+          "volume": 0.5,
+          "pitch": 2,
+          "weight": 3,
+          "is3D": false,
+          "stream": true,
+          "interruptible": false,
+          "allow_concurrent_streaming": false,
+          "load_on_low_memory": true
+        },
+        null,
+        5
+      ]
+    }
+  }
+}
+
+== PIG, a definition x added and the pig removed
+{
+  "format_version": "1.26.50",
+  "sound_definitions": {
+    "mob.pig.say": {
+      "category": "neutral",
+      "min_distance": 1,
+      "max_distance": 16.0,
+      "subtitle": "s",
+      "sounds": [
+        "a",
+        {
+          "name": "b",
+          "volume": 0.5,
+          "pitch": 2,
+          "weight": 3,
+          "is3D": false,
+          "stream": true,
+          "interruptible": false,
+          "allow_concurrent_streaming": false,
+          "load_on_low_memory": true
+        },
+        null,
+        5
+      ]
+    }
+  }
+}
+

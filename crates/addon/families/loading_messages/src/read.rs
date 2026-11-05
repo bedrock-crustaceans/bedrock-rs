@@ -8,9 +8,13 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, invalid, invalid_text, iterated, others, raw_member, to_text,
+    Authored, Object, array, iterated, kept_unknown, reader, to_text,
 };
+
+/// `InvalidValue` without a vanilla text: a finding of the crate's own.
+const INVALID: DiagnosticCode = DiagnosticCode::InvalidValue { text: None };
 
 /// The member of the store's progress texts.
 const TOOLTIPS: &str = "store_progress_tooltips";
@@ -86,40 +90,33 @@ impl LoadingMessage {
 
 /// Reads one element of a list: a string is kept; an object needs a `message` member, and
 /// `message` and `condition` are read as strings with an empty default.
-fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> LoadingMessage {
+fn read_element(read: &mut Read<'_>, node: &Node<'_>) -> LoadingMessage {
+    let element = node.value();
     if let Some(text) = element.as_string() {
         return LoadingMessage::Text(text.as_str().to_owned());
     }
-    if !element.is_object() {
-        diagnostics.push(Diagnostic::info(invalid()).at(at.clone()));
-        return LoadingMessage::Other(element.clone());
-    }
-    let Some(message) = raw_member(element, "message") else {
-        diagnostics.push(
-            Diagnostic::info(DiagnosticCode::MissingRequiredField { text: None })
-                .at(at.child("message")),
-        );
+    // Another kind is the crate's own finding, not a wrong type.
+    let Some(members) = element.is_object().then(|| read.object(node)).flatten() else {
+        read.push(Diagnostic::info(INVALID).at(node.path().clone()));
         return LoadingMessage::Other(element.clone());
     };
-    let mut wrong_type = |member: &Value, name: &str| {
-        if !member.is_string() {
-            diagnostics.push(
-                Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.child(name)),
-            );
-        }
+    let Some(message) = read.required(&members, "message") else {
+        return LoadingMessage::Other(element.clone());
     };
-    wrong_type(message, "message");
-    let condition = raw_member(element, "condition").map(|condition| {
-        wrong_type(condition, "condition");
-        to_text(condition)
+    // Each read as a string with an empty default: the wrong type is told and the text read on.
+    read.string(&message);
+    let condition = members.get("condition").map(|condition| {
+        read.string(&condition);
+        to_text(condition.value())
     });
     if condition
         .as_deref()
         .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
     {
         // An unknown condition is false; the message is never shown.
-        diagnostics.push(Diagnostic::info(invalid()).at(at.child("condition")));
+        read.push(Diagnostic::info(INVALID).at(node.path().child("condition")));
     }
+    let message = message.value();
     let mut extra = UnknownMembers::default();
     if let Some(object) = element.as_object() {
         for (name, member) in object {
@@ -137,52 +134,49 @@ fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -
 
 /// What the game iterates of a list member, and an information of the crate's own when it is no
 /// array.
-fn iterate<'v>(
-    member: &'v Value,
-    at: &JsonPath,
-    diagnostics: &mut Diagnostics,
-) -> Vec<(JsonPath, &'v Value)> {
-    if !member.is_array() {
-        diagnostics
-            .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
+fn iterate<'v>(read: &mut Read<'_>, member: &Node<'v>) -> Vec<Node<'v>> {
+    if !member.value().is_array() {
+        read.wrong_type(member);
     }
-    iterated(member, at)
+    iterated(member.value(), member.path())
+        .into_iter()
+        .map(|(at, element)| Node::new(element, at))
+        .collect()
 }
 
 impl Authored for LoadingMessages {
     /// Reads the file's root. A root that is no object has no list.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
-        let at = JsonPath::new();
-        if !root.is_object() {
-            diagnostics
-                .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
-        }
+        let mut read = reader(diagnostics);
+        // A root that is no object is told, and has no list.
+        let members = read.object(&Node::new(root, JsonPath::new()));
+        let member = |key: &str| members.as_ref().and_then(|members| members.get(key));
         let mut messages = Self::default();
         for list in MessageList::ALL {
-            let Some(member) = raw_member(root, list.key()) else {
+            let Some(member) = member(list.key()) else {
                 continue;
             };
-            let at = at.child(list.key());
-            let elements = iterate(member, &at, diagnostics)
-                .into_iter()
-                .map(|(at, element)| read_element(element, &at, diagnostics))
+            let elements = iterate(&mut read, &member)
+                .iter()
+                .map(|element| read_element(&mut read, element))
                 .collect();
             *messages.slot(list) = Some(elements);
         }
-        if let Some(member) = raw_member(root, TOOLTIPS) {
-            let at = at.child(TOOLTIPS);
+        if let Some(member) = member(TOOLTIPS) {
             let mut tooltips = Vec::new();
-            for (at, element) in iterate(member, &at, diagnostics) {
-                if !element.is_string() {
-                    diagnostics.push(Diagnostic::info(invalid()).at(at));
+            for element in iterate(&mut read, &member) {
+                if !element.value().is_string() {
+                    read.push(Diagnostic::info(INVALID).at(element.path().clone()));
                 }
-                tooltips.push(element.clone());
+                tooltips.push(element.value().clone());
             }
             messages.store_progress_tooltips = Some(tooltips);
         }
-        let mut read: Vec<&str> = MessageList::ALL.iter().map(|list| list.key()).collect();
-        read.push(TOOLTIPS);
-        messages.extra = others(root, &read, &at, diagnostics);
+        let mut known: Vec<&str> = MessageList::ALL.iter().map(|list| list.key()).collect();
+        known.push(TOOLTIPS);
+        if let Some(members) = &members {
+            messages.extra = kept_unknown(&mut read, members, &known);
+        }
         messages.check_lists(diagnostics);
         messages
     }
@@ -223,8 +217,10 @@ impl LoadingMessages {
                     text: Some(VanillaText::Fixed(BEGINNER_MISSING)),
                 })),
                 Some(list) if list.is_empty() => diagnostics.push(
-                    Diagnostic::info(invalid_text(BEGINNER_EMPTY))
-                        .at(JsonPath::new().child(MessageList::Beginner.key())),
+                    Diagnostic::info(DiagnosticCode::InvalidValue {
+                        text: Some(VanillaText::Fixed(BEGINNER_EMPTY)),
+                    })
+                    .at(JsonPath::new().child(MessageList::Beginner.key())),
                 ),
                 Some(_) => {}
             }
@@ -359,6 +355,26 @@ mod tests {
 mod kept_root_tests {
     use super::*;
     use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+
+    /// The root kept beside the fields is left out of equality: a loaded value that kept one
+    /// equals the value built by hand with the same fields, and is still written as authored.
+    #[test]
+    fn a_kept_root_is_left_out_of_equality() {
+        let root = bedrock_addon_support::jsoncpp::read(
+            br#"{"beginner_loading_messages": ["a"], "mid_game_loading_messages": 5}"#,
+        )
+        .expect("JSON");
+        let loaded = LoadingMessages::from_value(&root, &mut Diagnostics::default());
+        assert_eq!(*loaded.written, Some(root.clone()));
+        let built = LoadingMessages {
+            beginner_loading_messages: Some(vec![LoadingMessage::Text("a".to_owned())]),
+            mid_game_loading_messages: Some(Vec::new()),
+            ..LoadingMessages::default()
+        };
+        assert_eq!(loaded, built);
+        assert_eq!(loaded.to_value(), root);
+        assert_ne!(built.to_value(), root);
+    }
 
     /// A write of a value that keeps its root is linear in its entries, with one entry the
     /// game skips.

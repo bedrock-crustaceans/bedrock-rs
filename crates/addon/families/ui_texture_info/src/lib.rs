@@ -1,6 +1,11 @@
 //! `textures/ui/<image>.json`: the side file of a UI image, a nine-slice description or an
 //! Aseprite sprite sheet, and the stack's loader of them (`rp.ui_texture_infos()`): each the
 //! highest pack's copy whichever pack supplies the image.
+//!
+//! The reader stays hand-walked, not on the reader kit (`json::kit`): the game reads the file
+//! with no word for a member of the wrong type or one it does not know, so the reader has none
+//! of the kit's findings to tell, only its own (a value the game ignores, the member a rejected
+//! sheet fails at), and keeps every unknown member silently.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

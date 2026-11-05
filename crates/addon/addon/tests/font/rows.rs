@@ -1213,7 +1213,7 @@ fn f17b_f17d_entries_the_game_skips_or_never_matches() {
     let written = doc.to_json().unwrap();
     assert_eq!(json(&written), json(TEXT_F17B));
     let held = EmoticonList {
-        written: None,
+        written: None.into(),
         ..doc.value().clone()
     };
     assert_eq!(
