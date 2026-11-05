@@ -13,10 +13,7 @@ use bedrock_addon_core::id::{EntityId, kind};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, strip_bom,
 };
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::molang::{
     Admission, EmptyRule, MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, OpsRule,
     PROPERTY_DEFAULT_QUERIES, Step,
@@ -485,16 +482,6 @@ impl Placed for Beta {
     }
 }
 
-/// Every `.json` file below `entities/`, packs bottom-up so a higher pack's definition of an
-/// identifier replaces a lower one's.
-#[allow(
-    clippy::case_sensitive_file_extension_comparisons,
-    reason = "vanilla's directory walk matches `.json` as written"
-)]
-fn accept(path: &PackPath) -> bool {
-    path.as_str().ends_with(".json")
-}
-
 /// One file's contribution to the registry.
 fn parse_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Entity> {
     let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
@@ -538,18 +525,10 @@ fn combine(parsed: Vec<Contribution<Entity>>, cx: &StackCx<'_>) -> Registry<Enti
 /// The loader of `bp.entities()`.
 pub const fn load_registry() -> CollectionLoader<Registry<Entity>, Contribution<Entity>> {
     CollectionLoader {
-        walk: Walk {
-            directories: &[DIRECTORY],
-            depth: ListDepth::Recursive,
-            accept: Accept::Fn(accept),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        // Every `.json` file below `entities/` (vanilla's directory walk matches `.json` as
+        // written), packs bottom-up so a higher pack's definition of an identifier replaces a
+        // lower one's.
+        walk: Walk::json_tree_in(&[DIRECTORY]),
         parse: parse_file,
         combine,
         needs: &[],

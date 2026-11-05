@@ -28,10 +28,7 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, MAX_JSON_DEPTH, Value, WriteStyle, check_depth,
 };
 use bedrock_addon_core::json::{parse_at, strip_bom};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
@@ -684,19 +681,10 @@ const UNREAD: &str = "Cannot load geometry file {}: pack has no access strategy"
 
 /// `models/**`, packs bottom-up. Vanilla's directory strategy reads sub-folders for every pack
 /// but those shipped inside the app.
-const GEOMETRY_WALK: Walk = Walk {
-    directories: &["models"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_geometry_file),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
+const GEOMETRY_WALK: Walk = Walk::json_tree_in(&["models"])
+    .accept(Accept::Fn(is_geometry_file))
     // No subpack-shadowed copies are read.
-    shadowed: None,
-    read_error: Some(UNREAD),
-};
+    .read_error(UNREAD);
 
 /// What a geometry gives the geometries that inherit from it.
 #[derive(Clone)]

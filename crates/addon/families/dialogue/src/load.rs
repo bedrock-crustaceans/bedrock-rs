@@ -13,10 +13,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{DialogueSceneTag, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::SemVersion;
 use indexmap::IndexMap;
@@ -144,28 +141,9 @@ fn origin(pack: PackRef, side: PackSide, path: &PackPath, key: Option<&str>) -> 
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A dialogue file: extension exactly `json`, compared case-sensitively.
-fn is_json(path: &PackPath) -> bool {
-    path.segments()
-        .last()
-        .and_then(|name| name.rsplit_once('.'))
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `dialogue/**/*.json`, packs bottom-up (the game walks the stack from its last element, the
 /// lowest priority, to the first).
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,    // every matching file of every pack is read
-    shadowed: None,   // a file an active subpack shadows is not read
-    read_error: None, // a file that cannot be read gets the stack driver's generic text
-};
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
 
 /// One file's part of the registry.
 pub struct Parsed {

@@ -5,8 +5,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
+    Accept, AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bytes::Bytes;
@@ -81,18 +80,9 @@ fn is_read(path: &PackPath) -> bool {
 }
 
 /// The material files anywhere in the pack, lowest pack first.
-const WALK: Walk = Walk {
-    directories: &[""],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_read),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::Before,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[""])
+    .accept(Accept::Fn(is_read))
+    .app_data(&[], AppDataPlace::Before);
 
 /// The origin of a walked file.
 fn origin_of(file: &WalkFile) -> Origin {

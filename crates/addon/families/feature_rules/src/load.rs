@@ -15,8 +15,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{FeatureRuleId, kind};
 use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
+    AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::versioning::{
@@ -189,29 +188,13 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A rule file: a `.json` file below `feature_rules/`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `feature_rules/**/*.json`, packs top-down (vanilla walks the stack from its highest-priority
-/// pack), then the app data's `definitions/feature_rules`.
-const WALK: Walk = Walk {
-    directories: &["feature_rules"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &["definitions/feature_rules"],
-    app_data_place: AppDataPlace::After,
-    // Every pack's matching file is read, subpack-shadowed copies are not, and the family has
-    // no text of its own for an unreadable file.
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+/// pack), then the app data's `definitions/feature_rules`. Every pack's matching file is read,
+/// subpack-shadowed copies are not, and the family has no text of its own for an unreadable
+/// file.
+const WALK: Walk = Walk::json_tree_in(&["feature_rules"])
+    .top_down()
+    .app_data(&["definitions/feature_rules"], AppDataPlace::After);
 
 /// One file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<FeatureRule> {

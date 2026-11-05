@@ -4,10 +4,7 @@
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
@@ -346,18 +343,7 @@ fn parse(file: &WalkFile, _: &LoadContext) -> UiCopy {
 // The game hands the merge the copies of a file lowest priority first.
 pub const fn load() -> CollectionLoader<Merged<UiDefinitions, RawLayer>, UiCopy> {
     CollectionLoader {
-        walk: Walk {
-            directories: &[UI],
-            depth: ListDepth::Recursive,
-            accept: Accept::Fn(fixed_file),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::json_tree_in(&[UI]).accept(Accept::Fn(fixed_file)),
         parse,
         combine,
         needs: &[],

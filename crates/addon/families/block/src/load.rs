@@ -13,10 +13,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -298,27 +295,9 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A block file: a `.json` file below `blocks/`.
-fn is_json(path: &PackPath) -> bool {
-    // Vanilla's loader takes `.json` only, as written.
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `blocks/**/*.json`, packs bottom-up (the higher pack's definition replaces the lower's).
-const WALK: Walk = Walk {
-    directories: &["blocks"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,    // no file is left out by its pack
-    shadowed: None,   // a shadowed subpack file is not read
-    read_error: None, // an unreadable file has no family-specific text
-};
+/// Vanilla's loader takes `.json` only, as written (`Accept::Ext`).
+const WALK: Walk = Walk::json_tree_in(&["blocks"]);
 
 /// One file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Block> {

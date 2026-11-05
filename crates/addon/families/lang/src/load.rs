@@ -3,9 +3,7 @@
 
 use std::collections::btree_map::Entry;
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, StackCx, Walk, WalkFile, WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
@@ -80,16 +78,6 @@ pub struct LangLayer {
     keywords: Translations,
 }
 
-/// A `.lang` file, by the extension vanilla builds the path with.
-// `getLangFilePath` appends `.lang` as written.
-#[allow(
-    clippy::case_sensitive_file_extension_comparisons,
-    reason = "vanilla builds the path with this exact extension"
-)]
-fn is_lang(path: &PackPath) -> bool {
-    path.as_str().ends_with(".lang")
-}
-
 /// The `Parse` job of `translations(&language)`: the file's table as the stack loader reads
 /// it, and the keywords its pack reads of it.
 fn parse_lang(file: &WalkFile, _: &LoadContext) -> LangLayer {
@@ -139,18 +127,9 @@ fn combine_translations(parsed: Vec<LangLayer>, _: &StackCx<'_>) -> Merged<Trans
 pub fn load_translations(side: PackSide) -> CollectionLoader<Merged<Translations>, LangLayer> {
     let _ = side;
     CollectionLoader {
-        walk: Walk {
-            directories: &[TEXTS],
-            depth: ListDepth::Children,
-            accept: Accept::Fn(is_lang),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        // A `.lang` file, by the extension vanilla builds the path with (`getLangFilePath`
+        // appends `.lang` as written).
+        walk: Walk::json_children_in(&[TEXTS]).accept(Accept::Ext("lang")),
         parse: parse_lang,
         combine: combine_translations,
         needs: &[],

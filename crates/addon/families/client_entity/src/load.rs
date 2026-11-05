@@ -16,8 +16,7 @@ use bedrock_addon_core::id::{EntityId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, strip_bom};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
+    AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -387,13 +386,6 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A client entity file: a `.json` file below `entity/`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// The folder of the attachables, in a pack and in the app's own data: a file there that
 /// holds a `minecraft:client_entity` object is a client entity.
 const ATTACHABLES: &str = "attachables";
@@ -404,18 +396,9 @@ const APP_ATTACHABLES: &str = "definitions/attachables";
 /// vanilla loads them: the walk of the attachables, since one loader reads both payloads from
 /// either folder. The game loads its built-in definitions first, then the `entity` and
 /// `attachables` folders in that order, each from the last pack of the stack to the first.
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY, ATTACHABLES],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: true,
-    app_data: &[APP_ATTACHABLES],
-    app_data_place: AppDataPlace::Before,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY, ATTACHABLES])
+    .directory_major()
+    .app_data(&[APP_ATTACHABLES], AppDataPlace::Before);
 
 /// What one walked file is.
 #[derive(Debug)]

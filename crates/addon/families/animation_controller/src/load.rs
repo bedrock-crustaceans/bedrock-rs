@@ -12,14 +12,11 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_support::animation::load::{
-    FileContribution, combine, file_path, is_json, side_of, split, version_info, walk_origin, whole,
+    FileContribution, combine, file_path, side_of, split, version_info, walk_origin, whole,
 };
 
 impl bedrock_addon_core::__private::Sealed for AnimationControllerFile {}
@@ -145,18 +142,7 @@ fn parse_controller_file(
 }
 
 /// `animation_controllers/*.json`, packs bottom-up, sub-folders not read.
-const CONTROLLER_WALK: Walk = Walk {
-    directories: &["animation_controllers"],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const CONTROLLER_WALK: Walk = Walk::json_children_in(&["animation_controllers"]);
 
 fn combine_controllers(
     parsed: Vec<FileContribution<AnimationController>>,

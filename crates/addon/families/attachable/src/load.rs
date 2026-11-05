@@ -16,8 +16,7 @@ use bedrock_addon_core::id::{AttachableId, ItemId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
+    AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -445,30 +444,14 @@ fn refuse_client_entity(root: Option<&Value>, origin: &Origin) -> Result<(), Rej
     }
 }
 
-/// An attachable file: a `.json` file.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// The app's own `definitions/attachables`, then every `entity/**/*.json` and after them every
 /// `attachables/**/*.json`, each over the packs from the lowest priority to the highest, as
 /// vanilla loads them.
 // The game loads its built-in definitions first, then the directories `entity` and
 // `attachables`, each from the last pack of the stack to the first.
-const WALK: Walk = Walk {
-    directories: &[ENTITY_DIRECTORY, DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: true,
-    app_data: &[APP_DIRECTORY],
-    app_data_place: AppDataPlace::Before,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[ENTITY_DIRECTORY, DIRECTORY])
+    .directory_major()
+    .app_data(&[APP_DIRECTORY], AppDataPlace::Before);
 
 /// What one walked file is.
 #[derive(Debug)]

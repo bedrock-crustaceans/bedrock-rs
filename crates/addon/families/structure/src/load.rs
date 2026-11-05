@@ -1,10 +1,7 @@
 //! Loading structures: `Content`, the walk of `structures/`, the combine rule and the lookups
 //! vanilla does by identifier.
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
@@ -220,18 +217,10 @@ fn is_structure_or_template(path: &PackPath) -> bool {
 }
 
 /// `structures/**/*.mcstructure` (and `.nbt`, to report it), top pack first.
-const WALK: Walk = Walk {
-    directories: &[FOLDER],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_structure_or_template),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: Some(read_in_pack),
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[FOLDER])
+    .accept(Accept::Fn(is_structure_or_template))
+    .top_down()
+    .in_pack(read_in_pack);
 
 /// Whether the walk reads `path` in the pack loaded with `cx`: every structure file, and a
 /// `.nbt` template outside the base-game packs, where it is reported. A base-game pack's

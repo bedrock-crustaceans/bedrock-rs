@@ -15,10 +15,7 @@ use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{
     EncodeError, EnvelopeVersion, JsonSlice, Prepared, WriteStyle, probe_envelope,
 };
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -227,31 +224,11 @@ pub(crate) fn parse_culling(
     }
 }
 
-/// A culling file: extension exactly `json` (the 4-byte, case-sensitive compare of the
-/// per-file callback).
-// The game compares the file's extension, without the dot, with `json`.
-fn is_json(path: &PackPath) -> bool {
-    path.segments()
-        .last()
-        .and_then(|name| name.rsplit_once('.'))
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
-/// `block_culling/**/*.json`, packs bottom-up (the task walks the stack from its last
+/// `block_culling/**/*.json` (the extension exactly `json`: the game compares the file's
+/// extension, without the dot, case-sensitively), packs bottom-up (the task walks the stack from its last
 /// `PackInstance` to its first).
 // The game walks `block_culling` non-recursively per pack stack entry.
-const CULLING_WALK: Walk = Walk {
-    directories: &[CULLING_DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: Some(culling_reached),
-    shadowed: None,
-    read_error: None,
-};
+const CULLING_WALK: Walk = Walk::json_tree_in(&[CULLING_DIRECTORY]).in_pack(culling_reached);
 
 /// Whether vanilla's walk reaches `path` in the pack of `cx`: `forEachIn(…, recurseAnyways =
 /// false)` walks a pack shipped in the app package flat and every other pack with its

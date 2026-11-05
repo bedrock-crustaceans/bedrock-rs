@@ -1,10 +1,7 @@
 //! Loading fonts: `Content` of the two JSON files, the walk of `font/`, and the group the
 //! stack makes of them.
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
@@ -170,10 +167,6 @@ pub enum FontCopy {
     Emoticons(FileCopy<EmoticonList>),
 }
 
-fn is_font_json(path: &PackPath) -> bool {
-    matches!(path.as_str(), FONT_METADATA_PATH | EMOTICONS_PATH)
-}
-
 fn parse_font(file: &WalkFile, _: &LoadContext) -> FontCopy {
     let origin = origin(file.pack.clone(), file.side, &file.path);
     if file.key.as_str() == FONT_METADATA_PATH {
@@ -266,18 +259,8 @@ impl Reported for Fonts {
 /// resource pack. The other font files are known from each pack's listing; none is read.
 pub const fn load_fonts() -> CollectionLoader<Fonts, FontCopy> {
     CollectionLoader {
-        walk: Walk {
-            directories: &["font"],
-            depth: ListDepth::Children,
-            accept: Accept::Fn(is_font_json),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::json_children_in(&["font"])
+            .accept(Accept::Exact(&[FONT_METADATA_PATH, EMOTICONS_PATH])),
         parse: parse_font,
         combine,
         needs: &[],

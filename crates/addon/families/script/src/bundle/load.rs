@@ -15,8 +15,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, StackPack, Walk,
-    WalkFile, WalkOrder,
+    Accept, CollectionLoader, LoadContext, StackCx, StackPack, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide, PackType};
 
@@ -50,18 +49,10 @@ fn is_read_in(path: &PackPath, cx: &LoadContext) -> bool {
 /// The manifest and `scripts/**/*.js` of every pack, the highest pack first.
 // The game gives each pack of the stack its own script source rooted at `scripts/`, and
 // lists the `.js` files below it recursively.
-const WALK: Walk = Walk {
-    directories: &[""],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_bundle_file),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: Some(is_read_in),
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[""])
+    .accept(Accept::Fn(is_bundle_file))
+    .top_down()
+    .in_pack(is_read_in);
 
 /// One file of the walk, as its `Parse` job leaves it.
 #[derive(Debug)]

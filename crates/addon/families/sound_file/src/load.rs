@@ -1,20 +1,11 @@
 //! Loading the audio files of a resource stack: no file is walked, the packs' file listings are
 //! all the index is built from.
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
-use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 
 use super::files::{SoundFiles, index};
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::load::Reported;
-
-/// No file is read.
-fn accepts(_: &PackPath) -> bool {
-    false
-}
 
 /// Nothing to parse: the walk reads no file.
 fn parse(_: &WalkFile, _: &LoadContext) {}
@@ -28,18 +19,7 @@ fn combine(_: Vec<()>, cx: &StackCx<'_>) -> SoundFiles {
 /// the packs' listings.
 pub const fn load_files() -> CollectionLoader<SoundFiles, ()> {
     CollectionLoader {
-        walk: Walk {
-            directories: &[],
-            depth: ListDepth::Children,
-            accept: Accept::Fn(accepts),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::none(),
         parse,
         combine,
         needs: &[],

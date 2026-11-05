@@ -13,10 +13,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{Id, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -237,29 +234,10 @@ pub enum AimAssistFile {
     Preset(Box<FileOutcome<AimAssistPreset>>),
 }
 
-/// An aim-assist file: an extension exactly `json` (a case-sensitive compare; `x.JSON` is
-/// skipped without a message).
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `aim_assist/categories/*.json`, then `aim_assist/presets/*.json`, the files directly in each
 /// folder (not their subfolders), from the last stack entry to the first: a later load
 /// replaces an earlier one, so the highest-priority pack wins.
-const WALK: Walk = Walk {
-    directories: &[CATEGORIES, PRESETS],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: true,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_children_in(&[CATEGORIES, PRESETS]).directory_major();
 
 /// Parses one walked file by its directory.
 fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> AimAssistFile {

@@ -13,10 +13,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{RenderControllerId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
@@ -120,30 +117,12 @@ pub struct FileContribution {
     findings: Vec<Diagnostic>,
 }
 
-/// A `.json` file: the game compares the four bytes of the extension as written.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// Every `.json` file below `render_controllers/`, packs bottom-up: the game walks its stack
 /// from the last pack to the first and replaces a name's controller by the one it loads last.
 /// A file that is no `.json` file is no file of the walk: `combine` reports it from the
 /// pack's file list, its bytes unread. Sub-folders are read in every pack (the game reads them
 /// recursively except in packs shipped inside the app).
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
 
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
     let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
@@ -236,7 +215,9 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
     }
     // A file of the directory that is no `.json` file, from the packs' file lists: the game
     // skips it without a word, so this is the crate's own information.
-    for (pack, ignored) in bedrock_addon_core::load::unread_files(stack, DIRECTORY, is_json) {
+    for (pack, ignored) in
+        bedrock_addon_core::load::unread_files(stack, DIRECTORY, PackPath::is_json)
+    {
         let file = Origin::file(pack.pack.clone(), PackSide::Resource, ignored.path.clone());
         builder.push_diagnostic(
             Diagnostic::info(DiagnosticCode::IgnoredFile { text: None }).in_file(&file),

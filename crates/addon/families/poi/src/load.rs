@@ -17,10 +17,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{Id, PoiTypeId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, Value, WriteStyle, write_json};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::load::{Experiment, Reported};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -451,27 +448,9 @@ pub enum PoiFile {
     Gated(Box<Origin>),
 }
 
-/// Files whose extension is exactly `json`, as for the game's other category loaders.
-fn accept(path: &PackPath) -> bool {
-    let name = path.as_str().rsplit('/').next().unwrap_or_default();
-    name.rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// Every `*.json` directly in `poi/blocks` and `poi/tags`, packs from the lowest up: the
 /// definition loaded last wins. Neither loader reads a sub-folder.
-const WALK: Walk = Walk {
-    directories: &[TYPES, TAGS],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(accept),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_children_in(&[TYPES, TAGS]);
 
 /// One family's contribution from its file.
 fn contribution<F: PoiFamily>(file: &WalkFile, cx: &LoadContext) -> Contribution<F::Latest> {

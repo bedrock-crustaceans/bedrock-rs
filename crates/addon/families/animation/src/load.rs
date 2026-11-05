@@ -8,14 +8,11 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_support::animation::load::{
-    FileContribution, combine, file_path, is_json, side_of, split, walk_origin, whole,
+    FileContribution, combine, file_path, side_of, split, walk_origin, whole,
 };
 
 impl bedrock_addon_core::__private::Sealed for AnimationFile {}
@@ -66,18 +63,7 @@ fn parse_animation_file(file: &WalkFile, cx: &LoadContext) -> FileContribution<A
 
 /// `animations/**/*.json`, packs bottom-up. Vanilla's directory strategy recurses for every pack
 /// but those shipped inside the app, which it lists flat.
-const ANIMATION_WALK: Walk = Walk {
-    directories: &["animations"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const ANIMATION_WALK: Walk = Walk::json_tree_in(&["animations"]);
 
 fn combine_animations(
     parsed: Vec<FileContribution<Animation>>,

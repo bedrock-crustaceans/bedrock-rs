@@ -3,8 +3,7 @@
 //! stack-level lints.
 
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, ListedFile, LoadContext, StackCx, Walk,
-    WalkFile, WalkOrder,
+    Accept, CollectionLoader, ListedFile, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
@@ -151,27 +150,6 @@ pub(super) fn keyword_findings(facts: &KeywordFacts<'_>) -> Vec<Diagnostic> {
 /// `.lang` files. Every other file there counts by its path alone (the packs' file lists).
 fn is_read(path: &PackPath) -> bool {
     matches!(path.as_str(), LANGUAGES_JSON | LANGUAGE_NAMES_JSON) || language_of(path).is_some()
-}
-
-/// A walk of `directories`, lowest pack first, packs only.
-// `loadAllVersionsOf` returns every pack's copy, lowest priority first.
-const fn walk(
-    directories: &'static [&'static str],
-    depth: ListDepth,
-    accept: fn(&PackPath) -> bool,
-) -> Walk {
-    Walk {
-        directories,
-        depth,
-        accept: Accept::Fn(accept),
-        order: WalkOrder::BottomUp,
-        directory_major: false,
-        app_data: &[],
-        app_data_place: AppDataPlace::After,
-        in_pack: None,
-        shadowed: None,
-        read_error: None,
-    }
 }
 
 /// The `Parse` job of `languages()`: the two JSON files are read; of a `.lang` file only
@@ -370,7 +348,8 @@ fn other_file_findings(
 pub fn load_languages(side: PackSide) -> CollectionLoader<Merged<Languages>, TextsFile> {
     let _ = side;
     CollectionLoader {
-        walk: walk(&[TEXTS], ListDepth::Recursive, is_read),
+        // Lowest pack first: `loadAllVersionsOf` returns every pack's copy, lowest priority first.
+        walk: Walk::json_tree_in(&[TEXTS]).accept(Accept::Fn(is_read)),
         parse: parse_texts,
         combine: combine_languages,
         needs: &[],

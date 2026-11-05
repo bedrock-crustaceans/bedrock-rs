@@ -11,10 +11,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
@@ -175,30 +172,11 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A shape file: a file below `shapes/` whose extension is `json`, compared as written.
-// The extension is compared case-sensitively.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
-/// `shapes/**/*.json`, packs bottom-up: vanilla walks the stack from its last pack to its first
-/// and binds an identifier to the shape it loads last, so the highest pack's shape is the
-/// effective one. Sub-folders are read in every pack (the game reads them only in packs
-/// outside the app package).
-const WALK: Walk = Walk {
-    directories: &["shapes"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+/// `shapes/**/*.json` (the extension compared case-sensitively), packs bottom-up: vanilla walks
+/// the stack from its last pack to its first and binds an identifier to the shape it loads
+/// last, so the highest pack's shape is the effective one. Sub-folders are read in every pack
+/// (the game reads them only in packs outside the app package).
+const WALK: Walk = Walk::json_tree_in(&["shapes"]);
 
 /// One file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<VoxelShape> {

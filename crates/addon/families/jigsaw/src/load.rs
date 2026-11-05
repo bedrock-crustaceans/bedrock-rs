@@ -27,10 +27,7 @@ use bedrock_addon_core::json::{
     probe_envelope, write_json,
 };
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -598,18 +595,9 @@ fn accept(path: &PackPath) -> bool {
 /// `worldgen/{structures, template_pools, structure_sets, processors}/**/*.json` and
 /// `worldgen/metadata/*.dat`, packs top first (vanilla's walk; the first definition of an
 /// identifier wins).
-const WALK: Walk = Walk {
-    directories: &[STRUCTURES, POOLS, SETS, PROCESSORS, METADATA],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(accept),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[STRUCTURES, POOLS, SETS, PROCESSORS, METADATA])
+    .accept(Accept::Fn(accept))
+    .top_down();
 
 /// One family's contribution from its file.
 fn contribution<F: JsonFamily>(file: &WalkFile, cx: &LoadContext) -> Contribution<F::Latest> {

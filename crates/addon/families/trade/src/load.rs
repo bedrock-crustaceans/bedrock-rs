@@ -12,10 +12,7 @@ use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::{
     EncodeError, EnvelopeVersion, JsonSlice, NullRule, Value, WriteStyle, probe_envelope,
 };
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
@@ -290,26 +287,8 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A trade-table file: a `.json` file below `trading/`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `trading/**/*.json` of every pack, bottom-up.
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
 
 /// One copy of a path: the key it is filed under and the document or its rejection.
 pub type FileCopy = (PackPath, Result<Document<TradeTable>, Rejected>);

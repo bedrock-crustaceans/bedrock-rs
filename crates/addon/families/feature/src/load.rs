@@ -25,8 +25,7 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, write_json,
 };
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
+    AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -884,27 +883,11 @@ impl Feature {
 
 // ---- the collection ----------------------------------------------------------------------------
 
-/// A feature file: a `.json` file below `features/`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `features/**/*.json`, packs top-down as the client walks them, then the app's
 /// `definitions/features`.
-const WALK: Walk = Walk {
-    directories: &["features"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &["definitions/features"],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&["features"])
+    .top_down()
+    .app_data(&["definitions/features"], AppDataPlace::After);
 
 /// One file's contribution: a document claims its identifier even when its schema fails.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Feature> {

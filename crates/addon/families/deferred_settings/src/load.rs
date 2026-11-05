@@ -23,10 +23,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{BlockId, CubemapSettingsId, Id, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -421,18 +418,10 @@ pub(crate) fn is_read(path: &PackPath) -> bool {
 
 /// Each folder over every pack from the highest priority down, sub-folders included (a
 /// directory pack outside the app package lists them).
-const WALK: Walk = Walk {
-    directories: DIRECTORIES,
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_read),
-    order: WalkOrder::TopDown,
-    directory_major: true,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(DIRECTORIES)
+    .accept(Accept::Fn(is_read))
+    .top_down()
+    .directory_major();
 
 /// Parses one walked file by its folder.
 fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> SettingsFile {

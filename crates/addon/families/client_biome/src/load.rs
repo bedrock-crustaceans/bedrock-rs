@@ -26,10 +26,7 @@ use bedrock_addon_core::id::{BiomeId, kind};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
@@ -478,10 +475,6 @@ fn origin(pack: PackRef, path: &PackPath) -> Origin {
     clippy::case_sensitive_file_extension_comparisons,
     reason = "vanilla's directory walk matches `.json` as written"
 )]
-fn is_json(path: &PackPath) -> bool {
-    path.as_str().ends_with(".json")
-}
-
 /// Whether vanilla's walk reaches `path` in the pack of `cx`: the game lists `biomes/` of a
 /// pack shipped in the app package without descending into sub-folders, and every other pack
 /// with its sub-folders.
@@ -491,18 +484,7 @@ fn reached(path: &PackPath, cx: &LoadContext) -> bool {
 }
 
 /// `biomes/**/*.json` of every resource pack; `biomes/*.json` in a base-game pack.
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: Some(reached),
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]).top_down().in_pack(reached);
 
 /// One file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<ClientBiome> {

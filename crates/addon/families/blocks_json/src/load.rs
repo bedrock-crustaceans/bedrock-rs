@@ -14,10 +14,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 
@@ -93,25 +90,9 @@ fn version_info(file: &BlocksJson, effective: FormatVersion) -> VersionInfo {
     )
 }
 
-/// `blocks.json` at the pack root.
-fn is_blocks_json(path: &PackPath) -> bool {
-    path.as_str() == BLOCKS_JSON
-}
-
 /// The root file of every pack, lowest priority first: the client visits the stack from its last
 /// entry down to its first and reads at most one file per entry.
-const BLOCKS_WALK: Walk = Walk {
-    directories: &[""],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_blocks_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const BLOCKS_WALK: Walk = Walk::json_children_in(&[""]).accept(Accept::Exact(&[BLOCKS_JSON]));
 
 /// One pack's file as read.
 #[derive(Clone, Debug)]

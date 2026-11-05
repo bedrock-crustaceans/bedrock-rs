@@ -6,10 +6,7 @@ use std::collections::HashSet;
 use std::convert::Infallible;
 
 use bedrock_addon_core::json::Prepared;
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use super::history::{
@@ -677,13 +674,6 @@ pub enum UiFile {
     Style(Box<FileOutcome<UiStyle>>),
 }
 
-/// A data-driven UI file: an extension exactly `json` (a case-sensitive compare).
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// A file below a sub-folder of its directory (`ddui/root/sub/x.json`).
 fn nested(key: &PackPath) -> bool {
     key.segments().count() > 3
@@ -698,18 +688,11 @@ fn reached(key: &PackPath, cx: &LoadContext) -> bool {
 /// `ddui/root`, then `ddui/composition`, then `ddui/styling`, each over the whole stack from
 /// its first entry (the highest priority) to its last: a later load replaces an earlier one,
 /// so the lowest pack that defines an identifier wins.
-const WALK: Walk = Walk {
-    directories: &[ROOTS, COMPOSITIONS, STYLES],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::TopDown,
-    directory_major: true,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: Some(reached),
-    shadowed: None,
-    read_error: Some(UNREAD),
-};
+const WALK: Walk = Walk::json_tree_in(&[ROOTS, COMPOSITIONS, STYLES])
+    .top_down()
+    .directory_major()
+    .in_pack(reached)
+    .read_error(UNREAD);
 
 /// Parses one walked file by its directory.
 fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> UiFile {
@@ -747,7 +730,7 @@ fn ignored_files<T: Definition>(
     for pack in stack.packs {
         for file in pack.files() {
             let key = file.key.as_str();
-            if !key.starts_with(&prefix) || is_json(&file.key) || !reached(&file.key, &pack.context)
+            if !key.starts_with(&prefix) || file.key.is_json() || !reached(&file.key, &pack.context)
             {
                 continue;
             }

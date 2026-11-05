@@ -13,10 +13,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{SoundEventName, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Family, Loaded, load};
@@ -122,25 +119,9 @@ impl Definition for SoundMetadata {
     type Beta = NoBeta<kind::SoundEvent>;
 }
 
-/// The walk's file.
-fn accepts(path: &PackPath) -> bool {
-    path.as_str() == METADATA_PATH
-}
-
 /// The walk of `bp.server_sound_definitions()`: the fixed file of each pack, lowest pack first as
 /// vanilla visits the stack.
-const WALK: Walk = Walk {
-    directories: &["sounds"],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(accepts),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_children_in(&["sounds"]).accept(Accept::Exact(&[METADATA_PATH]));
 
 /// Parses one walked file.
 fn parse_walk_file(

@@ -4,10 +4,7 @@
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 use indexmap::IndexMap;
 
@@ -26,10 +23,6 @@ pub type SideFileCopy = (PackPath, Result<Document<UiTextureInfo>, Rejected>);
 
 /// The extension of a side file, as the game appends it to the image's path.
 const JSON: &str = ".json";
-
-fn is_json(path: &PackPath) -> bool {
-    path.as_str().strip_suffix(JSON).is_some()
-}
 
 /// One file's copy, read by the type's own reader and placed in its pack.
 fn parse(file: &WalkFile, cx: &LoadContext) -> SideFileCopy {
@@ -102,18 +95,7 @@ fn combine(parsed: Vec<SideFileCopy>, cx: &StackCx<'_>) -> Files<UiTextureInfo> 
 /// resource pack. The images are known from each pack's listing; none is read.
 pub const fn load_texture_infos() -> CollectionLoader<Files<UiTextureInfo>, SideFileCopy> {
     CollectionLoader {
-        walk: Walk {
-            directories: &[DIRECTORY],
-            depth: ListDepth::Recursive,
-            accept: Accept::Fn(is_json),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::json_tree_in(&[DIRECTORY]),
         parse,
         combine,
         needs: &[],

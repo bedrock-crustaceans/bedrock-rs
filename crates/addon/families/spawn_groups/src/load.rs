@@ -10,9 +10,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{SpawnGroupId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, Walk, WalkFile, WalkOrder,
-};
+use bedrock_addon_core::load::{AppDataPlace, CollectionLoader, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -20,7 +18,7 @@ use bedrock_addon_core::versioning::{
 };
 use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
-    FileLoad, Parsed, combine, contribution, is_json, load_family, load_file, origin,
+    FileLoad, Parsed, combine, contribution, load_family, load_file, origin,
 };
 
 /// The closing line of a spawn-group file that failed.
@@ -122,18 +120,7 @@ fn parse_group_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnGroup> {
 /// identifier replacing the earlier one with a `DuplicateIdentifier` warning; no pack is read.
 pub const fn load_groups() -> CollectionLoader<Registry<SpawnGroup>, Parsed<SpawnGroup>> {
     CollectionLoader {
-        walk: Walk {
-            directories: &[],
-            depth: ListDepth::Children,
-            accept: Accept::Fn(is_json),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[GROUPS_DIRECTORY],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::json_children_in(&[]).app_data(&[GROUPS_DIRECTORY], AppDataPlace::After),
         parse: parse_group_file,
         combine,
         needs: &[],

@@ -13,10 +13,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{RecipeId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 impl bedrock_addon_core::__private::Sealed for Recipe {}
@@ -105,28 +102,11 @@ pub(super) fn parse_file(
 
 /// A recipe file: the extension is exactly `json`; other files are skipped without a word.
 // The game compares the extension case-sensitively, so `Recipe.JSON` is not read.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `recipes/**/*.json`, packs top-down: vanilla walks the full stack front to back and the first
 /// load of an identifier wins.
-const WALK: Walk = Walk {
-    directories: &["recipes"],
-    // Subfolders are read: add-ons organise recipes in subfolders, and the game's lookup does
-    // not say it ignores them.
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+// Subfolders are read: add-ons organise recipes in subfolders, and the game's lookup does
+// not say it ignores them.
+const WALK: Walk = Walk::json_tree_in(&["recipes"]).top_down();
 
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileOutcome {
     parse_file(file.pack.clone(), file.side, &file.path, &file.bytes, cx)

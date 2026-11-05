@@ -12,10 +12,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{DimensionId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, Value, WriteStyle, write_json};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
@@ -299,27 +296,9 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A dimension file: an extension exactly `json` (vanilla's byte compare).
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
-/// `dimensions/*.json` (not recursive), from the last stack entry to the first: packs
-/// bottom-up.
-const WALK: Walk = Walk {
-    directories: &["dimensions"],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+/// `dimensions/*.json` (not recursive; an extension exactly `json`, vanilla's byte compare),
+/// from the last stack entry to the first: packs bottom-up.
+const WALK: Walk = Walk::json_children_in(&["dimensions"]);
 
 /// One file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Dimension> {

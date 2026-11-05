@@ -18,10 +18,7 @@ use bedrock_addon_core::id::{BiomeId, FogId};
 use bedrock_addon_core::json::{
     EncodeError, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::SemVersion;
 
@@ -709,24 +706,8 @@ fn read(
 
 // ---- the collection ------------------------------------------------------------------------
 
-/// The file at the pack root.
-fn is_file(path: &PackPath) -> bool {
-    path.as_str() == FILE
-}
-
-/// `biomes_client.json` of every resource pack, lowest pack first.
-const WALK: Walk = Walk {
-    directories: &[""],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_file),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+/// `biomes_client.json` at the root of every resource pack, lowest pack first.
+const WALK: Walk = Walk::json_children_in(&[""]).accept(Accept::Exact(&[FILE]));
 
 fn combine(copies: Vec<BiomesCopy>, _: &StackCx<'_>) -> Merged<LegacyClientBiomes, RawLayer> {
     merge(copies)

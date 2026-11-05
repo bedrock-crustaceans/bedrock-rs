@@ -21,10 +21,7 @@ use bedrock_addon_core::json::{
     EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value,
     WriteStyle, blank_bom, check_depth, last_wins, parse_at, probe_envelope,
 };
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -393,28 +390,10 @@ pub fn upgrade_document(
 
 // ---- the collection ----------------------------------------------------------------------------
 
-/// A fog file: a `.json` file directly in `fogs/`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `fogs/*.json`, packs top-down: the game walks its stack from index 0 and the first file to
 /// register an identifier keeps it.
 // The game collects them with `getResourcesOfGroup(pack, "fogs")`.
-const WALK: Walk = Walk {
-    directories: &["fogs"],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_children_in(&["fogs"]).top_down();
 
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<FogSettings> {
     match parse_file(file.pack.clone(), file.side, &file.path, &file.bytes, cx) {

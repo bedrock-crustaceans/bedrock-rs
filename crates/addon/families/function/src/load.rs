@@ -11,8 +11,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{FunctionPath, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, Registration, StackCx, Walk,
-    WalkFile, WalkOrder,
+    Accept, CollectionLoader, LoadContext, Registration, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{CURRENT_COMMAND_VERSION, MinEngineVersion};
@@ -191,25 +190,11 @@ fn is_function_file(path: &PackPath) -> bool {
     function_name(path).is_some()
 }
 
-/// The tick list of a pack.
-fn is_tick_file(path: &PackPath) -> bool {
-    path.as_str() == TICK_PATH
-}
-
 /// `functions/**/*.mcfunction`, packs top-down: vanilla walks the stack from index 0 and the
 /// first function created under a name keeps it. The game descends into sub-folders.
-const WALK: Walk = Walk {
-    directories: &["functions"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_function_file),
-    order: WalkOrder::TopDown,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&["functions"])
+    .accept(Accept::Fn(is_function_file))
+    .top_down();
 
 /// One function file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Function> {
@@ -265,18 +250,7 @@ pub struct TickWalkFile {
 /// `functions/tick.json`; packs bottom-up, as vanilla reads the tick files. Whether an entry
 /// names a function is asked of the stack's function registry (`StackCx::registered`): the
 /// function files are read once, for `bp.functions()`.
-const TICK_WALK: Walk = Walk {
-    directories: &["functions"],
-    depth: ListDepth::Children,
-    accept: Accept::Fn(is_tick_file),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const TICK_WALK: Walk = Walk::json_children_in(&["functions"]).accept(Accept::Exact(&[TICK_PATH]));
 
 /// One file of the tick walk.
 fn parse_tick_walk_file(file: &WalkFile, cx: &LoadContext) -> TickWalkFile {

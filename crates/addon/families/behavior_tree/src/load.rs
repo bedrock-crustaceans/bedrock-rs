@@ -12,10 +12,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{BehaviorTreeId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::ENGINE_VERSION;
 
@@ -108,29 +105,11 @@ fn unversioned() -> VersionInfo {
     VersionInfo::new(None, false, ENGINE_VERSION, ENGINE_VERSION, false)
 }
 
-/// A behavior-tree file: the extension is `json`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `behavior_trees/**`, packs from the lowest priority to the highest, as vanilla walks the
 /// stack.
 // `AutomationBehaviorTreeGroup::_loadTrees`: `getFullStack()` from the last
 // entry to the first; `forEachIn("behavior_trees", …)` reads sub-folders and keeps every path.
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
 
 fn parse_walk_file(file: &WalkFile, _: &LoadContext) -> FileOutcome {
     let read = match parse_file(file.pack.clone(), file.side, &file.path, &file.bytes) {
@@ -256,7 +235,9 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
     // Ours: a file of the folder that is no `.json` file is not a tree file (vanilla has no
     // extension filter: it parses every file of the folder). Reported from the packs' file
     // lists; the walk reads the `.json` files only.
-    for (pack, ignored) in bedrock_addon_core::load::unread_files(stack, DIRECTORY, is_json) {
+    for (pack, ignored) in
+        bedrock_addon_core::load::unread_files(stack, DIRECTORY, PackPath::is_json)
+    {
         builder.push_diagnostic(notice(
             DiagnosticCode::IgnoredFile { text: None },
             &pack.pack,

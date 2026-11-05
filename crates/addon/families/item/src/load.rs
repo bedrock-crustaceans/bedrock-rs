@@ -9,8 +9,7 @@ use bedrock_addon_core::id::{ItemId, kind};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle};
 use bedrock_addon_core::load::{
-    Accept, CollectionLoader, DocumentSource, ListDepth, LoadContext, LoadRequirement, StackCx,
-    Walk, WalkFile, WalkOrder,
+    Accept, CollectionLoader, DocumentSource, LoadContext, LoadRequirement, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -851,18 +850,7 @@ fn is_json(path: &PackPath) -> bool {
 /// The `bp.items()` loader: every `.json` below `items/`, bottom-up.
 pub const fn load_registry() -> CollectionLoader<Registry<Item>, ParsedItem> {
     CollectionLoader {
-        walk: Walk {
-            directories: ItemFamily::DIRECTORIES,
-            depth: ListDepth::Recursive,
-            accept: Accept::Fn(is_json),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: bedrock_addon_core::load::AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::json_tree_in(ItemFamily::DIRECTORIES).accept(Accept::Fn(is_json)),
         parse: parse_file,
         combine,
         needs: &[],

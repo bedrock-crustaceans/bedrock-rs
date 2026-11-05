@@ -13,10 +13,7 @@ use bedrock_addon_core::id::{AtomicClientEntityId, kind};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -214,27 +211,9 @@ fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// An atomic client entity file: the extension is exactly `json`; any other file of the
-/// directory is skipped silently.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
-/// `atomic_client_entities/**/*.json`, packs from the lowest priority to the highest.
-const WALK: Walk = Walk {
-    directories: &[DIRECTORY],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+/// `atomic_client_entities/**/*.json`, packs from the lowest priority to the highest: the
+/// extension is exactly `json`; any other file of the directory is skipped silently.
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
 
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<AtomicClientEntity> {
     match parse_file(file.pack.clone(), file.side, &file.path, &file.bytes, cx) {

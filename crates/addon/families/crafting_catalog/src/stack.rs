@@ -14,10 +14,9 @@
 //! is kept without a warning, since the catalogue cannot know.
 
 use bedrock_addon_core::load::{
-    Accept, AppDataPlace, BuiltIns, CollectionLoader, ListDepth, LoadContext, Registration,
-    StackCx, StackPack, Walk, WalkFile, WalkOrder,
+    Accept, BuiltIns, CollectionLoader, LoadContext, Registration, StackCx, StackPack, Walk,
+    WalkFile,
 };
-use bedrock_addon_core::pack_identity::PackPath;
 use uuid::Uuid;
 
 use super::load::parse_file;
@@ -34,24 +33,8 @@ impl Merge for CraftingCatalog {
 /// One catalogue file of the walk, loaded or rejected.
 pub type CatalogFile = Result<Document<CraftingCatalog>, Rejected>;
 
-/// The catalogue file: the one path, as written.
-fn is_catalog(path: &PackPath) -> bool {
-    path.as_str() == PATH
-}
-
 /// `item_catalog/crafting_item_catalog.json` of every pack; packs bottom-up.
-const WALK: Walk = Walk {
-    directories: &["item_catalog"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_catalog),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&["item_catalog"]).accept(Accept::Exact(&[PATH]));
 
 /// The identifier kinds the merge asks the stack about: the items and the blocks its packs
 /// registered.

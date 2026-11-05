@@ -12,9 +12,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{SpawnRulesId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, Walk, WalkFile, WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, Walk, WalkFile};
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
@@ -24,7 +22,7 @@ use bedrock_addon_core::versioning::{
 };
 use bedrock_addon_support::spawn::legacy::{RULES_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
-    FileLoad, Parsed, combine, contribution, is_json, load_family, load_file, origin,
+    FileLoad, Parsed, combine, contribution, load_family, load_file, origin,
 };
 
 /// The pack directory of spawn rules.
@@ -181,18 +179,7 @@ fn parse_rules_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnRules> {
 /// the same identifier replaces the earlier one).
 pub const fn load_rules() -> CollectionLoader<Registry<SpawnRules>, Parsed<SpawnRules>> {
     CollectionLoader {
-        walk: Walk {
-            directories: &[RULES_DIRECTORY],
-            depth: ListDepth::Recursive,
-            accept: Accept::Fn(is_json),
-            order: WalkOrder::BottomUp,
-            directory_major: false,
-            app_data: &[],
-            app_data_place: AppDataPlace::After,
-            in_pack: None,
-            shadowed: None,
-            read_error: None,
-        },
+        walk: Walk::json_tree_in(&[RULES_DIRECTORY]),
         parse: parse_rules_file,
         combine,
         needs: &[],

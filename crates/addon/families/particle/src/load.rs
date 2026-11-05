@@ -16,10 +16,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle, probe_envelope};
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
@@ -285,28 +282,10 @@ pub(crate) fn parse_file(
 
 // ---- the collection ----------------------------------------------------------------------
 
-/// A particle file: a file below `particles/` whose extension is `json`, as written.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `particles/**/*.json`, packs bottom-up: the effect loaded last is bound to its identifier,
 /// so the highest pack's is the effective one. Sub-folders are read in every pack, as for
 /// the other loaders that list a folder the same way.
-const WALK: Walk = Walk {
-    directories: &["particles"],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: false,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&["particles"]);
 
 /// One file's contribution. A file that failed binds nothing, whatever it names. A 1.10.0
 /// file the legacy parser stops in after its identifier is no failed file: it loads as far as

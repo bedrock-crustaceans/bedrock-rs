@@ -20,10 +20,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::{CameraListId, CameraPresetId, Id, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_core::load::{
-    Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, StackCx, Walk, WalkFile,
-    WalkOrder,
-};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -373,28 +370,10 @@ pub enum CameraFile {
     Spline(Box<Result<Document<CameraSpline>, Rejected>>),
 }
 
-/// A camera file: an extension exactly `json`.
-fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// `cameras/{presets, lists, splines}/**/*.json`: every pack's presets, then every pack's
 /// lists, then the splines, packs from the lowest priority up, so a later definition (the
 /// higher pack's) replaces an earlier one, as most of the game's loaders visit a stack.
-const WALK: Walk = Walk {
-    directories: &[PRESETS, LISTS, SPLINES],
-    depth: ListDepth::Recursive,
-    accept: Accept::Fn(is_json),
-    order: WalkOrder::BottomUp,
-    directory_major: true,
-    app_data: &[],
-    app_data_place: AppDataPlace::After,
-    in_pack: None,
-    shadowed: None,
-    read_error: None,
-};
+const WALK: Walk = Walk::json_tree_in(&[PRESETS, LISTS, SPLINES]).directory_major();
 
 /// Parses one walked file by its directory.
 fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> CameraFile {
