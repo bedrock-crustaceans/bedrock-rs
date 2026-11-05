@@ -575,7 +575,7 @@ fn entity_types_take_one_descriptor_or_a_list() {
     assert!(d.is_empty(), "{d:?}");
     let types = g.expect("kept").entity_types.expect("entity_types");
     assert!(matches!(types, goal::EntityTypes::One(_)));
-    assert_eq!(types.as_slice()[0].max_dist.map(|v| v.0), Some(6.0));
+    assert_eq!(types.as_slice()[0].max_dist, Some(6.0));
 
     let list = r#"{"entity_types": [{"max_dist": 6}, {"max_flee": 3, "zzz": 1}]}"#;
     let (g, d) = goal::<goal::AvoidMobType>(key, list, ConvertMode::Strict);

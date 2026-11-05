@@ -256,7 +256,7 @@ fn a_null_member_of_a_typed_component_takes_its_default() {
         .components
         .get::<bedrock_addon_family_entity::component::Insomnia>()
         .expect("the component is kept");
-    assert_eq!(insomnia.days_until_insomnia.0, 3.0);
+    assert_eq!(insomnia.days_until_insomnia, 3.0);
 }
 
 /// A member the type deprecates is `member "…" is deprecated`, an

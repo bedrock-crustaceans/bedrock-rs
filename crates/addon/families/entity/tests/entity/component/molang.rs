@@ -282,7 +282,7 @@ fn anger_level_reads_its_sounds_and_compiles_their_conditions() {
     );
     assert!(d.is_empty(), "{d:?}");
     assert_eq!(anger.on_increase_sounds.len(), 1);
-    assert_eq!(anger.on_increase_sounds[0].sound.0, "listening");
+    assert_eq!(anger.on_increase_sounds[0].sound, "listening");
     let d = passes(&mut anger, &pack([1, 21, 100]));
     assert!(!d.has_errors(), "{d:?}");
     let mut component = EntityComponent::from(anger);
@@ -302,7 +302,7 @@ fn anger_level_sound_with_an_object_condition_is_dropped_by_the_lenient_conversi
         r#"{"on_increase_sounds": [{"sound": "a", "condition": {"expression": "1", "version": 2}}, {"sound": "b", "condition": "1"}]}"#,
     );
     assert_eq!(anger.on_increase_sounds.len(), 1);
-    assert_eq!(anger.on_increase_sounds[0].sound.0, "b");
+    assert_eq!(anger.on_increase_sounds[0].sound, "b");
     assert!(has(
         &d,
         |c| matches!(c, DiagnosticCode::InvalidType { .. }),

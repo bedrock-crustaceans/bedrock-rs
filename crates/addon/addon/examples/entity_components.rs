@@ -34,12 +34,9 @@ fn describe(stacks: &StackSet) -> Option<Summary> {
 
     // Typed: the component is a struct with its defaults applied.
     let collision = walker.components.get::<CollisionBox>()?;
-    println!(
-        "collision box {} x {}",
-        collision.width.0, collision.height.0
-    );
+    println!("collision box {} x {}", collision.width, collision.height);
     if let Some(physics) = walker.components.get::<Physics>() {
-        println!("falls: {}", physics.has_gravity.0);
+        println!("falls: {}", physics.has_gravity);
     }
 
     // Kept as written: the value is the component's JSON.
@@ -75,7 +72,7 @@ fn describe(stacks: &StackSet) -> Option<Summary> {
         println!("written as {:?}", walker.version().written);
     }
     Some(Summary {
-        width: collision.width.0,
+        width: collision.width,
         max_health,
         speeds,
         families: families.into_iter().map(str::to_owned).collect(),

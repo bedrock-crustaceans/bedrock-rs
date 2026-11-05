@@ -5,81 +5,56 @@
 // `tick_world` from 1.21.100, `spawn_on_death` from 1.26.20 and `addrider` from 1.21.130.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString, Value};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::{VArray, VObject};
 
-use super::parse::{Check, Typed};
+use super::parse::{ComponentCheck, Typed};
 use super::value::one_element;
 
 /// `minecraft:instant_despawn`: the entity despawns at once.
 #[doc(alias = "minecraft:instant_despawn")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct InstantDespawn {
     /// `remove_child_entities`: the entity's children despawn with it; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub remove_child_entities: StrictBool,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = false)]
+    pub remove_child_entities: bool,
 }
 
 impl Typed for InstantDespawn {}
 
 /// `minecraft:tick_world`: the entity keeps the chunks around it ticking.
 #[doc(alias = "minecraft:tick_world")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TickWorld {
     /// `distance_to_players`: beyond this distance from every player the entity may despawn
     /// (unless `never_despawn`); at least 128, the default.
-    #[facet(default = StrictFloat(128.0_f32))]
-    pub distance_to_players: StrictFloat<f32>,
+    #[facet(default = 128.0_f32, schema::min = 128.0)]
+    pub distance_to_players: f32,
     /// `never_despawn`: the entity never despawns; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub never_despawn: StrictBool,
+    #[facet(default = true)]
+    pub never_despawn: bool,
     /// `radius`: the ticking area's radius in chunks, 2 to 6; default 2.
-    #[facet(default = StrictInt(2_u32))]
-    pub radius: StrictInt<u32>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for TickWorld {
-    fn default() -> Self {
-        Self {
-            distance_to_players: StrictFloat(128.0),
-            never_despawn: StrictBool(true),
-            radius: StrictInt(2),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 2_u32, schema::min = 2, schema::max = 6)]
+    pub radius: u32,
 }
 
 impl Typed for TickWorld {
     // The game's schema: `distance_to_players` minimum 128, `radius` 2 ..= 6.
-    fn check(&mut self, cx: &mut Check<'_>) {
-        cx.at_least(
-            &JsonPath::new().child("distance_to_players"),
-            &mut self.distance_to_players.0,
-            128.0,
-            128.0,
-        );
-        cx.within(
-            &JsonPath::new().child("radius"),
-            &mut self.radius.0,
-            (2, 6),
-            2,
-        );
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
+        cx.bounds(JsonPath::new(), self);
     }
 }
 
 /// `minecraft:spawn_on_death`: entities spawned where the entity dies.
 #[doc(alias = "minecraft:spawn_on_death")]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct SpawnOnDeath {
     /// `additional_spawn_range`: a random number of extra entities in this range; default
     /// `{min: 0, max: 0}`.
@@ -87,41 +62,36 @@ pub struct SpawnOnDeath {
     pub additional_spawn_range: IntRange,
     /// `entity_to_spawn`: the entity identifier, or `self` for the dying entity's own type;
     /// default `self`.
-    #[facet(default = StrictString("self".to_owned()))]
-    pub entity_to_spawn: StrictString,
+    #[facet(default = "self".to_owned())]
+    pub entity_to_spawn: String,
     /// `filters`: the condition for spawning; absent means always.
-    #[facet(default)]
     pub filters: Option<Filter>,
     /// `inherit_parent_name`: the spawned entities take the dying entity's name; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub inherit_parent_name: StrictBool,
+    #[facet(default = true)]
+    pub inherit_parent_name: bool,
     /// `spawn_amount`: how many entities spawn; default 1.
-    #[facet(default = StrictInt(1_i32))]
-    pub spawn_amount: StrictInt<i32>,
+    #[facet(default = 1_i32)]
+    pub spawn_amount: i32,
     /// `spawn_method`: the spawn reason the new entities get; default `spawned`.
-    #[facet(default = StrictString("spawned".to_owned()))]
-    pub spawn_method: StrictString,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = "spawned".to_owned())]
+    pub spawn_method: String,
 }
 
 impl Default for SpawnOnDeath {
     fn default() -> Self {
         Self {
             additional_spawn_range: IntRange::default(),
-            entity_to_spawn: StrictString("self".to_owned()),
+            entity_to_spawn: "self".to_owned(),
             filters: None,
-            inherit_parent_name: StrictBool(true),
-            spawn_amount: StrictInt(1),
-            spawn_method: StrictString("spawned".to_owned()),
-            extra: Extra::default(),
+            inherit_parent_name: true,
+            spawn_amount: 1,
+            spawn_method: "spawned".to_owned(),
         }
     }
 }
 
 impl Typed for SpawnOnDeath {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         cx.range(
             &JsonPath::new().child("additional_spawn_range"),
             &mut self.additional_spawn_range,
@@ -134,36 +104,31 @@ impl Typed for SpawnOnDeath {
 
 /// `minecraft:addrider`: entities that ride this one when it spawns.
 #[doc(alias = "minecraft:addrider")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Addrider {
     /// `riders`: the riders, in seat order.
     #[facet(default)]
     pub riders: Vec<Rider>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One rider of [`Addrider`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Rider {
     /// `entity_type`: the rider's entity identifier; required.
-    pub entity_type: StrictString,
+    pub entity_type: String,
     /// `spawn_event`: the event the rider spawns with; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub spawn_event: StrictString,
-    /// Members the rider does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = String::new())]
+    pub spawn_event: String,
 }
 
 impl Rider {
     /// A rider of type `entity_type` without a spawn event.
     pub fn new(entity_type: impl Into<String>) -> Self {
         Self {
-            entity_type: StrictString(entity_type.into()),
-            spawn_event: StrictString::default(),
-            extra: Extra::default(),
+            entity_type: entity_type.into(),
+            spawn_event: String::new(),
         }
     }
 }
@@ -178,7 +143,7 @@ impl Typed for Addrider {
     // empty, then a non-empty `entity_type` makes the rider, with `spawn_event` as its init
     // event. Without one the two members are read and never used: dropped, each with an
     // information.
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         if !matches!(cx.mode(), ConvertMode::Lenient) || json.contains_key("riders") {
             return false;
         }
@@ -221,26 +186,24 @@ impl Typed for Addrider {
 
 /// `minecraft:home`: the entity remembers where it spawned and stays near it.
 #[doc(alias = "minecraft:home")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Home {
     /// `home_block_list`: the block identifiers that can be the entity's home.
     #[facet(default)]
-    pub home_block_list: Vec<StrictString>,
+    pub home_block_list: Vec<String>,
     /// `restriction_radius`: how far from home the entity may go; 0 (the default) is no limit.
-    #[facet(default = StrictInt(0_i32))]
-    pub restriction_radius: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub restriction_radius: i32,
     /// `restriction_type`: which movement the radius limits; default `none`.
     #[facet(default = RestrictionType::None)]
     pub restriction_type: RestrictionType,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Typed for Home {}
 
 /// What a [`Home`]'s `restriction_radius` limits.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum RestrictionType {
@@ -262,85 +225,83 @@ pub enum RestrictionType {
 // are nested types whose members are zero (typed and legacy agree); the legacy parser takes a
 // number `delay` as its value. The game's own template writes `transformation_sound` as a
 // list, vanilla's files as one name: both are read.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
 #[doc(alias = "minecraft:transformation")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Transformation {
     /// `into`: the definition it turns into (with an optional `<event>`); default none.
-    #[facet(default = StrictString(String::new()))]
-    pub into: StrictString,
+    #[facet(default = String::new())]
+    pub into: String,
     /// `begin_transform_sound`: the sounds when the transformation starts; default none.
     #[facet(default)]
-    pub begin_transform_sound: Vec<StrictString>,
+    pub begin_transform_sound: Vec<String>,
     /// `transformation_sound`: the sounds when it is done; default none.
     #[facet(default)]
-    pub transformation_sound: Vec<StrictString>,
+    pub transformation_sound: Vec<String>,
     /// `drop_equipment`: it drops its equipment; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub drop_equipment: StrictBool,
+    #[facet(default = false)]
+    pub drop_equipment: bool,
     /// `drop_inventory`: it drops its inventory; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub drop_inventory: StrictBool,
+    #[facet(default = false)]
+    pub drop_inventory: bool,
     /// `preserve_equipment`: it keeps its equipment; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub preserve_equipment: StrictBool,
+    #[facet(default = false)]
+    pub preserve_equipment: bool,
     /// `keep_owner`: an owned entity stays owned; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub keep_owner: StrictBool,
+    #[facet(default = false)]
+    pub keep_owner: bool,
     /// `keep_level`: a trader keeps its level; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub keep_level: StrictBool,
+    #[facet(default = false)]
+    pub keep_level: bool,
     /// `add`: what the new entity gets.
     #[facet(default)]
     pub add: TransformationAdd,
     /// `delay`: how long the transformation takes.
     #[facet(default)]
     pub delay: TransformationDelay,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The `add` of a [`Transformation`].
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TransformationAdd {
     /// `component_groups`: the component groups added.
     #[facet(default)]
-    pub component_groups: Vec<StrictString>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub component_groups: Vec<String>,
 }
 
 /// The `delay` of a [`Transformation`]; every member defaults to 0.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TransformationDelay {
     /// `value`: seconds before it transforms; at least 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub value: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub value: f32,
     /// `range_min`: seconds added to `value` for the low end of a random time.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub range_min: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub range_min: f32,
     /// `range_max`: seconds added to `value` for the high end of a random time.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub range_max: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub range_max: f32,
     /// `block_assist_chance`: the chance it looks for blocks that speed it up; 0 to 1.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub block_assist_chance: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub block_assist_chance: f32,
     /// `block_radius`: how far it looks for those blocks; at least 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub block_radius: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub block_radius: i32,
     /// `block_max`: the most blocks it looks for (0: the radius); at least 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub block_max: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub block_max: i32,
     /// `block_chance`: the chance a found block helps; 0 to 1.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub block_chance: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub block_chance: f32,
     /// `block_types`: the blocks that help.
     #[facet(default)]
-    pub block_types: Vec<StrictString>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub block_types: Vec<String>,
 }
 
 impl Typed for Transformation {
@@ -351,7 +312,7 @@ impl Typed for Transformation {
     /// name: the game logs `expected an array` for a value that is no array. A `delay` that is
     /// neither a number nor an object gets the game's `Expected Number or Object.` text (for
     /// example `delay: 15.0` is a number and stays).
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         if !matches!(cx.mode(), ConvertMode::Lenient) {
             return false;
         }
@@ -396,24 +357,24 @@ impl Typed for Transformation {
     /// The typed reader's numeric constraints: `value`, `block_radius`,
     /// `block_max` at least 0, the two chances 0 ..= 1. The legacy parser has none, so they
     /// bind only at the typed version.
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         if !matches!(cx.mode(), ConvertMode::Strict) {
             return;
         }
         let delay = &mut self.delay;
         let at = |key: &str| JsonPath::new().with(&["delay", key]);
-        cx.at_least(&at("value"), &mut delay.value.0, 0.0, 0.0);
-        cx.at_least(&at("block_radius"), &mut delay.block_radius.0, 0, 0);
-        cx.at_least(&at("block_max"), &mut delay.block_max.0, 0, 0);
+        cx.at_least(&at("value"), &mut delay.value, 0.0, 0.0);
+        cx.at_least(&at("block_radius"), &mut delay.block_radius, 0, 0);
+        cx.at_least(&at("block_max"), &mut delay.block_max, 0, 0);
         cx.within(
             &at("block_assist_chance"),
-            &mut delay.block_assist_chance.0,
+            &mut delay.block_assist_chance,
             (0.0, 1.0),
             0.0,
         );
         cx.within(
             &at("block_chance"),
-            &mut delay.block_chance.0,
+            &mut delay.block_chance,
             (0.0, 1.0),
             0.0,
         );
@@ -426,52 +387,45 @@ impl Typed for Transformation {
 // the legacy `{range_min, range_max}` time is the typed `{min, max}`.
 #[doc(alias = "minecraft:timer")]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Timer {
     /// `looping`: the timer restarts when it fires; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub looping: StrictBool,
+    #[facet(default = true)]
+    pub looping: bool,
     /// `randomInterval`: the time is random between `time`'s ends; default `true`.
-    #[facet(rename = "randomInterval", default = StrictBool(true))]
-    pub random_interval: StrictBool,
+    #[facet(rename = "randomInterval", default = true)]
+    pub random_interval: bool,
     /// `time`: the seconds on the timer, a range; absent when `random_time_choices` is used.
-    #[facet(default)]
     pub time: Option<FloatRange>,
     /// `time_down_event`: the event fired when the time runs out.
-    #[facet(default)]
     pub time_down_event: Option<EventTrigger>,
     /// `random_time_choices`: weighted times, one picked each time.
     #[facet(default)]
     pub random_time_choices: Vec<TimeChoice>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Default for Timer {
     fn default() -> Self {
         Self {
-            looping: StrictBool(true),
-            random_interval: StrictBool(true),
+            looping: true,
+            random_interval: true,
             time: None,
             time_down_event: None,
             random_time_choices: Vec::new(),
-            extra: Extra::default(),
         }
     }
 }
 
 /// One of a [`Timer`]'s `random_time_choices`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TimeChoice {
     /// `value`: the seconds; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub value: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub value: f32,
     /// `weight`: how likely this choice is; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub weight: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = 0.0_f32)]
+    pub weight: f32,
 }
 
 impl Typed for Timer {
@@ -479,14 +433,14 @@ impl Typed for Timer {
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         if !matches!(cx.mode(), ConvertMode::Lenient) {
             return false;
         }
         super::movement::legacy_range(json, "time", false, &JsonPath::new(), cx)
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         if let Some(time) = &mut self.time {
             cx.range(&JsonPath::new().child("time"), time);
         }
@@ -499,27 +453,30 @@ impl Typed for Timer {
 /// `minecraft:scale_by_age`: the entity's size follows its age.
 // `scale_by_age`: the start and end scale default to 1.
 #[doc(alias = "minecraft:scale_by_age")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ScaleByAge {
     /// `start_scale`: the scale of the newborn; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub start_scale: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub start_scale: f32,
     /// `end_scale`: the scale when fully grown; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub end_scale: StrictFloat<f32>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for ScaleByAge {
-    fn default() -> Self {
-        Self {
-            start_scale: StrictFloat(1.0),
-            end_scale: StrictFloat(1.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 1.0_f32)]
+    pub end_scale: f32,
 }
 
 impl Typed for ScaleByAge {}
+
+crate::hand_fields!(SpawnOnDeath {
+    "entity_to_spawn": String,
+    "inherit_parent_name": bool,
+    "spawn_amount": i32,
+    "spawn_method": String,
+});
+bedrock_addon_core::impl_no_molang!(SpawnOnDeath);
+crate::hand_fields!(Timer {
+    "looping": bool,
+    "randomInterval": bool,
+    "time_down_event": Option<EventTrigger>,
+    "random_time_choices": Vec<TimeChoice>,
+});
+bedrock_addon_core::impl_no_molang!(Timer);

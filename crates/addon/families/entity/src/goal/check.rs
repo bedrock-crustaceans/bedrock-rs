@@ -6,16 +6,16 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
-    JsonSlice, SliceError, StrictFloat, StrictInt, StrictIntType, Value, parse_at,
-    parse_at_null_absent, remove_null_members, tell_null_members,
+    JsonSlice, NullRule, StrictIntType, Value, remove_null_members, tell_null_members,
 };
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{Schema, SchemaCx};
 use bedrock_addon_core::shared::{
     BlockDescriptor, EventTrigger, Filter, ItemDescriptor, Range, RangeEnd, RangeForm,
 };
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_core::versioning::{ConvertMode, MemberFailure};
 use facet::Facet;
 use facet_value::{VArray, VObject};
 
@@ -31,7 +31,7 @@ macro_rules! deprecated_text {
 pub(crate) use deprecated_text;
 
 /// The newest format version: what a strict parse without a document version reads as.
-pub(crate) const NEWEST: FormatVersion = known::V1_26_50;
+pub(crate) const NEWEST: FormatVersion = crate::versions::NEWEST_GOAL_RULES;
 /// 1.26.0: `aquatic_charge_attack` renames `charge_speed_multiplier`.
 pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
 /// 1.26.30: `pickup_items` gains `stop_if_holding_item`.
@@ -80,7 +80,7 @@ pub(crate) trait Goal: for<'a> Facet<'a> + Into<EntityComponent> + Default + Siz
     }
 
     /// Checks every member: ranges, constraints and the shared types' own findings.
-    fn check(&mut self, c: &mut Check<'_>);
+    fn check(&mut self, c: &mut GoalCheck<'_>);
 
     /// A deprecated member was written with `value`; the goal may carry it over to its
     /// replacement.
@@ -136,8 +136,7 @@ pub(crate) fn parse<T: Goal>(
 
 /// A parse of a goal by the document's format version: what the entity document's component
 /// map calls for a goal key (see [`versioned`](super::versioned)).
-pub(crate) type VersionedParseFn =
-    fn(JsonSlice<'_>, FormatVersion, &LoadContext, &mut Diagnostics) -> Option<EntityComponent>;
+pub(crate) type VersionedParseFn = bedrock_addon_core::schema::VersionedParseFn<EntityComponent>;
 
 /// Parses one goal of a document at `version`: leniently below the goal's typed version,
 /// strictly at or above it, with the typed → typed conversions and member gates of the versions
@@ -169,10 +168,10 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
             // The game reads an entity through jsoncpp, where a member written as `null` is
             // absent; the write-back writes nothing there, so each such place carries an
             // information.
-            let value = match parse_at_null_absent::<T>(slice) {
+            let value = match crate::typed::read::<T>(slice, Some(NullRule::Absent)) {
                 Ok(value) => value,
                 Err(error) => {
-                    d.push(slice_error(&error, Severity::Error));
+                    d.push(crate::typed::finding(&error, Some(slice), Severity::Error));
                     return None;
                 }
             };
@@ -266,7 +265,7 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
     if version.is_none() {
         value.lenient_value();
     }
-    let mut check = Check::new(version.is_some(), d);
+    let mut check = GoalCheck::new(version.is_some(), d);
     value.check(&mut check);
     if check.failed || rejected {
         return None;
@@ -277,7 +276,7 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
 /// The severity of a broken rule in the lenient read: an information, with or without the
 /// game's text: the game writes no content-log line for these, because the texts are
 /// cereal's constraints, which the legacy readers do not check. A line the game logs whatever the reader is told with
-/// [`Check::kept`].
+/// [`GoalCheck::kept`].
 fn lenient_severity(text: Option<&VanillaText>) -> Severity {
     let _ = text;
     Severity::Info
@@ -324,7 +323,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
     loop {
         // (A real negative zero keeps its sign where the goal reads the text with it.)
         let text = lenient_text::<T>(&json, d)?;
-        match parse_at::<T>(JsonSlice::new(&text)) {
+        match crate::typed::read::<T>(JsonSlice::new(&text), None) {
             Ok(mut value) => {
                 lists.record(d);
                 for name in failed {
@@ -342,7 +341,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
             Err(error) => {
                 // The innermost value the failure names that the JSON HAS: a failure named
                 // below it (the element `0` of an empty list) is the member's.
-                let mut steps = path_steps(&error.path);
+                let mut steps = path_steps(&crate::typed::failure_path(&error));
                 while !steps.is_empty() && !has_at(&json, &steps) {
                     steps.pop();
                 }
@@ -682,14 +681,6 @@ fn remove_at(json: &mut Value, steps: &[String]) -> bool {
     }
 }
 
-/// The finding of a failed strict parse, at the failing member.
-fn slice_error(error: &SliceError, severity: Severity) -> Diagnostic {
-    Diagnostic::error(error.code_with_path(error.has_path()))
-        .at(error.path.clone())
-        .span(error.span)
-        .severity(severity)
-}
-
 /// The number `value` holds, as an `f32`; `None` for any other JSON value or a number with no
 /// finite `f32`.
 pub(crate) fn float_of(value: &Value) -> Option<f32> {
@@ -726,14 +717,14 @@ impl<T: PartialOrd + Copy> Bound<T> {
 
 /// The member checks of one goal: where the findings go, and whether a violation drops the goal
 /// (strict) or resets the member to its default (lenient).
-pub(crate) struct Check<'d> {
+pub(crate) struct GoalCheck<'d> {
     strict: bool,
     d: &'d mut Diagnostics,
     failed: bool,
     at: JsonPath,
 }
 
-impl<'d> Check<'d> {
+impl<'d> GoalCheck<'d> {
     /// A check of a goal at the root of its slice.
     pub(crate) fn new(strict: bool, d: &'d mut Diagnostics) -> Self {
         Self {
@@ -782,7 +773,7 @@ impl<'d> Check<'d> {
         );
     }
 
-    /// [`Check::reject`] at `at`, a path below the goal.
+    /// [`GoalCheck::reject`] at `at`, a path below the goal.
     fn reject_at(&mut self, at: JsonPath, text: Option<VanillaText>) {
         let severity = if self.strict {
             self.failed = true;
@@ -800,14 +791,9 @@ impl<'d> Check<'d> {
     /// Checks a float member with the game's numeric constraint of a lower bound `min`: a value
     /// below refuses the member with the constraint's text (`the input must be a number >= …`,
     /// the game's range text).
-    pub(crate) fn float_at_least(
-        &mut self,
-        key: &str,
-        slot: &mut Option<StrictFloat<f32>>,
-        min: f64,
-    ) {
+    pub(crate) fn float_at_least(&mut self, key: &str, slot: &mut Option<f32>, min: f64) {
         let range = bedrock_addon_core::diagnostic::cereal::NumericRange::at_least(min);
-        if let Some(StrictFloat(x)) = *slot
+        if let Some(x) = *slot
             && !range.contains(f64::from(x))
         {
             self.reject(key, Some(range.text()));
@@ -912,7 +898,7 @@ impl<'d> Check<'d> {
         self.legacy_error_at(at, text);
     }
 
-    /// [`Check::legacy_error`] at `at` (a path below the goal, an element of a list).
+    /// [`GoalCheck::legacy_error`] at `at` (a path below the goal, an element of a list).
     pub(crate) fn legacy_error_at(&mut self, at: JsonPath, text: &'static str) {
         self.d.push_kept_error(
             Diagnostic::error(DiagnosticCode::InvalidValue {
@@ -934,20 +920,30 @@ impl<'d> Check<'d> {
         );
     }
 
+    /// The bounds `value`'s `Schema` states (`schema::min`, `max`, `above`), graded as
+    /// [`GoalCheck::reject`] grades a broken one: an error that drops the goal in the strict parse;
+    /// in the lenient one an information, and the member is left out (`None`).
+    pub(crate) fn bounds<T: Schema>(&mut self, value: &mut T) {
+        let failure = if self.strict {
+            MemberFailure::Refuse
+        } else {
+            MemberFailure::DefaultAndTell
+        };
+        let reading = crate::READING.with_on_member_failure(failure);
+        let mut cx = SchemaCx::new(reading, self.at.clone(), self.d);
+        value.check(&mut cx);
+        self.failed |= cx.failed();
+    }
+
     /// Checks the goal base: `priority` ≥ 0.
     // The game states the constraint as "`priority` minimum 0".
-    pub(crate) fn base(&mut self, priority: &mut Option<StrictInt<i32>>) {
+    pub(crate) fn base(&mut self, priority: &mut Option<i32>) {
         self.int("priority", priority, Bound::Min(0));
     }
 
     /// Checks a float member against its bound.
-    pub(crate) fn float(
-        &mut self,
-        key: &str,
-        slot: &mut Option<StrictFloat<f32>>,
-        bound: Bound<f32>,
-    ) {
-        if let Some(StrictFloat(x)) = *slot
+    pub(crate) fn float(&mut self, key: &str, slot: &mut Option<f32>, bound: Bound<f32>) {
+        if let Some(x) = *slot
             && !bound.holds(x)
         {
             self.reject(key, None);
@@ -959,10 +955,10 @@ impl<'d> Check<'d> {
     pub(crate) fn int<T: StrictIntType + PartialOrd>(
         &mut self,
         key: &str,
-        slot: &mut Option<StrictInt<T>>,
+        slot: &mut Option<T>,
         bound: Bound<T>,
     ) {
-        if let Some(StrictInt(x)) = *slot
+        if let Some(x) = *slot
             && !bound.holds(x)
         {
             self.reject(key, None);
@@ -1140,7 +1136,7 @@ impl<'d> Check<'d> {
         &mut self,
         key: &str,
         list: &mut Option<Vec<T>>,
-        mut check: impl FnMut(&mut T, &mut Check<'_>),
+        mut check: impl FnMut(&mut T, &mut GoalCheck<'_>),
     ) {
         for (i, element) in list.iter_mut().flatten().enumerate() {
             self.at.push(key);

@@ -20,9 +20,9 @@ fn e00f_instant_despawn_from_an_empty_despawn_round_trips() {
 fn tick_world_reads_its_schema_defaults() {
     let (value, _) = strict::<TickWorld>("{}");
     assert_eq!(value, TickWorld::default());
-    assert_eq!(value.radius.0, 2);
-    assert_eq!(value.distance_to_players.0, 128.0);
-    assert!(value.never_despawn.0);
+    assert_eq!(value.radius, 2);
+    assert_eq!(value.distance_to_players, 128.0);
+    assert!(value.never_despawn);
 }
 
 #[test]
@@ -46,8 +46,8 @@ fn tick_world_radius_outside_two_to_six_is_an_error_in_a_strict_read() {
 #[test]
 fn tick_world_radius_outside_its_range_takes_the_default_in_the_lenient_conversion() {
     let (value, d) = lenient::<TickWorld>(r#"{"radius": 9, "never_despawn": false}"#);
-    assert_eq!(value.radius.0, 2);
-    assert!(!value.never_despawn.0);
+    assert_eq!(value.radius, 2);
+    assert!(!value.never_despawn);
     assert!(has(
         &d,
         |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
@@ -64,14 +64,14 @@ fn spawn_on_death_round_trips_with_its_range_and_filters() {
             "additional_spawn_range": {"min": 0, "max": 2}, "inherit_parent_name": false,
             "spawn_method": "born", "filters": {"test": "is_baby", "value": false}}"#,
     );
-    assert_eq!(value.entity_to_spawn.0, "minecraft:slime");
+    assert_eq!(value.entity_to_spawn, "minecraft:slime");
     assert_eq!(value.additional_spawn_range.max, 2);
     assert!(value.filters.is_some());
     let (default, _) = strict::<SpawnOnDeath>("{}");
     assert_eq!(default, SpawnOnDeath::default());
-    assert_eq!(default.entity_to_spawn.0, "self");
-    assert_eq!(default.spawn_method.0, "spawned");
-    assert!(default.inherit_parent_name.0);
+    assert_eq!(default.entity_to_spawn, "self");
+    assert_eq!(default.spawn_method, "spawned");
+    assert!(default.inherit_parent_name);
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn addrider_reads_its_riders() {
                        {"entity_type": "minecraft:chicken"}]}"#,
     );
     assert_eq!(value.riders.len(), 2);
-    assert_eq!(value.riders[1].spawn_event.0, "");
+    assert_eq!(value.riders[1].spawn_event, "");
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn addrider_entry_without_entity_type_is_missing_a_required_member() {
 fn e01_guardian_home_round_trips() {
     // e01: `home { restriction_radius: 16 }`.
     let value = round_trip::<Home>(r#"{"restriction_radius": 16}"#);
-    assert_eq!(value.restriction_radius.0, 16);
+    assert_eq!(value.restriction_radius, 16);
     assert_eq!(value.restriction_type, RestrictionType::None);
 }
 
@@ -128,8 +128,8 @@ fn the_lenient_conversion_reads_the_legacy_single_rider() {
     );
     assert!(d.is_empty(), "{d:?}");
     assert_eq!(value.riders.len(), 1);
-    assert_eq!(value.riders[0].entity_type.0, "minecraft:skeleton");
-    assert_eq!(value.riders[0].spawn_event.0, "minecraft:spawn_as_jockey");
+    assert_eq!(value.riders[0].entity_type, "minecraft:skeleton");
+    assert_eq!(value.riders[0].spawn_event, "minecraft:spawn_as_jockey");
     let (strict, d) = strict::<Addrider>(r#"{"entity_type": "minecraft:skeleton"}"#);
     assert!(strict.riders.is_empty());
     assert!(has(

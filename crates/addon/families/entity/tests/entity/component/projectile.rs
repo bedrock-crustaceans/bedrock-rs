@@ -2,7 +2,6 @@
 //! and the lenient conversion of the legacy reader's JSON.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString};
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     DifficultyRandomization, EffectDuration, Projectile, ProjectileAnchor, ProjectileOffset,
@@ -15,21 +14,18 @@ use super::{fixture, has, json, lenient, read_as, round_trip, strict, write, wri
 fn the_vanilla_1_26_50_arrow_round_trips() {
     let arrow = round_trip::<Projectile>(&fixture("projectile_arrow_1_26_50.json"));
     assert_eq!(arrow.anchor, ProjectileAnchor::EyeHeight);
-    assert_eq!(arrow.power.0, 1.1);
+    assert_eq!(arrow.power, 1.1);
     assert_eq!(arrow.should_bounce, ShouldBounce::IfNoDamageDealt);
-    assert!(!arrow.isolated_physics.0);
+    assert!(!arrow.isolated_physics);
     let on_hit = arrow.on_hit.as_ref().expect("on_hit");
     let damage = on_hit.impact_damage.as_ref().expect("impact_damage");
-    assert!(damage.apply_knockback_to_blocking_targets.0 && damage.ceil_pre_critical_damage.0);
-    assert_eq!(damage.power_multiplier.0, 2.0);
+    assert!(damage.apply_knockback_to_blocking_targets && damage.ceil_pre_critical_damage);
+    assert_eq!(damage.power_multiplier, 2.0);
     assert_eq!(
-        on_hit.stick_in_ground.as_ref().map(|s| s.shake_time.0),
+        on_hit.stick_in_ground.as_ref().map(|s| s.shake_time),
         Some(0.35)
     );
-    assert_eq!(
-        arrow.offset,
-        ProjectileOffset::Array(vec![StrictFloat(0.0), StrictFloat(-0.1), StrictFloat(0.0)])
-    );
+    assert_eq!(arrow.offset, ProjectileOffset::Array(vec![0.0, -0.1, 0.0]));
 }
 
 #[test]
@@ -37,23 +33,23 @@ fn projectile_reads_its_schema_defaults() {
     let (value, d) = strict::<Projectile>("{}");
     assert!(d.is_empty());
     assert_eq!(value, Projectile::default());
-    assert_eq!(value.gravity.0, 0.05);
-    assert_eq!(value.inertia.0, 0.99);
-    assert_eq!(value.liquid_inertia.0, 0.6);
-    assert_eq!(value.on_fire_time.0, 5.0);
-    assert_eq!(value.particle.0, "iconcrack");
-    assert_eq!(value.potion_effect.0, -1);
-    assert_eq!(value.power.0, 1.3);
-    assert_eq!(value.splash_range.0, 4.0);
-    assert!(value.shoot_target.0 && value.isolated_physics.0);
+    assert_eq!(value.gravity, 0.05);
+    assert_eq!(value.inertia, 0.99);
+    assert_eq!(value.liquid_inertia, 0.6);
+    assert_eq!(value.on_fire_time, 5.0);
+    assert_eq!(value.particle, "iconcrack");
+    assert_eq!(value.potion_effect, -1);
+    assert_eq!(value.power, 1.3);
+    assert_eq!(value.splash_range, 4.0);
+    assert!(value.shoot_target && value.isolated_physics);
     let (damage, _) = strict::<Projectile>(r#"{"on_hit": {"impact_damage": {}}}"#);
     let damage = damage
         .on_hit
         .and_then(|o| o.impact_damage)
         .expect("impact_damage");
-    assert_eq!(damage.max_critical_damage.0, i32::MAX);
-    assert_eq!(damage.power_multiplier.0, 0.0);
-    assert!(damage.destroy_on_hit_requires_damage.0 && damage.set_last_hurt_requires_damage.0);
+    assert_eq!(damage.max_critical_damage, i32::MAX);
+    assert_eq!(damage.power_multiplier, 0.0);
+    assert!(damage.destroy_on_hit_requires_damage && damage.set_last_hurt_requires_damage);
     assert_eq!(
         damage.difficulty_randomization,
         DifficultyRandomization::None
@@ -78,20 +74,17 @@ fn on_hit_subcomponents_read() {
     );
     let on_hit = value.on_hit.expect("on_hit");
     assert_eq!(
-        on_hit.grant_xp.as_ref().map(|g| (g.min_xp.0, g.max_xp.0)),
+        on_hit.grant_xp.as_ref().map(|g| (g.min_xp, g.max_xp)),
         Some((3, 11))
     );
     let effects = &on_hit.mob_effect.as_ref().expect("mob_effect").effects;
-    assert_eq!(
-        effects[0].durationnormal,
-        Some(EffectDuration::Ticks(StrictInt(200)))
-    );
+    assert_eq!(effects[0].durationnormal, Some(EffectDuration::Ticks(200)));
     assert_eq!(
         effects[0].durationhard,
-        Some(EffectDuration::Named(StrictString("infinite".to_owned())))
+        Some(EffectDuration::Named("infinite".to_owned()))
     );
     assert!(on_hit.remove_on_hit.is_some() && on_hit.teleport_owner.is_some());
-    assert!(on_hit.spawn_chance.as_ref().is_some_and(|s| s.spawn_baby.0));
+    assert!(on_hit.spawn_chance.as_ref().is_some_and(|s| s.spawn_baby));
 }
 
 #[test]
@@ -184,7 +177,7 @@ fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
     let text = fixture("v14_projectile_reflect_on_hurt.json");
     let (old, d) = lenient::<Projectile>(&text);
     assert!(d.is_empty(), "{d:?}");
-    assert!(old.reflect_on_hurt.0);
+    assert!(old.reflect_on_hurt);
     assert!(
         d.unknown()
             .get(
@@ -194,7 +187,7 @@ fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
             .is_none()
     );
     let (new, d) = strict::<Projectile>(&text);
-    assert!(!new.reflect_on_hurt.0);
+    assert!(!new.reflect_on_hurt);
     assert!(has(
         &d,
         |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
@@ -215,9 +208,9 @@ fn the_lenient_conversion_maps_impact_damage_aliases_when_the_member_is_absent()
         .on_hit
         .and_then(|o| o.impact_damage)
         .expect("impact_damage");
-    assert!(damage.catch_fire.0 && damage.destroy_on_hit.0);
-    assert_eq!(damage.max_critical_damage.0, 9);
-    assert_eq!(damage.power_multiplier.0, 3.0, "the canonical member wins");
+    assert!(damage.catch_fire && damage.destroy_on_hit);
+    assert_eq!(damage.max_critical_damage, 9);
+    assert_eq!(damage.power_multiplier, 3.0, "the canonical member wins");
     assert!(has(
         &d,
         |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
@@ -244,7 +237,7 @@ fn projectile_offset_reads_the_object_form_and_rejects_a_short_array() {
     let ProjectileOffset::Object(xyz) = &value.offset else {
         panic!("the object form: {:?}", value.offset)
     };
-    assert_eq!((xyz.x.0, xyz.y.0, xyz.z.0), (0.5, 1.0, 0.0));
+    assert_eq!((xyz.x, xyz.y, xyz.z), (0.5, 1.0, 0.0));
     let (short, d) = read_as::<Projectile>(r#"{"offset": [1, 2]}"#, ConvertMode::Strict);
     assert!(short.is_none() && d.has_errors());
 }
@@ -263,8 +256,8 @@ fn the_lenient_conversion_reads_a_legacy_single_mob_effect() {
         .expect("mob_effect")
         .effects;
     assert_eq!(effects.len(), 1);
-    assert_eq!(effects[0].effect.0, "levitation");
-    assert_eq!(effects[0].amplifier.0, 1);
+    assert_eq!(effects[0].effect, "levitation");
+    assert_eq!(effects[0].amplifier, 1);
 }
 
 /// The legacy spawn chance reader reads `*_spawn_percent_chance` (float,
@@ -281,9 +274,9 @@ fn legacy_spawn_chances_are_read_as_the_game_reads_them() {
             .and_then(|o| o.spawn_chance)
             .expect("spawn_chance");
         (
-            spawn.first_spawn_chance.0,
-            spawn.second_spawn_chance.0,
-            spawn.second_spawn_count.0,
+            spawn.first_spawn_chance,
+            spawn.second_spawn_chance,
+            spawn.second_spawn_count,
             d,
         )
     };
@@ -327,7 +320,7 @@ fn legacy_spawn_chances_convert_other_types_as_the_game_does() {
             .on_hit
             .and_then(|o| o.spawn_chance)
             .expect("spawn_chance");
-        (spawn.first_spawn_chance.0, spawn.second_spawn_chance.0)
+        (spawn.first_spawn_chance, spawn.second_spawn_chance)
     };
     let rows: [(&str, (f32, f32)); 7] = [
         // A string or array percent is 0 %: the chance 0, the one-in-N member not read.
@@ -473,7 +466,7 @@ fn freeze_on_hit_size_defaults_to_one() {
         .as_ref()
         .and_then(|on_hit| on_hit.freeze_on_hit.as_ref())
         .expect("freeze_on_hit");
-    assert_eq!(freeze.size.0, 1.0);
+    assert_eq!(freeze.size, 1.0);
 }
 
 /// The game has no reader of
@@ -523,32 +516,27 @@ fn the_legacy_on_hit_camel_case_spellings_are_the_members_below_1_26_50() {
     assert!(!d.iter().any(|f| f.severity >= Severity::Warning), "{d:?}");
     let on_hit = value.on_hit.as_ref().expect("on_hit");
     let fire = on_hit.catch_fire.as_ref().expect("catch_fire");
-    assert_eq!(fire.on_fire_time.0, 3.0);
-    assert!(fire.fire_affected_by_griefing.0);
+    assert_eq!(fire.on_fire_time, 3.0);
+    assert!(fire.fire_affected_by_griefing);
     assert_eq!(
-        on_hit
-            .hurt_owner
-            .as_ref()
-            .expect("hurt_owner")
-            .owner_damage
-            .0,
+        on_hit.hurt_owner.as_ref().expect("hurt_owner").owner_damage,
         2.0
     );
     let spawn = on_hit.spawn_chance.as_ref().expect("spawn_chance");
     assert_eq!(
-        (spawn.first_spawn_chance.0, spawn.first_spawn_count.0),
+        (spawn.first_spawn_chance, spawn.first_spawn_count),
         (0.5, 2)
     );
     assert_eq!(
-        (spawn.second_spawn_chance.0, spawn.second_spawn_count.0),
+        (spawn.second_spawn_chance, spawn.second_spawn_count),
         (0.25, 3)
     );
-    assert_eq!(spawn.spawn_definition.0, "minecraft:chicken");
-    assert!(spawn.spawn_baby.0);
+    assert_eq!(spawn.spawn_definition, "minecraft:chicken");
+    assert!(spawn.spawn_baby);
     let event = on_hit.definition_event.as_ref().expect("definition_event");
-    assert!(event.affect_shooter.0 && event.affect_projectile.0 && event.affect_target.0);
-    assert!(event.affect_splash_area.0);
-    assert_eq!(event.splash_area.0, 2.0);
+    assert!(event.affect_shooter && event.affect_projectile && event.affect_target);
+    assert!(event.affect_splash_area);
+    assert_eq!(event.splash_area, 2.0);
     assert!(event.event_trigger.is_some());
     let (_, d) = read_as::<Projectile>(text, ConvertMode::Strict);
     assert!(
@@ -577,7 +565,7 @@ fn a_lone_mob_effect_object_is_one_effect_below_1_26_50() {
         .expect("mob_effect")
         .effects;
     assert_eq!(effects.len(), 1);
-    assert_eq!(effects[0].effect.0, "poison");
+    assert_eq!(effects[0].effect, "poison");
 }
 
 /// The ≥ 1.26.50 side: the typed reader takes `effects` as a list only,

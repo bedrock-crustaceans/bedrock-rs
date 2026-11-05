@@ -294,10 +294,7 @@ fn member_types_settled_in_review() {
     );
     assert!(d.is_empty(), "{d:?}");
     let types = g.expect("kept").entity_types.expect("entity_types");
-    assert_eq!(
-        types.as_slice()[0].must_see_forget_duration.map(|v| v.0),
-        Some(2.5)
-    );
+    assert_eq!(types.as_slice()[0].must_see_forget_duration, Some(2.5));
     let (g, _) = goal::<goal::AvoidBlock>(
         "minecraft:behavior.avoid_block",
         r#"{"target_selection_method": "random"}"#,

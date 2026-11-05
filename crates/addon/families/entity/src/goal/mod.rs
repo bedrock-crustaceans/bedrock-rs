@@ -52,6 +52,7 @@ struct VersionedIsTheDocumentsOwn;
 pub(crate) use check::VersionedParseFn;
 pub(crate) use check::legacy_ranges;
 pub(crate) use check::parse;
+pub(crate) use check::parse_versioned;
 #[allow(unused_imports, reason = "the component map's key routing uses them")]
 pub(crate) use memory::{GenericGoal, MOVE_TO_POSITION, generic_goal, suffix_missing};
 
@@ -66,10 +67,16 @@ pub(crate) fn versioned(key: &str) -> Option<VersionedParseFn> {
         GenericGoal::Named { base, .. } => base,
         _ => key,
     };
-    table::VERSIONED
-        .binary_search_by(|(name, _)| (*name).cmp(key))
-        .ok()
-        .map(|i| table::VERSIONED[i].1)
+    // The goal rows' own table first (`goal` on the row), then the goals still listed by hand.
+    [
+        crate::component::EntityComponent::VERSIONED,
+        table::VERSIONED,
+    ]
+    .into_iter()
+    .find_map(|list| {
+        let i = list.binary_search_by(|(name, _)| (*name).cmp(key)).ok()?;
+        Some(list[i].1)
+    })
 }
 
 #[cfg(test)]
@@ -89,15 +96,15 @@ mod tests {
             versioned("minecraft:behavior.vex_random_move").is_none(),
             "a dynamic key"
         );
-        for (key, _) in table::VERSIONED {
+        let listed = || table::VERSIONED.iter().chain(EntityComponent::VERSIONED);
+        for (key, _) in listed() {
             assert!(
                 versioned(key).is_some(),
                 "{key} is found (the table is sorted)"
             );
             assert!(EntityComponent::TABLE.get(key).is_some(), "{key} has a row");
         }
-        let goals = table::VERSIONED
-            .iter()
+        let goals = listed()
             .filter(|(key, _)| key.starts_with("minecraft:behavior."))
             .count();
         assert_eq!(

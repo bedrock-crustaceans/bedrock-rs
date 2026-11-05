@@ -10,13 +10,10 @@ fn interact_reads_a_vanilla_saddle_interaction() {
     let value = round_trip::<Interact>(&fixture("interact_saddle.json"));
     assert_eq!(value.interactions.len(), 2);
     let saddle = &value.interactions[0];
-    assert_eq!(
-        saddle.equip_item_slot.as_ref().map(|s| s.0.as_str()),
-        Some("0")
-    );
+    assert_eq!(saddle.equip_item_slot.as_deref(), Some("0"));
     assert_eq!(saddle.play_sounds.len(), 1);
     assert!(saddle.on_interact.is_some());
-    assert!(saddle.use_item.0 && !saddle.swing.0);
+    assert!(saddle.use_item && !saddle.swing);
     let unsaddle = &value.interactions[1];
     assert_eq!(unsaddle.vibration, InteractVibration::Shear);
     assert_eq!(
@@ -29,10 +26,10 @@ fn interact_reads_a_vanilla_saddle_interaction() {
 fn an_interaction_reads_its_schema_defaults() {
     let (value, _) = strict::<Interact>(r#"{"interactions": [{}]}"#);
     let one = &value.interactions[0];
-    assert!(one.swing.0, "the 1.26.0 default is `true`");
+    assert!(one.swing, "the 1.26.0 default is `true`");
     assert_eq!(one.vibration, InteractVibration::EntityInteract);
-    assert_eq!(one.cooldown.0, 0.0);
-    assert_eq!(one.health_amount.0, 0);
+    assert_eq!(one.cooldown, 0.0);
+    assert_eq!(one.health_amount, 0);
     assert!(
         one.add_items.is_none() && one.spawn_items.is_none() && one.repair_entity_item.is_none()
     );
@@ -40,8 +37,8 @@ fn an_interaction_reads_its_schema_defaults() {
         r#"{"interactions": [{"repair_entity_item": {"slot": "slot.armor.body"}, "spawn_items": {"table": "loot_tables/x.json"}}]}"#,
     );
     let one = &repair.interactions[0];
-    assert_eq!(one.repair_entity_item.as_ref().map(|r| r.amount.0), Some(1));
-    assert_eq!(one.spawn_items.as_ref().map(|s| s.y_offset.0), Some(1.0));
+    assert_eq!(one.repair_entity_item.as_ref().map(|r| r.amount), Some(1));
+    assert_eq!(one.spawn_items.as_ref().map(|s| s.y_offset), Some(1.0));
 }
 
 #[test]
@@ -61,8 +58,8 @@ fn the_lenient_conversion_reads_a_string_play_sounds_as_one_sound() {
         r#"{"interactions": [{"play_sounds": "eat", "spawn_entities": "minecraft:cow"}]}"#,
     );
     assert!(d.is_empty(), "{d:?}");
-    assert_eq!(value.interactions[0].play_sounds[0].0, "eat");
-    assert_eq!(value.interactions[0].spawn_entities[0].0, "minecraft:cow");
+    assert_eq!(value.interactions[0].play_sounds[0], "eat");
+    assert_eq!(value.interactions[0].spawn_entities[0], "minecraft:cow");
 }
 
 #[test]

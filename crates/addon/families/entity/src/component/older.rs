@@ -12,14 +12,14 @@
 //! it is kept among the document's unknown members and reported as `UnrecognizedField`.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{JsonSlice, StrictBool, StrictFloat};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 
-use super::parse::{Check, Typed, read};
+use super::parse::{ComponentCheck, Typed, read};
 use super::push::{
     ApplyKnockbackRules, ExtraKnockbackApproach, KnockbackMode, KnockbackPreset, PushMode,
     PushPreset, PushableByEntity,
@@ -27,49 +27,43 @@ use super::push::{
 
 /// `minecraft:apply_knockback_rules` from 1.8.0 to 1.26.20.
 #[doc(alias = "minecraft:apply_knockback_rules")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ApplyKnockbackRulesV1_8_0 {
     /// `presets`: the presets, in order.
     #[facet(default)]
     pub presets: Vec<KnockbackPresetV1_8_0>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One preset of [`ApplyKnockbackRulesV1_8_0`].
 // The shape follows the game's 1.21.80 `minecraft_apply_knockback_rules_instance.json`.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct KnockbackPresetV1_8_0 {
     /// `filter`: which targets the preset applies to; absent means all.
-    #[facet(default)]
     pub filter: Option<Filter>,
     /// `horizontal_power`: default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub horizontal_power: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub horizontal_power: f32,
     /// `vertical_power`: default 0.4.
-    #[facet(default = StrictFloat(0.4_f32))]
-    pub vertical_power: StrictFloat<f32>,
+    #[facet(default = 0.4_f32)]
+    pub vertical_power: f32,
     /// `vertical_velocity_cap`: default 0.4.
-    #[facet(default = StrictFloat(0.4_f32))]
-    pub vertical_velocity_cap: StrictFloat<f32>,
+    #[facet(default = 0.4_f32)]
+    pub vertical_velocity_cap: f32,
     /// `check_if_target_is_immersed_in_water`: default `false`.
-    #[facet(default = StrictBool(false))]
-    pub check_if_target_is_immersed_in_water: StrictBool,
-    /// Members the preset does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = false)]
+    pub check_if_target_is_immersed_in_water: bool,
 }
 
 impl Default for KnockbackPresetV1_8_0 {
     fn default() -> Self {
         Self {
             filter: None,
-            horizontal_power: StrictFloat(1.0),
-            vertical_power: StrictFloat(0.4),
-            vertical_velocity_cap: StrictFloat(0.4),
-            check_if_target_is_immersed_in_water: StrictBool(false),
-            extra: Extra::default(),
+            horizontal_power: 1.0,
+            vertical_power: 0.4,
+            vertical_velocity_cap: 0.4,
+            check_if_target_is_immersed_in_water: false,
         }
     }
 }
@@ -89,7 +83,7 @@ impl ApplyKnockbackRulesV1_8_0 {
 }
 
 impl Typed for ApplyKnockbackRulesV1_8_0 {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         // No minimum on `presets` here: vanilla's floor bind has no container constraint.
         let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter().enumerate() {
@@ -118,24 +112,19 @@ impl From<ApplyKnockbackRulesV1_8_0> for ApplyKnockbackRules {
                     check_if_target_is_immersed_in_water: p.check_if_target_is_immersed_in_water,
                     extra_knockback_approach: ExtraKnockbackApproach::ReapplyDefault,
                     knockback_mode: KnockbackMode::RelativeHorizontal,
-                    scale_with_damage: StrictBool(false),
-                    slowdown_scale: StrictFloat(0.5),
-                    extra: p.extra,
+                    scale_with_damage: false,
+                    slowdown_scale: 0.5,
                 })
                 .collect(),
-            extra: old.extra,
         }
     }
 }
 
 /// `minecraft:pushable_by_entity` in 1.26.20: other entities push this one; no members.
 #[doc(alias = "minecraft:pushable_by_entity")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct PushableByEntityV1_26_20 {
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+pub struct PushableByEntityV1_26_20 {}
 
 impl PushableByEntityV1_26_20 {
     /// Reads the component from its slice in `mode`; findings relative to the component.
@@ -155,75 +144,69 @@ impl Typed for PushableByEntityV1_26_20 {}
 /// The 1.26.30 upgrade: the empty component becomes `{presets: []}`, the built-in behaviour.
 // The game's upgrade hook returns without writing the destination.
 impl From<PushableByEntityV1_26_20> for PushableByEntityV1_26_30 {
-    fn from(old: PushableByEntityV1_26_20) -> Self {
+    fn from(_: PushableByEntityV1_26_20) -> Self {
         Self {
             presets: Vec::new(),
-            extra: old.extra,
         }
     }
 }
 
 /// `minecraft:pushable_by_entity` in 1.26.30.
 #[doc(alias = "minecraft:pushable_by_entity")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct PushableByEntityV1_26_30 {
     /// `presets`: the presets, in order.
     #[facet(default)]
     pub presets: Vec<PushPresetV1_26_30>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One preset of [`PushableByEntityV1_26_30`]: [`PushPreset`] without
 /// `require_collision_overlap`.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct PushPresetV1_26_30 {
     /// `filters`: absent means all.
-    #[facet(default)]
     pub filters: Option<Filter>,
     /// `push_mode`: default `default`.
     #[facet(default = PushMode::Default)]
     pub push_mode: PushMode,
     /// `strength_multiplier`: default 0.05.
-    #[facet(default = StrictFloat(0.05_f32))]
-    pub strength_multiplier: StrictFloat<f32>,
+    #[facet(default = 0.05_f32)]
+    pub strength_multiplier: f32,
     /// `min_distance`: default 0.01.
-    #[facet(default = StrictFloat(0.01_f32))]
-    pub min_distance: StrictFloat<f32>,
+    #[facet(default = 0.01_f32)]
+    pub min_distance: f32,
     /// `max_distance`: default the largest `f32`.
-    #[facet(default = StrictFloat(f32::MAX))]
-    pub max_distance: StrictFloat<f32>,
+    #[facet(default = f32::MAX)]
+    pub max_distance: f32,
     /// `push_scale_self`: default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub push_scale_self: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub push_scale_self: f32,
     /// `push_scale_other`: default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub push_scale_other: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub push_scale_other: f32,
     /// `kick_speed_scale`: default 2.
-    #[facet(default = StrictFloat(2.0_f32))]
-    pub kick_speed_scale: StrictFloat<f32>,
+    #[facet(default = 2.0_f32)]
+    pub kick_speed_scale: f32,
     /// `min_kick_speed`: default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub min_kick_speed: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub min_kick_speed: f32,
     /// `max_kick_speed`: default 0.5.
-    #[facet(default = StrictFloat(0.5_f32))]
-    pub max_kick_speed: StrictFloat<f32>,
+    #[facet(default = 0.5_f32)]
+    pub max_kick_speed: f32,
     /// `vertical_kick_multiplier`: default 0.3.
-    #[facet(default = StrictFloat(0.3_f32))]
-    pub vertical_kick_multiplier: StrictFloat<f32>,
+    #[facet(default = 0.3_f32)]
+    pub vertical_kick_multiplier: f32,
     /// `play_sound`: default `false`.
-    #[facet(default = StrictBool(false))]
-    pub play_sound: StrictBool,
+    #[facet(default = false)]
+    pub play_sound: bool,
     /// `play_sound_cooldown_in_seconds`: default 0.2.
-    #[facet(default = StrictFloat(0.2_f32))]
-    pub play_sound_cooldown_in_seconds: StrictFloat<f32>,
+    #[facet(default = 0.2_f32)]
+    pub play_sound_cooldown_in_seconds: f32,
     /// `play_sound_impulse_threshold`: default 0.2.
-    #[facet(default = StrictFloat(0.2_f32))]
-    pub play_sound_impulse_threshold: StrictFloat<f32>,
-    /// Members the preset does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = 0.2_f32)]
+    pub play_sound_impulse_threshold: f32,
 }
 
 impl Default for PushPresetV1_26_30 {
@@ -244,7 +227,6 @@ impl Default for PushPresetV1_26_30 {
             play_sound: new.play_sound,
             play_sound_cooldown_in_seconds: new.play_sound_cooldown_in_seconds,
             play_sound_impulse_threshold: new.play_sound_impulse_threshold,
-            extra: new.extra,
         }
     }
 }
@@ -263,7 +245,7 @@ impl PushableByEntityV1_26_30 {
 }
 
 impl Typed for PushableByEntityV1_26_30 {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter().enumerate() {
             if let Some(filters) = &preset.filters {
@@ -279,7 +261,7 @@ impl Typed for PushableByEntityV1_26_30 {
 /// gets `use_default_with_overlap_check: false`, which keep the 1.26.30 behaviour.
 impl From<PushableByEntityV1_26_30> for PushableByEntity {
     fn from(old: PushableByEntityV1_26_30) -> Self {
-        let use_default_with_overlap_check = old.presets.is_empty().then_some(StrictBool(false));
+        let use_default_with_overlap_check = old.presets.is_empty().then_some(false);
         Self {
             presets: old
                 .presets
@@ -299,12 +281,34 @@ impl From<PushableByEntityV1_26_30> for PushableByEntity {
                     play_sound: p.play_sound,
                     play_sound_cooldown_in_seconds: p.play_sound_cooldown_in_seconds,
                     play_sound_impulse_threshold: p.play_sound_impulse_threshold,
-                    require_collision_overlap: StrictBool(false),
-                    extra: p.extra,
+                    require_collision_overlap: false,
                 })
                 .collect(),
             use_default_with_overlap_check,
-            extra: old.extra,
         }
     }
 }
+
+crate::hand_fields!(KnockbackPresetV1_8_0 {
+    "horizontal_power": f32,
+    "vertical_power": f32,
+    "vertical_velocity_cap": f32,
+    "check_if_target_is_immersed_in_water": bool,
+});
+bedrock_addon_core::impl_no_molang!(KnockbackPresetV1_8_0);
+crate::hand_fields!(PushPresetV1_26_30 {
+    "push_mode": PushMode,
+    "strength_multiplier": f32,
+    "min_distance": f32,
+    "max_distance": f32,
+    "push_scale_self": f32,
+    "push_scale_other": f32,
+    "kick_speed_scale": f32,
+    "min_kick_speed": f32,
+    "max_kick_speed": f32,
+    "vertical_kick_multiplier": f32,
+    "play_sound": bool,
+    "play_sound_cooldown_in_seconds": f32,
+    "play_sound_impulse_threshold": f32,
+});
+bedrock_addon_core::impl_no_molang!(PushPresetV1_26_30);

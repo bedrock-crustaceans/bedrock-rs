@@ -369,7 +369,7 @@ fn dynamic_members(map: &ComponentMap<EntityComponent>) -> Vec<(String, Vec<Seg>
 
 /// Pass 2: compiled with the load context's check, else counted as not checked. A rejected
 /// expression lists its component for the drop.
-#[cfg(feature = "molang")]
+/// Without the `molang` feature every expression is counted as not checked.
 fn compile(
     members: &mut Members,
     molang: &MolangContext,
@@ -377,35 +377,26 @@ fn compile(
     cx: &mut ValidateCx<'_>,
     drop: &mut Vec<ComponentAt>,
 ) {
-    use bedrock_addon_core::molang::{MolangOutcome, Side, check_fields};
-    let Some(check) = cx.load.molang.clone() else {
-        not_checked(members, base, cx.diagnostics);
+    #[cfg(feature = "molang")]
+    if let Some(check) = cx.load.molang.clone() {
+        use bedrock_addon_core::molang::{MolangOutcome, Side, check_fields};
+        let failures = check_fields(members, &check, Side::Server, molang, base, cx.diagnostics);
+        for failure in failures {
+            if !matches!(failure.outcome, MolangOutcome::Failed(_)) {
+                continue;
+            }
+            if let Some(found) = members
+                .0
+                .iter()
+                .find(|m| !m.descriptor && json_path(&cx.at, &m.path) == failure.path)
+            {
+                drop.push(found.component.clone());
+            }
+        }
         return;
-    };
-    let failures = check_fields(members, &check, Side::Server, molang, base, cx.diagnostics);
-    for failure in failures {
-        if !matches!(failure.outcome, MolangOutcome::Failed(_)) {
-            continue;
-        }
-        if let Some(member) = members
-            .0
-            .iter()
-            .find(|m| !m.descriptor && json_path(&cx.at, &m.path) == failure.path)
-        {
-            drop.push(member.component.clone());
-        }
     }
-}
-
-/// Pass 2 without the `molang` feature: counted as not checked.
-#[cfg(not(feature = "molang"))]
-fn compile(
-    members: &mut Members,
-    _: &MolangContext,
-    base: &Location,
-    cx: &mut ValidateCx<'_>,
-    _: &mut Vec<ComponentAt>,
-) {
+    #[cfg(not(feature = "molang"))]
+    let _ = (molang, drop);
     not_checked(members, base, cx.diagnostics);
 }
 

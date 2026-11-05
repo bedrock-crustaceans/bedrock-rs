@@ -380,10 +380,7 @@ fn e32_pickup_items_stop_if_holding_item() {
     );
     let g = g.expect("kept");
     assert!(d.is_empty(), "{d:?}");
-    assert_eq!(
-        g.stop_if_holding_item,
-        Some(bedrock_addon_core::json::StrictBool(false))
-    );
+    assert_eq!(g.stop_if_holding_item, Some(false));
     assert!(!goal::PickupItems::default().stop_if_holding_item());
 }
 

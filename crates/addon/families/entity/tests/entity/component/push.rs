@@ -40,17 +40,17 @@ fn apply_knockback_rules_preset_reads_its_1_26_30_defaults() {
     let (rules, _) = strict::<ApplyKnockbackRules>(r#"{"presets": [{}]}"#);
     let preset = &rules.presets[0];
     assert_eq!(*preset, KnockbackPreset::default());
-    assert_eq!(preset.horizontal_power.0, 1.0);
-    assert_eq!(preset.vertical_power.0, 0.4);
-    assert_eq!(preset.vertical_velocity_cap.0, 0.4);
-    assert!(!preset.check_if_target_is_immersed_in_water.0);
+    assert_eq!(preset.horizontal_power, 1.0);
+    assert_eq!(preset.vertical_power, 0.4);
+    assert_eq!(preset.vertical_velocity_cap, 0.4);
+    assert!(!preset.check_if_target_is_immersed_in_water);
     assert_eq!(
         preset.extra_knockback_approach,
         ExtraKnockbackApproach::ReapplyDefault
     );
     assert_eq!(preset.knockback_mode, KnockbackMode::RelativeHorizontal);
-    assert!(!preset.scale_with_damage.0);
-    assert_eq!(preset.slowdown_scale.0, 0.5);
+    assert!(!preset.scale_with_damage);
+    assert_eq!(preset.slowdown_scale, 0.5);
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn e31b_iron_golem_knockback_preset_round_trips() {
         r#"{"presets": [{"horizontal_power": 0.52, "vertical_power": 0.39, "vertical_velocity_cap": 0.8,
                          "check_if_target_is_immersed_in_water": false}]}"#,
     );
-    assert_eq!(rules.presets[0].horizontal_power.0, 0.52);
+    assert_eq!(rules.presets[0].horizontal_power, 0.52);
     let built = ApplyKnockbackRules::with_preset(KnockbackPreset::new(0.52, 0.39, 0.8, false));
     assert_eq!(built, rules);
 }
@@ -107,15 +107,15 @@ fn e32_floor_knockback_preset_upgrades_with_the_1_26_30_defaults() {
     assert!(d.is_empty(), "{d:?}");
     let upgraded = ApplyKnockbackRules::from(floor.expect("reads"));
     let preset = &upgraded.presets[0];
-    assert_eq!(preset.horizontal_power.0, 0.6);
-    assert!(preset.check_if_target_is_immersed_in_water.0);
+    assert_eq!(preset.horizontal_power, 0.6);
+    assert!(preset.check_if_target_is_immersed_in_water);
     assert!(preset.filter.is_some());
     assert_eq!(
         preset.extra_knockback_approach,
         ExtraKnockbackApproach::ReapplyDefault
     );
     assert_eq!(preset.knockback_mode, KnockbackMode::RelativeHorizontal);
-    assert_eq!(preset.slowdown_scale.0, 0.5);
+    assert_eq!(preset.slowdown_scale, 0.5);
 }
 
 #[test]
@@ -139,13 +139,13 @@ fn pushable_by_entity_preset_reads_its_1_26_40_defaults() {
     let (value, _) = strict::<PushableByEntity>(r#"{"presets": [{}]}"#);
     let preset = &value.presets[0];
     assert_eq!(preset.push_mode, PushMode::Default);
-    assert_eq!(preset.strength_multiplier.0, 0.05);
-    assert_eq!(preset.min_distance.0, 0.01);
-    assert_eq!(preset.max_distance.0, f32::MAX);
-    assert_eq!(preset.kick_speed_scale.0, 2.0);
-    assert_eq!(preset.max_kick_speed.0, 0.5);
-    assert_eq!(preset.vertical_kick_multiplier.0, 0.3);
-    assert!(preset.require_collision_overlap.0);
+    assert_eq!(preset.strength_multiplier, 0.05);
+    assert_eq!(preset.min_distance, 0.01);
+    assert_eq!(preset.max_distance, f32::MAX);
+    assert_eq!(preset.kick_speed_scale, 2.0);
+    assert_eq!(preset.max_kick_speed, 0.5);
+    assert_eq!(preset.vertical_kick_multiplier, 0.3);
+    assert!(preset.require_collision_overlap);
     assert_eq!(value.use_default_with_overlap_check, None);
     assert!(value.uses_default_with_overlap_check());
 }
@@ -158,7 +158,7 @@ fn sulfur_cube_ball_preset_round_trips() {
                          "push_mode": "ball", "play_sound": true, "require_collision_overlap": false}]}"#,
     );
     assert_eq!(value.presets[0].push_mode, PushMode::Ball);
-    assert!(!value.presets[0].require_collision_overlap.0);
+    assert!(!value.presets[0].require_collision_overlap);
 }
 
 #[test]
@@ -190,13 +190,13 @@ fn e33_pushable_by_entity_presets_carried_to_1_26_40_do_not_require_overlap() {
     assert!(d.is_empty(), "{d:?}");
     let new = PushableByEntity::from(old.expect("reads"));
     assert_eq!(new.presets.len(), 2);
-    assert!(new.presets.iter().all(|p| !p.require_collision_overlap.0));
+    assert!(new.presets.iter().all(|p| !p.require_collision_overlap));
     assert_eq!(new.presets[0].push_mode, PushMode::Ball);
     assert_eq!(new.use_default_with_overlap_check, None);
     // No presets: the hidden flag is set to `false`.
     let (empty, _) = older(PushableByEntityV1_26_30::read, r#"{"presets": []}"#);
     let new = PushableByEntity::from(empty.expect("reads"));
-    assert_eq!(new.use_default_with_overlap_check.map(|b| b.0), Some(false));
+    assert_eq!(new.use_default_with_overlap_check, Some(false));
     assert_eq!(
         write(&new),
         json(r#"{"presets": [], "use_default_with_overlap_check": false}"#)

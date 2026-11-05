@@ -16,9 +16,9 @@ fn boss_reads_its_schema_defaults() {
     let (boss, d) = strict::<Boss>("{}");
     assert!(d.is_empty(), "{d:?}");
     assert_eq!(boss, Boss::default());
-    assert_eq!(boss.name.0, "");
-    assert!(!boss.should_darken_sky.0);
-    assert_eq!(boss.hud_range.0, 55);
+    assert_eq!(boss.name, "");
+    assert!(!boss.should_darken_sky);
+    assert_eq!(boss.hud_range, 55);
 }
 
 #[test]
@@ -27,10 +27,10 @@ fn e00a_boss_values_of_the_wither_and_the_dragon_round_trip() {
     let wither = round_trip::<Boss>(
         r#"{"name": "entity.wither.name", "should_darken_sky": true, "hud_range": 55}"#,
     );
-    assert!(wither.should_darken_sky.0);
-    assert_eq!(wither.name.0, "entity.wither.name");
+    assert!(wither.should_darken_sky);
+    assert_eq!(wither.name, "entity.wither.name");
     let dragon = round_trip::<Boss>(r#"{"should_darken_sky": false, "hud_range": 125}"#);
-    assert_eq!(dragon.hud_range.0, 125);
+    assert_eq!(dragon.hud_range, 125);
 }
 
 #[test]
@@ -48,8 +48,8 @@ fn boss_with_a_string_range_is_an_error_in_a_strict_read() {
 #[test]
 fn boss_with_a_string_range_takes_the_default_in_the_lenient_conversion() {
     let (boss, d) = lenient::<Boss>(r#"{"hud_range": "40", "should_darken_sky": true}"#);
-    assert_eq!(boss.hud_range.0, 55);
-    assert!(boss.should_darken_sky.0, "the other members are kept");
+    assert_eq!(boss.hud_range, 55);
+    assert!(boss.should_darken_sky, "the other members are kept");
     assert!(has(
         &d,
         |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
@@ -75,12 +75,12 @@ fn burns_in_daylight_reads_its_protection_slot() {
 #[test]
 fn damage_over_time_and_insomnia_round_trip() {
     let dot = round_trip::<DamageOverTime>(r#"{"damage_per_hurt": 2, "time_between_hurt": 0.5}"#);
-    assert_eq!(dot.damage_per_hurt.0, 2);
-    assert_eq!(dot.time_between_hurt.0, 0.5);
-    assert_eq!(DamageOverTime::default().damage_per_hurt.0, 1);
+    assert_eq!(dot.damage_per_hurt, 2);
+    assert_eq!(dot.time_between_hurt, 0.5);
+    assert_eq!(DamageOverTime::default().damage_per_hurt, 1);
     let insomnia = round_trip::<Insomnia>(r#"{"days_until_insomnia": 2.5}"#);
-    assert_eq!(insomnia.days_until_insomnia.0, 2.5);
-    assert_eq!(Insomnia::default().days_until_insomnia.0, 3.0);
+    assert_eq!(insomnia.days_until_insomnia, 2.5);
+    assert_eq!(Insomnia::default().days_until_insomnia, 3.0);
 }
 
 #[test]
@@ -88,18 +88,18 @@ fn e08_exhaustion_values_from_an_empty_object_are_the_vanilla_defaults() {
     // e08: the 1.18.30 A-op writes `{}` for the player; the typed read fills the
     // defaults vanilla's legacy parser used.
     let (values, _) = strict::<ExhaustionValues>("{}");
-    assert_eq!(values.heal.0, 6.0);
-    assert_eq!(values.jump.0, 0.05);
-    assert_eq!(values.sprint_jump.0, 0.2);
-    assert_eq!(values.mine.0, 0.005);
-    assert_eq!(values.attack.0, 0.1);
-    assert_eq!(values.damage.0, 0.1);
-    assert_eq!(values.walk.0, 0.0);
-    assert_eq!(values.sprint.0, 0.01);
-    assert_eq!(values.swim.0, 0.01);
-    assert_eq!(values.lunge.0, 4.0);
+    assert_eq!(values.heal, 6.0);
+    assert_eq!(values.jump, 0.05);
+    assert_eq!(values.sprint_jump, 0.2);
+    assert_eq!(values.mine, 0.005);
+    assert_eq!(values.attack, 0.1);
+    assert_eq!(values.damage, 0.1);
+    assert_eq!(values.walk, 0.0);
+    assert_eq!(values.sprint, 0.01);
+    assert_eq!(values.swim, 0.01);
+    assert_eq!(values.lunge, 4.0);
     let custom = round_trip::<ExhaustionValues>(r#"{"heal": 3, "walk": 0.25}"#);
-    assert_eq!(custom.heal.0, 3.0);
+    assert_eq!(custom.heal, 3.0);
 }
 
 #[test]

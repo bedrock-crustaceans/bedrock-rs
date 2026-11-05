@@ -2,10 +2,11 @@
 
 use std::ops::Deref;
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::MolangSource;
+use bedrock_addon_core::schema;
 use facet::Facet;
 use indexmap::IndexMap;
 
@@ -335,19 +336,18 @@ pub struct Event {
 
 /// `brain`: the Brain Prototype's memories.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Brain {
     /// `memories`: the entity's memories, unique by name.
     pub memories: Vec<Memory>,
     /// `internal_memory_access_mappings`: memories the engine itself writes.
     #[facet(default)]
     pub internal_memory_access_mappings: Option<InternalMemoryAccess>,
-    /// Members the format does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of [`Brain::memories`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Memory {
     /// `name`: the memory's identifier.
     pub name: String,
@@ -357,9 +357,6 @@ pub struct Memory {
     /// `persists`: whether the memory is saved with the entity; `false` when absent.
     #[facet(default)]
     pub persists: Option<bool>,
-    /// Members the format does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `type` of a [`Memory`].
@@ -421,13 +418,11 @@ impl MemoryType {
 
 /// `brain.internal_memory_access_mappings`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct InternalMemoryAccess {
     /// `beehive_has_nectar`: the `bool` memory the engine sets while the bee carries nectar.
     #[facet(default)]
     pub beehive_has_nectar: Option<String>,
-    /// Members the format does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `__deprecated`: the side-car of what an older document wrote and this version does not

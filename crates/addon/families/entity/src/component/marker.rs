@@ -1,10 +1,10 @@
-//! The marker components: no members, written `{}`. A member written into one is kept in its
-//! `extra` and reported as `UnrecognizedField`.
+//! The marker components: no members, written `{}`. A member written into one is kept among
+//! the document's unknown members and reported as `UnrecognizedField`.
 //!
 //! There are 49 markers: 23 first typed in 1.21.120, 11 in 1.26.20, 11 in 1.26.40 and 4 in
 //! 1.26.50. The game binds each of them without members.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema::{self, Schema};
 use facet::Facet;
 
 use super::parse::Typed;
@@ -14,12 +14,9 @@ macro_rules! markers {
     ($( $(#[$doc:meta])* $name:ident = $key:literal; )*) => {$(
         $(#[$doc])*
         #[doc(alias = $key)]
-        #[derive(Clone, Debug, Default, PartialEq, Facet)]
-        pub struct $name {
-            /// Members the component does not define, kept for write-back.
-            #[facet(skip, rename = "\u{0}extra")]
-            pub extra: Extra,
-        }
+        #[derive(Clone, Debug, PartialEq, Facet, Schema)]
+        #[facet(schema::unknown = "keep")]
+        pub struct $name {}
 
         impl Typed for $name {}
     )*};

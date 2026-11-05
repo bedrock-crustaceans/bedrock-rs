@@ -7,173 +7,130 @@
 //! projectile reader, whose camelCase aliases the lenient conversion maps.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{
-    ScalarShape, StrictBool, StrictError, StrictFloat, StrictInt, StrictString, Value,
-};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 use indexmap::IndexMap;
 
-use super::parse::{Check, Typed};
+use super::parse::{ComponentCheck, Typed};
 
 /// `minecraft:projectile`: the entity is a projectile.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
 #[doc(alias = "minecraft:projectile")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Projectile {
     /// `anchor`: where on the shooter the projectile starts; default `origin`.
     #[facet(default = ProjectileAnchor::Origin)]
     pub anchor: ProjectileAnchor,
     /// `angle_offset`: the angle added to the shot's pitch; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub angle_offset: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub angle_offset: f32,
     /// `catch_fire`: the projectile sets what it hits on fire; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub catch_fire: StrictBool,
+    #[facet(default = false)]
+    pub catch_fire: bool,
     /// `crit_particle_on_hurt`: critical-hit particles on hurt; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub crit_particle_on_hurt: StrictBool,
+    #[facet(default = false)]
+    pub crit_particle_on_hurt: bool,
     /// `destroy_on_hurt`: the projectile is destroyed when hurt; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub destroy_on_hurt: StrictBool,
+    #[facet(default = false)]
+    pub destroy_on_hurt: bool,
     /// `gravity`: the downward acceleration; default 0.05.
-    #[facet(default = StrictFloat(0.05_f32))]
-    pub gravity: StrictFloat<f32>,
+    #[facet(default = 0.05_f32)]
+    pub gravity: f32,
     /// `hit_ground_sound`: the sound when it hits a block; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub hit_ground_sound: StrictString,
+    #[facet(default = String::new())]
+    pub hit_ground_sound: String,
     /// `hit_nearest_passenger`: it hits the nearest passenger of a vehicle; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub hit_nearest_passenger: StrictBool,
+    #[facet(default = false)]
+    pub hit_nearest_passenger: bool,
     /// `hit_sound`: the sound when it hits an entity; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub hit_sound: StrictString,
+    #[facet(default = String::new())]
+    pub hit_sound: String,
     /// `hit_water`: it collides with water; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub hit_water: StrictBool,
+    #[facet(default = false)]
+    pub hit_water: bool,
     /// `homing`: it homes in on its target; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub homing: StrictBool,
+    #[facet(default = false)]
+    pub homing: bool,
     /// `ignored_entities`: entity identifiers it passes through.
     #[facet(default)]
-    pub ignored_entities: Vec<StrictString>,
+    pub ignored_entities: Vec<String>,
     /// `inertia`: the velocity kept per tick in air; default 0.99.
-    #[facet(default = StrictFloat(0.99_f32))]
-    pub inertia: StrictFloat<f32>,
+    #[facet(default = 0.99_f32)]
+    pub inertia: f32,
     /// `is_dangerous`: entities try to dodge it; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub is_dangerous: StrictBool,
+    #[facet(default = false)]
+    pub is_dangerous: bool,
     /// `isolated_physics`: its physics ignore other projectiles; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub isolated_physics: StrictBool,
+    #[facet(default = true)]
+    pub isolated_physics: bool,
     /// `lightning`: lightning strikes where it hits during a thunderstorm; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub lightning: StrictBool,
+    #[facet(default = false)]
+    pub lightning: bool,
     /// `liquid_inertia`: the velocity kept per tick in liquids; default 0.6.
-    #[facet(default = StrictFloat(0.6_f32))]
-    pub liquid_inertia: StrictFloat<f32>,
+    #[facet(default = 0.6_f32)]
+    pub liquid_inertia: f32,
     /// `multiple_targets`: it can hit several targets; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub multiple_targets: StrictBool,
+    #[facet(default = false)]
+    pub multiple_targets: bool,
     /// `offset`: the launch position relative to the anchor; default `[0, 0, 0]`.
     #[facet(default = ProjectileOffset::default())]
     pub offset: ProjectileOffset,
     /// `on_fire_time`: seconds a target burns; default 5.
-    #[facet(default = StrictFloat(5.0_f32))]
-    pub on_fire_time: StrictFloat<f32>,
+    #[facet(default = 5.0_f32)]
+    pub on_fire_time: f32,
     /// `on_hit`: what happens when it hits.
-    #[facet(default)]
     pub on_hit: Option<OnHit>,
     /// `particle`: vanilla's legacy particle name shown on hit; default `iconcrack`.
-    #[facet(default = StrictString("iconcrack".to_owned()))]
-    pub particle: StrictString,
+    #[facet(default = "iconcrack".to_owned())]
+    pub particle: String,
     /// `potion_effect`: the potion id applied on hit; −1 (the default) is none.
-    #[facet(default = StrictInt(-1_i32))]
-    pub potion_effect: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub potion_effect: i32,
     /// `power`: the launch speed; default 1.3.
-    #[facet(default = StrictFloat(1.3_f32))]
-    pub power: StrictFloat<f32>,
+    #[facet(default = 1.3_f32)]
+    pub power: f32,
     /// `reflect_immunity`: seconds it cannot be reflected; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub reflect_immunity: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub reflect_immunity: f32,
     /// `reflect_on_hurt`: it is reflected when hurt; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub reflect_on_hurt: StrictBool,
+    #[facet(default = false)]
+    pub reflect_on_hurt: bool,
     /// `shoot_sound`: the sound when shot; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub shoot_sound: StrictString,
+    #[facet(default = String::new())]
+    pub shoot_sound: String,
     /// `shoot_target`: it is aimed at the shooter's target; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub shoot_target: StrictBool,
+    #[facet(default = true)]
+    pub shoot_target: bool,
     /// `should_bounce`: when it bounces off what it hits; default `no`.
     #[facet(default = ShouldBounce::No)]
     pub should_bounce: ShouldBounce,
     /// `splash_range`: the radius of a splash effect; default 4.
-    #[facet(default = StrictFloat(4.0_f32))]
-    pub splash_range: StrictFloat<f32>,
+    #[facet(default = 4.0_f32)]
+    pub splash_range: f32,
     /// `spread_fire`: a burning projectile sets the entity it hits on fire; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub spread_fire: StrictBool,
+    #[facet(default = true)]
+    pub spread_fire: bool,
     /// `stop_on_hurt`: it stops when hurt; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub stop_on_hurt: StrictBool,
+    #[facet(default = false)]
+    pub stop_on_hurt: bool,
     /// `uncertainty_base`: the base spread of the shot; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub uncertainty_base: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub uncertainty_base: f32,
     /// `uncertainty_multiplier`: the spread added per difficulty level; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub uncertainty_multiplier: StrictFloat<f32>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Projectile {
-    fn default() -> Self {
-        Self {
-            anchor: ProjectileAnchor::Origin,
-            angle_offset: StrictFloat(0.0),
-            catch_fire: StrictBool(false),
-            crit_particle_on_hurt: StrictBool(false),
-            destroy_on_hurt: StrictBool(false),
-            gravity: StrictFloat(0.05),
-            hit_ground_sound: StrictString::default(),
-            hit_nearest_passenger: StrictBool(false),
-            hit_sound: StrictString::default(),
-            hit_water: StrictBool(false),
-            homing: StrictBool(false),
-            ignored_entities: Vec::new(),
-            inertia: StrictFloat(0.99),
-            is_dangerous: StrictBool(false),
-            isolated_physics: StrictBool(true),
-            lightning: StrictBool(false),
-            liquid_inertia: StrictFloat(0.6),
-            multiple_targets: StrictBool(false),
-            offset: ProjectileOffset::default(),
-            on_fire_time: StrictFloat(5.0),
-            on_hit: None,
-            particle: StrictString("iconcrack".to_owned()),
-            potion_effect: StrictInt(-1),
-            power: StrictFloat(1.3),
-            reflect_immunity: StrictFloat(0.0),
-            reflect_on_hurt: StrictBool(false),
-            shoot_sound: StrictString::default(),
-            shoot_target: StrictBool(true),
-            should_bounce: ShouldBounce::No,
-            splash_range: StrictFloat(4.0),
-            spread_fire: StrictBool(true),
-            stop_on_hurt: StrictBool(false),
-            uncertainty_base: StrictFloat(0.0),
-            uncertainty_multiplier: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub uncertainty_multiplier: f32,
 }
 
 /// Where on the shooter a [`Projectile`] starts.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum ProjectileAnchor {
@@ -190,7 +147,7 @@ pub enum ProjectileAnchor {
 }
 
 /// When a [`Projectile`] bounces off what it hits.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum ShouldBounce {
@@ -213,231 +170,147 @@ pub enum ShouldBounce {
 #[repr(u8)]
 pub enum ProjectileOffset {
     /// `[x, y, z]`.
-    Array(Vec<StrictFloat<f32>>),
+    Array(Vec<f32>),
     /// `{"x", "y", "z"}`.
     Object(Xyz),
 }
 
 impl Default for ProjectileOffset {
     fn default() -> Self {
-        Self::Array(vec![StrictFloat(0.0); 3])
+        Self::Array(vec![0.0; 3])
     }
 }
 
 /// The object form of a [`ProjectileOffset`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Xyz {
     /// `x`: default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub x: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub x: f32,
     /// `y`: default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub y: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub y: f32,
     /// `z`: default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub z: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Xyz {
-    fn default() -> Self {
-        Self {
-            x: StrictFloat(0.0),
-            y: StrictFloat(0.0),
-            z: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub z: f32,
 }
 
 /// `on_hit` of a [`Projectile`]: the subcomponents that run when it hits.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct OnHit {
     /// `arrow_effect`: the arrow's potion effects apply.
-    #[facet(default)]
     pub arrow_effect: Option<ArrowEffect>,
     /// `catch_fire`: the target catches fire.
-    #[facet(default)]
     pub catch_fire: Option<CatchFire>,
     /// `definition_event`: an event fires.
-    #[facet(default)]
     pub definition_event: Option<DefinitionEvent>,
     /// `douse_fire`: a burning target is extinguished.
-    #[facet(default)]
     pub douse_fire: Option<OnHitFlag>,
     /// `freeze_on_hit`: water around the hit freezes.
-    #[facet(default)]
     pub freeze_on_hit: Option<FreezeOnHit>,
     /// `grant_xp`: experience drops.
-    #[facet(default)]
     pub grant_xp: Option<GrantXp>,
     /// `hurt_owner`: the shooter is hurt.
-    #[facet(default)]
     pub hurt_owner: Option<HurtOwner>,
     /// `ignite`: the hit block or entity is set alight.
-    #[facet(default)]
     pub ignite: Option<OnHitFlag>,
     /// `impact_damage`: the target takes damage.
-    #[facet(default)]
     pub impact_damage: Option<ImpactDamage>,
     /// `mob_effect`: effects are applied to the target.
-    #[facet(default)]
     pub mob_effect: Option<MobEffect>,
     /// `particle_on_hit`: particles show.
-    #[facet(default)]
     pub particle_on_hit: Option<ParticleOnHit>,
     /// `remove_on_hit`: the projectile is removed.
-    #[facet(default)]
     pub remove_on_hit: Option<OnHitFlag>,
     /// `spawn_aoe_cloud`: an area effect cloud spawns.
-    #[facet(default)]
     pub spawn_aoe_cloud: Option<SpawnAoeCloud>,
     /// `spawn_chance`: entities may spawn.
-    #[facet(default)]
     pub spawn_chance: Option<SpawnChance>,
     /// `stick_in_ground`: the projectile sticks in the ground.
-    #[facet(default)]
     pub stick_in_ground: Option<StickInGround>,
     /// `teleport_owner`: the shooter teleports to the hit.
-    #[facet(default)]
     pub teleport_owner: Option<OnHitFlag>,
     /// `thrown_potion_effect`: a thrown potion's effect applies.
-    #[facet(default)]
     pub thrown_potion_effect: Option<ThrownPotionEffect>,
     /// `wind_burst_on_hit`: a wind burst happens.
-    #[facet(default)]
     pub wind_burst_on_hit: Option<OnHitFlag>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// An `on_hit` subcomponent without members (`douse_fire`, `ignite`, `remove_on_hit`,
 /// `teleport_owner`, `wind_burst_on_hit`): present means on.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct OnHitFlag {
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+pub struct OnHitFlag {}
 
 /// `on_hit.arrow_effect`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ArrowEffect {
     /// `apply_effect_to_blocking_targets`: the effects apply to a blocking target; default
     /// `true`.
-    #[facet(default = StrictBool(true))]
-    pub apply_effect_to_blocking_targets: StrictBool,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for ArrowEffect {
-    fn default() -> Self {
-        Self {
-            apply_effect_to_blocking_targets: StrictBool(true),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = true)]
+    pub apply_effect_to_blocking_targets: bool,
 }
 
 /// `on_hit.catch_fire`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct CatchFire {
     /// `fire_affected_by_griefing`: the fire follows the `mobGriefing` rule; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub fire_affected_by_griefing: StrictBool,
+    #[facet(default = false)]
+    pub fire_affected_by_griefing: bool,
     /// `on_fire_time`: seconds the target burns; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub on_fire_time: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for CatchFire {
-    fn default() -> Self {
-        Self {
-            fire_affected_by_griefing: StrictBool(false),
-            on_fire_time: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub on_fire_time: f32,
 }
 
 /// `on_hit.definition_event`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DefinitionEvent {
     /// `affect_projectile`: the event fires on the projectile; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub affect_projectile: StrictBool,
+    #[facet(default = false)]
+    pub affect_projectile: bool,
     /// `affect_shooter`: the event fires on the shooter; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub affect_shooter: StrictBool,
+    #[facet(default = false)]
+    pub affect_shooter: bool,
     /// `affect_splash_area`: the event fires on entities in the splash area; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub affect_splash_area: StrictBool,
+    #[facet(default = false)]
+    pub affect_splash_area: bool,
     /// `affect_target`: the event fires on the target; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub affect_target: StrictBool,
+    #[facet(default = false)]
+    pub affect_target: bool,
     /// `event_trigger`: the event.
-    #[facet(default)]
+    #[facet(schema::foreign_event)]
     pub event_trigger: Option<EventTrigger>,
     /// `splash_area`: the splash area's radius; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub splash_area: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for DefinitionEvent {
-    fn default() -> Self {
-        Self {
-            affect_projectile: StrictBool(false),
-            affect_shooter: StrictBool(false),
-            affect_splash_area: StrictBool(false),
-            affect_target: StrictBool(false),
-            event_trigger: None,
-            splash_area: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub splash_area: f32,
 }
 
 /// `on_hit.freeze_on_hit`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct FreezeOnHit {
     /// `shape`: the frozen area's shape; default `cube`.
     #[facet(default = FreezeShape::Cube)]
     pub shape: FreezeShape,
     /// `size`: the half-extent of the frozen area, in blocks; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub size: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub size: f32,
     /// `snap_to_block`: the area is aligned to the block grid; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub snap_to_block: StrictBool,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for FreezeOnHit {
-    fn default() -> Self {
-        Self {
-            shape: FreezeShape::Cube,
-            size: StrictFloat(1.0),
-            snap_to_block: StrictBool(false),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = false)]
+    pub snap_to_block: bool,
 }
 
 /// The shape of a [`FreezeOnHit`] area.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum FreezeShape {
@@ -451,134 +324,110 @@ pub enum FreezeShape {
 }
 
 /// `on_hit.grant_xp`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct GrantXp {
     /// `maxXP`: the most experience; default 0.
-    #[facet(rename = "maxXP", default = StrictInt(0_i32))]
-    pub max_xp: StrictInt<i32>,
+    #[facet(rename = "maxXP", default = 0_i32)]
+    pub max_xp: i32,
     /// `minXP`: the least experience; default 0.
-    #[facet(rename = "minXP", default = StrictInt(0_i32))]
-    pub min_xp: StrictInt<i32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for GrantXp {
-    fn default() -> Self {
-        Self {
-            max_xp: StrictInt(0),
-            min_xp: StrictInt(0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(rename = "minXP", default = 0_i32)]
+    pub min_xp: i32,
 }
 
 /// `on_hit.hurt_owner`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct HurtOwner {
     /// `ignite`: the shooter is set on fire; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub ignite: StrictBool,
+    #[facet(default = false)]
+    pub ignite: bool,
     /// `knockback`: the shooter is knocked back; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub knockback: StrictBool,
+    #[facet(default = false)]
+    pub knockback: bool,
     /// `owner_damage`: the damage the shooter takes; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub owner_damage: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for HurtOwner {
-    fn default() -> Self {
-        Self {
-            ignite: StrictBool(false),
-            knockback: StrictBool(false),
-            owner_damage: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub owner_damage: f32,
 }
 
 /// `on_hit.impact_damage`.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct ImpactDamage {
     /// `apply_knockback_to_blocking_targets`: a blocking target is knocked back too; default
     /// `false`.
-    #[facet(default = StrictBool(false))]
-    pub apply_knockback_to_blocking_targets: StrictBool,
+    #[facet(default = false)]
+    pub apply_knockback_to_blocking_targets: bool,
     /// `catch_fire`: the target catches fire; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub catch_fire: StrictBool,
+    #[facet(default = false)]
+    pub catch_fire: bool,
     /// `ceil_pre_critical_damage`: the damage is rounded up before critical damage is added;
     /// default `false`.
-    #[facet(default = StrictBool(false))]
-    pub ceil_pre_critical_damage: StrictBool,
+    #[facet(default = false)]
+    pub ceil_pre_critical_damage: bool,
     /// `channeling`: lightning strikes the target during a thunderstorm; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub channeling: StrictBool,
+    #[facet(default = false)]
+    pub channeling: bool,
     /// `damage`: the damage range; default `{min: 0, max: 0}`.
     #[facet(default = FloatRange::default())]
     pub damage: FloatRange,
     /// `destroy_on_hit`: the projectile is destroyed on hit; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub destroy_on_hit: StrictBool,
+    #[facet(default = false)]
+    pub destroy_on_hit: bool,
     /// `destroy_on_hit_requires_damage`: only when damage was dealt; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub destroy_on_hit_requires_damage: StrictBool,
+    #[facet(default = true)]
+    pub destroy_on_hit_requires_damage: bool,
     /// `difficulty_randomization`: how difficulty randomises the damage; default `none`.
     #[facet(default = DifficultyRandomization::None)]
     pub difficulty_randomization: DifficultyRandomization,
     /// `filter`: the entity identifier the damage applies to; default all (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub filter: StrictString,
+    #[facet(default = String::new())]
+    pub filter: String,
     /// `knockback`: the target is knocked back; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub knockback: StrictBool,
+    #[facet(default = false)]
+    pub knockback: bool,
     /// `max_critical_damage`: the largest critical bonus; default `i32::MAX`.
-    #[facet(default = StrictInt(i32::MAX))]
-    pub max_critical_damage: StrictInt<i32>,
+    #[facet(default = i32::MAX)]
+    pub max_critical_damage: i32,
     /// `min_critical_damage`: the smallest critical bonus; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub min_critical_damage: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub min_critical_damage: i32,
     /// `power_multiplier`: the damage added per unit of speed; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub power_multiplier: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub power_multiplier: f32,
     /// `set_last_hurt_requires_damage`: the target remembers its attacker only when damaged;
     /// default `true`.
-    #[facet(default = StrictBool(true))]
-    pub set_last_hurt_requires_damage: StrictBool,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = true)]
+    pub set_last_hurt_requires_damage: bool,
 }
 
 impl Default for ImpactDamage {
     fn default() -> Self {
         Self {
-            apply_knockback_to_blocking_targets: StrictBool(false),
-            catch_fire: StrictBool(false),
-            ceil_pre_critical_damage: StrictBool(false),
-            channeling: StrictBool(false),
+            apply_knockback_to_blocking_targets: false,
+            catch_fire: false,
+            ceil_pre_critical_damage: false,
+            channeling: false,
             damage: FloatRange::default(),
-            destroy_on_hit: StrictBool(false),
-            destroy_on_hit_requires_damage: StrictBool(true),
+            destroy_on_hit: false,
+            destroy_on_hit_requires_damage: true,
             difficulty_randomization: DifficultyRandomization::None,
-            filter: StrictString::default(),
-            knockback: StrictBool(false),
-            max_critical_damage: StrictInt(i32::MAX),
-            min_critical_damage: StrictInt(0),
-            power_multiplier: StrictFloat(0.0),
-            set_last_hurt_requires_damage: StrictBool(true),
-            extra: Extra::default(),
+            filter: String::new(),
+            knockback: false,
+            max_critical_damage: i32::MAX,
+            min_critical_damage: 0,
+            power_multiplier: 0.0,
+            set_last_hurt_requires_damage: true,
         }
     }
 }
 
 /// How [`ImpactDamage`] randomises its damage by difficulty.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum DifficultyRandomization {
@@ -595,246 +444,147 @@ pub enum DifficultyRandomization {
 }
 
 /// `on_hit.mob_effect`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MobEffect {
     /// `effects`: the effects.
     #[facet(default)]
     pub effects: Vec<MobEffectInstance>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One effect of [`MobEffect`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MobEffectInstance {
     /// `amplifier`: the effect level; default 1.
-    #[facet(default = StrictInt(1_i32))]
-    pub amplifier: StrictInt<i32>,
+    #[facet(default = 1_i32)]
+    pub amplifier: i32,
     /// `durationeasy`: the duration on easy.
-    #[facet(default)]
     pub durationeasy: Option<EffectDuration>,
     /// `durationhard`: the duration on hard.
-    #[facet(default)]
     pub durationhard: Option<EffectDuration>,
     /// `durationnormal`: the duration on normal.
-    #[facet(default)]
     pub durationnormal: Option<EffectDuration>,
     /// `effect`: the effect name; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub effect: StrictString,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for MobEffectInstance {
-    fn default() -> Self {
-        Self {
-            amplifier: StrictInt(1),
-            durationeasy: None,
-            durationhard: None,
-            durationnormal: None,
-            effect: StrictString::default(),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = String::new())]
+    pub effect: String,
 }
 
 /// An effect duration: ticks (an integer, at least 0) or a name (`infinite`). JSON: an integer
 /// or a string; any other JSON type is rejected.
 #[derive(Clone, Debug, PartialEq, Facet)]
-#[facet(proxy = ScalarShape)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum EffectDuration {
     /// A number of ticks.
-    Ticks(StrictInt<i32>),
+    Ticks(i32),
     /// A name.
-    Named(StrictString),
-}
-
-impl TryFrom<ScalarShape> for EffectDuration {
-    type Error = StrictError;
-
-    fn try_from(json: ScalarShape) -> Result<Self, StrictError> {
-        match json {
-            ScalarShape::String(name) => Ok(Self::Named(StrictString(name))),
-            other => StrictInt::try_from(other).map(Self::Ticks),
-        }
-    }
-}
-
-impl From<&EffectDuration> for ScalarShape {
-    fn from(value: &EffectDuration) -> Self {
-        match value {
-            EffectDuration::Ticks(ticks) => ScalarShape::from(ticks),
-            EffectDuration::Named(name) => ScalarShape::from(name),
-        }
-    }
+    Named(String),
 }
 
 /// `on_hit.particle_on_hit`.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct ParticleOnHit {
     /// `num_particles`: how many particles; default 1.
-    #[facet(default = StrictInt(1_i32))]
-    pub num_particles: StrictInt<i32>,
+    #[facet(default = 1_i32)]
+    pub num_particles: i32,
     /// `on_entity_hit`: particles when an entity is hit; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub on_entity_hit: StrictBool,
+    #[facet(default = false)]
+    pub on_entity_hit: bool,
     /// `on_other_hit`: particles when anything else is hit; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub on_other_hit: StrictBool,
+    #[facet(default = false)]
+    pub on_other_hit: bool,
     /// `particle_item_name`: item names for item particles, each with its condition.
     #[facet(default)]
     pub particle_item_name: IndexMap<String, Filter>,
     /// `particle_type`: vanilla's legacy particle name; default `none`.
-    #[facet(default = StrictString("none".to_owned()))]
-    pub particle_type: StrictString,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = "none".to_owned())]
+    pub particle_type: String,
 }
 
 impl Default for ParticleOnHit {
     fn default() -> Self {
         Self {
-            num_particles: StrictInt(1),
-            on_entity_hit: StrictBool(false),
-            on_other_hit: StrictBool(false),
+            num_particles: 1,
+            on_entity_hit: false,
+            on_other_hit: false,
             particle_item_name: IndexMap::new(),
-            particle_type: StrictString("none".to_owned()),
-            extra: Extra::default(),
+            particle_type: "none".to_owned(),
         }
     }
 }
 
 /// `on_hit.spawn_aoe_cloud`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SpawnAoeCloud {
     /// `affect_owner`: the cloud affects the shooter; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub affect_owner: StrictBool,
+    #[facet(default = true)]
+    pub affect_owner: bool,
     /// `duration`: the cloud's duration; default 0.
-    #[facet(default = EffectDuration::Ticks(StrictInt(0_i32)))]
+    #[facet(default = EffectDuration::Ticks(0_i32))]
     pub duration: EffectDuration,
     /// `particle`: vanilla's legacy particle name; default `mobspellambient`.
-    #[facet(default = StrictString("mobspellambient".to_owned()))]
-    pub particle: StrictString,
+    #[facet(default = "mobspellambient".to_owned())]
+    pub particle: String,
     /// `potion`: the potion id; −1 (the default) is none.
-    #[facet(default = StrictInt(-1_i32))]
-    pub potion: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub potion: i32,
     /// `radius`: the cloud's radius; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub radius: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub radius: f32,
     /// `radius_on_use`: the radius change per use; default −1.
-    #[facet(default = StrictFloat(-1.0_f32))]
-    pub radius_on_use: StrictFloat<f32>,
+    #[facet(default = -1.0_f32)]
+    pub radius_on_use: f32,
     /// `reapplication_delay`: ticks before an entity is affected again; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub reapplication_delay: StrictInt<i32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for SpawnAoeCloud {
-    fn default() -> Self {
-        Self {
-            affect_owner: StrictBool(true),
-            duration: EffectDuration::Ticks(StrictInt(0)),
-            particle: StrictString("mobspellambient".to_owned()),
-            potion: StrictInt(-1),
-            radius: StrictFloat(0.0),
-            radius_on_use: StrictFloat(-1.0),
-            reapplication_delay: StrictInt(0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0_i32)]
+    pub reapplication_delay: i32,
 }
 
 /// `on_hit.spawn_chance`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SpawnChance {
     /// `first_spawn_chance`: the chance of the first spawn, 0 to 1; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub first_spawn_chance: StrictFloat<f32>,
+    #[facet(default = 0.0_f32, schema::min = 0.0, schema::max = 1.0)]
+    pub first_spawn_chance: f32,
     /// `first_spawn_count`: entities of the first spawn; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub first_spawn_count: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub first_spawn_count: i32,
     /// `on_spawn`: events fired on the spawned entities.
-    #[facet(default)]
+    #[facet(default, schema::foreign_event)]
     pub on_spawn: Vec<EventTrigger>,
     /// `second_spawn_chance`: the chance of the second spawn, 0 to 1; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub second_spawn_chance: StrictFloat<f32>,
+    #[facet(default = 0.0_f32, schema::min = 0.0, schema::max = 1.0)]
+    pub second_spawn_chance: f32,
     /// `second_spawn_count`: entities of the second spawn; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub second_spawn_count: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub second_spawn_count: i32,
     /// `spawn_baby`: the spawned entities are babies; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub spawn_baby: StrictBool,
+    #[facet(default = false)]
+    pub spawn_baby: bool,
     /// `spawn_definition`: the entity identifier spawned; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub spawn_definition: StrictString,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for SpawnChance {
-    fn default() -> Self {
-        Self {
-            first_spawn_chance: StrictFloat(0.0),
-            first_spawn_count: StrictInt(0),
-            on_spawn: Vec::new(),
-            second_spawn_chance: StrictFloat(0.0),
-            second_spawn_count: StrictInt(0),
-            spawn_baby: StrictBool(false),
-            spawn_definition: StrictString::default(),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = String::new())]
+    pub spawn_definition: String,
 }
 
 /// `on_hit.stick_in_ground`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct StickInGround {
     /// `shake_time`: seconds the projectile shakes; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub shake_time: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for StickInGround {
-    fn default() -> Self {
-        Self {
-            shake_time: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub shake_time: f32,
 }
 
 /// `on_hit.thrown_potion_effect`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ThrownPotionEffect {
     /// `effect`: the potion id; −1 (the default) is none.
-    #[facet(default = StrictInt(-1_i32))]
-    pub effect: StrictInt<i32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for ThrownPotionEffect {
-    fn default() -> Self {
-        Self {
-            effect: StrictInt(-1),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = -1_i32)]
+    pub effect: i32,
 }
 
 /// The legacy reader's member aliases and the member each stands for.
@@ -965,7 +715,7 @@ fn enum_spelling(
     allowed: &[&str],
     fallback: &str,
     at: &JsonPath,
-    cx: &mut Check<'_>,
+    cx: &mut ComponentCheck<'_>,
 ) -> bool {
     let Some(text) = json.get(member).and_then(Value::as_string) else {
         return false;
@@ -987,7 +737,7 @@ fn enum_spelling(
 }
 
 impl Typed for Projectile {
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         let mut changed = false;
         if matches!(cx.mode(), ConvertMode::Lenient) {
             changed |= name_aliases(json, &mut |from, to| cx.moved(from, to));
@@ -1035,7 +785,7 @@ impl Typed for Projectile {
         changed
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         if let ProjectileOffset::Array(list) = &self.offset
             && list.len() != 3
         {
@@ -1053,7 +803,7 @@ impl Typed for Projectile {
 /// game's reader reads them ([`legacy_spawn_chances`]). Returns whether anything changed.
 // The crate's own reading, taken from the game's packs: the 1.26.0 `shulker_bullet` file
 // against its 1.26.50 copy.
-fn legacy_on_hit(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+fn legacy_on_hit(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
     let Some(on_hit) = json.get_mut("on_hit").and_then(Value::as_object_mut) else {
         return false;
     };
@@ -1125,7 +875,7 @@ fn legacy_on_hit(json: &mut VObject, cx: &mut Check<'_>) -> bool {
 /// another number than the one written is told where it is written with an information
 /// `ValueRewritten` ([`spawn_chance_rewritten`]; the game writes no content-log line for this).
 /// Returns whether anything changed.
-fn legacy_spawn_chances(spawn: &mut VObject, at: &JsonPath, cx: &mut Check<'_>) -> bool {
+fn legacy_spawn_chances(spawn: &mut VObject, at: &JsonPath, cx: &mut ComponentCheck<'_>) -> bool {
     let mut changed = false;
     for (percent, percent_camel, chance, chance_camel) in [
         (
@@ -1254,7 +1004,7 @@ fn impact_damage(json: &mut VObject) -> Option<&mut VObject> {
 
 impl OnHit {
     /// The rule checks of the subcomponents, under `at`.
-    fn check(&mut self, at: &JsonPath, cx: &mut Check<'_>) {
+    fn check(&mut self, at: &JsonPath, cx: &mut ComponentCheck<'_>) {
         if let Some(event) = &self.definition_event
             && let Some(trigger) = &event.event_trigger
         {
@@ -1277,7 +1027,7 @@ impl OnHit {
                     ("durationnormal", &mut effect.durationnormal),
                 ] {
                     if let Some(EffectDuration::Ticks(ticks)) = duration {
-                        cx.at_least(&here.child(key), &mut ticks.0, 0, 0);
+                        cx.at_least(&here.child(key), ticks, 0, 0);
                     }
                 }
             }
@@ -1292,23 +1042,12 @@ impl OnHit {
             && let EffectDuration::Ticks(ticks) = &mut cloud.duration
         {
             let here = at.child("spawn_aoe_cloud").child("duration");
-            cx.at_least(&here, &mut ticks.0, 0, 0);
+            cx.at_least(&here, ticks, 0, 0);
         }
         if let Some(spawn) = &mut self.spawn_chance {
             // The game's 1.26.50 schema bounds both chances to 0 ..= 1.
             let here = at.child("spawn_chance");
-            cx.within(
-                &here.child("first_spawn_chance"),
-                &mut spawn.first_spawn_chance.0,
-                (0.0, 1.0),
-                0.0,
-            );
-            cx.within(
-                &here.child("second_spawn_chance"),
-                &mut spawn.second_spawn_chance.0,
-                (0.0, 1.0),
-                0.0,
-            );
+            cx.bounds(here.clone(), spawn);
             let triggers = here.child("on_spawn");
             for (i, trigger) in spawn.on_spawn.iter().enumerate() {
                 cx.extend(trigger.check(&triggers.index(i)));
@@ -1348,3 +1087,31 @@ mod tests {
         default_matches_empty_object::<Xyz>();
     }
 }
+
+bedrock_addon_core::impl_schema_leaf!(ProjectileOffset);
+bedrock_addon_core::impl_no_molang!(ProjectileOffset);
+crate::hand_fields!(ImpactDamage {
+    "apply_knockback_to_blocking_targets": bool,
+    "catch_fire": bool,
+    "ceil_pre_critical_damage": bool,
+    "channeling": bool,
+    "destroy_on_hit": bool,
+    "destroy_on_hit_requires_damage": bool,
+    "difficulty_randomization": DifficultyRandomization,
+    "filter": String,
+    "knockback": bool,
+    "max_critical_damage": i32,
+    "min_critical_damage": i32,
+    "power_multiplier": f32,
+    "set_last_hurt_requires_damage": bool,
+});
+bedrock_addon_core::impl_no_molang!(ImpactDamage);
+bedrock_addon_core::impl_schema_leaf!(EffectDuration);
+bedrock_addon_core::impl_no_molang!(EffectDuration);
+crate::hand_fields!(ParticleOnHit {
+    "num_particles": i32,
+    "on_entity_hit": bool,
+    "on_other_hit": bool,
+    "particle_type": String,
+});
+bedrock_addon_core::impl_no_molang!(ParticleOnHit);

@@ -39,7 +39,7 @@ fn on_target_acquired_round_trips_with_its_values() {
     let value = round_trip::<OnTargetAcquired>(
         r#"{"event": "minecraft:become_aggressive", "target": "self"}"#,
     );
-    assert_eq!(value.event.0, "minecraft:become_aggressive");
+    assert_eq!(value.event, "minecraft:become_aggressive");
     assert_eq!(value.target, FilterSubject::Self_);
     assert!(value.filters.is_none());
 }
@@ -48,7 +48,7 @@ fn on_target_acquired_round_trips_with_its_values() {
 fn trigger_components_default_to_no_event_on_self() {
     let (death, _) = strict::<OnDeath>("{}");
     assert_eq!(death, OnDeath::default());
-    assert_eq!(death.event.0, "");
+    assert_eq!(death.event, "");
     assert_eq!(death.target, FilterSubject::Self_);
     let (hurt, _) = strict::<OnHurt>(r#"{"event": "x:hurt", "target": "other"}"#);
     assert_eq!(hurt.target, FilterSubject::Other);
@@ -82,7 +82,7 @@ fn on_equipment_changed_reads_its_slots() {
     assert_eq!(value.slots.len(), 2);
     assert_eq!(value.slots[0].slot, EquipmentSlot::ArmorHead);
     assert_eq!(value.slots[1].slot, EquipmentSlot::WeaponMainhand);
-    assert_eq!(value.slots[1].on_unequip.0, "");
+    assert_eq!(value.slots[1].on_unequip, "");
     assert_eq!(
         write(&value),
         json(

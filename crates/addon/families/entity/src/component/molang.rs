@@ -13,22 +13,20 @@
 #[cfg(feature = "molang")]
 use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{
-    JsonSlice, StrictBool, StrictFloat, StrictInt, StrictString, Value,
-};
+use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind,
 };
 #[cfg(feature = "molang")]
 use bedrock_addon_core::molang::{MolangContext, MolangOutcome, MolangSource, Side};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, drop_deprecated, read_prepared};
+use super::parse::{ComponentCheck, Typed, drop_deprecated, read_prepared};
 use super::value::{one_element, tell_partial_vector};
 use crate::goal::Vec3;
 
@@ -48,7 +46,7 @@ const LENIENT: MolangFieldSpec = MolangFieldSpec::KEPT.reader(ReaderKind::Schema
 /// rejects (the object form) is `InvalidType`, and with the `molang` feature an expression that
 /// does not compile at the pack's version is `InvalidMolang` (a kept error), and the member takes
 /// its default (`false`). A strict read keeps every value; pass 2 checks it.
-fn lenient_value(value: &Molang, at: &JsonPath, cx: &mut Check<'_>) -> bool {
+fn lenient_value(value: &Molang, at: &JsonPath, cx: &mut ComponentCheck<'_>) -> bool {
     if !matches!(cx.mode(), ConvertMode::Lenient) {
         return true;
     }
@@ -73,7 +71,7 @@ fn lenient_value(value: &Molang, at: &JsonPath, cx: &mut Check<'_>) -> bool {
 /// rejection reports the compiler's findings (errors as warnings) and returns `false`. Without
 /// the load's compile check (`LoadContext::molang`) nothing is compiled here.
 #[cfg(feature = "molang")]
-fn compiles(source: &MolangSource, at: &JsonPath, cx: &mut Check<'_>) -> bool {
+fn compiles(source: &MolangSource, at: &JsonPath, cx: &mut ComponentCheck<'_>) -> bool {
     let load = cx.load();
     let Some(check) = load.molang.clone() else {
         return true;
@@ -107,23 +105,21 @@ fn compiles(source: &MolangSource, at: &JsonPath, cx: &mut Check<'_>) -> bool {
 /// `minecraft:experience_reward`: the experience the entity drops when bred and when it dies,
 /// each a Molang expression or a number.
 #[doc(alias = "minecraft:experience_reward")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ExperienceReward {
     /// `on_bred`: the experience when bred; absent drops none.
-    #[facet(default)]
+    #[facet(schema::molang = EXPRESSION)]
     pub on_bred: Option<Molang>,
     /// `on_death`: the experience on death; absent drops none.
-    #[facet(default)]
+    #[facet(schema::molang = EXPRESSION)]
     pub on_death: Option<Molang>,
     /// `on_bred_array` (not in the published schema): further `on_bred` expressions.
-    #[facet(default)]
+    #[facet(schema::molang = EXPRESSION)]
     pub on_bred_array: Option<Vec<Molang>>,
     /// `on_death_array` (not in the published schema): further `on_death` expressions.
-    #[facet(default)]
+    #[facet(schema::molang = EXPRESSION)]
     pub on_death_array: Option<Vec<Molang>>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl ExperienceReward {
@@ -167,7 +163,7 @@ fn fold(scalar: &mut Option<Molang>, array: &mut Option<Vec<Molang>>) {
 }
 
 impl Typed for ExperienceReward {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         for (key, scalar) in [
             ("on_bred", &mut self.on_bred),
             ("on_death", &mut self.on_death),
@@ -200,93 +196,78 @@ impl Typed for ExperienceReward {
     }
 }
 
-impl MolangFields for ExperienceReward {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("on_bred", &EXPRESSION, &mut self.on_bred);
-        visitor.field("on_death", &EXPRESSION, &mut self.on_death);
-        visitor.field("on_bred_array", &EXPRESSION, &mut self.on_bred_array);
-        visitor.field("on_death_array", &EXPRESSION, &mut self.on_death_array);
-    }
-}
-
 /// `minecraft:anger_level`: the entity's anger towards nuisances (the warden).
 #[doc(alias = "minecraft:anger_level")]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct AngerLevel {
     /// `anger_decrement_interval`: seconds between anger decreases; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub anger_decrement_interval: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub anger_decrement_interval: f32,
     /// `angry_boost`: anger added to a nuisance already above the threshold; default 20.
-    #[facet(default = StrictInt(20_i32))]
-    pub angry_boost: StrictInt<i32>,
+    #[facet(default = 20_i32)]
+    pub angry_boost: i32,
     /// `angry_threshold`: the anger at which the entity is angry; default 80.
-    #[facet(default = StrictInt(80_i32))]
-    pub angry_threshold: StrictInt<i32>,
+    #[facet(default = 80_i32)]
+    pub angry_threshold: i32,
     /// `default_annoyingness`: anger added by a nuisance; at least 0, default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub default_annoyingness: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub default_annoyingness: i32,
     /// `default_projectile_annoyingness`: anger added by a projectile; at least 0, default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub default_projectile_annoyingness: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub default_projectile_annoyingness: i32,
     /// `max_anger`: the highest anger; default 100.
-    #[facet(default = StrictInt(100_i32))]
-    pub max_anger: StrictInt<i32>,
+    #[facet(default = 100_i32)]
+    pub max_anger: i32,
     /// `nuisance_filter`: which entities are nuisances; absent means all.
-    #[facet(default)]
     pub nuisance_filter: Option<Filter>,
     /// `on_increase_sounds`: sounds played when the anger rises, each with a condition.
     #[facet(default)]
     pub on_increase_sounds: Vec<AngerSound>,
     /// `remove_targets_below_angry_threshold`: targets below the threshold are dropped; default
     /// `true`.
-    #[facet(default = StrictBool(true))]
-    pub remove_targets_below_angry_threshold: StrictBool,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = true)]
+    pub remove_targets_below_angry_threshold: bool,
 }
 
 impl Default for AngerLevel {
     fn default() -> Self {
         Self {
-            anger_decrement_interval: StrictFloat(1.0),
-            angry_boost: StrictInt(20),
-            angry_threshold: StrictInt(80),
-            default_annoyingness: StrictInt(0),
-            default_projectile_annoyingness: StrictInt(0),
-            max_anger: StrictInt(100),
+            anger_decrement_interval: 1.0,
+            angry_boost: 20,
+            angry_threshold: 80,
+            default_annoyingness: 0,
+            default_projectile_annoyingness: 0,
+            max_anger: 100,
             nuisance_filter: None,
             on_increase_sounds: Vec::new(),
-            remove_targets_below_angry_threshold: StrictBool(true),
-            extra: Extra::default(),
+            remove_targets_below_angry_threshold: true,
         }
     }
 }
 
 /// One sound of [`AngerLevel::on_increase_sounds`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct AngerSound {
     /// `condition`: when the sound plays, a Molang expression; required.
     pub condition: Molang,
     /// `sound`: the sound event; required.
-    pub sound: StrictString,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub sound: String,
 }
 
 impl Typed for AngerLevel {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         // The game's schema minimums.
         cx.at_least(
             &JsonPath::new().child("default_annoyingness"),
-            &mut self.default_annoyingness.0,
+            &mut self.default_annoyingness,
             0,
             0,
         );
         cx.at_least(
             &JsonPath::new().child("default_projectile_annoyingness"),
-            &mut self.default_projectile_annoyingness.0,
+            &mut self.default_projectile_annoyingness,
             0,
             0,
         );
@@ -328,72 +309,50 @@ impl MolangFields for AngerLevel {
 // `1 ..= 64` and `1 ..= 32`, and `dismount_mode` is the `DismountMode` enum.
 // `rotate_rider_by` is Molang.
 #[doc(alias = "minecraft:rideable")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Rideable {
     /// `seat_count`: how many entities ride it at once; default 1.
-    #[facet(default = StrictInt(1_i32))]
-    pub seat_count: StrictInt<i32>,
+    #[facet(default = 1_i32)]
+    pub seat_count: i32,
     /// `controlling_seat`: the seat of the driver; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub controlling_seat: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub controlling_seat: i32,
     /// `crouching_skip_interact`: a crouching entity cannot interact with it; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub crouching_skip_interact: StrictBool,
+    #[facet(default = true)]
+    pub crouching_skip_interact: bool,
     /// `pull_in_entities`: it pulls entities of `family_types` into free seats; default
     /// `false`.
-    #[facet(default = StrictBool(false))]
-    pub pull_in_entities: StrictBool,
+    #[facet(default = false)]
+    pub pull_in_entities: bool,
     /// `rider_can_interact`: the rider can pick it when looking at it; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub rider_can_interact: StrictBool,
+    #[facet(default = false)]
+    pub rider_can_interact: bool,
     /// `passenger_max_width`: the widest a rider may be, 0 for any; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub passenger_max_width: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub passenger_max_width: f32,
     /// `family_types`: the families that may ride it.
     #[facet(default)]
-    pub family_types: Vec<StrictString>,
+    pub family_types: Vec<String>,
     /// `interact_text`: the touch-screen text of the interaction; default none.
-    #[facet(default = StrictString(String::new()))]
-    pub interact_text: StrictString,
+    #[facet(default = String::new())]
+    pub interact_text: String,
     /// `dismount_mode`: where riders are placed when they dismount; default `default`.
     #[facet(default = DismountMode::Default)]
     pub dismount_mode: DismountMode,
     /// `on_rider_enter_event`: the event when an entity starts riding; default none.
-    #[facet(default = StrictString(String::new()))]
-    pub on_rider_enter_event: StrictString,
+    #[facet(default = String::new())]
+    pub on_rider_enter_event: String,
     /// `on_rider_exit_event`: the event when an entity stops riding; default none.
-    #[facet(default = StrictString(String::new()))]
-    pub on_rider_exit_event: StrictString,
+    #[facet(default = String::new())]
+    pub on_rider_exit_event: String,
     /// `seats`: the seats.
     #[facet(default)]
     pub seats: Vec<Seat>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Rideable {
-    fn default() -> Self {
-        Self {
-            seat_count: StrictInt(1),
-            controlling_seat: StrictInt(0),
-            crouching_skip_interact: StrictBool(true),
-            pull_in_entities: StrictBool(false),
-            rider_can_interact: StrictBool(false),
-            passenger_max_width: StrictFloat(0.0),
-            family_types: Vec::new(),
-            interact_text: StrictString::default(),
-            dismount_mode: DismountMode::Default,
-            on_rider_enter_event: StrictString::default(),
-            on_rider_exit_event: StrictString::default(),
-            seats: Vec::new(),
-            extra: Extra::default(),
-        }
-    }
 }
 
 /// Where a [`Rideable`]'s riders go when they dismount.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum DismountMode {
@@ -410,50 +369,31 @@ pub enum DismountMode {
 }
 
 /// One seat of a [`Rideable`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Seat {
     /// `position`: the seat relative to the entity; default 0, 0, 0.
     #[facet(default = Vec3::new(0.0, 0.0, 0.0))]
     pub position: Vec3,
     /// `min_rider_count`: the riders needed before this seat is used; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub min_rider_count: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub min_rider_count: i32,
     /// `max_rider_count`: the most riders for this seat to be valid; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub max_rider_count: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub max_rider_count: i32,
     /// `rotate_rider_by`: the rider's rotation offset, a Molang expression; default 0.
-    #[facet(default = Molang::Const(0.0))]
+    #[facet(default = Molang::Const(0.0), schema::molang = EXPRESSION)]
     pub rotate_rider_by: Molang,
     /// `lock_rider_rotation`: the angle the rider may turn, in degrees; above 180 (the default
     /// 181) is no limit.
-    #[facet(default = StrictFloat(181.0_f32))]
-    pub lock_rider_rotation: StrictFloat<f32>,
+    #[facet(default = 181.0_f32)]
+    pub lock_rider_rotation: f32,
     /// `third_person_camera_radius`: the third-person camera's radius for a player in this
     /// seat, 1 to 64; absent keeps the camera's own.
-    #[facet(default)]
-    pub third_person_camera_radius: Option<StrictFloat<f32>>,
+    pub third_person_camera_radius: Option<f32>,
     /// `camera_relax_distance_smoothing`: the stiffness of the camera's return after an
     /// obstacle, 1 to 32; absent keeps the camera's own.
-    #[facet(default)]
-    pub camera_relax_distance_smoothing: Option<StrictFloat<f32>>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Seat {
-    fn default() -> Self {
-        Self {
-            position: Vec3::new(0.0, 0.0, 0.0),
-            min_rider_count: StrictInt(0),
-            max_rider_count: StrictInt(0),
-            rotate_rider_by: Molang::Const(0.0),
-            lock_rider_rotation: StrictFloat(181.0),
-            third_person_camera_radius: None,
-            camera_relax_distance_smoothing: None,
-            extra: Extra::default(),
-        }
-    }
+    pub camera_relax_distance_smoothing: Option<f32>,
 }
 
 impl Typed for Rideable {
@@ -463,7 +403,7 @@ impl Typed for Rideable {
 
     /// Below 1.26.60 a single `seats` object is the one seat (vanilla's older files write it so;
     /// the typed member is a list).
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         let changed = matches!(cx.mode(), ConvertMode::Lenient)
             && json.get("seats").is_some_and(Value::is_object)
             && one_element(json, "seats", &JsonPath::new(), cx);
@@ -478,7 +418,7 @@ impl Typed for Rideable {
         changed
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let seats = JsonPath::new().child("seats");
         for (i, seat) in self.seats.iter_mut().enumerate() {
             let at = seats.index(i);
@@ -502,7 +442,7 @@ impl Typed for Rideable {
                     ),
                 ] {
                     if let Some(number) = value {
-                        cx.within(&at.child(key), &mut number.0, bounds, bounds.0);
+                        cx.within(&at.child(key), number, bounds, bounds.0);
                     }
                 }
             }
@@ -510,14 +450,13 @@ impl Typed for Rideable {
     }
 }
 
-impl MolangFields for Rideable {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("seats".into());
-        for (i, seat) in self.seats.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visitor.field("rotate_rider_by", &EXPRESSION, &mut seat.rotate_rider_by);
-            visitor.leave();
-        }
-        visitor.leave();
-    }
-}
+crate::hand_fields!(AngerLevel {
+    "anger_decrement_interval": f32,
+    "angry_boost": i32,
+    "angry_threshold": i32,
+    "default_annoyingness": i32,
+    "default_projectile_annoyingness": i32,
+    "max_anger": i32,
+    "on_increase_sounds": Vec<AngerSound>,
+    "remove_targets_below_angry_threshold": bool,
+});

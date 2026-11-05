@@ -140,6 +140,22 @@ pub(crate) fn components() -> &'static [Owner] {
     &table::COMPONENTS
 }
 
+/// The game table's typed version of the component `name`, for the rows' `typed_table` test:
+/// `None` where the table has no reader of the key, `Some(None)` where its reader is never
+/// replaced by a typed one.
+#[cfg(test)]
+#[allow(
+    clippy::option_option,
+    reason = "the `typed_table` signature: no reader, or a reader never typed"
+)]
+pub(crate) fn typed_since(name: &str) -> Option<Option<FormatVersion>> {
+    component(name).map(|owner| {
+        owner
+            .typed_since
+            .map(|(a, b, c)| FormatVersion::new(a, b, c))
+    })
+}
+
 fn find(list: &'static [Owner], name: &str) -> Option<&'static Owner> {
     list.binary_search_by(|owner| owner.name.as_bytes().cmp(name.as_bytes()))
         .ok()
@@ -671,7 +687,7 @@ mod tests {
         let mut wrong = Vec::new();
         for owner in components() {
             if let Some((a, b, c)) = owner.typed_since {
-                let crate_first = crate::history::first_typed(owner.name);
+                let crate_first = crate::component::EntityComponent::typed_since(owner.name);
                 if crate_first != Some(FormatVersion::new(a, b, c)) {
                     wrong.push(format!("{}: {a}.{b}.{c} vs {crate_first:?}", owner.name));
                 }

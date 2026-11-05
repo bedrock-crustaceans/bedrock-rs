@@ -9,7 +9,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Unknown as Table;
-use bedrock_addon_core::json::{StrictFloat, Value};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{EventTrigger, FloatRange, RangeForm};
 use facet_value::VObject;
 
@@ -266,14 +266,14 @@ pub(crate) fn charge_speed(json: &mut VObject) {
 /// [1.21.120, 1.26.0), where `charge_speed_multiplier` is the live name (in `extra`).
 ///
 /// `unknown` holds the goal's unknown members, by paths below the goal.
-pub(crate) fn charge_speed_typed(charge_speed: &mut Option<StrictFloat<f32>>, unknown: &mut Table) {
+pub(crate) fn charge_speed_typed(charge_speed: &mut Option<f32>, unknown: &mut Table) {
     let root = JsonPath::new();
     let Some(value) = unknown.take(&root, "charge_speed_multiplier") else {
         return;
     };
     match float_of(&value) {
         Some(x) => {
-            charge_speed.get_or_insert(StrictFloat(x));
+            charge_speed.get_or_insert(x);
         }
         None => {
             unknown.put(&root, "charge_speed_multiplier", value);
@@ -310,8 +310,8 @@ pub fn eat_block_pairs(goal: &mut EatBlock, is_block: impl Fn(&str) -> bool) -> 
         let unknown = names
             .into_iter()
             .flatten()
-            .find(|name| !is_block(&name.0))
-            .map(|name| name.0.clone());
+            .find(|name| !is_block(name))
+            .cloned();
         if let Some(block) = &unknown {
             let at = JsonPath::new()
                 .child("eat_and_replace_block_pairs")
@@ -336,7 +336,6 @@ pub fn eat_block_pairs(goal: &mut EatBlock, is_block: impl Fn(&str) -> bool) -> 
 
 #[cfg(test)]
 mod tests {
-    use bedrock_addon_core::json::StrictString;
 
     use super::*;
 
@@ -374,9 +373,8 @@ mod tests {
     #[test]
     fn v12_an_eat_block_pair_naming_an_unknown_block_is_dropped_with_vanillas_text() {
         let pair = |eat: &str, replace: &str| EatAndReplaceBlockPair {
-            eat_block: Some(StrictString(eat.to_owned())),
-            replace_block: Some(StrictString(replace.to_owned())),
-            ..EatAndReplaceBlockPair::default()
+            eat_block: Some(eat.to_owned()),
+            replace_block: Some(replace.to_owned()),
         };
         let mut goal = EatBlock {
             eat_and_replace_block_pairs: Some(vec![

@@ -2,14 +2,15 @@
 //! type lists, vectors, sound events and the named-value enums the game's schema defines as constants.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::{Extra, UnknownMembers};
-use bedrock_addon_core::json::{ScalarShape, StrictBool, StrictFloat, StrictInt, Value, ValueExt};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::{VArray, VObject};
 
-use super::check::Check;
+use super::check::GoalCheck;
 use super::sound::SOUND_EVENTS;
 
 /// Why a goal member's JSON value could not be read: the facet message of an `InvalidType`.
@@ -110,6 +111,10 @@ macro_rules! names {
                 }
             }
         }
+
+        // A proxied name: no member is walked, nothing in it is Molang.
+        bedrock_addon_core::impl_schema_leaf!($name);
+        bedrock_addon_core::impl_no_molang!($name);
 
         impl From<&$name> for ScalarShape {
             fn from(value: &$name) -> Self {
@@ -569,6 +574,10 @@ pub struct Vec3 {
     pub extra: UnknownMembers,
 }
 
+// A proxied leaf: no member is walked, nothing in it is Molang.
+bedrock_addon_core::impl_schema_leaf!(Vec3);
+bedrock_addon_core::impl_no_molang!(Vec3);
+
 impl Vec3 {
     /// The vector `[x, y, z]`, written as an array.
     pub fn new(x: f32, y: f32, z: f32) -> Self {
@@ -710,46 +719,32 @@ impl<'a> IntoIterator for &'a EntityTypes {
 /// One entry of `entity_types`: which mobs match (`filters`) and how the goal treats them.
 /// This is the game's mob descriptor.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
     /// `check_if_outnumbered`: only flee when outnumbered; default `false`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub check_if_outnumbered: Option<StrictBool>,
+    pub check_if_outnumbered: Option<bool>,
     /// `cooldown`: ticks before the goal may react again; default 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub cooldown: Option<StrictInt<i32>>,
+    pub cooldown: Option<i32>,
     /// `filters`: the mobs this entry matches.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub filters: Option<Filter>,
     /// `max_dist`: the largest distance at which a mob matches; default 16.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub max_dist: Option<StrictFloat<f32>>,
+    pub max_dist: Option<f32>,
     /// `max_flee`: how far to flee from it; default 10.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub max_flee: Option<StrictFloat<f32>>,
+    pub max_flee: Option<f32>,
     /// `max_height`: the largest height difference; −1 (the default) for any.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub max_height: Option<StrictFloat<f32>>,
+    pub max_height: Option<f32>,
     /// `must_see`: the mob must be visible.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub must_see: Option<StrictBool>,
+    pub must_see: Option<bool>,
     /// `must_see_forget_duration`: seconds a mob stays matched out of sight; default 3.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub must_see_forget_duration: Option<StrictFloat<f32>>,
+    pub must_see_forget_duration: Option<f32>,
     /// `priority`: the entry's priority among the list; default 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `reevaluate_description`: re-test the filters while the goal runs; default `false`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub reevaluate_description: Option<StrictBool>,
+    pub reevaluate_description: Option<bool>,
     /// `sprint_speed_multiplier`: speed multiplier when sprinting; default 1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub sprint_speed_multiplier: Option<StrictFloat<f32>>,
+    pub sprint_speed_multiplier: Option<f32>,
     /// `walk_speed_multiplier`: speed multiplier when walking; default 1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub walk_speed_multiplier: Option<StrictFloat<f32>>,
-    /// Members the descriptor does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub walk_speed_multiplier: Option<f32>,
 }
 
 impl MobDescriptor {
@@ -771,7 +766,7 @@ impl MobDescriptor {
 }
 
 /// Checks every descriptor of an `entity_types` member.
-pub(crate) fn check_entity_types(c: &mut Check<'_>, key: &str, types: Option<&EntityTypes>) {
+pub(crate) fn check_entity_types(c: &mut GoalCheck<'_>, key: &str, types: Option<&EntityTypes>) {
     let Some(types) = types else { return };
     let mut at = c.path(key);
     let list = matches!(types, EntityTypes::List(_));
@@ -929,3 +924,29 @@ mod tests {
         assert_eq!(seen, 1);
     }
 }
+
+// Proxied or data-carrying values: no member is walked, nothing in them is Molang.
+bedrock_addon_core::impl_schema_leaf!(
+    LiquidMaterial,
+    MaterialType,
+    SoundEvent,
+    EntityTypes,
+    Vec2,
+    ParticleColor
+);
+bedrock_addon_core::impl_no_molang!(LiquidMaterial, MaterialType, SoundEvent, EntityTypes, Vec2);
+
+crate::hand_fields!(MobDescriptor {
+    "check_if_outnumbered": Option<bool>,
+    "cooldown": Option<i32>,
+    "max_dist": Option<f32>,
+    "max_flee": Option<f32>,
+    "max_height": Option<f32>,
+    "must_see": Option<bool>,
+    "must_see_forget_duration": Option<f32>,
+    "priority": Option<i32>,
+    "reevaluate_description": Option<bool>,
+    "sprint_speed_multiplier": Option<f32>,
+    "walk_speed_multiplier": Option<f32>,
+});
+bedrock_addon_core::impl_no_molang!(MobDescriptor);

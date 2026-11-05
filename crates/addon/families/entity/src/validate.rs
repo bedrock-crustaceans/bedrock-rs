@@ -844,7 +844,7 @@ fn event_expressions(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
 
 /// Pass 2 of the event expressions: compiled with the load context's check, else counted as
 /// not checked. A rejected expression lists its node for the drop.
-#[cfg(feature = "molang")]
+/// Without the `molang` feature every expression is counted as not checked.
 fn compile(
     expressions: &mut Expressions,
     molang: &MolangContext,
@@ -852,42 +852,33 @@ fn compile(
     cx: &mut ValidateCx<'_>,
     drop: &mut Vec<NodeRef>,
 ) {
-    use bedrock_addon_core::molang::{MolangOutcome, Side, check_fields};
-    let Some(check) = cx.load.molang.clone() else {
-        not_checked(expressions, base, cx.diagnostics);
+    #[cfg(feature = "molang")]
+    if let Some(check) = cx.load.molang.clone() {
+        use bedrock_addon_core::molang::{MolangOutcome, Side, check_fields};
+        let failures = check_fields(
+            expressions,
+            &check,
+            Side::Server,
+            molang,
+            base,
+            cx.diagnostics,
+        );
+        for failure in failures {
+            if !matches!(failure.outcome, MolangOutcome::Failed(_)) {
+                continue;
+            }
+            if let Some(found) = expressions
+                .0
+                .iter()
+                .find(|e| json_path(&cx.at, &e.path) == failure.path)
+            {
+                drop.push(found.node.clone());
+            }
+        }
         return;
-    };
-    let failures = check_fields(
-        expressions,
-        &check,
-        Side::Server,
-        molang,
-        base,
-        cx.diagnostics,
-    );
-    for failure in failures {
-        if !matches!(failure.outcome, MolangOutcome::Failed(_)) {
-            continue;
-        }
-        if let Some(expression) = expressions
-            .0
-            .iter()
-            .find(|e| json_path(&cx.at, &e.path) == failure.path)
-        {
-            drop.push(expression.node.clone());
-        }
     }
-}
-
-/// Pass 2 of the event expressions without the `molang` feature: counted as not checked.
-#[cfg(not(feature = "molang"))]
-fn compile(
-    expressions: &mut Expressions,
-    _: &MolangContext,
-    base: &Location,
-    cx: &mut ValidateCx<'_>,
-    _: &mut Vec<NodeRef>,
-) {
+    #[cfg(not(feature = "molang"))]
+    let _ = (molang, drop);
     not_checked(expressions, base, cx.diagnostics);
 }
 /// `text` as a JSON string literal.

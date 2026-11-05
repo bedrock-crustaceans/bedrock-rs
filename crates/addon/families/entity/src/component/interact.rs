@@ -4,232 +4,154 @@
 //! sub-schemas. Below 1.26.50 the key is `Dynamic`, read by the game's untyped interact reader.
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString, Value};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::EventTrigger;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed};
+use super::parse::{ComponentCheck, Typed};
 use super::upgrade::one_or_many;
 
 /// `minecraft:interact`: the interactions a player can have with the entity; the first whose
 /// condition passes runs.
 #[doc(alias = "minecraft:interact")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Interact {
     /// `interactions`: the interactions, in order.
     #[facet(default)]
     pub interactions: Vec<Interaction>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One interaction of [`Interact`] (the game's interaction data).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Interaction {
     /// `add_items`: items from a loot table added to the entity's inventory.
-    #[facet(default)]
     pub add_items: Option<LootTable>,
     /// `admire`: the entity admires the item; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub admire: StrictBool,
+    #[facet(default = false)]
+    pub admire: bool,
     /// `barter`: the entity barters for the item; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub barter: StrictBool,
+    #[facet(default = false)]
+    pub barter: bool,
     /// `cooldown`: seconds before the entity can be interacted with again; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub cooldown: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub cooldown: f32,
     /// `cooldown_after_being_attacked`: seconds after being attacked during which the
     /// interaction is unavailable; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub cooldown_after_being_attacked: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub cooldown_after_being_attacked: f32,
     /// `drop_item_slot`: the slot whose item is dropped (a slot name or number as a string).
-    #[facet(default)]
-    pub drop_item_slot: Option<StrictString>,
+    pub drop_item_slot: Option<String>,
     /// `drop_item_y_offset`: the height above the entity the item drops from; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub drop_item_y_offset: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub drop_item_y_offset: f32,
     /// `equip_item_slot`: the slot the used item is equipped to (a slot name or number as a
     /// string).
-    #[facet(default)]
-    pub equip_item_slot: Option<StrictString>,
+    pub equip_item_slot: Option<String>,
     /// `give_item`: the item is given to the entity; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub give_item: StrictBool,
+    #[facet(default = false)]
+    pub give_item: bool,
     /// `health_amount`: the health the entity gains; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub health_amount: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub health_amount: i32,
     /// `hurt_item`: the durability the used item loses; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub hurt_item: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub hurt_item: i32,
     /// `interact_text`: the text of the touch-screen button; default empty.
-    #[facet(default = StrictString(String::new()))]
-    pub interact_text: StrictString,
+    #[facet(default = String::new())]
+    pub interact_text: String,
     /// `on_interact`: the event fired, and the condition (`filters`) for the interaction.
-    #[facet(default)]
     pub on_interact: Option<EventTrigger>,
     /// `particle_on_start`: the particles shown when the interaction starts.
-    #[facet(default)]
     pub particle_on_start: Option<InteractParticle>,
     /// `play_sounds`: the sounds played.
     #[facet(default)]
-    pub play_sounds: Vec<StrictString>,
+    pub play_sounds: Vec<String>,
     /// `repair_entity_item`: an item of the entity that is repaired.
-    #[facet(default)]
     pub repair_entity_item: Option<RepairEntityItem>,
     /// `spawn_entities`: the entities spawned.
     #[facet(default)]
-    pub spawn_entities: Vec<StrictString>,
+    pub spawn_entities: Vec<String>,
     /// `spawn_items`: items from a loot table spawned.
-    #[facet(default)]
     pub spawn_items: Option<SpawnItems>,
     /// `swing`: the player's arm swings; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub swing: StrictBool,
+    #[facet(default = true)]
+    pub swing: bool,
     /// `take_item`: the entity takes the item; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub take_item: StrictBool,
+    #[facet(default = false)]
+    pub take_item: bool,
     /// `transform_to_item`: the item the used item becomes (`name:aux`); default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub transform_to_item: StrictString,
+    #[facet(default = String::new())]
+    pub transform_to_item: String,
     /// `use_item`: the used item is consumed; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub use_item: StrictBool,
+    #[facet(default = false)]
+    pub use_item: bool,
     /// `vibration`: the vibration emitted; default `entity_interact`.
     #[facet(default = InteractVibration::EntityInteract)]
     pub vibration: InteractVibration,
-    /// Members the interaction does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Interaction {
-    fn default() -> Self {
-        Self {
-            add_items: None,
-            admire: StrictBool(false),
-            barter: StrictBool(false),
-            cooldown: StrictFloat(0.0),
-            cooldown_after_being_attacked: StrictFloat(0.0),
-            drop_item_slot: None,
-            drop_item_y_offset: StrictFloat(0.0),
-            equip_item_slot: None,
-            give_item: StrictBool(false),
-            health_amount: StrictInt(0),
-            hurt_item: StrictInt(0),
-            interact_text: StrictString::default(),
-            on_interact: None,
-            particle_on_start: None,
-            play_sounds: Vec::new(),
-            repair_entity_item: None,
-            spawn_entities: Vec::new(),
-            spawn_items: None,
-            swing: StrictBool(true),
-            take_item: StrictBool(false),
-            transform_to_item: StrictString::default(),
-            use_item: StrictBool(false),
-            vibration: InteractVibration::EntityInteract,
-            extra: Extra::default(),
-        }
-    }
 }
 
 /// `add_items` of an [`Interaction`]: a loot table.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+// facet fills a member the text leaves out from the struct's `Default`: `table` reads as empty.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct LootTable {
     /// `table`: the loot table path; required.
-    pub table: StrictString,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub table: String,
 }
 
 /// `spawn_items` of an [`Interaction`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SpawnItems {
     /// `table`: the loot table path; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub table: StrictString,
+    #[facet(default = String::new())]
+    pub table: String,
     /// `y_offset`: the height above the entity the items spawn at; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub y_offset: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for SpawnItems {
-    fn default() -> Self {
-        Self {
-            table: StrictString::default(),
-            y_offset: StrictFloat(1.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 1.0_f32)]
+    pub y_offset: f32,
 }
 
 /// `repair_entity_item` of an [`Interaction`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct RepairEntityItem {
     /// `amount`: the durability restored; default 1.
-    #[facet(default = StrictInt(1_i32))]
-    pub amount: StrictInt<i32>,
+    #[facet(default = 1_i32)]
+    pub amount: i32,
     /// `slot`: the slot of the item repaired.
-    #[facet(default)]
-    pub slot: Option<StrictString>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for RepairEntityItem {
-    fn default() -> Self {
-        Self {
-            amount: StrictInt(1),
-            slot: None,
-            extra: Extra::default(),
-        }
-    }
+    pub slot: Option<String>,
 }
 
 /// `particle_on_start` of an [`Interaction`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct InteractParticle {
     /// `copper_event`: the copper effect shown; default `none`.
     #[facet(default = CopperEvent::None)]
     pub copper_event: CopperEvent,
     /// `particle_offset_towards_interactor`: the particles move towards the player; default
     /// `false`.
-    #[facet(default = StrictBool(false))]
-    pub particle_offset_towards_interactor: StrictBool,
+    #[facet(default = false)]
+    pub particle_offset_towards_interactor: bool,
     /// `particle_type`: vanilla's legacy particle name (`smoke`, `heart`, …); default `none`.
-    #[facet(default = StrictString("none".to_owned()))]
-    pub particle_type: StrictString,
+    #[facet(default = "none".to_owned())]
+    pub particle_type: String,
     /// `particle_y_offset`: the height above the entity; default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub particle_y_offset: StrictFloat<f32>,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for InteractParticle {
-    fn default() -> Self {
-        Self {
-            copper_event: CopperEvent::None,
-            particle_offset_towards_interactor: StrictBool(false),
-            particle_type: StrictString("none".to_owned()),
-            particle_y_offset: StrictFloat(0.0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0.0_f32)]
+    pub particle_y_offset: f32,
 }
 
 /// The copper effect of an [`InteractParticle`].
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum CopperEvent {
@@ -249,7 +171,7 @@ pub enum CopperEvent {
 }
 
 /// The vibration an [`Interaction`] emits.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum InteractVibration {
@@ -277,7 +199,7 @@ impl Typed for Interact {
     /// 1.26.50 files write them.
     // The crate's own reading, taken from the game's packs (`"play_sounds": "eat"` below
     // 1.26.50, arrays from it).
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         if !matches!(cx.mode(), ConvertMode::Lenient) {
             return false;
         }
@@ -302,7 +224,7 @@ impl Typed for Interact {
         changed
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let at = JsonPath::new().child("interactions");
         for (i, interaction) in self.interactions.iter().enumerate() {
             if let Some(trigger) = &interaction.on_interact {

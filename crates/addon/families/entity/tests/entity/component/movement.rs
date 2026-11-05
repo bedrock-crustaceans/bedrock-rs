@@ -13,12 +13,12 @@ use super::{json, lenient, read_as, round_trip, strict, write};
 #[test]
 fn jump_static_and_dynamic_read_their_defaults() {
     let (jump, _) = strict::<JumpStatic>("{}");
-    assert_eq!(jump.jump_power.0, 0.42);
+    assert_eq!(jump.jump_power, 0.42);
     let (dynamic, _) = strict::<JumpDynamic>("{}");
     assert_eq!(dynamic, JumpDynamic::default());
     assert_eq!(dynamic.regular_skip_data, SkipData::default());
-    assert_eq!(dynamic.fast_skip_data.jump_delay.0, 30);
-    assert_eq!(dynamic.fast_skip_data.height.0, 0.1);
+    assert_eq!(dynamic.fast_skip_data.jump_delay, 30);
+    assert_eq!(dynamic.fast_skip_data.height, 0.1);
 }
 
 #[test]
@@ -42,12 +42,12 @@ fn preferred_path_reads_block_sets() {
     );
     assert_eq!(value.preferred_path_blocks.len(), 2);
     assert_eq!(value.preferred_path_blocks[0].blocks.len(), 2);
-    assert_eq!(value.preferred_path_blocks[1].cost.map(|c| c.0), Some(50.0));
+    assert_eq!(value.preferred_path_blocks[1].cost, Some(50.0));
     assert!(matches!(
         value.preferred_path_blocks[1].blocks[0],
         BlockDescriptor::Tags { .. }
     ));
-    assert_eq!(strict::<PreferredPath>("{}").0.max_fall_blocks.0, 3);
+    assert_eq!(strict::<PreferredPath>("{}").0.max_fall_blocks, 3);
 }
 
 #[test]
@@ -61,31 +61,29 @@ fn e00d_salmon_flocking_round_trips() {
             "cohesion_weight": 1.85, "cohesion_threshold": 1.95, "innner_cohesion_threshold": 1.25,
             "min_height": 1.5, "max_height": 6.0, "block_distance": 1.0, "block_weight": 0.75}"#,
     );
-    assert!(value.in_water.0);
-    assert_eq!(value.innner_cohesion_threshold.0, 1.25);
+    assert!(value.in_water);
+    assert_eq!(value.innner_cohesion_threshold, 1.25);
     let (default, _) = strict::<Flocking>("{}");
     assert_eq!(default, Flocking::default());
-    assert_eq!(default.separation_threshold.0, 2.0);
+    assert_eq!(default.separation_threshold, 2.0);
 }
 
 #[test]
 fn small_movement_components_read_their_defaults() {
     let (tracking, _) = strict::<GameEventMovementTracking>("{}");
-    assert!(tracking.emit_move.0 && tracking.emit_swim.0 && !tracking.emit_flap.0);
+    assert!(tracking.emit_move && tracking.emit_swim && !tracking.emit_flap);
     let (crop, _) = strict::<GrowsCrop>("{}");
-    assert_eq!((crop.charges.0, crop.chance.0), (10, 0.0));
+    assert_eq!((crop.charges, crop.chance), (10, 0.0));
     let (physics, _) = strict::<Physics>("{}");
-    assert!(
-        physics.has_collision.0 && physics.has_gravity.0 && !physics.push_towards_closest_space.0
-    );
+    assert!(physics.has_collision && physics.has_gravity && !physics.push_towards_closest_space);
     let (collision, _) = strict::<CollisionBox>("{}");
-    assert_eq!((collision.width.0, collision.height.0), (0.6, 1.8));
+    assert_eq!((collision.width, collision.height), (0.6, 1.8));
 }
 
 #[test]
 fn physics_of_the_area_effect_cloud_round_trips() {
     let value = round_trip::<Physics>(r#"{"has_gravity": true, "has_collision": false}"#);
-    assert!(!value.has_collision.0);
+    assert!(!value.has_collision);
     assert_eq!(
         write(&value),
         json(
@@ -99,7 +97,7 @@ fn collision_box_outside_its_schema_range_is_an_error_and_a_lenient_default() {
     let (value, d) = read_as::<CollisionBox>(r#"{"width": 2e8}"#, ConvertMode::Strict);
     assert!(value.is_none() && d.has_errors());
     let (value, _) = lenient::<CollisionBox>(r#"{"width": 2e8, "height": 3}"#);
-    assert_eq!((value.width.0, value.height.0), (0.6, 3.0));
+    assert_eq!((value.width, value.height), (0.6, 3.0));
 }
 
 #[test]

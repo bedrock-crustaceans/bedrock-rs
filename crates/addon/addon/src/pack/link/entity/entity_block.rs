@@ -125,9 +125,9 @@ fn eat_block(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
                 ];
                 let unknown = names.into_iter().find_map(|(key, name)| {
                     let name = name.as_ref()?;
-                    let id = BlockId::parse(name.0.as_str());
+                    let id = BlockId::parse(name.as_str());
                     match cx.block(&id) {
-                        Target::Missing(hint) => Some((key, name.0.as_str(), hint)),
+                        Target::Missing(hint) => Some((key, name.as_str(), hint)),
                         _ => None,
                     }
                 });

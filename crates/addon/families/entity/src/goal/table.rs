@@ -20,16 +20,7 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         "minecraft:behavior.avoid_mob_type",
         parse_versioned::<super::AvoidMobType>,
     ),
-    (
-        "minecraft:behavior.barter",
-        parse_versioned::<super::Barter>,
-    ),
     ("minecraft:behavior.beg", parse_versioned::<super::Beg>),
-    (
-        "minecraft:behavior.break_door",
-        parse_versioned::<super::BreakDoor>,
-    ),
-    ("minecraft:behavior.breed", parse_versioned::<super::Breed>),
     (
         "minecraft:behavior.celebrate",
         parse_versioned::<super::Celebrate>,
@@ -39,10 +30,6 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::CelebrateSurvive>,
     ),
     (
-        "minecraft:behavior.charge_attack",
-        parse_versioned::<super::ChargeAttack>,
-    ),
-    (
         "minecraft:behavior.charge_held_item",
         parse_versioned::<super::ChargeHeldItem>,
     ),
@@ -50,18 +37,10 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         "minecraft:behavior.circle_around_anchor",
         parse_versioned::<super::CircleAroundAnchor>,
     ),
-    (
-        "minecraft:behavior.controlled_by_player",
-        parse_versioned::<super::ControlledByPlayer>,
-    ),
     ("minecraft:behavior.croak", parse_versioned::<super::Croak>),
     (
         "minecraft:behavior.defend_trusted_target",
         parse_versioned::<super::DefendTrustedTarget>,
-    ),
-    (
-        "minecraft:behavior.defend_village_target",
-        parse_versioned::<super::DefendVillageTarget>,
     ),
     (
         "minecraft:behavior.delayed_attack",
@@ -69,48 +48,16 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
     ),
     ("minecraft:behavior.dig", parse_versioned::<super::Dig>),
     (
-        "minecraft:behavior.door_interact",
-        parse_versioned::<super::DoorInteract>,
-    ),
-    (
         "minecraft:behavior.dragonchargeplayer",
         parse_versioned::<super::DragonChargePlayer>,
-    ),
-    (
-        "minecraft:behavior.dragondeath",
-        parse_versioned::<super::DragonDeath>,
-    ),
-    (
-        "minecraft:behavior.dragonflaming",
-        parse_versioned::<super::DragonFlaming>,
-    ),
-    (
-        "minecraft:behavior.dragonholdingpattern",
-        parse_versioned::<super::DragonHoldingPattern>,
-    ),
-    (
-        "minecraft:behavior.dragonlanding",
-        parse_versioned::<super::DragonLanding>,
-    ),
-    (
-        "minecraft:behavior.dragonscanning",
-        parse_versioned::<super::DragonScanning>,
     ),
     (
         "minecraft:behavior.dragonstrafeplayer",
         parse_versioned::<super::DragonStrafePlayer>,
     ),
     (
-        "minecraft:behavior.dragontakeoff",
-        parse_versioned::<super::DragonTakeoff>,
-    ),
-    (
         "minecraft:behavior.drink_milk",
         parse_versioned::<super::DrinkMilk>,
-    ),
-    (
-        "minecraft:behavior.drink_potion",
-        parse_versioned::<super::DrinkPotion>,
     ),
     (
         "minecraft:behavior.drop_item_for",
@@ -121,50 +68,13 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::EatBlock>,
     ),
     (
-        "minecraft:behavior.eat_carried_item",
-        parse_versioned::<super::EatCarriedItem>,
-    ),
-    (
-        "minecraft:behavior.eat_mob",
-        parse_versioned::<super::EatMob>,
-    ),
-    (
         "minecraft:behavior.emerge",
         parse_versioned::<super::Emerge>,
-    ),
-    (
-        "minecraft:behavior.equip_item",
-        parse_versioned::<super::EquipItem>,
-    ),
-    (
-        "minecraft:behavior.explore_outskirts",
-        parse_versioned::<super::ExploreOutskirts>,
-    ),
-    (
-        "minecraft:behavior.fertilize_farm_block",
-        parse_versioned::<super::FertilizeFarmBlock>,
-    ),
-    (
-        "minecraft:behavior.find_cover",
-        parse_versioned::<super::FindCover>,
-    ),
-    (
-        "minecraft:behavior.find_mount",
-        parse_versioned::<super::FindMount>,
-    ),
-    (
-        "minecraft:behavior.find_underwater_treasure",
-        parse_versioned::<super::FindUnderwaterTreasure>,
     ),
     (
         "minecraft:behavior.fire_at_target",
         parse_versioned::<super::FireAtTarget>,
     ),
-    (
-        "minecraft:behavior.flee_sun",
-        parse_versioned::<super::FleeSun>,
-    ),
-    ("minecraft:behavior.float", parse_versioned::<super::Float>),
     // Typed from 1.26.60.
     (
         "minecraft:behavior.float_tempt",
@@ -175,20 +85,8 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::FloatWander>,
     ),
     (
-        "minecraft:behavior.follow_caravan",
-        parse_versioned::<super::FollowCaravan>,
-    ),
-    (
         "minecraft:behavior.follow_mob",
         parse_versioned::<super::FollowMob>,
-    ),
-    (
-        "minecraft:behavior.follow_owner",
-        parse_versioned::<super::FollowOwner>,
-    ),
-    (
-        "minecraft:behavior.follow_parent",
-        parse_versioned::<super::FollowParent>,
     ),
     (
         "minecraft:behavior.follow_target_leader",
@@ -207,30 +105,8 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::GoHome>,
     ),
     (
-        "minecraft:behavior.guardian_attack",
-        parse_versioned::<super::GuardianAttack>,
-    ),
-    (
-        "minecraft:behavior.harvest_farm_block",
-        parse_versioned::<super::HarvestFarmBlock>,
-    ),
-    ("minecraft:behavior.hide", parse_versioned::<super::Hide>),
-    (
         "minecraft:behavior.hold_ground",
         parse_versioned::<super::HoldGround>,
-    ),
-    ("minecraft:behavior.hover", parse_versioned::<super::Hover>),
-    (
-        "minecraft:behavior.hurt_by_target",
-        parse_versioned::<super::HurtByTarget>,
-    ),
-    (
-        "minecraft:behavior.inspect_bookshelf",
-        parse_versioned::<super::InspectBookshelf>,
-    ),
-    (
-        "minecraft:behavior.investigate_suspicious_location",
-        parse_versioned::<super::InvestigateSuspiciousLocation>,
     ),
     (
         "minecraft:behavior.jump_around_target",
@@ -245,16 +121,8 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::KnockbackRoar>,
     ),
     (
-        "minecraft:behavior.lay_down",
-        parse_versioned::<super::LayDown>,
-    ),
-    (
         "minecraft:behavior.lay_egg",
         parse_versioned::<super::LayEgg>,
-    ),
-    (
-        "minecraft:behavior.leap_at_target",
-        parse_versioned::<super::LeapAtTarget>,
     ),
     (
         "minecraft:behavior.look_at_entity",
@@ -273,10 +141,6 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::LookAtTradingPlayer>,
     ),
     (
-        "minecraft:behavior.make_love",
-        parse_versioned::<super::MakeLove>,
-    ),
-    (
         "minecraft:behavior.melee_attack",
         parse_versioned::<super::MeleeAttack>,
     ),
@@ -285,72 +149,12 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::MeleeBoxAttack>,
     ),
     (
-        "minecraft:behavior.mingle",
-        parse_versioned::<super::Mingle>,
-    ),
-    (
-        "minecraft:behavior.mount_pathing",
-        parse_versioned::<super::MountPathing>,
-    ),
-    (
         "minecraft:behavior.move_around_target",
         parse_versioned::<super::MoveAroundTarget>,
     ),
     (
-        "minecraft:behavior.move_indoors",
-        parse_versioned::<super::MoveIndoors>,
-    ),
-    (
-        "minecraft:behavior.move_outdoors",
-        parse_versioned::<super::MoveOutdoors>,
-    ),
-    (
-        "minecraft:behavior.move_through_village",
-        parse_versioned::<super::MoveThroughVillage>,
-    ),
-    (
         "minecraft:behavior.move_to_block",
         parse_versioned::<super::MoveToBlock>,
-    ),
-    (
-        "minecraft:behavior.move_to_land",
-        parse_versioned::<super::MoveToLand>,
-    ),
-    (
-        "minecraft:behavior.move_to_lava",
-        parse_versioned::<super::MoveToLava>,
-    ),
-    (
-        "minecraft:behavior.move_to_liquid",
-        parse_versioned::<super::MoveToLiquid>,
-    ),
-    (
-        "minecraft:behavior.move_to_poi",
-        parse_versioned::<super::MoveToPoi>,
-    ),
-    (
-        "minecraft:behavior.move_to_random_block",
-        parse_versioned::<super::MoveToRandomBlock>,
-    ),
-    (
-        "minecraft:behavior.move_to_village",
-        parse_versioned::<super::MoveToVillage>,
-    ),
-    (
-        "minecraft:behavior.move_to_water",
-        parse_versioned::<super::MoveToWater>,
-    ),
-    (
-        "minecraft:behavior.move_towards_dwelling_restriction",
-        parse_versioned::<super::MoveTowardsDwellingRestriction>,
-    ),
-    (
-        "minecraft:behavior.move_towards_home_restriction",
-        parse_versioned::<super::MoveTowardsHomeRestriction>,
-    ),
-    (
-        "minecraft:behavior.move_towards_target",
-        parse_versioned::<super::MoveTowardsTarget>,
     ),
     ("minecraft:behavior.nap", parse_versioned::<super::Nap>),
     (
@@ -362,35 +166,11 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::NearestPrioritizedAttackableTarget>,
     ),
     (
-        "minecraft:behavior.ocelot_sit_on_block",
-        parse_versioned::<super::OcelotSitOnBlock>,
-    ),
-    (
-        "minecraft:behavior.ocelotattack",
-        parse_versioned::<super::Ocelotattack>,
-    ),
-    (
         "minecraft:behavior.offer_flower",
         parse_versioned::<super::OfferFlower>,
     ),
-    (
-        "minecraft:behavior.open_door",
-        parse_versioned::<super::OpenDoor>,
-    ),
-    (
-        "minecraft:behavior.owner_hurt_by_target",
-        parse_versioned::<super::OwnerHurtByTarget>,
-    ),
-    (
-        "minecraft:behavior.owner_hurt_target",
-        parse_versioned::<super::OwnerHurtTarget>,
-    ),
     // Typed from 1.26.60.
     ("minecraft:behavior.panic", parse_versioned::<super::Panic>),
-    (
-        "minecraft:behavior.pet_sleep_with_owner",
-        parse_versioned::<super::PetSleepWithOwner>,
-    ),
     (
         "minecraft:behavior.pickup_items",
         parse_versioned::<super::PickupItems>,
@@ -399,30 +179,13 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         "minecraft:behavior.place_block",
         parse_versioned::<super::PlaceBlock>,
     ),
-    ("minecraft:behavior.play", parse_versioned::<super::Play>),
     (
         "minecraft:behavior.play_dead",
         parse_versioned::<super::PlayDead>,
     ),
     (
-        "minecraft:behavior.player_ride_tamed",
-        parse_versioned::<super::PlayerRideTamed>,
-    ),
-    (
-        "minecraft:behavior.raid_garden",
-        parse_versioned::<super::RaidGarden>,
-    ),
-    (
         "minecraft:behavior.ram_attack",
         parse_versioned::<super::RamAttack>,
-    ),
-    (
-        "minecraft:behavior.random_breach",
-        parse_versioned::<super::RandomBreach>,
-    ),
-    (
-        "minecraft:behavior.random_fly",
-        parse_versioned::<super::RandomFly>,
     ),
     (
         "minecraft:behavior.random_hover",
@@ -433,170 +196,25 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::RandomLookAround>,
     ),
     (
-        "minecraft:behavior.random_look_around_and_sit",
-        parse_versioned::<super::RandomLookAroundAndSit>,
-    ),
-    (
         "minecraft:behavior.random_search_and_dig",
         parse_versioned::<super::RandomSearchAndDig>,
-    ),
-    (
-        "minecraft:behavior.random_sitting",
-        parse_versioned::<super::RandomSitting>,
-    ),
-    (
-        "minecraft:behavior.random_stroll",
-        parse_versioned::<super::RandomStroll>,
-    ),
-    (
-        "minecraft:behavior.random_swim",
-        parse_versioned::<super::RandomSwim>,
     ),
     (
         "minecraft:behavior.ranged_attack",
         parse_versioned::<super::RangedAttack>,
     ),
     (
-        "minecraft:behavior.receive_love",
-        parse_versioned::<super::ReceiveLove>,
-    ),
-    (
-        "minecraft:behavior.restrict_open_door",
-        parse_versioned::<super::RestrictOpenDoor>,
-    ),
-    (
-        "minecraft:behavior.restrict_sun",
-        parse_versioned::<super::RestrictSun>,
-    ),
-    (
-        "minecraft:behavior.rise_to_liquid_level",
-        parse_versioned::<super::RiseToLiquidLevel>,
-    ),
-    ("minecraft:behavior.roar", parse_versioned::<super::Roar>),
-    ("minecraft:behavior.roll", parse_versioned::<super::Roll>),
-    (
-        "minecraft:behavior.run_around_like_crazy",
-        parse_versioned::<super::RunAroundLikeCrazy>,
-    ),
-    (
-        "minecraft:behavior.scared",
-        parse_versioned::<super::Scared>,
-    ),
-    // Typed from 1.26.60.
-    (
-        "minecraft:behavior.send_event",
-        parse_versioned::<super::SendEvent>,
-    ),
-    (
-        "minecraft:behavior.share_items",
-        parse_versioned::<super::ShareItems>,
-    ),
-    (
-        "minecraft:behavior.silverfish_merge_with_stone",
-        parse_versioned::<super::SilverfishMergeWithStone>,
-    ),
-    (
-        "minecraft:behavior.silverfish_wake_up_friends",
-        parse_versioned::<super::SilverfishWakeUpFriends>,
-    ),
-    (
-        "minecraft:behavior.skeleton_horse_trap",
-        parse_versioned::<super::SkeletonHorseTrap>,
-    ),
-    ("minecraft:behavior.sleep", parse_versioned::<super::Sleep>),
-    (
-        "minecraft:behavior.slime_attack",
-        parse_versioned::<super::SlimeAttack>,
-    ),
-    (
-        "minecraft:behavior.slime_float",
-        parse_versioned::<super::SlimeFloat>,
-    ),
-    (
-        "minecraft:behavior.slime_keep_on_jumping",
-        parse_versioned::<super::SlimeKeepOnJumping>,
-    ),
-    (
-        "minecraft:behavior.slime_random_direction",
-        parse_versioned::<super::SlimeRandomDirection>,
-    ),
-    (
         "minecraft:behavior.snacking",
         parse_versioned::<super::Snacking>,
     ),
-    (
-        "minecraft:behavior.sneeze",
-        parse_versioned::<super::Sneeze>,
-    ),
     ("minecraft:behavior.sniff", parse_versioned::<super::Sniff>),
-    (
-        "minecraft:behavior.sonic_boom",
-        parse_versioned::<super::SonicBoom>,
-    ),
-    (
-        "minecraft:behavior.squid_dive",
-        parse_versioned::<super::SquidDive>,
-    ),
-    (
-        "minecraft:behavior.squid_flee",
-        parse_versioned::<super::SquidFlee>,
-    ),
-    (
-        "minecraft:behavior.squid_idle",
-        parse_versioned::<super::SquidIdle>,
-    ),
-    (
-        "minecraft:behavior.squid_move_away_from_ground",
-        parse_versioned::<super::SquidMoveAwayFromGround>,
-    ),
-    (
-        "minecraft:behavior.squid_out_of_water",
-        parse_versioned::<super::SquidOutOfWater>,
-    ),
     (
         "minecraft:behavior.stalk_and_pounce_on_target",
         parse_versioned::<super::StalkAndPounceOnTarget>,
     ),
     (
-        "minecraft:behavior.stay_near_noteblock",
-        parse_versioned::<super::StayNearNoteblock>,
-    ),
-    (
-        "minecraft:behavior.stay_while_sitting",
-        parse_versioned::<super::StayWhileSitting>,
-    ),
-    (
         "minecraft:behavior.stomp_attack",
         parse_versioned::<super::StompAttack>,
-    ),
-    (
-        "minecraft:behavior.stomp_turtle_egg",
-        parse_versioned::<super::StompTurtleEgg>,
-    ),
-    (
-        "minecraft:behavior.stroll_towards_village",
-        parse_versioned::<super::StrollTowardsVillage>,
-    ),
-    (
-        "minecraft:behavior.summon_entity",
-        parse_versioned::<super::SummonEntity>,
-    ),
-    ("minecraft:behavior.swell", parse_versioned::<super::Swell>),
-    (
-        "minecraft:behavior.swim_idle",
-        parse_versioned::<super::SwimIdle>,
-    ),
-    (
-        "minecraft:behavior.swim_up_for_breath",
-        parse_versioned::<super::SwimUpForBreath>,
-    ),
-    (
-        "minecraft:behavior.swim_wander",
-        parse_versioned::<super::SwimWander>,
-    ),
-    (
-        "minecraft:behavior.swim_with_entity",
-        parse_versioned::<super::SwimWithEntity>,
     ),
     (
         "minecraft:behavior.swoop_attack",
@@ -609,10 +227,6 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
     (
         "minecraft:behavior.take_flower",
         parse_versioned::<super::TakeFlower>,
-    ),
-    (
-        "minecraft:behavior.target_when_pushed",
-        parse_versioned::<super::TargetWhenPushed>,
     ),
     (
         "minecraft:behavior.teleport_to_owner",
@@ -633,10 +247,6 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
         parse_versioned::<super::TimerFlag3>,
     ),
     (
-        "minecraft:behavior.trade_interest",
-        parse_versioned::<super::TradeInterest>,
-    ),
-    (
         "minecraft:behavior.trade_with_player",
         parse_versioned::<super::TradeWithPlayer>,
     ),
@@ -647,14 +257,6 @@ pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
     (
         "minecraft:behavior.use_kinetic_weapon",
         parse_versioned::<super::UseKineticWeapon>,
-    ),
-    (
-        "minecraft:behavior.wither_random_attack_pos_goal",
-        parse_versioned::<super::WitherRandomAttackPosGoal>,
-    ),
-    (
-        "minecraft:behavior.wither_target_highest_damage",
-        parse_versioned::<super::WitherTargetHighestDamage>,
     ),
     ("minecraft:behavior.work", parse_versioned::<super::Work>),
     (

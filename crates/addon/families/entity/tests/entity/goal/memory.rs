@@ -18,16 +18,13 @@ fn v15_move_to_position_reads_its_members_and_not_the_draft_spellings() {
     let (g, d) = goal::<goal::MemoryMoveToPosition>(MOVE_TO_POSITION, &json, ConvertMode::Strict);
     let g = g.expect("kept");
     assert!(d.is_empty(), "{d:?}");
-    assert_eq!(g.speed_modifier.map(|v| v.0), Some(1.5));
-    assert_eq!(g.goal_radius.map(|v| v.0), Some(3.0));
-    assert_eq!(g.maximum_range.map(|v| v.0), Some(16.0));
+    assert_eq!(g.speed_modifier, Some(1.5));
+    assert_eq!(g.goal_radius, Some(3.0));
+    assert_eq!(g.maximum_range, Some(16.0));
     assert_eq!(g.interval.map(|r| (r.min, r.max)), Some((2.0, 4.0)));
-    assert_eq!(
-        g.memory.as_ref().map(|m| m.0.as_str()),
-        Some("demo:nearest_gold_block")
-    );
+    assert_eq!(g.memory.as_deref(), Some("demo:nearest_gold_block"));
     assert_eq!(g.on_reach.as_ref().map(Vec::len), Some(1));
-    assert_eq!(g.chance_to_start.map(|v| v.0), Some(0.5));
+    assert_eq!(g.chance_to_start, Some(0.5));
 
     let json = fixture_member(NAME, "draft_spellings");
     let (g, d) = goal::<goal::MemoryMoveToPosition>(MOVE_TO_POSITION, &json, ConvertMode::Strict);
@@ -99,7 +96,7 @@ fn every_memory_goal_takes_the_memory_goal_base() {
         ConvertMode::Strict,
     );
     assert!(d.is_empty(), "{d:?}");
-    assert_eq!(g.expect("kept").min_range.map(|v| v.0), Some(1.5));
+    assert_eq!(g.expect("kept").min_range, Some(1.5));
     let (_, d) = goal::<goal::MemoryLookAtEntity>(
         "minecraft:memory_behavior.look_at_entity",
         r#"{"look_distance": 6, "target_entity": "demo:player", "look_time": 5}"#,
@@ -147,7 +144,7 @@ fn memory_follow_target_reads_its_memory_and_speed() {
     assert!(d.is_empty(), "{d:?}");
     let g = g.expect("kept");
     assert_eq!(g.priority(), 1);
-    assert_eq!(g.target_memory.map(|m| m.0), Some("demo:parent".to_owned()));
+    assert_eq!(g.target_memory, Some("demo:parent".to_owned()));
 }
 
 /// The sensor entry of the experimental brain prototype pack (`demo_cube.json`), in the

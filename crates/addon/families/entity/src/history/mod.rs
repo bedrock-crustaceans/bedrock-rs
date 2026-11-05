@@ -16,7 +16,6 @@
 // One file per struct; the shared struct is `Payload`.
 
 mod ops;
-mod typed;
 
 pub mod v1_10_0;
 pub mod v1_11_0;
@@ -60,15 +59,13 @@ pub mod v1_26_40;
 pub mod v1_26_50;
 pub mod v1_8_0;
 
-pub(crate) use typed::first_typed;
-
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangContext, pass_one};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{Family, Identity, ParseCx, UpgradeCx, parse_payload};
 use facet::Facet;
@@ -194,6 +191,7 @@ pub struct Payload {
 
 /// What a [`Payload`] is parsed from.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell {
     #[facet(default)]
     description: Option<Value>,
@@ -212,8 +210,6 @@ struct Shell {
     // The pre-1.8 in-payload version (`Family::payload_version`): consumed, not kept.
     #[facet(default)]
     format_version: Option<Value>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// The first struct whose `component_groups` may not hold `null`.

@@ -11,11 +11,12 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told, VanillaText,
 };
-use bedrock_addon_core::json::{JsonSlice, SliceError, Value, parse_at, to_json};
+use bedrock_addon_core::json::{JsonSlice, NullRule, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_core::schema::{Schema, SchemaCx};
+use bedrock_addon_core::versioning::{ConvertMode, MemberFailure};
 use facet::Facet;
-use facet_value::{VArray, VObject};
+use facet_value::VObject;
 
 use super::EntityComponent;
 
@@ -30,13 +31,13 @@ pub(crate) trait Typed: for<'a> Facet<'a> {
 
     /// Rewrites the component's JSON object before the typed read: an alias or a value
     /// spelling the reader maps. Returns whether anything changed.
-    fn prepare(_json: &mut VObject, _cx: &mut Check<'_>) -> bool {
+    fn prepare(_json: &mut VObject, _cx: &mut ComponentCheck<'_>) -> bool {
         false
     }
 
     /// The rule checks on the read value (ranges, enum spellings, the shared types' own
     /// findings), reported through `cx`.
-    fn check(&mut self, _cx: &mut Check<'_>) {}
+    fn check(&mut self, _cx: &mut ComponentCheck<'_>) {}
 
     /// Whether the lenient conversion keeps a member, or a list element, whose nested member
     /// it cannot read, that nested member taken out (so it takes its default) and told
@@ -47,7 +48,7 @@ pub(crate) trait Typed: for<'a> Facet<'a> {
 }
 
 /// Where a component's rule checks report: the mode decides what a broken rule does.
-pub(crate) struct Check<'d> {
+pub(crate) struct ComponentCheck<'d> {
     mode: ConvertMode,
     #[cfg_attr(
         not(feature = "molang"),
@@ -58,7 +59,7 @@ pub(crate) struct Check<'d> {
     failed: bool,
 }
 
-impl<'d> Check<'d> {
+impl<'d> ComponentCheck<'d> {
     /// A check reporting to `out` in `mode`, for a file loaded in `load`.
     pub(crate) fn new(mode: ConvertMode, load: &'d LoadContext, out: &'d mut Diagnostics) -> Self {
         Self {
@@ -115,13 +116,13 @@ impl<'d> Check<'d> {
 
     /// A broken rule at `at` with no field default to fall back to: an error that drops the
     /// component in a strict read, an information of the crate's own in the lenient conversion
-    /// ([`Check::invalid`]).
+    /// ([`ComponentCheck::invalid`]).
     pub(crate) fn broken(&mut self, at: &JsonPath, text: Option<VanillaText>) {
         let mut unit = ();
         self.invalid(at, &mut unit, (), text);
     }
 
-    /// The schema bound `min ..= max` of a number at `at` ([`Check::invalid`] outside it).
+    /// The schema bound `min ..= max` of a number at `at` ([`ComponentCheck::invalid`] outside it).
     pub(crate) fn within<T: PartialOrd + Copy>(
         &mut self,
         at: &JsonPath,
@@ -134,7 +135,7 @@ impl<'d> Check<'d> {
         }
     }
 
-    /// The schema minimum of a number at `at` ([`Check::invalid`] below it).
+    /// The schema minimum of a number at `at` ([`ComponentCheck::invalid`] below it).
     pub(crate) fn at_least<T: PartialOrd + Copy>(
         &mut self,
         at: &JsonPath,
@@ -145,6 +146,21 @@ impl<'d> Check<'d> {
         if *field < min {
             self.invalid(at, field, default, None);
         }
+    }
+
+    /// The bounds `value`'s `Schema` states (`schema::min`, `max`, `above`, `below`), at `at`,
+    /// graded as [`ComponentCheck::invalid`] grades a broken rule: an error that drops the component in
+    /// a strict read; in the lenient conversion an information, and the member takes its
+    /// default.
+    pub(crate) fn bounds<T: Schema>(&mut self, at: JsonPath, value: &mut T) {
+        let failure = match self.mode {
+            ConvertMode::Strict => MemberFailure::Refuse,
+            ConvertMode::Lenient => MemberFailure::DefaultAndTell,
+        };
+        let reading = crate::READING.with_on_member_failure(failure);
+        let mut cx = SchemaCx::new(reading, at, self.out);
+        value.check(&mut cx);
+        self.failed |= cx.failed();
     }
 
     /// A finding that does not depend on the mode (a vanilla warning; the value stays).
@@ -212,7 +228,11 @@ impl<'d> Check<'d> {
 /// Removes the deprecated member names `names` from `json`, each with a `DeprecatedMember`
 /// error (vanilla's cereal text, an error at every level: the document is rejected): the value is
 /// not used. Returns whether one was there.
-pub(crate) fn drop_deprecated(json: &mut VObject, names: &[&str], cx: &mut Check<'_>) -> bool {
+pub(crate) fn drop_deprecated(
+    json: &mut VObject,
+    names: &[&str],
+    cx: &mut ComponentCheck<'_>,
+) -> bool {
     let mut changed = false;
     for name in names {
         if json.remove(name).is_some() {
@@ -233,7 +253,7 @@ pub(crate) fn legacy_spellings(
     json: &mut VObject,
     at: &JsonPath,
     spellings: &[(&str, &str)],
-    cx: &mut Check<'_>,
+    cx: &mut ComponentCheck<'_>,
 ) -> bool {
     if !matches!(cx.mode(), ConvertMode::Lenient) {
         return false;
@@ -279,7 +299,7 @@ pub(crate) fn read_prepared<T: Typed>(
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
-    before: impl FnOnce(&mut VObject, &mut Check<'_>) -> bool,
+    before: impl FnOnce(&mut VObject, &mut ComponentCheck<'_>) -> bool,
 ) -> Option<T> {
     let mut found = Diagnostics::default();
     let value = read_shaped::<T>(slice, mode, cx, &mut found, before);
@@ -358,7 +378,7 @@ fn read_shaped<T: Typed>(
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
-    before: impl FnOnce(&mut VObject, &mut Check<'_>) -> bool,
+    before: impl FnOnce(&mut VObject, &mut ComponentCheck<'_>) -> bool,
 ) -> Option<T> {
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     not_null(json.as_ref(), d)?;
@@ -392,8 +412,8 @@ fn read_shaped<T: Typed>(
         }
         // Not an object (the typed read, strict): the typed read names the problem (a syntax
         // error, a wrong type).
-        match parse_at::<T>(slice) {
-            Err(error) => d.push(slice_finding(&error, true, Severity::Error)),
+        match crate::typed::read::<T>(slice, None) {
+            Err(error) => d.push(crate::typed::finding(&error, Some(slice), Severity::Error)),
             Ok(_) => d.push(Diagnostic::error(DiagnosticCode::InvalidType {
                 text: None,
             })),
@@ -403,7 +423,7 @@ fn read_shaped<T: Typed>(
     // The game reads an entity through JsonCpp: a member written as `null` is absent and
     // keeps its default, at every version (a `null` is an absent member).
     let (mut object, _) = without_null_members::<T>(object, d);
-    let mut prepare = Check::new(mode, cx, d);
+    let mut prepare = ComponentCheck::new(mode, cx, d);
     let older = before(&mut object, &mut prepare);
     let changed = T::prepare(&mut object, &mut prepare) || older;
     if prepare.failed {
@@ -431,16 +451,17 @@ fn read_shaped<T: Typed>(
         text: &text,
         offset: slice.offset,
     };
-    let mut value = match (
-        bedrock_addon_core::json::parse_at_null_absent::<T>(at),
-        mode,
-    ) {
+    let mut value = match (crate::typed::read::<T>(at, Some(NullRule::Absent)), mode) {
         (Ok(value), _) => value,
         (Err(error), ConvertMode::Strict) => {
-            d.push(slice_finding(&error, !changed, Severity::Error));
+            d.push(crate::typed::finding(
+                &error,
+                (!changed).then_some(at),
+                Severity::Error,
+            ));
             return None;
         }
-        (Err(_), ConvertMode::Lenient) => isolate::<T>(&mut object, d)?,
+        (Err(_), ConvertMode::Lenient) => super::lenient::isolate::<T>(&mut object, d)?,
     };
     let source = Value::from(object);
     let mut kept = bedrock_addon_core::document::Unknown::new();
@@ -466,7 +487,7 @@ fn read_shaped<T: Typed>(
                 .severity(misread_severity),
         );
     }
-    let mut check = Check::new(mode, cx, d);
+    let mut check = ComponentCheck::new(mode, cx, d);
     value.check(&mut check);
     (!check.failed).then_some(value)
 }
@@ -482,248 +503,6 @@ fn not_null(json: Option<&Value>, d: &mut Diagnostics) -> Option<()> {
     Some(())
 }
 
-/// The lenient conversion's member isolation: each member read alone, a failing one reported
-/// (`InvalidValue` warning) and removed so its field takes its default, then the rest read
-/// together.
-fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Option<T> {
-    let keys: Vec<String> = object.keys().map(|k| k.as_str().to_owned()).collect();
-    for key in keys {
-        let Some(member) = object.get(&key) else {
-            continue;
-        };
-        let mut alone = VObject::new();
-        alone.insert(key.as_str(), member.clone());
-        let text = written::<T>(&alone, ConvertMode::Lenient, d)?;
-        if let Err(error) = parse_at::<T>(JsonSlice {
-            text: &text,
-            offset: 0,
-        }) {
-            if isolate_elements::<T>(object, &key, d) {
-                continue;
-            }
-            if T::KEEP_NESTED
-                && let Some((kept, removed)) = strip_nested::<T>(&alone)
-            {
-                for at in removed {
-                    d.push(
-                        // The lenient isolation's notes are the crate's own (the game writes no
-                        // content-log line for this): the legacy readers keep what they read in silence.
-                        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
-                            .at(at.clone()),
-                    );
-                }
-                if let Some(member) = kept.get(&key) {
-                    object.insert(key.as_str(), member.clone());
-                }
-                continue;
-            }
-            let at = if error.path.is_empty() {
-                JsonPath::new().child(&key)
-            } else {
-                error.path
-            };
-            let nested = at.len() > 1;
-            d.push(
-                // The crate's own, as above.
-                Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()),
-            );
-            if nested {
-                // The member goes whole for the value inside it: told at the member too, so
-                // what else it holds is known to be dropped (an information, the warning is
-                // the one above).
-                d.push(
-                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                        .at(JsonPath::new().child(&key)),
-                );
-            }
-            object.remove(&key);
-        }
-    }
-    let text = written::<T>(object, ConvertMode::Lenient, d)?;
-    match parse_at::<T>(JsonSlice {
-        text: &text,
-        offset: 0,
-    }) {
-        Ok(value) => Some(value),
-        Err(error) => {
-            d.push(slice_finding(
-                &error,
-                false,
-                // The crate's own, as above.
-                Severity::Info,
-            ));
-            None
-        }
-    }
-}
-
-/// [`isolate`] for a member that is a list: each element read alone, a failing one
-/// reported (`InvalidValue` warning where it fails, and `DroppedField` INFO at the element
-/// when the failure is inside it) and left out, the others kept. `false`, with nothing told
-/// or changed, when the member is no list, no element fails alone, or the elements left do
-/// not read together: the member then goes whole, as any other.
-fn isolate_elements<T: Typed>(object: &mut VObject, key: &str, d: &mut Diagnostics) -> bool {
-    let Some(list) = object.get(key).and_then(Value::as_array) else {
-        return false;
-    };
-    let reads = |elements: VArray| {
-        let mut alone = VObject::new();
-        alone.insert(key, elements);
-        let text = json_text::<T>(&alone, ConvertMode::Lenient)?;
-        Some(
-            parse_at::<T>(JsonSlice {
-                text: &text,
-                offset: 0,
-            })
-            .map(|_| ()),
-        )
-    };
-    let mut kept = VArray::new();
-    let mut told = Vec::new();
-    let mut moves = Vec::new();
-    for (place, element) in list.iter().enumerate() {
-        let mut one = VArray::new();
-        one.push(element.clone());
-        let at_element = JsonPath::new().child(key).index(place);
-        match reads(one) {
-            None => return false,
-            Some(Ok(())) => {
-                if kept.len() != place {
-                    moves.push((at_element, JsonPath::new().child(key).index(kept.len())));
-                }
-                kept.push(element.clone());
-            }
-            Some(Err(_)) if T::KEEP_NESTED && salvage::<T>(key, element).is_some() => {
-                let Some((salvaged, removed)) = salvage::<T>(key, element) else {
-                    continue;
-                };
-                told.extend(removed.iter().map(|at| element_finding(key, place, at)));
-                if kept.len() != place {
-                    moves.push((at_element, JsonPath::new().child(key).index(kept.len())));
-                }
-                kept.push(salvaged);
-            }
-            Some(Err(error)) => {
-                // The failure's path names the element as the first of its list of one.
-                // Below the element it is followed as far as the file has a value: a
-                // failure named deeper (the element `0` of an empty list) is of the value
-                // the file has there.
-                let mut at = at_element.clone();
-                let mut inside = false;
-                let mut node = Some(element);
-                for segment in error.path.segments().skip(2) {
-                    node = match segment {
-                        JsonPathSegment::Key(name) => node
-                            .and_then(Value::as_object)
-                            .and_then(|object| object.get(name)),
-                        JsonPathSegment::Index(number) => node
-                            .and_then(Value::as_array)
-                            .and_then(|array| array.get(number)),
-                    };
-                    if node.is_none() {
-                        break;
-                    }
-                    inside = true;
-                    match segment {
-                        JsonPathSegment::Key(name) => at.push(name),
-                        JsonPathSegment::Index(number) => at.push_index(number),
-                    }
-                }
-                told.push(
-                    // The crate's own, as above.
-                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()),
-                );
-                if inside {
-                    told.push(
-                        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                            .at(at_element.clone()),
-                    );
-                }
-            }
-        }
-    }
-    if told.is_empty() || !matches!(reads(kept.clone()), Some(Ok(()))) {
-        return false;
-    }
-    for finding in told {
-        d.push(finding);
-    }
-    for (from, to) in moves {
-        d.moved(from, to);
-    }
-    object.insert(key, kept);
-    true
-}
-
-/// The `InvalidValue` warning at `at`, a path that names the element `place` of the list `key`
-/// as the first of its list of one, at the element the file has.
-fn element_finding(key: &str, place: usize, at: &JsonPath) -> Diagnostic {
-    let mut here = JsonPath::new().child(key);
-    here.push_index(place);
-    for segment in at.segments().skip(2) {
-        match segment {
-            JsonPathSegment::Key(name) => here.push(name),
-            JsonPathSegment::Index(number) => here.push_index(number),
-        }
-    }
-    // The crate's own, as above.
-    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(here.clone())
-}
-
-/// [`strip_nested`] of the element `element` of the list `key`, read as the one element of its
-/// list: the element with the nested members taken out, and their paths (below the list of
-/// one), or `None` when it cannot be read so.
-fn salvage<T: Typed>(key: &str, element: &Value) -> Option<(Value, Vec<JsonPath>)> {
-    let mut one = VArray::new();
-    one.push(element.clone());
-    let mut alone = VObject::new();
-    alone.insert(key, one);
-    let (kept, removed) = strip_nested::<T>(&alone)?;
-    let element = kept.get(key)?.as_array()?.get(0)?.clone();
-    Some((element, removed))
-}
-
-/// Takes out of `alone` (one member of a component), one by one, each nested member at which a
-/// lone read fails, until the read succeeds: the object left and the paths taken out (below the
-/// component). `None` when a failure is not at a member of an object below the top level (the
-/// member itself is of the wrong shape), or after 64 tries.
-fn strip_nested<T: Typed>(alone: &VObject) -> Option<(VObject, Vec<JsonPath>)> {
-    let mut object = alone.clone();
-    let mut removed = Vec::new();
-    for _ in 0..64 {
-        let text = json_text::<T>(&object, ConvertMode::Lenient)?;
-        let Err(error) = parse_at::<T>(JsonSlice {
-            text: &text,
-            offset: 0,
-        }) else {
-            return (!removed.is_empty()).then_some((object, removed));
-        };
-        let segments: Vec<JsonPathSegment<'_>> = error.path.segments().collect();
-        let (JsonPathSegment::Key(name), parents) = segments.split_last()? else {
-            return None;
-        };
-        if parents.is_empty() {
-            return None;
-        }
-        let mut node: Option<&mut Value> = None;
-        for (i, segment) in parents.iter().enumerate() {
-            node = match (i, segment, node) {
-                (0, JsonPathSegment::Key(key), _) => object.get_mut(key),
-                (_, JsonPathSegment::Key(key), Some(value)) => {
-                    value.as_object_mut().and_then(|o| o.get_mut(key))
-                }
-                (_, JsonPathSegment::Index(n), Some(value)) => {
-                    value.as_array_mut().and_then(|a| a.get_mut(*n))
-                }
-                _ => None,
-            };
-        }
-        node?.as_object_mut()?.remove(name)?;
-        removed.push(error.path.clone());
-    }
-    None
-}
-
 /// `object` as JSON text: in the lenient conversion as facet writes a `Value` (an integral real
 /// becomes an integer, as in vanilla's conversion of a `Dynamic` value), else with the number
 /// tags kept.
@@ -732,7 +511,7 @@ fn strip_nested<T: Typed>(alone: &VObject) -> Option<(VObject, Vec<JsonPath>)> {
 /// text so: a float member then holds the zero of the file. Where `T` does not (the zero is
 /// at an integer member, which takes the integer `0` the plain conversion writes), the plain
 /// text is the one.
-fn json_text<T: Typed>(object: &VObject, mode: ConvertMode) -> Option<String> {
+pub(super) fn json_text<T: Typed>(object: &VObject, mode: ConvertMode) -> Option<String> {
     let value = Value::from(object.clone());
     match mode {
         ConvertMode::Strict => to_json(&value).ok(),
@@ -744,7 +523,11 @@ fn json_text<T: Typed>(object: &VObject, mode: ConvertMode) -> Option<String> {
 /// nests past `MAX_JSON_DEPTH`, which no file read through the door does): `InvalidValue`
 /// at the component, an information in the lenient conversion, which drops it, and an error
 /// in a strict read.
-fn written<T: Typed>(object: &VObject, mode: ConvertMode, d: &mut Diagnostics) -> Option<String> {
+pub(super) fn written<T: Typed>(
+    object: &VObject,
+    mode: ConvertMode,
+    d: &mut Diagnostics,
+) -> Option<String> {
     let text = json_text::<T>(object, mode);
     if text.is_none() {
         // The lenient conversion's drop is the crate's own: an information (the game writes no
@@ -756,19 +539,6 @@ fn written<T: Typed>(object: &VObject, mode: ConvertMode, d: &mut Diagnostics) -
         d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).severity(severity));
     }
     text
-}
-
-/// The finding of a failed typed read (of the slice the error is of); the span only when the
-/// text is the file's.
-fn slice_finding(error: &SliceError, as_written: bool, severity: Severity) -> Diagnostic {
-    let finding = Diagnostic::error(error.code_with_path(error.has_path()))
-        .at(error.path.clone())
-        .severity(severity);
-    if as_written {
-        finding.span(error.span)
-    } else {
-        finding
-    }
 }
 
 #[cfg(test)]

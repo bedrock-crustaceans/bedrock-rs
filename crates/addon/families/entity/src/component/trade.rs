@@ -5,41 +5,28 @@
 // the legacy tradeable component and `tamemount`).
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictBool, StrictInt, StrictString};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, IntRange, ItemDescriptor, RangeForm};
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed};
+use super::parse::{ComponentCheck, Typed};
 use super::value::visit_item_tags;
 
 /// `minecraft:admire_item`: the entity admires a held item for a while, ignoring targets.
 #[doc(alias = "minecraft:admire_item")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct AdmireItem {
     /// `cooldown_after_being_attacked`: seconds after being attacked during which it does not
     /// admire; default 10.
-    #[facet(default = StrictInt(10_i32))]
-    pub cooldown_after_being_attacked: StrictInt<i32>,
+    #[facet(default = 10_i32)]
+    pub cooldown_after_being_attacked: i32,
     /// `duration`: seconds the admiring lasts; default 10.
-    #[facet(default = StrictInt(10_i32))]
-    pub duration: StrictInt<i32>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for AdmireItem {
-    fn default() -> Self {
-        Self {
-            cooldown_after_being_attacked: StrictInt(10),
-            duration: StrictInt(10),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 10_i32)]
+    pub duration: i32,
 }
 
 impl Typed for AdmireItem {}
@@ -47,28 +34,16 @@ impl Typed for AdmireItem {}
 /// `minecraft:barter`: the entity drops items from a loot table in exchange for a bartered
 /// item.
 #[doc(alias = "minecraft:barter")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Barter {
     /// `barter_table`: the loot table path; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub barter_table: StrictString,
+    #[facet(default = String::new())]
+    pub barter_table: String,
     /// `cooldown_after_being_attacked`: seconds after being attacked during which it does not
     /// barter; default 10.
-    #[facet(default = StrictInt(10_i32))]
-    pub cooldown_after_being_attacked: StrictInt<i32>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Barter {
-    fn default() -> Self {
-        Self {
-            barter_table: StrictString::default(),
-            cooldown_after_being_attacked: StrictInt(10),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 10_i32)]
+    pub cooldown_after_being_attacked: i32,
 }
 
 impl Typed for Barter {}
@@ -76,26 +51,24 @@ impl Typed for Barter {}
 /// `minecraft:trade_table`: the entity trades from a trade table (the legacy trading screen
 /// unless `new_screen`).
 #[doc(alias = "minecraft:trade_table")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct TradeTable {
     /// `convert_trades_economy`: the trades convert to the economy trade table; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub convert_trades_economy: StrictBool,
+    #[facet(default = false)]
+    pub convert_trades_economy: bool,
     /// `display_name`: the trading screen's title; default empty.
-    #[facet(default = StrictString(String::new()))]
-    pub display_name: StrictString,
+    #[facet(default = String::new())]
+    pub display_name: String,
     /// `new_screen`: the newer trading screen is used; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub new_screen: StrictBool,
+    #[facet(default = false)]
+    pub new_screen: bool,
     /// `persist_trades`: the trades are kept when the entity changes; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub persist_trades: StrictBool,
+    #[facet(default = false)]
+    pub persist_trades: bool,
     /// `table`: the trade table path; default none (empty).
-    #[facet(default = StrictString(String::new()))]
-    pub table: StrictString,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = String::new())]
+    pub table: String,
 }
 
 impl Typed for TradeTable {}
@@ -103,10 +76,11 @@ impl Typed for TradeTable {}
 /// `minecraft:tamemount`: the entity can be tamed by riding it and feeding it.
 #[doc(alias = "minecraft:tamemount")]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Tamemount {
     /// `attempt_temper_mod`: temper added on each failed taming attempt; default 5.
-    #[facet(default = StrictInt(5_i32))]
-    pub attempt_temper_mod: StrictInt<i32>,
+    #[facet(default = 5_i32)]
+    pub attempt_temper_mod: i32,
     /// `auto_reject_items`: items the entity refuses when fed.
     #[facet(default)]
     pub auto_reject_items: Vec<RejectItem>,
@@ -114,80 +88,60 @@ pub struct Tamemount {
     #[facet(default)]
     pub feed_items: Vec<FeedItem>,
     /// `feed_text`: the interaction text for feeding; default empty.
-    #[facet(default = StrictString(String::new()))]
-    pub feed_text: StrictString,
+    #[facet(default = String::new())]
+    pub feed_text: String,
     /// `max_temper`: the highest starting temper; default 100.
-    #[facet(default = StrictInt(100_i32))]
-    pub max_temper: StrictInt<i32>,
+    #[facet(default = 100_i32)]
+    pub max_temper: i32,
     /// `min_temper`: the lowest starting temper; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub min_temper: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub min_temper: i32,
     /// `ride_text`: the interaction text for mounting; default empty.
-    #[facet(default = StrictString(String::new()))]
-    pub ride_text: StrictString,
+    #[facet(default = String::new())]
+    pub ride_text: String,
     /// `tame_event`: the event fired when the entity is tamed; absent means none.
-    #[facet(default)]
     pub tame_event: Option<EventTrigger>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Default for Tamemount {
     fn default() -> Self {
         Self {
-            attempt_temper_mod: StrictInt(5),
+            attempt_temper_mod: 5,
             auto_reject_items: Vec::new(),
             feed_items: Vec::new(),
-            feed_text: StrictString::default(),
-            max_temper: StrictInt(100),
-            min_temper: StrictInt(0),
-            ride_text: StrictString::default(),
+            feed_text: String::new(),
+            max_temper: 100,
+            min_temper: 0,
+            ride_text: String::new(),
             tame_event: None,
-            extra: Extra::default(),
         }
     }
 }
 
 /// One item of [`Tamemount::feed_items`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
+#[derive(Default)]
 pub struct FeedItem {
     /// `item`: the item; absent matches nothing.
-    #[facet(default)]
     pub item: Option<ItemDescriptor>,
     /// `temper_mod`: temper added when it is fed; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub temper_mod: StrictInt<i32>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for FeedItem {
-    fn default() -> Self {
-        Self {
-            item: None,
-            temper_mod: StrictInt(0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0_i32)]
+    pub temper_mod: i32,
 }
 
 /// One item of [`Tamemount::auto_reject_items`].
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct RejectItem {
     /// `item`: the item; absent matches nothing.
-    #[facet(default)]
     pub item: Option<ItemDescriptor>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Typed for Tamemount {
     /// The legacy reader's camel-case spellings (`minTemper|min_temper`, …, and
     /// `temperMod|temper_mod` in each feed item).
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         let mut changed = super::parse::legacy_spellings(
             json,
             &JsonPath::new(),
@@ -216,7 +170,7 @@ impl Typed for Tamemount {
         changed
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let feed = JsonPath::new().child("feed_items");
         for (i, entry) in self.feed_items.iter().enumerate() {
             let mut at = feed.index(i);
@@ -270,44 +224,28 @@ impl MolangFields for Tamemount {
 // `inventory`: `container_type` defaults to the string "none"; the other defaults are 5,
 // false, false, false and 0.
 #[doc(alias = "minecraft:inventory")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Inventory {
     /// `container_type`: the kind of container (`horse`, `minecart_chest`, `chest_boat`,
     /// `minecart_hopper`, `inventory`, `container`, `hopper`, …); default `none`.
-    #[facet(default = StrictString("none".to_owned()))]
-    pub container_type: StrictString,
+    #[facet(default = "none".to_owned())]
+    pub container_type: String,
     /// `inventory_size`: the number of slots; default 5.
-    #[facet(default = StrictInt(5_i32))]
-    pub inventory_size: StrictInt<i32>,
+    #[facet(default = 5_i32)]
+    pub inventory_size: i32,
     /// `can_be_siphoned_from`: a hopper can take items out; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub can_be_siphoned_from: StrictBool,
+    #[facet(default = false)]
+    pub can_be_siphoned_from: bool,
     /// `private`: the entity does not drop its inventory on death; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub private: StrictBool,
+    #[facet(default = false)]
+    pub private: bool,
     /// `restrict_to_owner`: only the owner (or the entity) opens it; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub restrict_to_owner: StrictBool,
+    #[facet(default = false)]
+    pub restrict_to_owner: bool,
     /// `additional_slots_per_strength`: slots gained per extra strength; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub additional_slots_per_strength: StrictInt<i32>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Inventory {
-    fn default() -> Self {
-        Self {
-            container_type: StrictString("none".to_owned()),
-            inventory_size: StrictInt(5),
-            can_be_siphoned_from: StrictBool(false),
-            private: StrictBool(false),
-            restrict_to_owner: StrictBool(false),
-            additional_slots_per_strength: StrictInt(0),
-            extra: Extra::default(),
-        }
-    }
+    #[facet(default = 0_i32)]
+    pub additional_slots_per_strength: i32,
 }
 
 impl Typed for Inventory {}
@@ -315,107 +253,91 @@ impl Typed for Inventory {}
 /// `minecraft:shareables`: the items the mob wants to share (and picks up).
 // `shareables`: amounts default to −1, priority to 0 and the flags to false.
 #[doc(alias = "minecraft:shareables")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Shareables {
     /// `singular_pickup`: it picks up no more of an item it already holds; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub singular_pickup: StrictBool,
+    #[facet(default = false)]
+    pub singular_pickup: bool,
     /// `all_items`: every other item is shareable too, at the lowest priority; default
     /// `false`.
-    #[facet(default = StrictBool(false))]
-    pub all_items: StrictBool,
+    #[facet(default = false)]
+    pub all_items: bool,
     /// `all_items_want_amount`: how many of such an item it wants; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub all_items_want_amount: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub all_items_want_amount: i32,
     /// `all_items_surplus_amount`: how many of such an item are extra; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub all_items_surplus_amount: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub all_items_surplus_amount: i32,
     /// `all_items_max_amount`: the most of such an item it holds; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub all_items_max_amount: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub all_items_max_amount: i32,
     /// `items`: the items, matched from the first.
     #[facet(default)]
     pub items: Vec<ShareableItem>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for Shareables {
-    fn default() -> Self {
-        Self {
-            singular_pickup: StrictBool(false),
-            all_items: StrictBool(false),
-            all_items_want_amount: StrictInt(-1),
-            all_items_surplus_amount: StrictInt(-1),
-            all_items_max_amount: StrictInt(-1),
-            items: Vec::new(),
-            extra: Extra::default(),
-        }
-    }
 }
 
 /// One item of [`Shareables`].
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct ShareableItem {
     /// `item`: the item or item tag; absent is no item.
-    #[facet(default)]
     pub item: Option<ItemDescriptor>,
     /// `want_amount`: how many it wants; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub want_amount: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub want_amount: i32,
     /// `surplus_amount`: how many are extra; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub surplus_amount: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub surplus_amount: i32,
     /// `max_amount`: the most it holds; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub max_amount: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub max_amount: i32,
     /// `pickup_limit`: the most it picks up in one goal tick; default −1.
-    #[facet(default = StrictInt(-1_i32))]
-    pub pickup_limit: StrictInt<i32>,
+    #[facet(default = -1_i32)]
+    pub pickup_limit: i32,
     /// `craft_into`: the item it crafts with this one; default none.
-    #[facet(default = StrictString(String::new()))]
-    pub craft_into: StrictString,
+    #[facet(default = String::new())]
+    pub craft_into: String,
     /// `priority`: which items it prefers, 0 first; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub priority: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub priority: i32,
     /// `admire`: it admires the item after picking it up; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub admire: StrictBool,
+    #[facet(default = false)]
+    pub admire: bool,
     /// `barter`: it barters for the item; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub barter: StrictBool,
+    #[facet(default = false)]
+    pub barter: bool,
     /// `stored_in_inventory`: it puts the item in its inventory when it cannot equip it;
     /// default `false`.
-    #[facet(default = StrictBool(false))]
-    pub stored_in_inventory: StrictBool,
+    #[facet(default = false)]
+    pub stored_in_inventory: bool,
     /// `consume_item`: it consumes the item; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub consume_item: StrictBool,
+    #[facet(default = false)]
+    pub consume_item: bool,
     /// `pickup_only`: it picks the item up and does not drop it; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub pickup_only: StrictBool,
-    /// Members the object does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = false)]
+    pub pickup_only: bool,
 }
 
 impl Default for ShareableItem {
     fn default() -> Self {
         Self {
             item: None,
-            want_amount: StrictInt(-1),
-            surplus_amount: StrictInt(-1),
-            max_amount: StrictInt(-1),
-            pickup_limit: StrictInt(-1),
-            craft_into: StrictString::default(),
-            priority: StrictInt(0),
-            admire: StrictBool(false),
-            barter: StrictBool(false),
-            stored_in_inventory: StrictBool(false),
-            consume_item: StrictBool(false),
-            pickup_only: StrictBool(false),
-            extra: Extra::default(),
+            want_amount: -1,
+            surplus_amount: -1,
+            max_amount: -1,
+            pickup_limit: -1,
+            craft_into: String::new(),
+            priority: 0,
+            admire: false,
+            barter: false,
+            stored_in_inventory: false,
+            consume_item: false,
+            pickup_only: false,
         }
     }
 }
@@ -425,7 +347,7 @@ impl Typed for Shareables {
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let list = JsonPath::new().child("items");
         for (i, entry) in self.items.iter().enumerate() {
             if let Some(item) = &entry.item {
@@ -435,41 +357,30 @@ impl Typed for Shareables {
     }
 }
 
-impl MolangFields for Shareables {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("items".into());
-        for (i, entry) in self.items.iter_mut().enumerate() {
-            if let Some(item) = &mut entry.item {
-                visitor.enter(i.into());
-                visitor.enter("item".into());
-                visit_item_tags(item, visitor);
-                visitor.leave();
-                visitor.leave();
-            }
-        }
-        visitor.leave();
-    }
-}
-
 /// `minecraft:economy_trade_table`: the entity trades with players by the economy rules.
 // `economy_trade_table`: `use_legacy_price_formula` defaults to false (an older document gets
 // `true` from the 1.16.0 step).
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the game's flags, one member each"
+)]
 #[doc(alias = "minecraft:economy_trade_table")]
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct EconomyTradeTable {
     /// `display_name`: the localization key of the trade screen's name; default none.
-    #[facet(default = StrictString(String::new()))]
-    pub display_name: StrictString,
+    #[facet(default = String::new())]
+    pub display_name: String,
     /// `table`: the trade table file; default none.
-    #[facet(default = StrictString(String::new()))]
-    pub table: StrictString,
+    #[facet(default = String::new())]
+    pub table: String,
     /// `new_screen`: the newer trade screen is used; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub new_screen: StrictBool,
+    #[facet(default = false)]
+    pub new_screen: bool,
     /// `hero_demand_discount`: the demand discount while the player is Hero of the Village;
     /// default −4.
-    #[facet(default = StrictInt(-4_i32))]
-    pub hero_demand_discount: StrictInt<i32>,
+    #[facet(default = -4_i32)]
+    pub hero_demand_discount: i32,
     /// `cured_discount`: the discount range of a cured villager; default −25 to −20.
     #[facet(default = IntRange::new(-25, -20, RangeForm::Array))]
     pub cured_discount: IntRange,
@@ -478,44 +389,40 @@ pub struct EconomyTradeTable {
     pub max_cured_discount: IntRange,
     /// `nearby_cured_discount`: the discount per cured villager nearby (legacy pricing);
     /// default −20.
-    #[facet(default = StrictInt(-20_i32))]
-    pub nearby_cured_discount: StrictInt<i32>,
+    #[facet(default = -20_i32)]
+    pub nearby_cured_discount: i32,
     /// `max_nearby_cured_discount`: the most of that discount; default −200.
-    #[facet(default = StrictInt(-200_i32))]
-    pub max_nearby_cured_discount: StrictInt<i32>,
+    #[facet(default = -200_i32)]
+    pub max_nearby_cured_discount: i32,
     /// `persist_trades`: the offers are saved with the entity; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub persist_trades: StrictBool,
+    #[facet(default = false)]
+    pub persist_trades: bool,
     /// `convert_trades_economy`: legacy trades become economy trades; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub convert_trades_economy: StrictBool,
+    #[facet(default = false)]
+    pub convert_trades_economy: bool,
     /// `show_trade_screen`: interacting opens the trade screen; default `true`.
-    #[facet(default = StrictBool(true))]
-    pub show_trade_screen: StrictBool,
+    #[facet(default = true)]
+    pub show_trade_screen: bool,
     /// `use_legacy_price_formula`: the legacy price formula is used; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub use_legacy_price_formula: StrictBool,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = false)]
+    pub use_legacy_price_formula: bool,
 }
 
 impl Default for EconomyTradeTable {
     fn default() -> Self {
         Self {
-            display_name: StrictString::default(),
-            table: StrictString::default(),
-            new_screen: StrictBool(false),
-            hero_demand_discount: StrictInt(-4),
+            display_name: String::new(),
+            table: String::new(),
+            new_screen: false,
+            hero_demand_discount: -4,
             cured_discount: IntRange::new(-25, -20, RangeForm::Array),
             max_cured_discount: IntRange::new(-25, -20, RangeForm::Array),
-            nearby_cured_discount: StrictInt(-20),
-            max_nearby_cured_discount: StrictInt(-200),
-            persist_trades: StrictBool(false),
-            convert_trades_economy: StrictBool(false),
-            show_trade_screen: StrictBool(true),
-            use_legacy_price_formula: StrictBool(false),
-            extra: Extra::default(),
+            nearby_cured_discount: -20,
+            max_nearby_cured_discount: -200,
+            persist_trades: false,
+            convert_trades_economy: false,
+            show_trade_screen: true,
+            use_legacy_price_formula: false,
         }
     }
 }
@@ -525,7 +432,7 @@ impl Typed for EconomyTradeTable {
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         if !matches!(cx.mode(), ConvertMode::Lenient) {
             return false;
         }
@@ -536,7 +443,7 @@ impl Typed for EconomyTradeTable {
         changed
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         cx.range(
             &JsonPath::new().child("cured_discount"),
             &mut self.cured_discount,
@@ -558,5 +465,59 @@ mod tests {
         assert_eq!(FeedItem::default(), feed);
         let reject = bedrock_addon_core::json::from_str::<RejectItem>("{}").expect("parses");
         assert_eq!(RejectItem::default(), reject);
+    }
+}
+
+crate::hand_fields!(Tamemount {
+    "attempt_temper_mod": i32,
+    "auto_reject_items": Vec<RejectItem>,
+    "feed_items": Vec<FeedItem>,
+    "feed_text": String,
+    "max_temper": i32,
+    "min_temper": i32,
+    "ride_text": String,
+    "tame_event": Option<EventTrigger>,
+});
+crate::hand_fields!(FeedItem {
+    "temper_mod": i32,
+});
+bedrock_addon_core::impl_no_molang!(FeedItem);
+crate::hand_fields!(RejectItem {});
+bedrock_addon_core::impl_no_molang!(RejectItem);
+crate::hand_fields!(ShareableItem {
+    "want_amount": i32,
+    "surplus_amount": i32,
+    "max_amount": i32,
+    "pickup_limit": i32,
+    "craft_into": String,
+    "priority": i32,
+    "admire": bool,
+    "barter": bool,
+    "stored_in_inventory": bool,
+    "consume_item": bool,
+    "pickup_only": bool,
+});
+crate::hand_fields!(EconomyTradeTable {
+    "display_name": String,
+    "table": String,
+    "new_screen": bool,
+    "hero_demand_discount": i32,
+    "nearby_cured_discount": i32,
+    "max_nearby_cured_discount": i32,
+    "persist_trades": bool,
+    "convert_trades_economy": bool,
+    "show_trade_screen": bool,
+    "use_legacy_price_formula": bool,
+});
+bedrock_addon_core::impl_no_molang!(EconomyTradeTable);
+
+/// The `item` descriptor's `tags` to the Molang walk.
+impl MolangFields for ShareableItem {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Some(item) = &mut self.item {
+            visitor.enter("item".into());
+            visit_item_tags(item, visitor);
+            visitor.leave();
+        }
     }
 }

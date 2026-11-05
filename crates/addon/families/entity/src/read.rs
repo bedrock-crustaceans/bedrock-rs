@@ -8,7 +8,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told, VanillaText,
 };
 use bedrock_addon_core::document::{
-    ComponentMap, ComponentSet, Extra, Origin, Rejected, Unknown as Table, VersionInfo,
+    ComponentMap, ComponentSet, Origin, Rejected, Unknown as Table, VersionInfo,
 };
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::{
@@ -18,17 +18,17 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{ConvertMode, Family, Loaded, ParseCx, load};
 use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::STRICT_SLICES;
 use super::component::EntityComponent;
 use super::game_schema;
 use super::goal;
-use super::history::first_typed;
+use super::versions::{BRAIN_1_26_50, BRAIN_1_26_50_KEYS, LAST_JSON_STRUCT, STRICT_SLICES};
 use super::{
     AnimateEntry, Brain, ComponentGroup, DeprecatedData, Description, Entity, EntityVersion, Event,
     Property, PropertyDefault, PropertyType, Scripts, SpawnCategory, UpgradeEntry, Written,
@@ -46,6 +46,7 @@ pub(crate) const BRAIN_SINCE: FormatVersion = known::V1_21_130;
 
 /// What the newest struct is parsed from.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell<'a> {
     #[facet(default)]
     description: Option<RawJson<'a>>,
@@ -67,21 +68,19 @@ struct Shell<'a> {
     // The pre-1.8 in-payload version (`Family::payload_version`), consumed by the selection.
     #[facet(default)]
     format_version: Option<Value>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// `__deprecated`.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct DeprecatedShell {
     #[facet(default)]
     aliases: Option<IndexMap<String, Value>>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What `description` is parsed from.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct DescriptionShell<'a> {
     identifier: EntityId,
     #[facet(default)]
@@ -107,12 +106,11 @@ struct DescriptionShell<'a> {
     // Vanilla's own files carry it and vanilla reads nothing from it: kept without a warning.
     #[facet(default)]
     is_experimental: Option<Value>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What a property is parsed from.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct PropertyShell<'a> {
     #[facet(rename = "type")]
     kind: String,
@@ -124,17 +122,14 @@ struct PropertyShell<'a> {
     values: Option<Vec<String>>,
     #[facet(default)]
     client_sync: Option<bool>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What `scripts` is parsed from.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct ScriptsShell<'a> {
     #[facet(default)]
     animate: Option<Vec<RawJson<'a>>>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// The state of one read: the context and where findings go.
@@ -556,7 +551,6 @@ pub(crate) fn read_components(
     within: JsonSlice<'_>,
     at: &JsonPath,
 ) -> ComponentMap<EntityComponent> {
-    let table = <Entity as Family>::components();
     let mut map = ComponentMap::new();
     for (key, raw) in entries {
         let slice = nested(within, raw);
@@ -607,20 +601,14 @@ pub(crate) fn read_components(
         // A key read below the version that types it is converted by the legacy reader, out
         // of the typed slice: what it tells is the conversion's.
         let typed_key = family.unwrap_or(key.as_str());
-        if BRAIN_1_26_50.contains(&typed_key) && r.original_version < BRAIN_1_26_50_SINCE {
+        if BRAIN_1_26_50_KEYS.contains(&typed_key) && r.original_version < BRAIN_1_26_50 {
             // No slice before 1.26.50 binds them and no legacy reader reads them: an unknown
             // component, refused from 1.21.89.
-            r.report(
-                DiagnosticCode::UnrecognizedComponent { text: None },
-                // The game logs this at the warning level for a document below 1.21.89 and lifts it
-                // to an error from that version on.
-                Severity::Warning,
-                path,
-                Some(span_of(slice)),
-            );
+            unknown_component(r, path, slice);
             continue;
         }
-        let converted = first_typed(typed_key).is_some_and(|since| r.original_version < since);
+        let converted =
+            EntityComponent::typed_since(typed_key).is_some_and(|since| r.original_version < since);
         // The game's schema reader of the key validates the member tree before it parses; its lines are told and the read is of what the validation leaves (`{}` when it
         // failed: the component keeps its defaults).
         let original = slice;
@@ -643,27 +631,10 @@ pub(crate) fn read_components(
             }
             found.unknown_mut().absorb(&JsonPath::new(), kept);
         }
-        let value = if let Some(parse) = goal::versioned(key) {
-            parse(slice, r.original_version, r.load, &mut found)
-        } else if let Some(row) = table.get(key) {
-            let mode = if converted {
-                ConvertMode::Lenient
-            } else if first_typed(key).is_some() {
-                ConvertMode::Strict
-            } else {
-                ConvertMode::Lenient
-            };
-            (row.parse)(slice, mode, r.load, &mut found)
-        } else {
+        let read = KeyRead { key, converted };
+        let Ok(value) = read.parse(slice, r, &mut found) else {
             // An unknown component is told and not kept (from 1.21.89 it refuses the document).
-            r.report(
-                DiagnosticCode::UnrecognizedComponent { text: None },
-                // The game logs this at the warning level for a document below 1.21.89 and lifts it
-                // to an error from that version on.
-                Severity::Warning,
-                path,
-                Some(span_of(slice)),
-            );
+            unknown_component(r, path, slice);
             continue;
         };
         if value.is_some() && found.is_empty() && slice.text.trim() == "null" {
@@ -685,18 +656,7 @@ pub(crate) fn read_components(
                 let text = without_members(&json_of(slice), &unknown);
                 let again = JsonSlice::new(&text);
                 let mut quiet = Diagnostics::default();
-                let reread = if let Some(parse) = goal::versioned(key) {
-                    parse(again, r.original_version, r.load, &mut quiet)
-                } else if let Some(row) = table.get(key) {
-                    let mode = if converted || first_typed(key).is_none() {
-                        ConvertMode::Lenient
-                    } else {
-                        ConvertMode::Strict
-                    };
-                    (row.parse)(again, mode, r.load, &mut quiet)
-                } else {
-                    None
-                };
+                let reread = read.parse(again, r, &mut quiet).ok().flatten();
                 if reread.is_some() {
                     // Read without them: they are not kept.
                     found.take_unknown();
@@ -733,7 +693,7 @@ pub(crate) fn read_components(
                     continue;
                 }
             }
-            if (converted || first_typed(typed_key).is_none())
+            if (converted || EntityComponent::typed_since(typed_key).is_none())
                 && finding.severity == Severity::Warning
                 && legacy_reader_is_silent(&finding.code)
             {
@@ -771,6 +731,65 @@ pub(crate) fn read_components(
         }
     }
     map
+}
+
+/// How one key of a component map is read: by its goal's versioned parse, or by its row of the
+/// component table in the mode [`mode_for`] gives it.
+struct KeyRead<'k> {
+    /// The key as written.
+    key: &'k str,
+    /// Whether the document is below the version that types the key (its legacy reader converts
+    /// it).
+    converted: bool,
+}
+
+impl KeyRead<'_> {
+    /// The key's read of `slice`, its findings in `found`; [`NoReader`] when no goal and no row
+    /// reads the key.
+    fn parse(
+        &self,
+        slice: JsonSlice<'_>,
+        r: &Reader<'_, '_>,
+        found: &mut Diagnostics,
+    ) -> Result<Option<EntityComponent>, NoReader> {
+        if let Some(parse) = goal::versioned(self.key) {
+            return Ok(parse(slice, r.original_version, r.load, found));
+        }
+        let row = <Entity as Family>::components()
+            .get(self.key)
+            .ok_or(NoReader)?;
+        Ok((row.parse)(
+            slice,
+            mode_for(self.key, self.converted),
+            r.load,
+            found,
+        ))
+    }
+}
+
+/// No goal and no row of the component table reads the key.
+struct NoReader;
+
+/// The mode a row reads its key in: strictly where the document's version already types the
+/// key, leniently where its legacy reader converts it or the key stays dynamic.
+fn mode_for(key: &str, converted: bool) -> ConvertMode {
+    if converted || EntityComponent::typed_since(key).is_none() {
+        ConvertMode::Lenient
+    } else {
+        ConvertMode::Strict
+    }
+}
+
+/// A key no row reads, or one no slice of the document's version binds: told and not kept.
+fn unknown_component(r: &mut Reader<'_, '_>, path: JsonPath, slice: JsonSlice<'_>) {
+    r.report(
+        DiagnosticCode::UnrecognizedComponent { text: None },
+        // The game logs this at the warning level for a document below 1.21.89 and lifts it
+        // to an error from that version on.
+        Severity::Warning,
+        path,
+        Some(span_of(slice)),
+    );
 }
 
 /// `json` as text without the members at `paths` (relative to it; a path that names no member
@@ -850,7 +869,7 @@ fn goal_ranges_read(
     found: &mut Diagnostics,
 ) -> Option<String> {
     goal::versioned(key)?;
-    let since = first_typed(typed_key)?;
+    let since = EntityComponent::typed_since(typed_key)?;
     if since <= LAST_JSON_STRUCT || version >= since {
         return None;
     }
@@ -872,10 +891,6 @@ fn schema_converted(key: &str) -> bool {
         .and_then(|owner| owner.typed_since)
         .is_some_and(|(a, b, c)| FormatVersion::new(a, b, c) <= LAST_JSON_STRUCT)
 }
-
-/// The newest struct that holds the payload as JSON: a component typed first after it converts
-/// in the read of its step to 1.26.50.
-const LAST_JSON_STRUCT: FormatVersion = known::V1_26_40;
 
 /// Whether the game's legacy reader says nothing of what the lenient typed read reports with
 /// `code`. A hand-written reader reads the keys it knows with `asFloat` / `asInt` / `asBool`
@@ -914,16 +929,6 @@ fn is_gate_finding(finding: &Diagnostic, member: &str) -> bool {
     matches!(finding.code, DiagnosticCode::UnrecognizedField { .. })
         && finding.location.json_path.is_key(member)
 }
-
-/// The Brain keys first bound in the 1.26.50 slice, with no reader before it.
-const BRAIN_1_26_50: [&str; 4] = [
-    "minecraft:memory_behavior.jump_to_block",
-    "minecraft:memory_behavior.prepare_ram_attack",
-    "minecraft:memory_behavior.ram_attack",
-    "minecraft:memory_sensor.find_ram_charge_position",
-];
-/// The version that binds [`BRAIN_1_26_50`].
-const BRAIN_1_26_50_SINCE: FormatVersion = known::V1_26_50;
 
 /// The struct version that reads `pickup_items.stop_if_holding_item`.
 const STOP_IF_HOLDING_ITEM_SINCE: FormatVersion = known::V1_26_30;
@@ -995,7 +1000,6 @@ fn read_description(
 ) -> Option<ReadDescription> {
     let shell: DescriptionShell<'_> = r.typed(slice, at, Severity::Error)?;
     // An unknown member of `description` is told and not kept.
-    let _ = shell.extra;
     let unknown = r.d.unknown_mut();
     unknown.take_all(at);
     if let Some(experimental) = shell.is_experimental {

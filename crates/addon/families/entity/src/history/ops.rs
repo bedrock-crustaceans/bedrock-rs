@@ -182,7 +182,9 @@ pub(crate) fn schema_conversions(payload: &mut Payload, to: FormatVersion, cx: &
         // Each goal the game types first at `to` is read by its legacy reader here; the `min` /
         // `max` of its ranges are not read.
         for key in section.members.keys() {
-            if crate::goal::versioned(&key).is_none() || super::first_typed(&key) != Some(to) {
+            if crate::goal::versioned(&key).is_none()
+                || crate::component::EntityComponent::typed_since(&key) != Some(to)
+            {
                 continue;
             }
             let Some(goal) = section.members.get_mut(&key).and_then(Value::as_object_mut) else {

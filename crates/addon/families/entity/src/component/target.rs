@@ -6,31 +6,28 @@
 //! defaults follow the game's 1.26.30 schema and the 1.21.120 mob descriptor.
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, drop_deprecated};
+use super::parse::{ComponentCheck, Typed, drop_deprecated};
 
 /// `minecraft:wither_target_highest_damage`: the wither targets the entity that dealt it the
 /// most damage.
 #[doc(alias = "minecraft:wither_target_highest_damage")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct WitherTargetHighestDamage {
     /// `priority`: the goal priority, lower runs first; at least 0, default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub priority: StrictInt<i32>,
+    #[facet(default = 0_i32, schema::min = 0)]
+    pub priority: i32,
     /// `control_flags`: the controls the goal takes while it runs.
     #[facet(default)]
     pub control_flags: Vec<ControlFlag>,
     /// `entity_types`: the entities it may target.
     #[facet(default = EntityTypes::default())]
     pub entity_types: EntityTypes,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The target goal's member names `wither_target_highest_damage` inherits and deprecates.
@@ -44,24 +41,19 @@ const DEPRECATED_TARGET_GOAL_NAMES: [&str; 6] = [
 ];
 
 impl Typed for WitherTargetHighestDamage {
-    fn prepare(json: &mut VObject, cx: &mut Check<'_>) -> bool {
+    fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {
         drop_deprecated(json, &DEPRECATED_TARGET_GOAL_NAMES, cx)
     }
 
-    fn check(&mut self, cx: &mut Check<'_>) {
-        cx.at_least(
-            &JsonPath::new().child("priority"),
-            &mut self.priority.0,
-            0,
-            0,
-        );
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
+        cx.bounds(JsonPath::new(), self);
         self.entity_types
             .check(&JsonPath::new().child("entity_types"), cx);
     }
 }
 
 /// A goal's control flag: what the goal takes control of while it runs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum ControlFlag {
@@ -107,7 +99,11 @@ impl EntityTypes {
     }
 
     /// The findings of every descriptor's filters, under `at`.
-    pub(crate) fn check(&self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
+    pub(crate) fn check(
+        &self,
+        at: &bedrock_addon_core::diagnostic::JsonPath,
+        cx: &mut ComponentCheck<'_>,
+    ) {
         match self {
             Self::Many(list) => {
                 for (i, one) in list.iter().enumerate() {
@@ -121,74 +117,86 @@ impl EntityTypes {
 
 /// Which entities a goal applies to, and how (the game's mob descriptor).
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
     /// `check_if_outnumbered`: only when the entity is outnumbered; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub check_if_outnumbered: StrictBool,
+    #[facet(default = false)]
+    pub check_if_outnumbered: bool,
     /// `cooldown`: seconds before the goal may pick this type again; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub cooldown: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub cooldown: i32,
     /// `filters`: which entities match; absent means all.
-    #[facet(default)]
     pub filters: Option<Filter>,
     /// `max_dist`: the largest distance to a matching entity; default 16.
-    #[facet(default = StrictFloat(16.0_f32))]
-    pub max_dist: StrictFloat<f32>,
+    #[facet(default = 16.0_f32)]
+    pub max_dist: f32,
     /// `max_flee`: the distance fled from a matching entity; default 10.
-    #[facet(default = StrictFloat(10.0_f32))]
-    pub max_flee: StrictFloat<f32>,
+    #[facet(default = 10.0_f32)]
+    pub max_flee: f32,
     /// `max_height`: the largest height difference; −1 (the default) is no limit.
-    #[facet(default = StrictFloat(-1.0_f32))]
-    pub max_height: StrictFloat<f32>,
+    #[facet(default = -1.0_f32)]
+    pub max_height: f32,
     /// `must_see`: the entity must be seen; absent means the goal's own setting.
-    #[facet(default)]
-    pub must_see: Option<StrictBool>,
+    pub must_see: Option<bool>,
     /// `must_see_forget_duration`: seconds an unseen entity is still targeted; default 3.
-    #[facet(default = StrictInt(3_i32))]
-    pub must_see_forget_duration: StrictInt<i32>,
+    #[facet(default = 3_i32)]
+    pub must_see_forget_duration: i32,
     /// `priority`: the order among the descriptors; default 0.
-    #[facet(default = StrictInt(0_i32))]
-    pub priority: StrictInt<i32>,
+    #[facet(default = 0_i32)]
+    pub priority: i32,
     /// `reevaluate_description`: the descriptor is checked again while the goal runs; default
     /// `false`.
-    #[facet(default = StrictBool(false))]
-    pub reevaluate_description: StrictBool,
+    #[facet(default = false)]
+    pub reevaluate_description: bool,
     /// `sprint_speed_multiplier`: the speed multiplier while sprinting; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub sprint_speed_multiplier: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub sprint_speed_multiplier: f32,
     /// `walk_speed_multiplier`: the speed multiplier while walking; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub walk_speed_multiplier: StrictFloat<f32>,
-    /// Members the descriptor does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = 1.0_f32)]
+    pub walk_speed_multiplier: f32,
 }
 
 impl Default for MobDescriptor {
     fn default() -> Self {
         Self {
-            check_if_outnumbered: StrictBool(false),
-            cooldown: StrictInt(0),
+            check_if_outnumbered: false,
+            cooldown: 0,
             filters: None,
-            max_dist: StrictFloat(16.0),
-            max_flee: StrictFloat(10.0),
-            max_height: StrictFloat(-1.0),
+            max_dist: 16.0,
+            max_flee: 10.0,
+            max_height: -1.0,
             must_see: None,
-            must_see_forget_duration: StrictInt(3),
-            priority: StrictInt(0),
-            reevaluate_description: StrictBool(false),
-            sprint_speed_multiplier: StrictFloat(1.0),
-            walk_speed_multiplier: StrictFloat(1.0),
-            extra: Extra::default(),
+            must_see_forget_duration: 3,
+            priority: 0,
+            reevaluate_description: false,
+            sprint_speed_multiplier: 1.0,
+            walk_speed_multiplier: 1.0,
         }
     }
 }
 
 impl MobDescriptor {
     /// The findings of the descriptor's filters, under `at`.
-    fn check(&self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
+    fn check(&self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut ComponentCheck<'_>) {
         if let Some(filters) = &self.filters {
             cx.extend(filters.check(&at.child("filters")));
         }
     }
 }
+
+crate::hand_fields!(MobDescriptor {
+    "check_if_outnumbered": bool,
+    "cooldown": i32,
+    "max_dist": f32,
+    "max_flee": f32,
+    "max_height": f32,
+    "must_see": Option<bool>,
+    "must_see_forget_duration": i32,
+    "priority": i32,
+    "reevaluate_description": bool,
+    "sprint_speed_multiplier": f32,
+    "walk_speed_multiplier": f32,
+});
+bedrock_addon_core::impl_no_molang!(MobDescriptor);
+bedrock_addon_core::impl_schema_leaf!(EntityTypes);
+bedrock_addon_core::impl_no_molang!(EntityTypes);

@@ -8,15 +8,15 @@
 // member's type, the crate picks the type that reads the members the game's own packs write.
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString, Value};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
+use bedrock_addon_core::schema::{self, Schema, SchemaCx, SchemaFields};
 use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use facet::Facet;
 
-use super::check::{Bound, Check, Goal};
+use super::check::{Bound, Goal, GoalCheck};
 use super::common::{ControlFlag, GameEventType, LegacyConditions, SoundEvent, Vec2, Vec3};
 use super::molang::{push_triggers, visit_blocks, visit_conditions};
 
@@ -27,47 +27,33 @@ use super::molang::{push_triggers, visit_blocks, visit_conditions};
 // `conditional_filters`, `chance_to_start`, `retry_attempt_cooldown`, `duration`).
 #[doc(alias = "minecraft:memory_behavior.move_to_position")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryMoveToPosition {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub chance_to_start: Option<StrictFloat<f32>>,
+    pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub retry_attempt_cooldown: Option<StrictFloat<f32>>,
+    pub retry_attempt_cooldown: Option<f32>,
     /// `duration`: how long the goal runs, in seconds, a number or a range; absent, without
     /// end (a shared memory-goal member).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub duration: Option<FloatRange>,
     /// `speed_modifier`: the movement speed multiplier while moving.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub speed_modifier: Option<StrictFloat<f32>>,
+    pub speed_modifier: Option<f32>,
     /// `goal_radius`: how close counts as arrived.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub goal_radius: Option<StrictFloat<f32>>,
+    pub goal_radius: Option<f32>,
     /// `maximum_range`: the largest distance to a position the goal moves to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub maximum_range: Option<StrictFloat<f32>>,
+    pub maximum_range: Option<f32>,
     /// `interval`: seconds between position checks, a range.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub interval: Option<FloatRange>,
     /// `memory`: the block-position memory to move to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub memory: Option<StrictString>,
+    pub memory: Option<String>,
     /// `on_reach`: the events fired when the position is reached.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub on_reach: Option<Vec<EventTrigger>>,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check; written back
     /// from each trigger's `extra`.
     #[doc(hidden)]
@@ -78,14 +64,14 @@ pub struct MemoryMoveToPosition {
 impl MemoryMoveToPosition {
     /// `priority`, or its default 0.
     pub fn priority(&self) -> i32 {
-        self.priority.map_or(0, |v| v.0)
+        self.priority.unwrap_or(0)
     }
 }
 
 impl Goal for MemoryMoveToPosition {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.float(
@@ -119,45 +105,36 @@ impl MolangFields for MemoryMoveToPosition {
 // definition adds `on_complete` and makes the shared `duration` optional.
 #[doc(alias = "minecraft:memory_behavior.wait")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryWait {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub chance_to_start: Option<StrictFloat<f32>>,
+    pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub retry_attempt_cooldown: Option<StrictFloat<f32>>,
+    pub retry_attempt_cooldown: Option<f32>,
     /// `duration`: how long to wait, in seconds, a number or a range; absent, without end (the
     /// shared memory-goal `duration`, optional).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub duration: Option<FloatRange>,
     /// `on_complete`: the events fired when the wait ends (a list of event triggers).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub on_complete: Option<Vec<EventTrigger>>,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MemoryWait {
     /// `priority`, or its default 0.
     pub fn priority(&self) -> i32 {
-        self.priority.map_or(0, |v| v.0)
+        self.priority.unwrap_or(0)
     }
 }
 
 impl Goal for MemoryWait {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.float(
@@ -170,9 +147,7 @@ impl Goal for MemoryWait {
     }
 }
 
-impl MolangFields for MemoryWait {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
+bedrock_addon_core::impl_no_molang!(MemoryWait);
 
 /// `minecraft:memory_behavior.look_at_entity`: the mob looks at the entity a memory holds.
 // Typed from 1.26.10: `look_distance` (required, at least 0), `look_angle` (a `Vec2`, each
@@ -180,52 +155,41 @@ impl MolangFields for MemoryWait {
 // `look_time`; it takes the shared memory-goal members instead.
 #[doc(alias = "minecraft:memory_behavior.look_at_entity")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryLookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass (a shared memory-goal member).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts; 0 to 1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub chance_to_start: Option<StrictFloat<f32>>,
+    pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again, in seconds.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub retry_attempt_cooldown: Option<StrictFloat<f32>>,
+    pub retry_attempt_cooldown: Option<f32>,
     /// `duration`: how long the goal runs, in seconds, a number or a range; absent, without
     /// end.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub duration: Option<FloatRange>,
     /// `look_distance`: the largest distance at which the mob looks. Required; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub look_distance: Option<StrictFloat<f32>>,
+    pub look_distance: Option<f32>,
     /// `look_angle`: the angles of view, in degrees, a `Vec2`, each
     /// component 0 to 360.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub look_angle: Option<Vec2>,
     /// `target_entity`: the entity memory to look at. Required.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_entity: Option<StrictString>,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub target_entity: Option<String>,
 }
 
 impl MemoryLookAtEntity {
     /// `priority`, or its default 0.
     pub fn priority(&self) -> i32 {
-        self.priority.map_or(0, |v| v.0)
+        self.priority.unwrap_or(0)
     }
 }
 
 impl Goal for MemoryLookAtEntity {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.float(
@@ -249,60 +213,47 @@ impl Goal for MemoryLookAtEntity {
     }
 }
 
-impl MolangFields for MemoryLookAtEntity {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
+bedrock_addon_core::impl_no_molang!(MemoryLookAtEntity);
 
 /// `minecraft:memory_behavior.follow_target`: the mob follows the entity a memory holds.
 // Typed from 1.26.20: `target_memory` (an `entity_ref` memory) and `speed_modifier`. The
 // current definition also has `min_range` and the shared memory-goal members.
 #[doc(alias = "minecraft:memory_behavior.follow_target")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryFollowTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass (a shared memory-goal member).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts; 0 to 1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub chance_to_start: Option<StrictFloat<f32>>,
+    pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again, in seconds.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub retry_attempt_cooldown: Option<StrictFloat<f32>>,
+    pub retry_attempt_cooldown: Option<f32>,
     /// `duration`: how long the goal runs, in seconds, a number or a range; absent, without
     /// end.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub duration: Option<FloatRange>,
     /// `target_memory`: the memory, of type `entity_ref`, naming the entity to follow.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_memory: Option<StrictString>,
+    pub target_memory: Option<String>,
     /// `speed_modifier`: the movement speed multiplier while following; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub speed_modifier: Option<StrictFloat<f32>>,
+    pub speed_modifier: Option<f32>,
     /// `min_range`: the distance the mob keeps from the target; at least 0 (a number).
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub min_range: Option<StrictFloat<f32>>,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub min_range: Option<f32>,
 }
 
 impl MemoryFollowTarget {
     /// `priority`, or its default 0.
     pub fn priority(&self) -> i32 {
-        self.priority.map_or(0, |v| v.0)
+        self.priority.unwrap_or(0)
     }
 }
 
 impl Goal for MemoryFollowTarget {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.float(
@@ -316,37 +267,27 @@ impl Goal for MemoryFollowTarget {
     }
 }
 
-impl MolangFields for MemoryFollowTarget {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
+bedrock_addon_core::impl_no_molang!(MemoryFollowTarget);
 
 /// What a sensor does when its condition changes: fire `event` and write memories.
 // A response names the event to fire and the memory setters that write the memories.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SensorResponse {
     /// `event`: the event to fire on the entity.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub event: Option<StrictString>,
+    pub event: Option<String>,
     /// `setters`: the memories to write.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub setters: Option<Vec<MemorySetter>>,
-    /// Members the response does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One memory a [`SensorResponse`] writes.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MemorySetter {
     /// `memory`: the memory's name.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub memory: Option<StrictString>,
+    pub memory: Option<String>,
     /// `value`: the value to write, of the memory's type.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub value: Option<Value>,
-    /// Members the setter does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// Declares a memory sensor: `sensor_entries` (required), a list of entries of `$entry`.
@@ -358,20 +299,29 @@ macro_rules! sensor {
         $(#[$meta])*
         #[doc(alias = $key)]
         #[derive(Clone, Debug, Default, PartialEq, Facet)]
+        #[facet(schema::unknown = "keep")]
         pub struct $name {
             /// `sensor_entries`: the sensor's entries, each searched on its own. Required.
-            #[facet(default, skip_serializing_if = Option::is_none)]
             pub sensor_entries: Option<Vec<$entry>>,
-            /// Members the sensor does not define, kept for write-back.
-            #[facet(skip, rename = "\u{0}extra")]
-            pub extra: Extra,
+        }
+
+        // The entries' trigger members; the entries hold the checks (`Goal::check`).
+        impl SchemaFields for $name {
+            fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
+
+            fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+                <Option<Vec<$entry>> as SchemaFields>::trigger_members(
+                    &schema::member(prefix, "sensor_entries"),
+                    out,
+                );
+            }
         }
 
         impl Goal for $name {
             const TYPED: FormatVersion = $typed;
 
 
-            fn check(&mut self, c: &mut Check<'_>) {
+            fn check(&mut self, c: &mut GoalCheck<'_>) {
                 c.required("sensor_entries", self.sensor_entries.is_some());
                 c.each("sensor_entries", &mut self.sensor_entries, $entry::check);
             }
@@ -447,35 +397,26 @@ impl MolangFields for MemorySensorInRangeOfEntity {
 
 /// One entry of `memory_sensor.find_nearest_block`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct FindNearestBlockEntry {
     /// `conditional_filters`: the entry searches only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `cooldown`: seconds between searches.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub cooldown: Option<StrictFloat<f32>>,
+    pub cooldown: Option<f32>,
     /// `search_blockpos_memory`: the block-position memory to search around.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub search_blockpos_memory: Option<StrictString>,
+    pub search_blockpos_memory: Option<String>,
     /// `found_blockpos_memory`: the block-position memory the result goes to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub found_blockpos_memory: Option<StrictString>,
+    pub found_blockpos_memory: Option<String>,
     /// `blocks`: the blocks searched for.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub blocks: Option<Vec<BlockDescriptor>>,
     /// `search_range`: the horizontal search distance, as written.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub search_range: Option<Value>,
     /// `search_height`: the vertical search distance, as written.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub search_height: Option<Value>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl FindNearestBlockEntry {
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
         c.blocks("blocks", self.blocks.as_deref());
@@ -484,32 +425,24 @@ impl FindNearestBlockEntry {
 
 /// One entry of `memory_sensor.find_nearest_entity`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct FindNearestEntityEntry {
     /// `name`: the entry's name.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub name: Option<StrictString>,
+    pub name: Option<String>,
     /// `found_entity_memory`: the entity memory the result goes to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub found_entity_memory: Option<StrictString>,
+    pub found_entity_memory: Option<String>,
     /// `cooldown`: seconds between searches.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub cooldown: Option<StrictFloat<f32>>,
+    pub cooldown: Option<f32>,
     /// `conditional_filters`: the entry searches only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `target_filters`: the entities that match.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub target_filters: Option<Filter>,
     /// `search_range`: the search box's half extents `[x, y, z]`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub search_range: Option<Vec3>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl FindNearestEntityEntry {
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.filter("target_filters", self.target_filters.as_ref());
@@ -518,32 +451,24 @@ impl FindNearestEntityEntry {
 
 /// One entry of `memory_sensor.find_nearest_poi`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct FindNearestPoiEntry {
     /// `name`: the entry's name.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub name: Option<StrictString>,
+    pub name: Option<String>,
     /// `found_poi_memory`: the point-of-interest memory the result goes to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub found_poi_memory: Option<StrictString>,
+    pub found_poi_memory: Option<String>,
     /// `cooldown`: seconds between searches.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub cooldown: Option<StrictFloat<f32>>,
+    pub cooldown: Option<f32>,
     /// `conditional_filters`: the entry searches only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `poi_name`: the point-of-interest type or tag searched for.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub poi_name: Option<StrictString>,
+    pub poi_name: Option<String>,
     /// `search_radius`: the search distance.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub search_radius: Option<StrictFloat<f32>>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub search_radius: Option<f32>,
 }
 
 impl FindNearestPoiEntry {
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
         c.filter("conditional_filters", self.conditional_filters.as_ref());
     }
@@ -551,26 +476,20 @@ impl FindNearestPoiEntry {
 
 /// One entry of `memory_sensor.game_event`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct GameEventEntry {
     /// `source_entity_filters`: the entities whose events count.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub source_entity_filters: Option<Filter>,
     /// `radius`: how far away an event is heard.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub radius: Option<StrictFloat<f32>>,
+    pub radius: Option<f32>,
     /// `event_type`: which game events count.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub event_type: Option<GameEventType>,
     /// `response`: what the sensor does when it hears one.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub response: Option<SensorResponse>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl GameEventEntry {
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.filter("source_entity_filters", self.source_entity_filters.as_ref());
         c.float("radius", &mut self.radius, Bound::Min(0.0));
     }
@@ -578,38 +497,28 @@ impl GameEventEntry {
 
 /// One entry of `memory_sensor.in_range_of_entity`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct InRangeOfEntityEntry {
     /// `conditional_filters`: the entry checks only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `cooldown`: seconds between checks.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub cooldown: Option<StrictFloat<f32>>,
+    pub cooldown: Option<f32>,
     /// `target_entity_memory`: the entity memory whose distance is checked.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_entity_memory: Option<StrictString>,
+    pub target_entity_memory: Option<String>,
     /// `search_range`: the range, as written.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub search_range: Option<Value>,
     /// `entered_range_response`: when the entity comes into range.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub entered_range_response: Option<SensorResponse>,
     /// `exited_range_response`: when the entity leaves the range.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub exited_range_response: Option<SensorResponse>,
     /// `within_range_response`: while the entity is in range.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub within_range_response: Option<SensorResponse>,
     /// `out_of_range_response`: while the entity is out of range.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub out_of_range_response: Option<SensorResponse>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl InRangeOfEntityEntry {
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
     }
@@ -620,45 +529,37 @@ impl InRangeOfEntityEntry {
 // Typed from 1.26.50, on top of the base members every generic goal has.
 #[doc(alias = "minecraft:memory_behavior.jump_to_block")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryJumpToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `jump_velocity_memory`: the `vec3` memory holding the jump velocity.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub jump_velocity_memory: Option<StrictString>,
+    pub jump_velocity_memory: Option<String>,
     /// `on_complete`: events run after the mob lands.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub on_complete: Option<Vec<EventTrigger>>,
     /// `scale_factor`: the bounding box scale during the jump. Default 0.7; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub scale_factor: Option<StrictFloat<f32>>,
+    pub scale_factor: Option<f32>,
     /// `target_blockpos_memory`: the `block_pos` memory holding the target.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_blockpos_memory: Option<StrictString>,
+    pub target_blockpos_memory: Option<String>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check.
     #[doc(hidden)]
     #[facet(skip, rename = "\u{0}legacy_conditions")]
     pub legacy_conditions: LegacyConditions,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MemoryJumpToBlock {
     /// `scale_factor`, or its default 0.7.
     pub fn scale_factor(&self) -> f32 {
-        self.scale_factor.map_or(0.7, |v| v.0)
+        self.scale_factor.unwrap_or(0.7)
     }
 }
 
 impl Goal for MemoryJumpToBlock {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.float("scale_factor", &mut self.scale_factor, Bound::Min(0.0));
         c.triggers("on_complete", self.on_complete.as_deref());
@@ -678,35 +579,28 @@ impl MolangFields for MemoryJumpToBlock {
 // Typed from 1.26.50.
 #[doc(alias = "minecraft:memory_behavior.prepare_ram_attack")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryPrepareRamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `on_entity_moved`: events run once the target has left the held position.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub on_entity_moved: Option<Vec<EventTrigger>>,
     /// `target_entity_memory`: the `entity_ref` memory holding the target.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_entity_memory: Option<StrictString>,
+    pub target_entity_memory: Option<String>,
     /// `target_position_memory`: the `block_pos` memory holding the target's position.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_position_memory: Option<StrictString>,
+    pub target_position_memory: Option<String>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check.
     #[doc(hidden)]
     #[facet(skip, rename = "\u{0}legacy_conditions")]
     pub legacy_conditions: LegacyConditions,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Goal for MemoryPrepareRamAttack {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.triggers("on_entity_moved", self.on_entity_moved.as_deref());
     }
@@ -728,57 +622,46 @@ impl MolangFields for MemoryPrepareRamAttack {
 // Typed from 1.26.50. The two sound members default to the sound event `undefined`.
 #[doc(alias = "minecraft:memory_behavior.ram_attack")]
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MemoryRamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub priority: Option<StrictInt<i32>>,
+    pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `baby_knockback_modifier`: the knockback modifier of babies. Default 1/3.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub baby_knockback_modifier: Option<StrictFloat<f32>>,
+    pub baby_knockback_modifier: Option<f32>,
     /// `knockback_force`: the force of the ram's knockback. Default 5.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub knockback_force: Option<StrictFloat<f32>>,
+    pub knockback_force: Option<f32>,
     /// `knockback_height`: the height of the ram's knockback. Default 0.1.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub knockback_height: Option<StrictFloat<f32>>,
+    pub knockback_height: Option<f32>,
     /// `on_collide`: events run once the charge has hit something.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub on_collide: Option<Vec<EventTrigger>>,
     /// `pre_ram_sound`: the sound when the charge begins. Default `undefined`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub pre_ram_sound: Option<SoundEvent>,
     /// `ram_impact_sound`: the sound when the charge hits. Default `undefined`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub ram_impact_sound: Option<SoundEvent>,
     /// `ram_position_memory`: the `block_pos` memory holding the position charged towards.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub ram_position_memory: Option<StrictString>,
+    pub ram_position_memory: Option<String>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check.
     #[doc(hidden)]
     #[facet(skip, rename = "\u{0}legacy_conditions")]
     pub legacy_conditions: LegacyConditions,
-    /// Members the goal does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MemoryRamAttack {
     /// `baby_knockback_modifier`, or its default 1/3.
     pub fn baby_knockback_modifier(&self) -> f32 {
-        self.baby_knockback_modifier.map_or(1.0 / 3.0, |v| v.0)
+        self.baby_knockback_modifier.unwrap_or(1.0 / 3.0)
     }
 
     /// `knockback_force`, or its default 5.
     pub fn knockback_force(&self) -> f32 {
-        self.knockback_force.map_or(5.0, |v| v.0)
+        self.knockback_force.unwrap_or(5.0)
     }
 
     /// `knockback_height`, or its default 0.1.
     pub fn knockback_height(&self) -> f32 {
-        self.knockback_height.map_or(0.1, |v| v.0)
+        self.knockback_height.unwrap_or(0.1)
     }
 
     /// `pre_ram_sound`, or its default `undefined`.
@@ -799,7 +682,7 @@ impl MemoryRamAttack {
 impl Goal for MemoryRamAttack {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.triggers("on_collide", self.on_collide.as_deref());
         c.sound("pre_ram_sound", self.pre_ram_sound.as_ref());
@@ -815,8 +698,7 @@ impl MolangFields for MemoryRamAttack {
     }
 }
 
-/// The version that types the four ram / jump Brain keys, which the 1.26.50 format introduces.
-const BRAIN_1_26_50: FormatVersion = known::V1_26_50;
+use crate::versions::BRAIN_1_26_50;
 
 sensor! {
     /// `minecraft:memory_sensor.find_ram_charge_position`: picks the position to charge a
@@ -831,48 +713,38 @@ impl MolangFields for MemorySensorFindRamChargePosition {
 
 /// One entry of `memory_sensor.find_ram_charge_position`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct FindRamChargePositionEntry {
     /// `charge_position_memory`: the `block_pos` memory the charge position goes to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub charge_position_memory: Option<StrictString>,
+    pub charge_position_memory: Option<String>,
     /// `conditional_filters`: the entry searches only when these pass.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub conditional_filters: Option<Filter>,
     /// `cooldown`: seconds between searches, a number or a range.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub cooldown: Option<FloatRange>,
     /// `max_ram_distance`: the largest distance between the target and the charge position. Default 7; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub max_ram_distance: Option<StrictInt<i32>>,
+    pub max_ram_distance: Option<i32>,
     /// `min_ram_distance`: the smallest distance between the target and the charge position. Default 4; at least 0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub min_ram_distance: Option<StrictInt<i32>>,
+    pub min_ram_distance: Option<i32>,
     /// `ram_position_memory`: the `block_pos` memory the position past the target goes to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub ram_position_memory: Option<StrictString>,
+    pub ram_position_memory: Option<String>,
     /// `target_entity_memory`: the `entity_ref` memory holding the target.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_entity_memory: Option<StrictString>,
+    pub target_entity_memory: Option<String>,
     /// `target_position_memory`: the `block_pos` memory the target's position goes to.
-    #[facet(default, skip_serializing_if = Option::is_none)]
-    pub target_position_memory: Option<StrictString>,
-    /// Members the entry does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub target_position_memory: Option<String>,
 }
 
 impl FindRamChargePositionEntry {
     /// `min_ram_distance`, or its default 4.
     pub fn min_ram_distance(&self) -> i32 {
-        self.min_ram_distance.map_or(4, |v| v.0)
+        self.min_ram_distance.unwrap_or(4)
     }
 
     /// `max_ram_distance`, or its default 7.
     pub fn max_ram_distance(&self) -> i32 {
-        self.max_ram_distance.map_or(7, |v| v.0)
+        self.max_ram_distance.unwrap_or(7)
     }
 
-    fn check(&mut self, c: &mut Check<'_>) {
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.range("cooldown", &mut self.cooldown);
         c.int(
@@ -1029,3 +901,114 @@ mod tests {
         assert!(generic_goal(&named).finding(JsonPath::new()).is_none());
     }
 }
+
+crate::hand_fields!(MemoryMoveToPosition {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    "chance_to_start": Option<f32>,
+    "retry_attempt_cooldown": Option<f32>,
+    "speed_modifier": Option<f32>,
+    "goal_radius": Option<f32>,
+    "maximum_range": Option<f32>,
+    "memory": Option<String>,
+    "on_reach": Option<Vec<EventTrigger>>,
+});
+crate::hand_fields!(MemoryWait {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    "chance_to_start": Option<f32>,
+    "retry_attempt_cooldown": Option<f32>,
+    // `on_complete` is no trigger of the reference check: today's list leaves it out.
+});
+crate::hand_fields!(MemoryLookAtEntity {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    "chance_to_start": Option<f32>,
+    "retry_attempt_cooldown": Option<f32>,
+    "look_distance": Option<f32>,
+    "look_angle": Option<Vec2>,
+    "target_entity": Option<String>,
+});
+crate::hand_fields!(MemoryFollowTarget {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    "chance_to_start": Option<f32>,
+    "retry_attempt_cooldown": Option<f32>,
+    "target_memory": Option<String>,
+    "speed_modifier": Option<f32>,
+    "min_range": Option<f32>,
+});
+crate::hand_fields!(FindNearestBlockEntry {
+    "cooldown": Option<f32>,
+    "search_blockpos_memory": Option<String>,
+    "found_blockpos_memory": Option<String>,
+    "search_range": Option<Value>,
+    "search_height": Option<Value>,
+});
+bedrock_addon_core::impl_no_molang!(FindNearestBlockEntry);
+crate::hand_fields!(FindNearestEntityEntry {
+    "name": Option<String>,
+    "found_entity_memory": Option<String>,
+    "cooldown": Option<f32>,
+    "search_range": Option<Vec3>,
+});
+bedrock_addon_core::impl_no_molang!(FindNearestEntityEntry);
+crate::hand_fields!(FindNearestPoiEntry {
+    "name": Option<String>,
+    "found_poi_memory": Option<String>,
+    "cooldown": Option<f32>,
+    "poi_name": Option<String>,
+    "search_radius": Option<f32>,
+});
+bedrock_addon_core::impl_no_molang!(FindNearestPoiEntry);
+crate::hand_fields!(GameEventEntry {
+    "radius": Option<f32>,
+    "event_type": Option<GameEventType>,
+    "response": Option<SensorResponse>,
+});
+bedrock_addon_core::impl_no_molang!(GameEventEntry);
+crate::hand_fields!(InRangeOfEntityEntry {
+    "cooldown": Option<f32>,
+    "target_entity_memory": Option<String>,
+    "search_range": Option<Value>,
+    "entered_range_response": Option<SensorResponse>,
+    "exited_range_response": Option<SensorResponse>,
+    "within_range_response": Option<SensorResponse>,
+    "out_of_range_response": Option<SensorResponse>,
+});
+bedrock_addon_core::impl_no_molang!(InRangeOfEntityEntry);
+crate::hand_fields!(MemoryJumpToBlock {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    "jump_velocity_memory": Option<String>,
+    // `on_complete` is no trigger of the reference check: today's list leaves it out.
+    "scale_factor": Option<f32>,
+    "target_blockpos_memory": Option<String>,
+});
+crate::hand_fields!(MemoryPrepareRamAttack {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    // `on_entity_moved` is no trigger of the reference check: today's list leaves it out.
+    "target_entity_memory": Option<String>,
+    "target_position_memory": Option<String>,
+});
+crate::hand_fields!(MemoryRamAttack {
+    "priority": Option<i32>,
+    "control_flags": Option<Vec<ControlFlag>>,
+    "baby_knockback_modifier": Option<f32>,
+    "knockback_force": Option<f32>,
+    "knockback_height": Option<f32>,
+    // `on_collide` is no trigger of the reference check: today's list leaves it out.
+    "pre_ram_sound": Option<SoundEvent>,
+    "ram_impact_sound": Option<SoundEvent>,
+    "ram_position_memory": Option<String>,
+});
+crate::hand_fields!(FindRamChargePositionEntry {
+    "charge_position_memory": Option<String>,
+    "max_ram_distance": Option<i32>,
+    "min_ram_distance": Option<i32>,
+    "ram_position_memory": Option<String>,
+    "target_entity_memory": Option<String>,
+    "target_position_memory": Option<String>,
+});
+bedrock_addon_core::impl_no_molang!(FindRamChargePositionEntry);

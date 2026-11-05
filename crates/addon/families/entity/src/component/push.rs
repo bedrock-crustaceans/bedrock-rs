@@ -3,24 +3,21 @@
 //! older shapes are in `older.rs`.
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{StrictBool, StrictFloat};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 
-use super::parse::{Check, Typed};
+use super::parse::{ComponentCheck, Typed};
 
 /// `minecraft:apply_knockback_rules`: the knockback the entity deals, by preset; the first
 /// preset whose filter passes applies.
 #[doc(alias = "minecraft:apply_knockback_rules")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct ApplyKnockbackRules {
     /// `presets`: the presets, in order; at least one.
     #[facet(default)]
     pub presets: Vec<KnockbackPreset>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl ApplyKnockbackRules {
@@ -28,13 +25,12 @@ impl ApplyKnockbackRules {
     pub fn with_preset(preset: KnockbackPreset) -> Self {
         Self {
             presets: vec![preset],
-            extra: Extra::default(),
         }
     }
 }
 
 impl Typed for ApplyKnockbackRules {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let at = JsonPath::new().child("presets");
         if self.presets.is_empty() {
             // The game accepts an empty list; the crate's own check refuses it.
@@ -48,22 +44,22 @@ impl Typed for ApplyKnockbackRules {
 
 /// One preset of [`ApplyKnockbackRules`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct KnockbackPreset {
     /// `filter`: which targets the preset applies to; absent means all.
-    #[facet(default)]
     pub filter: Option<Filter>,
     /// `horizontal_power`: the horizontal strength; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub horizontal_power: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub horizontal_power: f32,
     /// `vertical_power`: the vertical strength; default 0.4.
-    #[facet(default = StrictFloat(0.4_f32))]
-    pub vertical_power: StrictFloat<f32>,
+    #[facet(default = 0.4_f32)]
+    pub vertical_power: f32,
     /// `vertical_velocity_cap`: the largest vertical velocity it gives; default 0.4.
-    #[facet(default = StrictFloat(0.4_f32))]
-    pub vertical_velocity_cap: StrictFloat<f32>,
+    #[facet(default = 0.4_f32)]
+    pub vertical_velocity_cap: f32,
     /// `check_if_target_is_immersed_in_water`: only targets in water; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub check_if_target_is_immersed_in_water: StrictBool,
+    #[facet(default = false)]
+    pub check_if_target_is_immersed_in_water: bool,
     /// `extra_knockback_approach`: how knockback beyond the default is applied; default
     /// `reapply_default`.
     #[facet(default = ExtraKnockbackApproach::ReapplyDefault)]
@@ -72,14 +68,11 @@ pub struct KnockbackPreset {
     #[facet(default = KnockbackMode::RelativeHorizontal)]
     pub knockback_mode: KnockbackMode,
     /// `scale_with_damage`: the knockback grows with the damage dealt; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub scale_with_damage: StrictBool,
+    #[facet(default = false)]
+    pub scale_with_damage: bool,
     /// `slowdown_scale`: how much the attacker slows down, 0 to 1; default 0.5.
-    #[facet(default = StrictFloat(0.5_f32))]
-    pub slowdown_scale: StrictFloat<f32>,
-    /// Members the preset does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = 0.5_f32)]
+    pub slowdown_scale: f32,
 }
 
 impl Default for KnockbackPreset {
@@ -98,27 +91,30 @@ impl KnockbackPreset {
     ) -> Self {
         Self {
             filter: None,
-            horizontal_power: StrictFloat(horizontal_power),
-            vertical_power: StrictFloat(vertical_power),
-            vertical_velocity_cap: StrictFloat(vertical_velocity_cap),
-            check_if_target_is_immersed_in_water: StrictBool(check_if_target_is_immersed_in_water),
+            horizontal_power,
+            vertical_power,
+            vertical_velocity_cap,
+            check_if_target_is_immersed_in_water,
             extra_knockback_approach: ExtraKnockbackApproach::ReapplyDefault,
             knockback_mode: KnockbackMode::RelativeHorizontal,
-            scale_with_damage: StrictBool(false),
-            slowdown_scale: StrictFloat(0.5),
-            extra: Extra::default(),
+            scale_with_damage: false,
+            slowdown_scale: 0.5,
         }
     }
 
     /// The preset's rule checks, under `at`.
-    fn check(&mut self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
+    fn check(
+        &mut self,
+        at: &bedrock_addon_core::diagnostic::JsonPath,
+        cx: &mut ComponentCheck<'_>,
+    ) {
         if let Some(filter) = &self.filter {
             cx.extend(filter.check(&at.child("filter")));
         }
         // The game's schema: `slowdown_scale` minimum 0, maximum 1.
         cx.within(
             &at.child("slowdown_scale"),
-            &mut self.slowdown_scale.0,
+            &mut self.slowdown_scale,
             (0.0, 1.0),
             0.5,
         );
@@ -126,7 +122,7 @@ impl KnockbackPreset {
 }
 
 /// How a [`KnockbackPreset`] applies knockback beyond the default.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum ExtraKnockbackApproach {
@@ -140,7 +136,7 @@ pub enum ExtraKnockbackApproach {
 }
 
 /// The direction of a [`KnockbackPreset`]'s knockback.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum KnockbackMode {
@@ -156,7 +152,8 @@ pub enum KnockbackMode {
 /// `minecraft:pushable_by_entity`: other entities push this one, by preset; without presets
 /// the built-in push behaviour applies.
 #[doc(alias = "minecraft:pushable_by_entity")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct PushableByEntity {
     /// `presets`: the presets, in order; the first whose filters pass applies.
     #[facet(default)]
@@ -164,23 +161,19 @@ pub struct PushableByEntity {
     /// `use_default_with_overlap_check` (not in the published schema): the built-in behaviour
     /// checks for overlap; absent means `true`. The 1.26.40 upgrade sets it to `false` for a
     /// component without presets.
-    #[facet(default)]
-    pub use_default_with_overlap_check: Option<StrictBool>,
-    /// Members the component does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub use_default_with_overlap_check: Option<bool>,
 }
 
 impl PushableByEntity {
     /// Whether the built-in behaviour checks for overlap (`use_default_with_overlap_check`,
     /// default `true`).
     pub fn uses_default_with_overlap_check(&self) -> bool {
-        self.use_default_with_overlap_check.is_none_or(|b| b.0)
+        self.use_default_with_overlap_check.is_none_or(|b| b)
     }
 }
 
 impl Typed for PushableByEntity {
-    fn check(&mut self, cx: &mut Check<'_>) {
+    fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter_mut().enumerate() {
             preset.check(&at.index(i), cx);
@@ -190,60 +183,57 @@ impl Typed for PushableByEntity {
 
 /// One preset of [`PushableByEntity`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct PushPreset {
     /// `filters`: which pushing entities the preset applies to; absent means all.
-    #[facet(default)]
     pub filters: Option<Filter>,
     /// `push_mode`: how the entity moves when pushed; default `default`.
     #[facet(default = PushMode::Default)]
     pub push_mode: PushMode,
     /// `strength_multiplier`: the push strength; default 0.05.
-    #[facet(default = StrictFloat(0.05_f32))]
-    pub strength_multiplier: StrictFloat<f32>,
+    #[facet(default = 0.05_f32)]
+    pub strength_multiplier: f32,
     /// `min_distance`: the distance below which the push is strongest; at least 0, default
     /// 0.01.
-    #[facet(default = StrictFloat(0.01_f32))]
-    pub min_distance: StrictFloat<f32>,
+    #[facet(default = 0.01_f32)]
+    pub min_distance: f32,
     /// `max_distance`: the distance beyond which nothing pushes; at least 0, default the
     /// largest `f32`.
-    #[facet(default = StrictFloat(f32::MAX))]
-    pub max_distance: StrictFloat<f32>,
+    #[facet(default = f32::MAX)]
+    pub max_distance: f32,
     /// `push_scale_self`: how much of the push this entity takes; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub push_scale_self: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub push_scale_self: f32,
     /// `push_scale_other`: how much of the push the other entity takes; default 1.
-    #[facet(default = StrictFloat(1.0_f32))]
-    pub push_scale_other: StrictFloat<f32>,
+    #[facet(default = 1.0_f32)]
+    pub push_scale_other: f32,
     /// `kick_speed_scale`: the kick speed scale (`ball`); default 2.
-    #[facet(default = StrictFloat(2.0_f32))]
-    pub kick_speed_scale: StrictFloat<f32>,
+    #[facet(default = 2.0_f32)]
+    pub kick_speed_scale: f32,
     /// `min_kick_speed`: the lowest kick speed (`ball`); default 0.
-    #[facet(default = StrictFloat(0.0_f32))]
-    pub min_kick_speed: StrictFloat<f32>,
+    #[facet(default = 0.0_f32)]
+    pub min_kick_speed: f32,
     /// `max_kick_speed`: the highest kick speed (`ball`); default 0.5.
-    #[facet(default = StrictFloat(0.5_f32))]
-    pub max_kick_speed: StrictFloat<f32>,
+    #[facet(default = 0.5_f32)]
+    pub max_kick_speed: f32,
     /// `vertical_kick_multiplier`: the vertical part of a kick (`ball`); default 0.3.
-    #[facet(default = StrictFloat(0.3_f32))]
-    pub vertical_kick_multiplier: StrictFloat<f32>,
+    #[facet(default = 0.3_f32)]
+    pub vertical_kick_multiplier: f32,
     /// `play_sound`: a sound plays when pushed; default `false`.
-    #[facet(default = StrictBool(false))]
-    pub play_sound: StrictBool,
+    #[facet(default = false)]
+    pub play_sound: bool,
     /// `play_sound_cooldown_in_seconds`: the least time between sounds; at least 0, default
     /// 0.2.
-    #[facet(default = StrictFloat(0.2_f32))]
-    pub play_sound_cooldown_in_seconds: StrictFloat<f32>,
+    #[facet(default = 0.2_f32)]
+    pub play_sound_cooldown_in_seconds: f32,
     /// `play_sound_impulse_threshold`: the least impulse that plays the sound; at least 0,
     /// default 0.2.
-    #[facet(default = StrictFloat(0.2_f32))]
-    pub play_sound_impulse_threshold: StrictFloat<f32>,
+    #[facet(default = 0.2_f32)]
+    pub play_sound_impulse_threshold: f32,
     /// `require_collision_overlap`: the push needs the collision boxes to overlap; default
     /// `true`.
-    #[facet(default = StrictBool(true))]
-    pub require_collision_overlap: StrictBool,
-    /// Members the preset does not define, kept for write-back.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    #[facet(default = true)]
+    pub require_collision_overlap: bool,
 }
 
 impl Default for PushPreset {
@@ -251,52 +241,50 @@ impl Default for PushPreset {
         Self {
             filters: None,
             push_mode: PushMode::Default,
-            strength_multiplier: StrictFloat(0.05),
-            min_distance: StrictFloat(0.01),
-            max_distance: StrictFloat(f32::MAX),
-            push_scale_self: StrictFloat(1.0),
-            push_scale_other: StrictFloat(1.0),
-            kick_speed_scale: StrictFloat(2.0),
-            min_kick_speed: StrictFloat(0.0),
-            max_kick_speed: StrictFloat(0.5),
-            vertical_kick_multiplier: StrictFloat(0.3),
-            play_sound: StrictBool(false),
-            play_sound_cooldown_in_seconds: StrictFloat(0.2),
-            play_sound_impulse_threshold: StrictFloat(0.2),
-            require_collision_overlap: StrictBool(true),
-            extra: Extra::default(),
+            strength_multiplier: 0.05,
+            min_distance: 0.01,
+            max_distance: f32::MAX,
+            push_scale_self: 1.0,
+            push_scale_other: 1.0,
+            kick_speed_scale: 2.0,
+            min_kick_speed: 0.0,
+            max_kick_speed: 0.5,
+            vertical_kick_multiplier: 0.3,
+            play_sound: false,
+            play_sound_cooldown_in_seconds: 0.2,
+            play_sound_impulse_threshold: 0.2,
+            require_collision_overlap: true,
         }
     }
 }
 
 impl PushPreset {
     /// The preset's rule checks, under `at`.
-    fn check(&mut self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
+    fn check(
+        &mut self,
+        at: &bedrock_addon_core::diagnostic::JsonPath,
+        cx: &mut ComponentCheck<'_>,
+    ) {
         if let Some(filters) = &self.filters {
             cx.extend(filters.check(&at.child("filters")));
         }
         // The game's schema minimums.
-        cx.at_least(
-            &at.child("min_distance"),
-            &mut self.min_distance.0,
-            0.0,
-            0.01,
-        );
+        cx.at_least(&at.child("min_distance"), &mut self.min_distance, 0.0, 0.01);
         cx.at_least(
             &at.child("max_distance"),
-            &mut self.max_distance.0,
+            &mut self.max_distance,
             0.0,
             f32::MAX,
         );
         cx.at_least(
             &at.child("play_sound_cooldown_in_seconds"),
-            &mut self.play_sound_cooldown_in_seconds.0,
+            &mut self.play_sound_cooldown_in_seconds,
             0.0,
             0.2,
         );
         cx.at_least(
             &at.child("play_sound_impulse_threshold"),
-            &mut self.play_sound_impulse_threshold.0,
+            &mut self.play_sound_impulse_threshold,
             0.0,
             0.2,
         );
@@ -304,7 +292,7 @@ impl PushPreset {
 }
 
 /// How an entity moves when a [`PushPreset`] pushes it.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PushMode {
@@ -325,3 +313,32 @@ pub enum PushMode {
     #[facet(rename = "ball")]
     Ball,
 }
+
+crate::hand_fields!(KnockbackPreset {
+    "horizontal_power": f32,
+    "vertical_power": f32,
+    "vertical_velocity_cap": f32,
+    "check_if_target_is_immersed_in_water": bool,
+    "extra_knockback_approach": ExtraKnockbackApproach,
+    "knockback_mode": KnockbackMode,
+    "scale_with_damage": bool,
+    "slowdown_scale": f32,
+});
+bedrock_addon_core::impl_no_molang!(KnockbackPreset);
+crate::hand_fields!(PushPreset {
+    "push_mode": PushMode,
+    "strength_multiplier": f32,
+    "min_distance": f32,
+    "max_distance": f32,
+    "push_scale_self": f32,
+    "push_scale_other": f32,
+    "kick_speed_scale": f32,
+    "min_kick_speed": f32,
+    "max_kick_speed": f32,
+    "vertical_kick_multiplier": f32,
+    "play_sound": bool,
+    "play_sound_cooldown_in_seconds": f32,
+    "play_sound_impulse_threshold": f32,
+    "require_collision_overlap": bool,
+});
+bedrock_addon_core::impl_no_molang!(PushPreset);

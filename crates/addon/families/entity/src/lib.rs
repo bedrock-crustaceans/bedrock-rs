@@ -3,6 +3,28 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+/// The `SchemaFields` of a struct that derives no `Schema` (it holds a core shared type that has
+/// no walk of its own): no check (its own checks stay by hand), and the trigger members of the
+/// fields named, each by its JSON key, as the derive would list them.
+macro_rules! hand_fields {
+    ($ty:ty { $($json:literal: $field:ty),* $(,)? }) => {
+        impl bedrock_addon_core::schema::SchemaFields for $ty {
+            fn check_fields(&mut self, _: &mut bedrock_addon_core::schema::SchemaCx<'_>) {}
+
+            #[allow(unused_variables, reason = "a struct with no field that holds a trigger")]
+            fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+                $(
+                    <$field as bedrock_addon_core::schema::SchemaFields>::trigger_members(
+                        &bedrock_addon_core::schema::member(prefix, $json),
+                        out,
+                    );
+                )*
+            }
+        }
+    };
+}
+pub(crate) use hand_fields;
+
 pub mod component;
 mod dynamic;
 #[allow(
@@ -19,8 +41,10 @@ mod molang;
 mod network;
 mod read;
 mod references;
+mod typed;
 mod types;
 mod validate;
+mod versions;
 mod write;
 #[cfg(feature = "nbt")]
 #[cfg_attr(docsrs, doc(cfg(feature = "nbt")))]
@@ -62,8 +86,19 @@ use read::{close_refusal, decode, detached_origin, identifier_of, load_document,
 /// The directory entity files live in.
 const DIRECTORY: &str = "entities";
 
-/// The first slice registered with the strict mask.
-pub(crate) const STRICT_SLICES: FormatVersion = FormatVersion::new(1, 21, 89);
+pub(crate) use versions::STRICT_SLICES;
+
+/// What every slice reads by, the unknown mask aside ([`Family::reading`]): a `null` member is
+/// absent (rule N1), and a scalar is read strictly (the cereal readers' rule: a number beyond
+/// its float's width is refused). The typed reads of the components and goals, which run
+/// outside the door, read by the same rules ([`SCALAR_RULES`]).
+pub(crate) const READING: Reading = Reading::NULL_ABSENT
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error);
+
+/// The scalar rules of [`READING`]: what the typed read of a component or a goal judges each
+/// scalar by.
+pub(crate) const SCALAR_RULES: bedrock_addon_core::json::ScalarRules = READING.scalar_rules();
 
 impl Family for Entity {
     const NAME: &'static str = "entity";
@@ -103,16 +138,11 @@ impl Family for Entity {
             // The beta slice is read strictly, as every slice after the legacy one.
             StructIndex::Beta => true,
         };
-        // The components' scalars are the strict wrappers', which refuse a number beyond its
-        // float's width.
-        Reading::NULL_ABSENT
-            .with_scalars(Scalars::Strict)
-            .with_beyond_width(BeyondWidth::Error)
-            .with_unknown(if strict {
-                UnknownMask::Error
-            } else {
-                UnknownMask::Warn
-            })
+        READING.with_unknown(if strict {
+            UnknownMask::Error
+        } else {
+            UnknownMask::Warn
+        })
     }
 
     type Latest = Entity;
@@ -157,7 +187,7 @@ impl Family for Entity {
 }
 
 impl Versioned for Entity {
-    const VERSION: FormatVersion = known::V1_26_60;
+    const VERSION: FormatVersion = versions::VERSION;
 }
 
 impl VersionStruct for Entity {

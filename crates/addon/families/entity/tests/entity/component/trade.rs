@@ -14,16 +14,16 @@ fn admire_item_and_barter_read_their_defaults() {
     let (admire, _) = strict::<AdmireItem>("{}");
     assert_eq!(admire, AdmireItem::default());
     assert_eq!(
-        (admire.duration.0, admire.cooldown_after_being_attacked.0),
+        (admire.duration, admire.cooldown_after_being_attacked),
         (10, 10)
     );
     let (barter, _) = strict::<Barter>("{}");
     assert_eq!(barter, Barter::default());
-    assert_eq!(barter.cooldown_after_being_attacked.0, 10);
+    assert_eq!(barter.cooldown_after_being_attacked, 10);
     let barter = round_trip::<Barter>(
         r#"{"barter_table": "loot_tables/gameplay/barter.json", "cooldown_after_being_attacked": 20}"#,
     );
-    assert_eq!(barter.barter_table.0, "loot_tables/gameplay/barter.json");
+    assert_eq!(barter.barter_table, "loot_tables/gameplay/barter.json");
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn trade_table_round_trips() {
         r#"{"display_name": "entity.villager.farmer", "table": "trading/farmer_trades.json",
             "new_screen": true, "persist_trades": true, "convert_trades_economy": true}"#,
     );
-    assert!(value.new_screen.0 && value.persist_trades.0 && value.convert_trades_economy.0);
+    assert!(value.new_screen && value.persist_trades && value.convert_trades_economy);
     assert_eq!(strict::<TradeTable>("{}").0, TradeTable::default());
 }
 
@@ -47,7 +47,7 @@ fn tamemount_reads_items_and_its_tame_event() {
             "tame_event": {"event": "minecraft:on_tame", "target": "self"}}"#,
     );
     assert_eq!(value.feed_items.len(), 2);
-    assert_eq!(value.feed_items[0].temper_mod.0, 3);
+    assert_eq!(value.feed_items[0].temper_mod, 3);
     assert!(matches!(
         value.feed_items[1].item,
         Some(ItemDescriptor::Tags { .. })
@@ -59,8 +59,8 @@ fn tamemount_reads_items_and_its_tame_event() {
     );
     let (default, _) = strict::<Tamemount>("{}");
     assert_eq!(default, Tamemount::default());
-    assert_eq!(default.attempt_temper_mod.0, 5);
-    assert_eq!(default.max_temper.0, 100);
+    assert_eq!(default.attempt_temper_mod, 5);
+    assert_eq!(default.max_temper, 100);
 }
 
 #[test]
@@ -75,9 +75,9 @@ fn wither_target_highest_damage_reads_one_or_many_mob_descriptors() {
     let EntityTypes::Many(list) = &many.entity_types else {
         panic!("an array")
     };
-    assert_eq!(list[0].max_dist.0, 24.0);
-    assert_eq!(list[1].max_dist.0, 16.0);
-    assert_eq!(list[1].must_see.map(|b| b.0), Some(true));
+    assert_eq!(list[0].max_dist, 24.0);
+    assert_eq!(list[1].max_dist, 16.0);
+    assert_eq!(list[1].must_see, Some(true));
 }
 
 #[test]
