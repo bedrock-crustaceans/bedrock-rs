@@ -2,8 +2,8 @@
 {
   "test_music": {
     "event_name": "music.game.soulsand_valley",
-    "min_delay": 60,
-    "max_delay": 180
+    "min_delay": 60.0,
+    "max_delay": 180.0
   }
 }
 
@@ -11,8 +11,8 @@
 {
   "determinism": {
     "event_name": "music.determinism",
-    "min_delay": 60,
-    "max_delay": 180
+    "min_delay": 60.0,
+    "max_delay": 180.0
   }
 }
 
@@ -20,8 +20,8 @@
 {
   "game": {
     "event_name": "music.game",
-    "min_delay": 60,
-    "max_delay": 180
+    "min_delay": 60.0,
+    "max_delay": 180.0
   }
 }
 
@@ -37,11 +37,14 @@
         "name": "hostile"
       },
       {
-        "name": "ui",
-        "note": 1
+        "name": "ui"
       },
-      3,
-      {}
+      {
+        "name": ""
+      },
+      {
+        "name": ""
+      }
     ],
     "replace": false,
     "odd": null
@@ -51,23 +54,21 @@
 == {"game": {"max_delay": 2, "odd": 1, "event_name": "e", "min_delay": 1}}
 {
   "game": {
-    "max_delay": 2,
-    "odd": 1,
     "event_name": "e",
-    "min_delay": 1
+    "min_delay": 1.0,
+    "max_delay": 2.0,
+    "odd": 1
   }
 }
 
 == {"game": {"event_name": 5, "min_delay": "3", "max_delay": [1], "play_in_order": 1, "override_interruptible": "x", "replace": "yes"}}
 {
   "game": {
-    "event_name": 5,
-    "min_delay": "3",
-    "max_delay": [
-      1
-    ],
-    "play_in_order": 1,
-    "override_interruptible": "x",
+    "event_name": "",
+    "min_delay": 0.0,
+    "max_delay": 0.0,
+    "play_in_order": true,
+    "override_interruptible": [],
     "replace": "yes"
   }
 }
@@ -75,10 +76,10 @@
 == {"game": {"event_name": null, "min_delay": null, "play_in_order": null, "override_interruptible": null, "replace": null}}
 {
   "game": {
-    "event_name": null,
-    "min_delay": null,
-    "play_in_order": null,
-    "override_interruptible": null,
+    "event_name": "",
+    "min_delay": 0.0,
+    "play_in_order": false,
+    "override_interruptible": [],
     "replace": null
   }
 }
@@ -87,7 +88,7 @@
 {
   "game": {
     "event_name": "",
-    "min_delay": 0,
+    "min_delay": 0.0,
     "max_delay": 0.0,
     "play_in_order": false,
     "override_interruptible": []
@@ -96,11 +97,11 @@
 
 == {"format_version": "1.0.0", "": {"event_name": "x"}, "game": {}, "menu": 5, "end": [], "replace": true}
 {
+  "game": {},
   "format_version": "1.0.0",
   "": {
     "event_name": "x"
   },
-  "game": {},
   "menu": 5,
   "end": [],
   "replace": true
@@ -109,9 +110,9 @@
 == {"game": {"min_delay": 0.1, "max_delay": 16, "event_name": "aé"}, "nether": {"min_delay": -0.0, "max_delay": 1.5e3}}
 {
   "game": {
+    "event_name": "aé",
     "min_delay": 0.1,
-    "max_delay": 16,
-    "event_name": "aé"
+    "max_delay": 16.0
   },
   "nether": {
     "min_delay": -0.0,
@@ -144,7 +145,7 @@
 == {"game": {"min_delay": 1, "min_delay": 2}} // a comment
 {
   "game": {
-    "min_delay": 2
+    "min_delay": 2.0
   }
 }
 
@@ -162,18 +163,17 @@ rejected: ["MalformedInput "]
 == GAME, min_delay set to 5 and event_name to "music.edited"
 {
   "game": {
-    "event_name": "music.game",
-    "min_delay": 60,
-    "max_delay": 180
+    "event_name": "music.edited",
+    "min_delay": 5.0,
+    "max_delay": 180.0
   }
 }
 
 == GAME, a definition menu added and game removed
 {
-  "game": {
-    "event_name": "music.game",
-    "min_delay": 60,
-    "max_delay": 180
+  "menu": {
+    "event_name": "music.menu",
+    "play_in_order": true
   }
 }
 

@@ -148,6 +148,8 @@ fn the_1_26_50_step_makes_a_streamed_object_entry_not_stream_concurrently_and_to
         )),
         "an entry that does not stream, or says so already, changed"
     );
+    // The step's output is the 1.26.50 struct's typed value, which keeps an object `sounds`
+    // as written: the entry is as it was, no `allow_concurrent_streaming`.
     assert_eq!(
         at(&out, &["sound_definitions", "y", "sounds"]),
         Some(&json(r#"{"k": {"name": "e", "stream": true}}"#)),
@@ -204,6 +206,9 @@ const LEGACY: &str = r#"{"mob.pig.say": {"category": "neutral", "max_distance": 
 const ENVELOPE: &str = r#"{"format_version": "1.14.0", "sound_definitions": {"x": {"min_distance": 2, "sounds": ["a"]}}}"#;
 const DISTANCES: &str = r#"{"format_version": "1.20.20", "sound_definitions": {"x": {"min_distance": 2, "sounds": [{"name": "a", "stream": true}]}}}"#;
 const LATEST: &str = r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"min_distance": 2, "max_distance": null, "sounds": ["a", {"name": "b", "weight": 3}]}}}"#;
+/// [`LATEST`] as its typed value writes it: each distance as its float, the `null` as the
+/// 0.0 it reads as.
+const LATEST_WRITTEN: &str = r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"min_distance": 2.0, "max_distance": 0.0, "sounds": ["a", {"name": "b", "weight": 3}]}}}"#;
 
 #[test]
 fn a_file_is_read_by_the_struct_of_its_version_and_upgrades_to_what_parse_gives() {
@@ -217,9 +222,10 @@ fn a_file_is_read_by_the_struct_of_its_version_and_upgrades_to_what_parse_gives(
         assert_eq!(any.version().parsed_as, struct_version);
         assert_eq!(any.value().parsed_version(), struct_version);
         assert_eq!(any.version().written, written);
-        // The struct writes its own version's document back.
+        // An older struct writes its own version's document back; the newest its typed value.
         let rewritten: Value = facet_json::from_str(&any.to_json().unwrap()).unwrap();
-        assert_eq!(rewritten, json(text));
+        let expected = if text == LATEST { LATEST_WRITTEN } else { text };
+        assert_eq!(rewritten, json(expected));
         let parsed = SoundDefinitions::parse(
             &path("sounds/sound_definitions.json"),
             text.as_bytes(),
@@ -287,13 +293,16 @@ fn round_trips<T: Content + PartialEq + std::fmt::Debug>(at: &str, text: &str) -
 }
 
 #[test]
-fn sound_definitions_write_the_upgraded_document_and_keep_number_tags_and_nulls() {
+fn sound_definitions_write_the_typed_value_of_the_upgraded_document() {
     let latest: SoundDefinitions = round_trips("sounds/sound_definitions.json", LATEST);
-    // Exactly the JSON that was read: integer `2`, the `null`, the unknown-free entries.
+    // `json` is the JSON that was read: integer `2`, the `null`, the unknown-free entries.
     assert_eq!(*latest.json(), json(LATEST));
+    // What is written is the typed value: the distances as floats, the `null` as its reading.
     let rewritten: Value = facet_json::from_str(&latest.to_json().unwrap()).unwrap();
-    assert_eq!(rewritten, json(LATEST));
-    assert!(latest.to_json().unwrap().contains("\"min_distance\": 2,"));
+    assert_eq!(rewritten, json(LATEST_WRITTEN));
+    let text = latest.to_json().unwrap();
+    assert!(text.contains("\"min_distance\": 2.0,"), "{text}");
+    assert!(text.contains("\"max_distance\": 0.0,"), "{text}");
     // An older file is written as the 1.26.50 document it upgrades to.
     let legacy: SoundDefinitions = round_trips("sounds/sound_definitions.json", LEGACY);
     assert_eq!(
@@ -389,4 +398,82 @@ fn a_struct_given_a_text_that_is_no_json_says_so() {
         &mut d,
     );
     assert!(read.is_some() && d.is_empty(), "{d:?}");
+}
+
+#[test]
+fn a_float_beyond_f32_is_written_as_the_largest_double() {
+    // Both read as infinity through the f32 the client reads; the write gives the largest
+    // double, which the client's float cast makes infinity again.
+    let text = r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"min_distance": 1e39, "max_distance": 1e999, "sounds": [{"name": "a", "volume": -1e39}]}}}"#;
+    let parsed: SoundDefinitions = round_trips("sounds/sound_definitions.json", text);
+    let x = parsed.get("x").unwrap();
+    assert_eq!(x.min_distance, f32::INFINITY);
+    assert_eq!(x.max_distance, f32::INFINITY);
+    assert_eq!(x.sounds[0].volume, f32::NEG_INFINITY);
+    let written = parsed.to_json().unwrap();
+    assert!(
+        written.contains("\"max_distance\": 1.7976931348623157e308"),
+        "{written}"
+    );
+    assert!(
+        written.contains("\"volume\": -1.7976931348623157e308"),
+        "{written}"
+    );
+}
+
+#[test]
+fn a_float_no_json_holds_is_refused_at_its_member() {
+    use bedrock_addon::diagnostic::JsonPath;
+    use bedrock_addon::json::EncodeError;
+    let mut parsed = SoundDefinitions::from_json(json(
+        r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"sounds": [{"name": "a", "pitch": 2}]}}}"#,
+    ));
+    parsed.sound_definitions[0].sounds[0].pitch = f32::NAN;
+    let error = parsed.to_json().unwrap_err();
+    let mut expected = JsonPath::of_keys(["sound_definitions", "x", "sounds"]);
+    expected.push_index(0);
+    expected.push("pitch");
+    assert!(
+        matches!(&error, EncodeError::NotRepresentable { at, .. } if *at == expected),
+        "{error:?}"
+    );
+}
+
+/// The value read from `text`, written: the text it writes, read back as JSON.
+fn written_json(text: &str) -> Value {
+    let cx = LoadContext::detached();
+    let document =
+        SoundDefinitions::parse(&path("sounds/sound_definitions.json"), text.as_bytes(), &cx)
+            .expect("the file loads");
+    json(&document.to_json().expect("written"))
+}
+
+#[test]
+fn an_object_form_list_is_written_as_written() {
+    // The merge recurses into an object and replaces an array whole: an object written as
+    // an array would replace a lower pack's entries it merged into before.
+    let text = r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"sounds": {"b": "y", "a": {"name": "x", "volume": 0.5}}}, "y": {"actions": {"k": {"name": "n"}}}, "z": {"external_event_name": "e", "external_event_parameters": {"p": {"parameter": "q"}}}}}"#;
+    let parsed: SoundDefinitions = round_trips("sounds/sound_definitions.json", text);
+    let x = parsed.get("x").unwrap();
+    assert_eq!(x.sounds.len(), 2);
+    assert_eq!(x.sounds[0].name, "x");
+    assert_eq!(parsed.get("y").unwrap().actions[0].name, "n");
+    assert_eq!(
+        parsed.get("z").unwrap().external_event_parameters[0].parameter,
+        "q"
+    );
+    assert_eq!(written_json(text), json(text));
+}
+
+#[test]
+fn a_root_that_is_no_object_is_written_as_written() {
+    for text in [
+        "[]",
+        "[{\"sound_definitions\": {}}]",
+        "5",
+        "\"sounds\"",
+        "true",
+    ] {
+        assert_eq!(written_json(text), json(text), "{text}");
+    }
 }

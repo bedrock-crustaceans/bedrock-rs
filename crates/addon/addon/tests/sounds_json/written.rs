@@ -40,12 +40,7 @@ fn sounds_json_is_written_as_pinned() {
         edited::<SoundBindings>(PATH, STONE, |sounds| {
             let stone = sounds.block_sounds.get_mut("stone").expect("stone");
             stone.base = "slab".to_owned();
-            stone
-                .sounds
-                .events
-                .get_mut("break")
-                .expect("break")
-                .sound = "dig.edited".to_owned();
+            stone.sounds.events.get_mut("break").expect("break").sound = "dig.edited".to_owned();
         }),
     ));
     assert_as_pinned("sounds_json/written.pins", &render(&cases));

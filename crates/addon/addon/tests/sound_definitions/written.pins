@@ -27,6 +27,7 @@
   "sound_definitions": {
     "determinism.click": {
       "category": "ui",
+      "min_distance": 0.0,
       "max_distance": 0.0,
       "sounds": [
         "sounds/determinism/click",
@@ -35,16 +36,15 @@
           "stream": true,
           "allow_concurrent_streaming": false
         }
-      ],
-      "min_distance": null
+      ]
     },
     "music.determinism": {
       "category": "music",
+      "min_distance": 0.0,
+      "max_distance": 0.0,
       "sounds": [
         "sounds/determinism/click"
-      ],
-      "max_distance": null,
-      "min_distance": null
+      ]
     }
   }
 }
@@ -55,7 +55,7 @@
   "sound_definitions": {
     "mob.pig.say": {
       "category": "neutral",
-      "min_distance": 1,
+      "min_distance": 1.0,
       "max_distance": 16.0,
       "subtitle": "s",
       "sounds": [
@@ -63,16 +63,14 @@
         {
           "name": "b",
           "volume": 0.5,
-          "pitch": 2,
+          "pitch": 2.0,
           "weight": 3,
           "is3D": false,
           "stream": true,
           "interruptible": false,
           "allow_concurrent_streaming": false,
           "load_on_low_memory": true
-        },
-        null,
-        5
+        }
       ]
     }
   }
@@ -88,14 +86,14 @@
       "external_event_parameters": [
         {
           "parameter": "p",
-          "value": 1
+          "value": 0.0
         },
         {
           "parameter": "q",
           "value": 0.5,
           "z": 1
         },
-        3
+        {}
       ]
     }
   }
@@ -119,10 +117,10 @@
   "format_version": "1.26.50",
   "sound_definitions": {
     "x": {
-      "external_event_name": 5,
       "sounds": [
         "a"
       ],
+      "external_event_name": 5,
       "external_event_parameters": [
         {
           "parameter": "p"
@@ -130,10 +128,10 @@
       ]
     },
     "y": {
-      "external_event_name": null,
       "sounds": [
         "b"
-      ]
+      ],
+      "external_event_name": null
     }
   }
 }
@@ -150,12 +148,11 @@
           "target": "t",
           "enabled": true,
           "param": 0.5,
-          "delay": 1,
+          "delay": 0.0,
           "o": 2
         },
-        4,
         {
-          "action_type": 1.5
+          "action_type": -1
         }
       ]
     }
@@ -167,12 +164,12 @@
   "format_version": "1.26.50",
   "sound_definitions": {
     "x": {
-      "category": 5,
-      "min_distance": "3",
-      "max_distance": null,
-      "subtitle": [],
-      "__use_legacy_max_distance": "true",
-      "sounds": "a"
+      "category": "",
+      "min_distance": 0.0,
+      "max_distance": 0.0,
+      "__use_legacy_max_distance": true,
+      "subtitle": "",
+      "sounds": []
     }
   }
 }
@@ -180,16 +177,16 @@
 == {"format_version": "1.26.50", "stray": 1, "sound_definitions": {"x": 5, "y": {}, "music.z": {"category": "ui", "volume": 1, "pitch": 1}}}
 {
   "format_version": "1.26.50",
-  "stray": 1,
   "sound_definitions": {
-    "x": 5,
     "y": {},
     "music.z": {
       "category": "ui",
       "volume": 1,
       "pitch": 1
-    }
-  }
+    },
+    "x": 5
+  },
+  "stray": 1
 }
 
 == {"format_version": "1.26.50", "sound_definitions": 5}
@@ -211,11 +208,7 @@
 
 == {"format_version": [1, 26, 50], "sound_definitions": {"x": {"sounds": [{"name": "a", "stream": true}]}}}
 {
-  "format_version": [
-    1,
-    26,
-    50
-  ],
+  "format_version": "1.26.50",
   "sound_definitions": {
     "x": {
       "sounds": [
@@ -253,14 +246,14 @@
   "format_version": "1.26.50",
   "sound_definitions": {
     "x": {
+      "max_distance": 16.0,
       "sounds": [
         {
           "name": "a",
           "stream": true,
           "allow_concurrent_streaming": false
         }
-      ],
-      "max_distance": 16
+      ]
     }
   }
 }
@@ -270,14 +263,14 @@
   "format_version": "1.26.50",
   "sound_definitions": {
     "x": {
+      "min_distance": 0.0,
+      "max_distance": 0.0,
       "sounds": [
         {
           "name": "a",
-          "pitch": 2
+          "pitch": 2.0
         }
-      ],
-      "max_distance": 0.0,
-      "min_distance": null
+      ]
     }
   }
 }
@@ -288,12 +281,12 @@
   "sound_definitions": {
     "mob.pig.say": {
       "category": "neutral",
+      "min_distance": 2.5,
+      "max_distance": 0.0,
+      "__use_legacy_max_distance": true,
       "sounds": [
         "a"
-      ],
-      "max_distance": 0.0,
-      "min_distance": 2.5,
-      "__use_legacy_max_distance": "true"
+      ]
     }
   }
 }
@@ -356,25 +349,27 @@ rejected: ["MalformedInput "]
   "format_version": "1.26.50",
   "sound_definitions": {
     "mob.pig.say": {
-      "category": "neutral",
-      "min_distance": 1,
+      "category": "hostile",
+      "min_distance": 1.0,
       "max_distance": 16.0,
       "subtitle": "s",
       "sounds": [
-        "a",
+        {
+          "name": "a",
+          "weight": 2,
+          "interruptible": false
+        },
         {
           "name": "b",
-          "volume": 0.5,
-          "pitch": 2,
+          "volume": 0.75,
+          "pitch": 2.0,
           "weight": 3,
           "is3D": false,
           "stream": true,
           "interruptible": false,
           "allow_concurrent_streaming": false,
           "load_on_low_memory": true
-        },
-        null,
-        5
+        }
       ]
     }
   }
@@ -384,27 +379,9 @@ rejected: ["MalformedInput "]
 {
   "format_version": "1.26.50",
   "sound_definitions": {
-    "mob.pig.say": {
-      "category": "neutral",
-      "min_distance": 1,
-      "max_distance": 16.0,
-      "subtitle": "s",
-      "sounds": [
-        "a",
-        {
-          "name": "b",
-          "volume": 0.5,
-          "pitch": 2,
-          "weight": 3,
-          "is3D": false,
-          "stream": true,
-          "interruptible": false,
-          "allow_concurrent_streaming": false,
-          "load_on_low_memory": true
-        },
-        null,
-        5
-      ]
+    "x": {
+      "category": "ui",
+      "subtitle": "subtitle.x"
     }
   }
 }

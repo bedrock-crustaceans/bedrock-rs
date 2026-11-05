@@ -502,7 +502,7 @@ pub fn rows() -> Vec<Row> {
         vec![kind!(
             "sound_definitions",
             ba::families::sound_definitions::SoundDefinitions,
-            ValueRaw,
+            Value,
             Resource,
             |k| k == "sounds/sound_definitions.json",
             chain
@@ -525,7 +525,7 @@ pub fn rows() -> Vec<Row> {
         vec![kind!(
             "music_definitions",
             ba::families::music::MusicDefinitions,
-            ValueRaw,
+            Value,
             Resource,
             |k| k == "sounds/music_definitions.json"
         )],

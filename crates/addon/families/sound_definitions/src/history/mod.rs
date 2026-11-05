@@ -69,13 +69,17 @@ impl VersionStruct for SoundDefinitions {
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        Ok(self.json.clone())
+        self.to_value()
     }
 }
 
 /// A sound definitions file as the struct of its own version reads it.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the newest struct is the typed value; boxing it would change the variant's public type"
+)]
 pub enum Any {
     /// Below 1.14.0, or without a readable `format_version`.
     V1_0_0(v1_0_0::SoundDefinitions),
@@ -146,7 +150,8 @@ impl Any {
         }
     }
 
-    /// The document in the struct's own version, as JSON text.
+    /// The document in the struct's own version, as JSON text: an older struct's document as
+    /// read, the newest struct's typed value.
     ///
     /// # Errors
     ///
@@ -157,7 +162,7 @@ impl Any {
             Self::V1_0_0(value) => &value.definitions,
             Self::V1_14_0(value) => &value.document,
             Self::V1_20_20(value) => &value.document,
-            Self::V1_26_50(value) => &value.json,
+            Self::V1_26_50(value) => &value.to_value()?,
         };
         bedrock_addon_core::json::to_json(document)
     }

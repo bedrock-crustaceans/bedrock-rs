@@ -37,7 +37,10 @@ fn music_is_written_as_pinned() {
         cases.push((name, written::<MusicDefinitions>(PATH, &text)));
     }
     for probe in PROBES {
-        cases.push(((*probe).to_owned(), written::<MusicDefinitions>(PATH, probe)));
+        cases.push((
+            (*probe).to_owned(),
+            written::<MusicDefinitions>(PATH, probe),
+        ));
     }
     let game = MusicDefinitionId::parse("game");
     cases.push((

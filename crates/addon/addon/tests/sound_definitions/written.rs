@@ -48,7 +48,10 @@ fn sound_definitions_are_written_as_pinned() {
         cases.push((name, written::<SoundDefinitions>(PATH, &text)));
     }
     for probe in PROBES {
-        cases.push(((*probe).to_owned(), written::<SoundDefinitions>(PATH, probe)));
+        cases.push((
+            (*probe).to_owned(),
+            written::<SoundDefinitions>(PATH, probe),
+        ));
     }
     cases.push((
         "PIG, the second entry's volume set to 0.75 and the first's weight to 2, the category to \"hostile\"".to_owned(),

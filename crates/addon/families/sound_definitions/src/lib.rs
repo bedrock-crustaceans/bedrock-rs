@@ -270,7 +270,7 @@ impl Content for SoundDefinitions {
                 history::Any::V1_0_0(value) => &value.definitions,
                 history::Any::V1_14_0(value) => &value.document,
                 history::Any::V1_20_20(value) => &value.document,
-                history::Any::V1_26_50(value) => &value.json,
+                history::Any::V1_26_50(value) => value.json(),
             };
             // The same findings a stack gives its lowest copy.
             let upgraded = prepare_definitions(json, None, &mut steps);
@@ -296,9 +296,9 @@ impl Content for SoundDefinitions {
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        // Not core's `write_envelope`: the version steps edit the document in place, so the
-        // document read (envelope and all) is what is written.
-        write_document(&self.json, out, style)
+        // Not core's `write_envelope`: `format_version` is a member of the typed root, which
+        // the version steps stamped.
+        write_document(&self.to_value()?, out, style)
     }
 }
 
