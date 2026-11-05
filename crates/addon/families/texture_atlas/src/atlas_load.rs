@@ -4,9 +4,9 @@
 
 use indexmap::IndexMap;
 
-use super::atlas::{AtlasItem, AtlasKind, TextureAtlas, TextureElement, VariationEntry};
-use super::atlas_read::read_atlas;
 use super::patch::patch_json;
+use super::read::read_atlas;
+use super::types::{AtlasItem, AtlasKind, TextureAtlas, TextureElement, VariationEntry};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Extra, Merge, Merged, Origin, RawLayer, unversioned};
 use bedrock_addon_core::id::AtlasKey;
@@ -220,7 +220,7 @@ fn check_images(
     files: &StackFiles,
     out: &mut Diagnostics,
 ) {
-    let many = matches!(item.textures, super::atlas::AtlasTextures::Many(_));
+    let many = matches!(item.textures, super::types::AtlasTextures::Many(_));
     for (index, element) in item.elements().iter().enumerate() {
         let mut at = JsonPath::new()
             .child("texture_data")

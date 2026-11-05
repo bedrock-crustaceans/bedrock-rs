@@ -11,24 +11,32 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod history;
-mod load;
-mod set;
+mod read;
 mod set_load;
-mod set_read;
-mod set_write;
 mod texts;
+mod types;
+mod write;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{Document, Rejected};
 
-pub use set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
+pub use types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 
-#[doc(hidden)]
-pub use load::LOADER;
+use crate::set_load::{LintPack, capability_lints, check_layer_images, parse_file, texture_path};
+use bedrock_addon_core::document::unversioned::origin_of;
+use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_support::texture::files::{
+    IndexedFile, StackFiles, is_texture_file, listed_files,
+};
 #[doc(hidden)]
 pub use set_load::{PackSets, SetCopy, layer_path, payload_at};
 
 /// The texture sets of a resource stack (`rp.texture_sets()`).
+///
+/// Hand-written: the sets are indexed by the texture each sits beside, per pack, and held to
+/// rules that read the packs' listings (each layer's image in the set's own pack) and their
+/// capabilities. The file itself is a [`JsonDocument`](bedrock_addon_core::document::JsonDocument).
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct TextureSets {
@@ -85,5 +93,97 @@ impl TextureSets {
             Err(rejected) => rejected.diagnostics.iter(),
         });
         sets.chain(self.diagnostics.iter())
+    }
+}
+
+/// One walked texture set file: where it is and what its parse job made of it.
+#[derive(Debug)]
+pub struct SetFileParsed {
+    /// The pack.
+    pack: bedrock_addon_core::pack_identity::PackRef,
+    /// The path in the pack.
+    path: PackPath,
+    /// The key the stack reads the file at.
+    key: PackPath,
+    /// The texture it sits beside and the document, when the file is some texture's set.
+    set: Option<(String, Box<SetCopy>)>,
+}
+
+/// The files whose content the group reads: every texture set.
+fn is_read(path: &PackPath) -> bool {
+    path.as_str().ends_with("texture_set.json")
+}
+
+/// One file of the walk.
+fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> SetFileParsed {
+    let set = texture_path(file.key.as_str()).map(|texture| {
+        let copy = parse_file(origin_of(file), &file.bytes, cx);
+        (texture.to_owned(), Box::new(copy))
+    });
+    SetFileParsed {
+        pack: file.pack.clone(),
+        path: file.path.clone(),
+        key: file.key.clone(),
+        set,
+    }
+}
+
+/// The stack rules of the texture sets: each layer's image in the set's own pack, and
+/// the capability lints.
+fn check_sets(
+    sets: &mut [PackSets],
+    files: &StackFiles,
+    stack: &StackCx<'_>,
+    diagnostics: &mut Diagnostics,
+) {
+    for (index, sets) in sets.iter_mut().enumerate() {
+        check_layer_images(sets, index, files);
+    }
+    let lint_packs = stack.packs.iter().zip(&files.packs);
+    let lint_packs: Vec<LintPack<'_>> = lint_packs
+        .map(|(entry, files)| LintPack { entry, files })
+        .collect();
+    capability_lints(&lint_packs, diagnostics);
+}
+
+/// The texture sets, from every parsed file in walk order.
+fn combine(parsed: Vec<SetFileParsed>, stack: &StackCx<'_>) -> TextureSets {
+    let mut files = listed_files(stack);
+    let mut sets: Vec<PackSets> = stack.packs.iter().map(|_| PackSets::new()).collect();
+    for file in parsed {
+        let index = file.pack.index();
+        // A file the walk read is a file of its pack even where the listing lacks it.
+        let pack = index.and_then(|index| files.packs.get_mut(index));
+        if let Some(pack) = pack.filter(|_| is_texture_file(&file.key)) {
+            let path = file.path.clone();
+            pack.files
+                .insert(file.key.as_str().to_owned(), IndexedFile { path });
+        }
+        let slot = index.and_then(|index| sets.get_mut(index));
+        if let (Some((texture, copy)), Some(slot)) = (file.set, slot) {
+            slot.insert(texture, *copy);
+        }
+    }
+    let mut diagnostics = Diagnostics::default();
+    check_sets(&mut sets, &files, stack, &mut diagnostics);
+    TextureSets::new(sets, diagnostics)
+}
+
+/// The loader of `rp.texture_sets()`: every texture set of every resource pack, held to the
+/// rules of the stack.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<TextureSets, SetFileParsed> = CollectionLoader {
+    walk: Walk::json_tree_in(&[""]).accept(Accept::Fn(is_read)),
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
+
+impl bedrock_addon_core::load::Reported for TextureSets {
+    fn reported(
+        &self,
+    ) -> Box<dyn Iterator<Item = &bedrock_addon_core::diagnostic::Diagnostic> + '_> {
+        Box::new(self.diagnostics())
     }
 }

@@ -22,7 +22,6 @@ use crate::families::flipbooks::{Flipbook, FlipbookKey, Flipbooks};
 use crate::families::texture_atlas::{AtlasItem, TextureAtlas};
 use crate::families::texture_file::{ImageFormat, ImageInfo};
 use crate::id::{AtlasKey, Kind, kind};
-use crate::support::texture::document::finding_at;
 use crate::support::texture::files::{Found, IMAGE, StackFiles};
 use crate::support::texture::texts::{fixed, formatted};
 
@@ -184,9 +183,11 @@ impl Check<'_> {
         if let Some(element) = element {
             at.push_index(element);
         }
-        let mut finding = finding_at(code, severity, self.origin, at);
-        finding.phase = Phase::Link;
-        finding
+        Diagnostic::error(code)
+            .severity(severity)
+            .at(at)
+            .in_file(self.origin)
+            .phase(Phase::Link)
     }
 
     /// Reports a finding at member `key` of the entry.

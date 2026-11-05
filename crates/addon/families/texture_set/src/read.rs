@@ -5,8 +5,8 @@
 use facet_value::{VArray, VObject};
 
 use super::history::{Any, v1_16_100};
-use super::set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use super::texts;
+use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{Value, strip_bom};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};

@@ -2,9 +2,9 @@
 //! `metalness_emissive_roughness_subsurface`.
 
 use super::super::TextureSet as Latest;
-use super::super::set::{LayerValue, Rgb, Rgba, TextureName};
-use super::super::set_read::{Schema, V1_16_100};
-use super::super::set_write::{parse_layers, write_layers};
+use super::super::read::{Schema, V1_16_100};
+use super::super::types::{LayerValue, Rgb, Rgba, TextureName};
+use super::super::write::{parse_layers, write_layers};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;

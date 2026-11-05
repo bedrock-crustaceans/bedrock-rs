@@ -54,6 +54,9 @@ macro_rules! kind {
             same: super::same::<$ty>,
             as_written: Some({
                 fn as_written(c: &super::Carry<'_>) -> super::AsWritten {
+                    // A `JsonDocument`'s `parse_as_written` is the trait's; the others' are inherent.
+                    #[allow(unused_imports)]
+                    use ba::document::JsonDocument as _;
                     let Ok(first) = <$ty>::parse_as_written(c.path, c.bytes, c.cx) else {
                         return super::AsWritten::Rejected;
                     };

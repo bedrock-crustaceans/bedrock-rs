@@ -5,22 +5,23 @@
 use indexmap::IndexMap;
 
 use super::history::{Any, TextureSetFamily};
-use super::set::TextureSet;
-use super::set_read::{PAYLOAD, Schema, V1_16_100, read};
+use super::read::{PAYLOAD, Schema, V1_16_100, read};
 use super::texts;
+use super::types::TextureSet;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
-use bedrock_addon_core::document::{Content, Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
+use bedrock_addon_core::document::unversioned::{lone, rejected};
+use bedrock_addon_core::document::{Document, JsonDocument, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::StackPack;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    Envelope, Family, Identity, Loaded, MissingVersion, NoComponents, Parsed, RangeModel, finish,
+    DocumentRead, Envelope, Family, Identity, Loaded, MissingVersion, NoComponents, Parsed,
+    RangeModel, finish,
 };
-use bedrock_addon_support::texture::document::{detached, locate, rejected};
 use bedrock_addon_support::texture::files::{
     PackFiles, StackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE,
 };
@@ -48,40 +49,35 @@ impl Family for TextureSetFamily {
     }
 }
 
-impl bedrock_addon_core::__private::Sealed for TextureSet {}
-
-impl Content for TextureSet {
-    const NAME: &'static str = "texture set";
+impl JsonDocument for TextureSet {
+    type Family = TextureSetFamily;
     const SIDES: &'static [PackSide] = &[PackSide::Resource];
+    const NAME: &'static str = "texture set";
 
-    /// Reads one `.texture_set.json` on its own: every rule of the file. Whether the layers'
-    /// images exist is the stack's to say.
-    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
-        parse_file(detached(path), bytes, cx)
+    /// Reads one `.texture_set.json` with the file's own reader (the version the client
+    /// compares with `==`, its texts), then the chain: every rule of the file. Whether the
+    /// layers' images exist is the stack's to say.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<TextureSetFamily> {
+        match parse_file(origin, bytes, cx) {
+            Ok(document) => DocumentRead::Stable(document),
+            Err(rejected) => DocumentRead::Rejected(None, rejected),
+        }
     }
 
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        self.write_into(out, style)
-    }
-}
-
-impl bedrock_addon_core::document::JsonContent for TextureSet {}
-
-impl TextureSet {
     /// Parses one texture-set file without upgrading it: the struct its `format_version`
-    /// selects.
+    /// selects, read by the file's own reader.
     ///
     /// # Errors
     ///
     /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
     /// log would print when the bytes cannot be read as this file at all: not JSON, a
     /// `format_version` with no struct here, or a document that does not fit the struct it selects.
-    pub fn parse_as_written(
+    fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
         _: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
-        let origin = detached(path);
+        let origin = lone(path);
         let mut diagnostics = Diagnostics::default();
         let read = read(bytes, path.as_str(), &mut diagnostics);
         match (read.value, read.schema) {
@@ -97,11 +93,13 @@ impl TextureSet {
             _ => Err(rejected(origin, diagnostics)),
         }
     }
+}
 
+impl TextureSet {
     /// The payload object of the set as JSON, without the envelope.
     #[must_use]
     pub fn to_value(&self) -> Value {
-        super::set_write::write_layers(self)
+        super::write::write_layers(self)
     }
 }
 
@@ -169,6 +167,19 @@ pub(super) fn parse_file(
             finished(parsed(value, version_info(schema), diagnostics), origin, cx)
         }
         _ => Err(rejected(origin, diagnostics)),
+    }
+}
+
+/// Gives every finding the document's pack and file, taken out and pushed back as the
+/// unversioned kit does (so the moves and places the list held are dropped).
+// TODO(phase 1 step 4): `Diagnostics::locate` in place, which keeps them; behaviour-bearing,
+// with `unversioned`'s own switch.
+fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
+    let found = std::mem::take(diagnostics);
+    for mut finding in found {
+        finding.location.pack = Some(origin.pack.clone());
+        finding.location.path = Some(origin.path.clone());
+        diagnostics.push(finding);
     }
 }
 

@@ -5,16 +5,15 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod load;
-
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 
 use bedrock_addon_support::texture::files::{StackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
 
+use bedrock_addon_core::diagnostic::Diagnostic;
+use bedrock_addon_core::load::Reported;
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_support::texture::files::listed_files;
 pub use bedrock_addon_support::texture::image::{ImageFormat, ImageInfo};
-
-#[doc(hidden)]
-pub use load::LOADER;
 
 /// The file the client loads for a texture path.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -48,6 +47,8 @@ pub struct TextureImage<'a> {
 }
 
 /// The texture files of a resource stack (`rp.texture_files()`): which pack has which path.
+///
+/// Hand-written: it reads the packs' listings and no file's bytes (its walk is `Walk::none()`).
 #[derive(Debug, Default)]
 #[non_exhaustive]
 pub struct TextureFiles {
@@ -133,5 +134,30 @@ fn image_source(image: &bedrock_addon_support::texture::files::Found<'_>) -> Tex
     TextureSource::Image {
         stack_index: image.stack_index,
         file: image.key.to_owned(),
+    }
+}
+
+/// Nothing to parse: the walk reads no file.
+fn parse(_: &WalkFile, _: &LoadContext) {}
+
+/// The index of the packs' listings.
+fn combine(_: Vec<()>, cx: &StackCx<'_>) -> TextureFiles {
+    TextureFiles::from_files(listed_files(cx))
+}
+
+/// The loader of `rp.texture_files()`: every texture file of every resource pack, from the
+/// packs' listings.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<TextureFiles, ()> = CollectionLoader {
+    walk: Walk::none(),
+    parse,
+    combine,
+    needs: &[],
+    then: None,
+};
+
+impl Reported for TextureFiles {
+    fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
+        Box::new(std::iter::empty())
     }
 }

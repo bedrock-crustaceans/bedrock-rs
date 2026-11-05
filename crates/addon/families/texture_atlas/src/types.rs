@@ -21,7 +21,7 @@ pub enum AtlasKind {
 impl AtlasKind {
     /// The file's path in a resource pack.
     #[must_use]
-    pub fn path(self) -> &'static str {
+    pub const fn path(self) -> &'static str {
         match self {
             Self::Terrain => "textures/terrain_texture.json",
             Self::Item => "textures/item_texture.json",

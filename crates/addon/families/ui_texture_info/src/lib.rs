@@ -4,8 +4,6 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod content;
-mod load;
 mod write;
 
 use bedrock_addon_core::diagnostic::{
@@ -15,8 +13,20 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::jsoncpp::{member, number};
 
-#[doc(hidden)]
-pub use load::LOADER;
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::document::unversioned::{document, lone, reject};
+use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Rejected};
+use bedrock_addon_core::document::{Files, FilesBuilder, FilesRule};
+use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, StackCx, Walk};
+use bedrock_addon_core::pack_identity::PackRef;
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_support::fixed_path::{below, file_finding};
+use bedrock_addon_support::fixed_path::{json_text, malformed};
+use bedrock_addon_support::jsoncpp::read;
+use indexmap::IndexMap;
+use std::collections::HashSet;
 
 /// The side file of a UI image.
 ///
@@ -386,6 +396,119 @@ pub(crate) fn extra_value(extra: &Extra) -> Value {
     object.into_value()
 }
 
+impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}
+
+/// The root object of a file, or the rejection.
+fn root_object(origin: &Origin, bytes: &[u8]) -> Result<Value, Rejected> {
+    let rejection = |message: String| {
+        let code = malformed(message, None);
+        reject(origin.clone(), Diagnostic::error(code))
+    };
+    let root = read(bytes).map_err(|error| rejection(error.to_string()))?;
+    if root.is_object() {
+        Ok(root)
+    } else {
+        Err(rejection("the root is not an object".to_owned()))
+    }
+}
+
+impl Content for UiTextureInfo {
+    const NAME: &'static str = "ui texture info";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// Reads one `textures/ui/<image>.json`. A file that is no JSON object is rejected (the
+    /// game ignores the result of its parse and reads nothing from it).
+    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = lone(path);
+        // A file that is no JSON object has nothing a writer could give back: rejected.
+        let mut root = root_object(&origin, bytes)?;
+        let mut diagnostics = Diagnostics::default();
+        // A number no double holds is read as the largest finite one, with a warning.
+        bedrock_addon_core::json::clamp_non_finite_warned(
+            &mut root,
+            None,
+            &JsonPath::new(),
+            &mut diagnostics,
+        );
+        let info = Self::from_value(&root, &mut diagnostics);
+        Ok(document(info, origin, diagnostics))
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        json_text(&write::texture_info_value(self), out, style)
+    }
+}
+
+impl JsonContent for UiTextureInfo {}
+
+/// The directory whose images have side files.
+const DIRECTORY: &str = "textures/ui";
+/// The extensions an image is looked up with, in order; the first is the path as written.
+const IMAGE: [&str; 6] = [".tga", ".png", ".jpg", ".jpeg", ".hdr", ".ktx"];
+
+/// The extension of a side file, as the game appends it to the image's path.
+const JSON: &str = ".json";
+
+/// The `Combine` job of `rp.ui_texture_infos()`: the highest pack's copy of each path; a
+/// highest copy that is refused leaves the image without a side file.
+/// The game loads the first pack's copy from the top that has the JSON and does not look at
+/// the parse result, so no lower copy stands in.
+fn combine(parsed: Vec<FileCopy<UiTextureInfo>>, cx: &StackCx<'_>) -> Files<UiTextureInfo> {
+    // The images of the stack, each as the path its side file is named after: a file below
+    // `textures/ui/` without its image extension.
+    let mut images: HashSet<&str> = HashSet::new();
+    for pack in cx.packs {
+        for file in below(pack, DIRECTORY) {
+            let key = file.key.as_str();
+            if key.strip_suffix(JSON).is_none() {
+                let stem = IMAGE
+                    .iter()
+                    .find_map(|extension| key.strip_suffix(extension));
+                images.insert(stem.unwrap_or(key));
+            }
+        }
+    }
+    let mut builder = FilesBuilder::new(FilesRule::TopWins, cx.options);
+    // Each path with where its highest copy lies (the walk is lowest pack first).
+    let mut highest: IndexMap<PackPath, (PackRef, PackPath)> = IndexMap::new();
+    for (key, copy) in parsed {
+        let origin = match &copy {
+            Ok(read) => read.origin(),
+            Err(rejected) => &rejected.origin,
+        };
+        highest.insert(key.clone(), (origin.pack.clone(), origin.path.clone()));
+        builder.push(key, copy);
+    }
+    // No pack has an image the side file is for; the game never asks for it. Lowest pack
+    // first, by path.
+    let mut orphans: Vec<(&PackPath, &(PackRef, PackPath))> = highest
+        .iter()
+        .filter(|(key, _)| {
+            let stem = key.as_str().strip_suffix(JSON).unwrap_or(key.as_str());
+            !images.contains(stem)
+        })
+        .collect();
+    orphans.sort_by(|a, b| {
+        let rank = |pack: &PackRef| std::cmp::Reverse(pack.index());
+        (rank(&a.1.0), a.0.as_str()).cmp(&(rank(&b.1.0), b.0.as_str()))
+    });
+    for (_, (pack, path)) in orphans {
+        builder.push_diagnostic(file_finding(
+            DiagnosticCode::IgnoredFile { text: None },
+            Severity::Info,
+            pack,
+            path,
+        ));
+    }
+    builder.finish()
+}
+
+/// The loader of `rp.ui_texture_infos()`: every `.json` file below `textures/ui/` of every
+/// resource pack. The images are known from each pack's listing; none is read.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Files<UiTextureInfo>, FileCopy<UiTextureInfo>> =
+    load::merged::<UiTextureInfo, _>(Walk::json_tree_in(&[DIRECTORY]), combine);
+
 #[cfg(test)]
 #[allow(
     clippy::float_cmp,
@@ -393,7 +516,12 @@ pub(crate) fn extra_value(extra: &Extra) -> Value {
 )]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Diagnostics;
     use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::document::unversioned::{document, lone};
+    use bedrock_addon_core::document::{Content, Document};
+    use bedrock_addon_core::load::{LoadContext, LoadOptions};
+    use bedrock_addon_core::test_cost::assert_linear_at;
 
     fn read(text: &str) -> (UiTextureInfo, Diagnostics) {
         let root = bedrock_addon_support::jsoncpp::read(text.as_bytes()).unwrap();
@@ -667,5 +795,36 @@ mod tests {
         let lowest = value("-2147483648.0");
         assert_eq!(as_int(Some(&lowest)), None);
         assert_eq!(lowest.is_int(profile), Some(i32::MIN));
+    }
+
+    /// The highest copy of each path is chosen, and the side files without an image named, in
+    /// time linear in the listing (the order of the findings aside): two copies of every path,
+    /// no image.
+    #[test]
+    fn the_winners_of_a_listing_are_chosen_in_linear_time() {
+        let cx = LoadContext::detached();
+        let build = |entries: usize| -> Vec<(PackPath, Document<UiTextureInfo>)> {
+            (0..entries)
+                .map(|i| {
+                    let path =
+                        PackPath::new(&format!("textures/ui/i{}.json", i / 2)).expect("a path");
+                    let read = UiTextureInfo::parse(&path, br#"{ "nineslice_size": 2 }"#, &cx)
+                        .expect("a side file");
+                    let copy = document(read.into_value(), lone(&path), Diagnostics::default());
+                    (path, copy)
+                })
+                .collect()
+        };
+        let options = LoadOptions::default();
+        assert_linear_at("side_files::combine", 25_000, build, |copies| {
+            let parsed = copies
+                .iter()
+                .cloned()
+                .map(|(key, copy)| (key, Ok(copy)))
+                .collect();
+            let files = combine(parsed, &StackCx::new(&options, &[]));
+            assert_eq!(files.iter().count(), copies.len() / 2);
+            assert_eq!(files.diagnostics().count(), copies.len() / 2);
+        });
     }
 }

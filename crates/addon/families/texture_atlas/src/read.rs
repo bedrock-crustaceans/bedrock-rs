@@ -4,11 +4,11 @@
 use facet_value::VObject;
 use indexmap::IndexMap;
 
-use super::atlas::{
+use super::texts;
+use super::types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Face, Isotropic, MAX_WEIGHT, MIN_WEIGHT,
     TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry, face_is_read,
 };
-use super::texts;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
@@ -507,7 +507,7 @@ impl Reader<'_> {
         match value.as_string().map(facet_value::VString::as_str) {
             // The game throws on `""`; the crate refuses it like any other bad colour.
             Some(text) if !text.is_empty() => {
-                Some(Color::Hex(strtouint32_hex(super::atlas::after_first(text))))
+                Some(Color::Hex(strtouint32_hex(super::types::after_first(text))))
             }
             _ => {
                 // The game logs this at the content log's error level; the atlas loads: a kept

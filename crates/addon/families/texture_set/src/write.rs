@@ -1,12 +1,12 @@
-//! Writing a texture set, and the chain's view of the newest struct: the payload object and
-//! the document with its envelope. A layer the value does not hold is not written.
+//! Writing a texture set, and the chain's view of the newest struct: the payload object (the
+//! envelope is core's `write_envelope`). A layer the value does not hold is not written.
 
 use facet_value::{VArray, VObject};
 
-use super::set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
-use super::set_read::{PAYLOAD, Schema, V1_21_30, read_layers};
+use super::read::{Schema, V1_21_30, read_layers};
+use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
@@ -123,23 +123,4 @@ pub(super) fn write_layers(set: &TextureSet) -> Value {
         }
     }
     object.into()
-}
-
-impl TextureSet {
-    /// The whole document: `format_version` 1.21.30 and the payload.
-    pub(super) fn document(&self) -> Value {
-        let mut object = VObject::new();
-        object.insert("format_version", V1_21_30.to_string());
-        object.insert(PAYLOAD, write_layers(self));
-        object.into()
-    }
-
-    /// Writes the document into `out`.
-    pub(super) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        write_json(&self.document(), out, style)
-    }
 }

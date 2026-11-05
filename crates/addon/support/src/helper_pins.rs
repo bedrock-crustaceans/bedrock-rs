@@ -5,11 +5,9 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Document, Origin, VersionInfo};
+use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::load::WalkFile;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
 
 /// A pack (the crate has no `uuid` of its own to name another with).
 fn pack() -> PackRef {
@@ -52,59 +50,6 @@ fn unversioned_origin(pack: PackRef, side: PackSide) -> Origin {
     Origin::new(pack, side, path(), None, Vec::new())
 }
 
-fn none() -> VersionInfo {
-    let v = FormatVersion::new(0, 0, 0);
-    VersionInfo::new(None, false, v, v, false)
-}
-
-/// A document's parts, for comparing two documents field by field.
-fn parts<T: Clone>(document: &Document<T>) -> (T, Origin, VersionInfo, Vec<Diagnostic>) {
-    (
-        document.value().clone(),
-        document.origin().clone(),
-        document.version().clone(),
-        document.diagnostics().iter().cloned().collect(),
-    )
-}
-
-fn one(finding: Diagnostic) -> Diagnostics {
-    let mut diagnostics = Diagnostics::default();
-    diagnostics.push(finding);
-    diagnostics
-}
-
-#[test]
-fn the_fixed_path_kit_is_unversioned_and_located() {
-    use crate::fixed_path::{document, lone, origin, reject};
-    assert_eq!(
-        lone(&path()),
-        unversioned_origin(PackRef::app_data(), PackSide::Resource)
-    );
-    let of_pack = origin(pack(), PackSide::Behavior, &path());
-    assert_eq!(of_pack, unversioned_origin(pack(), PackSide::Behavior));
-    let doc = document(
-        1u8,
-        of_pack.clone(),
-        one(long(Severity::Warning, Phase::Parse, here(at()))),
-    );
-    assert_eq!(
-        parts(&doc),
-        (
-            1,
-            of_pack.clone(),
-            none(),
-            vec![long(Severity::Warning, Phase::Parse, in_file(at()))]
-        )
-    );
-    let rejected = reject(
-        of_pack.clone(),
-        long(Severity::Error, Phase::Parse, here(at())),
-    );
-    assert_eq!(rejected.origin, of_pack);
-    let found: Vec<_> = rejected.diagnostics.iter().cloned().collect();
-    assert_eq!(found, [long(Severity::Error, Phase::Parse, in_file(at()))]);
-}
-
 #[test]
 fn the_fixed_path_findings_and_paths() {
     use crate::fixed_path::{file_finding, finding, index, key};
@@ -139,40 +84,6 @@ fn the_fixed_path_is_int_is_jsoncpp_s_token_rule() {
     assert_eq!(read("true"), None);
     assert_eq!(read("\"7\""), None);
     assert_eq!(read("null"), None);
-}
-
-#[test]
-fn the_texture_kit_is_unversioned_and_located() {
-    use crate::texture::document::{detached, finding_at, origin_of, rejected};
-    assert_eq!(
-        detached(&path()),
-        unversioned_origin(PackRef::app_data(), PackSide::Resource)
-    );
-    let file = WalkFile {
-        pack: pack(),
-        side: PackSide::Resource,
-        path: path(),
-        key: PackPath::from_static("other.json"),
-        #[allow(
-            clippy::default_trait_access,
-            reason = "the crate has no `bytes` of its own to name the type with"
-        )]
-        bytes: Default::default(),
-    };
-    let of_pack = origin_of(&file);
-    assert_eq!(of_pack, unversioned_origin(pack(), PackSide::Resource));
-    let refused = rejected(
-        of_pack.clone(),
-        one(long(Severity::Error, Phase::Parse, here(at()))),
-    );
-    let found: Vec<_> = refused.diagnostics.iter().cloned().collect();
-    assert_eq!(found, [long(Severity::Error, Phase::Parse, in_file(at()))]);
-    for severity in [Severity::Info, Severity::Error] {
-        same(
-            &finding_at(code(), severity, &of_pack, at()),
-            &long(severity, Phase::Parse, in_file(at())),
-        );
-    }
 }
 
 #[test]

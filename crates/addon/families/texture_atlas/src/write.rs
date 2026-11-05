@@ -3,11 +3,11 @@
 
 use facet_value::{VArray, VObject};
 
-use super::atlas::{
+use super::read::read_atlas;
+use super::types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Isotropic, TextureAtlas, TextureElement,
     TextureLayer, Tint, TintMapColor, VariationEntry,
 };
-use super::atlas_read::read_atlas;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{
     Content, Document, Extra, JsonContent, Placed, Rejected, unversioned,
@@ -105,6 +105,8 @@ fn atlas_json(atlas: &TextureAtlas) -> Value {
         "default_horse_leather_color",
         atlas.default_horse_leather_color.as_deref(),
     );
+    // Not core's `write_envelope`: `format_version` is a member the game ignores, written back
+    // as read among the others, and there is no payload key.
     put(
         &mut root,
         "format_version",

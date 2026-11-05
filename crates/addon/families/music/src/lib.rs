@@ -3,15 +3,25 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod load;
-
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
 use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::unversioned::{lone, version_at};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+};
 use bedrock_addon_core::id::MusicDefinitionId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::version::ENGINE_VERSION;
 use bedrock_addon_support::sound::fork;
+use bedrock_addon_support::sound::merge::{
+    SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
+    write_document,
+};
 use bedrock_addon_support::sound::read::{boolean, float, string};
 use bedrock_addon_support::sound::report::{Reporter, check_unknown};
 
@@ -231,5 +241,103 @@ fn read_definition(value: &Value, report: &mut Reporter<'_>) -> MusicDefinition 
     definition
 }
 
+/// Where a pack keeps its music definitions.
+pub(crate) const MUSIC_PATH: &str = "sounds/music_definitions.json";
+
+impl bedrock_addon_core::__private::Sealed for MusicDefinitions {}
+
+impl Merge for MusicDefinitions {
+    /// A music name.
+    type Key = MusicDefinitionId;
+}
+
+/// Merges the copies of `sounds/music_definitions.json` and reads the result.
+fn merge_music(copies: Vec<SoundCopy>, _: &StackCx<'_>) -> Merged<MusicDefinitions, RawLayer> {
+    let mut diagnostics = Diagnostics::default();
+    let copies = readable(MUSIC_PATH, copies, &mut diagnostics);
+    let mut origins: IndexMap<MusicDefinitionId, Origin> = IndexMap::new();
+    let mut target: Option<Value> = None;
+    for (origin, json, _) in &copies {
+        for name in fork::member_names(json) {
+            origins.insert(MusicDefinitionId::parse(name), origin.clone());
+        }
+        match &mut target {
+            None => target = Some(json.clone()),
+            Some(target) => {
+                fork::recursive_merge(target, json, Some(replace_predicate));
+            }
+        }
+    }
+    let merged = target.unwrap_or(Value::NULL);
+    let mut found = Diagnostics::default();
+    let value = MusicDefinitions::read(merged, &mut found);
+    let top = copies.last().map(|(origin, _, _)| origin);
+    for mut finding in found {
+        let owner = path_member(&finding.location.json_path, 0)
+            .and_then(|name| origins.get(&MusicDefinitionId::parse(name)))
+            .or(top);
+        if let Some(origin) = owner {
+            finding.location.pack = Some(origin.pack.clone());
+            finding.location.path = Some(origin.path.clone());
+        }
+        diagnostics.push(finding);
+    }
+    origins.retain(|name, _| value.definitions.contains_key(name));
+    Merged::new(value, origins, layers(&copies), diagnostics)
+}
+
+/// The loader of `rp.music()`: every resource pack's copy of the file, merged as JSON and read
+/// once.
+///
+/// A hand loader rather than `load::merged`: a copy is the file\'s JSON, merged into the lower
+/// copies before the one typed read, not a document read on its own.
 #[doc(hidden)]
-pub use load::LOADER;
+pub const LOADER: CollectionLoader<Merged<MusicDefinitions, RawLayer>, SoundCopy> =
+    CollectionLoader {
+        walk: Walk::exact_files(&[MUSIC_PATH]),
+        parse: parse_copy,
+        combine: merge_music,
+        needs: &[],
+        then: None,
+    };
+
+impl Content for MusicDefinitions {
+    const NAME: &'static str = "music definitions";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// Reads one pack's `sounds/music_definitions.json` on its own. A file that is no JSON is
+    /// rejected.
+    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+        // A number no double holds is read as the largest finite one, with a warning.
+        bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
+            let origin = lone(path);
+            let json = match read_json(bytes) {
+                Ok(json) => json,
+                Err(message) => return Err(not_json(origin, &message)),
+            };
+            let mut found = Diagnostics::default();
+            let value = Self::read(json, &mut found);
+            let mut diagnostics = Diagnostics::default();
+            located(found, &origin, &mut diagnostics);
+            Ok(Document::new(
+                value,
+                origin,
+                version_at(ENGINE_VERSION),
+                diagnostics,
+            ))
+        })
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        write_document(&self.json, out, style)
+    }
+}
+
+impl JsonContent for MusicDefinitions {}
+
+impl Placed for MusicDefinitions {
+    /// `sounds/music_definitions.json`: the one path the client reads.
+    fn default_path(&self) -> PackPath {
+        PackPath::from_static(MUSIC_PATH)
+    }
+}

@@ -1,18 +1,17 @@
 //! What the three sound documents share when the client merges their copies as JSON across the
-//! stack: one pack's copy, the reading of it, the checks on the copies, and the documents of
-//! the files read on their own.
+//! stack: one pack's copy, the reading of it, the checks on the copies, and the rejection of a
+//! file read on its own that is no JSON. Each family's loader walks its one file
+//! (`Walk::exact_files`) with [`parse_copy`] as its parse.
 
-use bedrock_addon_core::load::{Accept, LoadContext, Walk, WalkFile};
-use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::load::{LoadContext, WalkFile};
 
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Origin, RawLayer, Rejected, VersionInfo, unversioned};
+use bedrock_addon_core::document::{Origin, RawLayer, Rejected, unversioned};
 use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, write_json,
 };
-use bedrock_addon_core::version::ENGINE_VERSION;
 
 use crate::jsoncpp::ReadError;
 
@@ -118,11 +117,6 @@ pub fn path_member(path: &JsonPath, at: usize) -> Option<String> {
     })
 }
 
-/// The origin of a file parsed outside a stack.
-pub fn detached_origin(path: &PackPath) -> Origin {
-    unversioned::lone(path)
-}
-
 /// The rejection of a file that is no JSON.
 pub fn not_json(origin: Origin, error: &ReadError) -> Rejected {
     let mut found = Diagnostics::default();
@@ -149,23 +143,6 @@ pub fn write_document(
     write_json(json, out, style)
 }
 
-/// The text of a document's JSON.
-///
-/// # Errors
-///
-/// `EncodeError::NotRepresentable` when `json` holds a non-finite number, or nests deeper than the
-/// readers of the crate follow.
-pub fn document_text(json: &Value) -> Result<String, EncodeError> {
-    let mut out = Vec::new();
-    write_document(json, &mut out, WriteStyle::default())?;
-    Ok(String::from_utf8(out).unwrap_or_default())
-}
-
-/// The version information of a file no loader reads a version of.
-pub fn unversioned() -> VersionInfo {
-    VersionInfo::new(None, false, ENGINE_VERSION, ENGINE_VERSION, false)
-}
-
 /// One pack's copy of the sound document a walked file is: its JSON, or why it is none, and
 /// what reading found.
 pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
@@ -183,10 +160,4 @@ pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
         found,
         molang_version: cx.molang_version.0,
     }
-}
-
-/// The walk of one document: the file `accept` takes, in every pack, lowest pack first, as
-/// vanilla collects the copies of a merged file.
-pub const fn walk(accept: fn(&PackPath) -> bool) -> Walk {
-    Walk::json_tree_in(&[""]).accept(Accept::Fn(accept))
 }

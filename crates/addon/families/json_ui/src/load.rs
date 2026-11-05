@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
@@ -162,7 +162,7 @@ impl Content for UiDefsList {
                 list.extra.insert(key.as_str().to_owned(), value.clone());
                 continue;
             }
-            list.ui_defs = write::read_ui_defs(value);
+            list.ui_defs = read_ui_defs(value);
             if !value.is_array() {
                 // The game reads no path from a list that is not an array; the crate says so.
                 diagnostics.push(
@@ -195,6 +195,14 @@ pub(super) fn listed(paths: &[Value]) -> Vec<String> {
         .iter()
         .map(|path| string_or_empty(Some(path)).to_owned())
         .collect()
+}
+
+/// The paths the game reads from a `ui_defs` value: the elements of an array.
+pub(super) fn read_ui_defs(written: &Value) -> Vec<String> {
+    written
+        .as_array()
+        .map(|paths| listed(paths.as_slice()))
+        .unwrap_or_default()
 }
 
 impl Placed for UiDefsList {
@@ -267,11 +275,6 @@ fn is_read(path: &str) -> bool {
     path.starts_with("ui/") && is_json(path)
 }
 
-/// The two files the game reads by their fixed paths: the list and the global variables.
-fn fixed_file(path: &PackPath) -> bool {
-    matches!(path.as_str(), UI_DEFS_PATH | GLOBAL_VARIABLES_PATH)
-}
-
 /// The second walk stage: the files the lists of the stack name. Every pack's copy of
 /// `ui/_ui_defs.json` that is JSON counts, as in the merge; the loader reads each named file
 /// from every pack that has it.
@@ -326,9 +329,12 @@ fn parse(file: &WalkFile, _: &LoadContext) -> UiCopy {
 /// The loader of `ui()`: the list and the global variables of every resource pack, lowest
 /// pack first, then the files the lists name (the second walk stage). A file below
 /// `ui/` that no list names is never asked for.
+///
+/// A hand loader rather than `load::merged`: a copy is the file's JSON, merged into the lower
+/// copies before it is read, and the listed files are a second stage (`then`).
 // The game hands the merge the copies of a file lowest priority first.
 pub const LOADER: CollectionLoader<Merged<UiDefinitions, RawLayer>, UiCopy> = CollectionLoader {
-    walk: Walk::json_tree_in(&[UI]).accept(Accept::Fn(fixed_file)),
+    walk: Walk::exact_files(&[UI_DEFS_PATH, GLOBAL_VARIABLES_PATH]),
     parse,
     combine,
     needs: &[],

@@ -30,7 +30,7 @@ bedrock_addon_core::version_chain! {
     molang = none;
 }
 
-/// Runs the upgrade step of a document [`TextureSet::parse_as_written`] gave: the same result
+/// Runs the upgrade step of a document [`parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same result
 /// [`TextureSet::parse`](bedrock_addon_core::document::Content::parse) gives for its file (the step
 /// runs over the document, which holds the origin).
 ///

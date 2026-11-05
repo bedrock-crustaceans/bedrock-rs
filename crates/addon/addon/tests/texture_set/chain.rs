@@ -3,7 +3,7 @@
 //! on its own, and the write side.
 
 use bedrock_addon::diagnostic::Severity::Warning;
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::texture_set::history::{self, Any, TextureSetFamily, v1_16_100};
 use bedrock_addon::families::texture_set::{
     LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet,

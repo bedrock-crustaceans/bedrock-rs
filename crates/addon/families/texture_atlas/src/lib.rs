@@ -8,27 +8,30 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod atlas;
 mod atlas_load;
-mod atlas_read;
-mod load;
 mod patch;
+mod read;
 mod texts;
+mod types;
 mod write;
 
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::document::{Merged, RawLayer};
 use bedrock_addon_support::texture::files::StackFiles;
 
-pub use atlas::{
+use crate::atlas_load::{AtlasCopy, merge_atlas, parse_copy};
+use bedrock_addon_core::load::Reported;
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_support::texture::files::listed_files;
+pub use types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Face, Isotropic, MAX_WEIGHT, MIN_WEIGHT,
     ResolvedLayer, TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry,
 };
 
-#[doc(hidden)]
-pub use load::LOADER;
-
 /// The atlases of a resource stack (`rp.texture_atlases()`).
+///
+/// Hand-written: one walk reads two atlases, each merged as JSON over the stack before it is
+/// read once, and the image paths of the result are looked up in the packs' listings.
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct TextureAtlases {
@@ -117,5 +120,64 @@ impl TextureAtlases {
         self.terrain_atlas
             .diagnostics()
             .chain(self.item_atlas.diagnostics())
+    }
+}
+
+/// One walked atlas file: which atlas it is a copy of, and the copy.
+#[derive(Debug)]
+pub struct AtlasFileParsed {
+    /// The atlas.
+    kind: AtlasKind,
+    /// The copy.
+    copy: Box<AtlasCopy>,
+}
+
+/// One file of the walk.
+fn parse_walk_file(file: &WalkFile, _: &LoadContext) -> AtlasFileParsed {
+    let kind = if file.key.as_str() == AtlasKind::Item.path() {
+        AtlasKind::Item
+    } else {
+        AtlasKind::Terrain
+    };
+    AtlasFileParsed {
+        kind,
+        copy: Box::new(parse_copy(file)),
+    }
+}
+
+/// The atlases, from every parsed file in walk order.
+fn combine(parsed: Vec<AtlasFileParsed>, stack: &StackCx<'_>) -> TextureAtlases {
+    let files = listed_files(stack);
+    let (mut terrain, mut item) = (Vec::new(), Vec::new());
+    for file in parsed {
+        match file.kind {
+            AtlasKind::Terrain => terrain.push(*file.copy),
+            AtlasKind::Item => item.push(*file.copy),
+        }
+    }
+    let (terrain_atlas, terrain_built) = merge_atlas(AtlasKind::Terrain, terrain, &files);
+    let (item_atlas, item_built) = merge_atlas(AtlasKind::Item, item, &files);
+    TextureAtlases::new(
+        terrain_atlas,
+        item_atlas,
+        [terrain_built, item_built],
+        files,
+    )
+}
+
+/// The loader of `rp.texture_atlases()`: the terrain and item atlases of every resource pack,
+/// each merged over the stack.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<TextureAtlases, AtlasFileParsed> = CollectionLoader {
+    walk: Walk::exact_files(&[AtlasKind::Terrain.path(), AtlasKind::Item.path()]),
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
+
+impl Reported for TextureAtlases {
+    fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
+        Box::new(self.diagnostics())
     }
 }

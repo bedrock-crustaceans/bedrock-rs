@@ -2,7 +2,7 @@
 
 use facet_value::{VArray, VObject};
 
-use super::load::listed;
+use super::load::read_ui_defs;
 use super::{GlobalVariables, UiDefsList, UiFile};
 use bedrock_addon_core::json::Value;
 
@@ -42,14 +42,6 @@ pub(super) fn defs_list_value(list: &UiDefsList) -> Value {
         }
     }
     root.into_value()
-}
-
-/// The paths the game reads from a `ui_defs` value: the elements of an array.
-pub(super) fn read_ui_defs(written: &Value) -> Vec<String> {
-    written
-        .as_array()
-        .map(|paths| listed(paths.as_slice()))
-        .unwrap_or_default()
 }
 
 /// The variables in order.

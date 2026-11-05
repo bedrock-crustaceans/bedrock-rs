@@ -1,39 +1,18 @@
 //! What the fixed-path files of the menu texts, the fonts and the UI images' side files share:
 //! reading one copy as vanilla's JSON reader does, the `Json::Value` conversions the readers
-//! lean on, the walk of one file at the pack root, and the document of an unversioned file.
+//! lean on, and the files of a pack below a directory. Their loaders are core's
+//! (`load::merged`), their documents core's `document::unversioned`.
 
-use bedrock_addon_core::load::ListedFile;
-use bedrock_addon_core::load::{Accept, StackPack, Walk};
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::load::{ListedFile, StackPack};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, unversioned};
+use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     Coerce, Coercing, EncodeError, IsIntRule, Value, WideInt, WriteStyle, write_json,
 };
-
-/// The origin of a file read on its own: no pack. [`unversioned::lone`].
-pub fn lone(path: &PackPath) -> Origin {
-    unversioned::lone(path)
-}
-
-/// The origin of a file of `pack`. [`unversioned::origin`].
-pub fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    unversioned::origin(pack, side, path)
-}
-
-/// A document of an unversioned file: no `format_version` is read on any path.
-/// [`unversioned::document`].
-pub fn document<T>(value: T, origin: Origin, diagnostics: Diagnostics) -> Document<T> {
-    unversioned::document(value, origin, diagnostics)
-}
-
-/// A rejection with one finding. [`unversioned::reject`].
-pub fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
-    unversioned::reject(origin, finding)
-}
 
 /// A finding at `at` inside a file.
 pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
@@ -260,14 +239,6 @@ pub trait Authored: Sized + PartialEq {
         }
         self.fields_value()
     }
-}
-
-/// One copy of a file as the stack walk hands it over: the file read, or why not.
-pub type FileCopy<T> = Result<Document<T>, Rejected>;
-
-/// A walk of the pack root for one fixed file name, lowest pack first, packs only.
-pub const fn root_file(accept: fn(&PackPath) -> bool) -> Walk {
-    Walk::json_children_in(&[""]).accept(Accept::Fn(accept))
 }
 
 /// The files of `pack` below the directory `directory`.
