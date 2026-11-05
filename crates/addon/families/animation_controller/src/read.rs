@@ -17,6 +17,7 @@ use bedrock_addon_core::molang::{MolangSource, RawVersion};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_shared_shapes::TrueOnly;
 use bedrock_addon_support::animation::event::command_version;
 use bedrock_addon_support::animation::molang::{MolangRun, run};
 use bedrock_addon_support::animation::read::{
@@ -456,7 +457,7 @@ fn read_state(walk: &mut Walk, node: Node<'_>, commands: u8) -> Option<State> {
             .into(),
         4 => match walk.bool(v) {
             Some(true) => {
-                state.blend_via_shortest_path = Some(true);
+                state.blend_via_shortest_path = Some(TrueOnly);
                 Hit::Ok
             }
             Some(false) => {

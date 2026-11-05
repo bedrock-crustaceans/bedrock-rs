@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 use bedrock_addon_core::molang::{Molang, MolangSource};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::TrueOnly;
 use bedrock_addon_support::animation::walk::atof;
 
 use super::{EventString, ParticleEffect, SoundEffect};
@@ -55,7 +56,7 @@ pub struct State {
     pub blend_transition: Option<BlendTransition>,
     /// `blend_via_shortest_path`: blend each Euler axis the short way round; only `true` may be
     /// written.
-    pub blend_via_shortest_path: Option<bool>,
+    pub blend_via_shortest_path: Option<TrueOnly>,
     /// `particle_effects`: particles played on entry.
     pub particle_effects: Option<Vec<ParticleEffect>>,
     /// `sound_effects`: sounds played on entry.

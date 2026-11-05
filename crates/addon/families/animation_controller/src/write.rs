@@ -42,7 +42,7 @@ fn state(s: &State) -> Result<Value, EncodeError> {
     o.opt(
         "blend_via_shortest_path",
         s.blend_via_shortest_path.as_ref(),
-        |b| Ok(Value::from(*b)),
+        |b| Ok(Value::from(bool::from(b))),
     )?;
     o.opt("particle_effects", s.particle_effects.as_ref(), |l| {
         list(l, particle)

@@ -9,6 +9,7 @@
 //!   [`HexOr`], a colour written as that text or as an array of channels.
 //! - [`descriptor`]: [`ItemDescriptor`], [`BlockDescriptor`] and [`BlockSpecifier`], how a
 //!   document names an item or a block.
+//! - [`flag`]: [`TrueOnly`], a member whose one allowed value is `true`.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
 //!   placement.
 //! - [`one_or_many`]: [`OneOrMany`], one value or an array of them, as written.
@@ -17,6 +18,7 @@
 
 pub mod color;
 pub mod descriptor;
+pub mod flag;
 pub mod menu;
 pub mod one_or_many;
 pub mod png;
@@ -26,6 +28,7 @@ pub use color::{Channels, HexOr};
 pub use descriptor::{
     BlockDescriptor, BlockSpecifier, ItemDescriptor, ItemDescriptorForm, StateValue,
 };
+pub use flag::{NotTrue, TrueOnly};
 pub use menu::{CreativeCategory, MenuCategory};
 pub use one_or_many::OneOrMany;
 pub use png::{PNG_SIGNATURE, PngHeader, png_size};

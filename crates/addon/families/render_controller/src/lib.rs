@@ -35,8 +35,8 @@ use read::{Parsed, group_by_controller};
 
 pub use fold::fold_case;
 pub use types::{
-    BonePattern, FilterLighting, ON_FIRE_ALPHA, ON_FIRE_GREEN, RenderController,
-    RenderControllerArrays, RenderControllerFile, Rgba, UvAnim,
+    BonePattern, ON_FIRE_ALPHA, ON_FIRE_GREEN, RenderController, RenderControllerArrays,
+    RenderControllerFile, Rgba, UvAnim,
 };
 
 impl bedrock_addon_core::__private::Sealed for RenderControllerFile {}

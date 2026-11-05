@@ -7,6 +7,7 @@ use super::fold_case;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::TrueOnly;
 
 /// A render controller file (`render_controllers/*.json`): `{"format_version",
 /// "render_controllers": {"controller.render.<name>": {…}}}`.
@@ -72,7 +73,7 @@ pub struct RenderController {
     /// `ignore_lighting`: draw without lighting; absent false.
     pub ignore_lighting: Option<bool>,
     /// `filter_lighting`: only `true` may be written; absent false.
-    pub filter_lighting: Option<FilterLighting>,
+    pub filter_lighting: Option<TrueOnly>,
     /// `rebuild_animation_matrices`: absent false.
     pub rebuild_animation_matrices: Option<bool>,
 }
@@ -119,10 +120,6 @@ pub struct UvAnim {
 /// `*`, where `*` stands for any run of bone-name characters.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct BonePattern(pub String);
-
-/// The one value `filter_lighting` may have: `true`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct FilterLighting;
 
 /// The Molang version the game compiles its own default expressions with, whatever the pack.
 const BUILT_IN: RawVersion = RawVersion(13);

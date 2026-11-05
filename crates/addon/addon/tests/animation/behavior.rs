@@ -170,7 +170,10 @@ fn r04_lowercase_transitions_below_1_17_30() {
     assert_eq!(view(&new), ("q.get_name == 'Dinnerbone'".to_owned(), false));
     for file in [&old, &new] {
         let state = &file.animation_controllers["controller.animation.x"].states["default"];
-        assert_eq!(state.blend_via_shortest_path, Some(true));
+        assert_eq!(
+            state.blend_via_shortest_path,
+            Some(bedrock_addon::shared::TrueOnly)
+        );
     }
 }
 

@@ -9,8 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use super::fold::{Folded, fold};
 use super::molang::{MolangRun, run};
 use super::{
-    BonePattern, FilterLighting, RenderController, RenderControllerArrays, RenderControllerFile,
-    Rgba, UvAnim,
+    BonePattern, RenderController, RenderControllerArrays, RenderControllerFile, Rgba, UvAnim,
 };
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
@@ -24,6 +23,7 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::{FormatVersionInput, SemVersion};
+use bedrock_addon_shared_shapes::TrueOnly;
 use bedrock_addon_support::schema_walk::{
     ABOVE_MAX_VERSION, ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, BELOW_MIN_VERSION, Group, Kind, Node,
     Pattern, REQUIRED_CHILD, UNKNOWN_OPTION_TYPE, VALUE_NOT_ALLOWED, Walk, text,
@@ -617,7 +617,7 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
         12 => walk.bool(v).map(|x| c.ignore_lighting = Some(x)).is_some(),
         _ => match walk.bool(v) {
             Some(true) => {
-                c.filter_lighting = Some(FilterLighting);
+                c.filter_lighting = Some(TrueOnly);
                 true
             }
             Some(false) => {
