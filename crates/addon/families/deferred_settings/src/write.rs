@@ -168,8 +168,8 @@ pub(crate) fn keyframes<T>(
     write: impl Fn(&T, &JsonPath) -> Written,
 ) -> Written {
     match value {
-        Keyframes::Constant(value) => write(value, at),
-        Keyframes::Frames(frames) => {
+        Keyframes::Single(value) => write(value, at),
+        Keyframes::Keys(frames) => {
             if frames.is_empty() {
                 return Err(refuse(at));
             }

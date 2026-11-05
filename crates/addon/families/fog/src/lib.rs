@@ -21,7 +21,7 @@ mod tests;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::version::known;
-use bedrock_addon_shared_shapes::HexOr;
+use bedrock_addon_shared_shapes::{HexOr, Keyframes};
 
 pub(crate) use jsonutil::{Era, read_document};
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
@@ -283,17 +283,12 @@ pub type FogColor = HexOr<[u8; 3]>;
 pub type ColorNorm = HexOr<[f32; 3]>;
 
 /// A value that may change over the day: one value, or values by time key
-/// (`{"0.0": 0.02, "0.5": 0.1}`). The keyed form is read by engines from 1.26.30.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Keyframed<T> {
-    /// One value.
-    Single(T),
-    /// Values by time, sorted by time. Two keys of a file that are one time (`"0"` and
-    /// `"0.0"`, or `"-0"` and `"0"`) are one keyframe, the later one, with its time as written.
-    /// A list built in memory that holds one time twice is not written: `to_json` refuses it
-    /// with `NotRepresentable` at the second keyframe of that time.
-    Keys(Vec<(f32, T)>),
-}
+/// (`{"0.0": 0.02, "0.5": 0.1}`; shapes' [`Keyframes`]). The keyed form is read by engines
+/// from 1.26.30. Keys are sorted by time; two keys of a file that are one time (`"0"` and
+/// `"0.0"`, or `"-0"` and `"0"`) are one keyframe, the later one, with its time as written. A
+/// list built in memory that holds one time twice is not written: `to_json` refuses it with
+/// `NotRepresentable` at the second keyframe of that time.
+pub type Keyframed<T> = Keyframes<T>;
 
 /// A keyframe time with `-0` as `0`, so that two finite times are one time exactly when
 /// their bits are equal.
@@ -747,27 +742,6 @@ impl FogWaterDistanceSetting {
     /// `render_distance_type`; `fixed` when the setting leaves it out.
     pub fn render_distance_type(&self) -> DistanceType {
         self.render_distance_type.unwrap_or_default()
-    }
-}
-
-impl<T> Keyframed<T> {
-    /// The one value, when the member is not keyed by time.
-    pub fn single(&self) -> Option<&T> {
-        match self {
-            Self::Single(value) => Some(value),
-            Self::Keys(_) => None,
-        }
-    }
-
-    /// Every value the member holds, with its time key (`None` for a single value).
-    pub fn values(&self) -> Vec<(Option<f32>, &T)> {
-        match self {
-            Self::Single(value) => vec![(None, value)],
-            Self::Keys(keys) => keys
-                .iter()
-                .map(|(time, value)| (Some(*time), value))
-                .collect(),
-        }
     }
 }
 

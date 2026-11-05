@@ -49,8 +49,8 @@ fn many_keyframes_of_one_member_are_read_in_near_linear_time() {
             panic!("a single value");
         };
         assert_eq!(keys.len(), n);
-        assert_eq!(keys.first().map(|key| key.0), Some(0.0));
-        assert!(keys.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        assert_eq!(keys.first().map(|key| key.time), Some(0.0));
+        assert!(keys.windows(2).all(|pair| pair[0].time < pair[1].time));
     });
 }
 
@@ -64,7 +64,7 @@ fn equal_times_in_several_positions_merge_to_the_later_one() {
     let document = loaded(parse(&text, &pack()));
     assert_eq!(
         max_density(&document),
-        Keyframed::Keys(vec![(0.0, 0.9), (0.5, 0.8), (1.0, 0.3), (2.0, 0.7)])
+        Keyframed::from_pairs([(0.0, 0.9), (0.5, 0.8), (1.0, 0.3), (2.0, 0.7)])
     );
 }
 

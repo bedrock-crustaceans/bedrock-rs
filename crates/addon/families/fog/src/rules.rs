@@ -85,23 +85,24 @@ fn distance_entry(
 fn pairs(a: &Keyframed<f32>, b: &Keyframed<f32>) -> Vec<(f32, f32)> {
     match (a, b) {
         (Keyframed::Single(a), Keyframed::Single(b)) => vec![(*a, *b)],
-        (Keyframed::Single(a), Keyframed::Keys(b)) => b.iter().map(|(_, b)| (*a, *b)).collect(),
-        (Keyframed::Keys(a), Keyframed::Single(b)) => a.iter().map(|(_, a)| (*a, *b)).collect(),
+        (Keyframed::Single(a), Keyframed::Keys(b)) => b.iter().map(|b| (*a, b.value)).collect(),
+        (Keyframed::Keys(a), Keyframed::Single(b)) => a.iter().map(|a| (a.value, *b)).collect(),
         (Keyframed::Keys(a), Keyframed::Keys(b)) => {
             // `b` by time, for a search per key of `a`. A value built in memory may hold its keys
             // in any order and a time twice: the sort is stable, so the first of `b`'s keys of
             // a time is the one found.
-            let mut by_time: Vec<(f32, f32)> = b.iter().map(|(t, b)| (same_zero(*t), *b)).collect();
+            let mut by_time: Vec<(f32, f32)> =
+                b.iter().map(|b| (same_zero(b.time), b.value)).collect();
             by_time.sort_by(|x, y| x.0.total_cmp(&y.0));
             a.iter()
-                .filter_map(|(time, a)| {
-                    let time = same_zero(*time);
+                .filter_map(|a| {
+                    let time = same_zero(a.time);
                     let first =
                         by_time.partition_point(|(other, _)| other.total_cmp(&time).is_lt());
                     by_time
                         .get(first)
                         .filter(|(other, _)| other.to_bits() == time.to_bits())
-                        .map(|(_, b)| (*a, *b))
+                        .map(|(_, b)| (a.value, *b))
                 })
                 .collect()
         }
@@ -224,7 +225,7 @@ pub(crate) fn namespace(
 /// The times of a member written by time key; `None` for one value or no member.
 fn times<T>(value: Option<&Keyframed<T>>) -> Option<Vec<f32>> {
     match value {
-        Some(Keyframed::Keys(keys)) => Some(keys.iter().map(|(time, _)| *time).collect()),
+        Some(Keyframed::Keys(keys)) => Some(keys.iter().map(|key| key.time).collect()),
         _ => None,
     }
 }

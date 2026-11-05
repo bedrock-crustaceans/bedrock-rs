@@ -49,7 +49,7 @@ pub struct CubemapLighting {
 
 super::defaults! {
     CubemapLighting {
-        ambient_light_illuminance: Keyframes<f32> = Keyframes::Frames(vec![
+        ambient_light_illuminance: Keyframes<f32> = Keyframes::Keys(vec![
             Keyframe { time: 0.0, value: 5.625 },
             Keyframe { time: 1.0, value: 5.625 },
         ]);

@@ -16,6 +16,7 @@ use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::kit::{Disposition, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value, parse_at};
 use bedrock_addon_core::versioning::Reading;
+use bedrock_addon_shared_shapes::Keyframe;
 use bedrock_addon_shared_shapes::color::is_hex;
 
 /// Reads one `minecraft:fog_settings` payload, findings below `at`; `None` (with an error in
@@ -249,16 +250,16 @@ fn keyframed<'v, T>(
     // file stands, as of a member written twice. The sort is stable, so the
     // keys of one time stay in the file's order and the last of each run is the later one.
     keys.sort_by(|a, b| same_zero(a.0).total_cmp(&same_zero(b.0)));
-    let mut times: Vec<(f32, T)> = Vec::with_capacity(keys.len());
+    let mut times: Vec<Keyframe<T>> = Vec::with_capacity(keys.len());
     let mut standing: Option<(usize, Node<'v>)> = None;
     let mut dropped = Vec::new();
     for (time, value, index, member) in keys {
         match times.last_mut() {
-            Some(last) if same_zero(last.0).to_bits() == same_zero(time).to_bits() => {
+            Some(last) if same_zero(last.time).to_bits() == same_zero(time).to_bits() => {
                 dropped.extend(standing.take());
-                *last = (time, value);
+                *last = Keyframe { time, value };
             }
-            _ => times.push((time, value)),
+            _ => times.push(Keyframe { time, value }),
         }
         standing = Some((index, member));
     }

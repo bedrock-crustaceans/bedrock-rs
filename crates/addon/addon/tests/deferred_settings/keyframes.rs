@@ -44,7 +44,7 @@ fn a02_a_single_value_is_one_keyframe_and_is_written_back_as_it_was() {
     let text = illuminance("7.5");
     let document = loads::<CubemapSettings>(&text);
     let read = frames("7.5");
-    assert_eq!(read, Keyframes::Constant(7.5));
+    assert_eq!(read, Keyframes::Single(7.5));
     assert_eq!(read.frames(), [frame(0.0, 7.5)]);
     assert_eq!(json(&round_trip(document.value())), json(&text));
 }
@@ -53,7 +53,7 @@ fn a02_a_single_value_is_one_keyframe_and_is_written_back_as_it_was() {
 fn a01_keyframes_are_sorted_by_time() {
     assert_eq!(
         frames(r#"{"1.000000": 3, "0.250000": 2, "0.000000": 1, "0.5": 4}"#),
-        Keyframes::Frames(vec![
+        Keyframes::Keys(vec![
             frame(0.0, 1.0),
             frame(0.25, 2.0),
             frame(0.5, 4.0),
@@ -114,7 +114,7 @@ fn a05_a_key_with_a_numeric_prefix_is_read_as_the_prefix() {
         assert!(document.diagnostics().is_empty(), "{key:?}");
         assert_eq!(
             frames(&format!(r#"{{"{key}": 2.0}}"#)),
-            Keyframes::Frames(vec![frame(time, 2.0)]),
+            Keyframes::Keys(vec![frame(time, 2.0)]),
             "{key:?}"
         );
     }
@@ -139,7 +139,7 @@ fn a_hexadecimal_key_outside_the_day_is_dropped_like_any_other() {
         );
         assert_eq!(
             frames(&format!(r#"{{"{key}": 1.0, "0.5": 2.0}}"#)),
-            Keyframes::Frames(vec![frame(0.5, 2.0)]),
+            Keyframes::Keys(vec![frame(0.5, 2.0)]),
             "{key:?}"
         );
     }
@@ -156,7 +156,7 @@ fn merged(
     Vec<(&'static str, String)>,
 ) {
     let document = loads::<CubemapSettings>(&illuminance(value));
-    let Some(Keyframes::Frames(read)) = document
+    let Some(Keyframes::Keys(read)) = document
         .lighting
         .as_ref()
         .unwrap()
@@ -266,7 +266,7 @@ fn a08_l13_a_key_outside_the_day_is_dropped_with_a_warning_deviation() {
             .as_ref()
             .unwrap()
             .ambient_light_illuminance,
-        Some(Keyframes::Frames(vec![frame(0.0, 10.0), frame(1.0, 30.0)]))
+        Some(Keyframes::Keys(vec![frame(0.0, 10.0), frame(1.0, 30.0)]))
     );
     assert_eq!(
         infos(document.diagnostics()),
@@ -306,7 +306,7 @@ fn the_bounds_of_the_day_are_inside_it() {
     assert!(document.diagnostics().is_empty());
     assert_eq!(
         frames(r#"{"0": 1, "1": 2}"#),
-        Keyframes::Frames(vec![frame(0.0, 1.0), frame(1.0, 2.0)])
+        Keyframes::Keys(vec![frame(0.0, 1.0), frame(1.0, 2.0)])
     );
     let just_outside = loads::<CubemapSettings>(&illuminance(r#"{"0.5": 1, "1.0001": 2}"#));
     assert_eq!(infos(just_outside.diagnostics()).len(), 1);
@@ -332,7 +332,7 @@ fn two_keys_of_one_time_keep_the_later_value_deviation() {
             .as_ref()
             .unwrap()
             .ambient_light_illuminance,
-        Some(Keyframes::Frames(vec![frame(0.25, 9.0), frame(0.5, 3.0)]))
+        Some(Keyframes::Keys(vec![frame(0.25, 9.0), frame(0.5, 3.0)]))
     );
     // The key that stands in place of another is an information (ours),
     // and each keyframe that does not stand is reported at its own key.
@@ -360,7 +360,7 @@ fn two_thousand_keyframes_load_sorted_and_are_written_back() {
     let text = illuminance(&format!("{{{}}}", keys.join(",")));
     let document = loads::<CubemapSettings>(&text);
     let written = document.to_json().unwrap();
-    let Some(Keyframes::Frames(read)) = document
+    let Some(Keyframes::Keys(read)) = document
         .lighting
         .as_ref()
         .unwrap()

@@ -15,6 +15,7 @@ use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
+use bedrock_addon_shared_shapes::Keyframe;
 
 fn refused(what: Unrepresentable) -> EncodeError {
     EncodeError::NotRepresentable {
@@ -118,7 +119,7 @@ fn keyframed<T>(
         Keyframed::Single(value) => write(value),
         Keyframed::Keys(keys) => {
             let mut object = VObject::new();
-            for (time, value) in keys {
+            for Keyframe { time, value } in keys {
                 if !time.is_finite() {
                     return Err(refused(Unrepresentable::NaN));
                 }

@@ -90,11 +90,11 @@ fn l07b_the_eight_digit_hex_colour_is_argb() {
         .unwrap();
     assert_eq!(
         orbital.sun.unwrap().color,
-        Some(Keyframes::Constant(Rgb8::new(255, 200, 100)))
+        Some(Keyframes::Single(Rgb8::new(255, 200, 100)))
     );
     assert_eq!(
         orbital.moon.unwrap().color,
-        Some(Keyframes::Constant(Rgb8::new(1, 2, 3)))
+        Some(Keyframes::Single(Rgb8::new(1, 2, 3)))
     );
     assert_eq!(
         at(&infos(document.diagnostics())),
@@ -122,7 +122,7 @@ fn the_1_21_40_struct_keeps_the_alpha_as_written() {
     };
     assert_eq!(
         old.directional_lights.clone().unwrap().sun.unwrap().color,
-        Some(Keyframes::Frames(vec![
+        Some(Keyframes::Keys(vec![
             Keyframe {
                 time: 0.0,
                 value: Rgba8::new(1, 2, 3, 4)
@@ -511,7 +511,7 @@ fn l08_flash_below_1_21_80_is_unknown_and_dropped_by_the_step() {
     assert!(lights.flash.is_none());
     assert_eq!(
         lights.orbital.unwrap().sun.unwrap().illuminance,
-        Some(Keyframes::Constant(5.0))
+        Some(Keyframes::Single(5.0))
     );
     // The member a newer struct declares is gone; the other unknown member stays.
     let written = document.to_json().unwrap();
@@ -615,7 +615,7 @@ fn l13_a_sun_key_outside_the_day_is_dropped() {
             .sun
             .unwrap()
             .illuminance,
-        Some(Keyframes::Frames(vec![Keyframe {
+        Some(Keyframes::Keys(vec![Keyframe {
             time: 0.0,
             value: 1.0
         }]))
@@ -649,16 +649,16 @@ fn the_games_lighting_values_stand_in_for_absent_members() {
             value: 1.0
         }
     );
-    assert_eq!(orbital.moon_illuminance(), Keyframes::Constant(0.27));
-    assert_eq!(orbital.sun_color(), Keyframes::Constant(Rgb8::WHITE));
-    assert_eq!(orbital.moon_color(), Keyframes::Constant(Rgb8::WHITE));
-    assert_eq!(orbital.orbital_offset_degrees(), Keyframes::Constant(0.0));
+    assert_eq!(orbital.moon_illuminance(), Keyframes::Single(0.27));
+    assert_eq!(orbital.sun_color(), Keyframes::Single(Rgb8::WHITE));
+    assert_eq!(orbital.moon_color(), Keyframes::Single(Rgb8::WHITE));
+    assert_eq!(orbital.orbital_offset_degrees(), Keyframes::Single(0.0));
     assert_eq!(lights.flash().color(), Rgb8::WHITE);
     assert_eq!(lights.flash().illuminance(), 1.0);
     assert_eq!(document.emissive().desaturation(), 0.1);
     assert_eq!(document.ambient().color, Keyframes::at_noon(Rgb8::WHITE));
     assert_eq!(document.ambient().illuminance, Keyframes::at_noon(0.02));
-    assert_eq!(document.sky().intensity(), Keyframes::Constant(1.0));
+    assert_eq!(document.sky().intensity(), Keyframes::Single(1.0));
     // Nothing of that is written back.
     assert_eq!(
         json(&document.to_json().unwrap()),
@@ -1144,7 +1144,7 @@ fn a01_the_vanilla_atmosphere_file_upgrades_unchanged() {
     let stamped = loads::<AtmosphereSettings>(&text.replace("1.21.40", "1.26.20"));
     assert_eq!(stamped.value(), document.value());
     // Keys are sorted by time.
-    let Some(Keyframes::Frames(start)) = document.horizon_blend_stops.clone().unwrap().start else {
+    let Some(Keyframes::Keys(start)) = document.horizon_blend_stops.clone().unwrap().start else {
         panic!("frames")
     };
     let times: Vec<f32> = start.iter().map(|frame| frame.time).collect();
@@ -1162,10 +1162,10 @@ fn a02_every_member_takes_a_single_value() {
     );
     let document = loads::<AtmosphereSettings>(&text);
     assert!(document.diagnostics().is_empty());
-    assert_eq!(document.rayleigh_strength, Some(Keyframes::Constant(50.0)));
+    assert_eq!(document.rayleigh_strength, Some(Keyframes::Single(50.0)));
     assert_eq!(
         document.sky_zenith_color,
-        Some(Keyframes::Constant(Rgb8::new(1, 2, 3)))
+        Some(Keyframes::Single(Rgb8::new(1, 2, 3)))
     );
     assert_eq!(
         document.sky_horizon_color.clone().unwrap().frames(),
@@ -1176,7 +1176,7 @@ fn a02_every_member_takes_a_single_value() {
     );
     assert_eq!(
         document.horizon_blend_stops.clone().unwrap().mie_start,
-        Some(Keyframes::Constant(1.2))
+        Some(Keyframes::Single(1.2))
     );
     round_trip(document.value());
 }
@@ -1187,7 +1187,7 @@ fn a03_an_absent_member_alone_takes_the_games_keyframes() {
         loads::<AtmosphereSettings>(&atmosphere("1.26.20", r#""sky_zenith_color": [9, 9, 9]"#));
     assert_eq!(
         document.sky_zenith_color(),
-        Keyframes::Constant(Rgb8::new(9, 9, 9))
+        Keyframes::Single(Rgb8::new(9, 9, 9))
     );
     let horizon = document.sky_horizon_color().frames();
     assert_eq!(horizon.len(), 11);

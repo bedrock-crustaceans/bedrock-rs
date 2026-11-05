@@ -51,7 +51,7 @@ fn the_constructors_write_documents_that_read_back() {
 #[test]
 fn a_full_lighting_value_round_trips() {
     let frames = |values: &[(f32, f32)]| {
-        Keyframes::Frames(
+        Keyframes::Keys(
             values
                 .iter()
                 .map(|&(time, value)| Keyframe { time, value })
@@ -63,11 +63,11 @@ fn a_full_lighting_value_round_trips() {
             orbital: Some(OrbitalLights {
                 sun: Some(OrbitalLight {
                     illuminance: Some(frames(&[(0.0, 110_000.0), (0.5, 0.0), (1.0, 0.25)])),
-                    color: Some(Keyframes::Constant(Rgb8::new(1, 2, 3))),
+                    color: Some(Keyframes::Single(Rgb8::new(1, 2, 3))),
                     extra: UnknownMembers::default(),
                 }),
                 moon: Some(OrbitalLight::default()),
-                orbital_offset_degrees: Some(Keyframes::Constant(359.99)),
+                orbital_offset_degrees: Some(Keyframes::Single(359.99)),
                 extra: UnknownMembers::default(),
             }),
             flash: Some(Flash {
@@ -175,7 +175,7 @@ fn a_value_outside_its_range_is_refused_with_its_path() {
 
     let cubemap = CubemapSettings {
         lighting: Some(CubemapLighting {
-            ambient_light_illuminance: Some(Keyframes::Frames(vec![
+            ambient_light_illuminance: Some(Keyframes::Keys(vec![
                 Keyframe {
                     time: 0.0,
                     value: 1.0,
@@ -231,18 +231,18 @@ fn keyframes_the_loader_refuses_are_not_written() {
     const AT: &str = "minecraft:cubemap_settings/lighting/ambient_light_illuminance";
     let frame = |time: f32| Keyframe { time, value: 1.0 };
     // No keyframe at all: the loader refuses an empty object.
-    assert_eq!(refused(&keyframed(Keyframes::Frames(Vec::new()))), AT);
+    assert_eq!(refused(&keyframed(Keyframes::Keys(Vec::new()))), AT);
     // A time outside the day would be dropped on load.
     for time in [1.5, -0.25, f32::NAN, f32::INFINITY] {
         assert_eq!(
-            refused(&keyframed(Keyframes::Frames(vec![frame(0.0), frame(time)]))),
+            refused(&keyframed(Keyframes::Keys(vec![frame(0.0), frame(time)]))),
             AT,
             "{time}"
         );
     }
     // Two keyframes of one time would be one member.
     assert_eq!(
-        refused(&keyframed(Keyframes::Frames(vec![
+        refused(&keyframed(Keyframes::Keys(vec![
             frame(0.5),
             frame(0.25),
             frame(0.5)
@@ -250,14 +250,14 @@ fn keyframes_the_loader_refuses_are_not_written() {
         AT
     );
     // Both ends of the day are written; unsorted keyframes read back sorted.
-    let written = keyframed(Keyframes::Frames(vec![frame(1.0), frame(0.0)]))
+    let written = keyframed(Keyframes::Keys(vec![frame(1.0), frame(0.0)]))
         .to_json()
         .unwrap();
     let read = loads::<CubemapSettings>(&written);
     assert!(read.diagnostics().is_empty());
     assert_eq!(
         read.lighting.clone().unwrap().ambient_light_illuminance,
-        Some(Keyframes::Frames(vec![frame(0.0), frame(1.0)]))
+        Some(Keyframes::Keys(vec![frame(0.0), frame(1.0)]))
     );
 }
 

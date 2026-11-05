@@ -69,66 +69,10 @@ impl Rgba8 {
     }
 }
 
-/// One keyframe: a value at a time of day.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Keyframe<T> {
-    /// The time of day in `[0, 1]`: 0 is noon, 0.25 sunset, 0.5 midnight, 0.75 sunrise.
-    pub time: f32,
-    /// The value at that time.
-    pub value: T,
-}
-
-/// A value that may change over the day.
-///
-/// JSON: a single value, or an object `{"<time>": value, …}` with at least one member whose
-/// keys are numbers written as strings. The game interpolates linearly between keyframes.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Keyframes<T> {
-    /// A single value, the same all day (JSON: the value itself).
-    Constant(T),
-    /// Keyframes sorted by time (JSON: the object form). A key outside `[0, 1]` is dropped on
-    /// load, as the game drops it.
-    Frames(Vec<Keyframe<T>>),
-}
-
-impl<T> Keyframes<T> {
-    /// One keyframe at time 0: what the game's upgrade steps turn a plain value into.
-    #[must_use]
-    pub fn at_noon(value: T) -> Self {
-        Self::Frames(vec![Keyframe { time: 0.0, value }])
-    }
-
-    /// The same keyframes with each value converted by `convert`.
-    #[must_use]
-    pub fn map<U>(self, mut convert: impl FnMut(T) -> U) -> Keyframes<U> {
-        match self {
-            Self::Constant(value) => Keyframes::Constant(convert(value)),
-            Self::Frames(frames) => Keyframes::Frames(
-                frames
-                    .into_iter()
-                    .map(|frame| Keyframe {
-                        time: frame.time,
-                        value: convert(frame.value),
-                    })
-                    .collect(),
-            ),
-        }
-    }
-}
-
-impl<T: Clone> Keyframes<T> {
-    /// The keyframes as the game holds them: a single value is one keyframe at time 0.
-    #[must_use]
-    pub fn frames(&self) -> Vec<Keyframe<T>> {
-        match self {
-            Self::Constant(value) => vec![Keyframe {
-                time: 0.0,
-                value: value.clone(),
-            }],
-            Self::Frames(frames) => frames.clone(),
-        }
-    }
-}
+/// A value that may change over the day (shapes'). The settings' reader takes a single value,
+/// or an object `{"<time>": value, …}` with at least one member whose keys are numbers written
+/// as strings, and drops a key outside `[0, 1]` on load, as the game drops it.
+pub use bedrock_addon_shared_shapes::{Keyframe, Keyframes};
 
 /// Three numbers, one per colour channel (the colour-grading controls).
 ///

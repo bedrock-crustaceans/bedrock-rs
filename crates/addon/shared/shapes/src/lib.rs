@@ -10,6 +10,7 @@
 //! - [`descriptor`]: [`ItemDescriptor`], [`BlockDescriptor`] and [`BlockSpecifier`], how a
 //!   document names an item or a block.
 //! - [`flag`]: [`TrueOnly`], a member whose one allowed value is `true`.
+//! - [`keyframes`]: [`Keyframes`], a value that may change over the day.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
 //!   placement.
 //! - [`one_or_many`]: [`OneOrMany`], one value or an array of them, as written.
@@ -19,6 +20,7 @@
 pub mod color;
 pub mod descriptor;
 pub mod flag;
+pub mod keyframes;
 pub mod menu;
 pub mod one_or_many;
 pub mod png;
@@ -29,6 +31,7 @@ pub use descriptor::{
     BlockDescriptor, BlockSpecifier, ItemDescriptor, ItemDescriptorForm, StateValue,
 };
 pub use flag::{NotTrue, TrueOnly};
+pub use keyframes::{Keyframe, Keyframes};
 pub use menu::{CreativeCategory, MenuCategory};
 pub use one_or_many::OneOrMany;
 pub use png::{PNG_SIGNATURE, PngHeader, png_size};

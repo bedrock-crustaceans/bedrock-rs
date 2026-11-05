@@ -63,7 +63,7 @@ pub struct HorizonBlendStops {
 
 /// Keyframes from `(time, value)` pairs.
 fn table<T: Copy>(pairs: &[(f32, T)]) -> Keyframes<T> {
-    Keyframes::Frames(
+    Keyframes::Keys(
         pairs
             .iter()
             .map(|&(time, value)| Keyframe { time, value })
@@ -78,7 +78,7 @@ const STRENGTH_TIMES: [f32; 8] = [0.0, 0.25, 0.3, 0.30375, 0.325, 0.6, 0.7075, 0
 
 /// Keyframes of `values` at `times`.
 fn timed(times: [f32; 8], values: [f32; 8]) -> Keyframes<f32> {
-    Keyframes::Frames(
+    Keyframes::Keys(
         times
             .into_iter()
             .zip(values)

@@ -555,7 +555,7 @@ fn the_keyframes_of_one_member_are_read_and_merged_in_near_linear_time() {
             let read = read::keyframes(&node, &mut d, |n, d| {
                 read::float_in(Range::new(0.0, 10.0), n, d)
             });
-            let Ok(Keyframes::Frames(frames)) = read else {
+            let Ok(Keyframes::Keys(frames)) = read else {
                 panic!("frames")
             };
             // Half of the keys stand, each the later of its two; the other half is reported.

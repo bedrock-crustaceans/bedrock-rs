@@ -178,7 +178,7 @@ fn settings_that_break_a_rule_of_the_schema_are_not_written() {
     keyed.volumetric = Some(FogVolumetricCollection {
         density: Some(FogVolumetricDensityCollection {
             air: Some(FogVolumetricDensitySetting {
-                max_density: Some(Keyframed::Keys(vec![(0.0, 0.1), (0.5, 0.2)])),
+                max_density: Some(Keyframed::from_pairs([(0.0, 0.1), (0.5, 0.2)])),
                 ..FogVolumetricDensitySetting::default()
             }),
             ..FogVolumetricDensityCollection::default()

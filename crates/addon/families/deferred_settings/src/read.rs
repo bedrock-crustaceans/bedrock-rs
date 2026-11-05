@@ -686,7 +686,7 @@ pub(crate) fn keyframes<'a, T>(
         for finding in own {
             d.push(finding);
         }
-        return read.map(Keyframes::Constant);
+        return read.map(Keyframes::Single);
     }
     let m = members(node, d)?;
     let mut frames = Vec::new();
@@ -728,7 +728,7 @@ pub(crate) fn keyframes<'a, T>(
     if !any || frames.is_empty() {
         return Err(node.error(DiagnosticCode::InvalidValue { text: None }, d));
     }
-    Ok(Keyframes::Frames(standing(frames, d)))
+    Ok(Keyframes::Keys(standing(frames, d)))
 }
 
 /// The keyframes that stand, by time: of the keyframes of one time the last in `frames`

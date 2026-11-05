@@ -625,7 +625,7 @@ fn c14_keyframes_engine_gate() {
     // Sorted by key.
     assert_eq!(
         air.max_density,
-        Some(Keyframed::Keys(vec![(0.0, 0.02), (0.5, 0.1)]))
+        Some(Keyframed::from_pairs([(0.0, 0.02), (0.5, 0.1)]))
     );
     round_trip(&document, |t| parse(t, &engine(1, 26, 30)));
     // A single value needs no such engine.
@@ -757,7 +757,7 @@ fn c14_two_keys_of_one_time_are_one_keyframe() {
     // The later spelling of the time stands.
     assert_eq!(
         air.max_density,
-        Some(Keyframed::Keys(vec![(0.0, 0.3), (0.5, 0.2)]))
+        Some(Keyframed::from_pairs([(0.0, 0.3), (0.5, 0.2)]))
     );
     round_trip(&document, |t| parse(t, &pack()));
 }
@@ -773,7 +773,7 @@ fn a_hand_built_keyframe_list_holding_one_time_twice_is_not_written() {
     let with = |keys: Vec<(f32, f32)>| {
         let mut settings = document.value().clone();
         let density = settings.volumetric.as_mut().unwrap().density.as_mut();
-        density.unwrap().air.as_mut().unwrap().max_density = Some(Keyframed::Keys(keys));
+        density.unwrap().air.as_mut().unwrap().max_density = Some(Keyframed::from_pairs(keys));
         settings.to_json()
     };
     let member = "minecraft:fog_settings/volumetric/density/air/max_density";
@@ -795,7 +795,7 @@ fn a_hand_built_keyframe_list_holding_one_time_twice_is_not_written() {
     let again = loaded(parse(&written, &pack()));
     assert_eq!(
         max_density(&again),
-        Keyframed::Keys(vec![(0.0, 0.1), (0.25, 0.2), (0.5, 0.3)])
+        Keyframed::from_pairs([(0.0, 0.1), (0.25, 0.2), (0.5, 0.3)])
     );
 }
 
@@ -828,8 +828,12 @@ fn c14_minus_zero_and_zero_are_one_keyframe_deviation() {
             panic!("a single value: {keys}");
         };
         // The later key stands whole: its value and its time as written.
-        assert_eq!(times, vec![(0.0, value), (0.5, 0.2)], "{keys}");
-        assert_eq!(times[0].0.is_sign_negative(), sign_negative, "{keys}");
+        assert_eq!(
+            Keyframed::Keys(times.clone()),
+            Keyframed::from_pairs([(0.0, value), (0.5, 0.2)]),
+            "{keys}"
+        );
+        assert_eq!(times[0].time.is_sign_negative(), sign_negative, "{keys}");
         assert_eq!(
             dropped_keyframes(document.diagnostics()),
             vec![format!("{AT}/{dropped}")],

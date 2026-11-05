@@ -426,7 +426,7 @@ fn k01_the_documentation_example_loads_and_its_values_are_the_games() {
     assert_eq!(lighting.ambient_light_illuminance, None);
     assert_eq!(
         lighting.ambient_light_illuminance(),
-        Keyframes::Frames(vec![
+        Keyframes::Keys(vec![
             Keyframe {
                 time: 0.0,
                 value: 5.625

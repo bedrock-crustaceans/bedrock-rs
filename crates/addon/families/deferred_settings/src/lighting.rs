@@ -149,7 +149,7 @@ pub(crate) const DEFAULT_SKY_INTENSITY: f32 = 1.0;
 
 /// The game's sun strength over the day.
 fn default_sun_illuminance() -> Keyframes<f32> {
-    Keyframes::Frames(
+    Keyframes::Keys(
         [
             (0.0, 109_880.0),
             (0.25, 20000.0),
@@ -168,7 +168,7 @@ fn default_sun_illuminance() -> Keyframes<f32> {
 // The game's values for a member the document leaves out (the same at every format version).
 super::defaults! {
     OrbitalLights<Rgb8> {
-        orbital_offset_degrees: Keyframes<f32> = Keyframes::Constant(0.0);
+        orbital_offset_degrees: Keyframes<f32> = Keyframes::Single(0.0);
     }
 }
 
@@ -190,7 +190,7 @@ impl OrbitalLights<Rgb8> {
         self.moon
             .as_ref()
             .and_then(|moon| moon.illuminance.clone())
-            .unwrap_or(Keyframes::Constant(0.27))
+            .unwrap_or(Keyframes::Single(0.27))
     }
 
     /// The sun's colour over the day, or white when the document leaves it out.
@@ -199,7 +199,7 @@ impl OrbitalLights<Rgb8> {
         self.sun
             .as_ref()
             .and_then(|sun| sun.color.clone())
-            .unwrap_or(Keyframes::Constant(Rgb8::WHITE))
+            .unwrap_or(Keyframes::Single(Rgb8::WHITE))
     }
 
     /// The moon's colour over the day, or white when the document leaves it out.
@@ -208,7 +208,7 @@ impl OrbitalLights<Rgb8> {
         self.moon
             .as_ref()
             .and_then(|moon| moon.color.clone())
-            .unwrap_or(Keyframes::Constant(Rgb8::WHITE))
+            .unwrap_or(Keyframes::Single(Rgb8::WHITE))
     }
 }
 
@@ -227,7 +227,7 @@ super::defaults! {
 
 super::defaults! {
     Sky {
-        intensity: Keyframes<f32> = Keyframes::Constant(DEFAULT_SKY_INTENSITY);
+        intensity: Keyframes<f32> = Keyframes::Single(DEFAULT_SKY_INTENSITY);
     }
 }
 
@@ -698,11 +698,11 @@ mod codec {
             }
         };
         let color = light.color.map(|color| match color {
-            Keyframes::Constant(value) => {
+            Keyframes::Single(value) => {
                 dropped(value.alpha, at.clone());
-                Keyframes::Constant(value.rgb())
+                Keyframes::Single(value.rgb())
             }
-            Keyframes::Frames(frames) => Keyframes::Frames(
+            Keyframes::Keys(frames) => Keyframes::Keys(
                 frames
                     .into_iter()
                     .map(|frame| {
