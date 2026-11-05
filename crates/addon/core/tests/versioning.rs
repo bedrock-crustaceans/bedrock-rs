@@ -9,6 +9,8 @@ mod toy;
 
 #[path = "versioning/chain.rs"]
 mod chain;
+#[path = "versioning/close.rs"]
+mod close;
 #[path = "versioning/components.rs"]
 mod components;
 #[path = "versioning/envelope.rs"]

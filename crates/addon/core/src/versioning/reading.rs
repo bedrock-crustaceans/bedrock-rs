@@ -258,7 +258,8 @@ impl TextReading {
 
     /// Whether a text from `source` gets the JSON size check: a document input read from
     /// JSON (an MCB source is a binary input).
-    pub fn sizes_json(self, source: DocumentSource) -> bool {
-        self.version_input == VersionInput::Document && source == DocumentSource::Json
+    pub const fn sizes_json(self, source: DocumentSource) -> bool {
+        matches!(self.version_input, VersionInput::Document)
+            && matches!(source, DocumentSource::Json)
     }
 }

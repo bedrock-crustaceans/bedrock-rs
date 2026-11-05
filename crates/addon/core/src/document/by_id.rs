@@ -9,7 +9,8 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 
 use super::combine::{CombineRule, Combined, Contribution, rank};
-use super::registry::{self, Slot};
+use super::layered::{Layered, Slot};
+use super::registry;
 use super::{Definition, Document, Origin, Rejected};
 use crate::diagnostic::{Diagnostic, Diagnostics};
 use crate::id::{Id, Kind};
@@ -21,9 +22,7 @@ use crate::load::{BuiltIns, LoadOptions, Registered};
 /// Load order: by the first definition of each identifier in the family's walk, an override
 /// taking the position of the definition it replaces.
 pub struct Registry<T: Definition> {
-    entries: IndexMap<Id<T::Kind>, Slot<T>>,
-    /// How many slots have an effective document.
-    len: usize,
+    layered: Layered<Id<T::Kind>, Document<T>>,
     rejected: Vec<Rejected>,
     /// Per-document, rejected and combine-time findings, in walk order.
     diagnostics: Diagnostics,
@@ -36,7 +35,7 @@ pub struct Registry<T: Definition> {
 impl<T: Definition> Registry<T> {
     /// The effective definition of `id`, or `None` if no pack defines it.
     pub fn get(&self, id: &Id<T::Kind>) -> Option<&Document<T>> {
-        self.entries.get(id)?.effective.as_ref()
+        self.layered.get(id)
     }
 
     /// [`get`](Self::get), plus whether a missing id is a known built-in.
@@ -56,23 +55,23 @@ impl<T: Definition> Registry<T> {
 
     /// Whether a pack defines `id`.
     pub fn contains(&self, id: &Id<T::Kind>) -> bool {
-        self.get(id).is_some()
+        self.layered.contains(id)
     }
 
     /// How many effective definitions.
     pub fn len(&self) -> usize {
-        self.len
+        self.layered.len()
     }
 
     /// No effective definitions.
     pub fn is_empty(&self) -> bool {
-        self.len == 0
+        self.layered.is_empty()
     }
 
     /// `(id, effective document)` in load order. A named type ([`registry::Iter`]) because
     /// `IntoIterator for &Registry` needs one; `std::collections::hash_map` style.
     pub fn iter(&self) -> registry::Iter<'_, T> {
-        registry::Iter::new(self.entries.iter())
+        self.layered.iter()
     }
 
     /// Every definition of `id`, effective first, then the ones it shadowed (top-first).
@@ -82,7 +81,7 @@ impl<T: Definition> Registry<T> {
     /// replaces is listed here whatever `keep_shadowed` says, with no effective one before it:
     /// the beta definition is effective in [`beta`](Self::beta).
     pub fn layers(&self, id: &Id<T::Kind>) -> registry::Layers<'_, T> {
-        registry::Layers::new(self.entries.get(id))
+        self.layered.layers(id)
     }
 
     /// Every identifier a definition is kept of, with all of them: `(id, layers)` in load
@@ -101,10 +100,7 @@ impl<T: Definition> Registry<T> {
     /// nothing is kept of is not listed. Whether the first layer is the effective one is
     /// [`get`](Self::get)`(id).is_some()`.
     pub fn all_layers(&self) -> impl Iterator<Item = (&Id<T::Kind>, registry::Layers<'_, T>)> + '_ {
-        self.entries
-            .iter()
-            .map(|(id, slot)| (id, registry::Layers::new(Some(slot))))
-            .filter(|(_, layers)| layers.len() > 0)
+        self.layered.all_layers()
     }
 
     /// Files that failed to load, with their diagnostics.
@@ -123,6 +119,12 @@ impl<T: Definition> Registry<T> {
         self.diagnostics.iter().chain(beta)
     }
 
+    /// The combine's own collection of the findings, moves and places included.
+    #[cfg(test)]
+    pub(crate) fn held_diagnostics(&self) -> &Diagnostics {
+        &self.diagnostics
+    }
+
     /// Beta documents (`"format_version": "beta"`), when `LoadOptions::beta_apis` allows them.
     /// Stored boxed (`Registry<T::Beta>` names `Registry<NoBeta>` one level down).
     ///
@@ -135,15 +137,12 @@ impl<T: Definition> Registry<T> {
     /// definition, in load order (stable first): what the `combine` of another collection sees
     /// of this one through `StackCx::registered`. A rejected file registers nothing.
     pub fn registered(&self) -> Registered {
-        let stable = self.entries.iter().filter_map(|(id, slot)| {
-            let document = slot.effective.as_ref()?;
-            Some((id.clone(), document.origin().pack.clone()))
-        });
+        let stable = self
+            .iter()
+            .map(|(id, document)| (id.clone(), document.origin().pack.clone()));
         let beta = self.beta().into_iter().flat_map(|beta| {
-            beta.entries.iter().filter_map(|(id, slot)| {
-                let document = slot.effective.as_ref()?;
-                Some((id.clone(), document.origin().pack.clone()))
-            })
+            beta.iter()
+                .map(|(id, document)| (id.clone(), document.origin().pack.clone()))
         });
         Registered::new::<T::Kind>(stable.chain(beta))
     }
@@ -231,7 +230,7 @@ pub struct RegistryBuilder<T: Definition> {
 /// One registry's slots while it is built.
 struct Combiner<T: Definition> {
     rule: CombineRule<T>,
-    entries: IndexMap<Id<T::Kind>, Slot<T>>,
+    entries: IndexMap<Id<T::Kind>, Slot<Document<T>>>,
     diagnostics: Diagnostics,
 }
 
@@ -319,6 +318,22 @@ impl<T: Definition> RegistryBuilder<T> {
         self.stable.diagnostics.push(diagnostic);
     }
 
+    /// The registry of a walk's contributions, in walk order: [`new`](Self::new), a
+    /// [`push`](Self::push) of each and [`finish`](Self::finish), for a family whose combine
+    /// adds no finding of its own.
+    pub fn combine(
+        parsed: impl IntoIterator<Item = Contribution<T>>,
+        rule: CombineRule<T>,
+        beta_rule: CombineRule<T::Beta>,
+        options: &LoadOptions,
+    ) -> Registry<T> {
+        let mut builder = Self::new(rule, beta_rule, options);
+        for contribution in parsed {
+            builder.push(contribution);
+        }
+        builder.finish()
+    }
+
     /// The registry.
     pub fn finish(self) -> Registry<T> {
         let Self {
@@ -367,7 +382,7 @@ fn apply_claims<T: Definition>(
         if rank(&claim.pack) >= rank(&effective.origin().pack) {
             continue;
         }
-        match &combiner.rule {
+        match combiner.rule.base() {
             CombineRule::TopWinsFallback {
                 fallback: Some(notice),
             } => {
@@ -399,7 +414,7 @@ fn claim_beta<T: Definition>(
     claims: &IndexMap<Id<T::Kind>, Origin>,
     reported: &HashSet<Id<T::Kind>>,
 ) {
-    let CombineRule::ClaimBeforeValidate { claimed } = &stable.rule else {
+    let CombineRule::ClaimBeforeValidate { claimed } = stable.rule.base() else {
         return;
     };
     for (id, claim) in claims {
@@ -457,13 +472,8 @@ fn finish<T: Definition>(
         slot.shadowed
             .sort_by_key(|document| rank(&document.origin().pack));
     }
-    let len = entries
-        .values()
-        .filter(|slot| slot.effective.is_some())
-        .count();
     Registry {
-        entries,
-        len,
+        layered: Layered::new(entries),
         rejected,
         diagnostics,
         beta,

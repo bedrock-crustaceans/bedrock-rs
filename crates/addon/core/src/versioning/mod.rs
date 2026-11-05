@@ -17,6 +17,7 @@
 
 mod chain;
 mod component;
+mod file;
 mod load;
 mod payload;
 mod range;
@@ -31,6 +32,7 @@ pub use component::{
     ComponentSection, check_experimental_fields, check_fields_released, check_fields_since_engine,
     check_released, parse_component, parse_component_map, validate_components,
 };
+pub use file::{BelowFloor, FileFamily};
 pub use load::{
     Parsed, file_version, finish, load, member_version, no_parser_version, parse_as_written,
 };
@@ -467,6 +469,9 @@ pub trait Family: Sized + 'static {
     }
     /// Whether the envelope's shape is checked.
     const ENVELOPE: EnvelopeCheck = EnvelopeCheck::Always;
+    /// What a document below [`FLOOR`](Self::FLOOR) is told. Default
+    /// [`BelowFloor::UseFormatVersion`], what `load` raises; not read by `load` yet.
+    const BELOW_FLOOR: BelowFloor = BelowFloor::UseFormatVersion;
     /// The error mask of the slice that parses a document. Default
     /// [`ErrorMask::Unstrict`]; a family opts in per slice, e.g. entity: `Unstrict` for the
     /// legacy structs below 1.21.89, `Strict` from `Legacy::ActorDocumentCorrected` on and
@@ -520,6 +525,19 @@ pub trait Family: Sized + 'static {
     /// [`Reading::unknown`].
     fn reading(index: StructIndex, source: crate::load::DocumentSource) -> Reading {
         Reading::from_knobs(Self::null_rule(index), Self::error_mask(index), source)
+    }
+    /// The post-parse hook a file's load closes with: rewrites the generic findings of a
+    /// parse into the family's vanilla texts and, when the file `failed`, adds the family's
+    /// closing line. `document` is the text, when it is one; `path` is the file's. The
+    /// default does nothing. Nothing calls it yet; the one-file families' write-back
+    /// sub-trait [`FileFamily`] closes through it unless it says otherwise.
+    #[allow(unused_variables)]
+    fn close(
+        diagnostics: &mut Diagnostics,
+        document: Option<JsonSlice<'_>>,
+        path: &crate::pack_identity::PackPath,
+        failed: bool,
+    ) {
     }
     /// The severity of `EmptyDocument` for an empty file (it is never loaded).
     const EMPTY_DOCUMENT: Severity = Severity::Error;

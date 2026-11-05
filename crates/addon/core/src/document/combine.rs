@@ -130,6 +130,81 @@ pub enum CombineRule<T> {
         /// (`ClientBiomeShadowsLowerPacks` for client biomes).
         claimed: Option<Notice>,
     },
+    /// `rule` between definitions of different packs; between two definitions of one pack,
+    /// `within_pack` decides instead, and nothing is merged or accumulated
+    /// ([`within_pack`](Self::within_pack)).
+    Tied {
+        /// The rule across packs.
+        rule: Box<CombineRule<T>>,
+        /// The tie within one pack.
+        within_pack: PackTie,
+    },
+}
+
+/// Which of two definitions of one identifier in one pack wins.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TieWinner {
+    /// The first in walk order stays; the later one is dropped.
+    First,
+    /// The later in walk order replaces the earlier one.
+    Last,
+}
+
+/// The tie between two definitions of one identifier in one pack
+/// ([`CombineRule::within_pack`]): the winner, and the notice raised at the loser.
+///
+/// Without a tie each rule keeps its own: the later definition with a
+/// [`Notice::duplicate`] at the earlier one, and under `BottomWins` the earlier one with the
+/// notice at the later one.
+///
+/// The tie compares the incoming definition with the current effective one only, not with
+/// every definition the pack gave before it. The loser lands in the slot's shadowed list, so
+/// it is seen in `Registry::layers` under `LoadOptions::keep_shadowed`. Fog and `feature_rules`,
+/// whose own combines this tie stands for, drop the loser today; their migration onto it pins
+/// `layers()` before and after.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PackTie {
+    /// Which definition wins.
+    pub winner: TieWinner,
+    /// Raised at the definition that loses.
+    pub notice: Option<Notice>,
+}
+
+impl PackTie {
+    /// The first definition of the pack wins; `notice` at each later one.
+    pub fn first(notice: Option<Notice>) -> Self {
+        Self {
+            winner: TieWinner::First,
+            notice,
+        }
+    }
+
+    /// The later definition of the pack wins; `notice` at the one it replaces.
+    pub fn last(notice: Option<Notice>) -> Self {
+        Self {
+            winner: TieWinner::Last,
+            notice,
+        }
+    }
+
+    /// The winner of `existing` and `incoming`, both of one pack, and the loser.
+    fn decide<T>(
+        &self,
+        existing: Document<T>,
+        incoming: Document<T>,
+        diagnostics: &mut Diagnostics,
+    ) -> Combined<T> {
+        match self.winner {
+            TieWinner::First => {
+                notify(self.notice.as_ref(), &incoming, diagnostics);
+                keep(existing, incoming)
+            }
+            TieWinner::Last => {
+                notify(self.notice.as_ref(), &existing, diagnostics);
+                keep(incoming, existing)
+            }
+        }
+    }
 }
 
 impl<T> CombineRule<T> {
@@ -151,12 +226,35 @@ impl<T> CombineRule<T> {
             replaced: Some(Notice::duplicate()),
         }
     }
+
+    /// The rule with `tie` deciding between two definitions of one pack (a tied rule's tie
+    /// replaced): fog keeps the first file of a pack, `PackTie::first(Some(Notice::shadowed()))`.
+    #[must_use]
+    pub fn within_pack(self, tie: PackTie) -> Self {
+        let rule = match self {
+            Self::Tied { rule, .. } => rule,
+            rule => Box::new(rule),
+        };
+        Self::Tied {
+            rule,
+            within_pack: tie,
+        }
+    }
+
+    /// The rule across packs: the rule itself, or a tied rule's own.
+    pub(crate) fn base(&self) -> &Self {
+        match self {
+            Self::Tied { rule, .. } => rule.base(),
+            rule => rule,
+        }
+    }
 }
 
-/// Prints the rule's name only.
+/// Prints the rule's name only (a tied rule as `Tied(<rule>)`).
 impl<T> fmt::Debug for CombineRule<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            Self::Tied { rule, .. } => return f.debug_tuple("Tied").field(rule).finish(),
             Self::TopWins { .. } => "TopWins",
             Self::BottomWins { .. } => "BottomWins",
             Self::LastLoadedWins { .. } => "LastLoadedWins",
@@ -296,13 +394,20 @@ impl<T> CombineRule<T> {
                 }
                 keep(winner, other)
             }
+            Self::Tied { rule, within_pack } => {
+                if same_pack {
+                    within_pack.decide(existing, incoming, diagnostics)
+                } else {
+                    rule.combine(Some(existing), incoming, diagnostics)
+                }
+            }
         }
     }
 
     /// The first definition of an identifier: effective, unless an `EngineVersionMerge` family
     /// ignores it.
     fn first(&self, incoming: Document<T>, diagnostics: &mut Diagnostics) -> Combined<T> {
-        if let Self::EngineVersionMerge { decide, .. } = self
+        if let Self::EngineVersionMerge { decide, .. } = self.base()
             && decide(None, &incoming, diagnostics) == EngineVersionDecision::Ignore
         {
             return Combined {

@@ -1,8 +1,6 @@
 //! One file of a camera or aim-assist family through the version chain: the text checks, the
 //! public parse stage, the family's vanilla texts and the document or its rejection.
 
-use std::convert::Infallible;
-
 use facet::Facet;
 
 use super::shape::{self, Shape};
@@ -12,36 +10,17 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at,
-    probe_envelope, strip_bom,
+    EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, probe_envelope,
+    strip_bom,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersionInput;
-use bedrock_addon_core::versioning::{
-    Family, Identity, Loaded, ParseCx, Parsed, VersionStruct, finish, parse_as_written,
-};
+use bedrock_addon_core::versioning::{Identity, Loaded, ParseCx, Parsed, finish, parse_as_written};
 
 /// A family of this module: no beta struct, and its own texts for the generic findings.
-pub trait FileFamily: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
-    /// Rewrites the generic findings of a parse into the family's vanilla texts and, when the
-    /// file `failed`, adds the family's closing line. `document` is the text, when it is one.
-    fn close(
-        diagnostics: &mut Diagnostics,
-        document: Option<JsonSlice<'_>>,
-        path: &PackPath,
-        failed: bool,
-    );
-
-    /// The whole document of `value`, `format_version` included.
-    ///
-    /// # Errors
-    ///
-    /// `EncodeError::NotRepresentable` when `value` holds something JSON cannot spell, such as a
-    /// non-finite number.
-    fn document(value: &Self::Latest) -> Result<Value, EncodeError>;
-}
+pub use bedrock_addon_core::versioning::FileFamily;
 
 /// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
 /// deep.
@@ -143,7 +122,7 @@ pub fn parse_file<F: FileFamily>(
 fn unreadable<F: FileFamily>(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(malformed());
-    F::close(&mut diagnostics, None, &origin.path, true);
+    <F as FileFamily>::close(&mut diagnostics, None, &origin.path, true);
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
 }
@@ -158,11 +137,11 @@ fn finish_file<F: FileFamily>(
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
     if let Some(Loaded::Stable(value)) = outcome.value {
-        F::close(&mut diagnostics, document, &origin.path, false);
+        <F as FileFamily>::close(&mut diagnostics, document, &origin.path, false);
         locate(&mut diagnostics, &origin);
         Ok(Document::new(value, origin, outcome.version, diagnostics))
     } else {
-        F::close(&mut diagnostics, document, &origin.path, true);
+        <F as FileFamily>::close(&mut diagnostics, document, &origin.path, true);
         locate(&mut diagnostics, &origin);
         Err(Rejected::new(origin, diagnostics))
     }
@@ -191,7 +170,7 @@ pub fn as_written<F: FileFamily>(
     let parsed = parse_as_written::<F>(document, cx);
     let mut diagnostics = parsed.diagnostics;
     let failed = parsed.value.is_none();
-    F::close(&mut diagnostics, Some(document), path, failed);
+    <F as FileFamily>::close(&mut diagnostics, Some(document), path, failed);
     locate(&mut diagnostics, &origin);
     match parsed.value {
         Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),

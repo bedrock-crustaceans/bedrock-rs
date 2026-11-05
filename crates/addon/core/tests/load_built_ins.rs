@@ -184,3 +184,15 @@ fn a_host_provider_is_preferred_over_the_tables() {
     detached.set_built_ins(Some(Arc::new(Host)));
     assert!(detached.built_ins().contains("block", "host:block"));
 }
+
+#[test]
+fn a_context_debug_prints_the_providers_as_present_or_absent() {
+    let mut cx = LoadContext::detached();
+    let absent = format!("{cx:?}");
+    assert!(absent.contains(r#"built_ins: "absent""#), "{absent}");
+    cx.set_built_ins(Some(Arc::new(Host)));
+    let present = format!("{cx:?}");
+    assert!(present.contains(r#"built_ins: "present""#), "{present}");
+    #[cfg(feature = "molang")]
+    assert!(present.contains(r#"molang: "absent""#), "{present}");
+}

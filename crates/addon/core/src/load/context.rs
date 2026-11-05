@@ -22,7 +22,7 @@ use crate::version::{
 ///
 /// Built per pack by the stack loaders; [`detached`](Self::detached) gives one for a file
 /// outside any stack, whose fields can then be set (`cx.beta_apis = true`).
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 #[non_exhaustive]
 #[allow(clippy::struct_excessive_bools)] // vanilla's flags, one field each
 pub struct LoadContext {
@@ -89,16 +89,39 @@ pub struct LoadContext {
     pub max_json_document_bytes: usize,
     /// The host's provider, shared from `LoadOptions::built_ins`
     /// ([`built_ins`](Self::built_ins), [`set_built_ins`](Self::set_built_ins)).
-    built_ins: Option<HostBuiltIns>,
+    built_ins: Option<Arc<dyn BuiltIns>>,
 }
 
-/// A host's provider on the context: `Debug` without asking the provider to be.
-#[derive(Clone)]
-struct HostBuiltIns(Arc<dyn BuiltIns>);
-
-impl fmt::Debug for HostBuiltIns {
+/// Prints the providers (`built_ins`, `molang`) as `present` or `absent`, as
+/// [`LoadOptions`] does, so neither has to be `Debug`.
+impl fmt::Debug for LoadContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("present")
+        let present = |present: bool| if present { "present" } else { "absent" };
+        let mut debug = f.debug_struct("LoadContext");
+        debug
+            .field("min_engine_version", &self.min_engine_version)
+            .field("molang_version", &self.molang_version)
+            .field("molang_experiments", &self.molang_experiments)
+            .field("is_base_game_pack", &self.is_base_game_pack)
+            .field("is_trusted_pack", &self.is_trusted_pack)
+            .field("pack_uuid", &self.pack_uuid)
+            .field("pack_type", &self.pack_type)
+            .field("runs_scripts", &self.runs_scripts)
+            .field("experiments", &self.experiments)
+            .field("beta_apis", &self.beta_apis)
+            .field("upcoming_creator_features", &self.upcoming_creator_features)
+            .field("engine_version", &self.engine_version)
+            .field("world_base_game_version", &self.world_base_game_version)
+            .field("client_render_identifiers", &self.client_render_identifiers);
+        #[cfg(feature = "molang")]
+        debug.field("molang", &present(self.molang.is_some()));
+        debug
+            .field("null_rule", &self.null_rule)
+            .field("strict_components", &self.strict_components)
+            .field("source", &self.source)
+            .field("max_json_document_bytes", &self.max_json_document_bytes)
+            .field("built_ins", &present(self.built_ins.is_some()))
+            .finish()
     }
 }
 
@@ -186,7 +209,7 @@ impl LoadContext {
             strict_components: false,
             source: DocumentSource::Json,
             max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,
-            built_ins: options.built_ins.clone().map(HostBuiltIns),
+            built_ins: options.built_ins.clone(),
         }
     }
 
@@ -196,7 +219,7 @@ impl LoadContext {
     pub fn built_ins(&self) -> &dyn BuiltIns {
         static TABLES: crate::vanilla::GeneratedBuiltIns = crate::vanilla::GeneratedBuiltIns;
         match &self.built_ins {
-            Some(host) => host.0.as_ref(),
+            Some(host) => host.as_ref(),
             None => &TABLES,
         }
     }
@@ -204,12 +227,12 @@ impl LoadContext {
     /// The host's provider, `None` when the host gave none: for the decisions that depend on
     /// whether a host answers at all (the link pass's views).
     pub fn host_built_ins(&self) -> Option<&Arc<dyn BuiltIns>> {
-        self.built_ins.as_ref().map(|host| &host.0)
+        self.built_ins.as_ref()
     }
 
     /// Gives the context a host's provider, or takes it away (a detached context has none).
     pub fn set_built_ins(&mut self, built_ins: Option<Arc<dyn BuiltIns>>) {
-        self.built_ins = built_ins.map(HostBuiltIns);
+        self.built_ins = built_ins;
     }
 }
 

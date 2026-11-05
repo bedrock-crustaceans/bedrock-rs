@@ -19,10 +19,13 @@ use crate::version::FormatVersion;
 
 mod by_id;
 mod by_path;
+#[cfg(test)]
+mod characterize_moves;
 mod combine;
 mod component;
 pub mod files;
 mod finite;
+pub mod layered;
 mod merged;
 mod placed;
 pub mod registry;
@@ -34,7 +37,10 @@ pub use by_path::Files;
 #[doc(hidden)]
 pub use by_path::FilesBuilder;
 #[doc(hidden)]
-pub use combine::{CombineRule, Contribution, DecideFn, EngineVersionDecision, FilesRule, Notice};
+pub use combine::{
+    CombineRule, Contribution, DecideFn, EngineVersionDecision, FilesRule, Notice, PackTie,
+    TieWinner,
+};
 pub use component::{Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 #[doc(hidden)]
 pub use finite::FiniteText;

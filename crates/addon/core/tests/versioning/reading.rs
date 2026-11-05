@@ -237,10 +237,7 @@ fn reading_names_each_toy_by_its_profile() {
         json::<LegacyFirst>(StructIndex::Stable(1)),
         Reading::DOCUMENT
     );
-    assert_eq!(
-        json::<BlockLike>(StructIndex::Stable(2)),
-        Reading::DOCUMENT
-    );
+    assert_eq!(json::<BlockLike>(StructIndex::Stable(2)), Reading::DOCUMENT);
     assert_eq!(
         json::<UnstrictFirst>(StructIndex::Stable(0)),
         Reading::DOCUMENT.with_unknown(warn)
@@ -274,4 +271,12 @@ fn coercing_profile_is_own_with_coercing_scalars() {
         Reading::COERCING.with_scalars(Scalars::Strict),
         Reading::OWN
     );
+}
+
+#[test]
+fn below_floor_defaults_to_the_generic_floor_line() {
+    use bedrock_addon_core::versioning::BelowFloor;
+    // What `load` raises below the floor today, for every family that does not say otherwise.
+    assert_eq!(Toy::BELOW_FLOOR, BelowFloor::UseFormatVersion);
+    assert_eq!(Document::BELOW_FLOOR, BelowFloor::default());
 }

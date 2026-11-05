@@ -49,6 +49,12 @@ impl<T: Merge, L> Merged<T, L> {
         self.diagnostics.iter()
     }
 
+    /// The merge's own collection of the findings, moves and places included.
+    #[cfg(test)]
+    pub(crate) fn held_diagnostics(&self) -> &Diagnostics {
+        &self.diagnostics
+    }
+
     /// A merged value from its parts: the value, the winning origin per key, the layers
     /// top-first and the findings (the fields are private, so `bedrock_addon` builds
     /// it here).
