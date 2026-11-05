@@ -1,6 +1,8 @@
 //! `texture_backwards_compatibility_mapping.json`: the game's own table of textures that moved.
 //! The client reads it from its app package only, never from a pack, and its layout is not
 //! modelled, so the file is held as the JSON it is.
+//!
+//! Nothing is read into a type: the file is held as the JSON it is.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

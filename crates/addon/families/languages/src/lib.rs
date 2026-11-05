@@ -6,6 +6,9 @@
 //! Beside the two lists the load looks at what else lies below `texts/` (a `.lang` file of a
 //! code no list names, the locale overlays, the pack keywords) and says what the game
 //! ignores.
+//!
+//! The reader stays a hand walk over the two JSON lists, read as vanilla's JSON library reads them:
+//! no schema stands behind them.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -5,6 +5,9 @@
 //!
 //! The image paths of the merged atlas are looked up in the stack's file listing, so the load
 //! can say which tile has no image and which variations the pack filter drops.
+//!
+//! The reader stays a hand walk over the merged JSON, with the coercions of vanilla's JSON library:
+//! the client reads the merged document by hand, with no schema behind it.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

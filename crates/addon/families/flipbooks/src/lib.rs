@@ -3,6 +3,9 @@
 //! and the merged array is read once.
 //! What a flipbook says of the terrain atlas and of its image is a link rule: the family
 //! knows neither.
+//!
+//! The reader stays a hand walk over the merged array, as the client reads it after its own merge:
+//! no schema stands behind it.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -5,6 +5,9 @@
 //! version input is the pack's `min_engine_version`, mapped to a command version (8 to 46) that
 //! every function and tick entry carries. Command lines are kept raw; parsing them is the command
 //! system's (chorus).
+//!
+//! The reader stays text: command lines are kept raw, and `tick.json` is a list of names read by
+//! hand as vanilla's function manager reads it.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

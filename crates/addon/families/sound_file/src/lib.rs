@@ -1,6 +1,8 @@
 //! The audio files of the stack's `sounds/` trees: which file a sound entry's `name` resolves
 //! to, and the lint rules over them. Vanilla opens audio only when a sound is first played;
 //! nothing here changes what is loaded, and no audio file is read.
+//!
+//! Nothing is read: the family holds names from the stack's file listing.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

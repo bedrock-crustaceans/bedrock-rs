@@ -20,14 +20,16 @@ pub struct Outcome {
     pub findings: Vec<Diagnostic>,
 }
 
+/// `write` is given the document, not its value: the document writes its unknown members
+/// (`Document::to_json`), which the value alone does not hold.
 pub fn outcome<T>(
     result: Result<Document<T>, Rejected>,
-    write: impl Fn(&T) -> Result<String, String>,
+    write: impl Fn(&Document<T>) -> Result<String, String>,
 ) -> Outcome {
     match result {
         Ok(document) => Outcome {
             loaded: true,
-            written: write(document.value()),
+            written: write(&document),
             findings: document.diagnostics().iter().cloned().collect(),
         },
         Err(rejected) => Outcome {

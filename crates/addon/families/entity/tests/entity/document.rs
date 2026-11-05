@@ -844,3 +844,26 @@ fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
     assert_eq!(refusal.location.pack, Some(PackRef::app_data()));
     assert_eq!(refusal.location.path, Some(path));
 }
+
+/// Vanilla's `is_experimental` is kept as written, whatever it holds (vanilla reads nothing
+/// from it), and the document writes it back: a number where vanilla writes a bool too, and
+/// through the upgrade of an older file. It lives in the document's unknown members, so the
+/// document writes it and the bare value does not.
+#[test]
+fn is_experimental_holding_a_number_is_written_back_as_read() {
+    let payload = r#"{ "description": { "identifier": "demo:x", "is_experimental": 7 },
+        "components": {} }"#;
+    for version in ["1.26.30", "1.26.60"] {
+        let document = parse(&doc(version, payload)).unwrap();
+        let written = json(&document.to_json().unwrap());
+        let held = written
+            .as_object()
+            .and_then(|root| root.get("minecraft:entity"))
+            .and_then(bedrock_addon_core::json::Value::as_object)
+            .and_then(|payload| payload.get("description"))
+            .and_then(bedrock_addon_core::json::Value::as_object)
+            .and_then(|description| description.get("is_experimental"))
+            .cloned();
+        assert_eq!(held, Some(json("7")), "{version}: {written:?}");
+    }
+}

@@ -1,6 +1,10 @@
 //! Block culling rules (`CullingRules`): `block_culling/**/*.json` of a resource pack
 //! (`minecraft:block_culling_rules`), which parts of a block model are hidden against which
 //! neighbour. A behaviour-pack block names a rules document with `minecraft:geometry` `culling`.
+//!
+//! The reader stays a hand walk in vanilla's strict cereal terms, because every finding carries
+//! vanilla's breadcrumb and text for its path, which the reader kit words only through
+//! `Read::push`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

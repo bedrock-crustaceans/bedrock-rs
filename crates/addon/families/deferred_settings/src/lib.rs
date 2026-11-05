@@ -5,6 +5,10 @@
 //! fallback values (`pbr/global.json`), one file each; and the local lights
 //! (`local_lighting/local_lighting.json`), merged per block — loaded together as the
 //! `DeferredSettings` group.
+//!
+//! The reader stays a hand walk over each payload's slices (a node and members of its own), with
+//! the game's texts per value form and every finding at its own value's place; moving it onto the
+//! reader kit is more than a swap of helpers.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

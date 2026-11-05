@@ -6,6 +6,9 @@
 //! ([`TextureListMode`]) and the paths the packs claim for preloading ([`TextureClaim`]),
 //! which needs the packs' file listings and the layer paths of their texture sets; nothing of
 //! the texture set family itself.
+//!
+//! The reader stays a hand walk: the client keeps whatever its JSON library made of the file and
+//! validates nothing, so there is no schema to follow.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

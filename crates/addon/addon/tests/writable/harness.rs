@@ -910,6 +910,9 @@ fn more(family: &str) -> &'static [&'static str] {
         ],
         "entity" => &[
             r#"{"format_version": "1.21.0", "minecraft:entity": {"description": {"identifier": "demo:y", "is_spawnable": true, "is_summonable": true}, "components": {"minecraft:interact": {"interactions": {"hurt_item": 3, "swing": true, "play_sounds": "eat", "interact_text": "t"}}, "minecraft:health": {"value": 4, "max": 6}}}}"#,
+            // Vanilla's `is_experimental`, kept as an unknown member of the description that
+            // nothing tells of: the written text holds whatever it held.
+            r#"{"format_version": "1.26.30", "minecraft:entity": {"description": {"identifier": "demo:y", "is_experimental": false}, "components": {}}}"#,
         ],
         "loot_table" => &[
             r#"{"pools": [{"rolls": 1, "entries": [{"type": "item", "name": "minecraft:stick", "weight": 3, "quality": 2, "functions": [{"function": "set_count", "count": {"min": 1, "max": 3}}, {"function": "set_potion", "id": "4"}]}]}]}"#,

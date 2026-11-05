@@ -6,6 +6,9 @@
 //!
 //! The language list a stack's translations are keyed by is the `languages` family's; the
 //! stack composes the two.
+//!
+//! The reader stays text: the byte-level state machine above, with no JSON for a typed read to
+//! take.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

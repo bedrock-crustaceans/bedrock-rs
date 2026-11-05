@@ -3,6 +3,9 @@
 //! strategy of its own (reproduced here) and reads the entries from the merged JSON. The file
 //! has no version, is merged over the whole stack, and still overrides the water and fog a
 //! client biome sets.
+//!
+//! The reader stays a hand walk over the merged JSON, as the game reads it after its own merge
+//! strategy: no schema stands behind it.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -2,6 +2,8 @@
 //!
 //! Structures: `structures/**/*.mcstructure` of a behaviour pack, little-endian NBT read by
 //! the game's structure loader. One format (1), so there is no version chain and no `history`.
+//!
+//! The reader stays binary: the file is NBT, with no JSON for a typed read to take.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -4,6 +4,10 @@
 //! materials: their names are the material namespace of client entities, attachables, render
 //! controllers and particles. The server never renders; the family exists to report what a
 //! client will reject, with the client's own messages, and to supply the name index.
+//!
+//! The reader stays a hand walk over the JSON values, because the client's material reader is
+//! hand-written too (each pack's copy leniently, then the typed read with its rules): no schema
+//! stands behind it.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

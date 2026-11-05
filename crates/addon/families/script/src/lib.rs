@@ -1,4 +1,7 @@
 //! Scripting: `ScriptModule`, `ScriptBundle`.
+//!
+//! The readers stay hand walks: a module is JavaScript, and the server's config files are read from
+//! their slices with the server's own texts. Only the game metadata (`meta`) is a facet read.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

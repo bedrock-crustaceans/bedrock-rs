@@ -4,6 +4,9 @@
 //! `models/blocks/**/*.json`. Vanilla reads these with a loader of its own: the file is validated once against the schema of its own
 //! `format_version`, upgraded in place to the newest shape, and each geometry is registered by
 //! its identifier.
+//!
+//! The reader stays a schema walk on the family's walker (`schema_walk`), because vanilla validates
+//! each file against the JSON schema of its `format_version` rather than reading a typed struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

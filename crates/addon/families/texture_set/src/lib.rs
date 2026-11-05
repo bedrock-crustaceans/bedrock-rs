@@ -7,6 +7,9 @@
 //! the rules of the stack: each layer's image is in the set's own pack, and the capability lints
 //! of the packs that ship sets. Which file the client loads for a texture path, and the images
 //! of the layers, are the stack's composition of this family with the texture files.
+//!
+//! The reader stays hand-versioned: one walk per `format_version` the client has a schema for
+//! (`history`), each with the texts the client logs, the colour parse included.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

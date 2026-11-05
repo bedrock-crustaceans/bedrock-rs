@@ -2,6 +2,8 @@
 //! the texture rules see them. Only names are held: no rule of the load needs an image's bytes,
 //! and the stack lists the packs' files, so nothing is read. The family answers which pack has
 //! which path and which file the client loads for a texture path ([`TextureFiles::source`]).
+//!
+//! Nothing is read: the family holds names from the stack's file listing.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

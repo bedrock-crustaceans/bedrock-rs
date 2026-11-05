@@ -19,7 +19,6 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span,
 };
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
@@ -217,9 +216,7 @@ impl Versioned for GeometryFile {
     const VERSION: FormatVersion = known::V1_8_0;
 }
 
-impl MolangFields for GeometryFile {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
+bedrock_addon_core::impl_no_molang!(GeometryFile);
 
 impl VersionStruct for GeometryFile {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {

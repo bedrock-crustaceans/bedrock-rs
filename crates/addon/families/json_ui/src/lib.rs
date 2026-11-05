@@ -3,6 +3,9 @@
 //! builds a control, run over every resolved definition (`UiDefinitions`, `UiFile`, `Control`,
 //! `GlobalVariables`). The family is unversioned: no file carries a `format_version` and
 //! nothing is gated on an engine version.
+//!
+//! The reader stays a hand walk, because the client reads a control's members by hand when a screen
+//! builds it, each with a text of its own: no schema stands behind it.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

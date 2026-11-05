@@ -4,6 +4,9 @@
 //! the resource-pack files with the same loader and the same schema, so
 //! one type serves both stacks; what differs is runtime: the registry each side keeps, the Molang
 //! query catalogue the compile check uses, and a few diagnostics of the crate's own.
+//!
+//! The reader stays a schema walk on `support`'s animation walker, because vanilla checks the files
+//! against its animation schema with a loader of its own rather than reading a typed struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

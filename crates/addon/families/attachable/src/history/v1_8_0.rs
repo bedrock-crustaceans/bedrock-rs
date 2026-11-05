@@ -36,50 +36,35 @@ pub struct Description {
     /// `identifier`.
     pub identifier: AttachableId,
     /// `min_engine_version`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub min_engine_version: Option<Value>,
     /// `materials`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub materials: Option<IndexMap<String, MaterialId>>,
     /// `textures`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub textures: Option<IndexMap<String, TexturePath>>,
     /// `geometry`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub geometry: Option<IndexMap<String, GeometryId>>,
     /// `spawn_egg`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub spawn_egg: Option<SpawnEgg>,
     /// `scripts`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub scripts: Option<Scripts>,
     /// `particle_effects`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `particle_emitters`: accepted and read by nothing.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub particle_emitters: Option<IndexMap<String, StrictString>>,
     /// `animations`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub animations: Option<IndexMap<String, AnimationRef>>,
     /// `animation_controllers`: a list of `{ name: controller }` objects, of which vanilla
     /// reads one member each (the key that sorts first byte by byte).
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub animation_controllers: Option<Vec<IndexMap<String, StrictString>>>,
     /// `render_controllers`: names only.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub render_controllers: Option<Vec<StrictString>>,
     /// `sound_effects`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `enable_attachables`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub enable_attachables: Option<StrictBool>,
     /// `held_item_ignores_lighting`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub held_item_ignores_lighting: Option<StrictBool>,
     /// `hide_armor`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub hide_armor: Option<StrictBool>,
 }
 

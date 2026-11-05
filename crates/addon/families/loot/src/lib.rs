@@ -4,6 +4,9 @@
 //! (the table, pool, entry, function and condition readers), lazily, and reads no
 //! `format_version`: `LootTable` is one unversioned struct and loot is not a version
 //! family.
+//!
+//! The reader stays a hand walk, member by member, because vanilla's loot readers are one: no
+//! schema stands behind them for a typed read to follow.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

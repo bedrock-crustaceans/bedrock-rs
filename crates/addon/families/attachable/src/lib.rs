@@ -1,5 +1,9 @@
 //! Attachables (`Attachable`): `attachables/**/*.json` of a resource pack (`minecraft:attachable`),
 //! what a client draws for an item an actor holds or wears.
+//!
+//! The reader stays hand-versioned: a walk over the JSON value with the texts vanilla's schema logs
+//! per member (`unknown child schema option type`), and only `description` a facet read. It stays
+//! so while its body is a copy of the client entity's.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -112,7 +116,6 @@ pub struct Description {
     /// `min_engine_version`: a version string or `[major, minor, patch]`. It decides which
     /// definition of an identifier wins across packs, never which members are read; a text
     /// that is no version counts as 0.0.0.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub min_engine_version: Option<Value>,
     /// `materials`: slot name → material.
     #[facet(default, skip_serializing_if = IndexMap::is_empty)]
@@ -124,48 +127,35 @@ pub struct Description {
     #[facet(default, skip_serializing_if = IndexMap::is_empty)]
     pub geometry: IndexMap<String, GeometryId>,
     /// `queryable_geometry`: the geometry slot Molang's geometry queries read.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub queryable_geometry: Option<StrictString>,
     /// `spawn_egg`: accepted, and without meaning for an attachable.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub spawn_egg: Option<SpawnEgg>,
     /// `scripts`: the Molang the client runs for the model and the animations it plays.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub scripts: Option<Scripts>,
     /// `particle_effects`: short name → particle effect.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `particle_emitters`: accepted and read by nothing.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub particle_emitters: Option<IndexMap<String, StrictString>>,
     /// `animations`: short name → animation (`animation.…`) or animation controller
     /// (`controller.animation.…`). A value with neither prefix is ignored. `None` when the
     /// member is absent, which reads as no animation.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub animations: Option<IndexMap<String, AnimationRef>>,
     /// `render_controllers`: the render controllers that draw the attachable, in order.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub render_controllers: Option<Vec<ControllerUse>>,
     /// `sound_effects`: short name → sound event. `None` when the member is absent.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `enable_attachables`: read as for a client entity (it describes an actor that holds
     /// items); `false` when absent.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub enable_attachables: Option<StrictBool>,
     /// `held_item_ignores_lighting`: read as for a client entity; `false` when absent.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub held_item_ignores_lighting: Option<StrictBool>,
     /// `held_item_scale`: read as for a client entity; 1.0 when absent. A number at or below
     /// 0 is not used.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub held_item_scale: Option<HeldItemScale>,
     /// `hide_armor`: read as for a client entity; `false` when absent.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub hide_armor: Option<StrictBool>,
     /// `item`: the item this attachable is drawn for, always or under a condition. Absent,
     /// the attachable is drawn for the item whose identifier is its own.
-    #[facet(default, skip_serializing_if = Option::is_none)]
     pub item: Option<ItemBinding>,
 }
 
