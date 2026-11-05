@@ -1,7 +1,7 @@
 //! Building a catalogue by hand  and the inherent helpers, `Placed` and the
 //! content constants.
 
-use bedrock_addon_core::document::{Content, Placed, UnknownMembers};
+use bedrock_addon_core::document::{Content, Placed};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::pack_identity::PackSide;
 use bedrock_addon_core::shared::CreativeCategory;
@@ -25,7 +25,6 @@ fn a_catalogue_built_with_the_constructors_equals_the_parsed_one() {
                         ItemId::from_static("custom:item1").into(),
                         CatalogItem::new(ItemId::from_static("custom:item2")),
                     ],
-                    ..Group::default()
                 }],
                 ..Category::new(CategoryName::Construction)
             },
@@ -36,7 +35,6 @@ fn a_catalogue_built_with_the_constructors_equals_the_parsed_one() {
                         ..GroupIdentifier::new("custom:tools")
                     }),
                     items: vec![ItemId::from_static("custom:item3").into()],
-                    extra: UnknownMembers::default(),
                 }],
                 ..Category::new(CategoryName::Equipment)
             },
@@ -55,7 +53,6 @@ fn a_catalogue_built_with_the_constructors_equals_the_parsed_one() {
                 ..Category::new(CategoryName::Nature)
             },
         ],
-        ..CraftingCatalog::new()
     };
     assert_eq!(built, cat01());
     // What is built is what loads.
@@ -72,13 +69,13 @@ fn the_empty_values() {
     assert!(Group::loose().items.is_empty());
     let category = Category::new(CategoryName::Nature);
     assert_eq!(category.category_name, CategoryName::Nature);
-    assert!(category.groups.is_empty() && category.extra.is_empty());
+    assert!(category.groups.is_empty());
     let identifier = GroupIdentifier::new("custom:g");
     assert_eq!(identifier.name, "custom:g");
-    assert!(identifier.icon.is_none() && identifier.extra.is_empty());
+    assert!(identifier.icon.is_none());
     let named = Group::named("custom:g");
     assert_eq!(named.group_identifier, Some(identifier));
-    assert!(named.items.is_empty() && named.extra.is_empty());
+    assert!(named.items.is_empty());
 }
 
 #[test]
@@ -134,9 +131,6 @@ fn items_compare_by_the_name_as_written() {
     assert_ne!(item("custom:a:1"), item("custom:a:2"));
     assert_ne!(item("custom:a"), item("custom:a:0"));
     assert_ne!(item("custom:a"), item("custom:b"));
-    let mut with_member = item("custom:a");
-    with_member.extra.insert("count".to_owned(), 1.into());
-    assert_ne!(with_member, item("custom:a"));
 }
 
 #[test]

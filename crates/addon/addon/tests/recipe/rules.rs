@@ -121,7 +121,7 @@ fn an_unlock_that_is_a_string_is_absent() {
         panic!()
     };
     assert!(recipe.unlock.is_none());
-    assert!(recipe.extra.get("unlock").is_some());
+    assert!(kept(&document, &["minecraft:recipe_shaped"], "unlock").is_some());
 }
 
 #[test]
@@ -346,7 +346,14 @@ fn material_reduction_output_of_another_type_gives_no_outputs() {
         panic!()
     };
     assert!(recipe.output.is_none());
-    assert!(recipe.extra.get("output").is_some());
+    assert!(
+        kept(
+            &document,
+            &["minecraft:recipe_material_reduction"],
+            "output"
+        )
+        .is_some()
+    );
     clean(document.diagnostics());
 }
 
@@ -423,7 +430,14 @@ fn smithing_transform_template_is_optional_and_unread_before_1_20() {
         panic!()
     };
     assert!(recipe.template.is_none());
-    assert!(recipe.extra.get("template").is_some());
+    assert!(
+        kept(
+            &document,
+            &["minecraft:recipe_smithing_transform"],
+            "template"
+        )
+        .is_some()
+    );
     assert!(!document.diagnostics().has_errors());
 }
 
@@ -465,11 +479,11 @@ fn unknown_members_are_kept_with_an_info() {
         &cx(),
     )
     .unwrap();
-    let Recipe::Shaped(recipe) = document.value() else {
+    let Recipe::Shaped(_) = document.value() else {
         panic!()
     };
-    assert!(recipe.extra.get("group").is_some());
-    assert!(recipe.extra.get("format_version").is_some());
+    assert!(kept(&document, &["minecraft:recipe_shaped"], "group").is_some());
+    assert!(kept(&document, &["minecraft:recipe_shaped"], "format_version").is_some());
     let unknown: Vec<_> = document
         .diagnostics()
         .iter()
@@ -509,14 +523,12 @@ fn unlock_on_a_type_that_does_not_read_it_is_an_unknown_member() {
     );
     let document = parse(&text, &cx()).unwrap();
     assert!(document.unlock_requirement(false).is_none());
-    let Recipe::BrewingContainer(recipe) = document.value() else {
+    let Recipe::BrewingContainer(_) = document.value() else {
         panic!()
     };
-    assert!(recipe.extra.get("unlock").is_some());
+    assert!(kept(&document, &["minecraft:recipe_brewing_container"], "unlock").is_some());
     assert!(matches!(
-        recipe
-            .extra
-            .get("unlock")
+        kept(&document, &["minecraft:recipe_brewing_container"], "unlock")
             .and_then(|v| v.as_object())
             .map(facet_value::VObject::len),
         Some(1)

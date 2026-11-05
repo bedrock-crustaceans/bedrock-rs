@@ -1,6 +1,7 @@
 //! Writing a catalogue back: `parse(write(parse(x))) ==
 //! parse(x)`, unknown members kept at their level, nothing written the author did not write.
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::json::{Indent, Value, WriteStyle};
 use bedrock_addon_family_crafting_catalog::CraftingCatalog;
@@ -78,16 +79,17 @@ fn the_written_format_version_is_the_newest_struct_s_whatever_the_file_said() {
     );
 }
 
-/// A read keeps no unknown member; an `extra` filled in code is written after the
-/// known members of its level, at 1.26.50, where the strict slice refuses it (C2).
+/// A read keeps no unknown member; one put in the document's table in code is written after
+/// the known members of its level, at 1.26.50, where the strict slice refuses it (C2).
 #[test]
 fn a_hand_built_extra_is_written_after_the_known_members_and_refused_on_read() {
-    let mut value = loads(&fixture("cat01_all_categories.json")).value().clone();
-    value.extra.insert("note".to_owned(), json("[1, 2]"));
-    value.categories[0]
-        .extra
-        .insert("hidden".to_owned(), json("true"));
-    let written = value.to_json().unwrap();
+    let mut document = loads(&fixture("cat01_all_categories.json"));
+    let root = JsonPath::of_keys(["minecraft:crafting_items_catalog"]);
+    document.unknown_mut().put(&root, "note", json("[1, 2]"));
+    document
+        .unknown_mut()
+        .put(&root.child("categories").index(0), "hidden", json("true"));
+    let written = document.to_json().unwrap();
     assert!(
         written.contains("\"format_version\": \"1.26.50\""),
         "{written}"

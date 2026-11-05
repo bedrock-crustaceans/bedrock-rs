@@ -64,7 +64,7 @@ impl Node for ParticleEffectType {
             if text.is_some() && !r.legacy() {
                 r.error(DiagnosticCode::InvalidValue { text: None });
             } else {
-                r.wrong_type(o.wrong);
+                r.wrong_type(value, o.wrong);
             }
         }
         read
@@ -276,7 +276,7 @@ impl Node for EventNode {
         match Members::of(value) {
             Some(members) => Some(Self::read_node(members, false, r)),
             None => {
-                r.wrong_type(Some(texts::EVENT_NO_DATA));
+                r.wrong_type(value, Some(texts::EVENT_NO_DATA));
                 None
             }
         }
@@ -355,22 +355,22 @@ impl Node for RandomEventNode {
     // one; a 1.20.80 document requires the member and has no bound.
     fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
         let Some(members) = Members::of(value) else {
-            r.wrong_type(Some(texts::EVENT_NO_DATA));
+            r.wrong_type(value, Some(texts::EVENT_NO_DATA));
             return None;
         };
-        let weight = r.key("weight", |r| match members.get("weight") {
-            Some(weight) => {
+        let weight = match members.get("weight") {
+            Some(weight) => r.key("weight", |r| {
                 let read = float(weight, r);
                 if read.is_none() {
-                    r.wrong_type(Some(texts::WEIGHT));
+                    r.wrong_type(weight, Some(texts::WEIGHT));
                 }
                 read
-            }
+            }),
             None => {
-                r.missing(Some(texts::WEIGHT));
+                r.missing(members, "weight", Some(texts::WEIGHT));
                 None
             }
-        });
+        };
         if r.legacy() {
             let negative = weight.is_some_and(|weight| weight < 0.0);
             if negative {

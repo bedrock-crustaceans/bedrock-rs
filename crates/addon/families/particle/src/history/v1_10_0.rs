@@ -318,17 +318,9 @@ impl VersionStruct for ParticleEffect {
         // The legacy parser reads `format_version` and `particle_effect` and nothing else of
         // the root: another member is passed over, which the crate reports (it is gone after
         // the upgrade, whose envelope has two members).
-        for (key, _) in members.iter() {
-            if key != PAYLOAD_KEY && key != "format_version" {
-                // The crate's own finding, an information.
-                r.key(key, |r| {
-                    r.push(
-                        DiagnosticCode::UnrecognizedField { text: None },
-                        Severity::Info,
-                    );
-                });
-            }
-        }
+        // The crate's own finding, an information (the legacy era's unknown severity).
+        let _: UnknownMembers =
+            members.extra(|key| key == PAYLOAD_KEY || key == "format_version", &mut r);
         r.key(PAYLOAD_KEY, |r| match members.get(PAYLOAD_KEY) {
             Some(payload) => Self::read(payload, version, r),
             None => {

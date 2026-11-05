@@ -10,7 +10,7 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase, VanillaText,
 };
-use bedrock_addon_core::document::{Document, MergeCx, UnknownMembers};
+use bedrock_addon_core::document::{Document, MergeCx};
 use bedrock_addon_core::id::ItemId;
 
 /// The payload key: where every path of a merge finding starts.
@@ -30,10 +30,8 @@ pub(super) fn empty() -> CraftingCatalog {
             .map(|category_name| Category {
                 category_name,
                 groups: Vec::new(),
-                extra: UnknownMembers::default(),
             })
             .collect(),
-        extra: UnknownMembers::default(),
     }
 }
 
@@ -125,7 +123,6 @@ impl<'a> Merger<'a> {
                         .as_ref()
                         .filter(|icon| self.resolves(icon, at, cx))
                         .map(placed),
-                    extra: UnknownMembers::default(),
                 })
             }
             None => None,
@@ -133,7 +130,6 @@ impl<'a> Merger<'a> {
         bucket.groups.push(Group {
             group_identifier,
             items: Vec::new(),
-            extra: UnknownMembers::default(),
         });
         bucket.groups.len() - 1
     }
@@ -216,6 +212,5 @@ impl<'a> Merger<'a> {
 fn placed(item: &CatalogItem) -> CatalogItem {
     CatalogItem {
         name: item.name.clone(),
-        extra: UnknownMembers::default(),
     }
 }

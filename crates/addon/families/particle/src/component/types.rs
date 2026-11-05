@@ -36,7 +36,7 @@ impl Node for VectorEvents {
             return Some(Self::One(name.as_str().to_owned()));
         }
         let Some(elements) = value.as_array() else {
-            r.wrong_type(Some(texts::EVENT_FIELD));
+            r.wrong_type(value, Some(texts::EVENT_FIELD));
             return None;
         };
         let mut names = Vec::with_capacity(elements.len());
@@ -47,7 +47,7 @@ impl Node for VectorEvents {
                     names.push(name.as_str().to_owned());
                     places.push(i);
                 }
-                None => r.index(i, |r| r.wrong_type(Some(texts::EVENT_ELEMENT))),
+                None => r.index(i, |r| r.wrong_type(element, Some(texts::EVENT_ELEMENT))),
             }
         }
         r.kept(&places);
@@ -96,7 +96,7 @@ impl Node for EmitterDirection {
                 None
             }
             _ => {
-                r.wrong_type(Some(texts::DIRECTION_INVALID));
+                r.wrong_type(value, Some(texts::DIRECTION_INVALID));
                 None
             }
         }
@@ -150,7 +150,7 @@ impl Node for PlaneNormal {
                 None
             }
             _ => {
-                r.wrong_type(Some(texts::PLANE_NORMAL_INVALID));
+                r.wrong_type(value, Some(texts::PLANE_NORMAL_INVALID));
                 None
             }
         }
@@ -233,11 +233,11 @@ impl Node for ColorExpr {
             Some(4) => <[Molang; 4]>::read(value, r, CHANNEL).map(Self::Rgba),
             Some(3) => <[Molang; 3]>::read(value, r, CHANNEL).map(Self::Rgb),
             Some(_) => {
-                r.wrong_type(Some(texts::COLOR_COUNT));
+                r.wrong_type(value, Some(texts::COLOR_COUNT));
                 None
             }
             None => {
-                r.wrong_type(Some(texts::COLOR_SHAPE));
+                r.wrong_type(value, Some(texts::COLOR_SHAPE));
                 None
             }
         }
@@ -317,7 +317,7 @@ impl Node for Gradient {
             let read = IndexMap::<String, ColorExpr>::read(value, r, o)?;
             (Self::Keyed(read), members.iter().count())
         } else {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
             return None;
         };
         let kept = match &read {

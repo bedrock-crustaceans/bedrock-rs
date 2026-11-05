@@ -18,12 +18,16 @@ use super::{
     AnimationSource, FaceFlag, GeometrySource, HexColor, PieceMetadata, PieceStoreInfo, PieceType,
     TextureSource, TintColor, TintColorOrString, Zones,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::{Disposition, Node, Read};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom,
 };
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading};
 
 /// The payload key of a meta file written as a Minecraft document.
 pub(super) const ENVELOPE: &str = "minecraft:persona_piece_meta";
@@ -90,22 +94,55 @@ enum Unread {
     Reported,
 }
 
-/// The reader of one file: the findings so far and the place being read.
-struct Reader<'f> {
-    findings: &'f mut Vec<Diagnostic>,
+/// How a meta file is read: the 1.26.40+ strict slice (module documentation), in which a
+/// `null` is a member of the wrong type and every finding of the reader is an error.
+const META_READING: Reading = Reading::DOCUMENT;
+
+/// How a store-info file is read: by the client's own JSON code, in which `null` is absent
+/// and a member of another type is taken without a line (an information).
+const STORE_INFO_READING: Reading =
+    Reading::NULL_ABSENT.with_on_member_failure(MemberFailure::DefaultAndTell);
+
+/// The reader of one file: the findings so far, how the file is read and the place being
+/// read.
+struct Reader {
+    findings: Diagnostics,
+    reading: Reading,
+    /// The severity of an unknown member, where it is not the reading's.
+    unknown_severity: Option<Severity>,
     at: JsonPath,
-    /// The 1.26.40+ meta reader (module documentation); `false` for a store-info file.
-    strict: bool,
 }
 
-impl Reader<'_> {
+impl Reader {
+    fn new(reading: Reading, unknown_severity: Option<Severity>) -> Self {
+        Self {
+            findings: Diagnostics::default(),
+            reading,
+            unknown_severity,
+            at: JsonPath::new(),
+        }
+    }
+
+    /// The kit's read, telling into the findings so far.
+    fn read(&mut self) -> Read<'_> {
+        let read = Read::new(self.reading, &mut self.findings);
+        match self.unknown_severity {
+            Some(severity) => read.unknown_severity(severity),
+            None => read,
+        }
+    }
+
+    /// `value` at the place being read.
+    fn node<'v>(&self, value: &'v Value) -> Node<'v> {
+        Node::new(value, self.at.clone())
+    }
+
     /// A finding at the place being read.
     fn report(&mut self, code: DiagnosticCode, severity: Severity) {
-        self.findings.push(
-            Diagnostic::error(code)
-                .severity(severity)
-                .at(self.at.clone()),
-        );
+        let finding = Diagnostic::error(code)
+            .severity(severity)
+            .at(self.at.clone());
+        self.read().push(finding);
     }
 
     /// A finding at the member `key` of the object being read.
@@ -115,21 +152,11 @@ impl Reader<'_> {
         self.at.pop();
     }
 
-    /// How bad a finding is that the 1.26.40+ reader refuses: an error there, `lenient`
-    /// elsewhere.
-    fn refusal(&self, lenient: Severity) -> Severity {
-        if self.strict {
-            Severity::Error
-        } else {
-            lenient
-        }
-    }
-
-    /// A member of an unexpected JSON type.
-    fn wrong_type(&mut self) {
-        // The client's own JSON code takes the member without a line.
-        let severity = self.refusal(Severity::Info);
-        self.report(DiagnosticCode::InvalidType { text: None }, severity);
+    /// `value`, at the place being read, is of an unexpected JSON type: an error in a meta
+    /// file; in a store-info file the client's own JSON code takes the member without a line.
+    fn wrong_type(&mut self, value: &Value) {
+        let node = self.node(value);
+        self.read().wrong_type(&node);
     }
 
     /// Reads the member `key` = `value` into `slot`; a value `read` does not take is kept in
@@ -147,8 +174,9 @@ impl Reader<'_> {
         match read(self, value) {
             Ok(read) => *slot = Some(read),
             Err(unread) => {
-                if (self.strict || !value.is_null()) && matches!(unread, Unread::Wrong) {
-                    self.wrong_type();
+                let absent = value.is_null() && self.reading.null == NullHandling::Absent;
+                if !absent && matches!(unread, Unread::Wrong) {
+                    self.wrong_type(value);
                 }
                 extra.insert(key.to_owned(), value.clone());
             }
@@ -160,12 +188,10 @@ impl Reader<'_> {
     /// makes the unknown member an error: the piece is invalid.
     /// In a store-info file the member is ignored (information).
     fn unknown(&mut self, key: &str, value: &Value, extra: &mut UnknownMembers) {
-        let severity = self.refusal(Severity::Info);
-        self.report_at(
-            key,
-            DiagnosticCode::UnrecognizedField { text: None },
-            severity,
-        );
+        self.at.push(key);
+        let node = self.node(value);
+        self.read().unknown_member(&node, Disposition::Keep);
+        self.at.pop();
         extra.insert(key.to_owned(), value.clone());
     }
 
@@ -205,16 +231,14 @@ impl Reader<'_> {
         Ok(written)
     }
 
-    /// A `missing required field` error (in both readers) for each of `keys` that `members`
-    /// does not have.
-    fn required(&mut self, members: &facet_value::VObject, keys: &[&str]) {
-        for key in keys {
-            if !members.contains_key(key) {
-                self.report_at(
-                    key,
-                    DiagnosticCode::MissingRequiredField { text: None },
-                    Severity::Error,
-                );
+    /// A `missing required field` error (in both readers) for each of `keys` that the object
+    /// `object` does not have.
+    fn required(&mut self, object: &Value, keys: &[&str]) {
+        let node = self.node(object);
+        let mut read = self.read();
+        if let Some(members) = read.object(&node) {
+            for key in keys {
+                read.required(&members, key);
             }
         }
     }
@@ -231,18 +255,27 @@ impl Reader<'_> {
         mut read: impl FnMut(&mut Self, &Value) -> Option<T>,
     ) -> Result<Vec<T>, Unread> {
         let array = value.as_array().ok_or(Unread::Wrong)?;
-        let before = self.findings.len();
+        // The entries are read apart, so that a bad one takes their findings with it.
+        let before = std::mem::take(&mut self.findings);
         let mut elements = Vec::with_capacity(array.len());
         for (index, element) in array.as_slice().iter().enumerate() {
             self.at.push_index(index);
             let read = read(self, element);
             if read.is_none() {
-                self.findings.truncate(before);
-                self.wrong_type();
+                self.findings = Diagnostics::default();
+                self.wrong_type(element);
             }
             self.at.pop();
-            elements.push(read.ok_or(Unread::Reported)?);
+            if let Some(read) = read {
+                elements.push(read);
+            } else {
+                let entries = std::mem::replace(&mut self.findings, before);
+                self.findings.extend_with_unknown(entries);
+                return Err(Unread::Reported);
+            }
         }
+        let entries = std::mem::replace(&mut self.findings, before);
+        self.findings.extend_with_unknown(entries);
         Ok(elements)
     }
 
@@ -330,7 +363,7 @@ impl Reader<'_> {
         }
         // `texture` is required; an empty one is a texture the builder skips, reading
         // nothing else of the entry.
-        self.required(members, &["texture"]);
+        self.required(value, &["texture"]);
         if source.texture.as_deref() == Some("") {
             self.no_texture();
         }
@@ -362,7 +395,7 @@ impl Reader<'_> {
                 other => self.unknown(other, value, extra),
             }
         }
-        self.required(members, &["geometry"]);
+        self.required(value, &["geometry"]);
         // The same skip, for an entry that gives the texture builder something: every vanilla geometry
         // source names no texture and loses nothing by being skipped.
         let unread = written_in(&source.extra, "texture");
@@ -395,13 +428,16 @@ impl Reader<'_> {
                 other => self.unknown(other, value, extra),
             }
         }
-        self.required(members, &["name", "animationFile"]);
+        self.required(value, &["name", "animationFile"]);
         Some(source)
     }
 
     /// The members of a meta file (the root's, or the payload's).
     #[allow(clippy::too_many_lines, reason = "one arm per member of the file")]
-    fn meta(&mut self, members: &facet_value::VObject, meta: &mut PieceMetadata) {
+    fn meta(&mut self, object: &Value, meta: &mut PieceMetadata) {
+        let Some(members) = object.as_object() else {
+            return;
+        };
         for (key, value) in members {
             let extra = &mut meta.extra;
             match key.as_str() {
@@ -493,7 +529,7 @@ impl Reader<'_> {
                 other => self.unknown(other, value, extra),
             }
         }
-        self.required(members, &["piece_id", "piece_name", "piece_type"]);
+        self.required(object, &["piece_id", "piece_name", "piece_type"]);
         self.side_rules(meta);
         // Only an emote's animations are ever played.
         if meta.animation_sources.is_some() && meta.piece_type() != PieceType::Emote {
@@ -601,26 +637,30 @@ pub(super) const META_VERSION: FormatVersion = known::V1_26_40;
 ///   and refused at any other version;
 /// - a value that is no version is malformed; `"beta"` has no slice and is refused.
 pub(super) fn read_meta(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceMetadata {
+    let mut reader = Reader::new(META_READING, None);
+    let meta = meta_file(root, &mut reader);
+    // The reader keeps no member in the document's table: it holds findings only.
+    findings.extend(reader.findings);
+    meta
+}
+
+/// [`read_meta`] with its reader.
+fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
     let mut meta = PieceMetadata::default();
     let Some(members) = root.as_object() else {
         return meta;
     };
-    let mut reader = Reader {
-        findings,
-        at: JsonPath::new(),
-        strict: true,
-    };
     let Some(version) = members.get("format_version") else {
-        reader.meta(members, &mut meta);
+        reader.meta(root, &mut meta);
         return meta;
     };
     let at_version = JsonPath::new().child("format_version");
-    let refuse = |reader: &mut Reader<'_>, code: DiagnosticCode, at: JsonPath| {
-        reader.findings.push(Diagnostic::error(code).at(at));
+    let refuse = |reader: &mut Reader, code: DiagnosticCode, at: JsonPath| {
+        reader.read().push(Diagnostic::error(code).at(at));
     };
     let Some(input) = FormatVersionInput::from_json(version) else {
         refuse(
-            &mut reader,
+            reader,
             DiagnosticCode::MalformedFormatVersion { text: None },
             at_version,
         );
@@ -640,12 +680,12 @@ pub(super) fn read_meta(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceMe
         .is_some_and(|v| v < META_VERSION || (input.prerelease && v == META_VERSION));
     if input.beta_literal || below {
         // Below the loader's minimum the envelope is not counted, and no slice takes it.
-        refuse(&mut reader, unsupported(&written), at_version);
+        refuse(reader, unsupported(&written), at_version);
         return meta;
     }
     if members.len() != 2 {
         refuse(
-            &mut reader,
+            reader,
             DiagnosticCode::MalformedInput {
                 message: format!(
                     "{} root members, not \"format_version\" and a payload member",
@@ -659,22 +699,22 @@ pub(super) fn read_meta(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceMe
     }
     let Some(payload) = members.get(ENVELOPE) else {
         refuse(
-            &mut reader,
+            reader,
             DiagnosticCode::MissingPayload { text: None },
             JsonPath::new(),
         );
         return meta;
     };
     if input.version != Some(META_VERSION) || input.prerelease {
-        refuse(&mut reader, unsupported(&written), at_version);
+        refuse(reader, unsupported(&written), at_version);
         return meta;
     }
     meta.envelope = Some(version.clone());
     reader.at.push(ENVELOPE);
-    let Some(payload) = payload.as_object() else {
-        reader.wrong_type();
+    if !payload.is_object() {
+        reader.wrong_type(payload);
         return meta;
-    };
+    }
     reader.meta(payload, &mut meta);
     meta
 }
@@ -685,11 +725,7 @@ pub(super) fn read_store_info(root: &Value, findings: &mut Vec<Diagnostic>) -> P
     let Some(members) = root.as_object() else {
         return store;
     };
-    let mut reader = Reader {
-        findings,
-        at: JsonPath::new(),
-        strict: false,
-    };
+    let mut reader = Reader::new(STORE_INFO_READING, Some(Severity::Info));
     for (key, value) in members {
         let extra = &mut store.extra;
         match key.as_str() {
@@ -725,5 +761,7 @@ pub(super) fn read_store_info(root: &Value, findings: &mut Vec<Diagnostic>) -> P
             );
         }
     }
+    // The reader keeps no member in the document's table: it holds findings only.
+    findings.extend(reader.findings);
     store
 }

@@ -117,7 +117,7 @@ object! {
 /// A block list: the value of `minecraft:particle_expire_if_in_blocks` and its opposite.
 fn read_blocks(value: &Value, r: &mut Reader<'_>) -> Option<Vec<String>> {
     let Some(elements) = value.as_array() else {
-        r.wrong_type(Some(texts::NO_BLOCK_LIST));
+        r.wrong_type(value, Some(texts::NO_BLOCK_LIST));
         return None;
     };
     let mut blocks = Vec::with_capacity(elements.len());
@@ -128,7 +128,7 @@ fn read_blocks(value: &Value, r: &mut Reader<'_>) -> Option<Vec<String>> {
                 blocks.push(name.as_str().to_owned());
                 places.push(i);
             }
-            None => r.index(i, |r| r.wrong_type(Some(texts::BLOCK_NOT_STRING))),
+            None => r.index(i, |r| r.wrong_type(element, Some(texts::BLOCK_NOT_STRING))),
         }
     }
     r.kept(&places);
@@ -326,7 +326,7 @@ impl Node for CollisionEvents {
             }
             return usable(&event, r.legacy()).then_some(Self::One(event));
         }
-        r.wrong_type(Some(texts::EVENTS_NOT_PAIRS));
+        r.wrong_type(value, Some(texts::EVENTS_NOT_PAIRS));
         None
     }
 

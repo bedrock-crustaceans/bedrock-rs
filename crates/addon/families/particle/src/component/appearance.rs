@@ -29,7 +29,7 @@ impl Node for DirectionMode {
                 None
             }
             _ => {
-                r.wrong_type(Some(texts::DIRECTION_MODE));
+                r.wrong_type(value, Some(texts::DIRECTION_MODE));
                 None
             }
         }

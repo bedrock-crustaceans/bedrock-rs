@@ -2,8 +2,9 @@
 //! document, no parser table, no struct per version. The walk is over an untyped `Value` because
 //! vanilla's coercions (a non-bool `assume_symmetry` ignored, a non-integer `count` ignored, a
 //! string or a list for `tags` and `result`) are not typed shapes. Nothing is deserialised from
-//! the `Value`, so members are read in vanilla's key order and unknown members go to the `extra`
-//! of their level with an info finding.
+//! the `Value`, so members are read in vanilla's key order. The walk is on the reader kit
+//! ([`Read`]); unknown members go to the document's table at their object's path with an info
+//! finding.
 
 #![allow(
     clippy::single_match_else,
@@ -22,10 +23,11 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{UnknownMembers, VersionInfo};
+use bedrock_addon_core::document::VersionInfo;
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{self, Disposition, Node, Read};
 use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, WideInt};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
@@ -34,10 +36,19 @@ use bedrock_addon_core::molang::{
 };
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
 /// jsoncpp's `isInt` as the recipe reader asks it: an integer token that fits an `i32`; a real
 /// token never is one.
 const IS_INT: Coercing = Coercing::new(IsIntRule::Token, WideInt::LowWord);
+
+/// How the walker reads a member vanilla ignores when it is of the wrong type: the member keeps
+/// its default and the crate says so in an information (the game says nothing).
+const LENIENT: Reading = Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell);
+
+/// How the walker reads the members the crate refuses the recipe over (`pattern`, `key`,
+/// `ingredients`): a missing one or one of the wrong type is an error.
+const REFUSING: Reading = Reading::OWN;
 
 /// What the loader learnt of a file before deciding on it: its type and identifier.
 #[derive(Clone, Debug, Default)]
@@ -124,25 +135,17 @@ impl Flags {
 }
 
 /// The members of one JSON object as the walker reads them: the ones read into a typed field,
-/// the ones moved to `extra` with a finding already raised, and the rest, unknown.
+/// the ones kept as written with a finding already raised, and the rest, unknown.
 struct Members<'v> {
-    object: &'v facet_value::VObject,
+    object: kit::Members<'v>,
     read: HashSet<String>,
     quiet: HashSet<String>,
 }
 
 impl<'v> Members<'v> {
-    fn new(object: &'v facet_value::VObject) -> Self {
-        Self {
-            object,
-            read: HashSet::new(),
-            quiet: HashSet::new(),
-        }
-    }
-
     /// Member `key`, now read.
     fn take(&mut self, key: &str) -> Option<&'v Value> {
-        let value = self.object.get(key)?;
+        let value = self.object.get(key)?.value();
         self.read.insert(key.to_owned());
         Some(value)
     }
@@ -200,25 +203,42 @@ impl<'c> Reader<'c> {
         }
     }
 
-    /// The members of `members` nobody read, kept in an `UnknownMembers`; the unknown ones raise
-    /// `UnrecognizedField` at info (vanilla reads no other key and says nothing).
-    fn rest(&mut self, members: &Members<'_>, at: &JsonPath) -> UnknownMembers {
-        let mut extra = UnknownMembers::default();
-        for (key, value) in members.object {
-            let key = key.as_str();
+    /// A read of the members vanilla ignores when mistyped, telling unknown members at info.
+    fn lenient(&mut self) -> Read<'_> {
+        Read::new(LENIENT, &mut self.diagnostics).unknown_severity(Severity::Info)
+    }
+
+    /// A read of the members the crate refuses the recipe over.
+    fn refusing(&mut self) -> Read<'_> {
+        Read::new(REFUSING, &mut self.diagnostics)
+    }
+
+    /// The members of the object `value` at `at`; `None` (with a wrong type) when it is none.
+    fn members<'v>(&mut self, value: &'v Value, at: &JsonPath) -> Option<Members<'v>> {
+        let members = self.lenient().object(&Node::new(value, at.clone()))?;
+        Some(Members {
+            object: members,
+            read: HashSet::new(),
+            quiet: HashSet::new(),
+        })
+    }
+
+    /// The members of `members` nobody read, kept in the document's table at the object's
+    /// path; the unknown ones raise `UnrecognizedField` at info (vanilla reads no other key and
+    /// says nothing).
+    fn rest(&mut self, members: &Members<'_>) {
+        let at = members.object.node().path().clone();
+        for (key, node) in members.object.iter() {
             if members.read.contains(key) {
                 continue;
             }
             if !members.quiet.contains(key) {
-                self.report(
-                    &at.child(key),
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Info,
-                );
+                self.lenient().unknown_member(&node, Disposition::Keep);
             }
-            extra.insert(key.to_owned(), value.clone());
+            self.diagnostics
+                .unknown_mut()
+                .put(&at, key, node.value().clone());
         }
-        extra
     }
 
     // ---- the document --------------------------------------------------------------------
@@ -275,7 +295,9 @@ impl<'c> Reader<'c> {
             );
             return (parsed, None, None);
         };
-        let mut root_members = Members::new(object);
+        let Some(mut root_members) = self.members(&root, &root_path) else {
+            return (parsed, None, None);
+        };
         let written = self.format_version(&mut root_members);
         self.version = written.unwrap_or(MISSING_VERSION);
         // The first present payload key, `null` counting as absent.
@@ -303,18 +325,15 @@ impl<'c> Reader<'c> {
         root_members.take(kind.payload_key());
         parsed.kind = Some(kind);
         let at = root_path.child(kind.payload_key());
-        let Some(payload) = payload.as_object() else {
+        if !payload.is_object() {
             self.no_identifier(&at);
             return (parsed, None, written);
-        };
+        }
         let Some(mut recipe) = self.payload(kind, payload, &at, &mut parsed) else {
             return (parsed, None, written);
         };
-        let root_extra = self.rest(&root_members, &root_path);
-        super::types::each!(&mut recipe, r => {
-            r.format_version = written;
-            r.root_extra = root_extra;
-        });
+        self.rest(&root_members);
+        super::types::each!(&mut recipe, r => r.format_version = written);
         if self.not_checked > 0 {
             self.report(
                 &root_path,
@@ -331,11 +350,11 @@ impl<'c> Reader<'c> {
     fn payload(
         &mut self,
         kind: RecipeKind,
-        payload: &facet_value::VObject,
+        payload: &Value,
         at: &JsonPath,
         parsed: &mut Parsed,
     ) -> Option<Recipe> {
-        let mut members = Members::new(payload);
+        let mut members = self.members(payload, at)?;
         let Some(description) = self.description(&mut members, at) else {
             self.no_identifier(at);
             return None;
@@ -355,11 +374,10 @@ impl<'c> Reader<'c> {
             }
             RecipeKind::SmithingTrim => self.smithing_trim(&mut members, at, tags.as_ref()),
         };
-        let extra = self.rest(&members, at);
+        self.rest(&members);
         super::types::each!(&mut recipe, r => {
             r.description = description;
             r.tags = tags;
-            r.extra = extra;
         });
         Some(recipe)
     }
@@ -416,18 +434,16 @@ impl<'c> Reader<'c> {
     /// `description`, with a non-empty string `identifier` (`asString("")`: any other value is
     /// empty).
     fn description(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Option<Description> {
-        let object = payload.take("description")?.as_object()?;
-        let identifier = object.get("identifier")?.as_string()?.as_str();
+        let value = payload.take("description")?;
+        let identifier = value.as_object()?.get("identifier")?.as_string()?.as_str();
         if identifier.is_empty() {
             return None;
         }
-        let at = at.child("description");
-        let mut members = Members::new(object);
+        let mut members = self.members(value, &at.child("description"))?;
         members.take("identifier");
-        let extra = self.rest(&members, &at);
+        self.rest(&members);
         Some(Description {
             identifier: RecipeId::parse(identifier.to_owned()),
-            extra,
         })
     }
 
@@ -445,27 +461,17 @@ impl<'c> Reader<'c> {
                     // The file's index of each tag held, for the link pass.
                     let mut kept = Vec::new();
                     for (index, entry) in entries.iter().enumerate() {
-                        match entry.as_string() {
-                            Some(tag) => {
-                                tags.push(tag.as_str().to_owned());
-                                kept.push(index);
-                            }
-                            None => self.report(
-                                &path.index(index),
-                                DiagnosticCode::InvalidType { text: None },
-                                Severity::Info,
-                            ),
+                        let entry = Node::new(entry, path.index(index));
+                        if let Some(tag) = self.lenient().string(&entry) {
+                            tags.push(tag.to_owned());
+                            kept.push(index);
                         }
                     }
                     self.diagnostics.left_out(&path, &kept);
                     Some(Tags::Many(tags))
                 } else {
                     payload.keep("tags");
-                    self.report(
-                        &path,
-                        DiagnosticCode::InvalidType { text: None },
-                        Severity::Info,
-                    );
+                    self.lenient().wrong_type(&Node::new(value, path.clone()));
                     None
                 }
             }
@@ -519,18 +525,18 @@ impl<'c> Reader<'c> {
             self.item_text(text, at);
             return Some(Ingredient::Name(text.to_owned()));
         }
-        let Some(object) = value.as_object() else {
+        if !value.is_object() {
             self.empty_item(at, flags, false);
             return None;
-        };
-        let mut members = Members::new(object);
+        }
+        let mut members = self.members(value, at)?;
         let mut ingredient = IngredientObject::default();
         // Vanilla reads the members in the order `data`, `count`, `item`, `tag`, and the first
         // failure ends the ingredient.
         self.data(&mut members, &mut ingredient, at);
         self.count(&mut members, &mut ingredient, at, flags)?;
         self.item_or_tag(&mut members, &mut ingredient, at, flags)?;
-        ingredient.extra = self.rest(&members, at);
+        self.rest(&members);
         Some(Ingredient::Object(ingredient))
     }
 
@@ -549,7 +555,7 @@ impl<'c> Reader<'c> {
             return;
         }
         if let Ok(list) = self.data_list(data, &mut at.child("data")) {
-            ingredient.data_value = self.evaluate(&list, &at.child("data"));
+            ingredient.data_value = self.evaluate(&list, &Node::new(data, at.child("data")));
             ingredient.data = Some(list);
             return;
         }
@@ -567,11 +573,8 @@ impl<'c> Reader<'c> {
                 Diagnostic::error(DiagnosticCode::InvalidType { text }).at(at.child("data")),
             );
         } else {
-            self.report(
-                &at.child("data"),
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-            );
+            self.lenient()
+                .wrong_type(&Node::new(data, at.child("data")));
         }
         ingredient.data_value = Some(0);
     }
@@ -634,15 +637,12 @@ impl<'c> Reader<'c> {
             );
             return None;
         }
-        if let Some(count) = count.is_int(IS_INT) {
-            ingredient.count = Some(count);
-        } else {
-            members.keep("count");
-            self.report(
-                &at.child("count"),
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-            );
+        match self
+            .lenient()
+            .int(&Node::new(count, at.child("count")), IS_INT)
+        {
+            Some(count) => ingredient.count = Some(count),
+            None => members.keep("count"),
         }
         Some(())
     }
@@ -732,18 +732,23 @@ impl<'c> Reader<'c> {
 
     /// The value `data` evaluates to at load: a constant directly; an expression compiled with
     /// the pack's version and resolved when it folds (a rejected one is 0); a list is no number.
-    fn evaluate(&mut self, data: &MolangList, at: &JsonPath) -> Option<i32> {
+    /// `node` is the member as written.
+    fn evaluate(&mut self, data: &MolangList, node: &Node<'_>) -> Option<i32> {
         match data {
             MolangList::One(bedrock_addon_core::molang::Molang::Expr(source)) => {
-                self.expression(source, at)
+                self.expression(source, node.path())
             }
             MolangList::One(_) => constant_data(data),
             MolangList::Many(_) => {
                 #[cfg(feature = "molang")]
                 if let Some(check) = self.cx.molang.clone() {
                     let mcx = self.molang_context();
-                    let location =
-                        bedrock_addon_core::diagnostic::Location::new(None, None, at.clone(), None);
+                    let location = bedrock_addon_core::diagnostic::Location::new(
+                        None,
+                        None,
+                        node.path().clone(),
+                        None,
+                    );
                     let mut found = Diagnostics::default();
                     check.check_list(
                         data,
@@ -757,11 +762,7 @@ impl<'c> Reader<'c> {
                 }
                 // An array `data` yields no number here, and the game logs no line for it, so
                 // the crate's own note is an information.
-                self.report(
-                    at,
-                    DiagnosticCode::InvalidType { text: None },
-                    Severity::Info,
-                );
+                self.lenient().wrong_type(node);
                 None
             }
         }
@@ -929,7 +930,9 @@ impl<'c> Reader<'c> {
                     Some(ingredient) => ingredients.push(ingredient),
                     None => {
                         // The game logs an error, zeroes the requirement and loads the
-                        // recipe: a kept error.
+                        // recipe: a kept error. The list is kept as written, so what the
+                        // elements before put in the table goes.
+                        self.diagnostics.unknown_mut().forget(&at);
                         self.report_kept(
                             &at,
                             DiagnosticCode::InvalidValue {
@@ -949,7 +952,7 @@ impl<'c> Reader<'c> {
             let name = object.get("context")?.as_string()?.as_str();
             Some((object, name))
         });
-        let Some((object, name)) = context else {
+        let Some((_, name)) = context else {
             // The game logs an error and then returns normally, so the recipe still loads
             // (the `unlock` gate below decides whether a missing requirement is fatal): a
             // kept error.
@@ -965,7 +968,7 @@ impl<'c> Reader<'c> {
             );
             return None;
         };
-        let mut members = Members::new(object);
+        let mut members = self.members(value, &at)?;
         members.take("context");
         let Some(context) = UnlockContext::from_name(name) else {
             // The game logs an error and goes on loading: a kept error.
@@ -980,8 +983,8 @@ impl<'c> Reader<'c> {
             );
             return Some(Unlock::Malformed(value.clone()));
         };
-        let extra = self.rest(&members, &at);
-        Some(Unlock::Context { context, extra })
+        self.rest(&members);
+        Some(Unlock::Context { context })
     }
 
     /// A shaped or shapeless recipe from 1.20.10 needs `unlock`.
@@ -1005,11 +1008,8 @@ impl<'c> Reader<'c> {
         }
         payload.keep("priority");
         if !is_empty(value) {
-            self.report(
-                &at.child("priority"),
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-            );
+            self.lenient()
+                .wrong_type(&Node::new(value, at.child("priority")));
         }
         None
     }
@@ -1028,19 +1028,16 @@ impl<'c> Reader<'c> {
     fn shaped(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Recipe {
         let priority = self.priority(payload, at);
         let assume_symmetry = match payload.take("assume_symmetry") {
-            Some(value) => match value.as_bool() {
-                Some(value) => Some(value),
-                None => {
+            Some(value) => {
+                let read = self
+                    .lenient()
+                    .bool(&Node::new(value, at.child("assume_symmetry")));
+                if read.is_none() {
                     // A non-bool is ignored (the default is `true`).
                     payload.keep("assume_symmetry");
-                    self.report(
-                        &at.child("assume_symmetry"),
-                        DiagnosticCode::InvalidType { text: None },
-                        Severity::Info,
-                    );
-                    None
                 }
-            },
+                read
+            }
             None => None,
         };
         let result = self.result(payload, at);
@@ -1067,21 +1064,10 @@ impl<'c> Reader<'c> {
     fn pattern(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Option<Vec<String>> {
         let at = at.child("pattern");
         let Some(value) = payload.take("pattern") else {
-            self.report(
-                &at,
-                DiagnosticCode::MissingRequiredField { text: None },
-                Severity::Error,
-            );
+            self.refusing().required(&payload.object, "pattern");
             return None;
         };
-        let Some(rows) = value.as_array() else {
-            self.report(
-                &at,
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Error,
-            );
-            return None;
-        };
+        let rows = self.refusing().array(&Node::new(value, at.clone()))?;
         if rows.is_empty() {
             self.report(
                 &at,
@@ -1091,18 +1077,8 @@ impl<'c> Reader<'c> {
             return None;
         }
         let mut pattern = Vec::new();
-        for (index, row) in rows.iter().enumerate() {
-            match row.as_string() {
-                Some(row) => pattern.push(row.as_str().to_owned()),
-                None => {
-                    self.report(
-                        &at.index(index),
-                        DiagnosticCode::InvalidType { text: None },
-                        Severity::Error,
-                    );
-                    return None;
-                }
-            }
+        for row in rows.iter() {
+            pattern.push(self.refusing().string(&row)?.to_owned());
         }
         let width = pattern.iter().map(String::len).max().unwrap_or(0);
         let height = pattern.len();
@@ -1131,21 +1107,10 @@ impl<'c> Reader<'c> {
     ) -> Option<indexmap::IndexMap<String, Ingredient>> {
         let at = at.child("key");
         let Some(value) = payload.take("key") else {
-            self.report(
-                &at,
-                DiagnosticCode::MissingRequiredField { text: None },
-                Severity::Error,
-            );
+            self.refusing().required(&payload.object, "key");
             return None;
         };
-        let Some(object) = value.as_object() else {
-            self.report(
-                &at,
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Error,
-            );
-            return None;
-        };
+        let object = self.refusing().object(&Node::new(value, at.clone()))?;
         if object.is_empty() {
             self.report(
                 &at,
@@ -1156,9 +1121,8 @@ impl<'c> Reader<'c> {
         }
         let flags = Flags::new(self.input_count(), true);
         let mut key = indexmap::IndexMap::new();
-        for (name, value) in object {
-            let name = name.as_str();
-            let entry_at = at.child(name);
+        for (name, entry) in object.iter() {
+            let entry_at = entry.path().clone();
             if name.is_empty() {
                 self.report(
                     &entry_at,
@@ -1167,7 +1131,7 @@ impl<'c> Reader<'c> {
                 );
                 return None;
             }
-            match self.ingredient(Some(value), &entry_at, flags) {
+            match self.ingredient(Some(entry.value()), &entry_at, flags) {
                 Some(ingredient) => {
                     key.insert(name.to_owned(), ingredient);
                 }
@@ -1247,21 +1211,21 @@ impl<'c> Reader<'c> {
         let ingredients_at = at.child("ingredients");
         let mut ingredients = Vec::new();
         match payload.take("ingredients") {
-            None => self.report(
-                &ingredients_at,
-                DiagnosticCode::MissingRequiredField { text: None },
-                Severity::Error,
-            ),
-            Some(value) => match value.as_array() {
-                None => self.report(
-                    &ingredients_at,
-                    DiagnosticCode::InvalidType { text: None },
-                    Severity::Error,
-                ),
-                Some(entries) => {
-                    for (index, entry) in entries.iter().enumerate() {
-                        let entry_at = ingredients_at.index(index);
-                        match self.ingredient(Some(entry), &entry_at, Flags::new(true, true)) {
+            None => {
+                self.refusing().required(&payload.object, "ingredients");
+            }
+            Some(value) => {
+                if let Some(entries) = self
+                    .refusing()
+                    .array(&Node::new(value, ingredients_at.clone()))
+                {
+                    for entry in entries.iter() {
+                        let entry_at = entry.path().clone();
+                        match self.ingredient(
+                            Some(entry.value()),
+                            &entry_at,
+                            Flags::new(true, true),
+                        ) {
                             Some(ingredient) => ingredients.push(ingredient),
                             None => {
                                 self.result_malformed(&entry_at);
@@ -1270,7 +1234,7 @@ impl<'c> Reader<'c> {
                         }
                     }
                 }
-            },
+            }
         }
         Recipe::Shapeless(Shapeless {
             priority,
@@ -1408,11 +1372,8 @@ impl<'c> Reader<'c> {
                     // Any other type gives no outputs; the value is kept as written.
                     payload.keep("output");
                     if !value.is_null() {
-                        self.report(
-                            &output_at,
-                            DiagnosticCode::InvalidType { text: None },
-                            Severity::Info,
-                        );
+                        self.lenient()
+                            .wrong_type(&Node::new(value, output_at.clone()));
                     }
                     None
                 }

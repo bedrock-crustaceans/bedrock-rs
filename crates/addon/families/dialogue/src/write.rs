@@ -3,32 +3,57 @@
 use facet_value::{VArray, VObject};
 
 use super::{Button, DialogueFile, DialogueScene, DialogueText, StoredCommand};
-use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::{EncodeError, Indent, Value, WriteStyle, write_json};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, JsonPathSegment};
+use bedrock_addon_core::document::Unknown;
+use bedrock_addon_core::json::{
+    EncodeError, Indent, Value, WriteStyle, write_json, write_json_with,
+};
 use bedrock_addon_core::version::SemVersion;
 
 impl DialogueFile {
-    /// Writes the file in `style`: the known members in schema order, each level's unknown
-    /// members after them, and no member the author did not write.
+    /// Writes the file in `style`: the known members in schema order, and no member the author
+    /// did not write.
     pub(crate) fn write_into(
         &self,
         out: &mut Vec<u8>,
         style: WriteStyle,
     ) -> Result<(), EncodeError> {
+        write_json(&self.root(), out, style)
+    }
+
+    /// [`write_into`](Self::write_into) with the document's unknown members after each level's
+    /// known ones. A member the typed value writes is never replaced by an unknown one of the
+    /// same key.
+    pub(crate) fn write_with_unknown(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        let root = self.root();
+        let mut kept = Unknown::new();
+        for (at, key, value) in unknown.iter() {
+            if !holds(&root, at, key) {
+                kept.put(at, key, value.clone());
+            }
+        }
+        write_json_with(&root, &kept, out, style)
+    }
+
+    /// The file's known members.
+    fn root(&self) -> Value {
         let mut scenes = VArray::new();
         for scene in &self.scenes {
             scenes.push(scene_json(scene));
         }
         let mut payload = VObject::new();
         payload.insert("scenes", scenes);
-        extend(&mut payload, &self.dialogue_extra);
         // Not core's `write_envelope`: the version is written as the file spelled it (a
         // `SemVersion`, not a `FormatVersion`), and dialogue is no family chain.
         let mut root = VObject::new();
         root.insert("format_version", version_text(&self.format_version));
         root.insert("minecraft:npc_dialogue", payload);
-        extend(&mut root, &self.extra);
-        write_json(&Value::from(root), out, style)
+        Value::from(root)
     }
 }
 
@@ -63,7 +88,6 @@ fn scene_json(scene: &DialogueScene) -> Value {
     if let Some(commands) = &scene.on_close_commands {
         object.insert("on_close_commands", commands_json(commands));
     }
-    extend(&mut object, &scene.extra);
     Value::from(object)
 }
 
@@ -77,7 +101,6 @@ fn button_json(button: &Button) -> Value {
     if let Some(url) = &button.url {
         object.insert("url", url.as_str());
     }
-    extend(&mut object, &button.extra);
     Value::from(object)
 }
 
@@ -98,13 +121,18 @@ fn commands_json(commands: &[StoredCommand]) -> VArray {
     list
 }
 
-/// Adds a level's unknown members after its known ones.
-fn extend(object: &mut VObject, extra: &UnknownMembers) {
-    for (key, value) in extra.iter() {
-        if !object.contains_key(key) {
-            object.insert(key, value.clone());
-        }
+/// Whether the object at `at` of `root` holds the member `key`.
+fn holds(root: &Value, at: &JsonPath, key: &str) -> bool {
+    let mut value = Some(root);
+    for segment in at.segments() {
+        value = value.and_then(|value| match segment {
+            JsonPathSegment::Key(key) => value.as_object()?.get(key),
+            JsonPathSegment::Index(index) => value.as_array()?.get(index),
+        });
     }
+    value
+        .and_then(Value::as_object)
+        .is_some_and(|object| object.contains_key(key))
 }
 
 /// `Json::FastWriter::write` of `value`: compact JSON and one newline. Object members come in

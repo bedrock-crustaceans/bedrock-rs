@@ -310,14 +310,7 @@ fn l10_an_unknown_member_at_any_level_is_a_warning() {
         ]
     );
     // Told, never kept.
-    let group = &document.categories[0].groups[0];
-    let identifier = group.group_identifier.as_ref().unwrap();
-    assert!(document.extra.is_empty());
-    assert!(document.categories[0].extra.is_empty());
-    assert!(group.extra.is_empty());
-    assert!(identifier.extra.is_empty());
-    assert!(identifier.icon.as_ref().unwrap().extra.is_empty());
-    assert!(group.items[0].extra.is_empty());
+    assert!(document.unknown().is_empty());
 }
 
 /// A member literally named `extra` is an unknown member like any other (this reader has
@@ -326,7 +319,7 @@ fn l10_an_unknown_member_at_any_level_is_a_warning() {
 fn l10_a_member_named_extra_is_an_unknown_member() {
     let document = loads(&with_group(r#""items": [], "extra": {"x": 1}"#));
     assert_eq!(document.diagnostics().iter().count(), 1);
-    assert!(document.categories[0].groups[0].extra.is_empty());
+    assert!(document.unknown().is_empty());
 }
 
 /// The constraints vanilla does not have: no size limits, no

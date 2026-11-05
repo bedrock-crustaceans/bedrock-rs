@@ -10,15 +10,17 @@ use super::texts::{
     SCENE_COMMAND_TYPE, URL_TYPE, formatted,
 };
 use super::{Button, DialogueScene, DialogueText, StoredCommand};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::DialogueSceneTag;
+use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
 use bedrock_addon_core::json::{Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::versioning::Reading;
 
 /// The payload member.
-const PAYLOAD: &str = "minecraft:npc_dialogue";
+pub(crate) const PAYLOAD: &str = "minecraft:npc_dialogue";
 
 /// The lowest `format_version` the game loads, 1.14.0.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 14, 0);
@@ -36,17 +38,18 @@ const SCENE_MEMBERS: &[&str] = &[
     "on_close_commands",
 ];
 
+/// How the game reads a dialogue file: jsoncpp's const `operator[]` and `isNull`, so a member
+/// written `null` is absent.
+const READING: Reading = Reading::NULL_ABSENT;
+
 /// A file vanilla reads: its version, its scenes and the file-level findings.
 pub(crate) struct ReadFile {
     /// `format_version` as read.
     pub(crate) format_version: SemVersion,
     /// Every scene element, in file order.
     pub(crate) scenes: Vec<ReadScene>,
-    /// Unknown members of `minecraft:npc_dialogue`.
-    pub(crate) dialogue_extra: UnknownMembers,
-    /// Unknown members of the root.
-    pub(crate) extra: UnknownMembers,
-    /// File-level warnings and infos.
+    /// File-level warnings and infos, with the unknown members of the root and of
+    /// `minecraft:npc_dialogue` in their table.
     pub(crate) diagnostics: Diagnostics,
 }
 
@@ -60,7 +63,8 @@ pub(crate) struct ReadScene {
 
 /// What became of one scene.
 pub(crate) enum SceneOutcome {
-    /// It loaded, with its warnings and infos.
+    /// It loaded, with its warnings and infos; the unknown members of the scene and of its
+    /// buttons are in their table, at paths from the scene.
     Loaded(DialogueScene, Diagnostics),
     /// A rule dropped it: the tag when it had a string one, and every finding (the dropping one
     /// at error level).
@@ -69,56 +73,97 @@ pub(crate) enum SceneOutcome {
     Untagged(Diagnostics),
 }
 
+/// What the read of one scene came to, before its findings are attached.
+enum Scene {
+    /// It loaded.
+    Loaded(DialogueScene),
+    /// The rule `code` at the path dropped it; the tag when it had a string one.
+    Dropped(Option<String>, DiagnosticCode, JsonPath),
+    /// It parsed with an empty tag.
+    Untagged,
+}
+
 /// Reads one file: the file, or every finding when the whole file is skipped. `stem` (the
 /// file's name without folders and extension) is the `%s` of every vanilla text; `cx` gives the
 /// command version.
 pub(crate) fn read(stem: &str, bytes: &[u8], cx: &LoadContext) -> Result<ReadFile, Diagnostics> {
-    let mut reader = Reader {
+    let reader = Reader {
         stem,
         command_version: command_version(cx.min_engine_version.as_ref()),
-        diagnostics: Diagnostics::default(),
     };
     // A number no double holds is read as the largest finite one, with a warning, so the
     // document can be written back.
     let finite = bedrock_addon_core::document::FiniteText::of(bytes);
-    let mut file = reader.file(finite.bytes());
-    match &mut file {
-        Some(file) => finite.settle(&mut file.diagnostics, None),
-        None => finite.settle(&mut reader.diagnostics, None),
-    }
-    file.ok_or(reader.diagnostics)
-}
-
-/// The member `key` of `value`, as jsoncpp's const `operator[]` and `isNull` see it: `None` when
-/// `value` is not an object, the member is absent, or it is `null`.
-fn member<'v>(value: &'v Value, key: &str) -> Option<&'v Value> {
-    value
-        .as_object()?
-        .get(key)
-        .filter(|member| !member.is_null())
-}
-
-/// The members of the object `value` vanilla never reads (every one but `known`), each
-/// reported as an information at `at` (the game ignores them, so the crate's own finding says
-/// so) and kept for write-back. A value that is not an object has none.
-fn unknown(
-    value: &Value,
-    known: &[&str],
-    at: &JsonPath,
-    diagnostics: &mut Diagnostics,
-) -> UnknownMembers {
-    let mut extra = UnknownMembers::default();
-    for (key, member) in value.as_object().into_iter().flatten() {
-        if known.contains(&key.as_str()) {
-            continue;
+    let mut diagnostics = Diagnostics::default();
+    let mut unknown = Unknown::new();
+    let file = reader.file(finite.bytes(), &mut kit(&mut diagnostics), &mut unknown);
+    finite.settle(&mut diagnostics, None);
+    match file {
+        Some((format_version, scenes)) => {
+            *diagnostics.unknown_mut() = unknown;
+            Ok(ReadFile {
+                format_version,
+                scenes,
+                diagnostics,
+            })
         }
-        diagnostics.push(
-            Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                .at(at.child(key.as_str())),
-        );
-        extra.insert(key.as_str().to_owned(), member.clone());
+        None => Err(diagnostics),
     }
-    extra
+}
+
+/// A read telling into `findings`: an unknown member is an information (the game ignores it,
+/// so the crate's own finding says so).
+fn kit(findings: &mut Diagnostics) -> Read<'_> {
+    Read::new(READING, findings).unknown_severity(Severity::Info)
+}
+
+/// The members of `node` when it is an object; nothing is told when it is not (jsoncpp reads
+/// every member of a value that is no object as `null`).
+fn members<'v>(read: &mut Read<'_>, node: &Node<'v>) -> Option<Members<'v>> {
+    if node.value().is_object() {
+        read.object(node)
+    } else {
+        None
+    }
+}
+
+/// The member `key` of `node`, as jsoncpp's const `operator[]` and `isNull` see it: `None` when
+/// `node` is not an object, the member is absent, or it is `null`.
+fn member<'v>(read: &mut Read<'_>, node: &Node<'v>, key: &str) -> Option<Node<'v>> {
+    let members = members(read, node)?;
+    read.opt(&members, key)
+}
+
+/// The elements of `node` when it is an array; nothing is told when it is not.
+fn elements<'v>(read: &mut Read<'_>, node: &Node<'v>) -> Option<Elements<'v>> {
+    if node.value().is_array() {
+        read.array(node)
+    } else {
+        None
+    }
+}
+
+/// Tells the members of the object `node` vanilla never reads (every one but `known`), each
+/// an information, and keeps each in `unknown` at `keep_at` (the object's path in the
+/// document) for write-back. A value that is not an object has none.
+fn unknown(
+    read: &mut Read<'_>,
+    node: &Node<'_>,
+    known: &[&str],
+    unknown: &mut Unknown,
+    keep_at: &JsonPath,
+) {
+    let Some(members) = members(read, node) else {
+        return;
+    };
+    for (key, value) in read.unknown(&members, known, Disposition::Keep) {
+        unknown.put(keep_at, key, value.clone());
+    }
+}
+
+/// An error at `at`.
+fn error(read: &mut Read<'_>, code: DiagnosticCode, at: JsonPath) {
+    read.push(Diagnostic::error(code).at(at));
 }
 
 /// The state of reading one file.
@@ -127,19 +172,25 @@ struct Reader<'s> {
     stem: &'s str,
     /// The pack's command version.
     command_version: u8,
-    /// File-level findings.
-    diagnostics: Diagnostics,
 }
 
 impl Reader<'_> {
-    /// The file, or `None` when it is skipped (the findings say why).
-    fn file(&mut self, bytes: &[u8]) -> Option<ReadFile> {
-        let root = self.json(bytes)?;
-        let format_version = self.version(&root)?;
+    /// The file's version and scenes, or `None` when it is skipped (the findings say why). The
+    /// unknown members of the root and of the payload go in `kept`.
+    fn file(
+        &self,
+        bytes: &[u8],
+        read: &mut Read<'_>,
+        kept: &mut Unknown,
+    ) -> Option<(SemVersion, Vec<ReadScene>)> {
+        let root = self.json(bytes, read)?;
+        let root = Node::new(&root, JsonPath::new());
+        let format_version = self.version(&root, read)?;
         let payload_at = JsonPath::new().child(PAYLOAD);
         // Only a null check: the payload's type is not looked at.
-        let Some(payload) = member(&root, PAYLOAD) else {
-            self.error(
+        let Some(payload) = member(read, &root, PAYLOAD) else {
+            error(
+                read,
                 DiagnosticCode::MissingPayload {
                     text: formatted(NO_PAYLOAD, &[self.stem]),
                 },
@@ -151,41 +202,39 @@ impl Reader<'_> {
         // One text for both an absent and a non-array `scenes`; a payload that is not an object
         // reads `scenes` as null.
         let text = formatted(NO_SCENES, &[self.stem]);
-        let Some(scenes) = member(payload, "scenes") else {
-            self.error(DiagnosticCode::MissingRequiredField { text }, scenes_at);
+        let Some(scenes) = member(read, &payload, "scenes") else {
+            error(
+                read,
+                DiagnosticCode::MissingRequiredField { text },
+                scenes_at,
+            );
             return None;
         };
-        let Some(scenes) = scenes.as_array() else {
-            self.error(DiagnosticCode::InvalidType { text }, scenes_at);
+        let Some(scenes) = elements(read, &scenes) else {
+            error(read, DiagnosticCode::InvalidType { text }, scenes_at);
             return None;
         };
         let scenes = scenes
             .iter()
-            .enumerate()
-            .map(|(index, scene)| {
-                let at = scenes_at.index(index);
-                let outcome = self.scene(scene, &at);
+            .map(|scene| {
+                let at = scene.path().clone();
+                let outcome = self.scene(&scene);
                 ReadScene { at, outcome }
             })
             .collect();
-        let extra = unknown(
+        unknown(
+            read,
             &root,
             &["format_version", PAYLOAD],
+            kept,
             &JsonPath::new(),
-            &mut self.diagnostics,
         );
-        let dialogue_extra = unknown(payload, &["scenes"], &payload_at, &mut self.diagnostics);
-        Some(ReadFile {
-            format_version,
-            scenes,
-            dialogue_extra,
-            extra,
-            diagnostics: std::mem::take(&mut self.diagnostics),
-        })
+        unknown(read, &payload, &["scenes"], kept, &payload_at);
+        Some((format_version, scenes))
     }
 
     /// The parsed root, comments allowed (`Json::Reader` with `allowComments`).
-    fn json(&mut self, bytes: &[u8]) -> Option<Value> {
+    fn json(&self, bytes: &[u8], read: &mut Read<'_>) -> Option<Value> {
         // A leading byte-order mark is blanked, not cut, so every offset stays an offset into the
         // file as written.
         let prepared = Prepared::new(bytes).ok();
@@ -202,7 +251,8 @@ impl Reader<'_> {
             Err(message) => {
                 // The file is skipped with the reader's message.
                 let text = formatted(READER, &[self.stem, &message]);
-                self.error(
+                error(
+                    read,
                     DiagnosticCode::MalformedInput { message, text },
                     JsonPath::new(),
                 );
@@ -210,7 +260,8 @@ impl Reader<'_> {
             }
         };
         if root.as_object().is_none() {
-            self.error(
+            error(
+                read,
                 DiagnosticCode::MalformedInput {
                     message: "the root is not an object".to_owned(),
                     text: formatted(ROOT_NOT_OBJECT, &[self.stem]),
@@ -223,10 +274,11 @@ impl Reader<'_> {
     }
 
     /// `format_version`, at 1.14.0 or above, with no maximum (`NPC_DIALOGUE_V1_14`).
-    fn version(&mut self, root: &Value) -> Option<SemVersion> {
+    fn version(&self, root: &Node<'_>, read: &mut Read<'_>) -> Option<SemVersion> {
         let at = JsonPath::new().child("format_version");
-        let Some(written) = member(root, "format_version") else {
-            self.error(
+        let Some(written) = member(read, root, "format_version") else {
+            error(
+                read,
                 DiagnosticCode::MissingFormatVersion {
                     text: formatted(NO_FORMAT_VERSION, &[self.stem]),
                 },
@@ -234,17 +286,19 @@ impl Reader<'_> {
             );
             return None;
         };
+        let written = written.value();
         // A version is a string (no wildcards), or an array of exactly three elements
         // convertible to unsigned; anything else is unreadable and gets the same text as absent.
-        let read = match written.as_string() {
+        let version = match written.as_string() {
             Some(text) => version_string(text.as_str()),
             None => written
                 .as_array()
                 // Core's reader of the array form, shared with the manifest.
                 .and_then(|elements| SemVersion::from_json_array(elements.as_slice())),
         };
-        let Some(version) = read else {
-            self.error(
+        let Some(version) = version else {
+            error(
+                read,
                 DiagnosticCode::MalformedFormatVersion {
                     text: formatted(NO_FORMAT_VERSION, &[self.stem]),
                 },
@@ -258,13 +312,13 @@ impl Reader<'_> {
         {
             // The literal `beta` is read as the sentinel 9999.9999.9999-beta. The game writes no
             // content-log line for it, so the crate reports it as an information.
-            self.diagnostics
-                .push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
+            read.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
         }
         // A plain `<` against the floor: 1.14.0 itself loads.
         if version < SemVersion::from(FLOOR) {
             let floor = FLOOR.to_string();
-            self.error(
+            error(
+                read,
                 DiagnosticCode::UnsupportedVersion {
                     text: formatted(OUT_OF_RANGE, &[self.stem, &floor]),
                 },
@@ -275,62 +329,77 @@ impl Reader<'_> {
         Some(version)
     }
 
-    /// A file-level error.
-    fn error(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.diagnostics.push(Diagnostic::error(code).at(at));
+    /// One scene element, with its own findings.
+    fn scene(&self, scene: &Node<'_>) -> SceneOutcome {
+        let mut diagnostics = Diagnostics::default();
+        let mut kept = Unknown::new();
+        let read = self.scene_members(scene, &mut kit(&mut diagnostics), &mut kept);
+        match read {
+            Scene::Loaded(scene) => {
+                *diagnostics.unknown_mut() = kept;
+                SceneOutcome::Loaded(scene, diagnostics)
+            }
+            // A dropped scene keeps no unknown member.
+            Scene::Dropped(tag, code, at) => {
+                diagnostics.push(Diagnostic::error(code).at(at));
+                SceneOutcome::Dropped(tag, diagnostics)
+            }
+            Scene::Untagged => SceneOutcome::Untagged(diagnostics),
+        }
     }
 
-    /// One scene element.
-    fn scene(&self, scene: &Value, at: &JsonPath) -> SceneOutcome {
+    /// The members of one scene element; the unknown members of the scene and of its buttons
+    /// go in `kept`, at paths from the scene.
+    fn scene_members(&self, scene: &Node<'_>, read: &mut Read<'_>, kept: &mut Unknown) -> Scene {
+        let at = scene.path();
         // The game's order: `npc_name`, `scene_tag`, `text`, `buttons` and their count, the open
         // and the close commands; the first failing rule drops the scene and ends the checks.
-        let mut diagnostics = Diagnostics::default();
         // A null or absent name is the empty name; a string or an object is a name; anything else
         // drops the scene.
-        let npc_name = match member(scene, "npc_name") {
+        let npc_name = match member(read, scene, "npc_name") {
             None => None,
             Some(name) => {
-                let Some(name) = text(name) else {
+                let Some(name) = text(name.value()) else {
                     let code = DiagnosticCode::InvalidType {
                         text: formatted(NPC_NAME, &[self.stem]),
                     };
-                    return dropped(None, diagnostics, code, at.child("npc_name"));
+                    return Scene::Dropped(None, code, at.child("npc_name"));
                 };
                 Some(name)
             }
         };
         // Absent, null or any other type than a string: one text.
-        let Some(tag) = member(scene, "scene_tag") else {
+        let Some(tag) = member(read, scene, "scene_tag") else {
             let code = DiagnosticCode::MissingRequiredField {
                 text: formatted(NO_SCENE_TAG, &[self.stem]),
             };
-            return dropped(None, diagnostics, code, at.child("scene_tag"));
+            return Scene::Dropped(None, code, at.child("scene_tag"));
         };
-        let Some(tag) = tag.as_string() else {
+        let Some(tag) = tag.value().as_string() else {
             let code = DiagnosticCode::InvalidType {
                 text: formatted(NO_SCENE_TAG, &[self.stem]),
             };
-            return dropped(None, diagnostics, code, at.child("scene_tag"));
+            return Scene::Dropped(None, code, at.child("scene_tag"));
         };
         let tag = tag.as_str().to_owned();
         // An object is kept as its JSON text and anything else is read as a string with the empty
         // default: a bool reads as its word, a number or an array as the empty text.
-        let text = match member(scene, "text") {
+        let text = match member(read, scene, "text") {
             None => {
                 let code = DiagnosticCode::MissingRequiredField {
                     text: formatted(NO_TEXT, &[self.stem]),
                 };
-                return dropped(Some(tag), diagnostics, code, at.child("text"));
+                return Scene::Dropped(Some(tag), code, at.child("text"));
             }
-            Some(value) => text(value).unwrap_or_else(|| {
+            Some(node) => text(node.value()).unwrap_or_else(|| {
                 // The game reads these without a content-log line, so the crate reports the
                 // coercion as an information.
-                diagnostics.push(
+                read.push(
                     Diagnostic::info(DiagnosticCode::InvalidType { text: None })
                         .at(at.child("text")),
                 );
                 DialogueText::Plain(
-                    match value.as_bool() {
+                    match node.value().as_bool() {
                         Some(true) => "true",
                         Some(false) => "false",
                         None => "",
@@ -341,18 +410,18 @@ impl Reader<'_> {
         };
         // Anything but an array is ignored.
         let buttons_at = at.child("buttons");
-        let buttons: Option<Vec<Button>> =
-            member(scene, "buttons")
-                .and_then(Value::as_array)
-                .map(|buttons| {
-                    buttons
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(index, button)| {
-                            self.button(button, &buttons_at.index(index), &mut diagnostics)
-                        })
-                        .collect()
-                });
+        let buttons: Option<Vec<Button>> = match member(read, scene, "buttons") {
+            Some(buttons) => elements(read, &buttons).map(|buttons| {
+                let mut read_buttons = Vec::new();
+                for button in buttons.iter() {
+                    // Kept at the index the button is written at: dropped ones do not count.
+                    let keep_at = JsonPath::new().child("buttons").index(read_buttons.len());
+                    read_buttons.extend(self.button(&button, read, kept, &keep_at));
+                }
+                read_buttons
+            }),
+            None => None,
+        };
         // The count is taken after every button has been read, so dropped buttons do not count.
         if buttons
             .as_ref()
@@ -361,92 +430,91 @@ impl Reader<'_> {
             let code = DiagnosticCode::InvalidValue {
                 text: formatted(MAX_BUTTONS, &[self.stem, &MAX_NUM_BUTTONS.to_string()]),
             };
-            return dropped(Some(tag), diagnostics, code, buttons_at);
+            return Scene::Dropped(Some(tag), code, buttons_at);
         }
-        let on_open_commands = self.scene_commands(scene, "on_open_commands", at, &mut diagnostics);
-        let on_close_commands =
-            self.scene_commands(scene, "on_close_commands", at, &mut diagnostics);
+        let on_open_commands = self.scene_commands(scene, "on_open_commands", read);
+        let on_close_commands = self.scene_commands(scene, "on_close_commands", read);
         // A scene that parsed with an empty tag is dropped without a message.
         if tag.is_empty() {
-            return SceneOutcome::Untagged(diagnostics);
+            return Scene::Untagged;
         }
-        let extra = unknown(scene, SCENE_MEMBERS, at, &mut diagnostics);
-        SceneOutcome::Loaded(
-            DialogueScene {
-                scene_tag: DialogueSceneTag::parse(tag),
-                npc_name,
-                text,
-                buttons,
-                on_open_commands,
-                on_close_commands,
-                extra,
-            },
-            diagnostics,
-        )
+        unknown(read, scene, SCENE_MEMBERS, kept, &JsonPath::new());
+        Scene::Loaded(DialogueScene {
+            scene_tag: DialogueSceneTag::parse(tag),
+            npc_name,
+            text,
+            buttons,
+            on_open_commands,
+            on_close_commands,
+        })
     }
 
     /// One button element; `None` when it is dropped: with a kept error by a rule, silently for
     /// an empty name. The game logs each of these (a missing name, both commands and a URL, a
     /// command that is no string, a URL that is no string) at the content log's error level and
-    /// skips the button while the scene goes on, so each finding is a kept error.
+    /// skips the button while the scene goes on, so each finding is a kept error. Its unknown
+    /// members go in `kept` at `keep_at`.
     fn button(
         &self,
-        button: &Value,
-        at: &JsonPath,
-        diagnostics: &mut Diagnostics,
+        button: &Node<'_>,
+        read: &mut Read<'_>,
+        kept: &mut Unknown,
+        keep_at: &JsonPath,
     ) -> Option<Button> {
-        let mut warn = |code: DiagnosticCode, at: JsonPath| {
-            diagnostics.push_kept_error(Diagnostic::error(code).at(at));
+        let at = button.path();
+        let warn = |read: &mut Read<'_>, code: DiagnosticCode, at: JsonPath| {
+            read.push(Diagnostic::error(code).at(at).into_kept());
         };
         // An absent or null name and one that is neither a string nor an object share one text.
-        let Some(name) = member(button, "name") else {
+        let Some(name) = member(read, button, "name") else {
             let text = formatted(NO_BUTTON_NAME, &[self.stem]);
             warn(
+                read,
                 DiagnosticCode::MissingRequiredField { text },
                 at.child("name"),
             );
             return None;
         };
-        let Some(name) = text(name) else {
+        let Some(name) = text(name.value()) else {
             let text = formatted(NO_BUTTON_NAME, &[self.stem]);
-            warn(DiagnosticCode::InvalidType { text }, at.child("name"));
+            warn(read, DiagnosticCode::InvalidType { text }, at.child("name"));
             return None;
         };
         // Both present and non-null, checked before either type is looked at.
-        let commands = member(button, "commands");
-        let url = member(button, "url");
+        let commands = member(read, button, "commands");
+        let url = member(read, button, "url");
         if commands.is_some() && url.is_some() {
             let text = formatted(COMMANDS_AND_URL, &[self.stem]);
-            warn(DiagnosticCode::InvalidValue { text }, at.clone());
+            warn(read, DiagnosticCode::InvalidValue { text }, at.clone());
             return None;
         }
         // A non-array is ignored; a non-string element drops the button.
-        let commands = match commands.and_then(Value::as_array) {
+        let commands = match commands.and_then(|commands| elements(read, &commands)) {
             None => None,
             Some(list) => {
-                let commands_at = at.child("commands");
-                let mut kept = Vec::new();
-                for (index, command) in list.iter().enumerate() {
-                    let Some(raw) = command.as_string() else {
+                let mut stored = Vec::new();
+                for command in list.iter() {
+                    let Some(raw) = command.value().as_string() else {
                         let text = formatted(COMMAND_TYPE, &[self.stem]);
                         warn(
+                            read,
                             DiagnosticCode::InvalidType { text },
-                            commands_at.index(index),
+                            command.path().clone(),
                         );
                         return None;
                     };
-                    kept.extend(self.command(raw.as_str()));
+                    stored.extend(self.command(raw.as_str()));
                 }
-                Some(kept)
+                Some(stored)
             }
         };
         // An absent or null `url` is none; any other type than a string drops the button.
         let url = match url {
             None => None,
             Some(url) => {
-                let Some(url) = url.as_string() else {
+                let Some(url) = url.value().as_string() else {
                     let text = formatted(URL_TYPE, &[self.stem]);
-                    warn(DiagnosticCode::InvalidType { text }, at.child("url"));
+                    warn(read, DiagnosticCode::InvalidType { text }, at.child("url"));
                     return None;
                 };
                 Some(url.as_str().to_owned())
@@ -456,16 +524,16 @@ impl Reader<'_> {
         if matches!(&name, DialogueText::Plain(name) if name.is_empty()) {
             return None;
         }
+        unknown(read, button, &["name", "commands", "url"], kept, keep_at);
         let button = Button {
             name,
             commands,
             url,
-            extra: unknown(button, &["name", "commands", "url"], at, diagnostics),
         };
         if button.label_is_cut() {
             // The label is cut, not the name; the game says nothing, so the crate reports an
             // information.
-            diagnostics.push(
+            read.push(
                 Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at.child("name")),
             );
         }
@@ -477,30 +545,30 @@ impl Reader<'_> {
     /// error and the rest are kept.
     fn scene_commands(
         &self,
-        scene: &Value,
+        scene: &Node<'_>,
         key: &'static str,
-        at: &JsonPath,
-        diagnostics: &mut Diagnostics,
+        read: &mut Read<'_>,
     ) -> Option<Vec<StoredCommand>> {
-        let list = member(scene, key)?.as_array()?;
-        let list_at = at.child(key);
+        let list = member(read, scene, key)?;
+        let list = elements(read, &list)?;
         // The game's text names the list in the singular: `on_open_command`, `on_close_command`.
         let name = key.strip_suffix('s').unwrap_or(key);
-        let mut kept = Vec::new();
-        for (index, command) in list.iter().enumerate() {
-            match command.as_string() {
-                Some(raw) => kept.extend(self.command(raw.as_str())),
+        let mut stored = Vec::new();
+        for command in list.iter() {
+            match command.value().as_string() {
+                Some(raw) => stored.extend(self.command(raw.as_str())),
                 // The game logs it at the content log's error level and skips the command, so
                 // the finding is a kept error.
-                None => diagnostics.push_kept_error(
+                None => read.push(
                     Diagnostic::error(DiagnosticCode::InvalidType {
                         text: formatted(SCENE_COMMAND_TYPE, &[self.stem, name]),
                     })
-                    .at(list_at.index(index)),
+                    .at(command.path().clone())
+                    .into_kept(),
                 ),
             }
         }
-        Some(kept)
+        Some(stored)
     }
 
     /// One command as the game stores it: trimmed, with the pack's command version; `None` when
@@ -543,15 +611,4 @@ fn text(value: &Value) -> Option<DialogueText> {
         return Some(DialogueText::Plain(text.as_str().to_owned()));
     }
     value.as_object().map(|_| DialogueText::Raw(value.clone()))
-}
-
-/// A scene dropped by the rule `code` at `at`, after the findings it already has.
-fn dropped(
-    tag: Option<String>,
-    mut diagnostics: Diagnostics,
-    code: DiagnosticCode,
-    at: JsonPath,
-) -> SceneOutcome {
-    diagnostics.push(Diagnostic::error(code).at(at));
-    SceneOutcome::Dropped(tag, diagnostics)
 }

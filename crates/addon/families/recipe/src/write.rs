@@ -1,11 +1,11 @@
 //! Writing a recipe back as JSON: the members the author wrote, in the order vanilla reads
-//! them, unknown members after the known ones of their level (the Value level).
+//! them. The unknown members are the document's table, which its writer puts after the known
+//! ones of their object.
 
 use facet_value::{VArray, VObject};
 
 use super::{Description, Ingredient, Output, Recipe, Tags, Unlock};
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::molang::write_list;
 
@@ -110,12 +110,10 @@ impl Recipe {
         }
         let mut root = VObject::new();
         super::types::each!(self, r => {
-            extend(&mut payload, &r.extra);
             if let Some(version) = r.format_version {
                 root.insert("format_version", version.to_string());
             }
             root.insert(self.kind().payload_key(), payload);
-            extend(&mut root, &r.root_extra);
         });
         Ok(root.into_value())
     }
@@ -124,7 +122,6 @@ impl Recipe {
 fn description(payload: &mut VObject, description: &Description) {
     let mut object = VObject::new();
     object.insert("identifier", description.identifier.as_str());
-    extend(&mut object, &description.extra);
     payload.insert("description", object);
 }
 
@@ -148,12 +145,6 @@ fn optional(object: &mut VObject, key: &str, value: Option<Value>) {
     }
 }
 
-fn extend(object: &mut VObject, extra: &UnknownMembers) {
-    for (key, value) in extra.iter() {
-        object.insert(key, value.clone());
-    }
-}
-
 fn ingredient_value(ingredient: &Ingredient) -> Result<Value, EncodeError> {
     match ingredient {
         Ingredient::Name(name) => Ok(Value::from(name.as_str())),
@@ -169,7 +160,6 @@ fn ingredient_value(ingredient: &Ingredient) -> Result<Value, EncodeError> {
             optional(&mut value, "count", object.count.map(int));
             optional(&mut value, "item", object.item.as_deref().map(Value::from));
             optional(&mut value, "tag", object.tag.as_deref().map(Value::from));
-            extend(&mut value, &object.extra);
             Ok(value.into_value())
         }
     }
@@ -194,10 +184,9 @@ fn unlock_value(unlock: &Unlock) -> Result<Value, EncodeError> {
     match unlock {
         Unlock::Ingredients(items) => list(items),
         Unlock::Malformed(value) => Ok(value.clone()),
-        Unlock::Context { context, extra } => {
+        Unlock::Context { context } => {
             let mut object = VObject::new();
             object.insert("context", context.as_str());
-            extend(&mut object, extra);
             Ok(object.into_value())
         }
     }

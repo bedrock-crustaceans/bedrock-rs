@@ -77,7 +77,7 @@ fn cat03_an_unknown_member_is_a_warning_and_the_file_loads() {
     let group = &document.categories[0].groups[0];
     assert_eq!(group.items, [item("custom:item1")]);
     // Told, not kept.
-    assert!(group.extra.is_empty(), "the member is not kept");
+    assert!(document.unknown().is_empty(), "the member is not kept");
 }
 
 #[test]

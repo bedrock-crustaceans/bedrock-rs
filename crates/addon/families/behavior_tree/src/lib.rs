@@ -11,6 +11,7 @@
 pub use link::link as link_subtrees;
 
 mod builtin;
+mod kinds;
 mod link;
 mod read;
 mod write;
@@ -19,7 +20,6 @@ mod write;
 mod tests;
 
 use crate::read::parse_document;
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BehaviorTreeId;
 use std::collections::{HashMap, HashSet};
 
@@ -27,7 +27,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Ph
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
-    NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
+    NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, Unknown, default_path,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -43,6 +43,11 @@ pub type Vec3 = [f32; 3];
 
 /// A behavior-tree file (`minecraft:behavior_tree`): a named tree of action nodes that
 /// vanilla's automation test framework runs on the local player.
+///
+/// The members of the document root other than `minecraft:behavior_tree` (a `format_version`,
+/// for one) and those of `minecraft:behavior_tree` other than `minecraft:name` and
+/// `minecraft:root` are kept in the document's unknown table ([`Document::unknown`]); vanilla
+/// reads none of them.
 ///
 /// JSON: `{"minecraft:behavior_tree": {"minecraft:name": "chop_wood", "minecraft:root":
 /// {"minecraft:sequence": {"children": [...]}}}}`. The tree is keyed by `minecraft:name`; the
@@ -64,12 +69,6 @@ pub struct BehaviorTree {
     /// one packet per tree. Empty for a tree built in memory. Writing a tree writes
     /// [`name`](Self::name) and [`root`](Self::root), never this text.
     pub raw: String,
-    /// The members of `minecraft:behavior_tree` other than `minecraft:name` and
-    /// `minecraft:root`. Vanilla reads none of them.
-    pub extra: UnknownMembers,
-    /// The members of the document root other than `minecraft:behavior_tree` (a
-    /// `format_version`, for one). Vanilla reads none of them.
-    pub root_extra: UnknownMembers,
 }
 
 /// A node parameter as vanilla keeps it: a literal and the name of a blackboard entry.
@@ -97,8 +96,9 @@ pub struct Param<T> {
 /// One node of a behavior tree: a JSON object with exactly one member, whose name is the
 /// node type (`minecraft:sequence`) and whose value is the node's body.
 ///
-/// There are 24 node types. A body that is not an object reads as an empty one. Each
-/// variant's `extra` holds the body members the node type does not read.
+/// There are 24 node types. A body that is not an object reads as an empty one. The body
+/// members the node type does not read are kept in the document's unknown table
+/// ([`Document::unknown`]) at the body's path, `…/<node type>`.
 ///
 /// A tree read from a file nests at most as deep as the reader's limit of 128 JSON levels
 /// (62 decorators around a leaf). A tree built in memory may nest deeper: it is dropped and
@@ -116,8 +116,6 @@ pub enum Node {
         /// the node then has no children. An element that is not a one-member object, or
         /// whose type is unknown, is left out.
         children: Option<Vec<Node>>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:selector`: a composite over its children, in order.
     Selector {
@@ -125,8 +123,6 @@ pub enum Node {
         /// the node then has no children. An element that is not a one-member object, or
         /// whose type is unknown, is left out.
         children: Option<Vec<Node>>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:repeat_until_success`: a decorator that repeats its child.
     RepeatUntilSuccess {
@@ -136,24 +132,18 @@ pub enum Node {
         /// `desired_max_number_of_attempts` (default 0), or the key
         /// `max_number_of_attempts_id` (default key `max_number_of_attempts`).
         max_attempts: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:repeat_until_failure`: a decorator that repeats its child.
     RepeatUntilFailure {
         /// `child`: one node. `None` when the member is absent, not a one-member object, or
         /// of an unknown type.
         child: Option<Box<Node>>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:inverter`: a decorator that inverts its child's result.
     Inverter {
         /// `child`: one node. `None` when the member is absent, not a one-member object, or
         /// of an unknown type.
         child: Option<Box<Node>>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:subtree`: runs another tree.
     Subtree {
@@ -165,24 +155,18 @@ pub enum Node {
         /// string `s` is `(s, s)`; an object with both `from` and `to` is that pair; the
         /// member is one such item or an array of them. Any other item is left out.
         data_items: Vec<(String, String)>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:activate_tool`.
     ActivateTool {
         /// `block_pos` (default `[0, 0, 0]`), or the key `block_pos_id` (default key
         /// `target_block_pos`).
         block_pos: Param<BlockPos>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:attack`.
     Attack {
         /// `num_of_ticks` (default 0), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:break_block`.
     BreakBlock {
@@ -192,14 +176,9 @@ pub enum Node {
         /// `num_of_ticks` (default 0), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:consume_item`: no parameters.
-    ConsumeItem {
-        /// The body members: the node reads none.
-        extra: UnknownMembers,
-    },
+    ConsumeItem {},
     /// `minecraft:find_block`.
     FindBlock {
         /// `block_name` (default empty), or the key `block_name_id`. The key is `block_name`
@@ -209,8 +188,6 @@ pub enum Node {
         /// `target_search_radius`). The literal is 32 when the member is absent or of the
         /// wrong type.
         search_radius: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:find_entity`.
     FindEntity {
@@ -221,8 +198,6 @@ pub enum Node {
         /// `target_search_radius`). The literal is 32 when the member is absent or of the
         /// wrong type.
         search_radius: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:fly`.
     ///
@@ -238,8 +213,6 @@ pub enum Node {
         /// `should_throw_event_if_no_state_change_necessary_id` (default key
         /// `should_throw_event_if_no_state_change_necessary`).
         throw_if_no_change: Param<bool>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:get_interaction_position_for_block`.
     GetInteractionPositionForBlock {
@@ -255,24 +228,18 @@ pub enum Node {
         /// `max_search_distance` (default 0), or the key `max_search_distance_id` (default
         /// key `max_search_distance`).
         max_search_distance: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:interact`.
     Interact {
         /// `num_of_ticks` (default 1), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:look_at`.
     LookAt {
         /// `block_pos` (default `[0, 0, 0]`), or the key `block_pos_id` (default key
         /// `target_block_pos`).
         block_pos: Param<BlockPos>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:look_at_entity`.
     LookAtEntity {
@@ -283,8 +250,6 @@ pub enum Node {
         /// `target_search_radius`). The literal is 32 when the member is absent or of the
         /// wrong type. Loaded, but the node never uses it.
         search_radius: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:move`.
     Move {
@@ -297,8 +262,6 @@ pub enum Node {
         /// `max_number_of_ticks` (default 0), or the key `number_of_ticks_id` (default key
         /// `number_of_ticks`).
         ticks: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:move_to`.
     MoveTo {
@@ -309,78 +272,32 @@ pub enum Node {
         /// `distance_epsilon` (default 0), or the key `distance_epsilon_id` (default key
         /// `target_distance_epsilon`).
         distance_epsilon: Param<f32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:place_block`: no parameters.
-    PlaceBlock {
-        /// The body members: the node reads none.
-        extra: UnknownMembers,
-    },
+    PlaceBlock {},
     /// `minecraft:shoot_bow`.
     ShootBow {
         /// `num_of_shots` (default 0), or the key `num_of_shots_id` (default key
         /// `target_num_of_shots`).
         shots: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:use_entity`: no parameters.
-    UseEntity {
-        /// The body members: the node reads none.
-        extra: UnknownMembers,
-    },
+    UseEntity {},
     /// `minecraft:wait`: waits whole seconds.
     Wait {
         /// `wait_duration` as an integer, in seconds (default 0), or the same member as a
         /// string, which is then the key (default key `duration`).
         seconds: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
     /// `minecraft:wait_ticks`.
     WaitTicks {
         /// `num_of_ticks` (default 0), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
-        /// The body members the node does not read.
-        extra: UnknownMembers,
     },
 }
 
 impl Node {
-    /// The node type as the JSON member names it: `minecraft:sequence`, `minecraft:wait`, ….
-    pub fn type_name(&self) -> &'static str {
-        match self {
-            Self::Sequence { .. } => "minecraft:sequence",
-            Self::Selector { .. } => "minecraft:selector",
-            Self::RepeatUntilSuccess { .. } => "minecraft:repeat_until_success",
-            Self::RepeatUntilFailure { .. } => "minecraft:repeat_until_failure",
-            Self::Inverter { .. } => "minecraft:inverter",
-            Self::Subtree { .. } => "minecraft:subtree",
-            Self::ActivateTool { .. } => "minecraft:activate_tool",
-            Self::Attack { .. } => "minecraft:attack",
-            Self::BreakBlock { .. } => "minecraft:break_block",
-            Self::ConsumeItem { .. } => "minecraft:consume_item",
-            Self::FindBlock { .. } => "minecraft:find_block",
-            Self::FindEntity { .. } => "minecraft:find_entity",
-            Self::Fly { .. } => "minecraft:fly",
-            Self::GetInteractionPositionForBlock { .. } => {
-                "minecraft:get_interaction_position_for_block"
-            }
-            Self::Interact { .. } => "minecraft:interact",
-            Self::LookAt { .. } => "minecraft:look_at",
-            Self::LookAtEntity { .. } => "minecraft:look_at_entity",
-            Self::Move { .. } => "minecraft:move",
-            Self::MoveTo { .. } => "minecraft:move_to",
-            Self::PlaceBlock { .. } => "minecraft:place_block",
-            Self::ShootBow { .. } => "minecraft:shoot_bow",
-            Self::UseEntity { .. } => "minecraft:use_entity",
-            Self::Wait { .. } => "minecraft:wait",
-            Self::WaitTicks { .. } => "minecraft:wait_ticks",
-        }
-    }
-
     /// The nodes directly below this one, in order: a composite's children, a decorator's
     /// child; none for any other node.
     pub fn nodes(&self) -> &[Node] {
@@ -392,36 +309,6 @@ impl Node {
             | Self::RepeatUntilFailure { child, .. }
             | Self::Inverter { child, .. } => child.as_deref().map_or(&[], std::slice::from_ref),
             _ => &[],
-        }
-    }
-
-    /// The body members the node does not read.
-    pub fn extra(&self) -> &UnknownMembers {
-        match self {
-            Self::Sequence { extra, .. }
-            | Self::Selector { extra, .. }
-            | Self::RepeatUntilSuccess { extra, .. }
-            | Self::RepeatUntilFailure { extra, .. }
-            | Self::Inverter { extra, .. }
-            | Self::Subtree { extra, .. }
-            | Self::ActivateTool { extra, .. }
-            | Self::Attack { extra, .. }
-            | Self::BreakBlock { extra, .. }
-            | Self::ConsumeItem { extra }
-            | Self::FindBlock { extra, .. }
-            | Self::FindEntity { extra, .. }
-            | Self::Fly { extra, .. }
-            | Self::GetInteractionPositionForBlock { extra, .. }
-            | Self::Interact { extra, .. }
-            | Self::LookAt { extra, .. }
-            | Self::LookAtEntity { extra, .. }
-            | Self::Move { extra, .. }
-            | Self::MoveTo { extra, .. }
-            | Self::PlaceBlock { extra }
-            | Self::ShootBow { extra, .. }
-            | Self::UseEntity { extra }
-            | Self::Wait { extra, .. }
-            | Self::WaitTicks { extra, .. } => extra,
         }
     }
 }
@@ -457,14 +344,12 @@ impl Drop for Node {
 }
 
 impl BehaviorTree {
-    /// A tree named `name` with the root node `root`, no raw text and no other members.
+    /// A tree named `name` with the root node `root` and no raw text.
     pub fn new(name: BehaviorTreeId, root: Node) -> Self {
         Self {
             name,
             root,
             raw: String::new(),
-            extra: UnknownMembers::default(),
-            root_extra: UnknownMembers::default(),
         }
     }
 }
@@ -556,6 +441,17 @@ impl Content for BehaviorTree {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
+    }
+
+    /// The writer's own merge of the unknown members: one named like a member the writer
+    /// writes is left out, and the members' nesting counts against the reader's limit.
+    fn write_json_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        self.write_into_with(unknown, out, style)
     }
 }
 

@@ -1,5 +1,6 @@
 //! Writing a tree back as JSON: the name and the root node, each parameter in the form it
-//! reads back from, unknown members after the known ones of their level (the Value level).
+//! reads back from, the document's unknown members after the known ones of their level (the
+//! Value level), one named like a member already written left out.
 //!
 //! A parameter is written as one of vanilla's two members at a time. Its key decides: under
 //! the key a read literal leaves (empty; `block_name` for `find_block`'s block name) it is the
@@ -24,10 +25,10 @@ use super::read::{
     SHOULD_THROW, TARGET_BLOCK_POS, WAIT_DEFAULT_KEY, WAIT_DURATION,
 };
 use super::{BehaviorTree, Node, Param};
-use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, JsonPathSegment};
+use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
+    EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, merge_unknown, write_json,
 };
 
 impl BehaviorTree {
@@ -37,55 +38,62 @@ impl BehaviorTree {
         out: &mut Vec<u8>,
         style: WriteStyle,
     ) -> Result<(), EncodeError> {
-        write_json(&self.to_value()?, out, style)
+        write_json(&self.to_value(&Unknown::new())?.0, out, style)
     }
 
-    /// The document as a JSON value. A tree whose text would nest past the reader's limit is
-    /// not written: the reader would reject it.
-    fn to_value(&self) -> Result<Value, EncodeError> {
+    /// [`write_into`](Self::write_into) with the document's unknown members, after the known
+    /// members of their object; what could not be written is told.
+    pub(super) fn write_into_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        let (document, told) = self.to_value(unknown)?;
+        write_json(&document, out, style)?;
+        Ok(told)
+    }
+
+    /// The document as a JSON value, with `unknown`'s members. A tree whose text would nest
+    /// past the reader's limit is not written: the reader would reject it.
+    fn to_value(&self, unknown: &Unknown) -> Result<(Value, Vec<Diagnostic>), EncodeError> {
         let payload_at = JsonPath::of_keys([PAYLOAD]);
         let root_at = payload_at.child(ROOT);
         let too_deep = || EncodeError::NotRepresentable {
             at: root_at.clone(),
             what: Unrepresentable::Unsupported,
         };
-        // Before anything recurses: the nodes and the unknown members, walked with explicit
-        // stacks. Past this point no walk is deeper than the limit.
+        // Before anything recurses: the nodes, walked with an explicit stack. Past this point
+        // no walk is deeper than the limit.
         if self.nesting() > MAX_JSON_DEPTH {
             return Err(too_deep());
         }
         let mut payload = VObject::new();
         payload.insert(NAME, self.name.as_str());
         payload.insert(ROOT, node_value(&self.root, &root_at)?);
-        extend(&mut payload, &self.extra);
         let mut root = VObject::new();
         root.insert(PAYLOAD, payload);
-        extend(&mut root, &self.root_extra);
-        let document = root.into_value();
-        // And exactly, with what the members themselves add (an `[x, y, z]`, `data_items`).
+        let mut document = root.into_value();
+        let unknown = not_written(&document, unknown);
+        let told = merge_unknown(&mut document, &unknown);
+        // And exactly, with what the members themselves add (an `[x, y, z]`, `data_items`, an
+        // unknown member).
         if value_nesting(&document) > MAX_JSON_DEPTH {
             return Err(too_deep());
         }
-        Ok(document)
+        Ok((document, told))
     }
 
-    /// The deepest level of arrays and objects among the node bodies and the unknown members
-    /// of the document as it would be written: the root object is level 1, the payload 2, the
-    /// root node's object 3 and its body 4; a decorator's child sits two levels below its
-    /// node, a composite's children three.
+    /// The deepest level of arrays and objects among the node bodies of the document as it
+    /// would be written: the root object is level 1, the payload 2, the root node's object 3
+    /// and its body 4; a decorator's child sits two levels below its node, a composite's
+    /// children three.
     fn nesting(&self) -> usize {
-        let extras = |extra: &UnknownMembers, level: usize| {
-            extra
-                .iter()
-                .map(|(_, value)| level + value_nesting(value))
-                .max()
-                .unwrap_or(level)
-        };
-        let mut deepest = extras(&self.root_extra, 1).max(extras(&self.extra, 2));
+        let mut deepest = 2;
         let mut pending = vec![(&self.root, 3_usize)];
         while let Some((node, object)) = pending.pop() {
             let body = object + 1;
-            deepest = deepest.max(extras(node.extra(), body));
+            deepest = deepest.max(body);
             if deepest > MAX_JSON_DEPTH {
                 // Deep enough to refuse: the rest of the tree need not be walked.
                 break;
@@ -98,6 +106,31 @@ impl BehaviorTree {
         }
         deepest
     }
+}
+
+/// The members of `unknown` to write into `document`: each but one named like a member its
+/// object already has.
+fn not_written(document: &Value, unknown: &Unknown) -> Unknown {
+    let mut kept = Unknown::new();
+    for (at, key, value) in unknown.iter() {
+        let written = object_at(document, at).is_some_and(|object| object.contains_key(key));
+        if !written {
+            kept.put(at, key, value.clone());
+        }
+    }
+    kept
+}
+
+/// The object at `at` in `document`, when there is one.
+fn object_at<'v>(document: &'v Value, at: &JsonPath) -> Option<&'v VObject> {
+    let mut value = document;
+    for segment in at.segments() {
+        value = match segment {
+            JsonPathSegment::Key(key) => value.as_object()?.get(key)?,
+            JsonPathSegment::Index(index) => value.as_array()?.get(index)?,
+        };
+    }
+    value.as_object()
 }
 
 /// The deepest level of arrays and objects in `value` (0 for a scalar), without recursion.
@@ -114,16 +147,6 @@ fn value_nesting(value: &Value) -> usize {
         }
     }
     deepest
-}
-
-/// The unknown members of a level, after its known ones; one named like a member already
-/// written is left out.
-fn extend(object: &mut VObject, extra: &UnknownMembers) {
-    for (key, value) in extra.iter() {
-        if !object.contains_key(key) {
-            object.insert(key, value.clone());
-        }
-    }
 }
 
 /// A literal as a JSON value; `at` is its path, for a number JSON cannot spell.
@@ -216,8 +239,8 @@ fn node_value(node: &Node, at: &JsonPath) -> Result<Value, EncodeError> {
     let at = &at.child(kind);
     let mut body = VObject::new();
     let b = &mut body;
-    let extra = match node {
-        Node::Sequence { children, extra } | Node::Selector { children, extra } => {
+    match node {
+        Node::Sequence { children } | Node::Selector { children } => {
             if let Some(children) = children {
                 let children_at = at.child("children");
                 let nodes = children
@@ -227,25 +250,20 @@ fn node_value(node: &Node, at: &JsonPath) -> Result<Value, EncodeError> {
                     .collect::<Result<Vec<Value>, EncodeError>>()?;
                 b.insert("children", VArray::from(nodes));
             }
-            extra
         }
         Node::RepeatUntilSuccess {
             child: node,
             max_attempts,
-            extra,
         } => {
             put(b, at, &MAX_ATTEMPTS, max_attempts)?;
             put_child(b, at, node.as_deref())?;
-            extra
         }
-        Node::RepeatUntilFailure { child: node, extra } | Node::Inverter { child: node, extra } => {
+        Node::RepeatUntilFailure { child: node } | Node::Inverter { child: node } => {
             put_child(b, at, node.as_deref())?;
-            extra
         }
         Node::Subtree {
             subtree_id,
             data_items,
-            extra,
         } => {
             if !subtree_id.as_str().is_empty() {
                 b.insert("subtree_id", subtree_id.as_str());
@@ -265,110 +283,82 @@ fn node_value(node: &Node, at: &JsonPath) -> Result<Value, EncodeError> {
                     .collect();
                 b.insert("data_items", VArray::from(items));
             }
-            extra
         }
-        Node::ActivateTool { block_pos, extra } | Node::LookAt { block_pos, extra } => {
+        Node::ActivateTool { block_pos } | Node::LookAt { block_pos } => {
             put(b, at, &BLOCK_POS, block_pos)?;
-            extra
         }
-        Node::Attack { ticks, extra }
-        | Node::Interact { ticks, extra }
-        | Node::WaitTicks { ticks, extra } => {
+        Node::Attack { ticks } | Node::Interact { ticks } | Node::WaitTicks { ticks } => {
             put(b, at, &NUM_OF_TICKS, ticks)?;
-            extra
         }
-        Node::BreakBlock {
-            block_pos,
-            ticks,
-            extra,
-        } => {
+        Node::BreakBlock { block_pos, ticks } => {
             put(b, at, &BLOCK_POS, block_pos)?;
             put(b, at, &NUM_OF_TICKS, ticks)?;
-            extra
         }
-        Node::ConsumeItem { extra } | Node::PlaceBlock { extra } | Node::UseEntity { extra } => {
-            extra
-        }
+        Node::ConsumeItem {} | Node::PlaceBlock {} | Node::UseEntity {} => {}
         Node::FindBlock {
             block_name,
             search_radius,
-            extra,
         } => {
             put(b, at, &BLOCK_NAME, block_name)?;
             put(b, at, &SEARCH_RADIUS, search_radius)?;
-            extra
         }
         Node::FindEntity {
             entity_name,
             search_radius,
-            extra,
         }
         | Node::LookAtEntity {
             entity_name,
             search_radius,
-            extra,
         } => {
             put(b, at, &ENTITY_NAME, entity_name)?;
             put(b, at, &SEARCH_RADIUS, search_radius)?;
-            extra
         }
         Node::Fly {
             should_be_flying,
             throw_if_no_change,
-            extra,
         } => {
             put(b, at, &SHOULD_BE_FLYING, should_be_flying)?;
             put(b, at, &SHOULD_THROW, throw_if_no_change)?;
-            extra
         }
         Node::GetInteractionPositionForBlock {
             target,
             anchor,
             facing,
             max_search_distance,
-            extra,
         } => {
             put(b, at, &TARGET_BLOCK_POS, target)?;
             put(b, at, &ANCHOR_BLOCK_POS, anchor)?;
             put(b, at, &FACING_STRING, facing)?;
             put(b, at, &MAX_SEARCH_DISTANCE, max_search_distance)?;
-            extra
         }
         Node::Move {
             direction,
             second_direction,
             ticks,
-            extra,
         } => {
             put(b, at, &DIRECTION, direction)?;
             put(b, at, &SECOND_DIRECTION, second_direction)?;
             put(b, at, &MAX_NUMBER_OF_TICKS, ticks)?;
-            extra
         }
         Node::MoveTo {
             pos,
             distance_epsilon,
-            extra,
         } => {
             put(b, at, &BLOCK_POS, pos)?;
             put(b, at, &DISTANCE_EPSILON, distance_epsilon)?;
-            extra
         }
-        Node::ShootBow { shots, extra } => {
+        Node::ShootBow { shots } => {
             put(b, at, &NUM_OF_SHOTS, shots)?;
-            extra
         }
-        Node::Wait { seconds, extra } => {
+        Node::Wait { seconds } => {
             // The one member is the literal as an integer or the key as a string.
             if seconds.key.is_empty() {
                 b.insert(WAIT_DURATION, i64::from(seconds.literal));
             } else if seconds.key != WAIT_DEFAULT_KEY {
                 b.insert(WAIT_DURATION, seconds.key.as_str());
             }
-            extra
         }
-    };
-    extend(&mut body, extra);
+    }
     let mut object = VObject::new();
     object.insert(kind, body);
     Ok(object.into_value())

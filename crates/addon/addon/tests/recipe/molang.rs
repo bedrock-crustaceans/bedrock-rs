@@ -154,7 +154,7 @@ fn data_molang_object_is_not_a_molang_value() {
     let ingredient = &shaped(&document).key["#"];
     assert_eq!(ingredient.aux(), 0);
     // kept as written
-    assert!(object(ingredient).extra.get("data").is_some());
+    assert!(kept(&document, &["minecraft:recipe_shaped", "key", "#"], "data").is_some());
 }
 
 #[cfg(feature = "molang")]

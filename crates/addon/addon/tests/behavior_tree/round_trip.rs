@@ -2,7 +2,8 @@
 //! again to the same value, and written again to the same text; a member the author did not
 //! write is not written.
 
-use bedrock_addon::document::{Content, Placed, UnknownMembers};
+use bedrock_addon::diagnostic::JsonPath;
+use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::json::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
 
@@ -29,13 +30,26 @@ fn written(node: Node) -> String {
         .to_owned()
 }
 
-/// The root node `{"<type>": <body>}` read and written again.
+/// The root node `{"<type>": <body>}` read and written again, with its unknown members.
 fn rewritten(node: &str) -> String {
-    written(root_of(node).0)
+    let text = compact_document(&loaded(&tree_text("t", node)));
+    let prefix = r#"{"minecraft:behavior_tree":{"minecraft:name":"t","minecraft:root":"#;
+    text.strip_prefix(prefix)
+        .and_then(|rest| rest.strip_suffix("}}"))
+        .unwrap_or_else(|| panic!("{text}"))
+        .to_owned()
 }
 
-fn none() -> UnknownMembers {
-    UnknownMembers::default()
+/// The document written compact, with its unknown members.
+fn compact_document(document: &Document<BehaviorTree>) -> String {
+    let mut out = Vec::new();
+    document.write_json(&mut out, COMPACT).expect("writes");
+    String::from_utf8(out).unwrap()
+}
+
+/// The path of the root node's body of type `kind`.
+fn root_body(kind: &str) -> JsonPath {
+    JsonPath::of_keys(["minecraft:behavior_tree", "minecraft:root", kind])
 }
 
 /// Every fixture's stack: the name of the fixture and its stack.
@@ -59,8 +73,7 @@ fn every_tree_of_every_fixture_reads_back_equal_and_rewrites_identically() {
             let again = parse(&text).unwrap_or_else(|r| panic!("{fixture} {name}: {text}\n{r:#?}"));
             assert_eq!(again.name, document.name, "{fixture} {name}");
             assert_eq!(again.root, document.root, "{fixture} {name}:\n{text}");
-            assert_eq!(again.extra, document.extra, "{fixture} {name}");
-            assert_eq!(again.root_extra, document.root_extra, "{fixture} {name}");
+            assert_eq!(again.unknown(), document.unknown(), "{fixture} {name}");
             // the raw text is the file's: of the rewritten file, the rewritten text
             assert_eq!(again.raw, text);
             assert_eq!(again.to_json().unwrap(), text, "{fixture} {name}");
@@ -124,12 +137,7 @@ fn a_built_in_tree_is_written_without_a_member_of_its_own() {
 
 #[test]
 fn a_literal_is_written_when_the_key_is_empty_and_the_key_when_it_is_not_the_default() {
-    let ticks = |ticks: Param<i32>| {
-        written(Node::WaitTicks {
-            ticks,
-            extra: none(),
-        })
-    };
+    let ticks = |ticks: Param<i32>| written(Node::WaitTicks { ticks });
     assert_eq!(
         ticks(Param::literal(0)),
         r#"{"minecraft:wait_ticks":{"num_of_ticks":0}}"#
@@ -267,19 +275,33 @@ fn unknown_members_are_written_after_the_known_ones_of_their_level() {
     let text = r#"{"format_version":"1.99.0","minecraft:behavior_tree":{"note":1,"minecraft:name":"t","minecraft:root":{"minecraft:wait":{"zeta":true,"wait_duration":2}}},"other":[]}"#;
     let document = loaded(text);
     assert_eq!(
-        compact(&document),
+        compact_document(&document),
         r#"{"minecraft:behavior_tree":{"minecraft:name":"t","minecraft:root":{"minecraft:wait":{"wait_duration":2,"zeta":true}},"note":1},"format_version":"1.99.0","other":[]}"#
     );
     // an unknown member named like one the writer writes does not appear twice
-    let mut extra = UnknownMembers::default();
-    extra.insert("num_of_ticks".to_owned(), Value::from("kept out"));
-    extra.insert("why".to_owned(), Value::from("kept"));
+    let mut document = loaded(&tree_text(
+        "t",
+        r#"{"minecraft:wait_ticks": {"num_of_ticks": 4}}"#,
+    ));
     assert_eq!(
-        written(Node::WaitTicks {
+        document.root,
+        Node::WaitTicks {
             ticks: Param::literal(4),
-            extra
-        }),
-        r#"{"minecraft:wait_ticks":{"num_of_ticks":4,"why":"kept"}}"#
+        }
+    );
+    let body = root_body("minecraft:wait_ticks");
+    document
+        .unknown_mut()
+        .put(&body, "num_of_ticks", Value::from("kept out"));
+    document
+        .unknown_mut()
+        .put(&body, "why", Value::from("kept"));
+    let text = compact_document(&document);
+    let prefix = r#"{"minecraft:behavior_tree":{"minecraft:name":"t","minecraft:root":"#;
+    assert_eq!(
+        text.strip_prefix(prefix)
+            .and_then(|rest| rest.strip_suffix("}}")),
+        Some(r#"{"minecraft:wait_ticks":{"num_of_ticks":4,"why":"kept"}}"#)
     );
 }
 
@@ -295,7 +317,6 @@ fn a_number_without_a_json_spelling_is_not_written() {
             Node::MoveTo {
                 pos: Param::literal([0.0, value, 0.0]),
                 distance_epsilon: Param::key("e"),
-                extra: none(),
             },
         );
         let mut out = b"before".to_vec();
@@ -317,7 +338,6 @@ fn a_number_without_a_json_spelling_is_not_written() {
         Node::MoveTo {
             pos: Param::key("p"),
             distance_epsilon: Param::literal(f32::NAN),
-            extra: none(),
         },
     );
     let EncodeError::NotRepresentable { at, .. } = tree.to_json().unwrap_err() else {
@@ -336,7 +356,6 @@ fn a_number_without_a_json_spelling_is_not_written() {
                 literal: f32::NAN,
                 key: "e".to_owned(),
             },
-            extra: none(),
         },
     );
     assert!(tree.to_json().is_ok());
@@ -351,19 +370,15 @@ fn a_tree_built_in_memory_is_placed_and_written() {
                 Node::FindBlock {
                     block_name: Param::literal("log".to_owned()),
                     search_radius: Param::key("target_search_radius"),
-                    extra: none(),
                 },
                 Node::BreakBlock {
                     block_pos: Param::key("target_block_pos"),
                     ticks: Param::key("target_num_of_ticks"),
-                    extra: none(),
                 },
             ]),
-            extra: none(),
         },
     );
     assert_eq!(tree.raw, "");
-    assert!(tree.extra.is_empty() && tree.root_extra.is_empty());
     assert_eq!(
         tree.default_path().as_str(),
         "behavior_trees/chop_wood.json"
@@ -672,54 +687,43 @@ fn nodes_built_for_the_repeat_and_the_finds() -> Vec<Node> {
         Node::RepeatUntilSuccess {
             child: None,
             max_attempts: Param::key("tries"),
-            extra: none(),
         },
         Node::RepeatUntilSuccess {
-            child: Some(Box::new(Node::ConsumeItem { extra: none() })),
+            child: Some(Box::new(Node::ConsumeItem {})),
             max_attempts: Param::default(),
-            extra: none(),
         },
         Node::ActivateTool {
             block_pos: Param::key("where"),
-            extra: none(),
         },
         Node::ActivateTool {
             block_pos: Param::default(),
-            extra: none(),
         },
         Node::Attack {
             ticks: Param::key("t"),
-            extra: none(),
         },
         Node::BreakBlock {
             block_pos: Param::literal([1, 2, 3]),
             ticks: Param::key("target_num_of_ticks"),
-            extra: none(),
         },
         Node::FindBlock {
             block_name: block_name("log"),
             search_radius: radius("target_search_radius"),
-            extra: none(),
         },
         Node::FindBlock {
             block_name: Param::key("what"),
             search_radius: radius("far"),
-            extra: none(),
         },
         Node::FindBlock {
             block_name: Param::default(),
             search_radius: Param::literal(0),
-            extra: none(),
         },
         Node::FindEntity {
             entity_name: Param::literal("item".to_owned()),
             search_radius: radius("r"),
-            extra: none(),
         },
         Node::FindEntity {
             entity_name: Param::default(),
             search_radius: Param::default(),
-            extra: none(),
         },
     ]
 }
@@ -731,68 +735,54 @@ fn nodes_built_for_the_actions() -> Vec<Node> {
         Node::Fly {
             should_be_flying: Param::literal(true),
             throw_if_no_change: Param::key_with("t", true),
-            extra: none(),
         },
         Node::Fly {
             should_be_flying: Param::key("f"),
             throw_if_no_change: Param::key("t"),
-            extra: none(),
         },
         Node::GetInteractionPositionForBlock {
             target: Param::key("a"),
             anchor: Param::literal([4, 5, 6]),
             facing: Param::key("f"),
             max_search_distance: Param::default(),
-            extra: none(),
         },
         Node::Interact {
             ticks: Param::key_with("t", Node::INTERACT_DEFAULT_TICKS),
-            extra: none(),
         },
         Node::Interact {
             ticks: Param::default(),
-            extra: none(),
         },
         Node::LookAt {
             block_pos: Param::key("p"),
-            extra: none(),
         },
         Node::LookAtEntity {
             entity_name: Param::key("who"),
             search_radius: radius("r"),
-            extra: none(),
         },
         Node::Move {
             direction: Param::literal("forward".to_owned()),
             second_direction: Param::key("side"),
             ticks: Param::default(),
-            extra: none(),
         },
         Node::MoveTo {
             pos: Param::key("target_pos"),
             distance_epsilon: Param::literal(1.5),
-            extra: none(),
         },
         Node::MoveTo {
             pos: Param::default(),
             distance_epsilon: Param::key("e"),
-            extra: none(),
         },
         Node::ShootBow {
             shots: Param::key("n"),
-            extra: none(),
         },
         Node::Wait {
             seconds: Param::key("secs"),
-            extra: none(),
         },
         Node::Wait {
             seconds: Param::default(),
-            extra: none(),
         },
         Node::WaitTicks {
             ticks: Param::key("t"),
-            extra: none(),
         },
     ]
 }
@@ -827,11 +817,10 @@ fn a_parameter_built_in_memory_reads_back_equal() {
 
 /// `depth` inverters around a leaf, built without recursion.
 fn inverters(depth: usize) -> BehaviorTree {
-    let mut node = Node::ConsumeItem { extra: none() };
+    let mut node = Node::ConsumeItem {};
     for _ in 0..depth {
         node = Node::Inverter {
             child: Some(Box::new(node)),
-            extra: none(),
         };
     }
     BehaviorTree::new(id("deep"), node)
@@ -839,11 +828,10 @@ fn inverters(depth: usize) -> BehaviorTree {
 
 /// `depth` sequences of one child around a leaf.
 fn sequences(depth: usize) -> BehaviorTree {
-    let mut node = Node::ConsumeItem { extra: none() };
+    let mut node = Node::ConsumeItem {};
     for _ in 0..depth {
         node = Node::Sequence {
             children: Some(vec![node]),
-            extra: none(),
         };
     }
     BehaviorTree::new(id("deep"), node)
@@ -892,12 +880,24 @@ fn a_tree_nested_past_the_readers_limit_is_not_written() {
     }
     let value: Value = facet_json::from_str(&deep_extra).unwrap();
     let with_extra = |value: Value| {
-        let mut extra = UnknownMembers::default();
-        extra.insert("deep".to_owned(), value);
-        BehaviorTree::new(id("t"), Node::ConsumeItem { extra })
+        let mut document = loaded(&tree_text("t", r#"{"minecraft:consume_item": {}}"#));
+        document
+            .unknown_mut()
+            .put(&root_body("minecraft:consume_item"), "deep", value);
+        document
+    };
+    let refused_document = |document: &Document<BehaviorTree>| {
+        let mut out = b"before".to_vec();
+        let error = document.write_json(&mut out, COMPACT).unwrap_err();
+        assert_eq!(out, b"before");
+        let EncodeError::NotRepresentable { at, what } = error else {
+            panic!()
+        };
+        assert_eq!(what, Unrepresentable::Unsupported);
+        assert_eq!(at.to_string(), "minecraft:behavior_tree/minecraft:root");
     };
     // 4 levels down to the body, and 125 more
-    refused(&with_extra(value));
+    refused_document(&with_extra(value));
     let value: Value = facet_json::from_str(&deep_extra[1..deep_extra.len() - 1]).unwrap();
     assert!(with_extra(value).to_json().is_ok());
     // and far past the limit, quickly and without a deep stack
@@ -952,7 +952,6 @@ fn inverters_around(depth: usize, leaf: Node) -> BehaviorTree {
     for _ in 0..depth {
         node = Node::Inverter {
             child: Some(Box::new(node)),
-            extra: none(),
         };
     }
     BehaviorTree::new(id("deep"), node)
@@ -965,17 +964,14 @@ fn inverters_around(depth: usize, leaf: Node) -> BehaviorTree {
 fn the_members_of_a_leaf_count_towards_the_limit() {
     let look_at = || Node::LookAt {
         block_pos: Param::literal([1, 2, 3]),
-        extra: none(),
     };
     let subtree = || Node::Subtree {
         subtree_id: id("move"),
         data_items: vec![("from".to_owned(), "to".to_owned())],
-        extra: none(),
     };
     let string_items = || Node::Subtree {
         subtree_id: id("move"),
         data_items: vec![("same".to_owned(), "same".to_owned())],
-        extra: none(),
     };
     let refused = |tree: &BehaviorTree| {
         matches!(
@@ -1007,7 +1003,6 @@ fn the_members_of_a_leaf_count_towards_the_limit() {
     // while the same leaf without an array member is written at 62: its body is level 128
     let bare = Node::LookAt {
         block_pos: Param::key("where"),
-        extra: none(),
     };
     assert!(inverters_around(62, bare).to_json().is_ok());
 }

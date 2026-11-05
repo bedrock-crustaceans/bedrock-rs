@@ -25,13 +25,16 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
+use bedrock_addon_core::json::kit::{self, Disposition, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::molang::{
     JsonScalar, Molang, MolangFailure, MolangFieldMut, MolangFieldSpec, MolangFields, MolangSource,
     MolangVisitor, RawVersion, ReadField, ReaderKind, Step, json_scalar,
 };
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
+use bedrock_addon_core::versioning::{
+    MemberFailure, ParseCx, Reading, UnknownMask, VersionStruct, Versioned,
+};
 
 /// Which loader reads the document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,6 +43,19 @@ pub(crate) enum Era {
     Legacy,
     /// The 1.20.80 reader: a bad value refuses the document.
     Cereal,
+}
+
+impl Era {
+    /// How the era's reader reads, for the findings the reader kit tells.
+    fn reading(self) -> Reading {
+        match self {
+            // The legacy parser goes on with a member's default after its line.
+            Era::Legacy => Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
+            // The strict document; an unknown member is told as the warning the game logs,
+            // which the pipeline's strict mask makes an error.
+            Era::Cereal => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+        }
+    }
 }
 
 /// The Molang spec of a field whose legacy default is `default`: a legacy field that does not
@@ -181,22 +197,62 @@ impl<'d> Reader<'d> {
         self.push(code, Severity::Error);
     }
 
-    /// A value of the wrong JSON type: a 1.20.80 document is refused; the legacy parser logs
-    /// `text` (when it has one) and the caller takes the default.
-    pub(crate) fn wrong_type(&mut self, text: Option<&'static str>) {
+    /// The reader kit's read of the era, telling into the reader's findings. The legacy
+    /// parser reads past an unknown member without a word, so the crate tells it as an
+    /// information.
+    fn kit(&mut self) -> Read<'_> {
+        let read = Read::new(self.era.reading(), self.d);
+        match self.era {
+            Era::Legacy => read.unknown_severity(Severity::Info),
+            Era::Cereal => read,
+        }
+    }
+
+    /// `value` as the kit's node at the current path.
+    fn node<'v>(&self, value: &'v Value) -> kit::Node<'v> {
+        kit::Node::new(value, self.path.clone())
+    }
+
+    /// `value`, at the current path, is of the wrong JSON type: a 1.20.80 document is refused
+    /// (the kit's wrong type); the legacy parser logs `text` (when it has one) and the caller
+    /// takes the default.
+    pub(crate) fn wrong_type(&mut self, value: &Value, text: Option<&'static str>) {
         match (self.era, text) {
-            (Era::Cereal, _) => self.error(DiagnosticCode::InvalidType { text: None }),
+            (Era::Cereal, _) => {
+                if self.muted == 0 {
+                    let node = self.node(value);
+                    self.kit().wrong_type(&node);
+                }
+            }
             (Era::Legacy, Some(text)) => self.warn(text),
             (Era::Legacy, None) => self.warn_ours(),
         }
     }
 
-    /// A required member that is absent, reported at the current path (the member's): the
-    /// 1.20.80 document is refused; the legacy parser logs `text` when it has one.
-    pub(crate) fn missing(&mut self, text: Option<&'static str>) {
+    /// The required member `key` of `m` (the object at the current path) is absent: the
+    /// 1.20.80 document is refused (the kit's missing member, at the member); the legacy
+    /// parser logs `text` there when it has one.
+    pub(crate) fn missing(&mut self, m: Members<'_>, key: &str, text: Option<&'static str>) {
         match (self.era, text) {
-            (Era::Cereal, _) => self.error(DiagnosticCode::MissingRequiredField { text: None }),
-            (Era::Legacy, Some(text)) => self.warn(text),
+            (Era::Cereal, _) => {
+                if self.muted > 0 {
+                    return;
+                }
+                match m.0 {
+                    Some(object) => {
+                        let node = self.node(object);
+                        let mut read = self.kit();
+                        if let Some(members) = read.object(&node) {
+                            read.required(&members, key);
+                        }
+                    }
+                    // No object to read from: only the defaults of a value read silently.
+                    None => self.key(key, |r| {
+                        r.error(DiagnosticCode::MissingRequiredField { text: None });
+                    }),
+                }
+            }
+            (Era::Legacy, Some(text)) => self.key(key, |r| r.warn(text)),
             (Era::Legacy, None) => {}
         }
     }
@@ -269,9 +325,11 @@ impl<'d> Reader<'d> {
     }
 }
 
-/// The members of an object being read.
+/// The members of an object being read: the object, which the walk reads at the reader's
+/// path (the kit's [`Members`](kit::Members) carry a path of their own, which this walk keeps
+/// in the [`Reader`]).
 #[derive(Clone, Copy)]
-pub(crate) struct Members<'v>(Option<&'v VObject>);
+pub(crate) struct Members<'v>(Option<&'v Value>);
 
 impl<'v> Members<'v> {
     /// No members: what a component that is no object reads its defaults from.
@@ -279,17 +337,21 @@ impl<'v> Members<'v> {
 
     /// The members of `value`, when it is an object.
     pub(crate) fn of(value: &'v Value) -> Option<Self> {
-        value.as_object().map(|object| Self(Some(object)))
+        value.is_object().then_some(Self(Some(value)))
+    }
+
+    fn object(self) -> Option<&'v VObject> {
+        self.0.and_then(Value::as_object)
     }
 
     /// The member `key`.
     pub(crate) fn get(self, key: &str) -> Option<&'v Value> {
-        self.0?.get(key)
+        self.object()?.get(key)
     }
 
     /// Every member, in file order.
     pub(crate) fn iter(self) -> impl Iterator<Item = (&'v str, &'v Value)> {
-        self.0
+        self.object()
             .into_iter()
             .flat_map(|object| object.iter().map(|(key, value)| (key.as_str(), value)))
     }
@@ -299,20 +361,13 @@ impl<'v> Members<'v> {
     /// kept: the game never stores an unknown key, so the value holds none and the upgrade
     /// carries none. The `extra` of a value is for one built by hand.
     pub(crate) fn extra(self, known: fn(&str) -> bool, r: &mut Reader<'_>) -> UnknownMembers {
-        for (key, _) in self.iter() {
-            if !known(key) {
-                // The legacy parser reads past an unknown member without a word, so the
-                // crate reports it as an information. A 1.20.80 document logs it as a
-                // warning and the strict loading of that format makes it an error that
-                // refuses the document.
-                let severity = if r.legacy() {
-                    Severity::Info
-                } else {
-                    Severity::Warning
-                };
-                r.key(key, |r| {
-                    r.push(DiagnosticCode::UnrecognizedField { text: None }, severity);
-                });
+        if r.muted == 0 {
+            for (key, value) in self.iter() {
+                if !known(key) {
+                    // Told at the era's unknown severity (`Reader::kit`), kept nowhere.
+                    let node = kit::Node::new(value, r.path.child(key));
+                    r.kit().unknown_member(&node, Disposition::Keep);
+                }
             }
         }
         UnknownMembers::default()
@@ -420,7 +475,7 @@ impl<T: Fields> Node for T {
         match Members::of(value) {
             Some(members) => Some(T::read_members(members, r)),
             None => {
-                r.wrong_type(o.wrong);
+                r.wrong_type(value, o.wrong);
                 None
             }
         }
@@ -452,13 +507,13 @@ pub(crate) fn opt<T: Node>(m: Members<'_>, key: &str, o: Opt, r: &mut Reader<'_>
 
 /// A required member; the field's fallback when it is absent or unusable.
 pub(crate) fn req<T: Node>(m: Members<'_>, key: &str, o: Opt, r: &mut Reader<'_>) -> T {
-    r.key(key, |r| match m.get(key) {
-        Some(value) => T::read(value, r, o),
+    match m.get(key) {
+        Some(value) => r.key(key, |r| T::read(value, r, o)),
         None => {
-            r.missing(o.missing);
+            r.missing(m, key, o.missing);
             None
         }
-    })
+    }
     .unwrap_or_else(|| T::fallback(o))
 }
 
@@ -538,7 +593,7 @@ impl Node for f32 {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
         let read = float(value, r);
         if read.is_none() {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
         }
         read
     }
@@ -556,7 +611,7 @@ impl Node for bool {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
         let read = value.as_bool();
         if read.is_none() {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
         }
         read
     }
@@ -580,7 +635,7 @@ impl Node for i32 {
                 .then_some(x as i32)
         });
         if read.is_none() {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
         }
         read
     }
@@ -600,7 +655,7 @@ impl Node for String {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
         let read = value.as_string().map(|text| text.as_str().to_owned());
         if read.is_none() {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
         }
         read
     }
@@ -652,7 +707,7 @@ fn molang(value: &Value, r: &mut Reader<'_>, o: Opt, text: &'static str) -> Opti
             ) {
                 Ok(ReadField::Value(value)) => Some(value),
                 _ => {
-                    r.error(DiagnosticCode::InvalidType { text: None });
+                    r.wrong_type(value, None);
                     None
                 }
             }
@@ -701,7 +756,7 @@ impl<const N: usize> Node for [Molang; N] {
                 r.warn(texts::ARRAY_ERROR);
                 return Some(Self::fallback(o));
             }
-            r.error(DiagnosticCode::InvalidType { text: None });
+            r.wrong_type(value, None);
             return None;
         };
         let mut complete = true;
@@ -746,7 +801,7 @@ impl<const N: usize> Node for [f32; N] {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
         let elements = value.as_array().filter(|elements| elements.len() == N);
         let Some(elements) = elements else {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
             return None;
         };
         let mut complete = true;
@@ -810,7 +865,7 @@ pub(crate) fn read_list<T: Node>(
     o: Opt,
 ) -> Option<(Vec<T>, Vec<usize>)> {
     let Some(elements) = value.as_array() else {
-        r.wrong_type(o.wrong);
+        r.wrong_type(value, o.wrong);
         return None;
     };
     let mut read = Vec::with_capacity(elements.len());
@@ -829,7 +884,7 @@ pub(crate) fn read_list<T: Node>(
 impl<T: Node> Node for indexmap::IndexMap<String, T> {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
         let Some(members) = Members::of(value) else {
-            r.wrong_type(o.wrong);
+            r.wrong_type(value, o.wrong);
             return None;
         };
         let mut read = Self::new();
@@ -1127,7 +1182,7 @@ impl ParticleEffect {
     /// only carries what could be read.
     fn read(payload: &Value, r: &mut Reader<'_>) -> Option<Self> {
         let Some(m) = Members::of(payload) else {
-            r.error(DiagnosticCode::InvalidType { text: None });
+            r.wrong_type(payload, None);
             return None;
         };
         let description: Description = req(m, "description", Opt::NONE, r);

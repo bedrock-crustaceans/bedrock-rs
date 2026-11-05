@@ -226,3 +226,14 @@ pub fn files_below(dir: &str) -> Vec<(String, Vec<u8>)> {
     out.sort();
     out
 }
+
+/// The unknown member `key` the document keeps in its table at the object `at`.
+pub fn kept<'d>(
+    document: &'d Document<Recipe>,
+    at: &[&str],
+    key: &str,
+) -> Option<&'d bedrock_addon::json::Value> {
+    document
+        .unknown()
+        .get(&bedrock_addon::diagnostic::JsonPath::of_keys(at), key)
+}

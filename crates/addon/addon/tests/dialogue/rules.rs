@@ -1,7 +1,7 @@
 //! The validation rules and the upgrade steps that no fixture row covers on
 //! its own, and both ends of every rule's range.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
 use bedrock_addon::families::dialogue::{ActionMode, DialogueScene, DialogueText, NpcAction};
 use bedrock_addon::id::DialogueSceneTag;
 
@@ -761,31 +761,38 @@ fn unknown_members_are_reported_as_infos_and_kept_deviation() {
         ]
     );
     // A member literally named "extra" is an unknown member like any other.
+    let unknown = document.unknown();
+    let root = JsonPath::new();
     assert_eq!(
-        document
-            .extra
-            .get("extra")
+        unknown
+            .get(&root, "extra")
             .and_then(|v| v.as_number()?.to_i64()),
         Some(1)
     );
-    assert!(document.extra.get("author").is_some());
-    assert_eq!(document.extra.iter().count(), 2);
+    assert!(unknown.get(&root, "author").is_some());
+    assert_eq!(unknown.members_at(&root).count(), 2);
+    let payload = root.child("minecraft:npc_dialogue");
     assert_eq!(
-        document
-            .dialogue_extra
-            .iter()
+        unknown
+            .members_at(&payload)
             .map(|(k, _)| k)
             .collect::<Vec<_>>(),
         ["notes"]
     );
-    let scene = &document.scenes[0];
+    let scene = payload.child("scenes").index(0);
     assert_eq!(
-        scene.extra.iter().map(|(k, _)| k).collect::<Vec<_>>(),
+        unknown
+            .members_at(&scene)
+            .map(|(k, _)| k)
+            .collect::<Vec<_>>(),
         ["custom"]
     );
-    let button = &scene.buttons.as_ref().unwrap()[0];
+    let button = scene.child("buttons").index(0);
     assert_eq!(
-        button.extra.iter().map(|(k, _)| k).collect::<Vec<_>>(),
+        unknown
+            .members_at(&button)
+            .map(|(k, _)| k)
+            .collect::<Vec<_>>(),
         ["icon"]
     );
 }
@@ -802,12 +809,8 @@ fn known_members_are_never_unknown_and_a_non_object_payload_has_none() {
         "{:#?}",
         document.diagnostics()
     );
-    assert!(document.extra.is_empty());
-    assert!(document.dialogue_extra.is_empty());
-    assert!(document.scenes[0].extra.is_empty());
-    for button in document.scenes[0].buttons.as_ref().unwrap() {
-        assert!(button.extra.is_empty());
-    }
+    // No level of the document, scenes and buttons included, keeps a member.
+    assert!(document.unknown().is_empty());
 }
 
 #[test]
@@ -1317,7 +1320,10 @@ fn unknown_members_are_infos_in_the_registry_as_well() {
     assert!(registry.diagnostics().all(|d| d.severity == Severity::Info));
     let a = scene(registry, "a");
     assert_eq!(
-        a.extra.iter().map(|(k, _)| k).collect::<Vec<_>>(),
+        a.unknown()
+            .members_at(&JsonPath::new())
+            .map(|(k, _)| k)
+            .collect::<Vec<_>>(),
         ["custom"]
     );
 }

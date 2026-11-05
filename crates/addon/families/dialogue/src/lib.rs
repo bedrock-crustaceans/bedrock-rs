@@ -19,16 +19,15 @@ mod write;
 mod tests;
 
 use crate::command::CURRENT;
-use crate::read::{FLOOR, ReadFile, SceneOutcome, read};
+use crate::read::{FLOOR, PAYLOAD, ReadFile, SceneOutcome, read};
 use crate::texts::{DUPLICATE, formatted};
 use crate::write::fast_writer;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, VersionInfo,
+    Registry, RegistryBuilder, Rejected, Unknown, VersionInfo,
 };
 use bedrock_addon_core::id::DialogueSceneTag;
 use bedrock_addon_core::id::kind;
@@ -52,10 +51,6 @@ pub struct DialogueFile {
     pub format_version: SemVersion,
     /// The scenes that loaded, in file order (JSON `minecraft:npc_dialogue.scenes`).
     pub scenes: Vec<DialogueScene>,
-    /// Unknown members of `minecraft:npc_dialogue`, which vanilla never reads.
-    pub dialogue_extra: UnknownMembers,
-    /// Unknown members of the root, which vanilla never reads.
-    pub extra: UnknownMembers,
 }
 
 /// One scene: the text an NPC shows, its buttons and the commands
@@ -82,8 +77,6 @@ pub struct DialogueScene {
     /// The commands run when the scene closes (JSON `on_close_commands`); as
     /// [`on_open_commands`](Self::on_open_commands).
     pub on_close_commands: Option<Vec<StoredCommand>>,
-    /// Unknown members, which vanilla never reads.
-    pub extra: UnknownMembers,
 }
 
 /// One button of a scene: a label and either commands or a URL.
@@ -98,8 +91,6 @@ pub struct Button {
     /// The URL the button opens (JSON `url`); `None` when absent. A non-empty URL makes the
     /// button a URL button; an empty one a command button without commands.
     pub url: Option<String>,
-    /// Unknown members, which vanilla never reads.
-    pub extra: UnknownMembers,
 }
 
 /// A text of a scene or a button: a plain string, or any JSON object (the intended form is a
@@ -181,11 +172,15 @@ impl Content for DialogueFile {
                 return Err(Rejected::located(origin, diagnostics));
             }
         };
+        // The unknown members of the root and of the payload are in the file's table; each
+        // stored scene's are added below its index among the stored ones.
         let mut diagnostics = file.diagnostics;
+        let scenes_at = JsonPath::new().child(PAYLOAD).child("scenes");
         let mut scenes: Vec<DialogueScene> = Vec::new();
         for scene in file.scenes {
             match scene.outcome {
-                SceneOutcome::Loaded(loaded, found) => {
+                SceneOutcome::Loaded(loaded, mut found) => {
+                    let kept = found.take_unknown();
                     diagnostics.extend(found);
                     // The first scene of a tag is the one stored; a later one is dropped like
                     // any other scene a rule drops. The game logs it at the content log's error
@@ -197,6 +192,9 @@ impl Content for DialogueFile {
                             &scene.at,
                         ));
                     } else {
+                        diagnostics
+                            .unknown_mut()
+                            .absorb(&scenes_at.index(scenes.len()), kept);
                         scenes.push(loaded);
                     }
                 }
@@ -221,14 +219,21 @@ impl Content for DialogueFile {
         let value = DialogueFile {
             format_version: file.format_version,
             scenes,
-            dialogue_extra: file.dialogue_extra,
-            extra: file.extra,
         };
         Ok(Document::new(value, origin, version, diagnostics))
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
+    }
+
+    fn write_json_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        self.write_with_unknown(unknown, out, style)
     }
 }
 
@@ -341,6 +346,8 @@ fn combine(parsed: Vec<Parsed>, stack: &StackCx<'_>) -> Registry<DialogueScene> 
             }
         };
         let mut file_diagnostics = file.diagnostics;
+        // The file is no document here: the unknown members of its root and payload go with it.
+        drop(file_diagnostics.take_unknown());
         file_diagnostics.locate(&file_origin);
         for finding in file_diagnostics {
             builder.push_diagnostic(finding);
@@ -389,6 +396,7 @@ fn push_scene(
                 }
                 // A second scene of the pack that stored the tag: not loaded.
                 Some(first) if *first == file.pack => {
+                    drop(diagnostics.take_unknown());
                     diagnostics.push(duplicate(file, tag.as_str(), at));
                     builder.push(Contribution::Rejected(
                         Some(tag),
@@ -568,8 +576,6 @@ impl DialogueFile {
         DialogueFile {
             format_version: SemVersion::from(FLOOR),
             scenes,
-            dialogue_extra: UnknownMembers::default(),
-            extra: UnknownMembers::default(),
         }
     }
 }
@@ -584,7 +590,6 @@ impl DialogueScene {
             buttons: None,
             on_open_commands: None,
             on_close_commands: None,
-            extra: UnknownMembers::default(),
         }
     }
 }
@@ -596,7 +601,6 @@ impl Button {
             name,
             commands: None,
             url: None,
-            extra: UnknownMembers::default(),
         }
     }
 }

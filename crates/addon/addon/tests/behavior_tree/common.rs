@@ -14,8 +14,8 @@
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Phase, Severity};
-use bedrock_addon::document::{Content, Document, Registry, Rejected, UnknownMembers};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
+use bedrock_addon::document::{Content, Document, Registry, Rejected, Unknown};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::id::BehaviorTreeId;
 use bedrock_addon::json::Value;
@@ -265,28 +265,36 @@ fn vec3(value: &[f32; 3]) -> Value {
     VArray::from(value.iter().map(float).collect::<Vec<_>>()).into()
 }
 
-fn extra_value(extra: &UnknownMembers) -> Value {
+/// The unknown members the document keeps for the object at `at`, when it keeps any.
+fn extra_value(unknown: &Unknown, at: &JsonPath) -> Option<Value> {
     let mut out = VObject::new();
-    for (key, value) in extra.iter() {
+    for (key, value) in unknown.members_at(at) {
         out.insert(key, value.clone());
     }
-    out.into_value()
+    (!out.is_empty()).then(|| out.into_value())
 }
 
-fn optional_node(node: Option<&Node>) -> Value {
-    node.map_or(Value::NULL, dump_node)
+fn optional_node(node: Option<&Node>, unknown: &Unknown, at: &JsonPath) -> Value {
+    node.map_or(Value::NULL, |node| dump_node_in(node, unknown, at))
+}
+
+/// [`dump_node_in`] of a node outside a document: it has no unknown members.
+pub fn dump_node(node: &Node) -> Value {
+    dump_node_in(node, &Unknown::new(), &JsonPath::new())
 }
 
 /// A node as `expected.json` writes it: `type`, then the variant's fields by their Rust names,
-/// a parameter as `{"literal": …, "key": …}`, and `extra` when the node has unknown members.
+/// a parameter as `{"literal": …, "key": …}`, and `extra` when the node has unknown members
+/// (those `unknown` keeps for its body; `at` is the node's object).
 #[allow(clippy::too_many_lines, reason = "one arm per node type")]
-pub fn dump_node(node: &Node) -> Value {
+pub fn dump_node_in(node: &Node, unknown: &Unknown, at: &JsonPath) -> Value {
+    let body = at.child(node.type_name());
     let mut out = VObject::new();
     let mut put = |key: &str, value: Value| {
         out.insert(key, value);
     };
-    let extra = match node {
-        Node::Sequence { children, extra } | Node::Selector { children, extra } => {
+    match node {
+        Node::Sequence { children } | Node::Selector { children } => {
             put(
                 "type",
                 Value::from(if matches!(node, Node::Sequence { .. }) {
@@ -298,35 +306,47 @@ pub fn dump_node(node: &Node) -> Value {
             put(
                 "children",
                 children.as_ref().map_or(Value::NULL, |children| {
-                    VArray::from(children.iter().map(dump_node).collect::<Vec<_>>()).into()
+                    VArray::from(
+                        children
+                            .iter()
+                            .enumerate()
+                            .map(|(index, node)| {
+                                dump_node_in(node, unknown, &body.child("children").index(index))
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                    .into()
                 }),
             );
-            extra
         }
         Node::RepeatUntilSuccess {
             child,
             max_attempts,
-            extra,
         } => {
             put("type", "minecraft:repeat_until_success".into());
             put("max_attempts", param(max_attempts, int));
-            put("child", optional_node(child.as_deref()));
-            extra
+            put(
+                "child",
+                optional_node(child.as_deref(), unknown, &body.child("child")),
+            );
         }
-        Node::RepeatUntilFailure { child, extra } => {
+        Node::RepeatUntilFailure { child } => {
             put("type", "minecraft:repeat_until_failure".into());
-            put("child", optional_node(child.as_deref()));
-            extra
+            put(
+                "child",
+                optional_node(child.as_deref(), unknown, &body.child("child")),
+            );
         }
-        Node::Inverter { child, extra } => {
+        Node::Inverter { child } => {
             put("type", "minecraft:inverter".into());
-            put("child", optional_node(child.as_deref()));
-            extra
+            put(
+                "child",
+                optional_node(child.as_deref(), unknown, &body.child("child")),
+            );
         }
         Node::Subtree {
             subtree_id,
             data_items,
-            extra,
         } => {
             put("type", "minecraft:subtree".into());
             put("subtree_id", subtree_id.as_str().into());
@@ -337,71 +357,55 @@ pub fn dump_node(node: &Node) -> Value {
                 })
                 .collect();
             put("data_items", VArray::from(items).into());
-            extra
         }
-        Node::ActivateTool {
-            block_pos: pos,
-            extra,
-        } => {
+        Node::ActivateTool { block_pos: pos } => {
             put("type", "minecraft:activate_tool".into());
             put("block_pos", param(pos, block_pos));
-            extra
         }
-        Node::Attack { ticks, extra } => {
+        Node::Attack { ticks } => {
             put("type", "minecraft:attack".into());
             put("ticks", param(ticks, int));
-            extra
         }
         Node::BreakBlock {
             block_pos: pos,
             ticks,
-            extra,
         } => {
             put("type", "minecraft:break_block".into());
             put("block_pos", param(pos, block_pos));
             put("ticks", param(ticks, int));
-            extra
         }
-        Node::ConsumeItem { extra } => {
+        Node::ConsumeItem {} => {
             put("type", "minecraft:consume_item".into());
-            extra
         }
         Node::FindBlock {
             block_name,
             search_radius,
-            extra,
         } => {
             put("type", "minecraft:find_block".into());
             put("block_name", param(block_name, text));
             put("search_radius", param(search_radius, int));
-            extra
         }
         Node::FindEntity {
             entity_name,
             search_radius,
-            extra,
         } => {
             put("type", "minecraft:find_entity".into());
             put("entity_name", param(entity_name, text));
             put("search_radius", param(search_radius, int));
-            extra
         }
         Node::Fly {
             should_be_flying,
             throw_if_no_change,
-            extra,
         } => {
             put("type", "minecraft:fly".into());
             put("should_be_flying", param(should_be_flying, boolean));
             put("throw_if_no_change", param(throw_if_no_change, boolean));
-            extra
         }
         Node::GetInteractionPositionForBlock {
             target,
             anchor,
             facing,
             max_search_distance,
-            extra,
         } => {
             put(
                 "type",
@@ -411,95 +415,83 @@ pub fn dump_node(node: &Node) -> Value {
             put("anchor", param(anchor, block_pos));
             put("facing", param(facing, text));
             put("max_search_distance", param(max_search_distance, int));
-            extra
         }
-        Node::Interact { ticks, extra } => {
+        Node::Interact { ticks } => {
             put("type", "minecraft:interact".into());
             put("ticks", param(ticks, int));
-            extra
         }
-        Node::LookAt {
-            block_pos: pos,
-            extra,
-        } => {
+        Node::LookAt { block_pos: pos } => {
             put("type", "minecraft:look_at".into());
             put("block_pos", param(pos, block_pos));
-            extra
         }
         Node::LookAtEntity {
             entity_name,
             search_radius,
-            extra,
         } => {
             put("type", "minecraft:look_at_entity".into());
             put("entity_name", param(entity_name, text));
             put("search_radius", param(search_radius, int));
-            extra
         }
         Node::Move {
             direction,
             second_direction,
             ticks,
-            extra,
         } => {
             put("type", "minecraft:move".into());
             put("direction", param(direction, text));
             put("second_direction", param(second_direction, text));
             put("ticks", param(ticks, int));
-            extra
         }
         Node::MoveTo {
             pos,
             distance_epsilon,
-            extra,
         } => {
             put("type", "minecraft:move_to".into());
             put("pos", param(pos, vec3));
             put("distance_epsilon", param(distance_epsilon, float));
-            extra
         }
-        Node::PlaceBlock { extra } => {
+        Node::PlaceBlock {} => {
             put("type", "minecraft:place_block".into());
-            extra
         }
-        Node::ShootBow { shots, extra } => {
+        Node::ShootBow { shots } => {
             put("type", "minecraft:shoot_bow".into());
             put("shots", param(shots, int));
-            extra
         }
-        Node::UseEntity { extra } => {
+        Node::UseEntity {} => {
             put("type", "minecraft:use_entity".into());
-            extra
         }
-        Node::Wait { seconds, extra } => {
+        Node::Wait { seconds } => {
             put("type", "minecraft:wait".into());
             put("seconds", param(seconds, int));
-            extra
         }
-        Node::WaitTicks { ticks, extra } => {
+        Node::WaitTicks { ticks } => {
             put("type", "minecraft:wait_ticks".into());
             put("ticks", param(ticks, int));
-            extra
         }
         other => panic!("a node type the dump does not know: {other:?}"),
-    };
-    if !extra.is_empty() {
-        put("extra", extra_value(extra));
+    }
+    if let Some(extra) = extra_value(unknown, &body) {
+        put("extra", extra);
     }
     out.into_value()
 }
 
 /// A tree as `expected.json` writes it: `root`, `raw`, and `extra` / `root_extra` when it has
 /// unknown members.
-pub fn dump_tree(tree: &BehaviorTree) -> Value {
+pub fn dump_tree(document: &Document<BehaviorTree>) -> Value {
+    let unknown = document.unknown();
+    let payload = JsonPath::of_keys(["minecraft:behavior_tree"]);
     let mut out = VObject::new();
-    out.insert("root", dump_node(&tree.root));
-    out.insert("raw", tree.raw.as_str());
-    if !tree.extra.is_empty() {
-        out.insert("extra", extra_value(&tree.extra));
+    out.insert(
+        "root",
+        dump_node_in(&document.root, unknown, &payload.child("minecraft:root")),
+    );
+    out.insert("raw", document.raw.as_str());
+    if let Some(extra) = extra_value(unknown, &payload) {
+        out.insert("extra", extra);
     }
-    if !tree.root_extra.is_empty() {
-        out.insert("root_extra", extra_value(&tree.root_extra));
+    if let Some(root_extra) = extra_value(unknown, &JsonPath::new()) {
+        out.insert("root_extra", root_extra);
     }
     out.into_value()
 }
@@ -555,7 +547,7 @@ pub fn dump_registry(registry: &Registry<BehaviorTree>) -> Value {
             name, &document.name,
             "a tree is registered under its minecraft:name"
         );
-        out.insert(name.as_str(), dump_tree(document.value()));
+        out.insert(name.as_str(), dump_tree(document));
     }
     out.into_value()
 }

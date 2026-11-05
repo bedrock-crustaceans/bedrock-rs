@@ -237,18 +237,15 @@ fn left_out(r: &mut Reader<'_>, legacy_only: bool) -> Option<Curve> {
 impl Node for Curve {
     fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
         let Some(members) = Members::of(value) else {
-            r.wrong_type(Some(texts::CURVE_NO_DATA));
+            r.wrong_type(value, Some(texts::CURVE_NO_DATA));
             return None;
         };
-        let kind = match members.get("type") {
-            Some(kind) => kind.as_string().map(facet_value::VString::as_str),
-            None => {
-                r.key("type", |r| r.missing(Some(texts::CURVE_TYPE)));
-                return left_out(r, true);
-            }
+        let Some(written) = members.get("type") else {
+            r.missing(members, "type", Some(texts::CURVE_TYPE));
+            return left_out(r, true);
         };
-        let Some(kind) = kind else {
-            r.key("type", |r| r.wrong_type(Some(texts::CURVE_TYPE)));
+        let Some(kind) = written.as_string().map(facet_value::VString::as_str) else {
+            r.key("type", |r| r.wrong_type(written, Some(texts::CURVE_TYPE)));
             return left_out(r, true);
         };
         // A curve whose nodes the legacy parser cannot read is not made.
@@ -311,7 +308,7 @@ pub(crate) fn named_map<T: Node>(
     let value = m.get(key)?;
     r.key(key, |r| {
         let Some(entries) = Members::of(value) else {
-            r.wrong_type(Some(not_object));
+            r.wrong_type(value, Some(not_object));
             return None;
         };
         let mut read = IndexMap::new();
@@ -329,19 +326,19 @@ pub(crate) fn named_map<T: Node>(
 }
 
 /// A member that must be an object in a 1.20.80 document, for the callers that read its
-/// entries themselves.
+/// entries themselves (the 1.20.80 reader alone).
 pub(crate) fn object_member<'v>(
     m: Members<'v>,
     key: &str,
     r: &mut Reader<'_>,
 ) -> Option<Members<'v>> {
     let Some(value) = m.get(key) else {
-        r.key(key, |r| r.missing(None));
+        r.missing(m, key, None);
         return None;
     };
     let members = Members::of(value);
     if members.is_none() {
-        r.key(key, |r| r.error(DiagnosticCode::InvalidType { text: None }));
+        r.key(key, |r| r.wrong_type(value, None));
     }
     members
 }

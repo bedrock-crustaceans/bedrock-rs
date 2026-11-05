@@ -924,6 +924,6 @@ fn the_merged_catalogue_holds_no_unknown_members() {
         ])
     );
     // The layer does not keep them either; their warnings are the merged catalogue's.
-    assert!(merged.layers()[0].extra.is_empty());
+    assert!(merged.layers()[0].unknown().is_empty());
     assert_eq!(merged.diagnostics().count(), 6);
 }

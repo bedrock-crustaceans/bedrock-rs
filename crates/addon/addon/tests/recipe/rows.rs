@@ -202,7 +202,7 @@ fn shaped_assume_symmetry_default_false_and_string() {
         infos[0].location.json_path.to_string(),
         "minecraft:recipe_shaped/assume_symmetry"
     );
-    assert!(shaped(&string).extra.get("assume_symmetry").is_some());
+    assert!(kept(&string, &["minecraft:recipe_shaped"], "assume_symmetry").is_some());
 }
 
 #[test]
@@ -504,12 +504,7 @@ fn payload_key_order_picks_shaped() {
     let document = loaded("payload_key_order.json", &cx());
     assert!(matches!(document.value(), Recipe::Shaped(_)));
     // the shapeless payload is not read, and kept for write-back
-    assert!(
-        shaped(&document)
-            .root_extra
-            .get("minecraft:recipe_shapeless")
-            .is_some()
-    );
+    assert!(kept(&document, &[], "minecraft:recipe_shapeless").is_some());
     assert!(
         document
             .diagnostics()

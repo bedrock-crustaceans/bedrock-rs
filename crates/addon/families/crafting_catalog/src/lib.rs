@@ -19,7 +19,6 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_core::version::FormatVersion;
@@ -75,8 +74,6 @@ pub struct CraftingCatalog {
     /// The categories groups are added to (JSON `categories`, required). A file may list a
     /// category several times; every entry adds to the same category.
     pub categories: Vec<Category>,
-    /// Unknown members of the payload.
-    pub extra: UnknownMembers,
 }
 
 /// The groups one entry of `categories` adds to a creative category.
@@ -86,8 +83,6 @@ pub struct Category {
     pub category_name: CategoryName,
     /// The groups added to it, in order (JSON `groups`, required).
     pub groups: Vec<Group>,
-    /// Unknown members.
-    pub extra: UnknownMembers,
 }
 
 /// One of the four creative categories a catalogue can add to; a pack cannot add, rename or
@@ -155,8 +150,6 @@ pub struct Group {
     pub group_identifier: Option<GroupIdentifier>,
     /// The items of the group, in order (JSON `items`, required).
     pub items: Vec<CatalogItem>,
-    /// Unknown members.
-    pub extra: UnknownMembers,
 }
 
 /// The name and icon of a collapsible group.
@@ -169,28 +162,24 @@ pub struct GroupIdentifier {
     /// The item or block that represents the group (JSON `icon`). A group keeps the icon of
     /// its first definition.
     pub icon: Option<CatalogItem>,
-    /// Unknown members.
-    pub extra: UnknownMembers,
 }
 
 /// One item or block of the catalogue.
 ///
 /// JSON: `"ns:item"`, `"ns:item:1"` (with an aux value) or `{"name": "ns:item"}`. Both forms
-/// read to the same value; it is written as the string unless it holds unknown members.
+/// read to the same value; it is written as the string.
 /// Two items are equal when their names are written the same, the aux value included.
 #[derive(Clone, Debug)]
 pub struct CatalogItem {
     /// The item (JSON `name`, or the string itself): `namespace:name`, optionally followed
     /// by `:aux`. The namespace is required.
     pub name: ItemId,
-    /// Unknown members of the object form.
-    pub extra: UnknownMembers,
 }
 
 /// By the name as written: `ItemId` alone compares without the aux value.
 impl PartialEq for CatalogItem {
     fn eq(&self, other: &Self) -> bool {
-        self.name.as_str() == other.name.as_str() && self.extra == other.extra
+        self.name.as_str() == other.name.as_str()
     }
 }
 
@@ -483,7 +472,6 @@ impl Category {
         Self {
             category_name,
             groups: Vec::new(),
-            extra: UnknownMembers::default(),
         }
     }
 }
@@ -516,7 +504,6 @@ impl GroupIdentifier {
         Self {
             name: name.into(),
             icon: None,
-            extra: UnknownMembers::default(),
         }
     }
 }
@@ -524,10 +511,7 @@ impl GroupIdentifier {
 impl CatalogItem {
     /// The item `name` (`namespace:name`, or `namespace:name:aux`).
     pub fn new(name: ItemId) -> Self {
-        Self {
-            name,
-            extra: UnknownMembers::default(),
-        }
+        Self { name }
     }
 }
 

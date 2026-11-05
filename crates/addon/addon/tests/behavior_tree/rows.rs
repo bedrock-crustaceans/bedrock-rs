@@ -2,8 +2,8 @@
 //! and compared with its `expected.json` and `expected.toml` (`check`), then the row's own
 //! claims are asserted.
 
-use bedrock_addon::diagnostic::Diagnostics;
 use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity, VanillaText};
+use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon::document::{Registry, Rejected};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -93,13 +93,18 @@ fn bt07_a_format_version_member_is_ignored() {
     assert!(trees.diagnostics().next().is_none());
     // not read, and kept where it was written
     assert_eq!(
-        tree.root_extra
-            .get("format_version")
+        tree.unknown()
+            .get(&JsonPath::new(), "format_version")
             .and_then(|version| version.as_string())
             .map(facet_value::VString::as_str),
         Some("1.99.0")
     );
-    assert!(tree.extra.is_empty());
+    assert!(
+        tree.unknown()
+            .members_at(&JsonPath::of_keys(["minecraft:behavior_tree"]))
+            .next()
+            .is_none()
+    );
     // the family has no version: nothing was written, whatever the member says
     assert_eq!(tree.version().written, None);
 }
@@ -476,9 +481,16 @@ fn bt28_both_fly_literals_are_one_value() {
 #[test]
 fn bt23_an_unknown_body_key_is_reported_and_kept() {
     let stack = check("bt23_unknown_body_key");
-    let (Node::WaitTicks { ticks, extra }, findings) = root(&stack, "ticks") else {
+    let (Node::WaitTicks { ticks }, findings) = root(&stack, "ticks") else {
         panic!()
     };
+    let tree = stack.behavior_trees().get(&id("ticks")).unwrap();
+    let body = JsonPath::of_keys([
+        "minecraft:behavior_tree",
+        "minecraft:root",
+        "minecraft:wait_ticks",
+    ]);
+    let extra: Vec<_> = tree.unknown().members_at(&body).collect();
     assert_eq!(ticks, &param(2, ""));
     let finding = one(
         findings,
@@ -492,13 +504,13 @@ fn bt23_an_unknown_body_key_is_reported_and_kept() {
     ));
     assert_eq!(findings.len(), 1);
     assert_eq!(
-        extra
-            .get("ticks")
+        tree.unknown()
+            .get(&body, "ticks")
             .and_then(|v| v.as_number())
             .and_then(facet_value::VNumber::to_i64),
         Some(3)
     );
-    assert_eq!(extra.iter().count(), 1);
+    assert_eq!(extra.len(), 1);
 }
 
 #[test]

@@ -126,20 +126,14 @@ fn parse_as_written_then_upgrade_is_the_load() {
 
 /// The 1.21.60 slice tells an unknown member
 /// (the warning stays) and never keeps it, as the game's reader under 0xfbf8 does;
-/// the value holds no `extra`, the writer stamps
+/// the document holds no unknown member, the writer stamps
 /// 1.26.50 and the written file reads back to the same value without a finding.
 #[test]
 fn an_unknown_member_below_1_26_50_is_told_and_not_kept() {
     let document = loads(&with_unknown_members("1.21.60"));
     assert_eq!(unrecognized(document.diagnostics()).len(), 6);
     let catalog = document.value();
-    assert!(catalog.extra.is_empty());
-    let group = &catalog.categories[0].groups[0];
-    assert!(catalog.categories[0].extra.is_empty() && group.extra.is_empty());
-    let identifier = group.group_identifier.as_ref().unwrap();
-    assert!(identifier.extra.is_empty());
-    assert!(identifier.icon.as_ref().unwrap().extra.is_empty());
-    assert!(group.items[0].extra.is_empty());
+    assert!(document.unknown().is_empty());
     let written = document.to_json().unwrap();
     assert!(
         written.contains(r#""format_version": "1.26.50""#),

@@ -19,14 +19,13 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::id::syntax::has_namespace;
+use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::Reading;
 
 /// The client's text for an identifier that is not `namespace:name`.
 const NAMESPACE_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";
-
-/// The members of a JSON object, each a slice of the file.
-type Members<'a> = IndexMap<String, RawJson<'a>>;
 
 /// The first byte of `text` that is neither white space nor inside a comment.
 fn first_token(text: &str) -> Option<u8> {
@@ -123,151 +122,129 @@ fn exponent_too_big(text: &str) -> Vec<std::ops::Range<usize>> {
     found
 }
 
-/// One file's read: the catalogue of the engine, where the reader is, and what it found.
+/// How every level of a ddui document is read: the client's strict error mask, so an unknown
+/// member, a missing member and a value of the wrong JSON type are each an error that skips the
+/// file.
+const READING: Reading = Reading::DOCUMENT;
+
+/// One file's read: the catalogue of the engine, and where the findings go. Each value is a
+/// [`Node`] of the payload with its text, so every finding has its path and span.
 struct Reader<'d> {
     catalogue: Catalogue,
-    /// The path of the value being read.
-    at: JsonPath,
     /// A root's `ExtensionPoint` controls are checked for their name; a composition's are
     /// never collected.
     root: bool,
-    /// An error was reported: the file is refused.
-    failed: bool,
+    /// How many findings `d` held before the read: an error told after it refuses the file.
+    start: usize,
     d: &'d mut Diagnostics,
 }
 
 impl Reader<'_> {
-    /// A finding at the reader's place.
-    fn report(&mut self, code: DiagnosticCode, severity: Severity, slice: JsonSlice<'_>) {
-        self.failed |= severity == Severity::Error;
-        self.d.push(
-            Diagnostic::error(code)
-                .severity(severity)
-                .at(self.at.clone())
-                .span(span_of(slice)),
-        );
+    /// The kit's read over the findings.
+    fn read(&mut self) -> Read<'_> {
+        Read::new(READING, self.d)
     }
 
-    /// An error at the reader's place.
-    fn error(&mut self, code: DiagnosticCode, slice: JsonSlice<'_>) {
-        self.report(code, Severity::Error, slice);
+    /// Whether an error was told since the findings held `mark`.
+    fn failed_since(&self, mark: usize) -> bool {
+        self.d
+            .iter()
+            .skip(mark)
+            .any(|finding| finding.severity == Severity::Error)
     }
 
-    /// An error at the member `key` of the reader's place; `slice` is what the span covers.
-    fn error_at(&mut self, key: &str, code: DiagnosticCode, slice: JsonSlice<'_>) {
-        self.at.push(key);
-        self.error(code, slice);
-        self.at.pop();
+    /// Whether the reader told an error: the file is refused.
+    fn failed(&self) -> bool {
+        self.failed_since(self.start)
     }
 
-    /// The member `key` of `object` is required and absent.
-    fn missing(&mut self, key: &str, object: JsonSlice<'_>) {
-        self.error_at(
-            key,
-            DiagnosticCode::MissingRequiredField { text: None },
-            object,
-        );
+    /// A finding at `node`, spanning it.
+    fn report(&mut self, node: &Node<'_>, code: DiagnosticCode, severity: Severity) {
+        let mut finding = Diagnostic::error(code)
+            .severity(severity)
+            .at(node.path().clone());
+        finding.location.span = node.span();
+        self.read().push(finding);
     }
 
-    /// A typed read of `slice` whose first token is `token`; a wrong type otherwise.
-    fn typed<'a, T: facet::Facet<'a>>(&mut self, slice: JsonSlice<'a>, token: u8) -> Option<T> {
-        if first_token(slice.text) != Some(token) {
-            self.error(DiagnosticCode::InvalidType { text: None }, slice);
-            return None;
+    /// An error at `node`, spanning it.
+    fn error(&mut self, node: &Node<'_>, code: DiagnosticCode) {
+        self.report(node, code, Severity::Error);
+    }
+
+    /// The members of the object `node`, in file order; a wrong type otherwise.
+    fn object<'v>(&mut self, node: &Node<'v>) -> Option<Members<'v>> {
+        self.read().object(node)
+    }
+
+    /// The elements of the array `node`; a wrong type otherwise.
+    fn array<'v>(&mut self, node: &Node<'v>) -> Option<Elements<'v>> {
+        self.read().array(node)
+    }
+
+    /// The string `node`: its text is a string token (the untyped value is a string for an
+    /// integer too wide too, which the client reads as a number); a wrong type otherwise.
+    fn string(&mut self, node: &Node<'_>) -> Option<String> {
+        let text = (token(node) == Some(b'"'))
+            .then(|| node.value().as_string())
+            .flatten();
+        if text.is_none() {
+            self.read().wrong_type(node);
         }
-        // The token says what the value is, so the reader itself is asked (the text of a pack
-        // file, comments allowed): `json::parse_at` would look for an array given to a map on
-        // every level again, which the token has already ruled out.
-        match bedrock_addon_core::json::from_str_borrowed_jsonc::<T>(slice.text) {
-            Ok(value) => Some(value),
-            Err(failure) => {
-                // The text is JSON (the envelope probe read it), so only a value the reader
-                // has no form for gets here.
-                let message = failure.kind.to_string();
-                self.error(
-                    DiagnosticCode::MalformedInput {
-                        message,
-                        text: None,
-                    },
-                    slice,
-                );
-                None
-            }
-        }
+        text.map(|text| text.as_str().to_owned())
     }
 
-    /// The members of the object `slice`, in file order.
-    fn object<'a>(&mut self, slice: JsonSlice<'a>) -> Option<Members<'a>> {
-        self.typed(slice, b'{')
-    }
-
-    /// The string `slice`.
-    fn string(&mut self, slice: JsonSlice<'_>) -> Option<String> {
-        self.typed(slice, b'"')
-    }
-
-    /// The string member `key`, held to `accept`; `text` is vanilla's for a refused value.
+    /// The string member `node`, held to `accept`; `text` is vanilla's for a refused value.
     fn string_member(
         &mut self,
-        key: &str,
-        slice: JsonSlice<'_>,
+        node: &Node<'_>,
         accept: fn(&str) -> bool,
         text: Option<&'static str>,
     ) -> Option<String> {
-        self.at.push(key);
-        let value = self.string(slice).filter(|value| {
+        self.string(node).filter(|value| {
             let accepted = accept(value);
             if !accepted {
                 self.error(
+                    node,
                     DiagnosticCode::InvalidValue {
                         text: text.map(VanillaText::Fixed),
                     },
-                    slice,
                 );
             }
             accepted
-        });
-        self.at.pop();
-        value
+        })
     }
 
     /// An object that binds the one string member `key`: the member's value, when it is
     /// written and accepted. What the object gets wrong is reported and fails the file.
     fn single(
         &mut self,
-        slice: JsonSlice<'_>,
+        node: &Node<'_>,
         key: &str,
         required: bool,
         accept: fn(&str) -> bool,
         text: Option<&'static str>,
     ) -> Option<String> {
-        let members = self.object(slice)?;
+        let members = self.object(node)?;
         let mut value = None;
-        for (name, raw) in &members {
-            let Some(member) = slice.nested(raw) else {
-                continue;
-            };
+        for (name, member) in members.iter() {
             if name == key {
-                value = self.string_member(key, member, accept, text);
+                value = self.string_member(&member, accept, text);
             } else {
-                self.error_at(
-                    name,
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    member,
-                );
+                self.read().unknown_member(&member, Disposition::Keep);
             }
         }
-        if required && !members.contains_key(key) {
-            self.missing(key, slice);
+        if required {
+            self.read().required(&members, key);
         }
         value
     }
 
     /// A document's `description`: the identifier, under `NamespaceConstraint` without a
     /// disallowed namespace.
-    fn description(&mut self, slice: JsonSlice<'_>) -> Option<String> {
+    fn description(&mut self, node: &Node<'_>) -> Option<String> {
         self.single(
-            slice,
+            node,
             "identifier",
             true,
             has_namespace,
@@ -276,51 +253,35 @@ impl Reader<'_> {
     }
 
     /// A `layout`: `markup`, at least one control of `set`.
-    fn layout(&mut self, slice: JsonSlice<'_>, set: ChildSet) -> Option<Layout> {
-        let members = self.object(slice)?;
+    fn layout(&mut self, node: &Node<'_>, set: ChildSet) -> Option<Layout> {
+        let members = self.object(node)?;
         let mut markup = None;
-        for (name, raw) in &members {
-            let Some(member) = slice.nested(raw) else {
-                continue;
-            };
+        for (name, member) in members.iter() {
             if name == "markup" {
-                self.at.push("markup");
-                markup = self.controls(member, set);
+                markup = self.controls(&member, set);
                 if markup.as_ref().is_some_and(Vec::is_empty) {
                     // `markup` must hold at least one control.
-                    self.error(DiagnosticCode::InvalidValue { text: None }, member);
+                    self.error(&member, DiagnosticCode::InvalidValue { text: None });
                     markup = None;
                 }
-                self.at.pop();
             } else {
-                self.error_at(
-                    name,
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    member,
-                );
+                self.read().unknown_member(&member, Disposition::Keep);
             }
         }
-        if !members.contains_key("markup") {
-            self.missing("markup", slice);
-        }
+        self.read().required(&members, "markup");
         markup.map(|markup| Layout { markup })
     }
 
     /// An array of controls of `set`; `None` when the array or one of its controls fails.
-    fn controls(&mut self, slice: JsonSlice<'_>, set: ChildSet) -> Option<Vec<Control>> {
-        let elements: Vec<RawJson<'_>> = self.typed(slice, b'[')?;
+    fn controls(&mut self, node: &Node<'_>, set: ChildSet) -> Option<Vec<Control>> {
+        let elements = self.array(node)?;
         let mut controls = Vec::with_capacity(elements.len());
         let mut complete = true;
-        for (index, raw) in elements.iter().enumerate() {
-            let Some(element) = slice.nested(raw) else {
-                continue;
-            };
-            self.at.push_index(index);
-            match self.control(element, set) {
+        for element in elements.iter() {
+            match self.control(&element, set) {
                 Some(control) => controls.push(control),
                 None => complete = false,
             }
-            self.at.pop();
         }
         complete.then_some(controls)
     }
@@ -333,37 +294,36 @@ impl Reader<'_> {
     /// error. Each such number is an error of its own, at its own place. An integer beyond 64
     /// bits is a number like any other here: the JSON reader hands it over as the double it
     /// spells.
-    fn attribs(&mut self, slice: JsonSlice<'_>) -> Option<Value> {
-        let mut value = self.typed::<Value>(slice, first_token(slice.text).unwrap_or(0))?;
+    fn attribs(&mut self, node: &Node<'_>) -> Option<Value> {
+        let slice = node.text()?;
+        let mut value = node.value().clone();
         let mut too_big = false;
         // Core's walk: each infinity with its own path and span.
         for clamped in bedrock_addon_core::json::clamp_non_finite(&mut value, Some(slice)) {
-            let mut at = self.at.clone();
+            let mut at = node.path().clone();
             at.append(&clamped.path);
-            self.failed = true;
             too_big = true;
             let finding = Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
             })
             .at(at);
-            self.d.push(match clamped.span {
+            self.read().push(match clamped.span {
                 Some(span) => finding.span(span),
                 None => finding,
             });
         }
         // A finite value whose exponent rapidjson refuses all the same (`0e999`).
         for range in exponent_too_big(slice.text) {
-            let token = JsonSlice {
+            too_big = true;
+            let finding = Diagnostic::error(DiagnosticCode::InvalidValue {
+                text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
+            })
+            .at(node.path().clone())
+            .span(span_of(JsonSlice {
                 text: &slice.text[range.clone()],
                 offset: slice.offset + range.start,
-            };
-            too_big = true;
-            self.error(
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
-                },
-                token,
-            );
+            }));
+            self.read().push(finding);
         }
         if too_big {
             return None;
@@ -371,23 +331,23 @@ impl Reader<'_> {
         Some(value)
     }
 
-    /// The control type `slice` names, when the catalogue has it; a hint names the engine
+    /// The control type `node` names, when the catalogue has it; a hint names the engine
     /// that has a type this one lacks: the first later one, else the last earlier one.
-    fn component(&mut self, slice: JsonSlice<'_>) -> Option<Component> {
-        let name = self.string(slice)?;
+    fn component(&mut self, node: &Node<'_>) -> Option<Component> {
+        let name = self.string(node)?;
         let known = Component::from_name(&name);
         if let Some(component) = known.filter(|component| self.catalogue.has(*component)) {
             return Some(component);
         }
         // No alternative of any variant has this constant: the file is skipped.
-        self.error(DiagnosticCode::InvalidValue { text: None }, slice);
+        self.error(node, DiagnosticCode::InvalidValue { text: None });
         if let Some(later) = known.and_then(|component| self.catalogue.later_with(component)) {
             self.report(
+                node,
                 DiagnosticCode::FieldSinceEngine {
                     since: later.engine(),
                 },
                 Severity::Info,
-                slice,
             );
         } else if let Some(earlier) =
             known.and_then(|component| self.catalogue.earlier_with(component))
@@ -395,11 +355,11 @@ impl Reader<'_> {
             // A type this engine has dropped (`Container.Item` from 1.26.45): the crate's own
             // hint.
             self.report(
+                node,
                 DiagnosticCode::FieldUntilEngine {
                     last: earlier.engine(),
                 },
                 Severity::Info,
-                slice,
             );
         }
         None
@@ -407,63 +367,41 @@ impl Reader<'_> {
 
     /// One control standing where `set` is expected. The JSON nests at most as deep as the
     /// reader's depth limit lets a file through, which bounds this recursion.
-    fn control(&mut self, slice: JsonSlice<'_>, set: ChildSet) -> Option<Control> {
-        let members = self.object(slice)?;
-        let Some(component) = members.get("component") else {
-            self.missing("component", slice);
-            return None;
-        };
-        self.at.push("component");
-        let named = slice.nested(component);
-        let component = named.and_then(|named| self.component(named));
+    fn control(&mut self, node: &Node<'_>, set: ChildSet) -> Option<Control> {
+        let members = self.object(node)?;
+        let named = self.read().required(&members, "component")?;
+        let component = self.component(&named);
         // A type of the catalogue that is no alternative of this place's variant.
-        let placed = match (component, named) {
-            (Some(component), Some(named)) if !self.catalogue.allows(set, component) => {
-                self.error(DiagnosticCode::InvalidValue { text: None }, named);
+        let placed = match component {
+            Some(component) if !self.catalogue.allows(set, component) => {
+                self.error(&named, DiagnosticCode::InvalidValue { text: None });
                 false
             }
             _ => true,
         };
-        self.at.pop();
         let component = component?;
         let rule = self.catalogue.rule(component)?;
-        let before = self.failed;
-        self.failed = false;
+        let mark = self.d.len();
         let mut attribs = None;
         let mut children = None;
-        for (name, raw) in &members {
-            let Some(member) = slice.nested(raw) else {
-                continue;
-            };
-            match (name.as_str(), rule.children) {
+        for (name, member) in members.iter() {
+            match (name, rule.children) {
                 ("component", _) => {}
+                // Any JSON is accepted; no key and no type is checked.
                 ("attribs", _) if rule.attribs != Binding::Unbound => {
-                    self.at.push("attribs");
-                    // Any JSON is accepted; no key and no type is checked.
-                    attribs = self.attribs(member);
-                    self.at.pop();
+                    attribs = self.attribs(&member);
                 }
-                ("children", Some(below)) => {
-                    self.at.push("children");
-                    children = self.controls(member, below);
-                    self.at.pop();
-                }
-                _ => self.error_at(
-                    name,
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    member,
-                ),
+                ("children", Some(below)) => children = self.controls(&member, below),
+                _ => self.read().unknown_member(&member, Disposition::Keep),
             }
         }
-        if rule.attribs == Binding::Required && !members.contains_key("attribs") {
-            self.missing("attribs", slice);
+        if rule.attribs == Binding::Required {
+            self.read().required(&members, "attribs");
         }
-        if rule.children.is_some() && !members.contains_key("children") {
-            self.missing("children", slice);
+        if rule.children.is_some() {
+            self.read().required(&members, "children");
         }
-        let failed = std::mem::replace(&mut self.failed, before) || !placed;
-        self.failed |= failed;
-        if failed {
+        if self.failed_since(mark) || !placed {
             return None;
         }
         let control = Control {
@@ -479,7 +417,7 @@ impl Reader<'_> {
             // `attribs["name"]` as a string, and a missing key or another type throws out of
             // the whole load without a log line. The crate reports an error that refuses the
             // root instead.
-            self.error(DiagnosticCode::InvalidValue { text: None }, slice);
+            self.error(node, DiagnosticCode::InvalidValue { text: None });
         }
         Some(control)
     }
@@ -502,128 +440,92 @@ fn integer_token(text: &str) -> bool {
         && (digits.len() == 1 || !digits.starts_with('0'))
 }
 
-/// How a key a style's object does not bind is reported.
-#[derive(Clone, Copy)]
-enum Unbound {
-    /// An unknown member.
-    Member,
-    /// An unknown component, a key of `components`.
-    Component,
+/// The first token of `node`'s text.
+fn token(node: &Node<'_>) -> Option<u8> {
+    node.text().and_then(|slice| first_token(slice.text))
 }
 
 impl Reader<'_> {
-    /// The members of the object `slice`, each key `known` does not name an error (an unknown
-    /// member or an unknown component, by `unbound`).
-    fn bound<'a>(
-        &mut self,
-        slice: JsonSlice<'a>,
-        known: &[&str],
-        unbound: Unbound,
-    ) -> Option<Members<'a>> {
-        let members = self.object(slice)?;
-        for (name, raw) in &members {
-            if known.contains(&name.as_str()) {
-                continue;
-            }
-            let Some(member) = slice.nested(raw) else {
-                continue;
-            };
-            let code = match unbound {
-                Unbound::Member => DiagnosticCode::UnrecognizedField { text: None },
-                Unbound::Component => DiagnosticCode::UnrecognizedComponent { text: None },
-            };
-            self.error_at(name, code, member);
-        }
+    /// The members of the object `node`, each key `known` does not name an unknown member.
+    fn bound<'v>(&mut self, node: &Node<'v>, known: &[&str]) -> Option<Members<'v>> {
+        let members = self.object(node)?;
+        self.read().unknown(&members, known, Disposition::Keep);
         Some(members)
     }
 
-    /// Runs `read` on the member `key` of `members` below it, when it is written.
-    fn member<'a, T>(
+    /// Runs `read` on the member `key` of `members`, when it is written.
+    fn member<'v, T>(
         &mut self,
-        members: &Members<'a>,
-        object: JsonSlice<'a>,
+        members: &Members<'v>,
         key: &str,
-        read: impl FnOnce(&mut Self, JsonSlice<'a>) -> Option<T>,
+        read: impl FnOnce(&mut Self, &Node<'v>) -> Option<T>,
     ) -> Option<T> {
-        let member = object.nested(members.get(key)?)?;
-        self.at.push(key);
-        let value = read(self, member);
-        self.at.pop();
-        value
+        let member = members.get(key)?;
+        read(self, &member)
     }
 
     /// A required member: `read`'s value, or a `MissingRequiredField` error at it.
-    fn required<'a, T>(
+    fn required<'v, T>(
         &mut self,
-        members: &Members<'a>,
-        object: JsonSlice<'a>,
+        members: &Members<'v>,
         key: &str,
-        read: impl FnOnce(&mut Self, JsonSlice<'a>) -> Option<T>,
+        read: impl FnOnce(&mut Self, &Node<'v>) -> Option<T>,
     ) -> Option<T> {
-        if !members.contains_key(key) {
-            self.missing(key, object);
-            return None;
-        }
-        self.member(members, object, key, read)
+        let member = self.read().required(members, key)?;
+        read(self, &member)
     }
 
     /// A boolean.
-    fn boolean(&mut self, slice: JsonSlice<'_>) -> Option<bool> {
-        let token = first_token(slice.text);
-        self.typed(
-            slice,
-            token.filter(|t| matches!(t, b't' | b'f')).unwrap_or(b't'),
-        )
+    fn boolean(&mut self, node: &Node<'_>) -> Option<bool> {
+        self.read().bool(node)
     }
 
-    /// An array of integer tokens, each with its slice; a wrong type at the array or at the
+    /// An array of integer tokens, each with its node; a wrong type at the array or at the
     /// element otherwise.
-    fn integers<'a>(&mut self, slice: JsonSlice<'a>) -> Option<Vec<(i64, JsonSlice<'a>)>> {
-        let elements: Vec<RawJson<'_>> = self.typed(slice, b'[')?;
+    fn integers(&mut self, node: &Node<'_>) -> Option<Vec<i64>> {
+        let elements = self.array(node)?;
         let mut values = Vec::with_capacity(elements.len());
         let mut complete = true;
-        for (index, raw) in elements.iter().enumerate() {
-            let Some(element) = slice.nested(raw) else {
+        for element in elements.iter() {
+            let Some(slice) = element.text() else {
                 complete = false;
                 continue;
             };
-            let text = element.text.trim();
+            let text = slice.text.trim();
             if let Some(value) = integer_token(text)
                 .then(|| text.parse::<i64>().ok())
                 .flatten()
             {
-                values.push((value, element));
+                values.push(value);
             } else {
-                self.at.push_index(index);
-                self.error(DiagnosticCode::InvalidType { text: None }, element);
-                self.at.pop();
+                self.read().wrong_type(&element);
                 complete = false;
             }
         }
         complete.then_some(values)
     }
 
-    /// A conversion failure: `InvalidValue` with `text` at the reader's place.
-    fn unconverted(&mut self, text: &'static str, slice: JsonSlice<'_>) {
+    /// A conversion failure: `InvalidValue` with `text` at `node`.
+    fn unconverted(&mut self, text: &'static str, node: &Node<'_>) {
         self.error(
+            node,
             DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed(text)),
             },
-            slice,
         );
     }
 
     /// A box size: two or four integers. Another count is the conversion's error
     /// (the two-value text up to two elements, the four-value text above).
-    fn box_size(&mut self, slice: JsonSlice<'_>) -> Option<BoxSize> {
-        let values = self.integers(slice)?;
+    fn box_size(&mut self, node: &Node<'_>) -> Option<BoxSize> {
+        let values = self.integers(node)?;
         let ints: Option<Vec<i32>> = values
             .iter()
-            .map(|(value, _)| i32::try_from(*value).ok())
+            .map(|value| i32::try_from(*value).ok())
             .collect();
-        let size = match (ints.as_deref(), values.len()) {
-            (Some(&[a, b]), _) => Some(BoxSize::Two([a, b])),
-            (Some(&[a, b, c, d]), _) => Some(BoxSize::Four([a, b, c, d])),
+        let size = match ints.as_deref() {
+            Some(&[a, b]) => Some(BoxSize::Two([a, b])),
+            Some(&[a, b, c, d]) => Some(BoxSize::Four([a, b, c, d])),
             _ => None,
         };
         if size.is_none() {
@@ -632,7 +534,7 @@ impl Reader<'_> {
             } else {
                 BOX_SIZE_4_TEXT
             };
-            self.unconverted(text, slice);
+            self.unconverted(text, node);
         }
         size
     }
@@ -640,10 +542,10 @@ impl Reader<'_> {
     /// A colour, RGBA tried first: four or three integers 0–255, or `#`
     /// with eight or six hex digits. What neither takes is the conversion's error, with the
     /// text of the alternative its shape is nearer (three elements or seven characters: RGB).
-    fn color(&mut self, slice: JsonSlice<'_>) -> Option<StyleColor> {
-        match first_token(slice.text) {
+    fn color(&mut self, node: &Node<'_>) -> Option<StyleColor> {
+        match token(node) {
             Some(b'"') => {
-                let text = self.string(slice)?;
+                let text = self.string(node)?;
                 if hex_bytes::<4>(&text).is_some() {
                     return Some(StyleColor::HexArgb(text));
                 }
@@ -657,15 +559,15 @@ impl Reader<'_> {
                     } else {
                         COLOR_RGBA_TEXT
                     },
-                    slice,
+                    node,
                 );
                 None
             }
             Some(b'[') => {
-                let values = self.integers(slice)?;
+                let values = self.integers(node)?;
                 let bytes: Option<Vec<u8>> = values
                     .iter()
-                    .map(|(value, _)| u8::try_from(*value).ok())
+                    .map(|value| u8::try_from(*value).ok())
                     .collect();
                 let color = match bytes.as_deref() {
                     Some(&[r, g, b, a]) => Some(StyleColor::Rgba([r, g, b, a])),
@@ -678,70 +580,60 @@ impl Reader<'_> {
                     } else {
                         COLOR_RGBA_TEXT
                     };
-                    self.unconverted(text, slice);
+                    self.unconverted(text, node);
                 }
                 color
             }
             _ => {
-                self.error(DiagnosticCode::InvalidType { text: None }, slice);
+                self.read().wrong_type(node);
                 None
             }
         }
     }
 
     /// A border image repeat mode: `"stretch"` or `"repeat"`.
-    fn repeat(&mut self, slice: JsonSlice<'_>) -> Option<BorderImageRepeat> {
-        let name = self.string(slice)?;
+    fn repeat(&mut self, node: &Node<'_>) -> Option<BorderImageRepeat> {
+        let name = self.string(node)?;
         let value = BorderImageRepeat::from_name(&name);
         if value.is_none() {
-            self.error(DiagnosticCode::InvalidValue { text: None }, slice);
+            self.error(node, DiagnosticCode::InvalidValue { text: None });
         }
         value
     }
 
     /// An image reference: a string.
-    fn image(&mut self, slice: JsonSlice<'_>) -> Option<String> {
-        self.string(slice)
+    fn image(&mut self, node: &Node<'_>) -> Option<String> {
+        self.string(node)
     }
 
     /// The `minecraft:form_panel` style component.
-    fn form_panel(&mut self, slice: JsonSlice<'_>) -> Option<FormPanelStyle> {
+    fn form_panel(&mut self, node: &Node<'_>) -> Option<FormPanelStyle> {
         const KNOWN: [&str; 4] = [
             "padding",
             "image",
             "image_repeat_top_bottom",
             "image_repeat_right_left",
         ];
-        let members = self.bound(slice, &KNOWN, Unbound::Member)?;
+        let members = self.bound(node, &KNOWN)?;
         Some(FormPanelStyle {
-            padding: self.member(&members, slice, "padding", Self::box_size),
-            image: self.member(&members, slice, "image", Self::image),
-            image_repeat_top_bottom: self.member(
-                &members,
-                slice,
-                "image_repeat_top_bottom",
-                Self::repeat,
-            ),
-            image_repeat_right_left: self.member(
-                &members,
-                slice,
-                "image_repeat_right_left",
-                Self::repeat,
-            ),
+            padding: self.member(&members, "padding", Self::box_size),
+            image: self.member(&members, "image", Self::image),
+            image_repeat_top_bottom: self.member(&members, "image_repeat_top_bottom", Self::repeat),
+            image_repeat_right_left: self.member(&members, "image_repeat_right_left", Self::repeat),
         })
     }
 
     /// The `minecraft:form_label` style component.
-    fn form_label(&mut self, slice: JsonSlice<'_>) -> Option<FormLabelStyle> {
-        let members = self.bound(slice, &["color", "shadow"], Unbound::Member)?;
+    fn form_label(&mut self, node: &Node<'_>) -> Option<FormLabelStyle> {
+        let members = self.bound(node, &["color", "shadow"])?;
         Some(FormLabelStyle {
-            color: self.member(&members, slice, "color", Self::color),
-            shadow: self.member(&members, slice, "shadow", Self::boolean),
+            color: self.member(&members, "color", Self::color),
+            shadow: self.member(&members, "shadow", Self::boolean),
         })
     }
 
     /// The `minecraft:form_textfield` style component: the four colours are required.
-    fn form_textfield(&mut self, slice: JsonSlice<'_>) -> Option<FormTextFieldStyle> {
+    fn form_textfield(&mut self, node: &Node<'_>) -> Option<FormTextFieldStyle> {
         const KNOWN: [&str; 9] = [
             "text_color",
             "caret_color",
@@ -753,82 +645,113 @@ impl Reader<'_> {
             "focused_image",
             "panel_image",
         ];
-        let members = self.bound(slice, &KNOWN, Unbound::Member)?;
-        let text_color = self.required(&members, slice, "text_color", Self::color);
-        let caret_color = self.required(&members, slice, "caret_color", Self::color);
+        let members = self.bound(node, &KNOWN)?;
+        let text_color = self.required(&members, "text_color", Self::color);
+        let caret_color = self.required(&members, "caret_color", Self::color);
         let selection_background_color =
-            self.required(&members, slice, "selection_background_color", Self::color);
-        let text_color_disabled =
-            self.required(&members, slice, "text_color_disabled", Self::color);
+            self.required(&members, "selection_background_color", Self::color);
+        let text_color_disabled = self.required(&members, "text_color_disabled", Self::color);
         let mut style = FormTextFieldStyle::new(
             text_color?,
             caret_color?,
             selection_background_color?,
             text_color_disabled?,
         );
-        style.default_image = self.member(&members, slice, "default_image", Self::image);
-        style.hovered_image = self.member(&members, slice, "hovered_image", Self::image);
-        style.disabled_image = self.member(&members, slice, "disabled_image", Self::image);
-        style.focused_image = self.member(&members, slice, "focused_image", Self::image);
-        style.panel_image = self.member(&members, slice, "panel_image", Self::image);
+        style.default_image = self.member(&members, "default_image", Self::image);
+        style.hovered_image = self.member(&members, "hovered_image", Self::image);
+        style.disabled_image = self.member(&members, "disabled_image", Self::image);
+        style.focused_image = self.member(&members, "focused_image", Self::image);
+        style.panel_image = self.member(&members, "panel_image", Self::image);
         Some(style)
     }
 
-    /// The `components` of a style: at least one component.
-    fn style_components(&mut self, slice: JsonSlice<'_>) -> Option<StyleComponents> {
+    /// The `components` of a style: at least one component; another key an unknown
+    /// component.
+    fn style_components(&mut self, node: &Node<'_>) -> Option<StyleComponents> {
         let [panel, label, textfield] = StyleComponents::KEYS;
-        let members = self.bound(slice, &StyleComponents::KEYS, Unbound::Component)?;
+        let members = self.object(node)?;
+        for (name, member) in members.iter() {
+            if !StyleComponents::KEYS.contains(&name) {
+                self.error(
+                    &member,
+                    DiagnosticCode::UnrecognizedComponent { text: None },
+                );
+            }
+        }
         let components = StyleComponents {
-            form_panel: self.member(&members, slice, panel, Self::form_panel),
-            form_label: self.member(&members, slice, label, Self::form_label),
-            form_textfield: self.member(&members, slice, textfield, Self::form_textfield),
+            form_panel: self.member(&members, panel, Self::form_panel),
+            form_label: self.member(&members, label, Self::form_label),
+            form_textfield: self.member(&members, textfield, Self::form_textfield),
         };
         if members.is_empty() {
-            self.error(DiagnosticCode::InvalidValue { text: None }, slice);
+            self.error(node, DiagnosticCode::InvalidValue { text: None });
             return None;
         }
         Some(components)
     }
 }
 
+/// Reads `payload` at `at` with `read`, the payload a [`Node`] with its text. A payload the
+/// untyped reader cannot read (not reached: the envelope probe read the file) is the reader's
+/// `MalformedInput`, spanning it.
+fn with_payload<T>(
+    payload: JsonSlice<'_>,
+    at: &JsonPath,
+    reader: &mut Reader<'_>,
+    read: impl FnOnce(&mut Reader<'_>, &Node<'_>) -> Option<T>,
+) -> Option<T> {
+    let json = match bedrock_addon_core::json::from_str_borrowed_jsonc::<Value>(payload.text) {
+        Ok(json) => json,
+        Err(failure) => {
+            let finding = Diagnostic::error(DiagnosticCode::MalformedInput {
+                message: failure.kind.to_string(),
+                text: None,
+            })
+            .at(at.clone())
+            .span(span_of(payload));
+            reader.read().push(finding);
+            return None;
+        }
+    };
+    read(reader, &Node::with_text(&json, at.clone(), payload))
+}
+
 /// Reads the payload of a form style: a `description` and its `components`.
 pub(crate) fn style(payload: JsonSlice<'_>, at: &JsonPath, d: &mut Diagnostics) -> Option<UiStyle> {
     let mut reader = Reader {
         catalogue: Catalogue::V1_26_60,
-        at: at.clone(),
         root: false,
-        failed: false,
+        start: d.len(),
         d,
     };
-    let members = reader.bound(payload, &["description", "components"], Unbound::Member)?;
-    let identifier = reader.required(&members, payload, "description", Reader::description);
-    let components = reader.required(&members, payload, "components", Reader::style_components);
-    if reader.failed {
-        return None;
-    }
-    Some(UiStyle {
-        description: StyleDescription {
-            identifier: Id::parse(identifier?),
-        },
-        components: components?,
+    with_payload(payload, at, &mut reader, |reader, payload| {
+        let members = reader.bound(payload, &["description", "components"])?;
+        let identifier = reader.required(&members, "description", Reader::description);
+        let components = reader.required(&members, "components", Reader::style_components);
+        if reader.failed() {
+            return None;
+        }
+        Some(UiStyle {
+            description: StyleDescription {
+                identifier: Id::parse(identifier?),
+            },
+            components: components?,
+        })
     })
 }
 
-/// A reader for a payload at `at`, read by an engine of version `engine`.
-fn reader<'d>(
-    engine: FormatVersion,
-    at: &JsonPath,
-    root: bool,
-    d: &'d mut Diagnostics,
-) -> Reader<'d> {
+/// A reader for a payload read by an engine of version `engine`.
+fn reader(engine: FormatVersion, root: bool, d: &mut Diagnostics) -> Reader<'_> {
     Reader {
         catalogue: Catalogue::for_engine(engine),
-        at: at.clone(),
         root,
-        failed: false,
+        start: d.len(),
         d,
     }
 }
+
+/// The members a root and a composition both require.
+const DOCUMENT_MEMBERS: [&str; 3] = ["description", "attribs", "layout"];
 
 /// Reads the payload of a root: `description`, `attribs` and `layout`, all required.
 pub(crate) fn root(
@@ -837,44 +760,39 @@ pub(crate) fn root(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<UiRoot> {
-    let mut reader = reader(engine, at, true, d);
-    let members = reader.object(payload)?;
-    let mut identifier = None;
-    let mut root_point = None;
-    let mut layout = None;
-    for (name, raw) in &members {
-        let Some(member) = payload.nested(raw) else {
-            continue;
-        };
-        reader.at.push(name);
-        match name.as_str() {
-            "description" => identifier = reader.description(member),
-            // `attribs` binds `root_point` alone, which must not be empty.
-            "attribs" => {
-                root_point =
-                    reader.single(member, "root_point", true, |text| !text.is_empty(), None);
+    let mut reader = reader(engine, true, d);
+    with_payload(payload, at, &mut reader, |reader, payload| {
+        let members = reader.object(payload)?;
+        let mut identifier = None;
+        let mut root_point = None;
+        let mut layout = None;
+        for (name, member) in members.iter() {
+            match name {
+                "description" => identifier = reader.description(&member),
+                // `attribs` binds `root_point` alone, which must not be empty.
+                "attribs" => {
+                    root_point =
+                        reader.single(&member, "root_point", true, |text| !text.is_empty(), None);
+                }
+                "layout" => layout = reader.layout(&member, ChildSet::RootControl),
+                _ => reader.read().unknown_member(&member, Disposition::Keep),
             }
-            "layout" => layout = reader.layout(member, ChildSet::RootControl),
-            _ => reader.error(DiagnosticCode::UnrecognizedField { text: None }, member),
         }
-        reader.at.pop();
-    }
-    for key in ["description", "attribs", "layout"] {
-        if !members.contains_key(key) {
-            reader.missing(key, payload);
+        for key in DOCUMENT_MEMBERS {
+            reader.read().required(&members, key);
         }
-    }
-    if reader.failed {
-        return None;
-    }
-    Some(UiRoot {
-        description: RootDescription {
-            identifier: Id::parse(identifier?),
-        },
-        attribs: RootAttribs {
-            root_point: root_point?,
-        },
-        layout: layout?,
+        if reader.failed() {
+            return None;
+        }
+        Some(UiRoot {
+            description: RootDescription {
+                identifier: Id::parse(identifier?),
+            },
+            attribs: RootAttribs {
+                root_point: root_point?,
+            },
+            layout: layout?,
+        })
     })
 }
 
@@ -885,47 +803,42 @@ pub(crate) fn composition(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<UiComposition> {
-    let mut reader = reader(engine, at, false, d);
-    let members = reader.object(payload)?;
-    let mut identifier = None;
-    let mut extension_point = None;
-    let mut layout = None;
-    for (name, raw) in &members {
-        let Some(member) = payload.nested(raw) else {
-            continue;
-        };
-        reader.at.push(name);
-        match name.as_str() {
-            "description" => identifier = reader.description(member),
-            // `attribs` binds an optional `extension_point` alone, which must not be empty.
-            "attribs" => {
-                extension_point = reader.single(
-                    member,
-                    "extension_point",
-                    false,
-                    |text| !text.is_empty(),
-                    None,
-                );
+    let mut reader = reader(engine, false, d);
+    with_payload(payload, at, &mut reader, |reader, payload| {
+        let members = reader.object(payload)?;
+        let mut identifier = None;
+        let mut extension_point = None;
+        let mut layout = None;
+        for (name, member) in members.iter() {
+            match name {
+                "description" => identifier = reader.description(&member),
+                // `attribs` binds an optional `extension_point` alone, which must not be empty.
+                "attribs" => {
+                    extension_point = reader.single(
+                        &member,
+                        "extension_point",
+                        false,
+                        |text| !text.is_empty(),
+                        None,
+                    );
+                }
+                "layout" => layout = reader.layout(&member, ChildSet::PanelContent),
+                _ => reader.read().unknown_member(&member, Disposition::Keep),
             }
-            "layout" => layout = reader.layout(member, ChildSet::PanelContent),
-            _ => reader.error(DiagnosticCode::UnrecognizedField { text: None }, member),
         }
-        reader.at.pop();
-    }
-    for key in ["description", "attribs", "layout"] {
-        if !members.contains_key(key) {
-            reader.missing(key, payload);
+        for key in DOCUMENT_MEMBERS {
+            reader.read().required(&members, key);
         }
-    }
-    if reader.failed {
-        return None;
-    }
-    Some(UiComposition {
-        description: CompositionDescription {
-            identifier: Id::parse(identifier?),
-        },
-        attribs: CompositionAttribs { extension_point },
-        layout: layout?,
+        if reader.failed() {
+            return None;
+        }
+        Some(UiComposition {
+            description: CompositionDescription {
+                identifier: Id::parse(identifier?),
+            },
+            attribs: CompositionAttribs { extension_point },
+            layout: layout?,
+        })
     })
 }
 
@@ -936,9 +849,10 @@ pub(crate) fn span_at(document: JsonSlice<'_>, path: &JsonPath) -> Option<Span> 
     for step in path.segments() {
         current = match (first_token(current.text)?, step) {
             (b'{', JsonPathSegment::Key(key)) => {
-                let members =
-                    bedrock_addon_core::json::from_str_borrowed_jsonc::<Members<'_>>(current.text)
-                        .ok()?;
+                let members = bedrock_addon_core::json::from_str_borrowed_jsonc::<
+                    IndexMap<String, RawJson<'_>>,
+                >(current.text)
+                .ok()?;
                 current.nested(members.get(key)?)?
             }
             (b'[', JsonPathSegment::Index(index)) => {

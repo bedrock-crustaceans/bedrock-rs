@@ -265,38 +265,38 @@ fn an_object_text_with_a_number_json_cannot_spell_is_an_encode_error() {
 
 #[test]
 fn a_known_member_among_the_unknown_ones_never_replaces_the_typed_one() {
+    use bedrock_addon::diagnostic::JsonPath;
     use bedrock_addon::json::Value;
     let mut scene = DialogueScene::new(
         DialogueSceneTag::parse("typed"),
         DialogueText::Plain("typed text".to_owned()),
     );
-    scene
-        .extra
-        .insert("scene_tag".to_owned(), Value::from("from extra"));
-    scene
-        .extra
-        .insert("text".to_owned(), Value::from("from extra"));
-    scene.extra.insert("kept".to_owned(), Value::from(true));
-    let mut button = Button::new(DialogueText::Plain("typed".to_owned()));
-    button
-        .extra
-        .insert("name".to_owned(), Value::from("from extra"));
-    scene.buttons = Some(vec![button]);
-    let mut file = DialogueFile::new(vec![scene]);
-    file.extra
-        .insert("format_version".to_owned(), Value::from("9.9.9"));
-    file.extra
-        .insert("minecraft:npc_dialogue".to_owned(), Value::from(1_i64));
-    file.dialogue_extra
-        .insert("scenes".to_owned(), Value::from(1_i64));
-    let loaded = loads(&file.to_json().unwrap());
+    scene.buttons = Some(vec![Button::new(DialogueText::Plain("typed".to_owned()))]);
+    let mut document = loads(&DialogueFile::new(vec![scene]).to_json().unwrap());
+    let root = JsonPath::new();
+    let payload = root.child("minecraft:npc_dialogue");
+    let scene_at = payload.child("scenes").index(0);
+    let button_at = scene_at.child("buttons").index(0);
+    let unknown = document.unknown_mut();
+    unknown.put(&scene_at, "scene_tag", Value::from("from extra"));
+    unknown.put(&scene_at, "text", Value::from("from extra"));
+    unknown.put(&scene_at, "kept", Value::from(true));
+    unknown.put(&button_at, "name", Value::from("from extra"));
+    unknown.put(&root, "format_version", Value::from("9.9.9"));
+    unknown.put(&root, "minecraft:npc_dialogue", Value::from(1_i64));
+    unknown.put(&payload, "scenes", Value::from(1_i64));
+    let loaded = loads(&document.to_json().unwrap());
     assert_eq!(loaded.format_version, SemVersion::new(1, 14, 0));
     assert_eq!(loaded.scenes.len(), 1);
     let scene = &loaded.scenes[0];
     assert_eq!(scene.scene_tag.as_str(), "typed");
     assert_eq!(scene.text, DialogueText::Plain("typed text".to_owned()));
     assert_eq!(
-        scene.extra.iter().map(|(k, _)| k).collect::<Vec<_>>(),
+        loaded
+            .unknown()
+            .members_at(&scene_at)
+            .map(|(k, _)| k)
+            .collect::<Vec<_>>(),
         ["kept"]
     );
     assert_eq!(

@@ -4,7 +4,7 @@
 use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::load::LoadContext;
@@ -703,21 +703,39 @@ fn subtree_id_is_read_as_text() {
 
 #[test]
 fn every_unknown_key_of_a_body_is_reported_and_kept_in_order() {
-    let (node, findings) = root_of(
+    let document = loaded(&tree_text(
+        "t",
         r#"{"minecraft:sequence": {"zeta": 1, "children": [{"minecraft:use_entity": {"who": "me"}}], "alpha": [2]}}"#,
-    );
-    let Node::Sequence { children, extra } = &node else {
+    ));
+    let (node, findings) = (&document.root, document.diagnostics());
+    let Node::Sequence { children } = node else {
         panic!()
     };
+    let body = JsonPath::of_keys([
+        "minecraft:behavior_tree",
+        "minecraft:root",
+        "minecraft:sequence",
+    ]);
     assert_eq!(
-        extra.iter().map(|(key, _)| key).collect::<Vec<_>>(),
+        document
+            .unknown()
+            .members_at(&body)
+            .map(|(key, _)| key)
+            .collect::<Vec<_>>(),
         ["zeta", "alpha"]
     );
-    let Some([Node::UseEntity { extra: inner }]) = children.as_deref() else {
+    let Some([Node::UseEntity {}]) = children.as_deref() else {
         panic!()
     };
+    let mut inner = body.child("children");
+    inner.push_index(0);
+    inner.push("minecraft:use_entity");
     assert_eq!(
-        inner.iter().map(|(key, _)| key).collect::<Vec<_>>(),
+        document
+            .unknown()
+            .members_at(&inner)
+            .map(|(key, _)| key)
+            .collect::<Vec<_>>(),
         ["who"]
     );
     let mut paths: Vec<String> = findings
@@ -744,10 +762,19 @@ fn every_unknown_key_of_a_body_is_reported_and_kept_in_order() {
         r#"{"extra": 1, "minecraft:behavior_tree": {"minecraft:name": "t", "note": "n", "minecraft:root": {"minecraft:wait": {}}}}"#,
     );
     silent(document.diagnostics());
-    assert!(document.root_extra.get("extra").is_some());
-    assert!(document.extra.get("note").is_some());
-    assert!(document.extra.get("minecraft:name").is_none());
-    assert!(document.root_extra.get("minecraft:behavior_tree").is_none());
+    let (root, payload) = (
+        JsonPath::new(),
+        JsonPath::of_keys(["minecraft:behavior_tree"]),
+    );
+    assert!(document.unknown().get(&root, "extra").is_some());
+    assert!(document.unknown().get(&payload, "note").is_some());
+    assert!(document.unknown().get(&payload, "minecraft:name").is_none());
+    assert!(
+        document
+            .unknown()
+            .get(&root, "minecraft:behavior_tree")
+            .is_none()
+    );
 }
 
 /// A `null` fly literal is an absent one, as for every other literal: no finding, the key
