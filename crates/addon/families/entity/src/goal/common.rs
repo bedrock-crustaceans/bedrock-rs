@@ -3,8 +3,7 @@
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::ValueExt;
-use bedrock_addon_core::json::{ScalarShape, StrictBool, StrictFloat, StrictInt, Value};
+use bedrock_addon_core::json::{ScalarShape, StrictBool, StrictFloat, StrictInt, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;

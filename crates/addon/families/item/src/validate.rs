@@ -295,17 +295,18 @@ fn triggers(item: &Item, at: &JsonPath, d: &mut Diagnostics) {
             full.push("event");
         }
         // The game has no line for this, so the information is the crate's own.
-        let mut finding = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
-            .at(full)
-            .phase(Phase::Validate);
-        finding.detail = Some(Box::new(
-            bedrock_addon_core::diagnostic::DiagnosticDetail::Reference {
-                kind: "event",
-                id: event.to_owned(),
-                hint: None,
-            },
-        ));
-        d.push(finding);
+        d.push(
+            Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+                .at(full)
+                .phase(Phase::Validate)
+                .detail(
+                    bedrock_addon_core::diagnostic::DiagnosticDetail::Reference {
+                        kind: "event",
+                        id: event.to_owned(),
+                        hint: None,
+                    },
+                ),
+        );
     };
     let deprecated = &item.deprecated;
     for (outer, inner, trigger) in [

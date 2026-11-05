@@ -35,16 +35,6 @@ pub fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
     unversioned::reject(origin, finding)
 }
 
-/// Gives every finding the document's pack and file.
-pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
-    for mut finding in found {
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
-        diagnostics.push(finding);
-    }
-}
-
 /// A finding at `at` inside a file.
 pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
     Diagnostic::error(code).severity(severity).at(at)

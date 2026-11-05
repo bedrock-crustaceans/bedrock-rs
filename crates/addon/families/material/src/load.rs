@@ -2,7 +2,6 @@
 //! `.material` file, one parse job per file, and one combine that processes the lists as the
 //! client does, merges each named file over the packs and creates the materials.
 
-use bedrock_addon_core::document::unversioned;
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::load::{
@@ -26,7 +25,9 @@ use super::write::{parse_error, stem_of, wrong_root};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
-use bedrock_addon_core::document::{Document, Extra, Merged, Origin, RawLayer, Rejected};
+use bedrock_addon_core::document::{
+    Document, Extra, Merged, Origin, RawLayer, Rejected, unversioned,
+};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::Reported;
 

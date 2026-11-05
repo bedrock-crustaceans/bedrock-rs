@@ -87,6 +87,8 @@ fn text_of<'a>(bytes: &'a [u8], diagnostics: &mut Diagnostics) -> Outcome<Cow<'a
         }));
         Outcome::Failed
     };
+    // Stripped, not `Prepared`: blanking would shift every span by three, so that switch is
+    // a behaviour-bearing change for later.
     let bytes = strip_bom(bytes);
     if bytes.iter().all(u8::is_ascii_whitespace) {
         return Outcome::Empty;

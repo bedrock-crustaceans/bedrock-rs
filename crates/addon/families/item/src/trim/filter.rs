@@ -95,14 +95,13 @@ impl TrimData {
 /// The finding for a pattern the filter leaves out: nothing of `kind` is named `item`. The
 /// crate reports it as an information; the game reports nothing for it.
 fn left_out(kind: &'static str, item: &ItemId) -> Diagnostic {
-    let mut finding =
-        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None }).phase(Phase::Link);
-    finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind,
-        id: item.as_str().to_owned(),
-        hint: None,
-    }));
-    finding
+    Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        .phase(Phase::Link)
+        .detail(DiagnosticDetail::Reference {
+            kind,
+            id: item.as_str().to_owned(),
+            hint: None,
+        })
 }
 
 /// What the filter finds for a template item.

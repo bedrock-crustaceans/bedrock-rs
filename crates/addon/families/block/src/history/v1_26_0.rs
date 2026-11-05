@@ -107,9 +107,7 @@ impl Upgrade for Block {
                         Diagnostic::error(DiagnosticCode::InvalidType {
                             text: fixed("Invalid, nonstring Json "),
                         })
-                        .at(JsonPath::new()
-                            .with(&["minecraft:block", "events", &name])
-                            .clone())
+                        .at(JsonPath::new().with(&["minecraft:block", "events", &name]))
                         .phase(Phase::Upgrade),
                     );
                 }
@@ -139,7 +137,7 @@ fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
         if block.extra.remove(key).is_some() {
             d.push(
                 Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(payload.with(&[key]).clone())
+                    .at(payload.with(&[key]))
                     .phase(Phase::Upgrade),
             );
         }
@@ -217,7 +215,7 @@ fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
             Diagnostic::error(DiagnosticCode::MissingToggles {
                 text: fixed("To use custom block properties, use format version 1.19.70 or higher"),
             })
-            .at(description("states").clone())
+            .at(description("states"))
             .phase(Phase::Upgrade),
         );
     }
@@ -231,9 +229,7 @@ fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
                     "To use custom block permutations, use format verison 1.19.70 or higher.",
                 ),
             })
-            .at(JsonPath::new()
-                .with(&["minecraft:block", "permutations"])
-                .clone())
+            .at(JsonPath::new().with(&["minecraft:block", "permutations"]))
             .phase(Phase::Upgrade),
         );
     }

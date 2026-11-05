@@ -141,6 +141,8 @@ impl Reader<'_> {
             Ok(value) => Some(value),
             Err(error) => {
                 // An entry is graded as at a member whenever its full path is not the root.
+                // The code reads the slice's own blank flag where the old code forced `false`:
+                // a member slice cannot be blank, so the result is equal.
                 let at_member = !at.is_empty() || error.has_path();
                 self.d
                     .push(error.into_diagnostic(at, |_, error| error.code_with_path(at_member)));

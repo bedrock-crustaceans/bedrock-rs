@@ -109,7 +109,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
 
 /// The schema the `format_version` member `written` selects.
 fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Option<Schema> {
-    let version_at = (JsonPath::new()).child(FORMAT_VERSION);
+    let version_at = JsonPath::new().child(FORMAT_VERSION);
     // The version is absent, or neither a version string nor three numbers.
     let version = written.and_then(|written| match written.as_array() {
         Some(array) => SemVersion::from_json_array(array.as_slice()),

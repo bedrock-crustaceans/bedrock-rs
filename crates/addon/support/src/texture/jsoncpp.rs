@@ -128,8 +128,8 @@ fn only_trivia(text: &str) -> bool {
 /// real is truncated toward zero and saturates; a bool is 0 or 1; a string, an array or an
 /// object is 0.
 pub fn as_int(value: Option<&Value>, default: i32) -> i32 {
-    // The low 32 bits of an integer token past `i64` ([`WideInt::LowWord`]); `asInt` reads
-    // no `isInt` rule.
+    // The low 32 bits of an integer token past `i64` ([`WideInt::LowWord`]). Only the
+    // `as_int` half of the `Coercing` profile applies: the `IsIntRule` is never read here.
     const PROFILE: Coercing = Coercing::new(IsIntRule::Integral, WideInt::LowWord);
     value.map_or(default, |value| value.as_int(default, PROFILE))
 }

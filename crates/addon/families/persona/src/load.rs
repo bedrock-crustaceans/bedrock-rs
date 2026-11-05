@@ -609,13 +609,13 @@ impl<S: PieceSource> Load<'_, S> {
         // The name the client shows needs a translation, or the piece's own offer title.
         let key = piece.name_key();
         if piece.offer_title.is_none() && !self.is_named(&key) {
-            let mut found = Diagnostic::info(DiagnosticCode::UnresolvedLangKey);
-            found.detail = Some(Box::new(DiagnosticDetail::Reference {
-                kind: "translation",
-                id: key,
-                hint: None,
-            }));
-            findings.push(found);
+            findings.push(Diagnostic::info(DiagnosticCode::UnresolvedLangKey).detail(
+                DiagnosticDetail::Reference {
+                    kind: "translation",
+                    id: key,
+                    hint: None,
+                },
+            ));
         }
         piece.findings = located(findings, &origin);
         Ok(piece)

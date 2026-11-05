@@ -12,3 +12,6 @@ mod common;
 
 #[path = "server_sound_definitions/stack.rs"]
 mod stack;
+
+#[path = "common/in_files.rs"]
+mod in_files;

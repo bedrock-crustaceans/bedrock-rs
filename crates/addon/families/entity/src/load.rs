@@ -20,8 +20,7 @@ use bedrock_addon_core::molang::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::known;
-use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
     InputKind, Loaded, ParseCx, Parsed, StructIndex, ValidateCx, VersionChain, VersionStruct,

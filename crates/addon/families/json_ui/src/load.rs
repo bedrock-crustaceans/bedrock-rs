@@ -2,7 +2,6 @@
 //! the united lists, each listed file merged from the lowest pack up, the global variables,
 //! the definition table and the checks over it.
 
-use bedrock_addon_core::document::unversioned;
 use std::collections::HashSet;
 
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
@@ -22,7 +21,7 @@ use bedrock_addon_core::diagnostic::{
     VanillaText,
 };
 use bedrock_addon_core::document::{
-    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
 };
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_support::jsoncpp::read;

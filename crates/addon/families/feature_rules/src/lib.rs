@@ -202,7 +202,7 @@ pub struct FeatureRules {
     pub unknown_passes: indexmap::IndexMap<String, Registry<FeatureRule>>,
     /// Files that failed to load.
     rejected: Vec<Rejected>,
-    /// The findings of the files that failed and of the combine step.
+    /// The findings of the files that failed.
     diagnostics: Diagnostics,
 }
 

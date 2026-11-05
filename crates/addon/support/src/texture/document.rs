@@ -4,19 +4,13 @@
 //! here.
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::{self, Document, Origin, Rejected};
+use bedrock_addon_core::document::{self, Origin, Rejected};
 use bedrock_addon_core::load::WalkFile;
 use bedrock_addon_core::pack_identity::PackPath;
 
 /// The origin of a file read on its own. `unversioned::lone`.
 pub fn detached(path: &PackPath) -> Origin {
     document::unversioned::lone(path)
-}
-
-/// A document of an unversioned file: no `format_version` is read on any path.
-/// `unversioned::document`.
-pub fn unversioned<T>(value: T, origin: Origin, diagnostics: Diagnostics) -> Document<T> {
-    document::unversioned::document(value, origin, diagnostics)
 }
 
 /// A rejection of the file `origin` with its findings. `unversioned::rejected`.
@@ -32,11 +26,6 @@ pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
         finding.location.path = Some(origin.path.clone());
         diagnostics.push(finding);
     }
-}
-
-/// A finding about the whole file `origin`.
-pub fn file_finding(code: DiagnosticCode, severity: Severity, origin: &Origin) -> Diagnostic {
-    finding_at(code, severity, origin, JsonPath::new())
 }
 
 /// A finding at `path` of the file `origin`.

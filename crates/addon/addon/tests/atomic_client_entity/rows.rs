@@ -16,6 +16,7 @@ use bedrock_addon::versioning::BETA_VERSION;
 use bedrock_addon::visual::{ControllerUse, HasVisuals};
 
 use super::common::*;
+use super::in_files::assert_in_files;
 
 const FAMILY: &str = "atomic_client_entity";
 const NO_PARSER: &str = "unsupported version: no parser available for version ";
@@ -1291,32 +1292,4 @@ fn every_finding_names_its_pack_and_file() {
         "pack 1",
         &files.map(|(path, _)| path),
     );
-}
-
-/// Every finding of `findings` names the pack `pack` and one of `files`, and each of `files`
-/// has one: the loader gives each finding its document's pack and file (phase 1 step 4 pin).
-fn assert_in_files<'a>(
-    findings: impl IntoIterator<Item = &'a bedrock_addon::diagnostic::Diagnostic>,
-    pack: &str,
-    files: &[&str],
-) {
-    let mut named = Vec::new();
-    for finding in findings {
-        let in_pack = finding
-            .location
-            .pack
-            .as_ref()
-            .map(bedrock_addon::pack::PackRef::name);
-        assert_eq!(in_pack, Some(pack), "{finding:?}");
-        let path = finding
-            .location
-            .path
-            .as_ref()
-            .map(bedrock_addon::storage::PackPath::as_str);
-        assert!(path.is_some_and(|p| files.contains(&p)), "{finding:?}");
-        named.extend(path.map(str::to_owned));
-    }
-    for file in files {
-        assert!(named.iter().any(|p| p == file), "no finding names {file}");
-    }
 }

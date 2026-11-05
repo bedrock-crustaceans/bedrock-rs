@@ -139,9 +139,7 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
         .into_iter()
         .enumerate()
     {
-        let mut path = at.with(&["structures"]);
-        path.push_index(i);
-        path.push("structure");
+        let path = at.child("structures").index(i).child("structure");
         match identifier_findings(
             entry.structure.as_str(),
             SET_REGISTER,
@@ -175,8 +173,7 @@ pub(crate) fn processors(value: &mut ProcessorList, at: &JsonPath, d: &mut Diagn
         d,
     );
     for (i, processor) in value.processors.iter_mut().enumerate() {
-        let mut path = at.with(&["processors"]);
-        path.push_index(i);
+        let path = at.child("processors").index(i);
         match processor {
             Processor::Rule { rules, .. } => empty_loot(rules, &path.with(&["rules"]), d),
             Processor::Capped {

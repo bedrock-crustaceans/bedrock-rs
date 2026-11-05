@@ -1,7 +1,6 @@
 //! The family rules on the loaded entity, run once on
 //! the newest struct (or the beta struct) against the document's original version.
 
-use bedrock_addon_core::version::known;
 use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::{
@@ -16,7 +15,7 @@ use bedrock_addon_core::molang::{
 };
 use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::ValidateCx;
 use indexmap::IndexMap;
 

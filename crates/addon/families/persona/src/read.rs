@@ -49,6 +49,8 @@ pub(super) enum RootError {
 /// the last of repeated members kept, content after the root value reported and ignored. The
 /// error is the reader's message ([`RootError`]).
 pub(super) fn read_root(bytes: &[u8], findings: &mut Vec<Diagnostic>) -> Result<Value, RootError> {
+    // Stripped, not `Prepared`: blanking would shift every span by three, so that switch is
+    // a behaviour-bearing change for later.
     let stripped = strip_bom(bytes);
     let bom = bytes.len() - stripped.len();
     check_depth(stripped, MAX_JSON_DEPTH).map_err(|deep| RootError::TooDeep {

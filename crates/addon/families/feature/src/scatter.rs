@@ -83,9 +83,10 @@ pub(crate) fn beyond_f32_findings(
             }
         }
         let span = bedrock_addon_core::json::span_at(payload, &relative);
-        let mut full = at.clone();
-        full.append(&relative);
-        d.push(bedrock_addon_core::molang::beyond_f32_warning(full, span));
+        d.push(bedrock_addon_core::molang::beyond_f32_warning(
+            at.join(&relative),
+            span,
+        ));
     };
     for key in ["scatter_chance", "x", "y", "z"] {
         let Some(value) = holder.get(key) else {

@@ -229,8 +229,8 @@ pub(crate) fn write_components(map: &ComponentMap<BiomeComponent>) -> Result<Val
 /// queries; a rejected expression fails the component and the biome is not registered.
 // The game compiles these expressions at Molang version 1 with only the `world_gen` queries
 // admitted, so a query outside that set rejects the component.
-pub(crate) // An empty text is compiled: at version 1 it is rejected with only an info note.
-const HEIGHT_RANGE: MolangFieldSpec = MolangFieldSpec::REJECTING
+// An empty text is compiled: at version 1 it is rejected with only an info note.
+pub(crate) const HEIGHT_RANGE: MolangFieldSpec = MolangFieldSpec::REJECTING
     .reader(ReaderKind::BiomeHeightRange)
     .version(MolangVersionSource::Constant(MolangVersion::V1))
     .world_gen()

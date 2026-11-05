@@ -145,30 +145,28 @@ impl Family for ItemFamily {
             {
                 item.legacy.left_empty_by_the_load = true;
                 let at = cx.at.child("components");
-                let mut told = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
-                    .at(at)
-                    .phase(Phase::Validate);
-                told.detail = Some(Box::new(
-                    bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
-                        "no registered component is left, so the newest format reads the \
-                         item as a legacy item: it is not written",
-                    ),
-                ));
-                cx.diagnostics.push(told);
+                cx.diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                        .at(at)
+                        .phase(Phase::Validate)
+                        .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
+                            "no registered component is left, so the newest format reads the \
+                             item as a legacy item: it is not written",
+                        )),
+                );
             } else if let Some(at) = super::write::newest_refusal(item) {
                 // A member the item holds from an older format that the strict 1.26.50 format
                 // does not bind: the newest writer refuses the item there, and the load
                 // says so where it is (an information of the crate's own; the game reads the
                 // older file and says nothing).
-                let mut told = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
-                    .at(at)
-                    .phase(Phase::Validate);
-                told.detail = Some(Box::new(
-                    bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
-                        texts::NOT_IN_THE_NEWEST_FORMAT,
-                    ),
-                ));
-                cx.diagnostics.push(told);
+                cx.diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                        .at(at)
+                        .phase(Phase::Validate)
+                        .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
+                            texts::NOT_IN_THE_NEWEST_FORMAT,
+                        )),
+                );
             }
         }
     }
@@ -633,11 +631,13 @@ fn numeric_version(text: &str) -> Option<Diagnostic> {
     let version = root.as_object()?.get("format_version")?;
     version.as_number()?;
     let at = JsonPath::new().child("format_version");
-    let mut told = Diagnostic::info(DiagnosticCode::ValueRewritten { text: None }).at(at);
-    told.detail = Some(Box::new(
-        bedrock_addon_core::diagnostic::DiagnosticDetail::Note(texts::NUMERIC_VERSION),
-    ));
-    Some(told)
+    Some(
+        Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+            .at(at)
+            .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
+                texts::NUMERIC_VERSION,
+            )),
+    )
 }
 
 /// The identifier of the item file `bytes` of the pack of `cx`, when the file loads there:

@@ -142,37 +142,8 @@ fn the_fixed_path_is_int_is_jsoncpp_s_token_rule() {
 }
 
 #[test]
-fn the_text_kit_is_unversioned_and_located() {
-    use crate::text::document::{document, origin, reject};
-    let of_pack = origin(pack(), PackSide::Resource, &path());
-    assert_eq!(of_pack, unversioned_origin(pack(), PackSide::Resource));
-    let doc = document(
-        2u8,
-        of_pack.clone(),
-        one(long(Severity::Info, Phase::Parse, here(at()))),
-    );
-    assert_eq!(
-        parts(&doc),
-        (
-            2,
-            of_pack.clone(),
-            none(),
-            vec![long(Severity::Info, Phase::Parse, in_file(at()))]
-        )
-    );
-    let rejected = reject(
-        of_pack,
-        Box::new(long(Severity::Error, Phase::Parse, here(at()))),
-    );
-    let found: Vec<_> = rejected.diagnostics.iter().cloned().collect();
-    assert_eq!(found, [long(Severity::Error, Phase::Parse, in_file(at()))]);
-}
-
-#[test]
 fn the_texture_kit_is_unversioned_and_located() {
-    use crate::texture::document::{
-        detached, file_finding, finding_at, origin_of, rejected, unversioned,
-    };
+    use crate::texture::document::{detached, finding_at, origin_of, rejected};
     assert_eq!(
         detached(&path()),
         unversioned_origin(PackRef::app_data(), PackSide::Resource)
@@ -190,20 +161,6 @@ fn the_texture_kit_is_unversioned_and_located() {
     };
     let of_pack = origin_of(&file);
     assert_eq!(of_pack, unversioned_origin(pack(), PackSide::Resource));
-    let doc = unversioned(
-        3u8,
-        of_pack.clone(),
-        one(long(Severity::Warning, Phase::Parse, here(at()))),
-    );
-    assert_eq!(
-        parts(&doc),
-        (
-            3,
-            of_pack.clone(),
-            none(),
-            vec![long(Severity::Warning, Phase::Parse, in_file(at()))]
-        )
-    );
     let refused = rejected(
         of_pack.clone(),
         one(long(Severity::Error, Phase::Parse, here(at()))),
@@ -211,10 +168,6 @@ fn the_texture_kit_is_unversioned_and_located() {
     let found: Vec<_> = refused.diagnostics.iter().cloned().collect();
     assert_eq!(found, [long(Severity::Error, Phase::Parse, in_file(at()))]);
     for severity in [Severity::Info, Severity::Error] {
-        same(
-            &file_finding(code(), severity, &of_pack),
-            &long(severity, Phase::Parse, in_file(JsonPath::new())),
-        );
         same(
             &finding_at(code(), severity, &of_pack, at()),
             &long(severity, Phase::Parse, in_file(at())),

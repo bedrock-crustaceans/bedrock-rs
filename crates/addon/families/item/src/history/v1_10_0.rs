@@ -299,8 +299,7 @@ fn read_food(
                     wrong_type(at.child(key), d);
                 }
                 for (i, effect) in member.as_array().into_iter().flatten().enumerate() {
-                    let mut path = at.child("effects");
-                    path.push_index(i);
+                    let path = at.child("effects").index(i);
                     let Some(effect) = effect.as_object() else {
                         wrong_type(path, d);
                         continue;
@@ -346,8 +345,7 @@ fn read_food(
                     wrong_type(at.child(key), d);
                 }
                 for (i, name) in member.as_array().into_iter().flatten().enumerate() {
-                    let mut path = at.child("remove_effects");
-                    path.push_index(i);
+                    let path = at.child("remove_effects").index(i);
                     let name = as_string(name, path.clone(), d).unwrap_or_default();
                     if !known_effect(&name, effects) {
                         // The game logs an unknown name in `remove_effects` at the error

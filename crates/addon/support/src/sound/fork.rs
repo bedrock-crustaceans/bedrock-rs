@@ -92,12 +92,9 @@ pub fn as_bool(value: &Value, default: bool) -> bool {
 
 /// `asInt(default)`: an integer as is, a real truncated toward zero, a bool 0 or 1, `null` the
 /// default, and a string, array or object **0** (not the default).
-#[allow(
-    clippy::cast_possible_truncation,
-    reason = "the game's float-to-integer conversion saturates, as `as` does, and it reads 32 bits"
-)]
 pub fn as_int(value: &Value, default: i32) -> i32 {
-    // 0 for an integer token past `i64` ([`WideInt::Zero`]); `asInt` reads no `isInt` rule.
+    // 0 for an integer token past `i64` ([`WideInt::Zero`]). Only the `as_int` half of the
+    // `Coercing` profile applies: the `IsIntRule` is never read here.
     const PROFILE: Coercing = Coercing::new(IsIntRule::Token, WideInt::Zero);
     value.as_int(default, PROFILE)
 }

@@ -12,3 +12,6 @@ mod pack_common;
 
 #[path = "voxel_shape/stack.rs"]
 mod stack;
+
+#[path = "common/in_files.rs"]
+mod in_files;

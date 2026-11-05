@@ -185,13 +185,6 @@ pub fn contribution<T: Definition>(
     }
 }
 
-/// A `.json` file, the extension compared exactly (`a.JSON` is not one).
-pub fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
-}
-
 /// The registry of the contributions in walk order, the top pack winning; the findings of a
 /// document vanilla does not register are added to it as they are.
 pub fn combine<T: Definition>(parsed: Vec<Parsed<T>>, stack: &StackCx<'_>) -> Registry<T> {

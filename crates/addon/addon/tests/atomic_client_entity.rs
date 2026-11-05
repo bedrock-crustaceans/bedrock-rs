@@ -18,3 +18,6 @@ mod generated;
 mod link;
 #[path = "atomic_client_entity/rows.rs"]
 mod rows;
+
+#[path = "common/in_files.rs"]
+mod in_files;

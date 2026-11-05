@@ -2,7 +2,6 @@
 //! [`MaterialFile`] and [`MaterialList`], `Placed` for the list. A member the value does not
 //! hold is not written, and a value the loader would refuse or read differently is refused.
 
-use bedrock_addon_core::document::unversioned;
 use facet_value::{VArray, VObject};
 
 use super::file::{
@@ -17,7 +16,7 @@ use super::read::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::document::{Content, Document, Extra, Placed, Rejected};
+use bedrock_addon_core::document::{Content, Document, Extra, Placed, Rejected, unversioned};
 use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
 };

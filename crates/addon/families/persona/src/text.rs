@@ -50,7 +50,7 @@ pub(super) fn vanilla<const N: usize>(
     })
 }
 
-/// `finding` with the name a reference could not be resolved to.
+/// An unresolved reference at `at`, with the name it could not be resolved to.
 pub(super) fn unresolved(
     kind: &'static str,
     name: &str,

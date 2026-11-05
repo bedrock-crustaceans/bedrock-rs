@@ -348,7 +348,6 @@ fn parse(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<(Option<BiomeId>, Parsed<BiomeFamily>), Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let text = text(bytes, origin)?;
     if let Some(gate) = world_gate(cx) {
         return Err(reject(origin.clone(), gate));

@@ -335,7 +335,6 @@ fn parse(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Parsed<ClientBiomeFamily>, Rejected> {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let text = text(bytes, origin)?;
     let mut parsed = parse_as_written::<ClientBiomeFamily>(JsonSlice::new(&text), cx);
     // The payload is under `minecraft:client_biome` on the raw-text path too: the checks after

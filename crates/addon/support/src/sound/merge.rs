@@ -57,11 +57,6 @@ pub fn located(found: Diagnostics, origin: &Origin, into: &mut Diagnostics) {
     into.extend(found.located(origin));
 }
 
-/// A finding of the merge itself.
-pub fn merge_finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::error(code).severity(severity).at(path)
-}
-
 /// The copies that are JSON, lowest first, after the checks of the game's merge: a
 /// lowest copy that is no JSON gives the merge up (an error with vanilla's text), any other such
 /// copy is skipped (an information).
@@ -88,14 +83,13 @@ pub fn readable(
                 } else {
                     (None, Severity::Info)
                 };
-                found.push(merge_finding(
-                    DiagnosticCode::MalformedInput {
+                found.push(
+                    Diagnostic::error(DiagnosticCode::MalformedInput {
                         message: error.to_string(),
                         text,
-                    },
-                    severity,
-                    JsonPath::new(),
-                ));
+                    })
+                    .severity(severity),
+                );
                 located(found, &copy.origin, diagnostics);
                 if index == 0 {
                     return Vec::new();
@@ -132,14 +126,10 @@ pub fn detached_origin(path: &PackPath) -> Origin {
 /// The rejection of a file that is no JSON.
 pub fn not_json(origin: Origin, error: &ReadError) -> Rejected {
     let mut found = Diagnostics::default();
-    found.push(merge_finding(
-        DiagnosticCode::MalformedInput {
-            message: error.to_string(),
-            text: None,
-        },
-        Severity::Error,
-        JsonPath::new(),
-    ));
+    found.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: error.to_string(),
+        text: None,
+    }));
     let mut diagnostics = Diagnostics::default();
     located(found, &origin, &mut diagnostics);
     Rejected::new(origin, diagnostics)

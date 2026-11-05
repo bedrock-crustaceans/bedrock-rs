@@ -22,8 +22,9 @@ pub fn side_of(cx: &LoadContext) -> PackSide {
     }
 }
 
-/// Gives every finding the file's pack and path.
-pub fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
+/// Gives every finding the file's pack and path, pushed one by one: the places the findings
+/// held are not carried over.
+fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
     let mut out = Diagnostics::default();
     for mut finding in diagnostics {
         finding.location.pack = Some(origin.pack.clone());
@@ -153,13 +154,6 @@ pub fn split<T: Definition<Kind = kind::Animation>, F>(
 /// The origin of a walked file.
 pub fn walk_origin(file: &WalkFile) -> Origin {
     bedrock_addon_core::document::unversioned::origin_of(file)
-}
-
-/// A `.json` file: vanilla compares the four bytes of the extension as written.
-pub fn is_json(path: &PackPath) -> bool {
-    path.as_str()
-        .rsplit_once('.')
-        .is_some_and(|(_, extension)| extension == "json")
 }
 
 /// Combine the files' contributions into one registry: per identifier the higher pack's definition

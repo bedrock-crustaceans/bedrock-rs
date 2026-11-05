@@ -2396,17 +2396,18 @@ fn dangling(d: &mut Diagnostics, at: &JsonPath, steps: &[Step<'_>], kind: &'stat
             Step::Index(index) => path.push_index(*index),
         }
     }
-    let mut finding = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
-        .at(path)
-        .phase(Phase::Validate);
-    finding.detail = Some(Box::new(
-        bedrock_addon_core::diagnostic::DiagnosticDetail::Reference {
-            kind,
-            id: id.to_owned(),
-            hint: None,
-        },
-    ));
-    d.push(finding);
+    d.push(
+        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            .at(path)
+            .phase(Phase::Validate)
+            .detail(
+                bedrock_addon_core::diagnostic::DiagnosticDetail::Reference {
+                    kind,
+                    id: id.to_owned(),
+                    hint: None,
+                },
+            ),
+    );
 }
 
 /// One step of a path below the payload.
