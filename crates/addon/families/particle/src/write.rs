@@ -12,7 +12,7 @@ use super::read::{Writer, put, put_opt};
 use super::{Description, ParticleEffect};
 use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::document::{ComponentRef, Extra};
-use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
+use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
 
 /// The key of the payload.
 pub(crate) const PAYLOAD_KEY: &str = "particle_effect";
@@ -146,23 +146,9 @@ pub(crate) fn document(version: &str, payload: Value) -> Value {
 /// be.
 pub(crate) fn document_payload(effect: &ParticleEffect) -> Result<Value, EncodeError> {
     let mut w = Writer::default();
-    let payload = w.key(PAYLOAD_KEY, |w| payload(effect, w))?;
-    // An unknown member may nest as deep as it likes; the reader stops at its limit. The
-    // document is one level deeper than its payload.
-    if nests_deeper_than(&payload, MAX_JSON_DEPTH - 1) {
-        return Err(w.key(PAYLOAD_KEY, |w| w.refuse(Unrepresentable::Unsupported)));
-    }
-    Ok(payload)
-}
-
-/// Whether `value` nests arrays and objects more than `levels` deep, looked at to that depth
-/// only (a value built by hand may nest without bound).
-fn nests_deeper_than(value: &Value, levels: usize) -> bool {
-    if let Some(array) = value.as_array() {
-        levels == 0 || array.iter().any(|v| nests_deeper_than(v, levels - 1))
-    } else if let Some(object) = value.as_object() {
-        levels == 0 || object.values().any(|v| nests_deeper_than(v, levels - 1))
-    } else {
-        false
-    }
+    // No depth check on the payload: nothing in it nests without bound but the events, and
+    // `EventNode::write_node` refuses a node at the reader's depth limit. Every other member
+    // has a fixed depth, and an unknown member or component (which could nest as it likes) is
+    // refused at its key, since the strict 1.20.80 reader refuses it.
+    w.key(PAYLOAD_KEY, |w| payload(effect, w))
 }

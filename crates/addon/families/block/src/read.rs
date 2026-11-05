@@ -624,7 +624,7 @@ fn malformed() -> Diagnostic {
 
 /// Reads one block file at `origin`: the document, or its rejection with the identifier its
 /// payload names (when it names one). `parse_document`'s steps, but for the path of a legacy
-/// file's findings.
+/// file's findings. It never calls `Family::close`: block has none, the default does nothing.
 pub(crate) fn read_file(
     origin: Origin,
     bytes: &[u8],

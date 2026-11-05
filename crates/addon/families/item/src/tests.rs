@@ -207,17 +207,25 @@ fn walked(pack: &PackRef, path: &str, json: &str) -> WalkFile {
     }
 }
 
-/// The stack of `packs` (each with whether it is a base-game pack), top first: what the
-/// combine reads a pack's base-game flag from.
+/// The stack of `packs` (each with whether it is a base-game pack), each at the position its
+/// index names (0 the top): what the combine reads a pack's base-game flag from. The indices
+/// must be `0..packs.len()`, each once.
 fn stack(packs: &[(&PackRef, bool)]) -> Vec<StackPack> {
-    let mut packs: Vec<_> = packs.to_vec();
-    packs.sort_by_key(|(pack, _)| pack.index());
-    packs
-        .into_iter()
-        .map(|(pack, base_game)| {
-            StackPack::new(pack.clone(), PackOrigin::World, context(base_game))
-        })
-        .collect()
+    let mut slots: Vec<Option<StackPack>> = vec![None; packs.len()];
+    for (pack, base_game) in packs {
+        let index = pack.index().expect("a pack of the stack has an index");
+        assert!(
+            slots.get(index).is_some_and(Option::is_none),
+            "pack index {index} is out of 0..{} or given twice",
+            packs.len()
+        );
+        slots[index] = Some(StackPack::new(
+            (*pack).clone(),
+            PackOrigin::World,
+            context(*base_game),
+        ));
+    }
+    slots.into_iter().flatten().collect()
 }
 
 fn doc(version: &str, id: &str, components: &str) -> String {

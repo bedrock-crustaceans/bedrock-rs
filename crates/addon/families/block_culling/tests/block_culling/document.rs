@@ -372,4 +372,17 @@ fn the_default_path_of_an_unusual_identifier_is_still_one_file_below_block_culli
         let rules = CullingRules::new(CullingRulesId::parse(identifier.to_owned()), Vec::new());
         assert_eq!(rules.default_path().as_str(), path, "{identifier:?}");
     }
+    // A `minecraft:` name whose segments, joined into one file name, are longer than a pack
+    // path may be (1023 bytes): the file keeps the nested path below the namespace instead.
+    let segment = "a".repeat(255);
+    let name = [segment.as_str(); 4].join("/");
+    let rules = CullingRules::new(
+        CullingRulesId::parse(format!("minecraft:{name}")),
+        Vec::new(),
+    );
+    assert_eq!(
+        rules.default_path().as_str(),
+        format!("block_culling/minecraft/{name}.json"),
+        "a joined name over 1023 bytes"
+    );
 }

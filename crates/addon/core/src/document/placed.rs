@@ -49,7 +49,12 @@ pub fn default_path_flat_for_vanilla<K: Kind>(directory: &str, id: &Id<K>) -> Pa
         name,
     } = parts(directory, id);
     match namespace {
-        Some(namespace) if namespace.eq_ignore_ascii_case(VANILLA_NAMESPACE) => {
+        // A name that, joined into one file name, is longer than a pack path may be keeps the
+        // nested `<directory>/<namespace>/<name>.json` instead.
+        Some(namespace)
+            if namespace.eq_ignore_ascii_case(VANILLA_NAMESPACE)
+                && PackPath::new(&name.join("_")).is_ok() =>
+        {
             folders.push(name.join("_"));
         }
         namespace => {
