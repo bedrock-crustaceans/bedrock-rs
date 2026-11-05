@@ -248,9 +248,6 @@ impl FromIterator<(PackPath, Bytes)> for PackFiles {
     }
 }
 
-/// The eight bytes every PNG file starts with.
-const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
-
 impl Pack {
     /// A pack around its shared part.
     pub(crate) fn from_inner(inner: PackInner) -> Pack {
@@ -296,7 +293,7 @@ impl Pack {
     pub fn icon(&self) -> Option<Bytes> {
         self.resident(&PackPath::from_static(ICON_PATH))
             .ok()
-            .filter(|bytes| bytes.starts_with(&PNG_SIGNATURE))
+            .filter(|bytes| bytes.starts_with(&bedrock_addon_shared_shapes::PNG_SIGNATURE))
     }
 
     /// The lints of `pack_icon.png` (the crate's own: the game shows no icon and says nothing):

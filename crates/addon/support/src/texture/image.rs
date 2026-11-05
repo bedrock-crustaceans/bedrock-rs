@@ -121,10 +121,8 @@ fn word16(bytes: &[u8], at: usize, big: bool) -> Option<u32> {
 // colour with a `tRNS` chunk, so that the game counts the chunk there, as a decoder does, is
 // inferred.
 fn png(bytes: &[u8]) -> Option<ImageInfo> {
-    if !bytes.starts_with(b"\x89PNG\r\n\x1a\n") || bytes.get(12..16)? != b"IHDR" {
-        return None;
-    }
-    let color_type = *bytes.get(25)?;
+    let header = bedrock_addon_shared_shapes::png::header(bytes)?;
+    let color_type = header.color_type;
     let samples = match color_type {
         0 => 1,
         4 => 2,
@@ -135,8 +133,8 @@ fn png(bytes: &[u8]) -> Option<ImageInfo> {
     // The types 4 and 6 carry their alpha in the samples and take no `tRNS`.
     let alpha = matches!(color_type, 0 | 2 | 3) && has_transparency(bytes);
     Some(ImageInfo {
-        width: be32(bytes, 16)?,
-        height: be32(bytes, 20)?,
+        width: header.width,
+        height: header.height,
         channels: Some(samples + u8::from(alpha)),
     })
 }

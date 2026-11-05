@@ -9,7 +9,7 @@
 //!   document names an item or a block.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
 //!   placement.
-//! - [`png`]: the PNG header ([`png_size`]).
+//! - [`png`]: the PNG header ([`png::header`], [`png_size`]).
 
 pub mod descriptor;
 pub mod menu;
@@ -19,4 +19,4 @@ pub use descriptor::{
     BlockDescriptor, BlockSpecifier, ItemDescriptor, ItemDescriptorForm, StateValue,
 };
 pub use menu::{CreativeCategory, MenuCategory};
-pub use png::png_size;
+pub use png::{PNG_SIGNATURE, PngHeader, png_size};
