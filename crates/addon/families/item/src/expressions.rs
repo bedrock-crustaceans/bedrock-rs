@@ -9,10 +9,9 @@ use bedrock_addon_core::molang::{
     RawVersion, ReadField, ReaderKind, Step, read, read_list,
 };
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_shared_shapes::event;
 
 /// The spec of a legacy item expression: it compiles at the item's format version. The game
 /// logs the Molang parser's refusal at the content log's error level, and every consumer of
@@ -163,21 +162,11 @@ impl Collector<'_> {
             // content log's warning level and ignore the sequence; without `randomize` the
             // sequence is loaded. The same loader serves block events. The sequence is not
             // walked here, as the game parses no condition in it.
-            let ignores_sequence = is_event_node(path)
-                && object.contains_key("randomize")
-                && object.contains_key("sequence");
+            let ignores_sequence = is_event_node(path) && event::is_sequence_ignored(value);
             if ignores_sequence {
                 let mut at = self.at.clone();
                 append(&mut at, path);
-                at.push("sequence");
-                self.d.push(
-                    Diagnostic::warn(DiagnosticCode::IgnoredMember {
-                        text: Some(VanillaText::Fixed(
-                            bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE,
-                        )),
-                    })
-                    .at(at),
-                );
+                self.d.push(event::sequence_ignored(&at));
             }
             for (key, member) in object {
                 if ignores_sequence && key.as_str() == "sequence" {

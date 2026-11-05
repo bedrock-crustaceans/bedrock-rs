@@ -463,6 +463,49 @@ fn an_event_with_randomize_and_sequence_warns() {
     assert_eq!(codes(&found, Severity::Warning), ["IgnoredMember"]);
 }
 
+/// Today's behaviour, not capture-checked: the game's text says the sequence is ignored, yet
+/// both lists are validated (no content log of an entity event with both lists exists).
+#[test]
+fn an_event_with_randomize_and_sequence_still_validates_both_lists() {
+    let text = payload(
+        "demo:x",
+        r#""events": { "demo:go": { "randomize": [ { "weight": 1, "add": { "component_groups": ["demo:r"] } } ], "sequence": [ { "add": { "component_groups": ["demo:s"] } } ] } }"#,
+    );
+    let (_, found) = stable(&doc("1.26.50", &text), &cx());
+    let ignored = with_code(&found, "IgnoredMember");
+    assert_eq!(ignored.len(), 1);
+    assert_eq!(ignored[0].severity, Severity::Warning);
+    assert_eq!(
+        ignored[0].phase,
+        bedrock_addon_core::diagnostic::Phase::Validate
+    );
+    assert_eq!(
+        ignored[0].code,
+        DiagnosticCode::IgnoredMember {
+            text: Some(VanillaText::Fixed(
+                bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE
+            )),
+        }
+    );
+    assert_eq!(
+        ignored[0].location.json_path.to_string(),
+        "minecraft:entity/events/demo:go/sequence"
+    );
+    // The ignored sequence's group reference is still checked, after the randomize's (the
+    // document's order).
+    let unresolved: Vec<String> = with_code(&found, "UnresolvedReference")
+        .iter()
+        .map(|d| d.location.json_path.to_string())
+        .collect();
+    assert_eq!(
+        unresolved,
+        [
+            "minecraft:entity/events/demo:go/randomize/0/add/component_groups/0",
+            "minecraft:entity/events/demo:go/sequence/0/add/component_groups/0",
+        ]
+    );
+}
+
 #[test]
 fn an_unknown_or_item_response_is_an_unknown_member() {
     let text = payload(

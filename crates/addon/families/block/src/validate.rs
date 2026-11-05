@@ -32,7 +32,7 @@ use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     Family, FieldMeta, Reading, ValidateCx, check_fields_since_engine,
 };
-use bedrock_addon_shared_shapes::StateValue;
+use bedrock_addon_shared_shapes::{StateValue, event};
 
 /// `Family::validate`.
 pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
@@ -2561,16 +2561,7 @@ fn references(block: &Block, at: &JsonPath, d: &mut Diagnostics) {
                     Index(index) => warned.push_index(*index),
                 }
             }
-            warned.push("sequence");
-            d.push(
-                Diagnostic::warn(DiagnosticCode::IgnoredMember {
-                    text: Some(VanillaText::Fixed(
-                        bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE,
-                    )),
-                })
-                .at(warned)
-                .phase(Phase::Validate),
-            );
+            d.push(event::sequence_ignored(&warned).phase(Phase::Validate));
         }
         if let Some(fired) = &event.trigger {
             let own = matches!(

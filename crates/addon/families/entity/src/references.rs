@@ -16,6 +16,7 @@ use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ValidateCx;
+use bedrock_addon_shared_shapes::event;
 
 use super::component::EntityComponent;
 use super::{AnimateEntry, Entity};
@@ -236,10 +237,7 @@ fn nodes(
             }
         }
         let mut nested = Vec::new();
-        for key in ["sequence", "randomize", "first_valid"] {
-            let Some(list) = object.get(key).and_then(Value::as_array) else {
-                continue;
-            };
+        for (key, list) in event::children(node).lists {
             let list_at = at.child(key);
             for (index, node) in list.iter().enumerate() {
                 let node_at = list_at.index(index);

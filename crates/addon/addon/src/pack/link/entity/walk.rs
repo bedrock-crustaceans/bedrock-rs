@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Origin};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_shared_shapes::event;
 
 use super::super::LinkCx;
 use crate::families::entity::Entity;
@@ -194,14 +195,11 @@ fn event_nodes<'a>(origin: &'a Origin, at: JsonPath, node: &'a Value) -> Vec<Eve
     // A stack of the nodes still to visit: an event's nesting is the file's, not the stack's.
     let mut pending = vec![(at, node)];
     while let Some((at, node)) = pending.pop() {
-        let Some(object) = node.as_object() else {
+        if !node.is_object() {
             continue;
-        };
+        }
         let mut nested = Vec::new();
-        for key in ["sequence", "randomize", "first_valid"] {
-            let Some(list) = object.get(key).and_then(Value::as_array) else {
-                continue;
-            };
+        for (key, list) in event::children(node).lists {
             for (index, child) in list.iter().enumerate() {
                 let mut child_at = at.clone();
                 child_at.push(key);

@@ -9,6 +9,8 @@
 //!   [`HexOr`], a colour written as that text or as an array of channels.
 //! - [`descriptor`]: [`ItemDescriptor`], [`BlockDescriptor`] and [`BlockSpecifier`], how a
 //!   document names an item or a block.
+//! - [`event`]: [`event::children`], the nested lists of an event node, and the game's
+//!   finding for a node whose `sequence` is ignored.
 //! - [`flag`]: [`TrueOnly`], a member whose one allowed value is `true`.
 //! - [`keyframes`]: [`Keyframes`], a value that may change over the day.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
@@ -19,6 +21,7 @@
 
 pub mod color;
 pub mod descriptor;
+pub mod event;
 pub mod flag;
 pub mod keyframes;
 pub mod menu;

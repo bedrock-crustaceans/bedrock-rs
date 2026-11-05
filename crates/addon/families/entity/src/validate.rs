@@ -17,7 +17,7 @@ use bedrock_addon_core::shared::{EventTrigger, Filter};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::ValidateCx;
-use bedrock_addon_shared_shapes::BlockDescriptor;
+use bedrock_addon_shared_shapes::{BlockDescriptor, event};
 use indexmap::IndexMap;
 
 use super::component::EntityComponent;
@@ -331,29 +331,20 @@ fn name<'a>(entry: &ComponentRef<'a, EntityComponent>) -> &'a str {
 /// (numbered subjects and operators are written back as names), the response gates, and
 /// any member the grammar does not name.
 fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut ValidateCx<'_>) {
+    let sequence_ignored = event::is_sequence_ignored(value);
+    let collection = event::has_collection(value);
     let Some(object) = value.as_object_mut() else {
         return;
     };
-    if object.contains_key("randomize") && object.contains_key("sequence") {
-        report(
-            cx,
-            DiagnosticCode::IgnoredMember {
-                text: Some(VanillaText::Fixed(
-                    bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE,
-                )),
-            },
-            // The game logs the item loader's string for an event node with both members at the
-            // warning level.
-            Severity::Warning,
-            at.child("sequence"),
-        );
+    if sequence_ignored {
+        // The game logs the item loader's string for an event node with both members at the
+        // warning level. Both lists are still validated below.
+        cx.diagnostics
+            .push(event::sequence_ignored(at).phase(Phase::Validate));
     }
     // A node with a collection returns before the response validation; the others'
     // members left after `weight`, `filters`, `trigger`, `add` and `remove` are the response
     // collection's, validated strictly at every version.
-    let collection = ["randomize", "sequence", "first_valid"]
-        .iter()
-        .any(|key| object.contains_key(key));
     let keys: Vec<String> = object.keys().map(|k| k.as_str().to_owned()).collect();
     // Whether the response collection failed.
     let mut failed = false;
@@ -729,15 +720,15 @@ fn collect(
             }
         }
     }
+    // Not `LISTS` order: the expressions, and so their findings, come in this one.
     for key in ["sequence", "first_valid", "randomize"] {
-        if let Some(nodes) = object.get(key).and_then(Value::as_array) {
-            for (index, child_node) in nodes.iter().enumerate() {
-                steps.push(Seg::Key(key.to_owned()));
-                steps.push(Seg::Index(index));
-                collect(child_node, steps, enums, out);
-                steps.pop();
-                steps.pop();
-            }
+        let nodes = object.get(key).and_then(Value::as_array);
+        for (index, child_node) in nodes.into_iter().flatten().enumerate() {
+            steps.push(Seg::Key(key.to_owned()));
+            steps.push(Seg::Index(index));
+            collect(child_node, steps, enums, out);
+            steps.pop();
+            steps.pop();
         }
     }
 }
@@ -1030,6 +1021,37 @@ mod tests {
         let groups = group_names(groups.iter());
         node(&mut event.clone(), &at, &groups, &mut cx);
         diagnostics
+    }
+
+    /// Pins the walk's order, which orders the expressions and so their findings: the node's own
+    /// `set_property`, then `sequence`, `first_valid` and `randomize`, whatever the document's.
+    #[test]
+    fn set_property_expressions_are_collected_sequence_first_valid_randomize() {
+        let node = bedrock_addon_core::json::from_str::<Value>(
+            r#"{
+                "randomize": [{"set_property": {"demo:r": "q.r"}}],
+                "first_valid": [{"set_property": {"demo:f": "q.f"}}],
+                "set_property": {"demo:own": "q.own"},
+                "sequence": [{"set_property": {"demo:s": "q.s"}}, {"set_property": {"demo:t": "q.t"}}]
+            }"#,
+        )
+        .expect("json");
+        let mut out = Vec::new();
+        collect(&node, &mut Vec::new(), &IndexMap::new(), &mut out);
+        let collected: Vec<String> = out
+            .iter()
+            .map(|(steps, name, _)| format!("{steps:?} {name}"))
+            .collect();
+        assert_eq!(
+            collected,
+            [
+                "[] demo:own",
+                r#"[Key("sequence"), Index(0)] demo:s"#,
+                r#"[Key("sequence"), Index(1)] demo:t"#,
+                r#"[Key("first_valid"), Index(0)] demo:f"#,
+                r#"[Key("randomize"), Index(0)] demo:r"#,
+            ]
+        );
     }
 
     #[test]
