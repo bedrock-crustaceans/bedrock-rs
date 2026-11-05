@@ -12,6 +12,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{Rejected, UnknownMembers};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_shared_shapes::OneOrMany;
+use bedrock_addon_shared_shapes::color::is_hex;
 
 /// One `<name>.meta.json`: what a persona piece is, as the file says it.
 ///
@@ -225,9 +226,7 @@ impl HexColor {
     /// Whether the text is `#` and six or eight hexadecimal digits.
     #[must_use]
     pub fn is_well_formed(&self) -> bool {
-        self.0.strip_prefix('#').is_some_and(|digits| {
-            matches!(digits.len(), 6 | 8) && digits.bytes().all(|byte| byte.is_ascii_hexdigit())
-        })
+        is_hex(&self.0, 6) || is_hex(&self.0, 8)
     }
 
     /// The colour the game reads, `0xAARRGGBB`: `None` for the empty text (no colour); else

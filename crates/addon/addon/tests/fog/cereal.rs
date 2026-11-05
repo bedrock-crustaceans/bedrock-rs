@@ -454,7 +454,7 @@ fn c10_colour_255_deviation() {
     assert!(document.diagnostics().is_empty());
     let color = air_of(&document).fog_color.clone().unwrap();
     assert_eq!(color, FogColor::Array([255, 128, 0]));
-    assert_eq!(color.rgb(), [1.0, 128.0 / 255.0, 0.0]);
+    assert_eq!(color.unit_rgb(), [1.0, 128.0 / 255.0, 0.0]);
     round_trip(&document, |t| parse(t, &pack()));
 
     let document = color_of(r#""fog_color": [300, -5, 0]"#);
@@ -515,9 +515,9 @@ fn c10b_coeff_clamp() {
         scattering,
         Keyframed::Single(ColorNorm::Array([1.5, -0.2, 0.5]))
     );
-    assert_eq!(scattering.single().unwrap().rgb(), [1.0, 0.0, 0.5]);
+    assert_eq!(scattering.single().unwrap().unit_rgb(), [1.0, 0.0, 0.5]);
     assert_eq!(
-        air.absorption.unwrap().single().unwrap().rgb(),
+        air.absorption.unwrap().single().unwrap().unit_rgb(),
         [1.0, 128.0 / 255.0, 0.0]
     );
     round_trip(&document, |t| parse(t, &pack()));
@@ -582,7 +582,7 @@ fn c13_partial_setting_zero_fill() {
     );
     assert_eq!((air.fog_start(), air.fog_end()), (0.0, 0.0));
     assert_eq!(air.render_distance_type(), DistanceType::Fixed);
-    assert_eq!(air.fog_color.as_ref().unwrap().rgb(), [1.0, 0.0, 0.0]);
+    assert_eq!(air.fog_color.as_ref().unwrap().unit_rgb(), [1.0, 0.0, 0.0]);
     // Nothing the author left out is written.
     let text = document.to_json().unwrap();
     assert!(

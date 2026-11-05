@@ -289,7 +289,10 @@ fn u04_int_array_colour() {
         lines(old.diagnostics())
     );
     assert_eq!(air_color(&old), FogColor::Array([128, 64, 255]));
-    assert_eq!(air_color(&old).rgb(), [128.0 / 255.0, 64.0 / 255.0, 1.0]);
+    assert_eq!(
+        air_color(&old).unit_rgb(),
+        [128.0 / 255.0, 64.0 / 255.0, 1.0]
+    );
     let new = loaded(parse(&doc("1.26.20", &members), &pack()));
     assert_eq!(old.value(), new.value());
 }
@@ -301,7 +304,7 @@ fn u05_colour_array_old_era_deviation() {
     // Clamped when read; vanilla says nothing, we note each clamped component.
     let document = loaded(parse(&with("[300, -5, 128]"), &pack()));
     assert_eq!(air_color(&document), FogColor::Array([255, 0, 128]));
-    assert_eq!(air_color(&document).rgb(), [1.0, 0.0, 128.0 / 255.0]);
+    assert_eq!(air_color(&document).unit_rgb(), [1.0, 0.0, 128.0 / 255.0]);
     assert_eq!(
         count(document.diagnostics(), "ClampedValue", Severity::Info),
         2
@@ -316,7 +319,7 @@ fn u05_colour_array_old_era_deviation() {
     // error.
     let document = loaded(parse(&with("[0.5, 1.0, 0]"), &pack()));
     assert_eq!(air_color(&document), FogColor::Array([255, 255, 0]));
-    assert_eq!(air_color(&document).rgb(), [1.0, 1.0, 0.0]);
+    assert_eq!(air_color(&document).unit_rgb(), [1.0, 1.0, 0.0]);
     assert_eq!(
         count(document.diagnostics(), "InvalidValue", Severity::Error),
         2
@@ -377,7 +380,7 @@ fn u05_colour_array_old_era_deviation() {
         scattering,
         &Keyframed::Single(ColorNorm::Array([2.0, -1.0, 0.5]))
     );
-    assert_eq!(scattering.single().unwrap().rgb(), [1.0, 0.0, 0.5]);
+    assert_eq!(scattering.single().unwrap().unit_rgb(), [1.0, 0.0, 0.5]);
 }
 
 #[test]
@@ -388,7 +391,7 @@ fn u06_hex_colour_both_eras() {
     let new = loaded(parse(&doc("1.26.20", &members), &pack()));
     assert_eq!(old.value(), new.value());
     assert_eq!(
-        air_color(&new).rgb(),
+        air_color(&new).unit_rgb(),
         [68.0 / 255.0, 175.0 / 255.0, 245.0 / 255.0]
     );
 }

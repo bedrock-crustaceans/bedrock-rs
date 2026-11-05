@@ -15,6 +15,7 @@ use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::{JsonSlice, ScalarShape, Value, parse_at};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_shared_shapes::color::hex_bytes;
 
 /// The game's text for a value that is no number.
 pub(crate) const MUST_BE_NUMBER: &str = "the input must be a number";
@@ -418,14 +419,7 @@ fn channels<const N: usize>(
             let Some(ScalarShape::String(hex)) = node.scalar() else {
                 return Err(wrong(node, d));
             };
-            let digits = hex.strip_prefix('#').unwrap_or("");
-            if digits.len() != 2 * N || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
-                return Err(wrong(node, d));
-            }
-            for (i, channel) in out.iter_mut().enumerate() {
-                *channel = u8::from_str_radix(&digits[2 * i..2 * i + 2], 16).unwrap_or(0);
-            }
-            Ok(out)
+            hex_bytes::<N>(&hex).ok_or_else(|| wrong(node, d))
         }
         Some(b'[') => {
             let Ok(elements) = parse_at::<Vec<RawJson<'_>>>(node.slice) else {

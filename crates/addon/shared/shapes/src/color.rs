@@ -166,7 +166,8 @@ macro_rules! channels {
             }
 
             /// `[r, g, b(, a)]` with number channels (an integer or a real token, finite as an
-            /// `f32`), kept as written.
+            /// `f32`), kept as their values: each writes back as a real, so `1` reads and
+            /// writes as `1.0`.
             impl Channels for [f32; $n] {
                 fn read(value: &Value) -> Result<Self, ShapeErrorKind> {
                     let mut out = [0.0; $n];
@@ -235,6 +236,7 @@ fn clamp(channel: i32) -> u8 {
 impl HexOr<[i32; 3]> {
     /// The channels as the game uses them: the hex digits, or the array's channels clamped to
     /// `0..=255`. `None` for a text that is not `#` and six hex digits.
+    #[must_use]
     pub fn rgb(&self) -> Option<[u8; 3]> {
         match self {
             Self::Hex(text) => hex_bytes::<3>(text),
@@ -269,8 +271,10 @@ fn lenient_bytes(text: &str) -> [u8; 3] {
 
 impl HexOr<[u8; 3]> {
     /// The colour as a fog uses it: red, green and blue from 0 to 1 (each byte over 255); a
-    /// digit pair of the text that is not hex is 0.
-    pub fn rgb(&self) -> [f32; 3] {
+    /// digit pair of the text that is not hex is 0. Unlike the strict [`HexOr::rgb`] of
+    /// integer channels, any text gives a colour.
+    #[must_use]
+    pub fn unit_rgb(&self) -> [f32; 3] {
         let bytes = match self {
             Self::Hex(text) => lenient_bytes(text),
             Self::Array(rgb) => *rgb,
@@ -282,7 +286,8 @@ impl HexOr<[u8; 3]> {
 impl HexOr<[f32; 3]> {
     /// The colour as a fog uses it: the text's bytes over 255 (a digit pair that is not hex is
     /// 0), or each channel clamped to 0 to 1.
-    pub fn rgb(&self) -> [f32; 3] {
+    #[must_use]
+    pub fn unit_rgb(&self) -> [f32; 3] {
         match self {
             Self::Hex(text) => lenient_bytes(text).map(|c| f32::from(c) / 255.0),
             Self::Array(rgb) => rgb.map(|c| c.clamp(0.0, 1.0)),

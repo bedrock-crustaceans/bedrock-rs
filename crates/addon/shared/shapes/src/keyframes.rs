@@ -94,8 +94,11 @@ impl<T: Clone> Keyframes<T> {
     }
 }
 
-/// Each value is walked where it is: the single value at the member, a keyframe's at its key
-/// (the time as the family spells it is not known here, so the walk takes no step).
+/// Each value is walked where it is: the single value at the member, a keyframe's at the
+/// member too (the time as the family spells it is not known here, so the walk takes no step
+/// and a keyframe's Molang is reported at the member, not at its key). No family walks a
+/// keyframed value today (fog and the deferred settings hold no Molang); a family that does
+/// needs the key step first.
 impl<T: MolangFields> MolangFields for Keyframes<T> {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         match self {

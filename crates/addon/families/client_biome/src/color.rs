@@ -2,7 +2,6 @@
 //! form they were written.
 
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::shared::ShapeErrorKind;
 use bedrock_addon_shared_shapes::{Channels, HexOr};
 
 /// An opaque RGB colour: `"#RRGGBB"` or `[r, g, b]` with integer
@@ -22,27 +21,19 @@ pub(crate) use bedrock_addon_shared_shapes::color::is_hex;
 pub(crate) fn is_rgb(value: &Value) -> bool {
     match value.as_string() {
         Some(text) => is_hex(text.as_str(), 6),
-        None => channels::<3>(value).is_ok(),
+        None => <[i32; 3]>::read(value).is_ok(),
     }
 }
 
 /// The channels of an `[r, g, b]` array outside `0..=255`, by index.
 pub(crate) fn clamped_channels(value: &Value) -> Vec<usize> {
-    channels::<3>(value)
+    <[i32; 3]>::read(value)
         .map(|channels| {
             (0..3)
                 .filter(|&i| !(0..=255).contains(&channels[i]))
                 .collect()
         })
         .unwrap_or_default()
-}
-
-/// `N` integer channels, as a colour array reads them.
-fn channels<const N: usize>(value: &Value) -> Result<[i32; N], ShapeErrorKind>
-where
-    [i32; N]: Channels,
-{
-    <[i32; N]>::read(value)
 }
 
 #[cfg(test)]
@@ -71,5 +62,3 @@ mod tests {
         assert_eq!(set.len(), 1);
     }
 }
-
-// The colours are read through their proxies, which judge their own form.

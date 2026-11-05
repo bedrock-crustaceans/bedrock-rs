@@ -1,5 +1,6 @@
 //! `HexOr`: the text form is kept as written (even a text that is no colour), the array form
-//! reads exactly its channels, and both write back as read.
+//! reads exactly its channels, and both write back as read (a unit channel written as an
+//! integer token comes back as a real).
 
 mod common;
 
@@ -79,21 +80,21 @@ fn an_array_of_the_wrong_shape_is_refused() {
 #[test]
 fn byte_and_unit_channels_read_and_write_as_written() {
     let color: HexOr<[u8; 3]> = round_trip("[255, 128, 0]");
-    assert_eq!(color.rgb(), [1.0, 128.0 / 255.0, 0.0]);
+    assert_eq!(color.unit_rgb(), [1.0, 128.0 / 255.0, 0.0]);
     let color: HexOr<[f32; 3]> = round_trip("[1.5, -0.2, 0.5]");
     assert_eq!(color, HexOr::Array([1.5, -0.2, 0.5]));
-    assert_eq!(color.rgb(), [1.0, 0.0, 0.5]);
+    assert_eq!(color.unit_rgb(), [1.0, 0.0, 0.5]);
     // A unit channel is a number: an integer token reads, and writes as a real.
     let color: HexOr<[f32; 3]> = read("[1, 0, 0.1]").unwrap();
     assert_eq!(color, HexOr::Array([1.0, 0.0, 0.1]));
     assert_eq!(compact(&color), "[1.0,0.0,0.1]");
     // The fog's reading of a text: 0 for a digit pair that is not hex.
     assert_eq!(
-        HexOr::<[u8; 3]>::Hex("#ff00zz".into()).rgb(),
+        HexOr::<[u8; 3]>::Hex("#ff00zz".into()).unit_rgb(),
         [1.0, 0.0, 0.0]
     );
     assert_eq!(
-        HexOr::<[f32; 3]>::Hex("#FF0080".into()).rgb(),
+        HexOr::<[f32; 3]>::Hex("#FF0080".into()).unit_rgb(),
         [1.0, 0.0, 128.0 / 255.0]
     );
 }

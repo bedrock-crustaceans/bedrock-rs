@@ -116,8 +116,7 @@ impl Failure {
 
     /// The failure seen from one array further out: it happened inside element `index`.
     #[must_use]
-    #[doc(hidden)]
-    pub fn index(mut self, index: usize) -> Self {
+    pub(crate) fn index(mut self, index: usize) -> Self {
         self.steps.push(Step::Index(index));
         self
     }
@@ -162,8 +161,7 @@ pub fn wrong_type(member: &'static str, expected: &'static str, found: &Value) -
 }
 
 /// A string member.
-#[doc(hidden)]
-pub fn string(member: &'static str, value: &Value) -> Result<String, Failure> {
+pub(crate) fn string(member: &'static str, value: &Value) -> Result<String, Failure> {
     value
         .as_string()
         .map(|s| s.as_str().to_owned())

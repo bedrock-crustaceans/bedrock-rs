@@ -67,7 +67,7 @@ fn v04_floor_the_vanilla_default_fog() {
     assert_eq!((air.fog_start(), air.fog_end()), (0.92, 1.0));
     assert_eq!(air.render_distance_type(), DistanceType::Render);
     assert_eq!(
-        air.fog_color.as_ref().unwrap().rgb(),
+        air.fog_color.as_ref().unwrap().unit_rgb(),
         [171.0 / 255.0, 210.0 / 255.0, 1.0]
     );
     let water = distance.water.as_ref().unwrap();
@@ -133,7 +133,7 @@ fn v06_1_21_90_henyey_greenstein() {
     );
     let media = volumetric.media_coefficients.as_ref().unwrap();
     let scattering = media.air.as_ref().unwrap().scattering.as_ref().unwrap();
-    assert_eq!(scattering.single().unwrap().rgb(), [0.06, 0.06, 0.06]);
+    assert_eq!(scattering.single().unwrap().unit_rgb(), [0.06, 0.06, 0.06]);
 
     let d = rejected(parse(
         &lush_caves().replace("1.21.90", "1.21.80"),
@@ -276,7 +276,7 @@ fn v11_partial_version() {
         .fog_color
         .clone();
     assert_eq!(color, Some(FogColor::Array([255, 0, 0])));
-    assert_eq!(color.unwrap().rgb(), [1.0, 0.0, 0.0]);
+    assert_eq!(color.unwrap().unit_rgb(), [1.0, 0.0, 0.0]);
 }
 
 /// a version array is refused at the envelope; the game's dispatcher

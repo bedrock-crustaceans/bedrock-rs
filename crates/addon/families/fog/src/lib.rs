@@ -275,11 +275,11 @@ pub enum DistanceType {
 
 /// A fog colour (`fog_color`): `"#RRGGBB"` (as written, hex digits of either case) or
 /// `[r, g, b]` with integers 0 to 255 (an integer outside is clamped when read, as the game
-/// clamps it). [`HexOr::rgb`] gives the colour as the game uses it.
+/// clamps it). [`HexOr::unit_rgb`] gives the colour as the game uses it.
 pub type FogColor = HexOr<[u8; 3]>;
 
 /// A coefficient colour (`absorption`, `scattering`): `"#RRGGBB"` or `[r, g, b]` with numbers
-/// as written, which the game clamps to 0 to 1 ([`HexOr::rgb`] gives the clamped components).
+/// as written, which the game clamps to 0 to 1 ([`HexOr::unit_rgb`] gives the clamped components).
 pub type ColorNorm = HexOr<[f32; 3]>;
 
 /// A value that may change over the day: one value, or values by time key
