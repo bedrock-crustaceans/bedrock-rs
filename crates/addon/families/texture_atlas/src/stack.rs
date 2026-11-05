@@ -8,7 +8,7 @@ use super::patch::patch_json;
 use super::read::read_atlas;
 use super::types::{AtlasItem, AtlasKind, TextureAtlas, TextureElement, VariationEntry};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::document::{Extra, Merge, Merged, Origin, RawLayer, unversioned};
+use bedrock_addon_core::document::{Merge, Merged, Origin, RawLayer, UnknownMembers, unversioned};
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::WalkFile;
@@ -88,8 +88,8 @@ fn unbuilt(kind: AtlasKind) -> TextureAtlas {
         default_leather_color: None,
         default_horse_leather_color: None,
         texture_data: None,
-        ignored: Extra::default(),
-        extra: Extra::default(),
+        ignored: UnknownMembers::default(),
+        extra: UnknownMembers::default(),
     }
 }
 

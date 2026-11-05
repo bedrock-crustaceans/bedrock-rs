@@ -9,7 +9,7 @@
 //!   `require_collision_overlap`.
 //!
 //! A member a newer version added is unknown to the older shape: written in an older document,
-//! it is kept in `extra` and reported as `UnrecognizedField`.
+//! it is kept among the document's unknown members and reported as `UnrecognizedField`.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;

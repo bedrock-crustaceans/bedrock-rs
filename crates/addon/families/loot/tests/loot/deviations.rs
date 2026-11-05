@@ -2,7 +2,7 @@
 //! the folder row it implements.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::document::{Content, Extra};
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_family_loot::{
     ConditionKind, EnchantOption, EntryKind, FunctionKind, LootFunction, RandomValueBounds,
 };
@@ -84,7 +84,7 @@ fn a_member_of_the_wrong_json_type_is_warned_and_read_as_absent_deviation() {
             name: "sharpness".to_owned(),
             min: None,
             max: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }]
     );
     // Nothing of the wrong type is written back.

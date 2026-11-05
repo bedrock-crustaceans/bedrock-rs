@@ -632,18 +632,26 @@ impl Run {
             StructIndex::Stable(i) => versions.get(i).copied().unwrap_or(F::FLOOR),
             StructIndex::Beta => BETA_VERSION,
         };
-        // The selected slice's reading: its null rule and its scalar rules ride on the context
-        // into `parse_payload` and `parse_component` (a rule the caller's context carries does
-        // not leak in; an MCB source is read by the binary reader, so by default it has no null
-        // rule), and so does whether a component that fails to read is fatal.
+        // The selected slice's reading: its null rule, its scalar rules and its unknown-member
+        // rule ride on the context into `parse_payload` and `parse_component` (a rule the
+        // caller's context carries does not leak in; an MCB source is read by the binary reader,
+        // so by default it has no null rule), and so does whether a component that fails to
+        // read is fatal.
         let reading = super::reading::slice_reading::<F>(index, cx.source);
         let rule = reading.null_rule();
         let strict_components = reading.components_fatal;
         let scalar_rules = reading.scalar_rules();
+        let keeps_unknown = reading.keeps_unknown;
+        let unknown_severity = match reading.unknown {
+            super::UnknownMask::Error => Severity::Error,
+            super::UnknownMask::Warn => Severity::Warning,
+        };
         let scoped;
         let load = if cx.null_rule == rule
             && cx.strict_components == strict_components
             && cx.scalar_rules == scalar_rules
+            && cx.keeps_unknown == keeps_unknown
+            && cx.unknown_severity == unknown_severity
         {
             cx
         } else {
@@ -651,6 +659,8 @@ impl Run {
             with_rule.null_rule = rule;
             with_rule.strict_components = strict_components;
             with_rule.scalar_rules = scalar_rules;
+            with_rule.keeps_unknown = keeps_unknown;
+            with_rule.unknown_severity = unknown_severity;
             scoped = with_rule;
             &scoped
         };

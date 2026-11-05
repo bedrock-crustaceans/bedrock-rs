@@ -139,7 +139,7 @@ fn every_struct_writes_its_own_version_and_reads_back() {
         let written =
             Biome::parse_as_written(&path(), text.as_bytes(), &context()).expect("parses");
         assert_eq!(written.value().parsed_version().to_string(), version);
-        let json = written.value().to_json().expect("writes");
+        let json = written.to_json().expect("writes");
         let again =
             Biome::parse_as_written(&path(), json.as_bytes(), &context()).expect("reads back");
         assert_eq!(again.value(), written.value(), "{version}");
@@ -159,12 +159,10 @@ fn every_struct_writes_its_own_version_and_reads_back() {
     assert!(matches!(written.value(), Any::Beta(_)));
     assert!(
         written
-            .value()
             .to_json()
             .unwrap()
             .contains(r#""format_version":"beta""#)
             || written
-                .value()
                 .to_json()
                 .unwrap()
                 .contains(r#""format_version": "beta""#)
@@ -296,4 +294,35 @@ fn the_beta_struct_follows_the_1_26_51_headers_deviation() {
     let beta = super::common::load_beta(&gradient, &base_game()).expect("the 1.26.30 shape");
     assert!(beta.diagnostics().is_empty(), "{:#?}", beta.diagnostics());
     let _ = Content::to_json(beta.value()).unwrap();
+}
+
+/// A biome reads every member strictly, so a file's unknown member refuses it; one put in the
+/// table of a document as written (an edit) is upgraded with its object, as a step moves it.
+#[test]
+fn upgrade_keeps_the_unknown_members_of_the_document_as_written() {
+    use bedrock_addon::diagnostic::JsonPath;
+    use bedrock_addon::json::Value;
+    let description = JsonPath::new()
+        .child("minecraft:biome")
+        .child("description");
+    for version in ["1.21.110", "1.21.120", "1.26.0", "1.26.30"] {
+        let text = biome(
+            version,
+            "test:x",
+            r#""minecraft:climate": {"temperature": 0.5}"#,
+        );
+        let mut written =
+            Biome::parse_as_written(&path(), text.as_bytes(), &context()).expect("parses");
+        written
+            .unknown_mut()
+            .put(&description, "zz_description", Value::from(1i64));
+        let expected = written.unknown().clone();
+        let upgraded = history::upgrade(written, &context()).expect("upgrades");
+        assert_eq!(
+            upgraded.value(),
+            loads(&text, &context()).value(),
+            "{version}"
+        );
+        assert_eq!(upgraded.unknown(), &expected, "{version}");
+    }
 }

@@ -32,6 +32,7 @@ mod no_beta;
 mod placed;
 pub mod registry;
 mod relocate;
+mod unknown;
 pub mod unversioned;
 
 #[doc(hidden)]
@@ -55,10 +56,10 @@ pub use merged::{Merged, RawLayer};
 #[doc(hidden)]
 pub use placed::default_path;
 pub use placed::{default_path_flat, default_path_flat_for_vanilla};
+pub use unknown::Unknown;
 
-// Defined in `json` beside the walk that fills it and the writer that emits it; this is its
-// one public path.
-pub use crate::json::extra::Extra;
+// Defined in `json` beside the walk and the writer; this is their one public path.
+pub use crate::json::extra::{Extra, UnknownMembers};
 
 /// A loaded value with its provenance and findings.
 ///
@@ -67,25 +68,45 @@ pub use crate::json::extra::Extra;
 ///
 /// Its findings hold no rejecting error; they may hold kept errors (a line the game
 /// logs at error level before it keeps the document, [`Diagnostic::kept`]).
+///
+/// Its [`unknown`](Self::unknown) members are beside the value, not in it: two documents are
+/// equal when their values, provenance, findings and unknown members are.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Document<T> {
     value: T,
     origin: Origin,
     version: VersionInfo,
     diagnostics: Diagnostics,
+    unknown: Unknown,
 }
 
 impl<T> Document<T> {
     /// A document from its parts (the fields are private, so `bedrock_addon` builds it
-    /// here).
+    /// here). The unknown members the read kept with its findings
+    /// ([`Diagnostics::unknown_mut`]) become the document's.
     #[doc(hidden)]
-    pub fn new(value: T, origin: Origin, version: VersionInfo, diagnostics: Diagnostics) -> Self {
+    pub fn new(
+        value: T,
+        origin: Origin,
+        version: VersionInfo,
+        mut diagnostics: Diagnostics,
+    ) -> Self {
+        let unknown = diagnostics.take_unknown();
         Self {
             value,
             origin,
             version,
             diagnostics,
+            unknown,
         }
+    }
+
+    /// The document with `unknown` as its unknown members.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn with_unknown_members(mut self, unknown: Unknown) -> Self {
+        self.unknown = unknown;
+        self
     }
 
     /// The value.
@@ -113,6 +134,18 @@ impl<T> Document<T> {
         &self.diagnostics
     }
 
+    /// The members of the file no field of the value takes, by the path of their object,
+    /// which a written document has again.
+    pub fn unknown(&self) -> &Unknown {
+        &self.unknown
+    }
+
+    /// The unknown members, mutably: an edit that moves an object moves its members with
+    /// it ([`Unknown::rebase`]), or they are not written.
+    pub fn unknown_mut(&mut self) -> &mut Unknown {
+        &mut self.unknown
+    }
+
     /// Applies `f` to the value and keeps the provenance (for derived views).
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Document<U> {
         Document {
@@ -120,12 +153,34 @@ impl<T> Document<T> {
             origin: self.origin,
             version: self.version,
             diagnostics: self.diagnostics,
+            unknown: self.unknown,
         }
     }
 
     /// The parts, for combine rules that merge documents.
-    pub(crate) fn into_parts(self) -> (T, Origin, VersionInfo, Diagnostics) {
-        (self.value, self.origin, self.version, self.diagnostics)
+    pub(crate) fn into_parts(self) -> (T, Origin, VersionInfo, Diagnostics, Unknown) {
+        (
+            self.value,
+            self.origin,
+            self.version,
+            self.diagnostics,
+            self.unknown,
+        )
+    }
+
+    /// The value, its provenance and its findings, with the unknown members put back among
+    /// the findings ([`Diagnostics::unknown_mut`]), as a read hands them on: for an upgrade
+    /// that rebuilds the parse stage from a document as written, so the moves of its steps
+    /// carry the members as in a parse of the file, and the document it builds
+    /// ([`Document::new`]) holds them again.
+    #[doc(hidden)]
+    pub fn into_parsed_parts(self) -> (T, Origin, VersionInfo, Diagnostics) {
+        let (value, origin, version, mut diagnostics, unknown) = self.into_parts();
+        if !unknown.is_empty() {
+            // A document's findings hold no unknown member (`new` took them).
+            *diagnostics.unknown_mut() = unknown;
+        }
+        (value, origin, version, diagnostics)
     }
 
     /// The value, mutably, for combine rules that merge into the effective document.
@@ -283,7 +338,9 @@ impl Rejected {
     /// A rejection from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
     /// builds it here).
     #[doc(hidden)]
-    pub fn new(origin: Origin, diagnostics: Diagnostics) -> Self {
+    pub fn new(origin: Origin, mut diagnostics: Diagnostics) -> Self {
+        // A rejected document keeps nothing: its unknown members go with it.
+        drop(diagnostics.take_unknown());
         Self {
             origin,
             diagnostics,
@@ -335,6 +392,148 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
         self.write_json(&mut out, WriteStyle::default())?;
         // The JSON writer emits only UTF-8; a non-JSON content overrides this method.
         Ok(String::from_utf8(out).unwrap_or_default())
+    }
+
+    /// [`write_json`](Self::write_json) with a document's unknown members, each after the
+    /// known members of the object at its path ([`Document::write_json`]); the findings of
+    /// the write (a member whose object is gone). The default writes nothing more for an
+    /// empty table and otherwise writes the text again from its `Value`, with the members;
+    /// a JSON document kind writes its root `Value` with them directly.
+    ///
+    /// # Errors
+    ///
+    /// As [`write_json`](Self::write_json).
+    #[doc(hidden)]
+    fn write_json_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        if unknown.is_empty() {
+            return self.write_json(out, style).map(|()| Vec::new());
+        }
+        let mut text = Vec::new();
+        self.write_json(&mut text, style)?;
+        let root = std::str::from_utf8(&text)
+            .ok()
+            .and_then(|text| crate::json::from_str::<crate::json::Value>(text).ok());
+        let Some(root) = root else {
+            // Not JSON (lang, a binary file): it holds no unknown member.
+            out.extend_from_slice(&text);
+            return Ok(Vec::new());
+        };
+        crate::json::write_json_with(&root, unknown, out, style)
+    }
+}
+
+/// A value that writes a whole document, with a document's unknown members: what a
+/// [`Document`] must hold for [`Document::write_json`] and [`Document::to_json`]. Every
+/// [`Content`] is one, and so is a chain's `Any` (the document as it was read,
+/// [`Document::to_json`] of a `parse_as_written`).
+pub trait WriteWith {
+    /// The document, with the members of `unknown` after the known members of the object at
+    /// each path; the findings of the write.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError` when the value has no JSON form.
+    fn write_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError>;
+}
+
+impl<T: Content> WriteWith for T {
+    fn write_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        self.write_json_with(unknown, out, style)
+    }
+}
+
+/// What `PackWriter::put` writes: a value of a file kind ([`Content::write_json`]), or a
+/// [`Document`] of one with its unknown members ([`Document::write_json`]).
+pub trait Writable {
+    /// The whole file, in `style`; the findings of the write.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError` when the value has no JSON form.
+    fn write_file(
+        &self,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError>;
+}
+
+impl<T: Content> Writable for T {
+    fn write_file(
+        &self,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        self.write_json(out, style).map(|()| Vec::new())
+    }
+}
+
+impl<T: WriteWith> Writable for Document<T> {
+    fn write_file(
+        &self,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        self.value.write_with(&self.unknown, out, style)
+    }
+}
+
+// The writers of a document: inherent, so they come before the value's own `to_json` and
+// `write_json` (`tests/document_deref.rs` lists them), and a document writes its unknown
+// members where `doc.value().to_json()` does not.
+impl<T: WriteWith> Document<T> {
+    /// The whole document in `style`, with its [`unknown`](Self::unknown) members after the
+    /// known members of their objects. A member whose object the value no longer holds is
+    /// not written ([`write_json_reporting`](Self::write_json_reporting) tells it).
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError` when the value has no JSON form.
+    pub fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        self.write_json_reporting(out, style).map(drop)
+    }
+
+    /// [`write_json`](Self::write_json) into a string, pretty-printed with two spaces.
+    ///
+    /// # Errors
+    ///
+    /// As [`write_json`](Self::write_json).
+    pub fn to_json(&self) -> Result<String, EncodeError> {
+        let mut out = Vec::new();
+        self.write_json(&mut out, WriteStyle::default())?;
+        Ok(String::from_utf8(out).unwrap_or_default())
+    }
+
+    /// [`write_json`](Self::write_json), and the findings of the write: each unknown member
+    /// left out because the value no longer holds its object (an edit removed or moved it
+    /// without [`Unknown::rebase`]), as a `DroppedField` warning at the member's path.
+    ///
+    /// An unknown member of a key its object writes itself is no finding: it replaces the
+    /// written value in place ([`merge_unknown`](crate::json::merge_unknown)).
+    ///
+    /// # Errors
+    ///
+    /// As [`write_json`](Self::write_json).
+    pub fn write_json_reporting(
+        &self,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        self.value.write_with(&self.unknown, out, style)
     }
 }
 
@@ -434,6 +633,25 @@ impl<K: Kind> Definition for NoBeta<K> {
 pub trait Placed: Content {
     /// The path the writer puts this value at.
     fn default_path(&self) -> PackPath;
+}
+
+/// What `PackWriter::add` writes: a [`Writable`] with a default path, a [`Placed`] value or a
+/// [`Document`] of one (which writes its unknown members with it).
+pub trait PlacedWritable: Writable {
+    /// The path the writer puts this value at ([`Placed::default_path`] of the value).
+    fn add_path(&self) -> PackPath;
+}
+
+impl<T: Placed> PlacedWritable for T {
+    fn add_path(&self) -> PackPath {
+        self.default_path()
+    }
+}
+
+impl<T: Placed> PlacedWritable for Document<T> {
+    fn add_path(&self) -> PackPath {
+        self.value.default_path()
+    }
 }
 
 /// A merge strategy of a file merged across the stack; sealed, the strategies are crate-private.

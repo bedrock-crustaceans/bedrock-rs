@@ -20,7 +20,11 @@ fn r07_an_unknown_member_of_conditions_warns_and_the_rule_loads() {
         found[0].location.json_path.to_string(),
         "minecraft:feature_rules/conditions/foo"
     );
-    assert!(document.conditions.extra.get("foo").is_some());
+    let conditions = bedrock_addon_core::diagnostic::JsonPath::of_keys([
+        "minecraft:feature_rules",
+        "conditions",
+    ]);
+    assert!(document.unknown().get(&conditions, "foo").is_some());
 }
 
 #[test]
@@ -274,7 +278,11 @@ fn a_member_named_like_a_kept_field_is_an_unknown_member() {
         with_code(document.diagnostics(), "UnrecognizedField").len(),
         2
     );
-    assert!(document.description.extra.get("extra").is_some());
+    let description = bedrock_addon_core::diagnostic::JsonPath::of_keys([
+        "minecraft:feature_rules",
+        "description",
+    ]);
+    assert!(document.unknown().get(&description, "extra").is_some());
 }
 
 #[test]

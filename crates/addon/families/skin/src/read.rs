@@ -4,7 +4,7 @@ use super::{Skin, SkinPack};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, PrepareError, Prepared, Value, blank_bom, check_depth, last_wins,
 };
@@ -36,7 +36,7 @@ fn note(at: JsonPath) -> Diagnostic {
 struct Fields<'v> {
     object: Option<&'v facet_value::VObject>,
     at: JsonPath,
-    extra: Extra,
+    extra: UnknownMembers,
 }
 
 impl<'v> Fields<'v> {
@@ -44,7 +44,7 @@ impl<'v> Fields<'v> {
         Self {
             object: value.as_object(),
             at,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -64,7 +64,7 @@ impl<'v> Fields<'v> {
     }
 
     /// `extra`, with every member that is none of `read` added and reported.
-    fn finish(mut self, read: &[&str], diagnostics: &mut Diagnostics) -> Extra {
+    fn finish(mut self, read: &[&str], diagnostics: &mut Diagnostics) -> UnknownMembers {
         for (name, member) in self.object.into_iter().flatten() {
             if !read.contains(&name.as_str()) {
                 diagnostics.push(
@@ -91,7 +91,7 @@ impl Skin {
             enable_attachables: fields.raw("enable_attachables").cloned(),
             held_item_ignores_lighting: fields.raw("held_item_ignores_lighting").cloned(),
             hide_armor: fields.raw("hide_armor").cloned(),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         };
         // A path the game's buffer cannot hold reads as empty; the game's only word is a debug
         // assert, no content-log line, so the crate reports an information.

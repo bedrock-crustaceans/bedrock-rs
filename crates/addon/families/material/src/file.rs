@@ -4,7 +4,7 @@ use std::fmt;
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::SemVersion;
 
@@ -27,7 +27,7 @@ pub struct MaterialFile {
     pub materials: IndexMap<MaterialKey, MaterialDef>,
     /// The root members that are no material: a member whose value is no object, and the
     /// `materials` member of a wrapper the client does not unwrap. Kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl MaterialFile {
@@ -204,7 +204,7 @@ pub struct StencilFace {
     /// `stencilPassOp`; `Keep` when nothing sets it.
     pub stencil_pass_op: Option<String>,
     /// The members the client does not read (vanilla's own `stencilPass` among them).
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `samplerStates`: what it sets on the sampler slot `samplerIndex`.
@@ -223,7 +223,7 @@ pub struct SamplerState {
     /// material.
     pub comparison_func: Option<String>,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `stencilRefOverride` as a material writes it. The client reads the member with `asBool`,
@@ -260,7 +260,7 @@ pub struct VertexField {
     /// `field` ([`VERTEX_FIELDS`](super::VERTEX_FIELDS)); an entry without one adds `Position`.
     pub field: Option<String>,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One element of a `variants` array: an object of variant name → body. The client registers
@@ -358,5 +358,5 @@ pub struct MaterialDef {
     /// Every other member, as written: unknown keys (vanilla's own `vrGeometryShader`,
     /// `depthBiasOGL`, `slopeScaledDepthBiasOGL` among them), a known key whose value has the
     /// wrong type or is `null`, and a `+` / `-` spelling of a key that has none.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }

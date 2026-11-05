@@ -32,7 +32,7 @@ use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Component as _, ComponentMap, Extra};
+use bedrock_addon_core::document::{Component as _, ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{
@@ -60,7 +60,7 @@ pub struct ParticleEffect {
     /// Events by name (JSON `events`).
     pub events: Option<IndexMap<String, EventNode>>,
     /// Unknown members of `particle_effect`.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of a legacy document's `components`.
@@ -151,7 +151,12 @@ impl ParticleEffect {
                 r.key("basic_render_parameters", |r| {
                     let Some(parameters) = parameters else {
                         lacking(r, texts::NO_RENDER_PARAMETERS);
-                        return (String::new(), String::new(), true, Extra::default());
+                        return (
+                            String::new(),
+                            String::new(),
+                            true,
+                            UnknownMembers::default(),
+                        );
                     };
                     let (material, no_material) = render_string(
                         parameters,
@@ -198,7 +203,7 @@ impl ParticleEffect {
             components: IndexMap::new(),
             curves: None,
             events: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         };
         if stopped {
             // The effect is registered with what was read so far: no curve, event or
@@ -492,7 +497,7 @@ fn legacy_defaults(component: &mut ParticleComponent) {
                     mode: DirectionMode::DeriveFromVelocity,
                     custom_direction: None,
                     min_speed_threshold: None,
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 })
                 .min_speed_threshold
                 .get_or_insert(LEGACY_MIN_SPEED_THRESHOLD);

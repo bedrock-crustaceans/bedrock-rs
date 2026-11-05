@@ -300,7 +300,7 @@ mod baked_items_load {
                 parsed_as != FormatVersion::new(1, 26, 50),
                 "{name}"
             );
-            let written = document.value().to_json().unwrap();
+            let written = document.to_json().unwrap();
             assert_eq!(payload(&written), payload(&text), "{name}: {written}");
             assert!(
                 written.contains("\"format_version\": \"1.26.50\""),

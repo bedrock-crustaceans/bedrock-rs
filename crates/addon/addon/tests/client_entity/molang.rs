@@ -4,7 +4,6 @@
 
 use bedrock_addon::diagnostic::Severity;
 #[cfg(feature = "molang")]
-use bedrock_addon::document::Content;
 use bedrock_addon::molang::{Molang, RawVersion, pack_molang_version};
 use bedrock_addon::version::{FormatVersion, MinEngineVersion};
 use bedrock_addon::visual::HeldItemScale;

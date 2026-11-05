@@ -77,19 +77,25 @@ pub fn rejected(origin: Origin, mut diagnostics: Diagnostics) -> Rejected {
 // `rejected` become `Rejected::located`). That switch is behaviour-bearing, per family: the
 // repush here drops the moves and places, `locate` keeps them in place, so each family moves
 // over in its own change with a test of what it now keeps.
+// The unknown members the list holds are not findings: they are taken first and put back.
 fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
+    let mut found = std::mem::take(diagnostics);
+    let unknown = found.take_unknown();
     for mut finding in found {
         finding.location.pack = Some(origin.pack.clone());
         finding.location.path = Some(origin.path.clone());
         diagnostics.push(finding);
+    }
+    if !unknown.is_empty() {
+        *diagnostics.unknown_mut() = unknown;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{DiagnosticCode, Location, Phase, Severity};
+    use crate::diagnostic::{DiagnosticCode, JsonPath, Location, Phase, Severity};
+    use crate::json::Value;
 
     fn path(text: &str) -> PackPath {
         PackPath::new(text).unwrap()
@@ -156,6 +162,21 @@ mod tests {
         let finding = document.diagnostics().iter().next().unwrap();
         assert_eq!(finding.location.path, Some(origin.path.clone()));
         assert_eq!(finding.location.pack, Some(origin.pack.clone()));
+    }
+
+    #[test]
+    fn a_document_keeps_the_unknown_members_of_its_findings() {
+        let mut diagnostics = Diagnostics::default();
+        diagnostics.push(finding());
+        diagnostics
+            .unknown_mut()
+            .put(&JsonPath::of_keys(["a"]), "zz", Value::from(1i64));
+        let document = document((), lone(&path("a.json")), diagnostics);
+        assert_eq!(
+            document.unknown().get(&JsonPath::of_keys(["a"]), "zz"),
+            Some(&Value::from(1i64))
+        );
+        assert_eq!(document.diagnostics().len(), 1);
     }
 
     #[test]

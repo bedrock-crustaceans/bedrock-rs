@@ -13,7 +13,7 @@ use crate::{
 };
 use crate::{Era, float, object_with, read_document};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -135,7 +135,7 @@ fn setting(setting: &FogSetting) -> FogDistanceSetting {
         fog_end: Some(setting.fog_end),
         render_distance_type: Some(setting.render_distance_type),
         fog_color: Some(color(setting.fog_color.clone())),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -145,7 +145,7 @@ fn init_fog(init: InitFog) -> FogDistanceSetting {
         fog_end: Some(init.fog_end),
         render_distance_type: Some(init.render_distance_type),
         fog_color: Some(color(init.fog_color)),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -186,9 +186,9 @@ fn water(old: FogSetting) -> FogWaterDistanceSetting {
             mid_seconds: Some(t.mid_seconds),
             mid_percent: Some(t.mid_percent),
             max_seconds: Some(t.max_seconds),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -199,7 +199,7 @@ fn density(setting: DensitySetting) -> FogVolumetricDensitySetting {
         uniform: setting.uniform,
         zero_density_height: setting.zero_density_height.map(Keyframed::Single),
         max_density_height: setting.max_density_height.map(Keyframed::Single),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -207,14 +207,14 @@ fn coefficients(c: Coefficients) -> FogVolumetricMediaCoeffsSetting {
     FogVolumetricMediaCoeffsSetting {
         absorption: Some(coefficient(c.absorption)),
         scattering: Some(coefficient(c.scattering)),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
 fn hg(setting: HgSetting) -> FogVolumetricHenyeyGreensteinGSetting {
     FogVolumetricHenyeyGreensteinGSetting {
         henyey_greenstein_g: Some(Keyframed::Single(setting.henyey_greenstein_g)),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -230,7 +230,7 @@ impl Upgrade for FogDocument {
             // Op 2.
             description: FogDescription {
                 identifier: FogId::parse(self.description.identifier),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             },
             distance: self.distance.map(|d| FogDistanceCollection {
                 air: entry("air", d.air, cx),
@@ -239,7 +239,7 @@ impl Upgrade for FogDocument {
                 lava: entry("lava", d.lava, cx),
                 lava_resistance: entry("lava_resistance", d.lava_resistance, cx),
                 powder_snow: entry("powder_snow", d.powder_snow, cx),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }),
             volumetric: self.volumetric.map(|v| FogVolumetricCollection {
                 density: v.density.map(|d| FogVolumetricDensityCollection {
@@ -248,14 +248,14 @@ impl Upgrade for FogDocument {
                     water: d.water.map(density),
                     lava: d.lava.map(density),
                     lava_resistance: d.lava_resistance.map(density),
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 }),
                 media_coefficients: v.media_coefficients.map(|m| {
                     FogVolumetricMediaCoeffsCollection {
                         air: m.air.map(coefficients),
                         water: m.water.map(coefficients),
                         cloud: m.cloud.map(coefficients),
-                        extra: Extra::default(),
+                        extra: UnknownMembers::default(),
                     }
                 }),
                 // Op 10.
@@ -263,12 +263,12 @@ impl Upgrade for FogDocument {
                     FogVolumetricHenyeyGreensteinGCollection {
                         air: g.air.map(hg),
                         water: g.water.map(hg),
-                        extra: Extra::default(),
+                        extra: UnknownMembers::default(),
                     }
                 }),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

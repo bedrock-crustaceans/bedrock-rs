@@ -11,7 +11,7 @@ use super::read::{MAX_TEXTURE, known};
 use super::read::{Writer, put, put_opt};
 use super::{Description, ParticleEffect};
 use bedrock_addon_core::document::Component as _;
-use bedrock_addon_core::document::{ComponentRef, Extra};
+use bedrock_addon_core::document::{ComponentRef, UnknownMembers};
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
 
 /// The key of the payload.
@@ -24,7 +24,7 @@ pub(crate) fn payload_of(
     components: VObject,
     curves: Option<&IndexMap<String, Curve>>,
     events: Option<&IndexMap<String, EventNode>>,
-    extra: &Extra,
+    extra: &UnknownMembers,
     w: &mut Writer,
 ) -> Result<Value, EncodeError> {
     let mut out = VObject::new();

@@ -2,8 +2,11 @@
 
 use std::borrow::Cow;
 
-use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
+use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra, Unknown, UnknownMembers};
+use bedrock_addon_core::json::{
+    EncodeError, JsonSlice, Value, WriteStyle, merge_unknown, write_json,
+};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -26,15 +29,26 @@ use bedrock_addon_core::diagnostic::Diagnostics;
 /// 1.26.50: the newest item format.
 const V1_26_50: FormatVersion = known::V1_26_50;
 
-/// The `description` of the newest format as JSON.
-fn description_value(description: &ItemDescription) -> Result<Value, EncodeError> {
+/// The path of the item object of a document.
+fn item_at() -> JsonPath {
+    JsonPath::of_keys(["minecraft:item"])
+}
+
+/// The `description` of the newest format as JSON; `unknown` the document's unknown members,
+/// whose `menu_category` members make the placement written whole.
+fn description_value(
+    description: &ItemDescription,
+    unknown: &Unknown,
+) -> Result<Value, EncodeError> {
     let mut object = VObject::new();
     object.insert("identifier", Value::from(description.identifier.as_str()));
     // A `none` and a `menu_category` the document did not write are not written, so the text
     // reads back as the document did; everything else of the placement is.
     let menu = &description.menu_category;
-    let whole =
-        menu.group.is_some() || menu.is_hidden_in_commands.is_some() || !menu.extra.is_empty();
+    let menu_at = item_at().child("description").child("menu_category");
+    let whole = menu.group.is_some()
+        || menu.is_hidden_in_commands.is_some()
+        || unknown.members_at(&menu_at).next().is_some();
     if description.category_is_written() {
         object.insert("menu_category", write_payload(menu)?);
     } else if whole || description.menu_category_presence != super::MenuCategoryPresence::Absent {
@@ -43,9 +57,6 @@ fn description_value(description: &ItemDescription) -> Result<Value, EncodeError
             ..menu.clone()
         };
         object.insert("menu_category", write_payload(&without_category)?);
-    }
-    for (key, value) in description.extra.iter() {
-        object.insert(key, value.clone());
     }
     Ok(Value::from(object))
 }
@@ -89,7 +100,7 @@ pub(crate) fn newest_value(
     deprecated: &ItemDeprecatedData,
     events: Option<&Value>,
     legacy: &LegacyItemData,
-    extra: &Extra,
+    unknown: &Unknown,
 ) -> Result<Value, EncodeError> {
     let typed = from_component_map(components);
     // What the legacy reading alone holds of a newest-format document, after the components.
@@ -110,7 +121,7 @@ pub(crate) fn newest_value(
             .map(|(key, value)| (key, Ok(value))),
     );
     write_parts(
-        description_value(description),
+        description_value(description, unknown),
         typed
             .into_iter()
             .map(|(key, component)| (key, write_component(&component)))
@@ -120,7 +131,7 @@ pub(crate) fn newest_value(
             SideCarPlace::AfterEvents,
         ),
         events,
-        extra,
+        unknown,
     )
 }
 
@@ -137,7 +148,6 @@ impl VersionStruct for Item {
             deprecated: n.deprecated,
             events: n.events,
             legacy: n.legacy,
-            extra: n.extra,
         })
     }
 
@@ -148,7 +158,18 @@ impl VersionStruct for Item {
             &self.deprecated,
             self.events.as_ref(),
             &self.legacy,
-            &self.extra,
+            &Unknown::new(),
+        )
+    }
+
+    fn write_with_unknown(&self, unknown: &Unknown) -> Result<Value, EncodeError> {
+        newest_value(
+            &self.description,
+            &self.components,
+            &self.deprecated,
+            self.events.as_ref(),
+            &self.legacy,
+            unknown,
         )
     }
 }
@@ -173,7 +194,6 @@ impl VersionStruct for Beta {
             deprecated: n.deprecated,
             events: n.events,
             legacy: n.legacy,
-            extra: n.extra,
         })
     }
 
@@ -184,7 +204,18 @@ impl VersionStruct for Beta {
             &self.deprecated,
             self.events.as_ref(),
             &self.legacy,
-            &self.extra,
+            &Unknown::new(),
+        )
+    }
+
+    fn write_with_unknown(&self, unknown: &Unknown) -> Result<Value, EncodeError> {
+        newest_value(
+            &self.description,
+            &self.components,
+            &self.deprecated,
+            self.events.as_ref(),
+            &self.legacy,
+            unknown,
         )
     }
 }
@@ -198,7 +229,7 @@ impl MolangFields for Beta {
 
 /// `{"format_version": version, "minecraft:item": payload}` (`"beta"` for the beta version).
 fn envelope(version: FormatVersion, payload: Value) -> Value {
-    write_envelope::<ItemFamily>(version, payload, &Extra::default())
+    write_envelope::<ItemFamily>(version, payload, &UnknownMembers::default())
 }
 
 /// Whether the text the newest format writes of `item` is a component-based document to the
@@ -229,6 +260,15 @@ pub(crate) fn is_component_based_as_written(item: &Item) -> bool {
 /// `menu_category` to write, which a legacy item does not have (`NotRepresentable` at
 /// `description/menu_category`).
 pub(crate) fn item_root(item: &Item) -> Result<Value, EncodeError> {
+    item_root_with(item, &Unknown::new()).map(|(root, _)| root)
+}
+
+/// [`item_root`] with the document's unknown members in it, and the findings of those left
+/// out: which format is written depends on them (the newest one refuses an unknown member).
+pub(crate) fn item_root_with(
+    item: &Item,
+    unknown: &Unknown,
+) -> Result<(Value, Vec<Diagnostic>), EncodeError> {
     let refused = |members: &[&str]| {
         let mut at = bedrock_addon_core::diagnostic::JsonPath::new();
         at.push("minecraft:item");
@@ -254,7 +294,7 @@ pub(crate) fn item_root(item: &Item) -> Result<Value, EncodeError> {
             return Err(refused(&["components"]));
         }
         _ => {
-            let writes_a_category = description_value(&item.description)?
+            let writes_a_category = description_value(&item.description, unknown)?
                 .as_object()
                 .is_some_and(|description| description.contains_key("menu_category"));
             if writes_a_category {
@@ -269,21 +309,32 @@ pub(crate) fn item_root(item: &Item) -> Result<Value, EncodeError> {
                 identifier: item.description.identifier.as_str().to_owned(),
                 category: item.legacy.category.clone(),
                 menu_category: None,
-                extra: item.description.extra.clone(),
+                extra: Extra::default(),
             },
             components: format_item.clone(),
             events: item.events.clone(),
-            extra: item.extra.clone(),
         };
-        envelope(V1_10_0, legacy.write()?)
+        let mut root = envelope(V1_10_0, legacy.write()?);
+        let told = merge_unknown(&mut root, unknown);
+        (root, told)
     } else {
-        let payload = item.write()?;
+        let mut root = envelope(V1_26_50, item.write_with_unknown(unknown)?);
+        let told = merge_unknown(&mut root, unknown);
+        let payload = payload_of(&root);
         match refuse_what_the_format_refuses(&payload, V1_26_50) {
-            Ok(()) => envelope(V1_26_50, payload),
-            Err(refused) => written_at_1_26_0(item, payload).ok_or(refused)?,
+            Ok(()) => (root, told),
+            Err(refused) => written_at_1_26_0(item, payload, unknown).ok_or(refused)?,
         }
     };
     Ok(root)
+}
+
+/// The item object of a whole document.
+fn payload_of(root: &Value) -> Value {
+    root.as_object()
+        .and_then(|root| root.get("minecraft:item"))
+        .cloned()
+        .unwrap_or(Value::NULL)
 }
 
 /// 1.26.0: the newest format of the legacy chain (`ComponentItemData_v1_26_0`), whose reader
@@ -301,8 +352,17 @@ const V1_10_0: FormatVersion = FormatVersion::new(1, 10, 0);
 /// carry the version of the file it came from, so the version is the newest one whose reader
 /// takes those members. `None` when the text does not read back so (the caller refuses at the
 /// member the 1.26.50 format refuses): nothing is dropped in silence.
-fn written_at_1_26_0(item: &Item, payload: Value) -> Option<Value> {
-    let root = envelope(V1_26_0, payload);
+///
+/// `payload` has the document's unknown members in it already; so has the text, and it reads
+/// back with them where the item has them (`unknown`).
+fn written_at_1_26_0(
+    item: &Item,
+    payload: Value,
+    unknown: &Unknown,
+) -> Option<(Value, Vec<Diagnostic>)> {
+    let mut root = envelope(V1_26_0, payload);
+    // The root's own members (the payload's are in it, and are put again in place).
+    let told = merge_unknown(&mut root, unknown);
     let text = bedrock_addon_core::json::to_facet_json(&root).ok()?;
     let cx = bedrock_addon_core::load::LoadContext::detached();
     let reread = super::read::load_item(text.as_bytes(), &cx);
@@ -316,17 +376,23 @@ fn written_at_1_26_0(item: &Item, payload: Value) -> Option<Value> {
     let mut held = item.clone();
     again.legacy.shared.clear();
     held.legacy.shared.clear();
-    (again == held).then_some(root)
+    let same_unknown = reread.outcome.diagnostics.unknown() == unknown;
+    (again == held && same_unknown).then_some((root, told))
 }
 
 /// Where the newest writer refuses `item` for a member the strict 1.26.50 format does not
 /// bind (`refuse_what_the_format_refuses`); `None` when it is written, or written in the legacy
 /// item format.
-pub(crate) fn newest_refusal(item: &Item) -> Option<bedrock_addon_core::diagnostic::JsonPath> {
+pub(crate) fn newest_refusal(
+    item: &Item,
+    unknown: &Unknown,
+) -> Option<bedrock_addon_core::diagnostic::JsonPath> {
     if item.legacy.format == ItemFormat::Legacy || !is_component_based_as_written(item) {
         return None;
     }
-    let payload = item.write().ok()?;
+    let mut root = envelope(V1_26_50, item.write_with_unknown(unknown).ok()?);
+    let _ = merge_unknown(&mut root, unknown);
+    let payload = payload_of(&root);
     match refuse_what_the_format_refuses(&payload, V1_26_50) {
         Err(EncodeError::NotRepresentable { at, .. }) => Some(at),
         _ => None,
@@ -387,9 +453,22 @@ pub(crate) fn write_beta(
     out: &mut Vec<u8>,
     style: WriteStyle,
 ) -> Result<(), EncodeError> {
-    let payload = beta.write()?;
-    refuse_what_the_format_refuses(&payload, BETA_VERSION)?;
-    write_json(&envelope(BETA_VERSION, payload), out, style)
+    write_beta_with(beta, &Unknown::new(), out, style).map(drop)
+}
+
+/// [`write_beta`] with the document's unknown members, which the beta format refuses as it
+/// refuses them in the payload.
+pub(crate) fn write_beta_with(
+    beta: &Beta,
+    unknown: &Unknown,
+    out: &mut Vec<u8>,
+    style: WriteStyle,
+) -> Result<Vec<Diagnostic>, EncodeError> {
+    let mut root = envelope(BETA_VERSION, beta.write_with_unknown(unknown)?);
+    let told = merge_unknown(&mut root, unknown);
+    refuse_what_the_format_refuses(&payload_of(&root), BETA_VERSION)?;
+    write_json(&root, out, style)?;
+    Ok(told)
 }
 
 #[allow(dead_code, reason = "the default menu placement of a new item")]

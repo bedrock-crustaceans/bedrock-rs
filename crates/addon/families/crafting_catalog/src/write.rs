@@ -5,11 +5,11 @@
 use facet_value::{VArray, VObject};
 
 use super::{CatalogItem, Category, CraftingCatalog, Group, GroupIdentifier};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 /// Appends the unknown members of a level after its known ones.
-fn with_extra(mut object: VObject, extra: &Extra) -> Value {
+fn with_extra(mut object: VObject, extra: &UnknownMembers) -> Value {
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());
     }

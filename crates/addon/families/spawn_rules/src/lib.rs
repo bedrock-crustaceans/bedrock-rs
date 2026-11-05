@@ -23,7 +23,7 @@ pub use simplified::{
 };
 
 use crate::simplified::V1_21_60;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Definition, Document, JsonContent, NoBeta, Placed, Registry, Rejected, default_path,
 };
@@ -87,10 +87,10 @@ pub struct StandardSpawnRules {
     /// The conditions (JSON `conditions`).
     pub conditions: Option<Vec<Condition>>,
     /// Unknown members of `minecraft:spawn_rules`.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Root members other than `format_version` and `minecraft:spawn_rules` (vanilla ignores
     /// them; each is an `UnrecognizedField` warning).
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:spawn_rules/description` of standard spawn rules.
@@ -102,7 +102,7 @@ pub struct StandardDescription {
     /// [`StandardDescription::population_control`].
     pub population_control: Option<String>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl StandardSpawnRules {
@@ -261,7 +261,7 @@ impl Content for SpawnRules {
                 let document = write_envelope::<SimplifiedFamily>(
                     <SimplifiedSpawnRules as Versioned>::VERSION,
                     VersionStruct::write(rules)?,
-                    &Extra::default(),
+                    &UnknownMembers::default(),
                 );
                 write_json(&document, out, style)
             }
@@ -322,7 +322,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.8.0..=1.8.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.8.0..=1.8.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             ",
         );
     }
@@ -338,7 +338,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.60..=1.21.60 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.21.60..=1.21.60 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             ",
         );
     }

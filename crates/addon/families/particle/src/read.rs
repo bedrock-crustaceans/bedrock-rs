@@ -23,7 +23,7 @@ use super::{BasicRenderParameters, Description, ParticleEffect, texts};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::molang::{
@@ -298,7 +298,7 @@ impl<'v> Members<'v> {
     /// which a 1.20.80 document makes an error; the legacy parser reads past them) and not
     /// kept: the game never stores an unknown key, so the value holds none and the upgrade
     /// carries none. The `extra` of a value is for one built by hand.
-    pub(crate) fn extra(self, known: fn(&str) -> bool, r: &mut Reader<'_>) -> Extra {
+    pub(crate) fn extra(self, known: fn(&str) -> bool, r: &mut Reader<'_>) -> UnknownMembers {
         for (key, _) in self.iter() {
             if !known(key) {
                 // The legacy parser reads past an unknown member without a word, so the
@@ -315,7 +315,7 @@ impl<'v> Members<'v> {
                 });
             }
         }
-        Extra::default()
+        UnknownMembers::default()
     }
 }
 
@@ -372,7 +372,7 @@ impl Writer {
     pub(crate) fn extra(
         &mut self,
         out: &mut VObject,
-        extra: &Extra,
+        extra: &UnknownMembers,
         known: fn(&str) -> bool,
     ) -> Result<(), EncodeError> {
         for (key, value) in extra.iter() {
@@ -885,7 +885,7 @@ macro_rules! object {
                 pub $field: object!(@ty $kind $ty),
             )*
             /// Unknown members.
-            pub extra: ::bedrock_addon_core::document::Extra,
+            pub extra: ::bedrock_addon_core::document::UnknownMembers,
         }
 
         impl $name {

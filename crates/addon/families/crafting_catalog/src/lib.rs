@@ -19,7 +19,7 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_core::version::FormatVersion;
@@ -76,7 +76,7 @@ pub struct CraftingCatalog {
     /// category several times; every entry adds to the same category.
     pub categories: Vec<Category>,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The groups one entry of `categories` adds to a creative category.
@@ -87,7 +87,7 @@ pub struct Category {
     /// The groups added to it, in order (JSON `groups`, required).
     pub groups: Vec<Group>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One of the four creative categories a catalogue can add to; a pack cannot add, rename or
@@ -156,7 +156,7 @@ pub struct Group {
     /// The items of the group, in order (JSON `items`, required).
     pub items: Vec<CatalogItem>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The name and icon of a collapsible group.
@@ -170,7 +170,7 @@ pub struct GroupIdentifier {
     /// its first definition.
     pub icon: Option<CatalogItem>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One item or block of the catalogue.
@@ -184,7 +184,7 @@ pub struct CatalogItem {
     /// by `:aux`. The namespace is required.
     pub name: ItemId,
     /// Unknown members of the object form.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// By the name as written: `ItemId` alone compares without the aux value.
@@ -420,10 +420,7 @@ pub(crate) fn upgrade_document(
     document: Document<CatalogAny>,
     cx: &LoadContext,
 ) -> Result<Document<CraftingCatalog>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let mut at = JsonPath::new();
     at.push(CatalogFamily::PAYLOAD_KEY);
     let written = FormatVersionInput {
@@ -486,7 +483,7 @@ impl Category {
         Self {
             category_name,
             groups: Vec::new(),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -519,7 +516,7 @@ impl GroupIdentifier {
         Self {
             name: name.into(),
             icon: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -529,7 +526,7 @@ impl CatalogItem {
     pub fn new(name: ItemId) -> Self {
         Self {
             name,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -564,8 +561,8 @@ mod reading_table {
                 missing version: rejected: Fixed("The file cannot be processed without a valid format_version")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.21.60..=1.21.60 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
-                1.26.50..=1.26.50 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.21.60..=1.21.60 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.26.50..=1.26.50 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             "#,
         );
     }

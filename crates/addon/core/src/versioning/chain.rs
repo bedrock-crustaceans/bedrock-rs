@@ -218,6 +218,21 @@ macro_rules! version_chain {
             }
         }
 
+        impl $crate::document::WriteWith for $any {
+            fn write_with(
+                &self,
+                unknown: &$crate::document::Unknown,
+                out: &mut ::std::vec::Vec<u8>,
+                style: $crate::json::WriteStyle,
+            ) -> ::core::result::Result<::std::vec::Vec<$crate::diagnostic::Diagnostic>, $crate::json::EncodeError> {
+                let payload = match self {
+                    $( Self::$variant(value) => $crate::versioning::VersionStruct::write_with_unknown(value, unknown)?, )*
+                    $( Self::$beta(value) => $crate::versioning::VersionStruct::write_with_unknown(value, unknown)?, )?
+                };
+                $crate::versioning::__macro::write_document_with::<$family>(self.parsed_version(), payload, unknown, out, style)
+            }
+        }
+
         $crate::version_chain!(@molang [ $($molang)? ] [ $($ty,)* $($beta_ty,)? ]);
     };
 

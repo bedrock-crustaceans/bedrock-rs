@@ -143,7 +143,7 @@ fn file_of(n: usize, key: impl Fn(usize) -> String) -> MaterialFile {
         materials: (0..n)
             .map(|i| (MaterialKey::parse(&key(i)), adding(&format!("v{i:06}"))))
             .collect(),
-        extra: bedrock_addon_core::document::Extra::default(),
+        extra: bedrock_addon_core::document::UnknownMembers::default(),
     }
 }
 
@@ -300,7 +300,7 @@ fn the_defines_of_a_list_entry_with_a_hundred_thousand_names_are_linear() {
             defines: Some((0..n).map(|i| format!("D{i}")).collect()),
             add_defines: Some((0..n).map(|i| format!("A{i}")).collect()),
             sub_defines: Some((0..n).map(|i| format!("D{}", n - 1 - i)).collect()),
-            extra: bedrock_addon_core::document::Extra::default(),
+            extra: bedrock_addon_core::document::UnknownMembers::default(),
         },
         |entry| {
             let defines = entry.base_defines();

@@ -133,7 +133,6 @@ fn a_null_member_of_a_legacy_table_is_the_legacy_parser_s() {
 /// test expects, and round-trips at the value level.
 #[test]
 fn the_engine_test_s_table_loads_with_its_expected_values_and_round_trips() {
-    use bedrock_addon_core::document::Content;
     let text = super::common::fixture("engine/case-1.json");
     let document = loads(&text);
     assert!(

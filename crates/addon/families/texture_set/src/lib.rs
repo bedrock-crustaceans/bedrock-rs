@@ -161,14 +161,8 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<TextureSet>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    finished(
-        parsed(document.into_value(), version, diagnostics),
-        origin,
-        cx,
-    )
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
+    finished(parsed(value, version, diagnostics), origin, cx)
 }
 
 /// Loads the texture-set file at `origin`.
@@ -192,11 +186,16 @@ fn parse_file(
 // TODO(phase 1 step 4): `Diagnostics::locate` in place, which keeps them; behaviour-bearing,
 // with `unversioned`'s own switch.
 fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
-    let found = std::mem::take(diagnostics);
+    let mut found = std::mem::take(diagnostics);
+    // The unknown members are no findings: taken first, put back after.
+    let unknown = found.take_unknown();
     for mut finding in found {
         finding.location.pack = Some(origin.pack.clone());
         finding.location.path = Some(origin.path.clone());
         diagnostics.push(finding);
+    }
+    if !unknown.is_empty() {
+        *diagnostics.unknown_mut() = unknown;
     }
 }
 
@@ -375,7 +374,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Error
-                1.16.100..=1.21.30 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.16.100..=1.21.30 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             ",
         );
     }

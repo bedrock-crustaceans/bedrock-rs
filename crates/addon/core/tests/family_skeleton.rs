@@ -138,11 +138,12 @@ fn text(value: &Value) -> String {
 
 #[test]
 fn write_envelope_puts_the_version_first_and_the_payload_under_the_family_key() {
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::versioning::{__macro::document_json, write_envelope};
     let payload = write_payload(&spark()).unwrap();
     let v = FormatVersion::new(1, 0, 0);
-    let written = write_envelope::<by_macro::GlintChain>(v, payload.clone(), &Extra::default());
+    let written =
+        write_envelope::<by_macro::GlintChain>(v, payload.clone(), &UnknownMembers::default());
     assert_eq!(
         text(&written),
         document_json::<by_macro::GlintChain>(v, &payload).unwrap(),
@@ -157,12 +158,12 @@ fn write_envelope_puts_the_version_first_and_the_payload_under_the_family_key() 
 
 #[test]
 fn write_envelope_writes_the_beta_version_as_beta() {
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::versioning::{BETA_VERSION, write_envelope};
     let written = write_envelope::<by_macro::GlintChain>(
         BETA_VERSION,
         write_payload(&spark()).unwrap(),
-        &Extra::default(),
+        &UnknownMembers::default(),
     );
     let root = written.as_object().unwrap();
     assert_eq!(
@@ -175,9 +176,9 @@ fn write_envelope_writes_the_beta_version_as_beta() {
 
 #[test]
 fn write_envelope_writes_the_root_extras_after_the_payload_in_their_order() {
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::versioning::write_envelope;
-    let extras: Extra = [
+    let extras: UnknownMembers = [
         ("zeta".to_owned(), Value::from(1)),
         ("alpha".to_owned(), Value::from(true)),
     ]
@@ -199,10 +200,10 @@ fn write_envelope_writes_the_root_extras_after_the_payload_in_their_order() {
 
 #[test]
 fn write_envelope_on_the_raw_text_path_is_the_payload_alone() {
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::versioning::{__macro::document_json, write_envelope};
     let payload = write_payload(&spark()).unwrap();
-    let extras: Extra = [("zeta".to_owned(), Value::from(1))].into_iter().collect();
+    let extras: UnknownMembers = [("zeta".to_owned(), Value::from(1))].into_iter().collect();
     let below = FormatVersion::new(1, 0, 0);
     let written = write_envelope::<raw_below_2::RawGlintChain>(below, payload.clone(), &extras);
     assert_eq!(
@@ -425,7 +426,7 @@ impl JsonDocument for Ember {
     fn write_version(&self) -> FormatVersion {
         self.read_at.unwrap_or(<Self as Versioned>::VERSION)
     }
-    fn write_extras(&self, root: &mut bedrock_addon_core::document::Extra) {
+    fn write_root_members(&self, root: &mut bedrock_addon_core::document::UnknownMembers) {
         root.insert("demo:note".to_owned(), Value::from("kept"));
     }
     fn refuse_write(&self) -> Result<(), EncodeError> {
@@ -672,7 +673,7 @@ impl JsonDocument for Cinder {
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
     fn write_root(&self) -> Result<Value, EncodeError> {
         use bedrock_addon_core::versioning::write_envelope;
-        let extras = bedrock_addon_core::document::Extra::default();
+        let extras = bedrock_addon_core::document::UnknownMembers::default();
         if self.heat > 9 {
             let older: Value =
                 bedrock_addon_core::json::from_str_jsonc(&format!(r#"{{"glow": {}}}"#, self.heat))

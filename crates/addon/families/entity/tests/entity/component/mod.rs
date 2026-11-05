@@ -103,6 +103,22 @@ pub fn write<T: for<'a> facet::Facet<'a>>(value: &T) -> Value {
     facet_json::from_str::<Value>(&text).expect("the writer's JSON reads back")
 }
 
+/// [`write`] with the unknown members a read kept (paths below the value).
+pub fn write_with<T: for<'a> facet::Facet<'a>>(
+    value: &T,
+    unknown: &bedrock_addon_core::document::Unknown,
+) -> Value {
+    let mut out = Vec::new();
+    bedrock_addon_core::json::write_json_with(
+        value,
+        unknown,
+        &mut out,
+        bedrock_addon_core::json::WriteStyle::default(),
+    )
+    .expect("writes");
+    facet_json::from_slice::<Value>(&out).expect("the writer's JSON reads back")
+}
+
 /// Strict read, write, strict read again: the two values are equal; returns the first.
 pub fn round_trip<T>(json: &str) -> T
 where

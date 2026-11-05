@@ -6,7 +6,7 @@ use crate::ColorGradingSettings;
 /// Format 1.21.40.
 pub mod v1_21_40 {
     use crate::{ColorGradingDescription, Highlights, Midtones, Shadows, ToneMapping};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
 
     /// Colour-grading settings at format 1.21.40.
     #[derive(Clone, Debug, Default, PartialEq)]
@@ -18,7 +18,7 @@ pub mod v1_21_40 {
         /// The tone mapper (JSON `tone_mapping`).
         pub tone_mapping: Option<ToneMapping>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 
     /// The grading controls at format 1.21.40: without `temperature`.
@@ -31,7 +31,7 @@ pub mod v1_21_40 {
         /// The controls of the dark tones (JSON `shadows`).
         pub shadows: Option<Shadows>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 

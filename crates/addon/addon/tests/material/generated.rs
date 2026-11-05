@@ -3,7 +3,7 @@
 //! value; each built value is either written as text that reads back equal, or refused with
 //! `NotRepresentable`.
 
-use bedrock_addon::document::{Content, Extra};
+use bedrock_addon::document::{Content, UnknownMembers};
 use bedrock_addon::families::material::{
     KeyRules, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, MaterialList,
     SamplerState, StencilFace, Variant, VertexField,
@@ -519,7 +519,7 @@ fn every_built_value_is_written_as_text_that_reads_back_equal_or_is_refused() {
         let mut value = MaterialFile {
             form,
             materials,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         };
         if let MaterialFileForm::Single { .. } = value.form
             && rng.chance(2)

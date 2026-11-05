@@ -3,7 +3,6 @@
 //! or `minecraft:tags` no slice of the file's version binds, the members of a component a step
 //! takes apart, a `tag:` key beside `minecraft:tags`, and the legacy `creative_category`.
 
-use bedrock_addon_core::document::Content;
 use bedrock_addon_core::load::LoadContext;
 
 use super::common::{allowlisted, item, loads, newest_payload, rejects, third_party};
@@ -59,7 +58,7 @@ fn written_or_refused(
     match document.to_json() {
         Ok(written) => written,
         Err(bedrock_addon_core::json::EncodeError::NotRepresentable { at, .. }) => {
-            format!("REFUSED at {at}: {}", newest_payload(document.value()))
+            format!("REFUSED at {at}: {}", newest_payload(document))
         }
         Err(error) => panic!("the item writes: {error:?}"),
     }
@@ -690,7 +689,7 @@ fn a_movement_modifier_out_of_the_modifiers_range_is_told_and_not_carried() {
 fn an_item_with_a_side_car_beside_events_is_written_as_its_reload_writes_it() {
     let text = r#"{"format_version": "1.20.20", "minecraft:item": {"description": {"identifier": "demo:x"}, "components": {"minecraft:food": {"nutrition": 1, "on_consume": {"event": "a"}}, "minecraft:use_duration": 1.6}, "events": {"a": {}}}}"#;
     let document = loads(text, &allowlisted());
-    let payload = newest_payload(document.value());
+    let payload = newest_payload(&document);
     assert!(
         payload.contains("__deprecated_components") && payload.contains(r#""events""#),
         "the item holds both members: {payload}"

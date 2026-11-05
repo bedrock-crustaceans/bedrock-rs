@@ -790,10 +790,7 @@ fn every_behavior_entity_molang_occurrence_loads_with_its_text_and_version() {
         let document = Entity::parse(&file.at, file.text.as_bytes(), &file.cx)
             .map_err(|rejected| rejected.diagnostics)?;
         let diagnostics = document.diagnostics().clone();
-        let written = document
-            .value()
-            .to_json()
-            .expect("the entity writes itself");
+        let written = document.to_json().expect("the entity writes itself");
         let written: Value =
             parse_at(JsonSlice::new(&written)).expect("the written entity is JSON");
         let mut entity = document.into_value();

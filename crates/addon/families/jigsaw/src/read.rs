@@ -18,7 +18,7 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, Unknown, VersionInfo};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, NullRule, StrictFloat, Value, keep_unknown_members, parse_at,
     reject_nulls,
@@ -42,8 +42,8 @@ const MAX_FILE_REFERENCE: usize = 256;
 /// The text facet gives an internally tagged enum whose tag names no variant.
 const UNKNOWN_TAG: &str = "No variant found";
 
-/// Parses `T` from `payload`: the typed parse, its unknown members kept in the `extra` of the
-/// struct they belong to (each an `UnrecognizedField` warning), and a failed parse as one error.
+/// Parses `T` from `payload`: the typed parse, its unknown members kept in the document's table
+/// by the path of the struct they belong to (each an `UnrecognizedField` warning), and a failed parse as one error.
 /// An internally tagged enum's unknown tag is `InvalidEnumValue`, as vanilla's enum binds
 /// report it (facet calls it a type mismatch). `check` sees the JSON before the typed parse and
 /// returns `false` to refuse it (the type pre-check of an untagged member).
@@ -68,15 +68,17 @@ fn parse_typed<'a, T: Facet<'a>>(
         {
             None
         }
-        Ok(mut value) => {
+        Ok(value) => {
             if let Some(json) = &json {
-                for (path, _) in keep_unknown_members(&mut value, json) {
+                let mut kept = Unknown::new();
+                for (path, _) in keep_unknown_members(&value, json, &mut kept) {
                     // The game logs an unknown member at the content log's warning level and goes on.
                     d.push(
                         Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
                             .at(cx.at.join(&path)),
                     );
                 }
+                d.unknown_mut().absorb(&cx.at, kept);
             }
             Some(value)
         }

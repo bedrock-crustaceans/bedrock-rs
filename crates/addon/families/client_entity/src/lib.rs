@@ -400,10 +400,13 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<ClientEntity>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, mut diagnostics) = document.into_parsed_parts();
+    // The steps start from no finding, with the unknown members to move and take.
+    let mut rows = Diagnostics::default();
+    let unknown = diagnostics.take_unknown();
+    if !unknown.is_empty() {
+        *rows.unknown_mut() = unknown;
+    }
     let identifier = match &value {
         Any::V1_8_0(entity) => entity.description.identifier.as_str(),
         Any::V1_10_0(entity) => entity.description.identifier.as_str(),
@@ -423,12 +426,12 @@ pub(crate) fn upgrade_document(
         version,
         written,
         JsonPath::new(),
-        Diagnostics::default(),
+        rows,
     )
     .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut found = diagnostics;
-    found.extend(place(outcome.diagnostics, &origin));
+    found.extend_with_unknown(place(outcome.diagnostics, &origin));
     match outcome.value {
         Some(Loaded::Stable(entity)) => Ok(Document::new(entity, origin, outcome.version, found)),
         _ => Err(Rejected::new(origin, found)),
@@ -890,7 +893,7 @@ mod reading_table {
                 missing version: at the floor, told at Warning: Some(Fixed("Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions."))
                 below floor: UseFormatVersion
                 empty document: Error
-                1.8.0..=1.26.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.8.0..=1.26.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             "#,
         );
     }

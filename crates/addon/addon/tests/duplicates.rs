@@ -108,7 +108,7 @@ fn behavior_tree_keeps_the_last_copy() {
             "{value}"
         );
         // Whole: no member of the first copy survives in the kept tree.
-        assert!(!value.contains(r#"Extra({"first"#), "{value}");
+        assert!(!value.contains(r#"UnknownMembers({"first"#), "{value}");
     }
 }
 

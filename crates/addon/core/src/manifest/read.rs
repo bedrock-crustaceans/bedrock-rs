@@ -8,7 +8,7 @@
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::Value;
 use crate::pack_identity::PackPath;
 use crate::version::SemVersion;
@@ -131,7 +131,7 @@ pub(super) fn pack_scope(
     sink: &mut Sink<'_>,
     text: Option<String>,
     code: DiagnosticCode,
-    extra: &mut Extra,
+    extra: &mut UnknownMembers,
 ) -> Option<PackScope> {
     let text = text?;
     let scope = PackScope::from_json_name(&text);

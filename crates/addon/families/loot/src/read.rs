@@ -16,7 +16,7 @@ use super::function::{
 use super::texts;
 use super::{Entry, EntryKind, LootTable, Pool, RandomValueBounds, Tiers};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::json::{
     Indent, MAX_JSON_DEPTH, Value, WriteStyle, blank_bom, check_depth, write_json,
@@ -419,15 +419,15 @@ impl Walk<'_> {
     }
 
     /// The members of `m` the walk did not read, kept for write-back.
-    fn rest(&mut self, m: &Members<'_>, at: &JsonPath) -> Extra {
+    fn rest(&mut self, m: &Members<'_>, at: &JsonPath) -> UnknownMembers {
         self.rest_except(m, at, &[])
     }
 
     /// [`rest`](Self::rest), reporting each member as `UnrecognizedField` at info except the
     /// `silent` ones. Vanilla ignores such members without a word; the information is the crate's own, and
     /// stays an information because vanilla's own tables carry them.
-    fn rest_except(&mut self, m: &Members<'_>, at: &JsonPath, silent: &[&str]) -> Extra {
-        let mut extra = Extra::default();
+    fn rest_except(&mut self, m: &Members<'_>, at: &JsonPath, silent: &[&str]) -> UnknownMembers {
+        let mut extra = UnknownMembers::default();
         for (key, value) in m.rest() {
             if !silent.contains(&key) {
                 self.findings.push(

@@ -2,7 +2,7 @@
 //! type lists, vectors, sound events and the named-value enums the game's schema defines as constants.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::{Extra, UnknownMembers};
 use bedrock_addon_core::json::{ScalarShape, StrictBool, StrictFloat, StrictInt, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
 use bedrock_addon_core::shared::Filter;
@@ -469,7 +469,7 @@ pub enum VecForm {
 fn read_vector<const N: usize>(
     value: &Value,
     names: [&'static str; N],
-) -> Result<([f32; N], VecForm, Extra), ValueError> {
+) -> Result<([f32; N], VecForm, UnknownMembers), ValueError> {
     let number = |value: &Value| {
         let x = value.as_number().ok_or(ValueError::WrongType {
             expected: "a number",
@@ -494,9 +494,9 @@ fn read_vector<const N: usize>(
         for (slot, element) in out.iter_mut().zip(array.iter()) {
             *slot = number(element)?;
         }
-        Ok((out, VecForm::Array, Extra::default()))
+        Ok((out, VecForm::Array, UnknownMembers::default()))
     } else if let Some(object) = value.as_object() {
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (key, element) in object {
             match names.iter().position(|n| *n == key.as_str()) {
                 Some(i) => out[i] = number(element)?,
@@ -530,7 +530,7 @@ fn write_vector<const N: usize>(
     coordinates: [f32; N],
     names: [&'static str; N],
     form: VecForm,
-    extra: &Extra,
+    extra: &UnknownMembers,
 ) -> Result<Value, ValueError> {
     match form {
         VecForm::Array => {
@@ -566,7 +566,7 @@ pub struct Vec3 {
     /// The form read; writing uses it.
     pub form: VecForm,
     /// Members of the object form the vector does not define, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Vec3 {
@@ -577,7 +577,7 @@ impl Vec3 {
             y,
             z,
             form: VecForm::Array,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -622,7 +622,7 @@ pub struct Vec2 {
     /// The form read; writing uses it.
     pub form: VecForm,
     /// Members of the object form the vector does not define, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Vec2 {
@@ -632,7 +632,7 @@ impl Vec2 {
             x,
             y,
             form: VecForm::Array,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

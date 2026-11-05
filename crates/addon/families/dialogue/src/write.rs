@@ -3,7 +3,7 @@
 use facet_value::{VArray, VObject};
 
 use super::{Button, DialogueFile, DialogueScene, DialogueText, StoredCommand};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Indent, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::SemVersion;
 
@@ -99,7 +99,7 @@ fn commands_json(commands: &[StoredCommand]) -> VArray {
 }
 
 /// Adds a level's unknown members after its known ones.
-fn extend(object: &mut VObject, extra: &Extra) {
+fn extend(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         if !object.contains_key(key) {
             object.insert(key, value.clone());

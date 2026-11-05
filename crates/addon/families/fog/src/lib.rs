@@ -18,7 +18,7 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::version::known;
 
@@ -87,7 +87,7 @@ pub struct FogSettings {
     /// `volumetric`: the volumetric fog of the deferred renderer.
     pub volumetric: Option<FogVolumetricCollection>,
     /// The members the schema does not know, as written.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `description` of [`FogSettings`].
@@ -98,7 +98,7 @@ pub struct FogDescription {
     /// game's: no other pack may use it.
     pub identifier: FogId,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `distance`: one setting per medium the camera can be in.
@@ -117,7 +117,7 @@ pub struct FogDistanceCollection {
     /// `powder_snow`.
     pub powder_snow: Option<FogDistanceSetting>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One distance setting. Every member is optional; a member a present setting leaves out is 0
@@ -133,7 +133,7 @@ pub struct FogDistanceSetting {
     /// `fog_color`.
     pub fog_color: Option<FogColor>,
     /// The members the schema does not know (a `transition_fog` outside `water` is one).
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The `water` distance setting: the members of [`FogDistanceSetting`] and `transition_fog`.
@@ -150,7 +150,7 @@ pub struct FogWaterDistanceSetting {
     /// `transition_fog`: how the fog changes while the camera stays under water.
     pub transition_fog: Option<FogTransitionSetting>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `transition_fog` of the water setting: from `init_fog` towards the setting itself over time.
@@ -167,7 +167,7 @@ pub struct FogTransitionSetting {
     /// `max_seconds`: at least 0.
     pub max_seconds: Option<f32>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `volumetric`: the fog of the deferred renderer.
@@ -180,7 +180,7 @@ pub struct FogVolumetricCollection {
     /// `henyey_greenstein_g`: the scattering direction, per medium.
     pub henyey_greenstein_g: Option<FogVolumetricHenyeyGreensteinGCollection>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `volumetric.density`.
@@ -197,7 +197,7 @@ pub struct FogVolumetricDensityCollection {
     /// `lava_resistance`.
     pub lava_resistance: Option<FogVolumetricDensitySetting>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One density setting. Either `uniform` is `true` and neither height is written, or both
@@ -213,7 +213,7 @@ pub struct FogVolumetricDensitySetting {
     /// `max_density_height`: the height below which the fog is at `max_density`, −64 to 320.
     pub max_density_height: Option<Keyframed<f32>>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `volumetric.media_coefficients`.
@@ -226,7 +226,7 @@ pub struct FogVolumetricMediaCoeffsCollection {
     /// `cloud`.
     pub cloud: Option<FogVolumetricMediaCoeffsSetting>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The coefficients of one medium.
@@ -237,7 +237,7 @@ pub struct FogVolumetricMediaCoeffsSetting {
     /// `scattering`: how much of each colour the medium scatters.
     pub scattering: Option<Keyframed<ColorNorm>>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `volumetric.henyey_greenstein_g`.
@@ -248,7 +248,7 @@ pub struct FogVolumetricHenyeyGreensteinGCollection {
     /// `water`.
     pub water: Option<FogVolumetricHenyeyGreensteinGSetting>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The scattering direction of one medium.
@@ -257,7 +257,7 @@ pub struct FogVolumetricHenyeyGreensteinGSetting {
     /// `henyey_greenstein_g`: −1 (backwards) to 1 (forwards).
     pub henyey_greenstein_g: Option<Keyframed<f32>>,
     /// The members the schema does not know.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// What `fog_start` and `fog_end` are measured in (`render_distance_type`).
@@ -645,9 +645,7 @@ pub fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<FogSettings>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let at = if version.parsed_as == LATEST {
         payload_at()
     } else {
@@ -658,13 +656,7 @@ pub fn upgrade_document(
         beta_literal: false,
         prerelease: false,
     };
-    let parsed = Parsed::<FogFamily>::from_value(
-        Some(document.into_value()),
-        version,
-        written,
-        at,
-        diagnostics,
-    );
+    let parsed = Parsed::<FogFamily>::from_value(Some(value), version, written, at, diagnostics);
     let (settings, version, diagnostics) = finish_parsed(parsed, cx);
     // The findings the document carried are located already; the new ones are not.
     let diagnostics = diagnostics.located(&origin);
@@ -708,7 +700,7 @@ impl FogSettings {
             description: FogDescription::new(identifier),
             distance: None,
             volumetric: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -729,7 +721,7 @@ impl FogDescription {
     pub fn new(identifier: FogId) -> Self {
         Self {
             identifier,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -837,7 +829,7 @@ mod reading_table {
                 missing version: rejected: Fixed("Invalid 'format_version' in fog settings JSON")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.16.100..=1.26.20 (0..=3): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.16.100..=1.26.20 (0..=3): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             "#,
         );
     }

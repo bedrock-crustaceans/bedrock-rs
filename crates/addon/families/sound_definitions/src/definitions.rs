@@ -4,7 +4,7 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::SemVersion;
@@ -104,7 +104,7 @@ pub struct SoundDefinition {
     /// `actions`.
     pub actions: Vec<SoundAction>,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl SoundDefinition {
@@ -156,7 +156,7 @@ pub struct SoundEntry {
     /// entry of an older file that does not say. A path string does not say and reads `true`.
     pub allow_concurrent_streaming: bool,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `external_event_parameters`.
@@ -168,7 +168,7 @@ pub struct ExternalEventParameter {
     /// `value`; 0.0 unless it is written with a fraction (an integer such as `1` is 0.0).
     pub value: f32,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `actions` (used by vanilla's own packs only).
@@ -188,7 +188,7 @@ pub struct SoundAction {
     /// `delay`; 0.0 unless it is written with a fraction.
     pub delay: f32,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Reads the root of an upgraded document: the definitions under `sound_definitions`, each a
@@ -424,7 +424,7 @@ fn read_entry(
             stream: false,
             interruptible: false,
             allow_concurrent_streaming: true,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         },
         Stored::Object => SoundEntry {
             form: SoundEntryForm::Object,

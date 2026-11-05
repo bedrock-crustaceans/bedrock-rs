@@ -12,7 +12,7 @@ use super::types::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::texture::jsoncpp::{
@@ -115,8 +115,8 @@ impl Reader<'_> {
     }
 
     /// The members of `object` outside `known`, each reported as unrecognized.
-    fn unknown(&mut self, object: &VObject, known: &[&str]) -> Extra {
-        let mut extra = Extra::default();
+    fn unknown(&mut self, object: &VObject, known: &[&str]) -> UnknownMembers {
+        let mut extra = UnknownMembers::default();
         for (key, value) in object {
             if !known.contains(&key.as_str()) {
                 // The game reads the members it knows and ignores the rest.
@@ -192,7 +192,7 @@ pub(super) fn read_atlas(
             tiles
         }
     };
-    let mut ignored = Extra::default();
+    let mut ignored = UnknownMembers::default();
     for key in IGNORED {
         if let Some(value) = root.get(key) {
             ignored.insert(key.to_owned(), value.clone());

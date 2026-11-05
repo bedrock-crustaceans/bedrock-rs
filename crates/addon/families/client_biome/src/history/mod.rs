@@ -88,10 +88,6 @@ macro_rules! legacy_document {
             pub description: $crate::Description,
             /// The components (JSON `minecraft:client_biome/components`).
             pub components: ::bedrock_addon_core::document::ComponentMap<$set>,
-            /// Unknown members of `minecraft:client_biome`.
-            pub extra: ::bedrock_addon_core::document::Extra,
-            /// Unknown members of the document's root.
-            pub root_extra: ::bedrock_addon_core::document::Extra,
         }
 
         impl ::bedrock_addon_core::versioning::Versioned for ClientBiome {
@@ -112,19 +108,13 @@ macro_rules! legacy_document {
                     format_version: read.format_version,
                     description: read.payload.description,
                     components: read.payload.components,
-                    extra: read.payload.extra,
-                    root_extra: read.root_extra,
                 })
             }
 
             fn write(&self) -> Result<::bedrock_addon_core::json::Value, ::bedrock_addon_core::json::EncodeError> {
                 use $crate::write::{document, object};
-                let payload = object(&self.description, &self.components, &self.extra)?;
-                Ok(document(
-                    &self.format_version,
-                    payload.into(),
-                    &self.root_extra,
-                ))
+                let payload = object(&self.description, &self.components)?;
+                Ok(document(&self.format_version, payload.into()))
             }
         }
     };

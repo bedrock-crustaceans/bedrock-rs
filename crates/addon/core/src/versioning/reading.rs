@@ -97,6 +97,10 @@ pub struct Reading {
     pub beyond_width: BeyondWidth,
     /// What an unknown member or component of the payload is.
     pub unknown: UnknownMask,
+    /// Whether the unknown members of the slice's structs are kept in the document's table
+    /// and written back, where a struct does not say otherwise (`schema::unknown`, or the
+    /// `extra: Extra` mark). `false` in every profile: only a struct that says so keeps them.
+    pub keeps_unknown: bool,
     /// Whether a component that fails to read rejects the document (today's
     /// `LoadContext::strict_components`).
     pub components_fatal: bool,
@@ -115,6 +119,7 @@ impl Reading {
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
         unknown: UnknownMask::Error,
+        keeps_unknown: false,
         components_fatal: true,
         on_member_failure: MemberFailure::Refuse,
     };
@@ -125,6 +130,7 @@ impl Reading {
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
         unknown: UnknownMask::Warn,
+        keeps_unknown: false,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
     };
@@ -135,6 +141,7 @@ impl Reading {
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
         unknown: UnknownMask::Warn,
+        keeps_unknown: false,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
     };
@@ -163,6 +170,16 @@ impl Reading {
     #[must_use]
     pub const fn with_unknown(self, unknown: UnknownMask) -> Self {
         Self { unknown, ..self }
+    }
+
+    /// The reading keeping the unknown members of its structs or not, where a struct does not
+    /// say otherwise.
+    #[must_use]
+    pub const fn with_keeps_unknown(self, keeps_unknown: bool) -> Self {
+        Self {
+            keeps_unknown,
+            ..self
+        }
     }
 
     /// The reading with a failed component fatal or not.

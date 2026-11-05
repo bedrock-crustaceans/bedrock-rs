@@ -23,8 +23,6 @@ pub struct Dimension {
     /// The document's `format_version` (the floor when absent). Not a JSON member; the writer
     /// writes it as `format_version` when it is 1.26.50 or newer.
     pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:dimension`.
-    pub extra: Extra,
     /// The root members beside `format_version` and `minecraft:dimension` (vanilla reads the
     /// whole document as one struct, so they are unknown members, not an envelope error).
     pub root_extra: Extra,

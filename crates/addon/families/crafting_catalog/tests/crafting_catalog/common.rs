@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
-use bedrock_addon_core::document::{Content, Document, Extra, Rejected};
+use bedrock_addon_core::document::{Content, Document, Rejected, UnknownMembers};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -113,7 +113,7 @@ pub fn expected_list(path: &str) -> Vec<(String, String, String)> {
 pub fn item(name: &str) -> CatalogItem {
     CatalogItem {
         name: ItemId::parse(name),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -123,10 +123,10 @@ pub fn named(name: &str, icon: Option<&str>, items: &[&str]) -> Group {
         group_identifier: Some(GroupIdentifier {
             name: name.to_owned(),
             icon: icon.map(item),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }),
         items: items.iter().copied().map(item).collect(),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -135,7 +135,7 @@ pub fn loose(items: &[&str]) -> Group {
     Group {
         group_identifier: None,
         items: items.iter().copied().map(item).collect(),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -144,7 +144,7 @@ pub fn category(category_name: CategoryName, groups: Vec<Group>) -> Category {
     Category {
         category_name,
         groups,
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -152,7 +152,7 @@ pub fn category(category_name: CategoryName, groups: Vec<Group>) -> Category {
 pub fn catalog(categories: Vec<Category>) -> CraftingCatalog {
     CraftingCatalog {
         categories,
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 

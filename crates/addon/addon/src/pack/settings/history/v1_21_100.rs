@@ -5,7 +5,6 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use crate::diagnostic::Diagnostics;
-use crate::document::Extra;
 use crate::json::{EncodeError, JsonSlice, Value};
 use crate::version::FormatVersion;
 use crate::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
@@ -28,8 +27,6 @@ pub struct Settings {
     pub last_used: Option<u64>,
     /// The values by setting name (JSON `values`).
     pub values: IndexMap<String, SettingValue>,
-    /// Unknown members. Always empty after a load: an unknown member rejects the file.
-    pub extra: Extra,
 }
 
 /// One saved value of format 1.21.100: a number, a boolean or a string (no arrays yet).
@@ -78,7 +75,6 @@ impl Settings {
                 .into_iter()
                 .map(|(name, value)| (name, value.upgrade()))
                 .collect(),
-            extra: self.extra,
         }
     }
 
@@ -92,7 +88,6 @@ impl Settings {
                 .into_iter()
                 .filter_map(|(name, value)| Some((name, SettingValue::from_latest(value)?)))
                 .collect(),
-            extra: entry.extra,
         }
     }
 }

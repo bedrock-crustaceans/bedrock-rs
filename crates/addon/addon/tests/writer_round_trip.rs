@@ -224,6 +224,8 @@ pub enum Outcome {
         of_the_upgrade: usize,
         /// What `PackWriter::put` said.
         put: Result<(), String>,
+        /// The unknown members the write left out (`PackWriter::put_reporting`), by path.
+        orphans: Vec<String>,
     },
 }
 
@@ -233,10 +235,19 @@ pub fn carry<T: Content + Debug + PartialEq>(file: &Carry<'_>, writer: &mut Pack
         Err(rejected) => Outcome::Rejected(findings(&rejected.diagnostics)),
         Ok(document) => {
             let put = writer
-                .put(file.path.clone(), document.value())
+                .put_reporting(file.path.clone(), &document)
                 .map_err(|error| format!("{error:?}"));
+            let orphans = put
+                .as_ref()
+                .map(|told| {
+                    told.iter()
+                        .map(|finding| finding.location.json_path.to_string())
+                        .collect()
+                })
+                .unwrap_or_default();
+            let put = put.map(drop);
             Outcome::Loaded {
-                debug: format!("{:?}", document.value()),
+                debug: format!("{:?} {:?}", document.value(), document.unknown()),
                 findings: findings(document.diagnostics()),
                 upgraded: document.version().upgraded,
                 of_the_upgrade: document
@@ -245,15 +256,20 @@ pub fn carry<T: Content + Debug + PartialEq>(file: &Carry<'_>, writer: &mut Pack
                     .filter(|f| f.phase == bedrock_addon::diagnostic::Phase::Upgrade)
                     .count(),
                 put,
-                value: Rc::new(document.into_value()),
+                orphans,
+                value: Rc::new((document.unknown().clone(), document.into_value())),
             }
         }
     }
 }
 
-/// Whether two values `carry::<T>` gave are equal.
+/// Whether two values `carry::<T>` gave are equal, their documents' unknown members too.
 pub fn same<T: PartialEq + 'static>(a: &dyn Any, b: &dyn Any) -> bool {
-    match (a.downcast_ref::<T>(), b.downcast_ref::<T>()) {
+    type Carried<T> = (bedrock_addon::document::Unknown, T);
+    match (
+        a.downcast_ref::<Carried<T>>(),
+        b.downcast_ref::<Carried<T>>(),
+    ) {
         (Some(a), Some(b)) => a == b,
         _ => false,
     }
@@ -1101,6 +1117,7 @@ fn judge(
             findings,
             upgraded,
             put,
+            orphans,
             ..
         } = outcome
         else {
@@ -1120,6 +1137,12 @@ fn judge(
         let counted = tally.carried.entry(*kind).or_default();
         counted.0 += 1;
         counted.1 += usize::from(*upgraded);
+        for orphan in orphans {
+            // A document written as it was read writes every unknown member it kept.
+            faults.push(format!(
+                "{name}/{at}: an unknown member is not written: {orphan}"
+            ));
+        }
         if let Err(error) = put {
             faults.push(format!("{name}/{at}: {kind} is not written: {error}"));
             continue;
@@ -1806,7 +1829,7 @@ fn read_only_a_persona_piece_document_is_written_by_put_and_reads_back() {
         uuid::Uuid::from_u128(5),
         uuid::Uuid::from_u128(6),
     ));
-    writer.put(at.clone(), read.value()).unwrap();
+    writer.put(at.clone(), &read).unwrap();
     let written: Vec<u8> = writer
         .files()
         .find(|(file, _)| **file == at)
@@ -1814,6 +1837,7 @@ fn read_only_a_persona_piece_document_is_written_by_put_and_reads_back() {
         .unwrap();
     let again = PieceStoreInfo::parse(&at, &written, &cx).unwrap();
     assert_eq!(again.value(), read.value());
+    assert_eq!(again.unknown(), read.unknown());
     assert_eq!(tokens(text.as_bytes()), tokens(&written));
 }
 

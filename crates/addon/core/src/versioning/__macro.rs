@@ -100,9 +100,29 @@ pub fn document_json<F: Family>(
     version: FormatVersion,
     payload: &Value,
 ) -> Result<String, EncodeError> {
-    crate::json::to_json(&super::write_envelope::<F>(
+    crate::json::to_json(&document_value::<F>(version, payload.clone()))
+}
+
+/// [`document_json`] with a document's unknown members, for `Document<Any>::write_json`.
+///
+/// # Errors
+///
+/// `EncodeError` when the document has no JSON form.
+pub fn write_document_with<F: Family>(
+    version: FormatVersion,
+    payload: Value,
+    unknown: &crate::document::Unknown,
+    out: &mut Vec<u8>,
+    style: crate::json::WriteStyle,
+) -> Result<Vec<crate::diagnostic::Diagnostic>, EncodeError> {
+    crate::json::write_json_with(&document_value::<F>(version, payload), unknown, out, style)
+}
+
+/// The whole document in the struct's own version ([`document_json`]), as a `Value`.
+fn document_value<F: Family>(version: FormatVersion, payload: Value) -> Value {
+    super::write_envelope::<F>(
         version,
-        payload.clone(),
-        &crate::document::Extra::default(),
-    ))
+        payload,
+        &crate::document::UnknownMembers::default(),
+    )
 }

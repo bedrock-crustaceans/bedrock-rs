@@ -2,7 +2,6 @@
 //! Findings are matched by code and severity, and by vanilla's text where the row gives it.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::animation::{EventString, LerpMode, LoopMode, OneOrMany};
 use bedrock_addon::families::animation_controller::{AnimationControllerFile, StateAnimation};
 use bedrock_addon::id::AnimationRef;

@@ -21,7 +21,7 @@ pub mod texts;
 mod write;
 
 use crate::read::parse_table;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{
     Content, Document, Files, FiniteText, JsonContent, Origin, Rejected,
@@ -43,7 +43,7 @@ pub struct LootTable {
     /// values read as the pools, as vanilla iterates it.
     pub pools: Option<Vec<Pool>>,
     /// Root members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One pool of a table: how often it rolls and what it picks from.
@@ -65,7 +65,7 @@ pub struct Pool {
     /// pool is kept with no entries.
     pub entries: Option<Vec<Entry>>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A pool's tier selection.
@@ -80,7 +80,7 @@ pub struct Tiers {
     /// JSON `bonus_chance` (default 0.0, [`bonus_chance`](Self::bonus_chance)).
     pub bonus_chance: Option<f32>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of a pool.
@@ -103,7 +103,7 @@ pub struct Entry {
     pub pools: Option<Vec<Pool>>,
     /// Members vanilla does not read (vanilla's own `aux_val`, `auxVal`, `count`), kept for
     /// write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// What an entry gives: the JSON `type` and its members.
@@ -231,7 +231,7 @@ impl Entry {
             quality: None,
             conditions: None,
             pools: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -298,7 +298,7 @@ impl LootFunction {
             namespace: None,
             kind,
             conditions: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -440,7 +440,7 @@ impl SpecificEnchant {
         Self {
             id: id.into(),
             level: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -455,7 +455,7 @@ impl LootCondition {
     pub fn new(kind: ConditionKind) -> Self {
         Self {
             kind,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

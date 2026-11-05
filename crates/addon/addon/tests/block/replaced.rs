@@ -3,8 +3,6 @@
 //! beside the member a step writes it to, a permutation that goes whole, and the findings of
 //! the typed read of a member a step moved.
 
-use bedrock_addon::document::Content;
-
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::load::LoadContext;
 
@@ -36,7 +34,7 @@ fn told_in(version: &str, payload: &str, cx: &LoadContext) -> (Vec<String>, Stri
     // of ours in their legacy shapes, at a legacy version).
     let mut written = Vec::new();
     bedrock_addon::json::write_json(
-        &super::common::newest_shape(block.value()),
+        &super::common::newest_shape(&block),
         &mut written,
         bedrock_addon::json::WriteStyle::default(),
     )

@@ -11,7 +11,7 @@ use super::{
     FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed, same_zero,
 };
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, Span};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_support::schema_walk::{Kind, Node, Walk};
@@ -50,7 +50,7 @@ fn violation(walk: &mut Walk, node: Node<'_>) {
 fn object<'a>(
     walk: &mut Walk,
     node: Node<'a>,
-    extra: &mut Extra,
+    extra: &mut UnknownMembers,
     mut on: impl FnMut(&mut Walk, &str, Node<'a>) -> Option<bool>,
 ) -> bool {
     let Some(members) = walk.members(node) else {
@@ -292,7 +292,7 @@ fn settings(walk: &mut Walk, node: Node<'_>) -> Option<FogSettings> {
     let mut description = None;
     let mut distance = None;
     let mut volumetric = None;
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "description" => put(&mut description, self::description(walk, v)),
         "distance" => put(&mut distance, self::distance(walk, v)),
@@ -315,7 +315,7 @@ fn settings(walk: &mut Walk, node: Node<'_>) -> Option<FogSettings> {
 
 fn description(walk: &mut Walk, node: Node<'_>) -> Option<FogDescription> {
     let mut identifier = None;
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         // `SharedTypes::Identifier<9>`: any string, stored as written.
         "identifier" => put(&mut identifier, text(walk, v)),
@@ -365,7 +365,7 @@ fn distance_type(walk: &mut Walk, node: Node<'_>) -> Option<DistanceType> {
 
 fn distance_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogDistanceSetting> {
     let mut setting = FogDistanceSetting::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| {
         base_member(walk, key, v, &mut setting)
     });
@@ -376,7 +376,7 @@ fn distance_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogDistanceSettin
 fn water_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogWaterDistanceSetting> {
     let mut base = FogDistanceSetting::default();
     let mut transition_fog = None;
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "transition_fog" => put(&mut transition_fog, transition(walk, v)),
         _ => base_member(walk, key, v, &mut base),
@@ -393,7 +393,7 @@ fn water_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogWaterDistanceSett
 
 fn transition(walk: &mut Walk, node: Node<'_>) -> Option<FogTransitionSetting> {
     let mut t = FogTransitionSetting::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "init_fog" => put(&mut t.init_fog, distance_setting(walk, v)),
         "min_percent" => put(&mut t.min_percent, ranged(walk, v, 0.0, 1.0)),
@@ -408,7 +408,7 @@ fn transition(walk: &mut Walk, node: Node<'_>) -> Option<FogTransitionSetting> {
 
 fn distance(walk: &mut Walk, node: Node<'_>) -> Option<FogDistanceCollection> {
     let mut c = FogDistanceCollection::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "air" => put(&mut c.air, distance_setting(walk, v)),
         "weather" => put(&mut c.weather, distance_setting(walk, v)),
@@ -429,7 +429,7 @@ fn height(walk: &mut Walk, v: Node<'_>) -> Option<Keyframed<f32>> {
 
 fn density_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricDensitySetting> {
     let mut s = FogVolumetricDensitySetting::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "max_density" => put(
             &mut s.max_density,
@@ -446,7 +446,7 @@ fn density_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricDensi
 
 fn density(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricDensityCollection> {
     let mut c = FogVolumetricDensityCollection::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "air" => put(&mut c.air, density_setting(walk, v)),
         "weather" => put(&mut c.weather, density_setting(walk, v)),
@@ -461,7 +461,7 @@ fn density(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricDensityCollec
 
 fn coefficients(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricMediaCoeffsSetting> {
     let mut s = FogVolumetricMediaCoeffsSetting::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "absorption" => put(&mut s.absorption, keyframed_color(walk, v)),
         "scattering" => put(&mut s.scattering, keyframed_color(walk, v)),
@@ -478,7 +478,7 @@ fn keyframed_color(walk: &mut Walk, node: Node<'_>) -> Option<Keyframed<ColorNor
 
 fn media(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricMediaCoeffsCollection> {
     let mut c = FogVolumetricMediaCoeffsCollection::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "air" => put(&mut c.air, coefficients(walk, v)),
         "water" => put(&mut c.water, coefficients(walk, v)),
@@ -491,7 +491,7 @@ fn media(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricMediaCoeffsColl
 
 fn hg_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricHenyeyGreensteinGSetting> {
     let mut s = FogVolumetricHenyeyGreensteinGSetting::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "henyey_greenstein_g" => put(
             &mut s.henyey_greenstein_g,
@@ -505,7 +505,7 @@ fn hg_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricHenyeyGree
 
 fn hg(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricHenyeyGreensteinGCollection> {
     let mut c = FogVolumetricHenyeyGreensteinGCollection::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "air" => put(&mut c.air, hg_setting(walk, v)),
         "water" => put(&mut c.water, hg_setting(walk, v)),
@@ -517,7 +517,7 @@ fn hg(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricHenyeyGreensteinGC
 
 fn volumetric(walk: &mut Walk, node: Node<'_>) -> Option<FogVolumetricCollection> {
     let mut c = FogVolumetricCollection::default();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let ok = object(walk, node, &mut extra, |walk, key, v| match key {
         "density" => put(&mut c.density, density(walk, v)),
         "media_coefficients" => put(&mut c.media_coefficients, media(walk, v)),

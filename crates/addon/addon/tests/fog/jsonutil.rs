@@ -2,7 +2,6 @@
 //! document below 1.26.20.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::fog::DistanceType;
 
 use super::common::{count, expect, expect_at, lines, loaded, rejected};

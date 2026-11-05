@@ -89,7 +89,12 @@ fn e29c_charge_speed_multiplier_is_live_below_1_26_0() {
     assert!(d.is_empty(), "{d:?}");
     let g = g.expect("kept");
     assert_eq!(g.charge_speed(), 0.5);
-    assert!(g.extra.is_empty());
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none()
+    );
     let (g, d) = at_version::<goal::AquaticChargeAttack>(KEY, &old, (1, 26, 0));
     assert_finding(
         &d,

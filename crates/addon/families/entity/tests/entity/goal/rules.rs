@@ -587,7 +587,8 @@ fn entity_types_take_one_descriptor_or_a_list() {
     );
     let types = g.expect("kept").entity_types.expect("entity_types");
     assert_eq!(types.as_slice().len(), 2);
-    assert!(types.as_slice()[1].extra.get("zzz").is_some());
+    let second = bedrock_addon_core::diagnostic::JsonPath::of_keys(["entity_types"]).index(1);
+    assert!(d.unknown().get(&second, "zzz").is_some());
 }
 
 /// Unknown members are kept and written back (the value round trip of ).

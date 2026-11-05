@@ -77,7 +77,7 @@ pub struct ParticleEffect {
     /// Events by name (JSON `events`).
     pub events: Option<IndexMap<String, EventNode>>,
     /// Unknown members of `particle_effect`.
-    pub extra: bedrock_addon_core::document::Extra,
+    pub extra: bedrock_addon_core::document::UnknownMembers,
 }
 
 impl ParticleEffect {
@@ -93,14 +93,14 @@ impl ParticleEffect {
                 basic_render_parameters: BasicRenderParameters {
                     material: material.into(),
                     texture: texture.into(),
-                    extra: bedrock_addon_core::document::Extra::default(),
+                    extra: bedrock_addon_core::document::UnknownMembers::default(),
                 },
-                extra: bedrock_addon_core::document::Extra::default(),
+                extra: bedrock_addon_core::document::UnknownMembers::default(),
             },
             components: ComponentMap::new(),
             curves: None,
             events: None,
-            extra: bedrock_addon_core::document::Extra::default(),
+            extra: bedrock_addon_core::document::UnknownMembers::default(),
         }
     }
 }
@@ -272,10 +272,7 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<ParticleEffect>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let identifier = match &value {
         Any::V1_10_0(effect) => &effect.description.identifier,
         Any::V1_20_80(effect) => &effect.description.identifier,
@@ -485,8 +482,8 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.10.0..=1.10.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
-                1.20.80..=1.20.80 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.10.0..=1.10.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+                1.20.80..=1.20.80 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

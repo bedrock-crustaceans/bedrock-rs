@@ -35,7 +35,7 @@ fn told<T: Content>(at: &str, cx: &LoadContext, text: &str) -> (Vec<String>, Str
             )
         })
         .collect();
-    let written = document.value().to_json().expect("written");
+    let written = document.to_json().expect("written");
     // The written text loads.
     T::parse(&PackPath::new(at).unwrap(), written.as_bytes(), cx)
         .unwrap_or_else(|rejected| panic!("the written text: {:?}", rejected.diagnostics));
@@ -355,7 +355,7 @@ fn prt4_a_boolean_at_a_molang_member_is_noted_at_the_member() {
         as_read.diagnostics()
     );
     // The 1.10.0 text spells the boolean, and reads back as the document it was.
-    let written = as_read.value().to_json().expect("written as it was read");
+    let written = as_read.to_json().expect("written as it was read");
     assert!(written.contains(r#""num_particles": true"#), "{written}");
     let again = bedrock_addon::families::particle::ParticleEffect::parse_as_written(
         &PackPath::new("particles/demo.particle.json").unwrap(),
@@ -364,7 +364,7 @@ fn prt4_a_boolean_at_a_molang_member_is_noted_at_the_member() {
     )
     .expect("the written text loads");
     assert_eq!(again.value(), as_read.value(), "{written}");
-    assert_eq!(again.value().to_json().expect("written again"), written);
+    assert_eq!(again.to_json().expect("written again"), written);
 }
 
 /// PRT10: an element of a legacy `sequence` that is no object is left out, told at the

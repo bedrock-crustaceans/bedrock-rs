@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
+use bedrock_addon::document::{Document, Rejected};
 use bedrock_addon::families::geometry::{Geometry, GeometryFile, load_file};
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;

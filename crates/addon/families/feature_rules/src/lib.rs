@@ -105,16 +105,15 @@ impl JsonDocument for FeatureRule {
                 let origin = document.origin().clone();
                 let version = document.version().clone();
                 let mut diagnostics = document.diagnostics().clone();
+                let unknown = document.unknown().clone();
                 let mut found = Diagnostics::default();
                 identifier_checks(document.value(), &origin.path, &mut found);
                 found.locate(&origin);
                 diagnostics.extend(found);
-                DocumentRead::Stable(Document::new(
-                    document.into_value(),
-                    origin,
-                    version,
-                    diagnostics,
-                ))
+                DocumentRead::Stable(
+                    Document::new(document.into_value(), origin, version, diagnostics)
+                        .with_unknown_members(unknown),
+                )
             }
             read => read,
         }
@@ -297,7 +296,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.12.0..=1.12.0 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.12.0..=1.12.0 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
             ",
         );
     }

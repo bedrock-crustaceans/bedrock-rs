@@ -468,11 +468,22 @@ fn base_game_members_are_unknown_elsewhere() {
     else {
         panic!()
     };
-    assert!(instance.dithering.is_none() && instance.extra.get("dithering").is_some());
+    let components_at =
+        bedrock_addon::diagnostic::JsonPath::of_keys(["minecraft:block", "components"]);
+    let instance_at = components_at
+        .child("minecraft:material_instances")
+        .child("*");
+    assert!(
+        instance.dithering.is_none() && loaded.unknown().get(&instance_at, "dithering").is_some()
+    );
     let rule = loaded.components.get::<ConnectionRule>().unwrap();
+    let rule_at = components_at.child("minecraft:connection_rule");
     assert!(
         rule.vanilla_connections_from.is_none()
-            && rule.extra.get("vanilla_connections_from").is_some()
+            && loaded
+                .unknown()
+                .get(&rule_at, "vanilla_connections_from")
+                .is_some()
     );
     assert!(at(
         loaded.diagnostics(),
@@ -777,11 +788,12 @@ fn internal_vanilla_data_is_an_unknown_member_outside_the_base_game() {
     );
     let loaded = loads(&text, &context());
     assert!(loaded.description.internal_vanilla_data.is_none());
+    let description =
+        bedrock_addon::diagnostic::JsonPath::of_keys(["minecraft:block", "description"]);
     assert!(
         loaded
-            .description
-            .extra
-            .get("internal_vanilla_data")
+            .unknown()
+            .get(&description, "internal_vanilla_data")
             .is_some()
     );
     // The legacy description loader reads by name and says nothing of it: an
@@ -972,7 +984,6 @@ fn shared_descriptors_report_their_own_findings() {
 // `blocks/red_concrete_double_slab.block.json`, copied unchanged.
 #[test]
 fn a_vanilla_1_26_50_block_with_instrument_sound_rewrites_byte_stable() {
-    use bedrock_addon::document::Content;
     use bedrock_addon::json::Value;
 
     let input = super::common::fixture("vanilla/red_concrete_double_slab.block.json");
@@ -987,10 +998,10 @@ fn a_vanilla_1_26_50_block_with_instrument_sound_rewrites_byte_stable() {
     let first = loads(&input, &cx);
     assert!(first.diagnostics().is_empty(), "{:#?}", first.diagnostics());
     assert!(first.components.get::<InstrumentSound>().is_some());
-    let written = first.value().to_json().unwrap();
+    let written = first.to_json().unwrap();
     let second = loads(&written, &cx);
     assert_eq!(second.value(), first.value());
-    let rewritten = second.value().to_json().unwrap();
+    let rewritten = second.to_json().unwrap();
     assert_eq!(rewritten, written, "write, parse, write is byte-stable");
     let read = |text: &str| facet_json::from_str::<Value>(text).unwrap();
     assert_eq!(
@@ -1069,7 +1080,6 @@ fn told_and_written(
     components: &str,
 ) -> (Vec<(String, String)>, Result<String, String>) {
     use bedrock_addon::diagnostic::Phase;
-    use bedrock_addon::document::Content;
     let text = document(
         version,
         &format!(
@@ -1095,7 +1105,6 @@ fn told_and_written(
 fn a_legacy_block_the_newest_format_refuses_with_legacy_components_is_written_in_its_legacy_shape()
 {
     use bedrock_addon::diagnostic::Phase;
-    use bedrock_addon::document::Content;
     for (components, at) in [
         (
             r#""minecraft:destructible_by_explosion": {"explosion_resistance": -1}"#,
@@ -1147,7 +1156,6 @@ fn a_legacy_block_the_newest_format_refuses_with_legacy_components_is_written_in
 #[test]
 fn a_legacy_block_the_newest_format_refuses_is_written_at_its_own_format_version_and_reads_back() {
     use bedrock_addon::diagnostic::Phase;
-    use bedrock_addon::document::Content;
     for (version, components, at) in [
         (
             "1.21.60",
@@ -1202,7 +1210,6 @@ fn a_legacy_block_the_newest_format_refuses_is_written_at_its_own_format_version
 /// The bounds themselves, and a block the rules have nothing against, are written.
 #[test]
 fn a_legacy_block_within_the_rules_of_the_newest_format_is_written_and_reads_back() {
-    use bedrock_addon::document::Content;
     for components in [
         r#""minecraft:friction": 0"#,
         r#""minecraft:friction": 0.9"#,
@@ -1488,7 +1495,6 @@ fn a_finding_behind_permutations_a_step_and_a_rule_skip_is_at_the_index_of_the_f
 #[cfg(feature = "molang")]
 #[test]
 fn the_writer_refuses_a_member_behind_a_skipped_permutation_at_the_index_of_the_file() {
-    use bedrock_addon::document::Content;
     let text = document(
         "1.19.60",
         r#"{"description": {"identifier": "demo:x"}, "components": {}, "permutations": [

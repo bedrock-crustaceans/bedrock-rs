@@ -1,6 +1,6 @@
 //! The family's types and their constructors.
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
@@ -37,8 +37,6 @@ pub struct Item {
     pub events: Option<Value>,
     /// What vanilla's legacy reader takes from the same document; not written.
     pub legacy: LegacyItemData,
-    /// Unknown members of the item object.
-    pub extra: Extra,
 }
 
 /// An item's `description`.
@@ -53,8 +51,6 @@ pub struct ItemDescription {
     /// How much of `menu_category` the document wrote itself: what tells a `none` the author
     /// wrote from the `none` an absent member means, and what the writer leaves out again.
     pub menu_category_presence: MenuCategoryPresence,
-    /// Unknown members.
-    pub extra: Extra,
 }
 
 /// How much of `description.menu_category` an item document wrote.
@@ -116,8 +112,6 @@ pub struct Beta {
     pub events: Option<Value>,
     /// What vanilla's legacy reader takes from the same document; not written.
     pub legacy: LegacyItemData,
-    /// Unknown members of the item object.
-    pub extra: Extra,
 }
 
 impl Item {
@@ -157,13 +151,11 @@ impl Item {
                     ..MenuCategory::default()
                 },
                 menu_category_presence: super::MenuCategoryPresence::Absent,
-                extra: Extra::default(),
             },
             components: ComponentMap::new(),
             deprecated: ItemDeprecatedData::default(),
             events: None,
             legacy: LegacyItemData::default(),
-            extra: Extra::default(),
         }
     }
 

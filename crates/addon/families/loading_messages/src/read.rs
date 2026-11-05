@@ -6,7 +6,7 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
     Authored, Object, array, invalid, invalid_text, iterated, others, raw_member, to_text,
@@ -120,7 +120,7 @@ fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -
         // An unknown condition is false; the message is never shown.
         diagnostics.push(Diagnostic::info(invalid()).at(at.child("condition")));
     }
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     if let Some(object) = element.as_object() {
         for (name, member) in object {
             if !ELEMENT_KEYS.contains(&name.as_str()) {

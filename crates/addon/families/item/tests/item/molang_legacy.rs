@@ -19,7 +19,6 @@ fn with_events(events: &str, components: &str) -> String {
 #[test]
 fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
     use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-    use bedrock_addon_core::document::Content;
     use bedrock_addon_core::json::Value;
 
     // The document with `@` where the number stands, the members down to the number from the
@@ -86,7 +85,7 @@ fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
             // `events` and the side-car are no members of the 1.26.50 format: the
             // newest writer writes the item at 1.26.0. The number is written as
             // authored, and reads back so.
-            let written = written_at_1_26_0(&document.value().to_json());
+            let written = written_at_1_26_0(&document.to_json());
             let read = |text: &str| {
                 let root: Value = facet_json::from_str(text).unwrap();
                 let mut value = root
@@ -311,8 +310,6 @@ fn legacy_expressions_are_counted_without_the_molang_feature() {
 mod compiled {
     use std::sync::Arc;
 
-    use bedrock_addon_core::document::Content as _;
-
     use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::molang::MolangCheck;
@@ -360,10 +357,7 @@ mod compiled {
         );
         // the value is kept as written (`events` is no member of the newest format, whose
         // writer refuses it; the as-written writer keeps it)
-        assert!(refused_at(
-            &document.value().to_json(),
-            "minecraft:item/events"
-        ));
+        assert!(refused_at(&document.to_json(), "minecraft:item/events"));
         let written = written_as_read(&json, &checking());
         assert!(written.contains("'a' + 1"), "{written}");
         let valid = with_events(r#""demo:e": {"condition": "query.is_sneaking"}"#, "");

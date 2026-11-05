@@ -40,7 +40,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{
-    Content, Document, Extra, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
+    Content, Document, Merged, Origin, Placed, RawLayer, Rejected, UnknownMembers, unversioned,
 };
 use bedrock_addon_core::id::MaterialId;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
@@ -616,7 +616,7 @@ fn merge_file(path: &PackPath, sources: &[&FileCopy], before: Diagnostics) -> Me
     }
     diagnostics.extend(writers.place_all(found));
     if top.is_none() {
-        read.file.extra = Extra::default();
+        read.file.extra = UnknownMembers::default();
     }
     MergedFile {
         merged: Merged::new(read.file, origins, layers, diagnostics),

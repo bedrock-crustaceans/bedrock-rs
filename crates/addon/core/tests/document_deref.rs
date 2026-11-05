@@ -1,6 +1,8 @@
 //! The `Deref` name-collision rule: `Document<T>` dereferences to `T`, so a
 //! method of `Document` hides one of `T` with the same name. No root type may name a field or a
-//! method `value`, `into_value`, `origin`, `version`, `diagnostics` or `map`.
+//! method `value`, `into_value`, `origin`, `version`, `diagnostics`, `map`, `unknown`,
+//! `unknown_mut`, `write_json`, `to_json` or `write_json_reporting` (the document's writers,
+//! which write its unknown members, stand before the `Content` methods of those names).
 //!
 //! A source-text scan over `crates/addon/addon/src/**` for those names inside the root types of
 //! `tests/document/root_types.txt` (their `struct` bodies and every `impl` block whose self type
@@ -16,13 +18,18 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// `Document<T>`'s own methods.
-const DOCUMENT_METHODS: [&str; 6] = [
+const DOCUMENT_METHODS: [&str; 11] = [
     "value",
     "into_value",
     "origin",
     "version",
     "diagnostics",
     "map",
+    "unknown",
+    "unknown_mut",
+    "write_json",
+    "to_json",
+    "write_json_reporting",
 ];
 
 fn manifest_dir() -> PathBuf {

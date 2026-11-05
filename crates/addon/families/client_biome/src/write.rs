@@ -8,7 +8,7 @@ use super::history::ClientBiomeFamily;
 use super::read::{ComponentEra, MODERN, PAYLOAD_KEY, beta_payload, payload, strict};
 use super::{Beta, ClientBiome, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra};
+use bedrock_addon_core::document::{ComponentMap, ComponentRef, UnknownMembers};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -33,32 +33,27 @@ fn components<C: ComponentEra>(map: &ComponentMap<C>) -> Result<Value, EncodeErr
     Ok(object.into())
 }
 
-/// The payload object: `description`, `components`, then the unknown members.
+/// The payload object: `description` and `components`; the writer adds the document's unknown
+/// members after them.
 pub(crate) fn object<C: ComponentEra>(
     description: &Description,
     map: &ComponentMap<C>,
-    extra: &Extra,
 ) -> Result<VObject, EncodeError> {
     let mut object = VObject::new();
     object.insert("description", write_payload(description)?);
     object.insert("components", components(map)?);
-    for (key, value) in extra.iter() {
-        object.insert(key, value.clone());
-    }
     Ok(object)
 }
 
-/// The whole document: `format_version`, the payload, then the root's unknown members. The
+/// The whole document: `format_version` and the payload (the writer adds the root's unknown
+/// members from the document's table). The
 /// legacy structs' text is the whole document (the raw-text path, below 1.21.130) with the
 /// version as written, so they write their envelope here; the newest and the beta struct go
 /// through core's `write_envelope`.
-pub(crate) fn document(version: &str, payload: Value, root_extra: &Extra) -> Value {
+pub(crate) fn document(version: &str, payload: Value) -> Value {
     let mut root = VObject::new();
     root.insert("format_version", Value::from(version));
     root.insert(PAYLOAD_KEY, payload);
-    for (key, value) in root_extra.iter() {
-        root.insert(key, value.clone());
-    }
     root.into()
 }
 
@@ -74,12 +69,11 @@ impl VersionStruct for ClientBiome {
         Some(Self {
             description: payload.description,
             components: payload.components,
-            extra: payload.extra,
         })
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        Ok(object(&self.description, &self.components, &self.extra)?.into())
+        Ok(object(&self.description, &self.components)?.into())
     }
 }
 
@@ -94,22 +88,18 @@ impl VersionStruct for Beta {
             description: payload.description,
             components: payload.components,
             environment_attributes,
-            extra: payload.extra,
         })
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
         // `environment_attributes` follows `components`, before the unknown members.
         let mut written = VObject::new();
-        let object = object(&self.description, &self.components, &Extra::default())?;
+        let object = object(&self.description, &self.components)?;
         for (key, value) in &object {
             written.insert(key.as_str(), value.clone());
         }
         if let Some(attributes) = &self.environment_attributes {
             written.insert("environment_attributes", write_payload(attributes)?);
-        }
-        for (key, value) in self.extra.iter() {
-            written.insert(key, value.clone());
         }
         Ok(written.into())
     }
@@ -125,7 +115,7 @@ impl ClientBiome {
         let root = write_envelope::<ClientBiomeFamily>(
             Self::VERSION,
             VersionStruct::write(self)?,
-            &Extra::default(),
+            &UnknownMembers::default(),
         );
         write_json(&root, out, style)
     }
@@ -141,7 +131,7 @@ impl Beta {
         let root = write_envelope::<ClientBiomeFamily>(
             BETA_VERSION,
             VersionStruct::write(self)?,
-            &Extra::default(),
+            &UnknownMembers::default(),
         );
         write_json(&root, out, style)
     }

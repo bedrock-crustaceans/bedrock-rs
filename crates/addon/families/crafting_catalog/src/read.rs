@@ -11,7 +11,7 @@ use super::{CatalogItem, Category, CategoryName, CraftingCatalog, Group, GroupId
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{JsonSlice, parse_at};
 use bedrock_addon_core::versioning::ParseCx;
@@ -201,8 +201,8 @@ impl Reader<'_> {
     /// warning, never kept: the game's reader skips the member it does not
     /// bind and stores nothing of it. The slice decides whether the warning stays one (below
     /// 1.26.50 the game logs it at the content log's warning level and goes on) or becomes an
-    /// error (from 1.26.50 on). The returned `Extra` is empty.
-    fn unknown(&mut self, members: &Members<'_>, known: &[&str], at: &JsonPath) -> Extra {
+    /// error (from 1.26.50 on). The returned `UnknownMembers` is empty.
+    fn unknown(&mut self, members: &Members<'_>, known: &[&str], at: &JsonPath) -> UnknownMembers {
         for (key, slice) in members {
             if known.contains(&key.as_str()) {
                 continue;
@@ -213,7 +213,7 @@ impl Reader<'_> {
                     .span(span(*slice)),
             );
         }
-        Extra::default()
+        UnknownMembers::default()
     }
 
     /// The required member `key` of `members`, or the finding of its
@@ -334,7 +334,7 @@ impl Reader<'_> {
     /// An item: the bare string, or `{ "name": "..." }`.
     // The game reads the bare string as if it were the object's `name` member.
     fn item(&mut self, slice: JsonSlice<'_>, at: &JsonPath) -> Option<CatalogItem> {
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         let name = if Token::of(slice.text) == Token::Object {
             let members = self.object(slice, at)?;
             extra = self.unknown(&members, &["name"], at);

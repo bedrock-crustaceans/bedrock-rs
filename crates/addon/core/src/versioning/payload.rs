@@ -1,5 +1,5 @@
 //! Parsing and writing one version struct the plain way: typed from its slice of the text,
-//! unknown members kept in its `extra`; and the findings' paths placed below the payload.
+//! unknown members kept in the document's table; and the findings' paths placed below the payload.
 
 use facet::Facet;
 
@@ -10,14 +10,19 @@ use crate::diagnostic::{
 };
 use crate::json::{
     EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, SliceError, Unrepresentable,
-    Value, keep_unknown_members, parse_with_rules, reject_nulls,
+    Value, parse_with_rules, reject_nulls,
 };
+use crate::load::LoadContext;
+use crate::schema::UnknownRule;
 
 /// Parses a version struct from `payload` (typed, straight from the text, never from a
-/// `Value`) and keeps its unknown members in the `extra` fields of the structs they belong to,
-/// each reported as an `UnrecognizedField` warning. Its scalars are read by the slice's scalar
-/// rules (`LoadContext::scalar_rules`, the scalar pre-pass). A failed typed parse is one error
-/// (its code chosen by facet's error kind) at the failing member, and `None`.
+/// `Value`) and keeps the unknown members of its structs that keep them in `d`'s table
+/// (below `cx.at`; which keep is `json::unknown`'s rule, under the slice's
+/// `Reading::keeps_unknown`), each told by its disposition: kept or reported, an
+/// `UnrecognizedField` warning; `schema::unknown = "reject"` a `DroppedField` and `"ignore"` an
+/// `IgnoredMember`, both at `LoadContext::unknown_severity`. Its scalars are read by the
+/// slice's scalar rules (`LoadContext::scalar_rules`, the scalar pre-pass). A failed typed parse
+/// is one error (its code chosen by facet's error kind) at the failing member, and `None`.
 pub fn parse_payload<'a, T: Facet<'a>>(
     payload: JsonSlice<'a>,
     cx: &ParseCx<'_>,
@@ -25,7 +30,7 @@ pub fn parse_payload<'a, T: Facet<'a>>(
 ) -> Option<T> {
     let rule = cx.load.null_rule;
     let ScalarRead {
-        mut value,
+        value,
         told,
         json,
         absent,
@@ -44,22 +49,53 @@ pub fn parse_payload<'a, T: Facet<'a>>(
         // Each member read as absent (rule N1; the pre-pass left it out of `json`) is marked:
         // the write-back writes its default.
         crate::json::tell_null_members(&absent, &cx.at, d);
-        for (path, _) in keep_unknown_members(&mut value, &json) {
-            // The game logs an unknown member at content-log level 2, a warning; a `Strict`
-            // slice makes it an error after the parse.
-            d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Warning,
-                Phase::Parse,
-                Location::new(None, None, join(&cx.at, &path), None),
-            ));
-        }
+        let mut kept = crate::document::Unknown::new();
+        let unknown =
+            crate::json::door_unknown_members(&value, &json, cx.load.keeps_unknown, &mut kept);
+        d.unknown_mut().absorb(&cx.at, kept);
+        tell_unknown(unknown, &cx.at, cx.load, d);
         // A scalar its member read as another value is told where it is.
         for told in told {
             d.push(told.finding(&cx.at));
         }
     }
     Some(value)
+}
+
+/// Tells each unknown member the door found, at `base` followed by its path, by its
+/// disposition: kept, or not kept by a struct that says nothing or `report`, an
+/// `UnrecognizedField` warning (the game logs an unknown member at content-log level 2; a
+/// `Strict` slice makes it an error after the parse); rejected (`schema::unknown = "reject"`) a
+/// `DroppedField`, ignored (`"ignore"`) an `IgnoredMember`, both at the slice's
+/// `LoadContext::unknown_severity`.
+pub(super) fn tell_unknown(
+    unknown: Vec<(JsonPath, UnknownRule)>,
+    base: &JsonPath,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) {
+    for (path, rule) in unknown {
+        let (code, severity) = match rule {
+            UnknownRule::Reject => (
+                DiagnosticCode::DroppedField { text: None },
+                cx.unknown_severity,
+            ),
+            UnknownRule::Ignore => (
+                DiagnosticCode::IgnoredMember { text: None },
+                cx.unknown_severity,
+            ),
+            UnknownRule::Keep | UnknownRule::Report => (
+                DiagnosticCode::UnrecognizedField { text: None },
+                Severity::Warning,
+            ),
+        };
+        d.push(Diagnostic::new(
+            code,
+            severity,
+            Phase::Parse,
+            Location::new(None, None, join(base, &path), None),
+        ));
+    }
 }
 
 /// The finding of a read that failed, at `base` followed by the failing member: an error of

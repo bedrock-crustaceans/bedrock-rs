@@ -34,8 +34,6 @@ pub struct Item {
     pub components: LegacyFormatItem,
     /// JSON `events`, as written.
     pub events: Option<Value>,
-    /// Unknown members of the item object, ignored by vanilla.
-    pub extra: Extra,
 }
 
 impl Versioned for Item {
@@ -58,12 +56,9 @@ impl VersionStruct for Item {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let mut found = Diagnostics::default();
         let shell: Option<Shell> = parse_payload(payload, cx, &mut found);
-        // unknown keys are ignored silently at every version
-        d.extend(
-            found
-                .into_iter()
-                .filter(|f| !matches!(f.code, DiagnosticCode::UnrecognizedField { .. })),
-        );
+        // unknown keys are ignored silently at every version (and kept)
+        found.retain(|f| !matches!(f.code, DiagnosticCode::UnrecognizedField { .. }));
+        d.extend_with_unknown(found);
         let mut shell = shell?;
         if let Err(reason) = is_component_based(payload, cx.written) {
             d.push(Diagnostic::info(DiagnosticCode::LegacyItemFormat { reason }).at(cx.at.clone()));
@@ -71,10 +66,8 @@ impl VersionStruct for Item {
         if let Some(menu) = shell.description.menu_category.take()
             && let Ok(value) = write_payload(&menu)
         {
-            shell
-                .description
-                .extra
-                .insert("menu_category".to_owned(), value);
+            d.unknown_mut()
+                .put(&cx.at.child("description"), "menu_category", value);
         }
         let at = cx.at.child("components");
         let components = match &shell.components {
@@ -105,7 +98,6 @@ impl VersionStruct for Item {
             description: shell.description,
             components,
             events: shell.events,
-            extra: shell.extra,
         })
     }
 
@@ -116,9 +108,7 @@ impl VersionStruct for Item {
         if let Some(events) = &self.events {
             object.insert("events", events.clone());
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         Ok(Value::from(object))
     }
 }
@@ -585,7 +575,6 @@ impl Upgrade for Item {
             deprecated: crate::ItemDeprecatedData::default(),
             events: self.events,
             legacy,
-            extra: self.extra,
         }
     }
 }

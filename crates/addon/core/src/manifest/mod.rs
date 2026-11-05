@@ -28,7 +28,7 @@ pub use script_module::{DependencyTexts, NativeDependencyText, dependency_texts}
 pub use setting::{DropdownOption, Setting};
 
 use crate::__private::Sealed;
-use crate::document::{Content, Document, Extra, Rejected};
+use crate::document::{Content, Document, Rejected, UnknownMembers};
 use crate::json::{EncodeError, WriteStyle};
 use crate::load::LoadContext;
 use crate::pack_identity::{PackIdVersion, PackPath, PackSide, PackType};
@@ -67,7 +67,7 @@ pub struct Manifest {
     /// JSON `has_education_metadata` (format 3).
     pub has_education_metadata: Option<bool>,
     /// Unknown root members of a legacy manifest, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A manifest's `format_version` (vanilla `PackManifestFormat`).
@@ -130,7 +130,7 @@ pub struct Header {
     /// Unknown header members of a legacy manifest, a `pack_scope` that names no scope (any
     /// format), and a format-0/1 `min_engine_version` that is capped or the default as read,
     /// kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Header {
@@ -161,7 +161,7 @@ pub struct Module {
     /// JSON `language`: a script module's language (absent or empty is JavaScript).
     pub language: Option<String>,
     /// Unknown module members of a legacy manifest, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Module {
@@ -174,7 +174,7 @@ impl Module {
             description: None,
             entry: None,
             language: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -290,7 +290,7 @@ impl Manifest {
                 allow_random_seed: None,
                 lock_template_options: None,
                 pack_optimization_version: None,
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             },
             modules: vec![Module::new(
                 ModuleType::for_pack_type(pack_type),
@@ -303,7 +303,7 @@ impl Manifest {
             subpacks: Vec::new(),
             settings: Vec::new(),
             has_education_metadata: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 

@@ -5,7 +5,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use super::{Definition, Document, Origin, Rejected};
+use super::{Definition, Document, Origin, Rejected, Unknown};
 use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
 use crate::id::Id;
 use crate::pack_identity::PackRef;
@@ -369,9 +369,11 @@ impl<T> CombineRule<T> {
                 } else {
                     // The incoming definition is lower: it is the base the existing one is
                     // written over; the provenance stays the higher one's.
-                    let (base, lower_origin, _, lower_diagnostics) = incoming.into_parts();
-                    let (upper, origin, version, diagnostics) = existing.into_parts();
-                    let mut document = Document::new(base, origin, version, lower_diagnostics);
+                    let (base, lower_origin, _, lower_diagnostics, unknown) = incoming.into_parts();
+                    let (upper, origin, version, diagnostics, upper_unknown) =
+                        existing.into_parts();
+                    let mut document = Document::new(base, origin, version, lower_diagnostics)
+                        .with_unknown_members(merged_unknown(unknown, upper_unknown));
                     merge(document.value_mut(), upper);
                     document.diagnostics_mut().extend(diagnostics);
                     document.origin_mut().add_contributor(&lower_origin.pack);
@@ -466,8 +468,9 @@ fn merge_into<T>(
     incoming: Document<T>,
     merge: fn(&mut T, T),
 ) -> Document<T> {
-    let (mut value, existing_origin, _, mut diagnostics) = existing.into_parts();
-    let (incoming_value, mut origin, version, incoming_diagnostics) = incoming.into_parts();
+    let (mut value, existing_origin, _, mut diagnostics, unknown) = existing.into_parts();
+    let (incoming_value, mut origin, version, incoming_diagnostics, incoming_unknown) =
+        incoming.into_parts();
     merge(&mut value, incoming_value);
     diagnostics.extend(incoming_diagnostics);
     origin.add_contributor(&existing_origin.pack);
@@ -475,6 +478,14 @@ fn merge_into<T>(
         origin.add_contributor(pack);
     }
     Document::new(value, origin, version, diagnostics)
+        .with_unknown_members(merged_unknown(unknown, incoming_unknown))
+}
+
+/// The unknown members of a merged document: those of the base, and over them those of the
+/// document merged into it, each by its path ([`Unknown::absorb`]'s rule).
+fn merged_unknown(mut base: Unknown, upper: Unknown) -> Unknown {
+    base.absorb(&crate::diagnostic::JsonPath::new(), upper);
+    base
 }
 
 /// How the copies of one path from several packs combine in a `Files` collection.

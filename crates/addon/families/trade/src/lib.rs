@@ -21,7 +21,7 @@ mod tests;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
-    Document, Extra, Files, JsonDocument, Origin, Rejected, VersionInfo,
+    Document, Files, JsonDocument, Origin, Rejected, UnknownMembers, VersionInfo,
 };
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::{EncodeError, EnvelopeVersion, JsonSlice, Value, probe_envelope};
@@ -107,7 +107,7 @@ impl JsonDocument for TradeTable {
         Ok(write_envelope::<TradeFamily>(
             CEREAL,
             VersionStruct::write(self)?,
-            &Extra::default(),
+            &UnknownMembers::default(),
         ))
     }
 
@@ -153,10 +153,7 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<TradeTable>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let at = match value {
         Any::V0(_) => JsonPath::new(),
         Any::V1_21_30(_) => payload_at(),
@@ -310,8 +307,8 @@ mod reading_table {
                 missing version: at the floor, silently
                 below floor: UseFormatVersion
                 empty document: Error
-                0.0.0..=0.0.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
-                1.21.30..=1.21.30 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                0.0.0..=0.0.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+                1.21.30..=1.21.30 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

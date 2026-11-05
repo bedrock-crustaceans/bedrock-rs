@@ -142,7 +142,7 @@ fn the_vanilla_1_26_30_apple_runs_the_step_unchanged() {
         document.diagnostics()
     );
     assert_eq!(document.version().parsed_as, version(1, 26, 30));
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     let again = loads(&written, &base);
     assert!(
         above_info(again.diagnostics()).is_empty(),

@@ -1,7 +1,7 @@
 //! `minecraft:cubemap_settings`: how a cubemap (skybox) is lit.
 
 use super::value::{Description, Keyframe, Keyframes};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{CubemapSettingsId, kind};
 
 /// The lighting of a cubemap (`minecraft:cubemap_settings`, in `cubemaps/`), at its only
@@ -22,7 +22,7 @@ pub struct CubemapSettings {
     /// How the cubemap is lit (JSON `lighting`).
     pub lighting: Option<CubemapLighting>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// How a cubemap is lit (JSON `lighting`); every member is optional and not written back when
@@ -44,7 +44,7 @@ pub struct CubemapLighting {
     /// `affected_by_volumetric_scattering`).
     pub affected_by_volumetric_scattering: Option<bool>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 super::defaults! {

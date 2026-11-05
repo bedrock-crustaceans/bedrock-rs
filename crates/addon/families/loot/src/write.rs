@@ -11,7 +11,7 @@ use super::function::{
 };
 use super::{Entry, EntryKind, LootTable, Pool, RandomValueBounds, Tiers};
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value, WriteStyle, write_json};
 use bedrock_addon_core::shared::IntRange;
@@ -170,7 +170,7 @@ impl<'a> Object<'a> {
     }
 
     /// Writes the unknown members after the known ones and closes the object.
-    fn finish(mut self, extra: &Extra) -> Value {
+    fn finish(mut self, extra: &UnknownMembers) -> Value {
         for (key, value) in extra.iter() {
             self.object.insert(key, value.clone());
         }

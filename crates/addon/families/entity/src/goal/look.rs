@@ -60,10 +60,6 @@ impl Beg {
 impl Goal for Beg {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.items("items", self.items.as_deref());
@@ -146,10 +142,6 @@ impl LookAtEntity {
 
 impl Goal for LookAtEntity {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -249,10 +241,6 @@ impl LookAtPlayer {
 impl Goal for LookAtPlayer {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.int(
@@ -349,10 +337,6 @@ impl LookAtTarget {
 
 impl Goal for LookAtTarget {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -451,10 +435,6 @@ impl LookAtTradingPlayer {
 impl Goal for LookAtTradingPlayer {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.int(
@@ -543,10 +523,6 @@ impl RandomLookAround {
 
 impl Goal for RandomLookAround {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -669,10 +645,6 @@ impl Goal for RandomLookAroundAndSit {
     const DEPRECATED: &'static [Deprecated] =
         &[("look_time", deprecated_text!("look_time"), known::V1_26_30)];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -747,10 +719,6 @@ impl TradeInterest {
 
 impl Goal for TradeInterest {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

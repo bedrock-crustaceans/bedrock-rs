@@ -3,7 +3,7 @@
 //! (`use_modifiers.start_sound`, `swing_sounds.*`, `durability_thresholds[].sound_event`) bind
 //! a `LevelSoundEvent`. The step to 1.26.50 turns each into its name.
 
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -28,8 +28,6 @@ pub struct Item {
     pub events: Option<Value>,
     /// What vanilla's legacy reader takes from the same document; not written.
     pub legacy: LegacyItemData,
-    /// Unknown members of the item object.
-    pub extra: Extra,
 }
 
 impl Versioned for Item {
@@ -45,7 +43,6 @@ impl VersionStruct for Item {
             deprecated: n.deprecated,
             events: n.events,
             legacy: n.legacy,
-            extra: n.extra,
         })
     }
 
@@ -56,7 +53,21 @@ impl VersionStruct for Item {
             &self.deprecated,
             self.events.as_ref(),
             &self.legacy,
-            &self.extra,
+            &bedrock_addon_core::document::Unknown::new(),
+        )
+    }
+
+    fn write_with_unknown(
+        &self,
+        unknown: &bedrock_addon_core::document::Unknown,
+    ) -> Result<Value, EncodeError> {
+        crate::write::newest_value(
+            &self.description,
+            &self.components,
+            &self.deprecated,
+            self.events.as_ref(),
+            &self.legacy,
+            unknown,
         )
     }
 }

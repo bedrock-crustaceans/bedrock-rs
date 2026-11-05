@@ -11,7 +11,7 @@ use super::{
     AnimationSource, FaceFlag, GeometrySource, HexColor, PieceMetadata, PieceStoreInfo,
     TextureSource, TintColor, TintColorOrString, Zones,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 /// One object being written.
@@ -30,7 +30,7 @@ impl Members {
     }
 
     /// The members kept as written, but those the model holds by now.
-    fn finish(mut self, extra: &Extra) -> Value {
+    fn finish(mut self, extra: &UnknownMembers) -> Value {
         for (key, value) in extra.iter() {
             if !self.0.contains_key(key) {
                 self.0.insert(key, value.clone());

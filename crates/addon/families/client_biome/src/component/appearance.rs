@@ -10,7 +10,7 @@ use crate::color::{Color255Rgb, clamped_channels, is_rgb};
 use crate::texts::{COLOR, WATER_EMPTY, fixed};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::{Extra, UnknownMembers};
 use bedrock_addon_core::json::{StrictBool, StrictFloat, Value};
 use bedrock_addon_core::molang::JsonType;
 use bedrock_addon_core::shared::ShapeErrorKind;
@@ -34,7 +34,7 @@ macro_rules! color_or_map {
                 /// JSON `color_map`.
                 color_map: $map,
                 /// Unknown members of the object.
-                extra: Extra,
+                extra: UnknownMembers,
             },
         }
 
@@ -53,7 +53,7 @@ macro_rules! color_or_map {
                     found: JsonType::Object,
                 })?;
                 let color_map = $map::from_name(name.as_str()).ok_or(ShapeErrorKind::UnknownName)?;
-                let mut extra = Extra::default();
+                let mut extra = UnknownMembers::default();
                 for (key, member) in object {
                     if key.as_str() != COLOR_MAP {
                         extra.insert(key.as_str().to_owned(), member.clone());

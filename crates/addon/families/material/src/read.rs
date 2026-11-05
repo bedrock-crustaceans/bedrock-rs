@@ -20,7 +20,7 @@ use super::values::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, Prepared, Value, blank_bom, check_depth, last_wins,
 };
@@ -941,7 +941,7 @@ pub(super) fn read_file(
         unread: false,
     };
     let mut materials = IndexMap::new();
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let mut refused = Vec::new();
     if map.get("vertexShader").is_some_and(Value::is_string) {
         let mut def = reader.def(map, KeyRules::Legacy);

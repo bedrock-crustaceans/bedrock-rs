@@ -6,7 +6,7 @@ use crate::read::payload;
 use crate::write::object;
 use crate::{Biome as Latest, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -20,8 +20,6 @@ pub struct Biome {
     pub description: Description,
     /// The components (JSON `components`).
     pub components: ComponentMap<BiomeComponent>,
-    /// Unknown members of `minecraft:biome`.
-    pub extra: Extra,
 }
 
 impl Versioned for Biome {
@@ -34,12 +32,11 @@ impl VersionStruct for Biome {
         Some(Self {
             description: payload.description,
             components: payload.components,
-            extra: payload.extra,
         })
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        object(&self.description, &self.components, &self.extra)
+        object(&self.description, &self.components)
     }
 }
 
@@ -58,7 +55,6 @@ impl Upgrade for Biome {
         Latest {
             description: self.description,
             components: self.components,
-            extra: self.extra,
         }
     }
 }

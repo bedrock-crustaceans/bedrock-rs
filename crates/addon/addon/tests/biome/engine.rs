@@ -7,7 +7,6 @@
 //! format-string template the test fills before parsing.
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
-use bedrock_addon::document::Content;
 use bedrock_addon::version::FormatVersion;
 
 use super::common::{base_game, context, fixture, load, load_beta, loads, rejected};

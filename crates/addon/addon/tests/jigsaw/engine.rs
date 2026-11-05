@@ -32,10 +32,10 @@ fn round_trips<T: Content + PartialEq + std::fmt::Debug>(path: &str, text: &str)
         "{path}: {:#?}",
         first.diagnostics()
     );
-    let written = first.value().to_json().unwrap();
+    let written = first.to_json().unwrap();
     let again = loads::<T>(path, &written);
     assert_eq!(again.value(), first.value(), "{written}");
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
     first.into_value()
 }
 

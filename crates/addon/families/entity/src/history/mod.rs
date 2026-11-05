@@ -190,8 +190,6 @@ pub struct Payload {
     /// `do_not_upgrade`: present (any value) when the author asked vanilla to skip its
     /// section-A rewrites.
     pub do_not_upgrade: Option<Value>,
-    /// Members the format does not define, kept for write-back.
-    pub extra: Extra,
 }
 
 /// What a [`Payload`] is parsed from.
@@ -325,7 +323,6 @@ impl Payload {
             brain: shell.brain,
             upgrades: shell.upgrades,
             do_not_upgrade: shell.do_not_upgrade,
-            extra: shell.extra,
         })
     }
 
@@ -358,9 +355,7 @@ impl Payload {
         if let Some(flag) = &self.do_not_upgrade {
             object.insert("do_not_upgrade", flag.clone());
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         object.into()
     }
 }
@@ -372,7 +367,15 @@ impl Payload {
 /// text is the steps' output, not the file).
 pub(crate) fn into_latest(payload: &Payload, cx: &mut UpgradeCx<'_>) -> Entity {
     let at = JsonPath::new().child(<Entity as Family>::PAYLOAD_KEY);
-    let Ok(text) = bedrock_addon_core::json::to_json(&payload.write()) else {
+    // The payload's unknown members are read again with it: the newest struct keeps those it
+    // does not know, where it keeps them.
+    let mut written = payload.write();
+    if let Some(object) = written.as_object_mut() {
+        for (key, value) in cx.diagnostics.unknown_mut().take_all(&at) {
+            object.insert(&*key, value);
+        }
+    }
+    let Ok(text) = bedrock_addon_core::json::to_json(&written) else {
         // A non-finite number cannot come from JSON text, so this is not reached.
         cx.diagnostics.push(
             Diagnostic::error(DiagnosticCode::InternalError)

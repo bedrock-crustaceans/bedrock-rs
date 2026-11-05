@@ -3,7 +3,7 @@
 //! reader and writer share one table round-trips under any spelling, so neither half is
 //! tested through the other.
 
-use bedrock_addon::document::{Content, Extra};
+use bedrock_addon::document::{Content, UnknownMembers};
 use bedrock_addon::families::particle::component::{
     DirectionMode, DirectionSettings, EmitterDirection, EmitterShapeDisc, EmitterShapeSphere,
     ParticleAppearanceBillboard, PlaneNormal,
@@ -109,7 +109,7 @@ fn the_particle_effect_types_are_spelled_as_the_schema_spells_them() {
                 effect: "demo:other".to_owned(),
                 kind,
                 pre_effect_expression: None,
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             });
             let mut effect = base();
             effect.events = Some(IndexMap::from([("e".to_owned(), node)]));
@@ -162,7 +162,7 @@ fn the_curve_types_are_spelled_as_the_schema_spells_them() {
                     input: number(0.0),
                     horizontal_range: None,
                     nodes: vec![number(0.0); 4],
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 }),
                 CurveKind::BezierChain => {
                     let node = BezierChainNode {
@@ -173,7 +173,7 @@ fn the_curve_types_are_spelled_as_the_schema_spells_them() {
                     Curve::BezierChain(BezierChainCurve {
                         input: number(0.0),
                         nodes: IndexMap::from([("0.0".to_owned(), node)]),
-                        extra: Extra::default(),
+                        extra: UnknownMembers::default(),
                     })
                 }
             };

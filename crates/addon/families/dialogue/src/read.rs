@@ -11,7 +11,7 @@ use super::texts::{
 };
 use super::{Button, DialogueScene, DialogueText, StoredCommand};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::DialogueSceneTag;
 use bedrock_addon_core::json::{Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
@@ -43,9 +43,9 @@ pub(crate) struct ReadFile {
     /// Every scene element, in file order.
     pub(crate) scenes: Vec<ReadScene>,
     /// Unknown members of `minecraft:npc_dialogue`.
-    pub(crate) dialogue_extra: Extra,
+    pub(crate) dialogue_extra: UnknownMembers,
     /// Unknown members of the root.
-    pub(crate) extra: Extra,
+    pub(crate) extra: UnknownMembers,
     /// File-level warnings and infos.
     pub(crate) diagnostics: Diagnostics,
 }
@@ -101,8 +101,13 @@ fn member<'v>(value: &'v Value, key: &str) -> Option<&'v Value> {
 /// The members of the object `value` vanilla never reads (every one but `known`), each
 /// reported as an information at `at` (the game ignores them, so the crate's own finding says
 /// so) and kept for write-back. A value that is not an object has none.
-fn unknown(value: &Value, known: &[&str], at: &JsonPath, diagnostics: &mut Diagnostics) -> Extra {
-    let mut extra = Extra::default();
+fn unknown(
+    value: &Value,
+    known: &[&str],
+    at: &JsonPath,
+    diagnostics: &mut Diagnostics,
+) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     for (key, member) in value.as_object().into_iter().flatten() {
         if known.contains(&key.as_str()) {
             continue;

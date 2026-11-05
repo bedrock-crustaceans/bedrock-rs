@@ -6,7 +6,7 @@ use facet_value::{VArray, VObject};
 use super::read::{self, Failure, ROOT, ShapeError, ShapeErrorKind, fail, wrong_type};
 use super::{finding, unrecognized};
 use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::Value;
 
 /// A filter group: one test, a list (every element must pass), or a group of collection keys, as
@@ -49,7 +49,7 @@ pub struct FilterTest {
     /// The value compared against (JSON `value`).
     pub value: Option<FilterScalar>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A group of filters by collection key, as the game's filter group map. The aliases (`all_of`,
@@ -75,7 +75,7 @@ pub struct FilterGroup {
     /// No filter may pass (JSON `NOT`).
     pub not: Option<Box<Filter>>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Whom a filter test looks at, as in the game. JSON: `self`, `other`, `player`,
@@ -375,7 +375,7 @@ impl FilterTest {
             operator: None,
             domain: None,
             value: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -384,7 +384,7 @@ impl FilterTest {
         let member = |key| object.get(key).filter(|v| !v.is_null());
         let test = member("test")
             .ok_or_else(|| Failure::new(ShapeErrorKind::MissingMember { member: "test" }))?;
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (key, value) in object {
             if !TEST_KEYS.contains(&key.as_str()) {
                 extra.insert(key.as_str().to_owned(), value.clone());
@@ -469,7 +469,7 @@ impl FilterGroup {
                 _ => Ok(None),
             }
         };
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (key, value) in object {
             if !GROUP_KEYS.contains(&key.as_str()) {
                 extra.insert(key.as_str().to_owned(), value.clone());

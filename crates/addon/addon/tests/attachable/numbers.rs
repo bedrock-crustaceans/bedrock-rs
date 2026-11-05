@@ -7,7 +7,6 @@
 //! it spells (core's reader), in each of those places.
 
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
-use bedrock_addon::document::Content;
 use bedrock_addon::families::attachable::Attachable;
 use bedrock_addon::json::Value;
 use bedrock_addon::molang::Molang;

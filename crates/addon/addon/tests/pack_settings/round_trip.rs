@@ -14,7 +14,7 @@ const PACK: Uuid = Uuid::from_u128(0xd334_9771_6782_4420_875a_fcd6_179a_8915);
 /// Parse, write, parse strictly again: equal values, and the second write is identical.
 fn round_trip(name: &str) {
     let first = loads(name);
-    let written = first.value().to_json().expect("writable");
+    let written = first.to_json().expect("writable");
     let second = parse_text(WORLD, &written).unwrap_or_else(|r| panic!("{:#?}", r.diagnostics));
     let codes = |d: &bedrock_addon::diagnostic::Diagnostics| {
         d.iter().map(|d| d.code.name()).collect::<Vec<_>>()
@@ -27,7 +27,7 @@ fn round_trip(name: &str) {
         .collect();
     assert_eq!(codes(second.diagnostics()), first_codes, "{name}");
     assert_eq!(first.value(), second.value(), "{name}");
-    assert_eq!(second.value().to_json().unwrap(), written, "{name}");
+    assert_eq!(second.to_json().unwrap(), written, "{name}");
 }
 
 #[test]
@@ -48,7 +48,6 @@ fn every_loading_fixture_round_trips() {
 #[test]
 fn the_writer_emits_the_members_in_vanilla_order_and_no_absent_last_used() {
     let written = loads("ps02_v1_21_100_no_last_used.before.json")
-        .value()
         .to_json()
         .unwrap();
     assert_eq!(
@@ -62,7 +61,7 @@ fn a_vanilla_written_file_reads_back_unchanged() {
     // The shape `_saveUserOverridesToFile` writes (the 1.21.100 example).
     let text = String::from_utf8(fixture("ps01_v1_21_100_upgrade.before.json")).unwrap();
     let loaded = parse_text(WORLD, &text).unwrap();
-    let written = loaded.value().to_json().unwrap();
+    let written = loaded.to_json().unwrap();
     let as_json = |text: &str| bedrock_addon::json::from_str::<Value>(text).unwrap();
     assert_eq!(as_json(&written), as_json(&text));
 }

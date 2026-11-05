@@ -39,7 +39,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    Content, Contribution, Definition, Document, Extra, JsonContent, JsonDefinition, JsonDocument,
+    Content, Contribution, Definition, Document, JsonContent, JsonDefinition, JsonDocument,
     JsonPlaced, NoBeta, Origin, Placed, Registry, Rejected, default_path,
 };
 use bedrock_addon_core::id::{EntityId, kind};
@@ -225,10 +225,8 @@ impl Entity {
         written: Document<history::Any>,
         cx: &LoadContext,
     ) -> Result<Document<Entity>, Rejected> {
-        let origin = written.origin().clone();
-        let version = written.version().clone();
-        let found = written.diagnostics().clone();
-        let any = written.into_value();
+        let (any, origin, version, mut found) = written.into_parsed_parts();
+        let rows = found.take_unknown();
         let (identity, skip_upgrades) = history::identity(&any);
         let at = { JsonPath::new().child(<Entity as Family>::PAYLOAD_KEY) };
         let input = FormatVersionInput {
@@ -248,9 +246,13 @@ impl Entity {
             at,
             // What the reader moved, without its findings: what the steps and the checks
             // tell is at the member the file has, as in a load of the file.
+            // The unknown members go with them, for the steps to move and take.
             {
                 let mut moved = found.clone();
                 moved.retain(|_| false);
+                if !rows.is_empty() {
+                    *moved.unknown_mut() = rows;
+                }
                 moved
             },
         )
@@ -366,8 +368,11 @@ impl Content for Beta {
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        let document =
-            write_envelope::<Entity>(BETA_VERSION, write::payload(&self.0)?, &Extra::default());
+        let document = write_envelope::<Entity>(
+            BETA_VERSION,
+            write::payload(&self.0)?,
+            &bedrock_addon_core::document::UnknownMembers::default(),
+        );
         write_json(&document, out, style)
     }
 }
@@ -411,9 +416,9 @@ mod reading_table {
                 missing version: at the floor, told at Info: Some(NoFormatVersionField)
                 below floor: UseFormatVersion
                 empty document: Error
-                1.8.0..=1.21.80 (0..=28): json Absent/Strict/Error/Warn/lenient/Refuse, mcb Own/Strict/Error/Warn/lenient/Refuse
-                1.21.89..=1.26.60 (29..=41): json Absent/Strict/Error/Error/lenient/Refuse, mcb Own/Strict/Error/Error/lenient/Refuse
-                beta: json Absent/Strict/Error/Error/lenient/Refuse, mcb Own/Strict/Error/Error/lenient/Refuse
+                1.8.0..=1.21.80 (0..=28): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
+                1.21.89..=1.26.60 (29..=41): json Absent/Strict/Error/Error/reports/lenient/Refuse, mcb Own/Strict/Error/Error/reports/lenient/Refuse
+                beta: json Absent/Strict/Error/Error/reports/lenient/Refuse, mcb Own/Strict/Error/Error/reports/lenient/Refuse
             ",
         );
     }

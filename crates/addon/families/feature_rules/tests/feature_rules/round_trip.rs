@@ -2,7 +2,6 @@
 //! parsed again is equal, and the second write is the first; unknown members are kept at their
 //! level. The strongest fixtures are the retail 1.26.45 files, copied as shipped.
 
-use bedrock_addon_core::document::Content;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{RangeModel, Selection, select_versions};

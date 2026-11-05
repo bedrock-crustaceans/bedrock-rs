@@ -520,7 +520,7 @@ fn a_number_past_a_double_is_held_at_the_largest_and_written() {
             "info UnrecognizedField pieces/hat/hat.store_info.json foo",
         ]
     );
-    let written = document.value().to_json().expect("finite numbers");
+    let written = document.to_json().expect("finite numbers");
     assert_eq!(&store(&written), document.value());
     let root = json(&written);
     let foo = root

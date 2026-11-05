@@ -4,7 +4,6 @@
 //! (value equality, a stable second write).
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Content;
 use bedrock_addon_core::load::LoadContext;
 
 use super::common::{fixture, load};

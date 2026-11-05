@@ -175,7 +175,7 @@ impl Family for ItemFamily {
                              item as a legacy item: it is not written",
                         )),
                 );
-            } else if let Some(at) = crate::write::newest_refusal(item) {
+            } else if let Some(at) = crate::write::newest_refusal(item, cx.diagnostics.unknown()) {
                 // A member the item holds from an older format that the strict 1.26.50 format
                 // does not bind: the newest writer refuses the item there, and the load
                 // says so where it is (an information of the crate's own; the game reads the
@@ -394,6 +394,13 @@ impl JsonDocument for Item {
     fn write_root(&self) -> Result<Value, EncodeError> {
         crate::write::item_root(self)
     }
+
+    fn write_root_with(
+        &self,
+        unknown: &bedrock_addon_core::document::Unknown,
+    ) -> Result<(Value, Vec<bedrock_addon_core::diagnostic::Diagnostic>), EncodeError> {
+        crate::write::item_root_with(self, unknown)
+    }
 }
 
 impl JsonPlaced for Item {
@@ -436,6 +443,15 @@ impl Content for Beta {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         crate::write::write_beta(self, out, style)
+    }
+
+    fn write_json_with(
+        &self,
+        unknown: &bedrock_addon_core::document::Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<bedrock_addon_core::diagnostic::Diagnostic>, EncodeError> {
+        crate::write::write_beta_with(self, unknown, out, style)
     }
 }
 
@@ -486,9 +502,9 @@ mod reading_table {
                 missing version: rejected: Fixed("document's version not found or not readable")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.10.0..=1.26.0 (0..=18): json Absent/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
-                1.26.30..=1.26.50 (19..=20): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.10.0..=1.26.0 (0..=18): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+                1.26.30..=1.26.50 (19..=20): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             "#,
         );
     }

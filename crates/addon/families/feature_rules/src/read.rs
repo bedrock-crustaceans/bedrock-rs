@@ -74,7 +74,6 @@ pub(crate) fn parse_rule(
         conditions: shell.conditions,
         distribution,
         source_format_version: cx.original_version,
-        extra: shell.extra,
     })
 }
 
@@ -193,9 +192,12 @@ fn typed<T: for<'f> Facet<'f>>(
 ) -> Option<T> {
     match parse_at::<T>(slice) {
         Ok(value) if rule == Some(NullRule::Rejected) && reject_nulls(&value, slice, at, d) => None,
-        Ok(mut value) => {
+        Ok(value) => {
             if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
-                for (path, _) in keep_unknown_members(&mut value, &json) {
+                let mut kept = bedrock_addon_core::document::Unknown::new();
+                let found = keep_unknown_members(&value, &json, &mut kept);
+                d.unknown_mut().absorb(at, kept);
+                for (path, _) in found {
                     let mut full = at.clone();
                     full.append(&path);
                     // Under the slice's error mask an unknown member is a level-2 content-log

@@ -22,7 +22,7 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Extra, VersionInfo};
+use bedrock_addon_core::document::{UnknownMembers, VersionInfo};
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::Value;
@@ -200,10 +200,10 @@ impl<'c> Reader<'c> {
         }
     }
 
-    /// The members of `members` nobody read, kept in an `Extra`; the unknown ones raise
+    /// The members of `members` nobody read, kept in an `UnknownMembers`; the unknown ones raise
     /// `UnrecognizedField` at info (vanilla reads no other key and says nothing).
-    fn rest(&mut self, members: &Members<'_>, at: &JsonPath) -> Extra {
-        let mut extra = Extra::default();
+    fn rest(&mut self, members: &Members<'_>, at: &JsonPath) -> UnknownMembers {
+        let mut extra = UnknownMembers::default();
         for (key, value) in members.object {
             let key = key.as_str();
             if members.read.contains(key) {

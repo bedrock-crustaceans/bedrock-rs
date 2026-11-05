@@ -1,6 +1,5 @@
 //! The spline rows: cam11, cam22 (the texts) and cam25, with validation.md rule 6.
 
-use bedrock_addon::document::Content;
 use bedrock_addon::families::camera::{Easing, SplineType};
 
 use super::common::*;

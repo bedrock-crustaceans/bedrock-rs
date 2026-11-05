@@ -219,7 +219,6 @@ pub(crate) fn parse_document(
             components,
             deprecated: p.deprecated.clone(),
             ordered_v1_custom_components: p.ordered_v1_custom_components.clone(),
-            extra: p.extra.clone(),
         });
     }
     let mut deprecated_event_handlers = IndexMap::new();
@@ -238,7 +237,6 @@ pub(crate) fn parse_document(
         deprecated_event_handlers,
         ordered_v1_custom_components: shell.ordered_v1_custom_components,
         source_format_version: cx.original_version,
-        extra: shell.extra,
         refused_at: Vec::new(),
     };
     Some((block, one_box))
@@ -270,9 +268,11 @@ fn newest_members(
             Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
                 .at(at.with(&["minecraft:block_entity", "entity_storage"])),
         );
-        entity
-            .extra
-            .insert("entity_storage".to_owned(), Value::from(value.0));
+        d.unknown_mut().put(
+            &at.child("minecraft:block_entity"),
+            "entity_storage",
+            Value::from(value.0),
+        );
     }
 }
 
@@ -489,9 +489,12 @@ fn parse_entry<T: for<'f> Facet<'f>>(
 ) -> Option<T> {
     let slice = payload.nested(raw)?;
     match parse_at::<T>(slice) {
-        Ok(mut value) => {
+        Ok(value) => {
             if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
-                for (path, _) in keep_unknown_members(&mut value, &json) {
+                let mut kept = bedrock_addon_core::document::Unknown::new();
+                let found = keep_unknown_members(&value, &json, &mut kept);
+                d.unknown_mut().absorb(at, kept);
+                for (path, _) in found {
                     let mut full = at.clone();
                     full.append(&path);
                     d.push(
@@ -582,10 +585,7 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<Block>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let identity = Identity {
         identifier: Some(identifier_of(&value)),
         runtime_identifier: None,

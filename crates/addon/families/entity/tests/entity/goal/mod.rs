@@ -94,6 +94,14 @@ pub fn at_version<T: Component<Set = EntityComponent>>(
         finding.location.json_path = relative;
         d.push(finding);
     }
+    // And the goal's unknown members, below it.
+    let at =
+        bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity", "components", key]);
+    for (path, member, value) in outcome.diagnostics.unknown().iter() {
+        if let Some(below) = path.strip_prefix(&at) {
+            d.unknown_mut().put(&below, member, value.clone());
+        }
+    }
     let value = match outcome.value {
         Some(bedrock_addon_core::versioning::Loaded::Stable(mut entity)) => {
             entity.components.remove::<T>()

@@ -5,7 +5,6 @@
 
 use std::fmt::Write as _;
 
-use bedrock_addon::document::Content;
 use bedrock_addon::json::EncodeError;
 
 use super::common::{lines, rp, unchecked};

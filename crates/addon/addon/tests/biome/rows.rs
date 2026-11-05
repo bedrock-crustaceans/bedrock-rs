@@ -44,7 +44,6 @@ pub fn round_trip(biome: &Biome) {
         "the rewrite reads back equal"
     );
     assert_eq!(again.value().description, biome.description);
-    assert_eq!(again.value().extra, biome.extra);
     assert_eq!(again.to_json().unwrap(), written, "the rewrite is stable");
 }
 

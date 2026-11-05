@@ -5,7 +5,7 @@
 //! text equals the source's, but for the recorded differences, each applied by name below.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::{Content, JsonDocument as _};
+use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::families::client_entity::history::Any;
 use bedrock_addon::json::EncodeError;

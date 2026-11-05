@@ -53,10 +53,7 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<Dimension>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let identifier = match &value {
         Any::V1_18_0(d) => d.description.identifier.as_str().to_owned(),
         Any::V1_26_50(d) => d.description.identifier.as_str().to_owned(),

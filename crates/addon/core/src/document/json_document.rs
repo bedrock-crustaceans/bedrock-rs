@@ -2,8 +2,12 @@
 //! states, from which core supplies the mechanical quartet (`Sealed`, [`Content`],
 //! [`JsonContent`], [`Placed`], and [`Definition`] for a definition) by blanket impls.
 
-use super::{CombineRule, Content, Definition, Document, Extra, JsonContent, Placed, Rejected};
+use super::{
+    CombineRule, Content, Definition, Document, JsonContent, Placed, Rejected, Unknown,
+    UnknownMembers,
+};
 use crate::__private::Sealed;
+use crate::diagnostic::Diagnostic;
 use crate::id::{Id, Kind};
 use crate::json::{EncodeError, Value, WriteStyle};
 use crate::load::{LoadContext, StackCx};
@@ -56,7 +60,7 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// [`write_version`](Self::write_version)), where the struct writes its own root, root
     /// members included.
     #[allow(unused_variables)]
-    fn write_extras(&self, root: &mut Extra) {}
+    fn write_root_members(&self, root: &mut UnknownMembers) {}
 
     /// Refuses to write a value the game would not read back (fog's rules, block culling's
     /// cube-index check), before anything is written. Default: every value is written.
@@ -70,7 +74,7 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
 
     /// The whole document the value writes: by default [`write_envelope`] over
     /// [`write_version`](Self::write_version), the struct's payload and
-    /// [`write_extras`](Self::write_extras), after [`refuse_write`](Self::refuse_write).
+    /// [`write_root_members`](Self::write_root_members), after [`refuse_write`](Self::refuse_write).
     ///
     /// Overridden for a value written in a format other than the newest envelope: one the
     /// newest format cannot hold, written as an older document whose payload is not
@@ -82,6 +86,24 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// `EncodeError` when the value has no text.
     fn write_root(&self) -> Result<Value, EncodeError> {
         document_of(self)
+    }
+
+    /// [`write_root`](Self::write_root) with the document's unknown members in it, each
+    /// after the members of its object ([`json::merge_unknown`](crate::json::merge_unknown)),
+    /// and the findings of the members left out. What `Document::write_json` writes.
+    ///
+    /// Overridden by a writer whose choice of format looks at the members the document has
+    /// (block writes an older document for an unknown member the newest one refuses): it
+    /// puts the members into the document it chooses.
+    ///
+    /// # Errors
+    ///
+    /// As [`write_root`](Self::write_root).
+    #[doc(hidden)]
+    fn write_root_with(&self, unknown: &Unknown) -> Result<(Value, Vec<Diagnostic>), EncodeError> {
+        let mut root = self.write_root()?;
+        let told = crate::json::merge_unknown(&mut root, unknown);
+        Ok((root, told))
     }
 
     /// Reads the file at `origin`: the stable document, a beta one or the rejection. Default:
@@ -167,8 +189,8 @@ fn first_side(sides: &[PackSide]) -> PackSide {
 /// The whole document of `value`, after its refusal check.
 fn document_of<T: JsonDocument>(value: &T) -> Result<Value, EncodeError> {
     value.refuse_write()?;
-    let mut extras = Extra::default();
-    value.write_extras(&mut extras);
+    let mut extras = UnknownMembers::default();
+    value.write_root_members(&mut extras);
     Ok(write_envelope::<T::Family>(
         value.write_version(),
         VersionStruct::write(value)?,
@@ -193,6 +215,20 @@ impl<T: JsonDocument> Content for T {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         crate::json::write_json(&self.write_root()?, out, style)
+    }
+
+    fn write_json_with(
+        &self,
+        unknown: &Unknown,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<Vec<Diagnostic>, EncodeError> {
+        if unknown.is_empty() {
+            return self.write_json(out, style).map(|()| Vec::new());
+        }
+        let (root, told) = self.write_root_with(unknown)?;
+        crate::json::write_json(&root, out, style)?;
+        Ok(told)
     }
 }
 

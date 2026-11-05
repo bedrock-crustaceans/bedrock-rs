@@ -8,7 +8,8 @@ use super::{
     write_envelope,
 };
 use crate::diagnostic::Diagnostics;
-use crate::document::Extra;
+use crate::document::UnknownMembers;
+use crate::json::Value;
 use crate::json::{EncodeError, JsonSlice};
 use crate::load::LoadContext;
 use crate::molang::MolangFields;
@@ -79,12 +80,32 @@ impl<F: Family> Single<F> {
     ///
     /// `EncodeError` when the struct has no JSON form.
     pub fn to_json(&self) -> Result<String, EncodeError> {
-        let document = write_envelope::<F>(
+        crate::json::to_json(&self.document()?)
+    }
+
+    /// The document in the struct's own version, as a `Value`.
+    fn document(&self) -> Result<Value, EncodeError> {
+        Ok(write_envelope::<F>(
             self.parsed_version(),
             VersionStruct::write(&self.0)?,
-            &Extra::default(),
+            &UnknownMembers::default(),
+        ))
+    }
+}
+
+impl<F: Family> crate::document::WriteWith for Single<F> {
+    fn write_with(
+        &self,
+        unknown: &crate::document::Unknown,
+        out: &mut Vec<u8>,
+        style: crate::json::WriteStyle,
+    ) -> Result<Vec<crate::diagnostic::Diagnostic>, EncodeError> {
+        let document = write_envelope::<F>(
+            self.parsed_version(),
+            VersionStruct::write_with_unknown(&self.0, unknown)?,
+            &UnknownMembers::default(),
         );
-        crate::json::to_json(&document)
+        crate::json::write_json_with(&document, unknown, out, style)
     }
 }
 

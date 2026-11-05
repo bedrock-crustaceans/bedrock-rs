@@ -42,8 +42,6 @@ pub struct Block {
     /// gates of validation and the client's runtime flags compare against. Not a JSON member;
     /// the writer writes it as `format_version` when it is 1.26.20 or newer.
     pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:block`.
-    pub extra: Extra,
     /// Where the file has the members that a rule of 1.26.20 refuses of a block read from a
     /// file below it, where an upgrade step moved them: `(the member of the block, the
     /// member of the file)`. The write's refusal names the file's member, so the author sees where to fix it. Not a
@@ -138,8 +136,6 @@ pub struct Permutation {
     /// The order of the permutation's 1.21.60 `custom_components` list (JSON
     /// `ordered_v1_custom_components`).
     pub ordered_v1_custom_components: Vec<String>,
-    /// Unknown members.
-    pub extra: Extra,
 }
 
 /// A block's material (ids 0..=25), `internal_vanilla_data.material`.
@@ -189,7 +185,6 @@ impl Block {
             deprecated_event_handlers: IndexMap::new(),
             ordered_v1_custom_components: Vec::new(),
             source_format_version: CEREAL,
-            extra: Extra::default(),
             refused_at: Vec::new(),
         }
     }
@@ -275,7 +270,6 @@ impl Permutation {
             components: ComponentMap::new(),
             deprecated: DeprecatedComponents::default(),
             ordered_v1_custom_components: Vec::new(),
-            extra: Extra::default(),
         }
     }
 

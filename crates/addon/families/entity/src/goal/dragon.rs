@@ -78,10 +78,6 @@ impl DragonChargePlayer {
 impl Goal for DragonChargePlayer {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("active_speed", &mut self.active_speed, Bound::Min(0.0));
@@ -125,10 +121,6 @@ impl DragonDeath {
 
 impl Goal for DragonDeath {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -223,10 +215,6 @@ impl DragonFlaming {
 impl Goal for DragonFlaming {
     const TYPED: FormatVersion = known::V1_21_100;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -261,10 +249,6 @@ impl DragonHoldingPattern {
 
 impl Goal for DragonHoldingPattern {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -301,10 +285,6 @@ impl DragonLanding {
 impl Goal for DragonLanding {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -339,10 +319,6 @@ impl DragonScanning {
 
 impl Goal for DragonScanning {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -444,10 +420,6 @@ impl DragonStrafePlayer {
 impl Goal for DragonStrafePlayer {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("active_speed", &mut self.active_speed, Bound::Min(0.0));
@@ -502,10 +474,6 @@ impl DragonTakeoff {
 
 impl Goal for DragonTakeoff {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

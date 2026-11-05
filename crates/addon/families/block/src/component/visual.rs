@@ -7,7 +7,8 @@ use indexmap::IndexMap;
 
 use super::types::{Color, RenderMethod, TintMethod, Vec3};
 use super::{BONE_VISIBILITY, visit_geometry};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::{Extra, Unknown};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 
@@ -198,22 +199,28 @@ impl MaterialInstances {
         None
     }
 
-    /// Fills each instance's `extra` from the JSON it was read from (`keep_unknown_members` does
-    /// not reach map values) and returns the unknown keys as `(instance, member)`.
-    pub(crate) fn keep_unknown(&mut self, json: &Value) -> Vec<(String, String)> {
+    /// Keeps each instance's unknown members, from the JSON it was read from
+    /// (`keep_unknown_members` does not reach map values), in `kept` below `at/<instance>`, and
+    /// returns the unknown keys as `(instance, member)`.
+    pub(crate) fn keep_unknown(
+        &self,
+        json: &Value,
+        at: &JsonPath,
+        kept: &mut Unknown,
+    ) -> Vec<(String, String)> {
         let mut unknown = Vec::new();
         let Some(object) = json.as_object() else {
             return unknown;
         };
-        for (name, entry) in &mut self.0 {
-            let (MaterialInstanceEntry::Instance(instance), Some(written)) =
+        for (name, entry) in &self.0 {
+            let (MaterialInstanceEntry::Instance(_), Some(written)) =
                 (entry, object.get(name.as_str()).and_then(Value::as_object))
             else {
                 continue;
             };
             for (key, value) in written {
                 if !Self::KNOWN.contains(&key.as_str()) {
-                    instance.extra.insert(key.to_string(), value.clone());
+                    kept.put(&at.child(name), key.as_str(), value.clone());
                     unknown.push((name.clone(), key.to_string()));
                 }
             }

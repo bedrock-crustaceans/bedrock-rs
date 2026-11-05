@@ -1,7 +1,7 @@
 //! `minecraft:water_settings`: how water is drawn.
 
 use super::value::Description;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{WaterSettingsId, kind};
 
 /// The water of the deferred renderer (`minecraft:water_settings`, in `water/`), at the newest
@@ -33,7 +33,7 @@ pub struct WaterSettings {
     /// `biome_water_color_contribution`, from format 1.26.0).
     pub biome_water_color_contribution: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// What is dissolved in the water (JSON `particle_concentrations`).
@@ -47,7 +47,7 @@ pub struct ParticleConcentrations {
     /// `cdom`).
     pub cdom: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 super::defaults! {
@@ -85,7 +85,7 @@ pub struct Waves {
     /// How sharp the wave crests are, 1–10 (JSON `shape`).
     pub shape: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 super::defaults! {
@@ -119,7 +119,7 @@ pub struct Caustics {
     /// The contrast of the pattern, 1–6 (JSON `power`).
     pub power: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The game's own caustics texture, used when [`Caustics::texture`] is left out or cannot be
@@ -158,7 +158,7 @@ mod codec {
     use bedrock_addon_core::diagnostic::{
         Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
     };
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::version::FormatVersion;
@@ -231,7 +231,7 @@ mod codec {
         caustics: Option<Caustics>,
         waves: Option<history::Waves>,
         contribution: Option<f32>,
-        extra: Extra,
+        extra: UnknownMembers,
     }
 
     /// A ranged number member.
@@ -529,7 +529,7 @@ mod codec {
         caustics: Option<&Caustics>,
         waves: Option<&history::Waves>,
         contribution: Option<f32>,
-        extra: &Extra,
+        extra: &UnknownMembers,
     ) -> Written {
         let mut object = Object::new(&write::payload(KEY));
         if shape.description_required && description.is_none() {

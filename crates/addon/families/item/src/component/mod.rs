@@ -229,19 +229,22 @@ pub(crate) fn tell_range_members<T>(
     use bedrock_addon_core::json::{
         from_str_jsonc, keep_members, keep_members_and_range_members, parse_at,
     };
-    let (Ok(json), Ok(mut plain), Ok(mut ranged)) = (
+    let (Ok(json), Ok(plain), Ok(ranged)) = (
         from_str_jsonc::<Value>(slice.text),
         parse_at::<T>(slice),
         parse_at::<T>(slice),
     ) else {
         return;
     };
-    let known: Vec<bedrock_addon_core::diagnostic::JsonPath> = keep_members(&mut plain, &json)
-        .0
-        .into_iter()
-        .map(|(path, _)| path)
-        .collect();
-    for (path, _) in keep_members_and_range_members(&mut ranged, &json).0 {
+    // Told only: the component's own parse keeps its members.
+    let mut none = bedrock_addon_core::document::Unknown::new();
+    let known: Vec<bedrock_addon_core::diagnostic::JsonPath> =
+        keep_members(&plain, &json, &mut none)
+            .0
+            .into_iter()
+            .map(|(path, _)| path)
+            .collect();
+    for (path, _) in keep_members_and_range_members(&ranged, &json, &mut none).0 {
         if !known.contains(&path) {
             d.push(
                 Diagnostic::error(

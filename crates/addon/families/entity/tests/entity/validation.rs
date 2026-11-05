@@ -240,8 +240,14 @@ fn entity_version_below_1_26_20_is_an_unknown_member() {
         ["UnrecognizedField", "UnrecognizedField"]
     );
     assert!(entity.description.entity_version.is_none());
-    assert!(entity.description.extra.get("entity_version").is_none());
-    assert!(entity.extra.get("upgrades").is_none());
+    let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
+    assert!(
+        found
+            .unknown()
+            .get(&payload.child("description"), "entity_version")
+            .is_none()
+    );
+    assert!(found.unknown().get(&payload, "upgrades").is_none());
 }
 
 /// One structure check: `entity_version` as written gives `text`, and both members are
@@ -422,7 +428,8 @@ fn brain_below_1_21_130_is_an_unknown_member() {
     let (entity, found) = stable(&doc("1.21.80", &payload("x:bee", BRAIN)), &cx());
     assert!(entity.brain.is_none());
     assert_eq!(codes(&found, Severity::Warning), ["UnrecognizedField"]);
-    assert!(entity.extra.get("brain").is_none());
+    let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
+    assert!(found.unknown().get(&payload, "brain").is_none());
 }
 
 #[test]
@@ -1147,7 +1154,7 @@ fn a_root_member_beside_the_version_and_the_payload_is_passed_over() {
                 context,
             )
             .unwrap();
-            let written = document.value().to_json().unwrap();
+            let written = document.to_json().unwrap();
             assert!(!written.contains(member), "{written}");
         }
     }

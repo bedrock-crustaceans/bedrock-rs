@@ -73,8 +73,6 @@ pub struct ClientBiome {
     pub description: Description,
     /// The components (JSON `components`, may be empty).
     pub components: ComponentMap<ClientBiomeComponent>,
-    /// Unknown members of `minecraft:client_biome`.
-    pub extra: Extra,
 }
 
 /// `minecraft:client_biome/description`.
@@ -101,8 +99,6 @@ pub struct Beta {
     pub components: ComponentMap<ClientBiomeComponent>,
     /// Experimental environment attributes (JSON `environment_attributes`).
     pub environment_attributes: Option<EnvironmentAttributes>,
-    /// Unknown members of `minecraft:client_biome`.
-    pub extra: Extra,
 }
 
 /// The directory client-biome files live in.
@@ -283,10 +279,13 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<ClientBiome>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let found = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, mut found) = document.into_parsed_parts();
+    // The steps start from no finding, with the unknown members to move and take.
+    let mut rows = Diagnostics::default();
+    let unknown = found.take_unknown();
+    if !unknown.is_empty() {
+        *rows.unknown_mut() = unknown;
+    }
     let identity = Identity {
         identifier: Some(identifier_of(&value).to_owned()),
         runtime_identifier: None,
@@ -301,14 +300,14 @@ pub(crate) fn upgrade_document(
         version,
         written,
         child(&JsonPath::new(), &[PAYLOAD_KEY]),
-        Diagnostics::default(),
+        rows,
     )
     .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut more = outcome.diagnostics;
     more.locate(&origin);
     let mut diagnostics = found;
-    diagnostics.extend(more);
+    diagnostics.extend_with_unknown(more);
     let parts = Parts {
         origin,
         version: outcome.version,
@@ -412,6 +411,11 @@ fn parse(
 fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
     let written = parsed.version.written;
     let mut found = Diagnostics::default();
+    // The findings are told again in other words; the unknown members the read kept stay.
+    let kept = parsed.diagnostics.take_unknown();
+    if !kept.is_empty() {
+        found.unknown_mut().absorb(&JsonPath::new(), kept);
+    }
     for mut diagnostic in std::mem::take(&mut parsed.diagnostics) {
         let mut after = None;
         let reworded = match &diagnostic.code {
@@ -731,7 +735,6 @@ impl ClientBiome {
         Self {
             description: Description::new(identifier),
             components: ComponentMap::new(),
-            extra: Extra::default(),
         }
     }
 
@@ -759,7 +762,6 @@ impl Beta {
             description: Description::new(identifier),
             components: ComponentMap::new(),
             environment_attributes: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -812,8 +814,8 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Error
-                1.21.40..=1.21.130 (0..=6): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.21.40..=1.21.130 (0..=6): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

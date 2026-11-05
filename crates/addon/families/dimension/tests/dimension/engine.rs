@@ -86,7 +86,6 @@ fn upgraded_height(identifier: &str, bounds: Option<(i32, i32)>) -> Option<(i16,
             extra: Extra::default(),
         },
         source_format_version: FormatVersion::new(1, 21, 60),
-        extra: Extra::default(),
         root_extra: Extra::default(),
     };
     let mut diagnostics = bedrock_addon_core::diagnostic::Diagnostics::default();
@@ -542,7 +541,6 @@ fn a_document_without_minecraft_generation_is_rejected() {
 /// without a warning, upgraded to the height {0, 16}, and round-trips.
 #[test]
 fn loader_perf_tests_2_the_perf_dimension_loads_and_round_trips() {
-    use bedrock_addon_core::document::Content;
     let document = loads(&fixture("loader_perf/LoaderPerfTests-2.json"));
     assert!(
         above_info(document.diagnostics()).is_empty(),
@@ -551,10 +549,10 @@ fn loader_perf_tests_2_the_perf_dimension_loads_and_round_trips() {
     );
     let height = document.components.dimension_height.as_ref().unwrap();
     assert_eq!((height.min_y.0, height.height_range.0), (0, 16));
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     let again = loads(&written);
     assert_eq!(again.value().components, document.value().components);
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
 }
 
 /// The texts of 1.26.20 and retail

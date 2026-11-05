@@ -43,8 +43,12 @@ fn a_1_26_50_entity_reads_every_document_member() {
     assert!(entity.is_spawnable());
     assert!(entity.is_summonable());
     assert_eq!(description.spawn_category, Some(SpawnCategory::Creature));
+    let description_at =
+        bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity", "description"]);
     assert_eq!(
-        description.extra.get("is_experimental"),
+        diagnostics
+            .unknown()
+            .get(&description_at, "is_experimental"),
         Some(&json("false"))
     );
     let mood = &entity.properties()["demo:mood"];
@@ -105,8 +109,15 @@ fn unknown_members_are_told_at_their_level_and_not_kept() {
         ["UnrecognizedField", "UnrecognizedField"],
         "{diagnostics:#?}"
     );
-    assert!(entity.extra.get("demo_root").is_none());
-    assert!(entity.description.extra.get("demo_note").is_none());
+    let _ = entity;
+    let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
+    assert!(diagnostics.unknown().get(&payload, "demo_root").is_none());
+    assert!(
+        diagnostics
+            .unknown()
+            .get(&payload.child("description"), "demo_note")
+            .is_none()
+    );
     assert_eq!(reparse(&entity), entity);
 }
 

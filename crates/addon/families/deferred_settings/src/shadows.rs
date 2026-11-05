@@ -1,6 +1,6 @@
 //! `minecraft:shadow_settings`: the pack-wide shadow style.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 
 /// The shadow style of the deferred renderer (`minecraft:shadow_settings`, the one file
 /// `shadows/global.json`), at its only format version (1.21.80).
@@ -18,7 +18,7 @@ pub struct ShadowSettings {
     /// [`ShadowSettings::texel_size`]).
     pub texel_size: Option<u16>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// How the deferred renderer draws shadows.

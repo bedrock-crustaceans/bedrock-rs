@@ -11,7 +11,7 @@ use crate::read::parse_document;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::ComponentRef;
+use bedrock_addon_core::document::{ComponentRef, Unknown};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadRequirement;
@@ -59,6 +59,8 @@ impl Upgrade for Block {
     type Next = super::v1_26_20::Block;
 
     fn upgrade(mut self, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        // The root's own unknown members are not carried: the 1.26.20 block has none.
+        cx.diagnostics.unknown_mut().take_all(&JsonPath::new());
         let lcf = LoadRequirement::LegacyCreatorFeatures.satisfied(cx.load);
         let original = cx.original_version;
         drop_crate_members(&mut self, cx.diagnostics);
@@ -121,7 +123,7 @@ impl Upgrade for Block {
                 handlers.insert(name, handler);
             }
         }
-        let payload = payload(&self, &sidecars, &handlers);
+        let payload = payload(&self, &sidecars, &handlers, cx.diagnostics.unknown_mut());
         convert(&payload, &self, cx)
     }
 }
@@ -134,7 +136,7 @@ impl Upgrade for Block {
 fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
     let payload = JsonPath::new().with(&["minecraft:block"]);
     for key in ["deprecated", "deprecated_event_handlers"] {
-        if block.extra.remove(key).is_some() {
+        if d.unknown_mut().take(&payload, key).is_some() {
             d.push(
                 Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
                     .at(payload.with(&[key]))
@@ -142,10 +144,10 @@ fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
             );
         }
     }
-    for (index, permutation) in block.permutations.iter_mut().enumerate() {
-        if permutation.extra.remove("deprecated").is_some() {
-            let mut at = payload.with(&["permutations"]);
-            at.push_index(index);
+    for index in 0..block.permutations.len() {
+        let mut at = payload.with(&["permutations"]);
+        at.push_index(index);
+        if d.unknown_mut().take(&at, "deprecated").is_some() {
             at.push("deprecated");
             d.push(
                 Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
@@ -602,11 +604,16 @@ fn event_node(node: &Value, from: &JsonPath, to: &JsonPath, d: &mut Diagnostics)
 }
 
 /// The converted document in the 1.26.20 shape.
+///
+/// The unknown members of the payload and of each permutation are taken out of `unknown` into
+/// it: reading it as 1.26.20 keeps them again, where the newest structs keep them.
 fn payload(
     block: &Block,
     sidecars: &[IndexMap<String, Value>],
     handlers: &IndexMap<String, Value>,
+    unknown: &mut Unknown,
 ) -> Value {
+    let at = JsonPath::new().with(&["minecraft:block"]);
     let mut object = facet_value::VObject::new();
     object.insert("description", to_object(&block.description));
     object.insert("components", to_object(&block.components));
@@ -626,8 +633,10 @@ fn payload(
                 super::legacy::strings_value(&permutation.ordered_v1_custom_components),
             );
         }
-        for (key, value) in permutation.extra.iter() {
-            p.insert(key, value.clone());
+        let mut permutation_at = at.with(&["permutations"]);
+        permutation_at.push_index(index);
+        for (key, value) in unknown.take_all(&permutation_at) {
+            p.insert(&*key, value);
         }
         permutations.push(p);
     }
@@ -646,8 +655,8 @@ fn payload(
             super::legacy::strings_value(&block.ordered_v1_custom_components),
         );
     }
-    for (key, value) in block.extra.iter() {
-        object.insert(key, value.clone());
+    for (key, value) in unknown.take_all(&at) {
+        object.insert(&*key, value);
     }
     object.into()
 }
@@ -697,10 +706,13 @@ fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1
     };
     let mut found = Diagnostics::default();
     let parsed = parse_document(JsonSlice::new(&text), &parse, &mut found);
+    // What the newest structs keep of the converted payload (paths from the root).
+    let kept = found.take_unknown();
     for mut finding in found {
         finding.location.span = None;
         cx.diagnostics.push(finding);
     }
+    cx.diagnostics.unknown_mut().absorb(&JsonPath::new(), kept);
     let Some((mut block, one_box)) = parsed else {
         return empty(identifier);
     };

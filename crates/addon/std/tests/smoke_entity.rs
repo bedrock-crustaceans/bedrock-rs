@@ -434,7 +434,7 @@ fn written(stack: &PackStack<Behavior>, id: &str) -> Value {
         .entities()
         .get(&EntityId::parse(id))
         .unwrap_or_else(|| panic!("{id} loads"));
-    json(&entity.value().to_json().unwrap())
+    json(&entity.to_json().unwrap())
 }
 
 fn json(text: &str) -> Value {

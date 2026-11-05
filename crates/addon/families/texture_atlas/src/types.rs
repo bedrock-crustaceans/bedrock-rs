@@ -3,7 +3,7 @@
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::texture::jsoncpp::strtouint32_hex;
@@ -67,9 +67,9 @@ pub struct TextureAtlas {
     pub texture_data: Option<IndexMap<AtlasKey, AtlasItem>>,
     /// `resource_pack_name` and `format_version`: written by vanilla's own files and read by
     /// nothing.
-    pub ignored: Extra,
+    pub ignored: UnknownMembers,
     /// Members vanilla does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl TextureAtlas {
@@ -188,7 +188,7 @@ pub struct AtlasItem {
     /// `mip_fade_color`: the default of every layer; no colour when absent.
     pub mip_fade_color: Option<Color>,
     /// Members vanilla does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl AtlasItem {
@@ -320,7 +320,7 @@ pub enum TextureElement {
         /// The entries of `variations`.
         variations: Vec<VariationEntry>,
         /// The object's other members, which vanilla ignores.
-        ignored: Extra,
+        ignored: UnknownMembers,
     },
     /// Any other object: one layer.
     Layer(Box<TextureLayer>),
@@ -369,7 +369,7 @@ pub struct TextureLayer {
     /// `isotropic`: the faces drawn without a fixed orientation.
     pub isotropic: Option<Isotropic>,
     /// Members vanilla does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl TextureLayer {

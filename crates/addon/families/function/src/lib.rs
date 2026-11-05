@@ -17,7 +17,7 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FunctionPath;
 
 use crate::read::{first_word, trimmed};
@@ -109,7 +109,7 @@ pub struct TickList {
     /// The functions to run, in order (JSON `values`).
     pub values: Vec<TickFunction>,
     /// The other members of the file, which vanilla does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of a [`TickList`].

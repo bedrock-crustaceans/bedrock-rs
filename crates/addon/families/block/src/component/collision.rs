@@ -192,7 +192,7 @@ pub(crate) fn read_collision_box(
                 );
                 let json =
                     bedrock_addon_core::versioning::write_payload(&value).unwrap_or(Value::NULL);
-                b.extra.insert(name.to_owned(), json);
+                d.unknown_mut().put(&box_at(index), name, json);
             }
         }
     }

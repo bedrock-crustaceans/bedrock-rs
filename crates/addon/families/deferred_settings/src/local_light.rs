@@ -3,7 +3,7 @@
 use indexmap::IndexMap;
 
 use super::value::Rgb8;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BlockId;
 
 /// The local lights of the deferred renderer (`minecraft:local_light_settings`, the one file
@@ -31,7 +31,7 @@ pub struct LocalLight {
     /// light colour.
     pub light_color: Option<Rgb8>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The kind of a block's local light.
@@ -132,7 +132,10 @@ mod codec {
             for (block, light) in &self.lights {
                 object.req(block.as_str(), light, write_light)?;
             }
-            object.finish(&bedrock_addon_core::document::Extra::default(), &[])
+            object.finish(
+                &bedrock_addon_core::document::UnknownMembers::default(),
+                &[],
+            )
         }
     }
 }

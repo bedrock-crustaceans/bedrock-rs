@@ -140,8 +140,6 @@ impl Upgrade for ClientBiome {
             format_version: self.format_version,
             description: self.description,
             components,
-            extra: self.extra,
-            root_extra: self.root_extra,
         }
     }
 }

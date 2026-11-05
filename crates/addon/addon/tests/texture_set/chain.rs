@@ -321,3 +321,20 @@ fn the_image_layers_are_listed_in_the_schema_s_order() {
     );
     assert_eq!(LayerKind::Heightmap.key(), "heightmap");
 }
+
+/// An unknown member put in the table of a document as written (an edit) is upgraded with its
+/// object.
+#[test]
+fn upgrade_keeps_the_unknown_members_of_the_document_as_written() {
+    use bedrock_addon::diagnostic::JsonPath;
+    let old = doc("1.16.100", r#""color": "stone""#);
+    let mut written =
+        TextureSet::parse_as_written(&path(), old.as_bytes(), &LoadContext::detached()).unwrap();
+    let payload = JsonPath::of_keys(["minecraft:texture_set"]);
+    written
+        .unknown_mut()
+        .put(&payload, "zz_payload", Value::from(1i64));
+    let expected = written.unknown().clone();
+    let upgraded = history::upgrade(written, &LoadContext::detached()).unwrap();
+    assert_eq!(upgraded.unknown(), &expected);
+}

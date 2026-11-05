@@ -4,7 +4,6 @@
 //! scratch decode with the bind order) is the strict slice's fixture, and the storage's
 //! catalogue body decoder reads the original to the same document.
 
-use bedrock_addon::document::Content;
 use bedrock_addon::families::crafting_catalog::CategoryName;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::version::FormatVersion;

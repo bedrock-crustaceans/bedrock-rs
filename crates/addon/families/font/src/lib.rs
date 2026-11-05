@@ -16,7 +16,7 @@ use std::ops::RangeInclusive;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::document::{Extra, Merged};
+use bedrock_addon_core::document::{Merged, UnknownMembers};
 use bedrock_addon_core::json::Value;
 
 use crate::stack::Index;
@@ -105,7 +105,7 @@ pub struct FontMetadata {
     /// JSON `font_aliases`, in order, read after every font.
     pub font_aliases: Option<Vec<FontAlias>>,
     /// The other members (`version` is not one: a loaded file's is 1).
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// The root as the author wrote it, kept when the fields cannot say it (an entry the game
     /// skips, a list that is no array, a number the fields hold narrowed).
     /// `to_json` writes it for as long as the fields are still the game's reading of it; a
@@ -157,7 +157,7 @@ pub struct FontEntry {
     /// ([`render_size`](Self::render_size) gives the size it ends up with).
     pub target_font_render_size: Option<i32>,
     /// The other members, and the members above as written when the field cannot say them.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One element of `generate_pages_on_start`.
@@ -187,7 +187,7 @@ pub struct FontAlias {
     /// integer.
     pub font_scale_factor_override: Option<f64>,
     /// The other members, and `font_scale_factor_override` as written when it is no decimal.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One font of an alias.
@@ -204,7 +204,7 @@ pub struct FontAliasRef {
     /// JSON `font_scale` when written as a decimal number; the game ignores an integer.
     pub font_scale: Option<f64>,
     /// The other members, and the members above as written when the field cannot say them.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A range of code points of an alias font: `{"first": 57344, "last": 63743}`.
@@ -254,7 +254,7 @@ pub struct Emoticon {
     /// [`code_point`](Self::code_point).
     pub code: String,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The metrics of one MSDF font page (`font/smooth/smooth_41.fontdata`): how far each of the

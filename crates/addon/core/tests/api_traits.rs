@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::str::FromStr;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, IdError, kind};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, StrictBool, StrictFloat, StrictInt, StrictString, Value, WriteStyle,
@@ -64,7 +64,7 @@ fn color_defaults_to_nil() {
 
 #[test]
 fn extra_collects_extends_and_counts() {
-    let mut extra: Extra = [("b".to_owned(), Value::from(1_i64))].into_iter().collect();
+    let mut extra: UnknownMembers = [("b".to_owned(), Value::from(1_i64))].into_iter().collect();
     extra.extend([("a".to_owned(), Value::from(2_i64))]);
     assert_eq!(extra.len(), 2);
     let keys: Vec<&str> = extra.iter().map(|(key, _)| key).collect();

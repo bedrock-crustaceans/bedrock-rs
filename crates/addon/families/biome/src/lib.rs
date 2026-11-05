@@ -49,7 +49,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, JsonDefinition,
     JsonDocument, JsonPlaced, NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected,
-    default_path_flat_for_vanilla,
+    UnknownMembers, default_path_flat_for_vanilla,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
@@ -79,8 +79,6 @@ pub struct Biome {
     pub description: Description,
     /// The components (JSON `components`, may be empty).
     pub components: ComponentMap<BiomeComponent>,
-    /// Unknown members of `minecraft:biome`.
-    pub extra: Extra,
 }
 
 /// `minecraft:biome/description`.
@@ -106,8 +104,6 @@ pub struct Beta {
     pub components: ComponentMap<BiomeComponent>,
     /// Experimental environment attributes (JSON `environment_attributes`).
     pub environment_attributes: Option<EnvironmentAttributes>,
-    /// Unknown members of `minecraft:biome`.
-    pub extra: Extra,
 }
 
 /// The directory biome files live in.
@@ -277,7 +273,7 @@ impl Content for Beta {
         let root = write_envelope::<BiomeFamily>(
             BETA_VERSION,
             VersionStruct::write(self)?,
-            &Extra::default(),
+            &UnknownMembers::default(),
         );
         write_json(&root, out, style)
     }
@@ -305,10 +301,13 @@ pub(crate) fn upgrade_document(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<Biome>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let found = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, mut found) = document.into_parsed_parts();
+    // The steps start from no finding, with the unknown members to move and take.
+    let mut rows = Diagnostics::default();
+    let unknown = found.take_unknown();
+    if !unknown.is_empty() {
+        *rows.unknown_mut() = unknown;
+    }
     let identity = Identity {
         identifier: Some(identifier_of(&value).to_owned()),
         runtime_identifier: None,
@@ -319,19 +318,13 @@ pub(crate) fn upgrade_document(
         beta_literal: version.beta,
         prerelease: false,
     };
-    let parsed = Parsed::<BiomeFamily>::from_value(
-        Some(value),
-        version,
-        written,
-        at,
-        Diagnostics::default(),
-    )
-    .with_identity(identity);
+    let parsed = Parsed::<BiomeFamily>::from_value(Some(value), version, written, at, rows)
+        .with_identity(identity);
     let outcome = finish(parsed, cx);
     let mut diagnostics = found;
     let mut more = outcome.diagnostics;
     more.locate(&origin);
-    diagnostics.extend(more);
+    diagnostics.extend_with_unknown(more);
     match outcome.value {
         Some(Loaded::Stable(biome)) => {
             Ok(Document::new(biome, origin, outcome.version, diagnostics))
@@ -643,7 +636,6 @@ impl Biome {
         Self {
             description: Description::new(identifier),
             components: ComponentMap::new(),
-            extra: Extra::default(),
         }
     }
 }
@@ -655,7 +647,6 @@ impl Beta {
             description: Description::new(identifier),
             components: ComponentMap::new(),
             environment_attributes: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -1080,8 +1071,8 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.21.110..=1.26.30 (0..=3): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.21.110..=1.26.30 (0..=3): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

@@ -356,3 +356,24 @@ fn a_null_events_member_of_a_1_26_20_document_is_told_as_deprecated_alone() {
         "{d:#?}"
     );
 }
+
+#[test]
+fn upgrade_keeps_the_unknown_members_a_parse_keeps() {
+    // A 1.16.0 document: the upgrade rebuilds the payload, so its members are moved.
+    let text = r#"{"format_version": "1.16.0", "minecraft:block": {
+        "description": {"identifier": "design:x", "zz_description": 1},
+        "components": {
+            "minecraft:destroy_time": 4.0,
+            "minecraft:flammable": {"flame_odds": 50, "burn_odds": 0, "zz_flammable": 2}
+        },
+        "zz_payload": 3
+    }}"#;
+    let path = PackPath::from_static("blocks/demo/x.json");
+    let cx = context();
+    let parsed = Block::parse(&path, text.as_bytes(), &cx).expect("loads");
+    assert!(!parsed.unknown().is_empty(), "the parse keeps a member");
+    let written = Block::parse_as_written(&path, text.as_bytes(), &cx).expect("parses");
+    let upgraded = history::upgrade(written, &cx).expect("upgrades");
+    assert_eq!(upgraded.value(), parsed.value());
+    assert_eq!(upgraded.unknown(), parsed.unknown());
+}

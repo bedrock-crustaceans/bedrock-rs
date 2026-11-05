@@ -294,7 +294,7 @@ impl PageSpec {
                 let mut object = Written::default();
                 object.put("first_page", Some(Value::from(*first_page)));
                 object.put("last_page", Some(Value::from(*last_page)));
-                object.finish(&bedrock_addon_core::document::Extra::default())
+                object.finish(&bedrock_addon_core::document::UnknownMembers::default())
             }
             Self::Other(written) => written.clone(),
         }
@@ -438,7 +438,7 @@ impl FontAliasRef {
                     let mut object = Written::default();
                     object.put("first", Some(Value::from(range.first)));
                     object.put("last", Some(Value::from(range.last)));
-                    object.finish(&bedrock_addon_core::document::Extra::default())
+                    object.finish(&bedrock_addon_core::document::UnknownMembers::default())
                 }))
             }),
         );

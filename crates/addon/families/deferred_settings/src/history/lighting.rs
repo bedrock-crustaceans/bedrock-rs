@@ -7,7 +7,7 @@
 //! - 1.26.0 (the newest): `ambient` and `sky.intensity` are keyframed.
 
 use crate::{LightingSettings, Rgb8};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 
 /// The ambient light before format 1.26.0: plain values, both required.
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +17,7 @@ pub struct AmbientLight {
     /// The ambient strength, 0–5 (JSON `illuminance`).
     pub illuminance: f32,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The sky light of formats 1.21.70 and 1.21.80.
@@ -26,14 +26,14 @@ pub struct Sky {
     /// The strength of the sky light, 0.1–1 (JSON `intensity`).
     pub intensity: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Format 1.21.40.
 pub mod v1_21_40 {
     use super::AmbientLight;
     use crate::{Description, Emissive, OrbitalLights, Rgba8};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Lighting settings at format 1.21.40: the sun, moon and orbital offset directly in
@@ -49,7 +49,7 @@ pub mod v1_21_40 {
         /// The light that reaches every surface (JSON `ambient`).
         pub ambient: Option<AmbientLight>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 
@@ -57,7 +57,7 @@ pub mod v1_21_40 {
 pub mod v1_21_60 {
     use super::AmbientLight;
     use crate::{Description, Emissive, OrbitalLights};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Lighting settings at format 1.21.60: as 1.21.40, the colours without alpha.
@@ -72,7 +72,7 @@ pub mod v1_21_60 {
         /// The light that reaches every surface (JSON `ambient`).
         pub ambient: Option<AmbientLight>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 
@@ -80,7 +80,7 @@ pub mod v1_21_60 {
 pub mod v1_21_70 {
     use super::{AmbientLight, Sky};
     use crate::{Description, Emissive, OrbitalLights};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Lighting settings at format 1.21.70: as 1.21.60, with `sky`.
@@ -97,7 +97,7 @@ pub mod v1_21_70 {
         /// The light of the sky (JSON `sky`).
         pub sky: Option<Sky>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 
@@ -105,7 +105,7 @@ pub mod v1_21_70 {
 pub mod v1_21_80 {
     use super::{AmbientLight, Sky};
     use crate::{Description, DirectionalLights, Emissive};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Lighting settings at format 1.21.80: the sun and moon under
@@ -123,7 +123,7 @@ pub mod v1_21_80 {
         /// The light of the sky (JSON `sky`).
         pub sky: Option<Sky>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 

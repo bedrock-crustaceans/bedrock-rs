@@ -131,7 +131,7 @@ fn history_parses_without_upgrading_and_upgrades_on_request() {
         );
         // Not upgraded: the document as it was written.
         assert_eq!(
-            json(&as_written.value().to_json().unwrap()),
+            json(&as_written.to_json().unwrap()),
             json(&text),
             "{version}"
         );
@@ -154,7 +154,7 @@ fn a_legacy_struct_keeps_its_root() {
     };
     assert_eq!(biome.format_version, "1.21.45");
     assert_eq!(biome.description.identifier.as_str(), "plains");
-    assert_eq!(json(&as_written.value().to_json().unwrap()), json(text));
+    assert_eq!(json(&as_written.to_json().unwrap()), json(text));
     let unknown = r#"{"format_version": "1.21.45", "minecraft:client_biome": {"description": {"identifier": "plains"}, "components": {}, "tag": 1}, "note": [1]}"#;
     assert!(ClientBiome::parse_as_written(&path(), unknown.as_bytes(), &context()).is_err());
 }
@@ -168,7 +168,7 @@ fn a_beta_document_is_the_beta_struct_and_is_not_upgraded() {
     for cx in [beta_apis(), base_game()] {
         let as_written = ClientBiome::parse_as_written(&path(), text.as_bytes(), &cx).unwrap();
         assert!(matches!(as_written.value(), Any::Beta(_)));
-        assert_eq!(json(&as_written.value().to_json().unwrap()), json(&text));
+        assert_eq!(json(&as_written.to_json().unwrap()), json(&text));
         // The stable document has no parser for it.
         assert!(history::upgrade(as_written, &cx).is_err());
     }

@@ -146,7 +146,6 @@ fn added_rules_report_what_vanilla_is_silent_on_deviation() {
 /// vanilla's `asFloat` gives an infinity the writer has no spelling for.
 #[test]
 fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
-    use bedrock_addon::document::Content as _;
     use bedrock_addon::molang::Molang;
     let text = r#"{"format_version": "1.8.0", "animations": {"animation.x": {"anim_time_update": 1e39, "blend_weight": -1e999, "bones": {"b": {"scale": [1, 1e39, 2]}}}}}"#;
     let document = loaded(animation(text, &rp(1, 21, 0)));
@@ -174,7 +173,7 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
         lines(document.diagnostics()).join("\n")
     );
     // What was read is written, and reads back equal without the finding.
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     let again = loaded(animation(&written, &rp(1, 21, 0)));
     assert_eq!(again.value(), document.value(), "{written}");
     assert!(find(again.diagnostics(), "InvalidValue", Severity::Info).is_none());

@@ -30,7 +30,7 @@ fn rewritten(table: &TradeTable) -> String {
     let again = loads(&written);
     assert_eq!(again.version().parsed_as, FormatVersion::new(1, 21, 30));
     assert_eq!(again.value(), table);
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
     written
 }
 
@@ -112,7 +112,7 @@ fn legacy_rewritten(table: &TradeTable) -> String {
         "{:#?}",
         again.diagnostics()
     );
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
     written
 }
 
@@ -235,7 +235,7 @@ fn k107_a_blob_written_under_its_deprecated_name_is_announced_at_the_member_of_t
         // The written table is a legacy document when a blob was announced (no `__DEP_`
         // member, which the game rejects), reads back to the same value with
         // no finding above information, and its upgrade announces the same members again.
-        let written = document.value().to_json().unwrap();
+        let written = document.to_json().unwrap();
         assert!(!written.contains("__DEP_"), "{written}");
         let again = loads(&written);
         assert_eq!(again.value(), document.value(), "{written}");
@@ -372,7 +372,7 @@ fn a_legacy_file_parses_as_written_and_upgrades_to_what_parse_gives() {
     assert_eq!(legacy.tiers[0].trades.as_ref().map(Vec::len), Some(2));
     assert_eq!(legacy.tiers[1].total_exp_required, None);
     // Written in its own version, it is the same document.
-    let rewritten = as_written.value().to_json().unwrap();
+    let rewritten = as_written.to_json().unwrap();
     assert_eq!(json(&rewritten), json(&text));
     let again = TradeTable::parse_as_written(&path(), rewritten.as_bytes(), &cx()).unwrap();
     assert_eq!(again.value(), as_written.value());
@@ -393,7 +393,7 @@ fn a_stamped_legacy_file_keeps_its_version_when_written_in_its_own_shape() {
             "gives": [{"item": "minecraft:emerald"}]}]}]"#,
     );
     let as_written = TradeTable::parse_as_written(&path(), text.as_bytes(), &cx()).unwrap();
-    let rewritten = as_written.value().to_json().unwrap();
+    let rewritten = as_written.to_json().unwrap();
     assert_eq!(json(&rewritten), json(&text));
     // The gates still see 1.18.10 after the rewrite: the same upgrade.
     assert_eq!(loads(&rewritten).value(), loads(&text).value());
@@ -416,7 +416,7 @@ fn a_1_21_30_file_parses_as_the_newest_struct_and_upgrade_runs_no_step() {
         as_written.value().parsed_version(),
         FormatVersion::new(1, 21, 30)
     );
-    let rewritten = as_written.value().to_json().unwrap();
+    let rewritten = as_written.to_json().unwrap();
     assert_eq!(
         member(&json(&rewritten), "tiers"),
         member(&json(&text), "tiers")
@@ -475,24 +475,44 @@ fn a_legacy_documents_unknown_members_are_written_back_in_its_own_shape() {
     let Any::V0(legacy) = as_written.value() else {
         panic!("not the legacy struct");
     };
-    assert_eq!(legacy.extra.get("note"), Some(&json("1")));
-    let tier = &legacy.tiers[0];
-    assert_eq!(tier.extra.get("tag"), Some(&json(r#""x""#)));
-    let group = &tier.groups.as_ref().unwrap()[0];
-    assert_eq!(group.extra.get("label"), Some(&json(r#""y""#)));
-    let traded = &group.trades[0];
-    assert_eq!(traded.extra.get("comment"), Some(&json(r#""z""#)));
-    let v0::ItemList::Item(wheat) = &traded.wants[0] else {
+    let trades = &legacy.tiers[0].groups.as_ref().unwrap()[0].trades[0];
+    let v0::ItemList::Item(_) = &trades.wants[0] else {
         panic!("not a bare item");
     };
-    assert_eq!(wheat.extra.get("count"), Some(&json("2")));
-    assert_eq!(wheat.extra.get("quanitity"), Some(&json("3")));
-    let v0::ItemList::Choice { choice, extra } = &traded.gives[0] else {
+    let v0::ItemList::Choice { .. } = &trades.gives[0] else {
         panic!("not a choice");
     };
-    assert_eq!(extra.get("hint"), Some(&json("true")));
-    assert_eq!(choice[0].extra.get("amount"), Some(&json("1")));
-    let rewritten = as_written.value().to_json().unwrap();
+    // The document keeps them, each at its object.
+    let unknown = as_written.unknown();
+    let at = |path: &str| {
+        let mut at = bedrock_addon_core::diagnostic::JsonPath::new();
+        for segment in path.split('/').filter(|s| !s.is_empty()) {
+            match segment.parse::<usize>() {
+                Ok(index) => at.push_index(index),
+                Err(_) => at.push(segment),
+            }
+        }
+        at
+    };
+    let trade = "tiers/0/groups/0/trades/0";
+    assert_eq!(unknown.get(&at(""), "note"), Some(&json("1")));
+    assert_eq!(unknown.get(&at("tiers/0"), "tag"), Some(&json(r#""x""#)));
+    assert_eq!(
+        unknown.get(&at("tiers/0/groups/0"), "label"),
+        Some(&json(r#""y""#))
+    );
+    assert_eq!(unknown.get(&at(trade), "comment"), Some(&json(r#""z""#)));
+    let wheat = at(&format!("{trade}/wants/0"));
+    assert_eq!(unknown.get(&wheat, "count"), Some(&json("2")));
+    assert_eq!(unknown.get(&wheat, "quanitity"), Some(&json("3")));
+    let gives = at(&format!("{trade}/gives/0"));
+    assert_eq!(unknown.get(&gives, "hint"), Some(&json("true")));
+    assert_eq!(
+        unknown.get(&gives.child("choice").index(0), "amount"),
+        Some(&json("1"))
+    );
+    assert_eq!(unknown.len(), 8);
+    let rewritten = as_written.to_json().unwrap();
     assert_eq!(json(&rewritten), json(WITH_UNKNOWN));
     for key in [
         "note",
@@ -509,7 +529,8 @@ fn a_legacy_documents_unknown_members_are_written_back_in_its_own_shape() {
     // Reading the rewrite gives the same struct, unknown members included.
     let again = TradeTable::parse_as_written(&path(), rewritten.as_bytes(), &cx()).unwrap();
     assert_eq!(again.value(), as_written.value());
-    assert_eq!(again.value().to_json().unwrap(), rewritten);
+    assert_eq!(again.unknown(), as_written.unknown());
+    assert_eq!(again.to_json().unwrap(), rewritten);
 }
 
 #[test]
@@ -556,7 +577,7 @@ fn a_member_named_extra_is_an_unknown_member_like_any_other() {
         5
     );
     assert!(above_info(as_written.diagnostics()).is_empty());
-    assert_eq!(json(&as_written.value().to_json().unwrap()), json(legacy));
+    assert_eq!(json(&as_written.to_json().unwrap()), json(legacy));
     // From 1.21.30: an unknown member, so an `UnrecognizedField` error at its own path.
     let stamped = r#"{"format_version": "1.21.30", "tiers": [{"total_exp_required": 0, "extra": 1,
         "groups": [{"trades": [{"wants": [{"item": "minecraft:wheat", "extra": 2}],

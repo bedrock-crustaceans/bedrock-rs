@@ -21,7 +21,7 @@ mod cost;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 
 #[allow(unused_imports, reason = "the link stage reads them")]
 #[doc(hidden)]
@@ -77,7 +77,7 @@ pub struct ClientBlock {
     /// is not a string is read as `"true"`, `"false"` or `""`.
     pub sound: Option<String>,
     /// The members the client never reads (`brightness_gamma`, `sounds`, `client_entity`, …).
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The textures of a block's six faces, in one of the three forms `blocks.json` has.

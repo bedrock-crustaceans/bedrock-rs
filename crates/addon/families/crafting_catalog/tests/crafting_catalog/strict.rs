@@ -4,7 +4,7 @@
 //! C2), joined by a plain copy step.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
-use bedrock_addon_core::document::{Content, JsonDocument as _};
+use bedrock_addon_core::document::JsonDocument as _;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion};
 
 use super::common::*;

@@ -32,8 +32,6 @@ pub struct Legacy<const MAJOR: u16, const MINOR: u16, const PATCH: u16> {
     pub events: Option<Value>,
     /// The names of the 1.21.60 `minecraft:custom_components` list, in order (from 1.21.90).
     pub ordered_v1_custom_components: Vec<String>,
-    /// The other members of the payload.
-    pub extra: Extra,
     /// The root members beside `format_version` and `minecraft:block` (vanilla's legacy
     /// slice reads the raw text and ignores them; reported as unknown members).
     pub root_extra: Extra,
@@ -55,8 +53,6 @@ pub struct LegacyPermutation {
     pub components: IndexMap<String, Value>,
     /// The names of the permutation's 1.21.60 `custom_components` list (from 1.21.90).
     pub ordered_v1_custom_components: Vec<String>,
-    /// The other members of the permutation.
-    pub extra: Extra,
 }
 
 impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Versioned
@@ -81,7 +77,6 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
             permutations: self.permutations,
             events: self.events,
             ordered_v1_custom_components: self.ordered_v1_custom_components,
-            extra: self.extra,
             root_extra: self.root_extra,
             synthesized: self.synthesized,
             category_from: self.category_from,
@@ -377,18 +372,21 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
     /// Reads the whole document (the raw-text path below 1.26.20) or the payload alone
     /// (as the step-file harness hands it).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        // A document without the payload key is read as the payload itself; its unknown
+        // members are kept where it is written, below the payload key.
+        let below = cx.at.child("minecraft:block");
         let Some(root) = object_members(text.text) else {
-            return Self::parse_payload(text.text, &cx.at, d);
+            return Self::parse_payload(text.text, &cx.at, &below, d);
         };
         let Some(payload) = root
             .iter()
             .find(|(key, _)| key == "minecraft:block")
             .map(|(_, raw)| *raw)
         else {
-            return Self::parse_payload(text.text, &cx.at, d);
+            return Self::parse_payload(text.text, &cx.at, &below, d);
         };
         let at = cx.at.child("minecraft:block");
-        let mut block = Self::parse_payload(payload, &at, d)?;
+        let block = Self::parse_payload(payload, &at, &at, d)?;
         for (key, raw) in root {
             if key == "minecraft:block" || key == "format_version" {
                 continue;
@@ -397,7 +395,7 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
             // The legacy reader ignores it with no log, so the crate reports it as an information.
             d.push(Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None }).at(path));
             if let Some(value) = read_value(raw) {
-                block.root_extra.insert(key, value);
+                d.unknown_mut().put(&cx.at, &key, value);
             }
         }
         Some(block)
@@ -409,16 +407,20 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
         let mut root = facet_value::VObject::new();
         root.insert("format_version", Self::VERSION.to_string());
         root.insert("minecraft:block", self.payload_json());
-        for (key, value) in self.root_extra.iter() {
-            root.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         Ok(root.into())
     }
 }
 
 impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, PATCH> {
-    /// Reads the payload object `text`, its findings below `base`.
-    fn parse_payload(text: &str, base: &JsonPath, d: &mut Diagnostics) -> Option<Self> {
+    /// Reads the payload object `text`, its findings below `base` and its unknown members
+    /// below `kept` (the payload's place in the written document).
+    fn parse_payload(
+        text: &str,
+        base: &JsonPath,
+        kept: &JsonPath,
+        d: &mut Diagnostics,
+    ) -> Option<Self> {
         let payload = JsonSlice::new(text);
         let at = |key: Option<&str>| {
             let mut path = base.clone();
@@ -485,7 +487,9 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
                     for (index, entry) in entries.into_iter().enumerate() {
                         let mut path = at(Some("permutations"));
                         path.push_index(index);
-                        let Some(permutation) = read_permutation(entry, &path, d) else {
+                        let mut kept_at = kept.child("permutations");
+                        kept_at.push_index(index);
+                        let Some(permutation) = read_permutation(entry, &path, &kept_at, d) else {
                             structural(d, PERMUTATION_OBJECT, path.clone());
                             if object_members(entry).is_none() {
                                 structural(d, PERMUTATIONS_OBJECTS, path);
@@ -502,7 +506,7 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
                 }
                 _ => {
                     if let Some(value) = read_value(raw) {
-                        block.extra.insert(key, value);
+                        d.unknown_mut().put(kept, &key, value);
                     }
                 }
             }
@@ -536,9 +540,6 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
                 strings_value(&self.ordered_v1_custom_components),
             );
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
         object.into()
     }
 }
@@ -557,9 +558,6 @@ impl LegacyPermutation {
                 strings_value(&self.ordered_v1_custom_components),
             );
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
         object.into()
     }
 }
@@ -571,7 +569,12 @@ pub(crate) fn strings_value(strings: &[String]) -> Value {
 }
 
 /// A permutation object; `None` when it is not an object with an object `components`.
-fn read_permutation(text: &str, at: &JsonPath, d: &mut Diagnostics) -> Option<LegacyPermutation> {
+fn read_permutation(
+    text: &str,
+    at: &JsonPath,
+    kept: &JsonPath,
+    d: &mut Diagnostics,
+) -> Option<LegacyPermutation> {
     let members = object_members(text)?;
     let mut permutation = LegacyPermutation::default();
     let mut has_components = false;
@@ -589,7 +592,7 @@ fn read_permutation(text: &str, at: &JsonPath, d: &mut Diagnostics) -> Option<Le
             }
             _ => {
                 if let Some(value) = read_value(raw) {
-                    permutation.extra.insert(key, value);
+                    d.unknown_mut().put(kept, &key, value);
                 }
             }
         }

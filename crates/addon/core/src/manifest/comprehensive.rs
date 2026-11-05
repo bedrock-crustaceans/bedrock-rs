@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use crate::diagnostic::{DiagnosticCode as Code, VanillaText};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::Value;
 use crate::pack_identity::PackType;
 use crate::version::{ENGINE_VERSION, MinEngineVersion, SemVersion};
@@ -80,7 +80,7 @@ pub(super) fn read(
         subpacks,
         settings,
         has_education_metadata,
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     })
 }
 
@@ -272,7 +272,7 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
             base_game_version(sink, header, pack_type, true, "header/base_game_version")
         };
     let scope_text = string(sink, header, "pack_scope", AT, false);
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     let pack_scope = pack_scope(
         sink,
         scope_text,
@@ -432,7 +432,7 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
                 description,
                 entry,
                 language,
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             });
         }
     }

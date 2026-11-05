@@ -4,7 +4,7 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     JsonSlice, SliceError, StrictFloat, StrictInt, StrictIntType, Value, parse_at,
     parse_at_null_absent, remove_null_members, tell_null_members,
@@ -72,9 +72,6 @@ pub(crate) trait Goal: for<'a> Facet<'a> + Into<EntityComponent> + Default + Siz
     /// tells a member it gives up with this text and severity instead of its own.
     const LENIENT_TEXTS: &'static [(&'static str, &'static str, Severity)] = &[];
 
-    /// The goal's unknown members.
-    fn extra_mut(&mut self) -> &mut Extra;
-
     /// The lenient read gave up the [`Goal::LENIENT_TEXTS`] member `name`: what the legacy
     /// reader does after that failure. Returns the members it set back to their defaults that
     /// the goal was written with, each told as dropped. Nothing by default.
@@ -97,7 +94,8 @@ pub(crate) trait Goal: for<'a> Facet<'a> + Into<EntityComponent> + Default + Siz
     }
 
     /// The typed → typed conversions of a document read strictly at `from`, below a later
-    /// redeclaration of the goal: members of the older struct are taken from `extra`.
+    /// redeclaration of the goal: members of the older struct are taken from its unknown
+    /// members (`Diagnostics::unknown_mut`).
     fn upgrade(&mut self, from: FormatVersion, d: &mut Diagnostics) {
         let _ = (from, d);
     }
@@ -189,7 +187,10 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
             (value, json, None)
         }
     };
-    let (unknown, misread) = crate::read::keep_unknown(&mut value, &json);
+    // The goal's unknown members, by paths below the goal (its caller places them).
+    let mut kept = bedrock_addon_core::document::Unknown::new();
+    let (unknown, misread) = crate::read::keep_unknown(&value, &json, &mut kept);
+    d.unknown_mut().absorb(&JsonPath::new(), kept);
     for path in misread {
         d.push(
             // The game writes no content-log line for this, so the crate reports it as an
@@ -220,7 +221,7 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
             .filter(|_| top)
             .unwrap_or_default()
             .to_owned();
-        if top && value.extra_mut().get(&name).is_none() {
+        if top && !d.unknown().contains(&JsonPath::new(), &name) {
             // Taken by a conversion.
             continue;
         }
@@ -235,7 +236,7 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
             rejected = true;
             d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(path));
         } else if let Some((name, text, _)) = deprecated {
-            value.extra_mut().remove(name);
+            d.unknown_mut().take(&JsonPath::new(), name);
             // The game logs a deprecated name as an error that rejects the document in a
             // typed read; the lenient conversion of an older document, whose struct may still
             // bind the name, is only told.
@@ -1064,8 +1065,8 @@ impl<'d> Check<'d> {
     }
 
     /// Reports the members a vector's object form does not define (kept in its `extra`).
-    pub(crate) fn vector(&mut self, key: &str, extra: Option<&Extra>) {
-        for (name, _) in extra.into_iter().flat_map(Extra::iter) {
+    pub(crate) fn vector(&mut self, key: &str, extra: Option<&UnknownMembers>) {
+        for (name, _) in extra.into_iter().flat_map(UnknownMembers::iter) {
             let mut at = self.path(key);
             at.push(name);
             self.d.push(

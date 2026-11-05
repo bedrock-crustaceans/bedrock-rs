@@ -140,10 +140,17 @@ fn the_in_payload_version_stands_in_for_a_missing_root_one() {
         codes(&outcome.diagnostics, Severity::Info),
         Vec::<&str>::new()
     );
-    let Some(Loaded::Stable(entity)) = outcome.value else {
+    let Some(Loaded::Stable(_)) = outcome.value else {
         panic!("{:?}", outcome.diagnostics)
     };
-    assert!(entity.extra.get("format_version").is_none());
+    let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
+    assert!(
+        outcome
+            .diagnostics
+            .unknown()
+            .get(&payload, "format_version")
+            .is_none()
+    );
 }
 
 #[test]
@@ -232,5 +239,37 @@ fn a_1_26_50_document_is_its_own_slice_below_the_newest_1_26_60() {
             "{version}: {:?}",
             loaded.diagnostics
         );
+    }
+}
+
+#[test]
+fn upgrade_keeps_the_unknown_members_a_parse_keeps() {
+    use bedrock_addon_core::document::Content;
+    let path = bedrock_addon_core::pack_identity::PackPath::new("entities/x.json").unwrap();
+    // The description keeps `is_experimental`; the payload's own member is told, and taken
+    // by a step of the upgrade.
+    let older = r#"{ "description": { "identifier": "demo:x", "is_experimental": false },
+        "components": { "minecraft:health": { "value": 10 } }, "zz_payload": 3 }"#;
+    // A 1.26.40 ranged attack's radius is an unknown member of the goal, which the 1.26.50
+    // step takes into `attack_range`.
+    let ranged = r#"{ "description": { "identifier": "demo:x" }, "components": {
+        "minecraft:behavior.ranged_attack": { "priority": 2, "attack_radius": 15 } } }"#;
+    // The newest struct's description keeps `is_experimental` as written.
+    let newest = r#"{ "description": { "identifier": "demo:x", "is_experimental": false },
+        "components": {} }"#;
+    for (version, payload) in [
+        ("1.26.60", newest),
+        ("1.12.0", older),
+        ("1.20.0", older),
+        ("1.21.50", older),
+        ("1.26.40", ranged),
+    ] {
+        let text = doc(version, payload);
+        let direct = Entity::parse(&path, text.as_bytes(), &cx()).unwrap();
+        let written = Entity::parse_as_written(&path, text.as_bytes(), &cx()).unwrap();
+        let upgraded = Entity::upgrade(written, &cx()).unwrap();
+        assert_eq!(upgraded.value(), direct.value(), "{version}");
+        assert_eq!(upgraded.unknown(), direct.unknown(), "{version}");
+        assert_eq!(upgraded.diagnostics(), direct.diagnostics(), "{version}");
     }
 }

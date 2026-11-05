@@ -3,7 +3,6 @@
 use indexmap::IndexMap;
 use uuid::Uuid;
 
-use crate::document::Extra;
 use crate::pack::PackType;
 
 use super::{GLOBAL_FILE, WORLD_FILE};
@@ -42,8 +41,6 @@ pub struct Settings {
     /// The values by setting name (JSON `values`): the `name` of a slider, toggle, dropdown
     /// or multiselect definition in the pack's manifest.
     pub values: IndexMap<String, SettingValue>,
-    /// Unknown members. Always empty after a load: an unknown member rejects the file.
-    pub extra: Extra,
 }
 
 /// One saved setting value: what a slider, toggle, dropdown or multiselect holds.
@@ -130,7 +127,6 @@ impl Settings {
             pack_id,
             last_used: None,
             values,
-            extra: Extra::default(),
         }
     }
 }

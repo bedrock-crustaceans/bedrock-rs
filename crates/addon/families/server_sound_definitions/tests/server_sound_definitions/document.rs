@@ -1,7 +1,7 @@
 //! The file: every rule of one document, no stack.
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Content;
+
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_server_sound_definitions::{DurationMode, SoundDuration, TagValueList};

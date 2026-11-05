@@ -565,7 +565,7 @@ fn an_unknown_member_of_a_legacy_metadata_is_told_as_not_kept() {
         })
         .collect();
     assert_eq!(told, ["MemberNotKept Info at metadata/x_meta"]);
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     assert!(!written.contains("x_meta"), "{written}");
     assert!(written.contains(r#""license": "MIT""#), "{written}");
     // Without the member nothing is told.
@@ -615,7 +615,7 @@ fn a_format_0_manifest_is_written_as_format_1_and_the_load_says_so() {
             "UnusualFormatVersion Info at ``"
         ]
     );
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     assert!(written.contains(r#""format_version": 1"#), "{written}");
     assert!(
         written.contains(r#""uuid": "11111111-1111-1111-1111-111111111111""#)
@@ -630,5 +630,5 @@ fn a_format_0_manifest_is_written_as_format_1_and_the_load_says_so() {
     let mut expected = document.into_value();
     expected.original_format = ManifestFormat::V1;
     assert_eq!(again.value(), &expected);
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
 }

@@ -9,10 +9,11 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::{Extra, Unknown};
 use bedrock_addon_core::json::{
     EncodeError, Indent, StrictFloat, StrictInt, Unrepresentable, Value, WriteStyle,
-    keep_unknown_members, to_json, write_json,
+    keep_unknown_members, to_json, write_json, write_json_with,
 };
 use facet::Facet;
 use indexmap::IndexMap;
@@ -26,6 +27,18 @@ fn compact<'f, T: Facet<'f>>(value: &T) -> String {
     let mut out = Vec::new();
     write_json(value, &mut out, COMPACT).unwrap();
     String::from_utf8(out).unwrap()
+}
+
+/// [`compact`] with a document's unknown members.
+fn compact_with<'f, T: Facet<'f>>(value: &T, unknown: &Unknown) -> String {
+    let mut out = Vec::new();
+    let told = write_json_with(value, unknown, &mut out, COMPACT).unwrap();
+    assert!(told.is_empty(), "{told:?}");
+    String::from_utf8(out).unwrap()
+}
+
+fn at(keys: &[&str]) -> JsonPath {
+    JsonPath::of_keys(keys)
 }
 
 fn not_representable<'f, T: Facet<'f>>(value: &T) -> Unrepresentable {
@@ -48,10 +61,12 @@ fn not_representable_names_the_member_by_its_json_path() {
     let mut nested = Nested::default();
     nested.points.push(Point::default());
     nested.points.push(Point::default());
-    nested.points[1]
-        .extra
-        .insert("bad".into(), Value::from(f64::NAN));
-    assert_eq!(not_representable_at(&nested), "points/1/bad");
+    let mut unknown = Unknown::new();
+    unknown.put(&at(&["points"]).index(1), "bad", Value::from(f64::NAN));
+    match write_json_with(&nested, &unknown, &mut Vec::new(), COMPACT) {
+        Err(EncodeError::NotRepresentable { at, .. }) => assert_eq!(at.to_string(), "points/1/bad"),
+        other => panic!("{other:?}"),
+    }
     let mut map: IndexMap<String, Vec<f32>> = IndexMap::new();
     map.insert("ok".into(), vec![1.0]);
     map.insert("scale".into(), vec![0.5, f32::INFINITY]);
@@ -128,11 +143,12 @@ fn fields_are_written_in_declaration_order_and_none_is_omitted() {
 
 #[test]
 fn extra_members_follow_the_known_members_of_their_object() {
-    let mut point = Point::default();
-    point.extra.insert("b_unknown".into(), Value::from(1i64));
-    point.extra.insert("a_unknown".into(), Value::from("s"));
+    let point = Point::default();
+    let mut unknown = Unknown::new();
+    unknown.put(&JsonPath::new(), "b_unknown", Value::from(1i64));
+    unknown.put(&JsonPath::new(), "a_unknown", Value::from("s"));
     assert_eq!(
-        compact(&point),
+        compact_with(&point, &unknown),
         r#"{"z":0,"minecraft:x":0,"b_unknown":1,"a_unknown":"s"}"#
     );
 }
@@ -148,15 +164,15 @@ struct Nested {
 
 #[test]
 fn extra_members_are_written_at_their_level() {
-    let mut inner = Point::default();
-    inner.extra.insert("deep".into(), Value::TRUE);
-    let mut nested = Nested {
-        points: vec![Point::default(), inner],
+    let nested = Nested {
+        points: vec![Point::default(), Point::default()],
         ..Nested::default()
     };
-    nested.extra.insert("top".into(), Value::NULL);
+    let mut unknown = Unknown::new();
+    unknown.put(&at(&["points"]).index(1), "deep", Value::TRUE);
+    unknown.put(&JsonPath::new(), "top", Value::NULL);
     assert_eq!(
-        compact(&nested),
+        compact_with(&nested, &unknown),
         r#"{"points":[{"z":0,"minecraft:x":0},{"z":0,"minecraft:x":0,"deep":true}],"map":{},"top":null}"#
     );
 }
@@ -369,9 +385,10 @@ fn a_document_round_trips_by_value_with_its_unknown_members() {
     let text =
         r#"{ "points": [{ "z": 1, "q": [1.0], "minecraft:x": 2 }], "map": { "k": 7 }, "w": {} }"#;
     let json: Value = facet_json::from_str(text).unwrap();
-    let mut nested: Nested = facet_json::from_str(text).unwrap();
-    keep_unknown_members(&mut nested, &json);
-    let written = to_json(&nested).unwrap();
+    let nested: Nested = facet_json::from_str(text).unwrap();
+    let mut unknown = Unknown::new();
+    keep_unknown_members(&nested, &json, &mut unknown);
+    let written = compact_with(&nested, &unknown);
     let again: Value = facet_json::from_str(&written).unwrap();
     assert_eq!(
         compact(&again),
@@ -406,21 +423,30 @@ enum Tagged {
 
 #[test]
 fn extra_members_of_a_struct_variant_follow_its_fields() {
-    let mut extra = Extra::default();
-    extra.insert("u".into(), Value::from(1i64));
+    let mut unknown = Unknown::new();
+    unknown.put(&JsonPath::new(), "u", Value::from(1i64));
     let untagged = Untagged::Named {
         name: "a".into(),
-        extra: extra.clone(),
+        extra: Extra::default(),
     };
-    assert_eq!(compact(&untagged), r#"{"name":"a","u":1}"#);
+    assert_eq!(compact_with(&untagged, &unknown), r#"{"name":"a","u":1}"#);
     let tagged = vec![
         Tagged::Named {
             name: "b".into(),
-            extra,
+            extra: Extra::default(),
         },
         Tagged::Unit,
     ];
-    assert_eq!(compact(&tagged), r#"[{"Named":{"name":"b","u":1}},"Unit"]"#);
+    let mut unknown = Unknown::new();
+    unknown.put(
+        &JsonPath::new().index(0).child("Named"),
+        "u",
+        Value::from(1i64),
+    );
+    assert_eq!(
+        compact_with(&tagged, &unknown),
+        r#"[{"Named":{"name":"b","u":1}},"Unit"]"#
+    );
 }
 
 // --- number respelt: the write-back class of a raw `Value` number ---------------------

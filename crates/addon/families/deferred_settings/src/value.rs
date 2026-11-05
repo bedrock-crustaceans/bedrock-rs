@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
 
 /// A colour without alpha, each channel 0–255.
@@ -166,7 +166,7 @@ pub struct Description<K: Kind> {
     /// The settings' name (JSON `identifier`).
     pub identifier: Id<K>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl<K: Kind> Description<K> {
@@ -175,7 +175,7 @@ impl<K: Kind> Description<K> {
     pub fn new(identifier: Id<K>) -> Self {
         Self {
             identifier,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

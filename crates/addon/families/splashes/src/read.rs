@@ -3,7 +3,7 @@
 
 use super::{ConditionalSplashes, SplashClient, SplashRequires, Splashes};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
     Authored, Object, array, invalid, iterated, others, raw_member, to_text,
@@ -71,7 +71,7 @@ impl Authored for Splashes {
             can_merge: raw_member(root, "canMerge").cloned(),
             splashes: raw_member(root, "splashes").cloned(),
             conditional: raw_member(root, "conditional").cloned(),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
             written: None,
         };
         if splashes.can_merge.as_ref().is_some_and(|v| !v.is_bool()) {
@@ -159,7 +159,7 @@ impl Splashes {
         entries
             .iter()
             .map(|entry| {
-                let mut extra = Extra::default();
+                let mut extra = UnknownMembers::default();
                 if let Some(object) = entry.as_object() {
                     for (name, member) in object {
                         if !ENTRY_KEYS.contains(&name.as_str()) {
@@ -234,7 +234,7 @@ impl ConditionalSplashes {
     /// The requirements, when `requires` is an object.
     pub fn requirements(&self) -> Option<SplashRequires> {
         let requires = self.requires.as_ref().filter(|v| v.is_object())?;
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (name, member) in requires.as_object()? {
             if !REQUIRES_KEYS.contains(&name.as_str()) {
                 extra.insert(name.as_str().to_owned(), member.clone());

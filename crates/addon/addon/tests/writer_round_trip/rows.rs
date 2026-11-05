@@ -60,7 +60,7 @@ macro_rules! kind {
                     let Ok(first) = <$ty>::parse_as_written(c.path, c.bytes, c.cx) else {
                         return super::AsWritten::Rejected;
                     };
-                    let text = match first.value().to_json() {
+                    let text = match first.to_json() {
                         Ok(text) => text,
                         Err(error) => return super::AsWritten::NotWritten(format!("{error:?}")),
                     };
@@ -69,10 +69,11 @@ macro_rules! kind {
                     };
                     super::AsWritten::Written {
                         same_value: format!("{:?}", first.value())
-                            == format!("{:?}", again.value()),
+                            == format!("{:?}", again.value())
+                            && first.unknown() == again.unknown(),
                         read_at: format!("{:?}", first.version().parsed_as),
                         written_at: format!("{:?}", again.version().parsed_as),
-                        rewritten: again.value().to_json().ok().as_ref() == Some(&text),
+                        rewritten: again.to_json().ok().as_ref() == Some(&text),
                     }
                 }
                 as_written

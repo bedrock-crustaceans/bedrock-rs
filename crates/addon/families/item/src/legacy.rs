@@ -1,7 +1,7 @@
 //! What vanilla's legacy readers take from an item document: the legacy read of a
 //! component-based document (at every version) and the legacy item format of 1.10.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::version::{FormatVersion, known};
 use indexmap::IndexMap;
 
@@ -457,7 +457,7 @@ pub struct LegacyFormatItem {
     /// `hover_text_color`, `rarity`), as written.
     pub client: IndexMap<String, Value>,
     /// Every other key, ignored by vanilla (`minecraft:is_meat`), kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Default for LegacyFormatItem {
@@ -474,7 +474,7 @@ impl Default for LegacyFormatItem {
             seed: None,
             camera: None,
             client: IndexMap::new(),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -505,7 +505,7 @@ pub struct LegacyFood {
     /// `remove_effects`.
     pub remove_effects: Vec<String>,
     /// Other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl LegacyFood {
@@ -563,7 +563,7 @@ pub struct LegacySeed {
     /// `plant_at_face`.
     pub plant_at_face: Option<String>,
     /// Other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:camera` of the legacy item format.
@@ -583,5 +583,5 @@ pub struct LegacyCamera {
     /// `slide_away_duration`.
     pub slide_away_duration: f32,
     /// Other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }

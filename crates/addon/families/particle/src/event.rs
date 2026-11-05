@@ -11,7 +11,7 @@ use facet_value::{VArray, VObject};
 use super::read::{Era, Members, Node, Opt, Reader, Writer, float, object, opt, put_opt, walk};
 use super::texts;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor, Step};
 
@@ -139,7 +139,7 @@ pub struct EventNode {
     /// A line for the content log (JSON `log`).
     pub log: Option<String>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One option of `randomize`: a node and its weight.

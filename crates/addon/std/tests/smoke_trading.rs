@@ -178,7 +178,7 @@ fn check_files(source: &str, dir: &Path) -> (usize, usize, usize) {
                         }
                     }
                     // What was read is written back and reads the same.
-                    let written = document.value().to_json().unwrap();
+                    let written = document.to_json().unwrap();
                     let again = TradeTable::parse(&path, written.as_bytes(), &cx)
                         .unwrap_or_else(|r| panic!("{}: {:#?}", file.display(), r.diagnostics));
                     assert_eq!(again.value(), document.value(), "{}", file.display());

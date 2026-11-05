@@ -5,7 +5,7 @@ use facet_value::{VArray, VObject};
 
 use super::{Description, Ingredient, Output, Recipe, Tags, Unlock};
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::molang::write_list;
 
@@ -148,7 +148,7 @@ fn optional(object: &mut VObject, key: &str, value: Option<Value>) {
     }
 }
 
-fn extend(object: &mut VObject, extra: &Extra) {
+fn extend(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());
     }

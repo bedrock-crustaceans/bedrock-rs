@@ -137,22 +137,27 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
     let id = value.description.identifier.as_str().to_owned();
     check_identifier(&id, SET_REGISTER, at, d);
     let mut kept = Vec::with_capacity(value.structures.len());
+    let mut places = Vec::with_capacity(value.structures.len());
     for (i, entry) in std::mem::take(&mut value.structures)
         .into_iter()
         .enumerate()
     {
         let path = at.child("structures").index(i).child("structure");
-        match identifier_findings(
+        if let Some(found) = identifier_findings(
             entry.structure.as_str(),
             SET_REGISTER,
             Severity::Error,
             &path,
         ) {
-            Some(found) => d.extend(found.into_iter().map(Diagnostic::into_kept)),
-            None => kept.push(entry),
+            d.extend(found.into_iter().map(Diagnostic::into_kept));
+        } else {
+            kept.push(entry);
+            places.push(i);
         }
     }
     value.structures = kept;
+    // The unknown members of a dropped entry go with it; those of the others follow them.
+    d.unknown_mut().left_out(&at.child("structures"), &places);
     // The spacing must be more than twice the separation.
     let placement = &value.placement;
     if u32::from(placement.spacing.0) <= 2 * u32::from(placement.separation.0) {

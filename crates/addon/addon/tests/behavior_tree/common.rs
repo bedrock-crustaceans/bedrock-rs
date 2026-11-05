@@ -15,7 +15,7 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Phase, Severity};
-use bedrock_addon::document::{Content, Document, Extra, Registry, Rejected};
+use bedrock_addon::document::{Content, Document, Registry, Rejected, UnknownMembers};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::id::BehaviorTreeId;
 use bedrock_addon::json::Value;
@@ -265,7 +265,7 @@ fn vec3(value: &[f32; 3]) -> Value {
     VArray::from(value.iter().map(float).collect::<Vec<_>>()).into()
 }
 
-fn extra_value(extra: &Extra) -> Value {
+fn extra_value(extra: &UnknownMembers) -> Value {
     let mut out = VObject::new();
     for (key, value) in extra.iter() {
         out.insert(key, value.clone());

@@ -25,7 +25,7 @@ use crate::write::fast_writer;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
     Registry, RegistryBuilder, Rejected, VersionInfo,
@@ -53,9 +53,9 @@ pub struct DialogueFile {
     /// The scenes that loaded, in file order (JSON `minecraft:npc_dialogue.scenes`).
     pub scenes: Vec<DialogueScene>,
     /// Unknown members of `minecraft:npc_dialogue`, which vanilla never reads.
-    pub dialogue_extra: Extra,
+    pub dialogue_extra: UnknownMembers,
     /// Unknown members of the root, which vanilla never reads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One scene: the text an NPC shows, its buttons and the commands
@@ -83,7 +83,7 @@ pub struct DialogueScene {
     /// [`on_open_commands`](Self::on_open_commands).
     pub on_close_commands: Option<Vec<StoredCommand>>,
     /// Unknown members, which vanilla never reads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One button of a scene: a label and either commands or a URL.
@@ -99,7 +99,7 @@ pub struct Button {
     /// button a URL button; an empty one a command button without commands.
     pub url: Option<String>,
     /// Unknown members, which vanilla never reads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A text of a scene or a button: a plain string, or any JSON object (the intended form is a
@@ -568,8 +568,8 @@ impl DialogueFile {
         DialogueFile {
             format_version: SemVersion::from(FLOOR),
             scenes,
-            dialogue_extra: Extra::default(),
-            extra: Extra::default(),
+            dialogue_extra: UnknownMembers::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -584,7 +584,7 @@ impl DialogueScene {
             buttons: None,
             on_open_commands: None,
             on_close_commands: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -596,7 +596,7 @@ impl Button {
             name,
             commands: None,
             url: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

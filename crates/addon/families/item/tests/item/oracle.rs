@@ -72,9 +72,7 @@ fn normalised(item: &Item) -> (String, Vec<String>) {
         })
         .collect();
     components.sort();
-    let mut description = item.description.clone();
-    description.extra = bedrock_addon_core::document::Extra::default();
-    (format!("{description:?}"), components)
+    (format!("{:?}", item.description), components)
 }
 
 #[test]

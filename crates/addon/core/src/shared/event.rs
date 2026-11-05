@@ -6,7 +6,7 @@ use super::filter::{Filter, FilterSubject};
 use super::read::{self, ROOT, ShapeError, wrong_type};
 use super::unrecognized;
 use crate::diagnostic::{Diagnostics, JsonPath};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::Value;
 
 /// An event trigger: the game's entity trigger (typed entity components) and the item
@@ -29,7 +29,7 @@ pub struct EventTrigger {
     /// The condition (JSON `filters`); absent means always.
     pub filters: Option<Filter>,
     /// A legacy `condition` and other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Read from (and written as) the string form.
     pub bare: bool,
 }
@@ -41,7 +41,7 @@ impl EventTrigger {
             event: Some(event.into()),
             target: None,
             filters: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
             bare: true,
         }
     }
@@ -71,7 +71,7 @@ impl TryFrom<Value> for EventTrigger {
             .as_object()
             .ok_or_else(|| wrong_type(ROOT, "a string or an object", &value))?;
         let member = |key| object.get(key).filter(|v| !v.is_null());
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (key, value) in object {
             if !matches!(key.as_str(), "event" | "target" | "filters") {
                 extra.insert(key.as_str().to_owned(), value.clone());

@@ -64,7 +64,7 @@ fn an_entry_without_a_condition_holds_none_and_is_written_without_one() {
     };
     let final_entry = list.conditional_features.last().expect("an entry");
     assert_eq!(final_entry.condition, None);
-    let written = document.value().to_json().expect("written");
+    let written = document.to_json().expect("written");
     assert_eq!(written.matches("\"condition\"").count(), 2, "{written}");
 }
 
@@ -151,14 +151,10 @@ fn the_engine_snap_bodies_load_at_their_formats() {
 #[track_caller]
 fn round_trip(name: &str, json: &str, cx: &LoadContext) -> String {
     let first = loads(json, cx);
-    let written = first.value().to_json().expect("written");
+    let written = first.to_json().expect("written");
     let second = loads(&written, cx);
     assert_eq!(first.value(), second.value(), "{name}: {written}");
-    assert_eq!(
-        second.value().to_json().expect("written again"),
-        written,
-        "{name}"
-    );
+    assert_eq!(second.to_json().expect("written again"), written, "{name}");
     written
 }
 

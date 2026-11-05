@@ -4,7 +4,6 @@
 //! `NotRepresentable` and a path; and the text written equals the source's, but for the
 //! recorded differences, each applied by name below.
 
-use bedrock_addon::document::Content;
 use bedrock_addon::json::EncodeError;
 
 use super::common::*;

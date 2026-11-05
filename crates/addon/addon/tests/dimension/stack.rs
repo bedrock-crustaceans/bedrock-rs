@@ -227,7 +227,7 @@ fn a_rejected_file_names_the_identifier_of_its_last_copy() {
 // `<namespace>_<name>.json` otherwise.
 #[test]
 fn the_default_path_of_a_dimension_is_read_back_by_the_walk() {
-    use bedrock_addon::document::{Content, Placed};
+    use bedrock_addon::document::Placed;
 
     let pack = bp(1).file("dimensions/a.json", HIGH).open();
     let stack = PackStack::<Behavior>::of([pack], LoadOptions::default()).unwrap();

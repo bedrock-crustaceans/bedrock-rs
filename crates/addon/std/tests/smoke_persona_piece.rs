@@ -17,7 +17,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
-use bedrock_addon::document::Content;
 use bedrock_addon::families::persona::{
     BUILTIN_PACK, PackKind, PersonaPiece, PersonaPieces, PieceSource, PieceType,
 };
@@ -298,7 +297,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
     // Every meta and store-info file is written back as it was read.
     let mut written = 0;
     for piece in &named.pieces {
-        let text = piece.meta.value().to_json().expect("a meta file");
+        let text = piece.meta.to_json().expect("a meta file");
         let path = &piece.meta.origin().path;
         assert!(
             same(
@@ -309,7 +308,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
         );
         written += 1;
         if let Some(store) = &piece.store_info {
-            let text = store.value().to_json().expect("a store-info file");
+            let text = store.to_json().expect("a store-info file");
             let path = &store.origin().path;
             assert!(
                 same(

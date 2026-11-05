@@ -14,7 +14,7 @@ pub use bedrock_addon_support::spawn::{
     RangeFilter, VillageFilter, Weight, WorldAgeFilter,
 };
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Origin, Registry, Rejected,
     default_path,
@@ -53,9 +53,9 @@ pub struct SpawnGroup {
     /// The conditions (JSON `conditions`); a group without any is never registered.
     pub conditions: Option<Vec<Condition>>,
     /// Other members of `minecraft:spawn_groups` (kept, ignored).
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Root members other than `format_version` and `minecraft:spawn_groups` (kept, ignored).
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:spawn_groups/description`.
@@ -66,7 +66,7 @@ pub struct GroupDescription {
     /// Read and kept; unused by spawn groups (JSON `population_control`).
     pub population_control: Option<String>,
     /// Other members (kept, ignored).
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl SpawnGroup {
@@ -232,7 +232,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.8.0..=1.8.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.8.0..=1.8.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             ",
         );
     }

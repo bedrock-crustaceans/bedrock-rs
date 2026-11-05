@@ -1,7 +1,7 @@
 //! `minecraft:lighting_settings`: the sun, the moon, ambient and sky light.
 
 use super::value::{Description, Keyframe, Keyframes, Rgb8};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{LightingSettingsId, kind};
 
 /// The lighting of the deferred renderer (`minecraft:lighting_settings`, in `lighting/`), at
@@ -29,7 +29,7 @@ pub struct LightingSettings {
     /// The light of the sky (JSON `sky`, from format 1.21.70).
     pub sky: Option<Sky>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The directional lights (JSON `directional_lights`, from format 1.21.80; older formats hold
@@ -41,7 +41,7 @@ pub struct DirectionalLights {
     /// The flashes of the End's sky (JSON `flash`).
     pub flash: Option<Flash>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The sun and the moon (JSON `orbital`). `C` is the colour form: [`Rgb8`] from format
@@ -56,7 +56,7 @@ pub struct OrbitalLights<C = Rgb8> {
     /// `orbital_offset_degrees`).
     pub orbital_offset_degrees: Option<Keyframes<f32>>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl<C> Default for OrbitalLights<C> {
@@ -65,7 +65,7 @@ impl<C> Default for OrbitalLights<C> {
             sun: None,
             moon: None,
             orbital_offset_degrees: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -78,7 +78,7 @@ pub struct OrbitalLight<C = Rgb8> {
     /// The light's colour over the day (JSON `color`).
     pub color: Option<Keyframes<C>>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl<C> Default for OrbitalLight<C> {
@@ -86,7 +86,7 @@ impl<C> Default for OrbitalLight<C> {
         Self {
             illuminance: None,
             color: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -99,7 +99,7 @@ pub struct Flash {
     /// The flash's strength in lux (JSON `illuminance`; the game sets no bound).
     pub illuminance: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// How light-emitting surfaces are drawn (JSON `emissive`).
@@ -108,7 +108,7 @@ pub struct Emissive {
     /// How much emissive colours are desaturated, 0–1 (JSON `desaturation`).
     pub desaturation: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The light that reaches every surface (JSON `ambient`); both members are required.
@@ -119,7 +119,7 @@ pub struct AmbientLight {
     /// The ambient strength over the day, each value 0–5 (JSON `illuminance`).
     pub illuminance: Keyframes<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Default for AmbientLight {
@@ -128,7 +128,7 @@ impl Default for AmbientLight {
         Self {
             color: Keyframes::at_noon(Rgb8::WHITE),
             illuminance: Keyframes::at_noon(DEFAULT_AMBIENT_ILLUMINANCE),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }
@@ -139,7 +139,7 @@ pub struct Sky {
     /// The strength of the sky light over the day, each value 0.1–1 (JSON `intensity`).
     pub intensity: Option<Keyframes<f32>>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The game's ambient strength.
@@ -263,7 +263,7 @@ mod codec {
     use bedrock_addon_core::diagnostic::{
         Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
     };
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::version::FormatVersion;
     use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
@@ -760,7 +760,7 @@ mod codec {
                 ambient: self.ambient,
                 sky: Some(history::Sky {
                     intensity: Some(DEFAULT_SKY_INTENSITY),
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 }),
                 extra,
             }
@@ -784,7 +784,7 @@ mod codec {
                         sun: lights.sun,
                         moon: lights.moon,
                         orbital_offset_degrees: lights.orbital_offset_degrees,
-                        extra: Extra::default(),
+                        extra: UnknownMembers::default(),
                     }),
                     flash: None,
                     extra,

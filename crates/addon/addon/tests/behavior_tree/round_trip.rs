@@ -2,7 +2,7 @@
 //! again to the same value, and written again to the same text; a member the author did not
 //! write is not written.
 
-use bedrock_addon::document::{Content, Extra, Placed};
+use bedrock_addon::document::{Content, Placed, UnknownMembers};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::json::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
 
@@ -34,8 +34,8 @@ fn rewritten(node: &str) -> String {
     written(root_of(node).0)
 }
 
-fn none() -> Extra {
-    Extra::default()
+fn none() -> UnknownMembers {
+    UnknownMembers::default()
 }
 
 /// Every fixture's stack: the name of the fixture and its stack.
@@ -271,7 +271,7 @@ fn unknown_members_are_written_after_the_known_ones_of_their_level() {
         r#"{"minecraft:behavior_tree":{"minecraft:name":"t","minecraft:root":{"minecraft:wait":{"wait_duration":2,"zeta":true}},"note":1},"format_version":"1.99.0","other":[]}"#
     );
     // an unknown member named like one the writer writes does not appear twice
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     extra.insert("num_of_ticks".to_owned(), Value::from("kept out"));
     extra.insert("why".to_owned(), Value::from("kept"));
     assert_eq!(
@@ -892,7 +892,7 @@ fn a_tree_nested_past_the_readers_limit_is_not_written() {
     }
     let value: Value = facet_json::from_str(&deep_extra).unwrap();
     let with_extra = |value: Value| {
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         extra.insert("deep".to_owned(), value);
         BehaviorTree::new(id("t"), Node::ConsumeItem { extra })
     };

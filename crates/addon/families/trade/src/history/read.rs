@@ -111,19 +111,19 @@ impl Reader<'_> {
 
     /// The members of `object` not in `known`, each with an `UnrecognizedField` information:
     /// the legacy parser reads only the members it knows and ignores the rest. They are kept
-    /// for the document's own shape; the upgraded table does not have them.
+    /// for the document's own shape, in the document's table; the upgraded table does not have
+    /// them.
     fn unknown(&mut self, object: &facet_value::VObject, known: &[&str], at: &JsonPath) -> Extra {
-        let mut extra = Extra::default();
         for (key, value) in object {
             if !known.contains(&key.as_str()) {
                 self.warn(
                     DiagnosticCode::UnrecognizedField { text: None },
                     at.child(key.as_str()),
                 );
-                extra.insert(key.as_str().to_owned(), value.clone());
+                self.d.unknown_mut().put(at, key.as_str(), value.clone());
             }
         }
-        extra
+        Extra::default()
     }
 
     /// The root. A message of the table parser itself rejects the table (vanilla returns an

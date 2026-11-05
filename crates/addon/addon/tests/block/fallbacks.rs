@@ -28,7 +28,7 @@ fn misread(version: &str, payload: &str) -> (Vec<String>, Value) {
         })
         .map(|f| f.location.json_path.to_string())
         .collect();
-    (told, super::common::newest_shape(block.value()))
+    (told, super::common::newest_shape(&block))
 }
 
 /// A JSON value from text.
@@ -463,12 +463,12 @@ fn a_legacy_creative_category_is_told_at_the_member_the_file_has() {
     let refused = parse(
         r#"{"format_version": "1.16.100", "minecraft:block": {"description": {"identifier": "demo:x"}, "components": {"minecraft:creative_category": {"group": "g"}}}}"#,
     );
-    assert!(refused.value().to_json().is_err(), "told and not written");
+    assert!(refused.to_json().is_err(), "told and not written");
     // Nothing of the step's bookkeeping is in the block.
     let block = parse(
         r#"{"format_version": "1.16.100", "minecraft:block": {"description": {"identifier": "demo:x"}, "components": {"minecraft:creative_category": {"category": "nature"}}}}"#,
     );
-    let written = block.value().to_json().unwrap();
+    let written = block.to_json().unwrap();
     assert!(!written.contains("__"), "{written}");
     assert!(
         block

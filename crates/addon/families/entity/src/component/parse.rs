@@ -5,8 +5,8 @@
 //! type or outside its range is an error and the component is dropped. A component converted
 //! from an older document's JSON (`ConvertMode::Lenient`, the lenient conversion) keeps going: a
 //! bad member is a warning and takes its default, and only a value that is not an object drops
-//! the component. Unknown members are kept in the `extra` of their level with an
-//! `UnrecognizedField` warning in both modes.
+//! the component. Unknown members are kept among the document's unknown members, by the path
+//! of their level, with an `UnrecognizedField` warning in both modes.
 
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told, VanillaText,
@@ -298,6 +298,7 @@ pub(crate) fn read_prepared<T: Typed>(
         .any(wrapped)
         .then(|| bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok())
         .flatten();
+    let kept = found.take_unknown();
     for told in found.into_told() {
         match told {
             Told::Finding(mut finding) => {
@@ -310,6 +311,9 @@ pub(crate) fn read_prepared<T: Typed>(
             // is told at the index the file has.
             Told::Moved { from, to } => d.moved(from, to),
         }
+    }
+    if value.is_some() {
+        d.unknown_mut().absorb(&JsonPath::new(), kept);
     }
     value
 }
@@ -439,7 +443,10 @@ fn read_shaped<T: Typed>(
         (Err(_), ConvertMode::Lenient) => isolate::<T>(&mut object, d)?,
     };
     let source = Value::from(object);
-    let (unknown, misread) = crate::read::keep_unknown(&mut value, &source);
+    let mut kept = bedrock_addon_core::document::Unknown::new();
+    let (unknown, misread) = crate::read::keep_unknown(&value, &source, &mut kept);
+    // Below the component (its caller places them).
+    d.unknown_mut().absorb(&JsonPath::new(), kept);
     for (path, _) in unknown {
         // The game logs an unknown member at level 2 (a warning) for the legacy slice; the
         // strict slice from 1.21.89 makes it an error.

@@ -46,10 +46,6 @@ impl Breed {
 impl Goal for Breed {
     const TYPED: FormatVersion = known::V1_21_90;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -129,10 +125,6 @@ impl Celebrate {
 impl Goal for Celebrate {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("celebration_sound", self.celebration_sound.as_ref());
@@ -209,10 +201,6 @@ impl CelebrateSurvive {
 impl Goal for CelebrateSurvive {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("fireworks_interval", &mut self.fireworks_interval);
@@ -281,10 +269,6 @@ impl Croak {
 
 impl Goal for Croak {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -380,10 +364,6 @@ impl Dig {
 impl Goal for Dig {
     const TYPED: FormatVersion = known::V1_21_120;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.trigger("on_start", self.on_start.as_ref());
@@ -447,10 +427,6 @@ impl Emerge {
 
 impl Goal for Emerge {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -551,10 +527,6 @@ impl FertilizeFarmBlock {
 
 impl Goal for FertilizeFarmBlock {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -676,10 +648,6 @@ impl HarvestFarmBlock {
 impl Goal for HarvestFarmBlock {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("goal_radius", &mut self.goal_radius, Bound::Above(0.0));
@@ -771,10 +739,6 @@ impl HoldGround {
 impl Goal for HoldGround {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.trigger("within_radius_event", self.within_radius_event.as_ref());
@@ -859,10 +823,6 @@ impl InspectBookshelf {
 impl Goal for InspectBookshelf {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("goal_radius", &mut self.goal_radius, Bound::Above(0.0));
@@ -923,10 +883,6 @@ impl InvestigateSuspiciousLocation {
 impl Goal for InvestigateSuspiciousLocation {
     const TYPED: FormatVersion = known::V1_21_130;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -977,10 +933,6 @@ impl LayDown {
 
 impl Goal for LayDown {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1115,10 +1067,6 @@ impl Goal for LayEgg {
         known::V1_26_10,
     )];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         if c.lenient() {
@@ -1185,10 +1133,6 @@ impl MakeLove {
 
 impl Goal for MakeLove {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1271,10 +1215,6 @@ impl Goal for Mingle {
 
     const DEPRECATED: &'static [Deprecated] =
         &[("poi_type", deprecated_text!("poi_type"), known::V1_26_20)];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1361,10 +1301,6 @@ impl Nap {
 impl Goal for Nap {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("can_nap_filters", self.can_nap_filters.as_ref());
@@ -1433,10 +1369,6 @@ impl PetSleepWithOwner {
 
 impl Goal for PetSleepWithOwner {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1533,10 +1465,6 @@ impl Play {
 
 impl Goal for Play {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1651,10 +1579,6 @@ impl PlayDead {
 impl Goal for PlayDead {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("filters", self.filters.as_ref());
@@ -1766,10 +1690,6 @@ impl Goal for RaidGarden {
         deprecated_text!("search_count"),
         known::V1_26_10,
     )];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1937,10 +1857,6 @@ impl RandomSearchAndDig {
 impl Goal for RandomSearchAndDig {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("cooldown_range", &mut self.cooldown_range);
@@ -2064,10 +1980,6 @@ impl RandomSitting {
 impl Goal for RandomSitting {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2102,10 +2014,6 @@ impl ReceiveLove {
 
 impl Goal for ReceiveLove {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2149,10 +2057,6 @@ impl Roar {
 
 impl Goal for Roar {
     const TYPED: FormatVersion = known::V1_21_110;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2198,10 +2102,6 @@ impl Roll {
 impl Goal for Roll {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2244,10 +2144,6 @@ impl RunAroundLikeCrazy {
 
 impl Goal for RunAroundLikeCrazy {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2292,10 +2188,6 @@ impl Scared {
 impl Goal for Scared {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2331,10 +2223,6 @@ impl SilverfishMergeWithStone {
 impl Goal for SilverfishMergeWithStone {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2369,10 +2257,6 @@ impl SilverfishWakeUpFriends {
 
 impl Goal for SilverfishWakeUpFriends {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2424,10 +2308,6 @@ impl SkeletonHorseTrap {
 
 impl Goal for SkeletonHorseTrap {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2524,10 +2404,6 @@ impl Goal for Sleep {
 
     const DEPRECATED: &'static [Deprecated] =
         &[("poi_type", deprecated_text!("poi_type"), known::V1_26_20)];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2653,10 +2529,6 @@ impl Sneeze {
 impl Goal for Sneeze {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.entity_types("entity_types", self.entity_types.as_ref());
@@ -2736,10 +2608,6 @@ impl Sniff {
 impl Goal for Sniff {
     const TYPED: FormatVersion = known::V1_21_110;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("cooldown_range", &mut self.cooldown_range);
@@ -2813,10 +2681,6 @@ impl StayNearNoteblock {
 impl Goal for StayNearNoteblock {
     const TYPED: FormatVersion = known::V1_21_110;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2851,10 +2715,6 @@ impl StayWhileSitting {
 
 impl Goal for StayWhileSitting {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2939,10 +2799,6 @@ impl StompTurtleEgg {
 impl Goal for StompTurtleEgg {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("goal_radius", &mut self.goal_radius, Bound::Above(0.0));
@@ -3017,10 +2873,6 @@ impl TimerFlag1 {
 impl Goal for TimerFlag1 {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("cooldown_range", &mut self.cooldown_range);
@@ -3094,10 +2946,6 @@ impl TimerFlag2 {
 impl Goal for TimerFlag2 {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("cooldown_range", &mut self.cooldown_range);
@@ -3170,10 +3018,6 @@ impl TimerFlag3 {
 
 impl Goal for TimerFlag3 {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3282,10 +3126,6 @@ impl Work {
 
 impl Goal for Work {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3462,10 +3302,6 @@ impl Goal for WorkComposter {
             known::V1_26_10,
         ),
     ];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

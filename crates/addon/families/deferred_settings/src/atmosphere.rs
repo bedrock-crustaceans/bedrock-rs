@@ -1,7 +1,7 @@
 //! `minecraft:atmosphere_settings`: how the sky scatters light over the day.
 
 use super::value::{Description, Keyframe, Keyframes, Rgb8};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{AtmosphereSettingsId, kind};
 
 /// The atmospheric scattering of the deferred renderer (`minecraft:atmosphere_settings`, in
@@ -42,7 +42,7 @@ pub struct AtmosphereSettings {
     /// The colour of the sky at the horizon (JSON `sky_horizon_color`).
     pub sky_horizon_color: Option<Keyframes<Rgb8>>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Where the horizon colour blends into the zenith colour (JSON `horizon_blend_stops`); every
@@ -58,7 +58,7 @@ pub struct HorizonBlendStops {
     /// Where the zenith colour is reached, each value 0–1 (JSON `max`).
     pub max: Option<Keyframes<f32>>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Keyframes from `(time, value)` pairs.

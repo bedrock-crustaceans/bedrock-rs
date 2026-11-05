@@ -752,7 +752,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -768,7 +768,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -784,7 +784,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -800,7 +800,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/fatal/Refuse
+                1.21.20..=1.21.20 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
             ",
         );
     }
@@ -816,7 +816,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: UseFormatVersion
                 empty document: Error
-                1.21.50..=1.21.80 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/lenient/Refuse
+                1.21.50..=1.21.80 (0..=1): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
             ",
         );
     }

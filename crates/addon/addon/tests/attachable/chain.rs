@@ -117,3 +117,26 @@ fn a10_without_the_list_the_step_only_stamps_the_version() {
     assert_eq!(scripts.animate, None);
     assert!(scripts.parent_setup.is_some());
 }
+
+/// An unknown member put in the table of a document as written (an edit) is upgraded with its
+/// object, and the upgrade's steps see it as they see a member of a parse.
+#[test]
+fn upgrade_keeps_the_unknown_members_of_the_document_as_written() {
+    use bedrock_addon::diagnostic::JsonPath;
+    let before = fixture(FAMILY, "a10_wand.before.json");
+    let path = PackPath::from_static(PATH);
+    let mut written = loaded(Attachable::parse_as_written(
+        &path,
+        before.as_bytes(),
+        &cx(),
+    ));
+    let description = JsonPath::of_keys(["minecraft:attachable", "description"]);
+    written.unknown_mut().put(
+        &description,
+        "zz_description",
+        bedrock_addon::json::Value::from(1i64),
+    );
+    let expected = written.unknown().clone();
+    let upgraded = loaded(history::upgrade(written, &cx()));
+    assert_eq!(upgraded.unknown(), &expected);
+}

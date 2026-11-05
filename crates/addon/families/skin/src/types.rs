@@ -4,7 +4,7 @@ use std::borrow::Cow;
 
 use bedrock_addon_core::pack_identity::PackOrigin;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 use super::BUILT_IN_GEOMETRIES;
@@ -32,7 +32,7 @@ pub struct SkinPack {
     /// values in key order). `None` when the member is absent.
     pub skins: Option<Vec<Skin>>,
     /// The other members, and the members above as written when the field cannot say them.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// The root as the author wrote it, kept when the fields cannot say it (an entry of `skins`
     /// that is no object, a `skins` that is no array).
     /// `to_json` writes it for as long as the fields are still the game's reading of it; a
@@ -67,12 +67,12 @@ pub struct Skin {
     /// JSON `hide_armor`, as written.
     pub hide_armor: Option<Value>,
     /// The other members, and the string members above as written when they are no strings.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A string member as the game reads it: the typed field, else the written value through
 /// `asString("")` (a boolean is `true` / `false`, anything else empty).
-fn text<'a>(typed: Option<&'a String>, extra: &'a Extra, name: &str) -> Cow<'a, str> {
+fn text<'a>(typed: Option<&'a String>, extra: &'a UnknownMembers, name: &str) -> Cow<'a, str> {
     match typed {
         Some(text) => Cow::Borrowed(text),
         None => match extra.get(name).and_then(Value::as_bool) {

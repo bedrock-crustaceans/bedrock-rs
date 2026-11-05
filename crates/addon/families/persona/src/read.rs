@@ -19,7 +19,7 @@ use super::{
     TextureSource, TintColor, TintColorOrString, Zones,
 };
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity, VanillaText};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom,
 };
@@ -139,7 +139,7 @@ impl Reader<'_> {
         &mut self,
         key: &str,
         value: &Value,
-        extra: &mut Extra,
+        extra: &mut UnknownMembers,
         slot: &mut Option<T>,
         read: impl FnOnce(&mut Self, &Value) -> Result<T, Unread>,
     ) {
@@ -159,7 +159,7 @@ impl Reader<'_> {
     /// A member the schema does not declare (1.26.40+), kept as written. The strict slice
     /// makes the unknown member an error: the piece is invalid.
     /// In a store-info file the member is ignored (information).
-    fn unknown(&mut self, key: &str, value: &Value, extra: &mut Extra) {
+    fn unknown(&mut self, key: &str, value: &Value, extra: &mut UnknownMembers) {
         let severity = self.refusal(Severity::Info);
         self.report_at(
             key,
@@ -583,7 +583,7 @@ fn saturating(real: f64) -> i32 {
 
 /// Whether `extra` holds the member `key` with a value other than `null`: a known member of
 /// a JSON type the reader did not take.
-pub(super) fn written_in(extra: &Extra, key: &str) -> bool {
+pub(super) fn written_in(extra: &UnknownMembers, key: &str) -> bool {
     extra.get(key).is_some_and(|value| !value.is_null())
 }
 

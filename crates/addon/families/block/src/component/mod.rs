@@ -462,7 +462,11 @@ fn keep_instances(
         },
         None => json,
     };
-    for (instance, member) in instances.keep_unknown(&json) {
+    let mut at = JsonPath::new();
+    if let Some(key) = within {
+        at.push(key);
+    }
+    for (instance, member) in instances.keep_unknown(&json, &at, d.unknown_mut()) {
         let mut path = JsonPath::new();
         if let Some(key) = within {
             path.push(key);

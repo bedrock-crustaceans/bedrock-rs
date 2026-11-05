@@ -65,10 +65,7 @@ impl Yielded {
         let again = text.as_ref().ok().map(|text| {
             let path = PackPath::new(path).expect("a pack path");
             match T::parse(&path, text.as_bytes(), &LoadContext::detached()) {
-                Ok(document) => document
-                    .value()
-                    .to_json()
-                    .map_err(|error| format!("{error:?}")),
+                Ok(document) => document.to_json().map_err(|error| format!("{error:?}")),
                 Err(rejected) => Err(format!(
                     "the written text does not load: {:?}",
                     rejected

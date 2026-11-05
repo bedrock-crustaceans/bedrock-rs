@@ -9,7 +9,7 @@ use super::texts;
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{BlockDescriptor, Filter};
@@ -157,7 +157,7 @@ pub struct Condition {
     /// Kept as written; vanilla does not read it (JSON `minecraft:spawn_event`).
     pub spawn_event: Option<Value>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:weight`.
@@ -168,7 +168,7 @@ pub struct Weight {
     /// The rarity; absent = 0, `null` = 5 (JSON `rarity`).
     pub rarity: Option<i32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:density_limit`: population caps, −1 for none.
@@ -179,7 +179,7 @@ pub struct DensityLimit {
     /// The cap underground; absent = −1 (JSON `underground`).
     pub underground: Option<i32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:spawns_above_block_filter`.
@@ -190,7 +190,7 @@ pub struct AboveBlockFilter {
     /// How far above; absent = 1 (JSON `distance`).
     pub distance: Option<i32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `minecraft:herd` (one herd). No `min_size ≤ max_size` check;
@@ -210,7 +210,7 @@ pub struct Herd {
     /// How many members get `initial_event`; absent = 0 (JSON `initial_event_count`).
     pub initial_event_count: Option<i32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `minecraft:permute_type`: an entity spawned instead of the condition's own.
@@ -224,7 +224,7 @@ pub struct Permutation {
     /// The entity (JSON `entity_type`).
     pub entity_type: Option<EntityId>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:brightness_filter`: the light level range, each end clamped to 0..=15.
@@ -237,7 +237,7 @@ pub struct BrightnessFilter {
     /// Darken for weather (JSON `adjust_for_weather`).
     pub adjust_for_weather: Option<bool>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:height_filter` and `minecraft:distance_filter`: an integer range whose absent ends
@@ -249,7 +249,7 @@ pub struct RangeFilter {
     /// The upper end; absent = 128 (JSON `max`).
     pub max: Option<i32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:difficulty_filter`: names compared case-insensitively; an unknown name takes the
@@ -261,7 +261,7 @@ pub struct DifficultyFilter {
     /// The highest difficulty; absent or unknown = `hard` (JSON `max`).
     pub max: Option<String>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:world_age_filter`: a range of world ages in ticks, compared unsigned (a negative
@@ -273,7 +273,7 @@ pub struct WorldAgeFilter {
     /// The highest age; absent = `u64::MAX` (JSON `max`).
     pub max: Option<u64>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:delay_filter`.
@@ -288,7 +288,7 @@ pub struct DelayFilter {
     /// The chance in percent; absent = 100 (JSON `spawn_chance`).
     pub spawn_chance: Option<i32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:mob_event_filter`.
@@ -297,7 +297,7 @@ pub struct MobEventFilter {
     /// The mob event's name (JSON `event`).
     pub event: Option<String>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `minecraft:player_in_village_filter`.
@@ -309,7 +309,7 @@ pub struct VillageFilter {
     /// `village_border_tolerance`).
     pub village_border_tolerance: Option<u32>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The JSON keys of a condition, in the order the game's reader tests them, then
@@ -423,7 +423,7 @@ pub fn unknown_members(
     known: &[&str],
     at: &JsonPath,
     d: &mut Diagnostics,
-) -> Extra {
+) -> UnknownMembers {
     members(object, known, &[], at, d)
 }
 
@@ -436,8 +436,8 @@ pub fn members(
     kept: &[&str],
     at: &JsonPath,
     d: &mut Diagnostics,
-) -> Extra {
-    let mut extra = Extra::default();
+) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     for (key, value) in object {
         if kept.contains(&key.as_str()) {
             extra.insert(key.as_str().to_owned(), value.clone());
@@ -933,7 +933,7 @@ fn put(object: &mut VObject, key: &str, value: Option<Value>) {
 }
 
 /// The unknown members after the known ones.
-pub fn put_extra(object: &mut VObject, extra: &Extra) {
+pub fn put_extra(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());
     }

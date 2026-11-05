@@ -63,8 +63,8 @@ use indexmap::IndexMap;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, Extra, JsonContent, NoBeta, Origin,
-    Placed, Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
+    Registry, RegistryBuilder, Rejected, UnknownMembers, default_path,
 };
 use bedrock_addon_core::id::{FeatureId, kind};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
@@ -123,7 +123,7 @@ impl FeatureFn<Result<Value, EncodeError>> for WholeDocument {
         Ok(write_envelope::<Fam<T>>(
             version,
             payload,
-            &Extra::default(),
+            &UnknownMembers::default(),
         ))
     }
 }

@@ -154,12 +154,17 @@ pub fn pack(files: Vec<(&str, Vec<u8>)>) -> Pack {
 
 /// The block in the shape of the newest format, as `{"minecraft:block": payload}`: the value
 /// an upgrade gave, whatever version the writer would write it at.
-pub fn newest_shape(block: &Block) -> bedrock_addon::json::Value {
+pub fn newest_shape(
+    block: &bedrock_addon::document::Document<Block>,
+) -> bedrock_addon::json::Value {
     use bedrock_addon::versioning::VersionStruct;
     let mut object = facet_value::VObject::new();
     object.insert(
         "minecraft:block",
-        block.write().expect("the block has a JSON form"),
+        block.value().write().expect("the block has a JSON form"),
     );
-    object.into()
+    // With the document's unknown members, where the document has them.
+    let mut value = object.into();
+    let _ = bedrock_addon::json::merge_unknown(&mut value, block.unknown());
+    value
 }

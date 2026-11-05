@@ -133,7 +133,7 @@ fn the_1_21_40_struct_keeps_the_alpha_as_written() {
             },
         ]))
     );
-    assert_eq!(json(&document.value().to_json().unwrap()), json(&text));
+    assert_eq!(json(&document.to_json().unwrap()), json(&text));
     // Both alphas are dropped by the step: two infos, at their keys.
     let upgraded = history::lighting::upgrade(document, &LoadContext::detached()).unwrap();
     assert_eq!(
@@ -698,11 +698,7 @@ fn every_lighting_struct_writes_what_it_read() {
         )
         .unwrap();
         assert!(document.diagnostics().is_empty(), "{version}");
-        assert_eq!(
-            json(&document.value().to_json().unwrap()),
-            json(&text),
-            "{version}"
-        );
+        assert_eq!(json(&document.to_json().unwrap()), json(&text), "{version}");
     }
 }
 
@@ -1125,11 +1121,7 @@ fn every_water_struct_writes_what_it_read() {
         )
         .unwrap();
         assert!(document.diagnostics().is_empty(), "{version}");
-        assert_eq!(
-            json(&document.value().to_json().unwrap()),
-            json(&text),
-            "{version}"
-        );
+        assert_eq!(json(&document.to_json().unwrap()), json(&text), "{version}");
         let upgraded = history::water::upgrade(document, &LoadContext::detached()).unwrap();
         assert_eq!(upgraded.value(), loads::<WaterSettings>(&text).value());
     }
@@ -1379,7 +1371,7 @@ fn the_1_21_40_atmosphere_struct_writes_what_it_read() {
         document.value(),
         history::atmosphere::Any::V1_21_40(_)
     ));
-    assert_eq!(json(&document.value().to_json().unwrap()), json(&text));
+    assert_eq!(json(&document.to_json().unwrap()), json(&text));
     let upgraded = history::atmosphere::upgrade(document, &LoadContext::detached()).unwrap();
     assert_eq!(upgraded.value(), loads::<AtmosphereSettings>(&text).value());
     assert!(upgraded.to_json().unwrap().contains("\"more\""));
@@ -1705,7 +1697,7 @@ fn the_1_21_40_grading_struct_writes_what_it_read() {
         document.value(),
         history::color_grading::Any::V1_21_40(_)
     ));
-    assert_eq!(json(&document.value().to_json().unwrap()), json(&text));
+    assert_eq!(json(&document.to_json().unwrap()), json(&text));
     let upgraded = history::color_grading::upgrade(document, &LoadContext::detached()).unwrap();
     assert_eq!(
         upgraded.value(),

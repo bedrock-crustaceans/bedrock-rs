@@ -1,6 +1,6 @@
 //! Loot conditions: what must hold for a pool, an entry or a function to apply.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, ItemId};
 use bedrock_addon_core::shared::IntRange;
 
@@ -14,7 +14,7 @@ pub struct LootCondition {
     /// The condition (JSON `condition`) and its parameters.
     pub kind: ConditionKind,
     /// Members the condition does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The conditions of vanilla's factory map, with their parameters (in the game's order).
@@ -156,5 +156,5 @@ pub struct ToolEnchantment {
     /// JSON `levels`.
     pub levels: Option<IntRange>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }

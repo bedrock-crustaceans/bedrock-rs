@@ -187,7 +187,6 @@ fn the_members_of_ours_reject_a_cereal_block() {
 /// legacy reader warns of it; a block of the newest format that holds one has no text.
 #[test]
 fn an_unknown_member_is_never_written_into_a_cereal_document() {
-    use bedrock_addon::document::Content;
     use bedrock_addon::families::block::Block;
     use bedrock_addon::id::BlockId;
     use bedrock_addon::json::{EncodeError, Value};
@@ -203,12 +202,16 @@ fn an_unknown_member_is_never_written_into_a_cereal_document() {
         written.contains(r#""format_version": "1.26.0""#),
         "{written}"
     );
-    assert_eq!(loads(&written, &context()).value(), legacy.value());
-    let mut newest = Block::new(BlockId::parse("demo:x".to_owned()));
-    newest
-        .description
-        .extra
-        .insert("note".to_owned(), Value::from(1));
+    let again = loads(&written, &context());
+    assert_eq!(again.value(), legacy.value());
+    assert_eq!(again.unknown(), legacy.unknown());
+    let mut newest = legacy.map(|_| Block::new(BlockId::parse("demo:x".to_owned())));
+    *newest.unknown_mut() = bedrock_addon::document::Unknown::new();
+    newest.unknown_mut().put(
+        &bedrock_addon::diagnostic::JsonPath::of_keys(["minecraft:block", "description"]),
+        "note",
+        Value::from(1),
+    );
     match newest.to_json() {
         Err(EncodeError::NotRepresentable { at, .. }) => {
             assert_eq!(at.to_string(), "minecraft:block/description/note");
@@ -318,7 +321,7 @@ fn the_newest_struct_is_1_26_60() {
         bedrock_addon::families::block::history::Any::V1_26_20(_)
     ));
     // As written: the one object, with `origin` and `size`.
-    let again = written.value().to_json().expect("its own shape");
+    let again = written.to_json().expect("its own shape");
     assert!(
         again.contains(r#""origin""#) && !again.contains(r#""min""#),
         "{again}"
@@ -510,7 +513,6 @@ fn the_collision_gtests_of_1_26_20_load() {
 /// with `min`/`max` (which 1.26.20 does not bind).
 #[test]
 fn an_upgraded_block_is_written_at_its_own_version_by_origin_and_size() {
-    use bedrock_addon::document::Content;
     let shelf = loads(
         &fixture("vanilla_1_26_50/shelf_mushroom_block.json"),
         &base_game(),
@@ -1198,7 +1200,6 @@ fn deprecated(c: &DiagnosticCode) -> bool {
 /// "Invalid box bounds" inserted before the area text.
 #[test]
 fn a_min_above_max_is_a_box_and_the_area_text_has_the_prefix() {
-    use bedrock_addon::document::Content;
     let text = newest(r#""minecraft:collision_box": [{"min": [8, 0, 0], "max": [4, 16, 16]}]"#);
     let block = loads(&text, &ucf());
     let written = block.to_json().expect("a text");

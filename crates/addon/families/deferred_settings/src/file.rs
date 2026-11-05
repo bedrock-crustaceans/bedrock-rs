@@ -439,10 +439,7 @@ pub(crate) fn upgrade<F: Family>(
     document: Document<F::Any>,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let written = FormatVersionInput {
         version: Some(version.effective),
         beta_literal: false,

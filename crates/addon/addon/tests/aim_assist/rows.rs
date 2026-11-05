@@ -1,7 +1,6 @@
 //! The fixture rows about one file: aa01–aa17 (aa04b's lookup half
 //! is in `stack.rs`).
 
-use bedrock_addon::document::Content;
 use bedrock_addon::families::aim_assist::{AimAssistPreset, ExclusionSettings};
 use bedrock_addon::id::{AimAssistCategoryId, AimAssistPresetId, BlockId, EntityId, ItemId};
 use bedrock_addon::json::StrictString;

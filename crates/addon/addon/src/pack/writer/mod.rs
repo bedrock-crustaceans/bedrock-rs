@@ -26,7 +26,7 @@ use std::sync::{LazyLock, OnceLock};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, PackReport, Phase, Severity,
 };
-use bedrock_addon_core::document::{Content, Placed};
+use bedrock_addon_core::document::{PlacedWritable, Writable};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{Place, RootId};
 use bedrock_addon_core::pack_identity::{PackOrigin, PackPath};
@@ -166,7 +166,9 @@ impl PackWriter {
     }
 
     /// Adds a document at its default path (`blocks/<namespace>/<name>.json`,
-    /// `entities/<namespace>/<name>.json`, …); `DuplicatePath` if taken.
+    /// `entities/<namespace>/<name>.json`, …); `DuplicatePath` if taken. A value or a loaded
+    /// [`Document`](bedrock_addon_core::document::Document), which writes its unknown members
+    /// with it, as [`put`](Self::put) writes them.
     ///
     /// A taken path is never overwritten, whatever holds it: two identifiers can ask for one
     /// path, and the second document goes where [`PackWriter::put`] is told to put it. A value
@@ -176,8 +178,8 @@ impl PackWriter {
     ///
     /// [`WriteError`]: `DuplicatePath` when the default path is taken, `Encode` for a value with no JSON
     /// spelling, `ReservedPath` for a path that is no file's.
-    pub fn add<T: Content + Placed>(&mut self, value: &T) -> Result<PackPath, WriteError> {
-        let path = file_path(value.default_path())?;
+    pub fn add<W: PlacedWritable>(&mut self, value: &W) -> Result<PackPath, WriteError> {
+        let path = file_path(value.add_path())?;
         if self.files.contains_key(&path) {
             return Err(WriteError::DuplicatePath { path });
         }
@@ -186,20 +188,39 @@ impl PackWriter {
     }
 
     /// Writes a document at `path`, replacing what was there: the text of
-    /// [`Content::write_json`] in the default style. A value with no JSON spelling is
-    /// `Encode` and a path that is no file's (`manifest.json`, the root) `ReservedPath`;
-    /// either leaves the writer as it was.
+    /// [`Content::write_json`](bedrock_addon_core::document::Content::write_json) in the
+    /// default style, of a value or of a loaded
+    /// [`Document`](bedrock_addon_core::document::Document), which writes its unknown members
+    /// with it ([`Writable`]). A value with no JSON spelling is `Encode` and a path that is no
+    /// file's (`manifest.json`, the root) `ReservedPath`; either leaves the writer as it was.
+    /// An unknown member of a document whose object the value no longer holds is not written
+    /// ([`put_reporting`](Self::put_reporting) tells it).
     ///
     /// # Errors
     ///
     /// [`WriteError`]: `Encode` for a value with no JSON spelling, `ReservedPath` for a path that is no
     /// file's.
-    pub fn put<T: Content>(&mut self, path: PackPath, value: &T) -> Result<(), WriteError> {
+    pub fn put<W: Writable>(&mut self, path: PackPath, value: &W) -> Result<(), WriteError> {
+        self.put_reporting(path, value).map(drop)
+    }
+
+    /// [`put`](Self::put), and the findings of the write: each unknown member of a document
+    /// left out because the value no longer holds its object, a `DroppedField` warning at the
+    /// member's path.
+    ///
+    /// # Errors
+    ///
+    /// As [`put`](Self::put).
+    pub fn put_reporting<W: Writable>(
+        &mut self,
+        path: PackPath,
+        value: &W,
+    ) -> Result<Vec<Diagnostic>, WriteError> {
         let path = file_path(path)?;
         let mut out = Vec::new();
-        value.write_json(&mut out, WriteStyle::default())?;
+        let told = value.write_file(&mut out, WriteStyle::default())?;
         self.files.insert(path, Bytes::from(out));
-        Ok(())
+        Ok(told)
     }
 
     /// Writes raw bytes at `path`, replacing what was there. `ReservedPath` for

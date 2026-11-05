@@ -85,10 +85,6 @@ impl MemoryMoveToPosition {
 impl Goal for MemoryMoveToPosition {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
@@ -161,10 +157,6 @@ impl MemoryWait {
 impl Goal for MemoryWait {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
@@ -232,10 +224,6 @@ impl MemoryLookAtEntity {
 
 impl Goal for MemoryLookAtEntity {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -314,10 +302,6 @@ impl MemoryFollowTarget {
 impl Goal for MemoryFollowTarget {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
@@ -386,9 +370,6 @@ macro_rules! sensor {
         impl Goal for $name {
             const TYPED: FormatVersion = $typed;
 
-            fn extra_mut(&mut self) -> &mut Extra {
-                &mut self.extra
-            }
 
             fn check(&mut self, c: &mut Check<'_>) {
                 c.required("sensor_entries", self.sensor_entries.is_some());
@@ -677,10 +658,6 @@ impl MemoryJumpToBlock {
 impl Goal for MemoryJumpToBlock {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("scale_factor", &mut self.scale_factor, Bound::Min(0.0));
@@ -728,10 +705,6 @@ pub struct MemoryPrepareRamAttack {
 
 impl Goal for MemoryPrepareRamAttack {
     const TYPED: FormatVersion = BRAIN_1_26_50;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -825,10 +798,6 @@ impl MemoryRamAttack {
 
 impl Goal for MemoryRamAttack {
     const TYPED: FormatVersion = BRAIN_1_26_50;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

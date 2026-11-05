@@ -3,7 +3,6 @@
 //! loads either writes text that loads again to an equal value (and writes the same text
 //! again), or is refused with `NotRepresentable` and a path.
 
-use bedrock_addon::document::Content;
 use bedrock_addon::json::EncodeError;
 
 use super::common::lines;

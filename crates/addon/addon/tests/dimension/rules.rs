@@ -4,7 +4,6 @@
 #[cfg(feature = "biome")]
 use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::dimension::Dimension;
 
 use super::common::*;

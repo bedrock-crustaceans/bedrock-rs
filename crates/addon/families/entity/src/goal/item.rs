@@ -81,10 +81,6 @@ impl AdmireItem {
 impl Goal for AdmireItem {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("admire_item_sound", self.admire_item_sound.as_ref());
@@ -137,10 +133,6 @@ impl Barter {
 impl Goal for Barter {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -178,10 +170,6 @@ impl ChargeHeldItem {
 
 impl Goal for ChargeHeldItem {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -238,10 +226,6 @@ impl DrinkMilk {
 impl Goal for DrinkMilk {
     const TYPED: FormatVersion = known::V1_21_120;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("filters", self.filters.as_ref());
@@ -288,10 +272,6 @@ impl DrinkPotion {
 
 impl Goal for DrinkPotion {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -484,10 +464,6 @@ impl DropItemFor {
 impl Goal for DropItemFor {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
@@ -601,10 +577,6 @@ impl EatBlock {
 impl Goal for EatBlock {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.each(
@@ -672,10 +644,6 @@ impl EatCarriedItem {
 impl Goal for EatCarriedItem {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -715,10 +683,6 @@ impl EquipItem {
 
 impl Goal for EquipItem {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -810,10 +774,6 @@ impl GoAndGiveItemsToNoteblock {
 
 impl Goal for GoAndGiveItemsToNoteblock {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -908,10 +868,6 @@ impl GoAndGiveItemsToOwner {
 impl Goal for GoAndGiveItemsToOwner {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.triggers("on_item_throw", self.on_item_throw.as_deref());
@@ -1001,10 +957,6 @@ impl OfferFlower {
 
 impl Goal for OfferFlower {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1163,10 +1115,6 @@ impl Goal for PickupItems {
 
     const GATED: &'static [(&'static str, FormatVersion)] = &[("stop_if_holding_item", V1_26_30)];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.items("excluded_items", self.excluded_items.as_deref());
@@ -1274,10 +1222,6 @@ impl PlaceBlock {
 impl Goal for PlaceBlock {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("can_place", self.can_place.as_ref());
@@ -1367,10 +1311,6 @@ impl ShareItems {
 impl Goal for ShareItems {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.entity_types("entity_types", self.entity_types.as_ref());
@@ -1433,10 +1373,6 @@ impl Snacking {
 
 impl Goal for Snacking {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1529,10 +1465,6 @@ impl TakeBlock {
 
 impl Goal for TakeBlock {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1649,10 +1581,6 @@ impl TakeFlower {
 impl Goal for TakeFlower {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("filters", self.filters.as_ref());
@@ -1731,10 +1659,6 @@ impl TradeWithPlayer {
 
 impl Goal for TradeWithPlayer {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1862,10 +1786,6 @@ impl TransportItems {
 
 impl Goal for TransportItems {
     const TYPED: FormatVersion = known::V1_21_100;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

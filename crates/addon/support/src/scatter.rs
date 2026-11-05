@@ -502,9 +502,7 @@ impl ScatterParams {
             };
             object.insert(key, value);
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         Ok(object.into())
     }
 }

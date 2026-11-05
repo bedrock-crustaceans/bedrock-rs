@@ -93,6 +93,19 @@ pub trait VersionStruct: Versioned + MolangFields + Sized {
     ///
     /// Returns `EncodeError` when the struct has no JSON form.
     fn write(&self) -> Result<Value, EncodeError>;
+
+    /// [`write`](Self::write) for a document whose unknown members are `unknown` (paths from
+    /// the document root), for a writer whose shape depends on them (item writes a member it
+    /// would leave out when the file had it as an unknown one). The writer puts the members
+    /// in afterwards. Default: [`write`](Self::write).
+    ///
+    /// # Errors
+    ///
+    /// As [`write`](Self::write).
+    fn write_with_unknown(&self, unknown: &crate::document::Unknown) -> Result<Value, EncodeError> {
+        let _ = unknown;
+        self.write()
+    }
 }
 
 /// What a struct's parse sees besides the text.

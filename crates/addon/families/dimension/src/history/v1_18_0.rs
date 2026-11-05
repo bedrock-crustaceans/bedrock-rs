@@ -27,8 +27,6 @@ pub struct Dimension {
     pub components: Components,
     /// The document's `format_version` (the floor when absent); written as `format_version`.
     pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:dimension`.
-    pub extra: Extra,
     /// The root members beside `format_version` and `minecraft:dimension`.
     pub root_extra: Extra,
 }
@@ -65,7 +63,7 @@ impl VersionStruct for Dimension {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let rule = slice_null_rule(cx);
-        let root: RootV1 = parse_root(text, cx, rule, |root: &mut RootV1| &mut root.extra, d)?;
+        let root: RootV1 = parse_root(text, cx, rule, d)?;
         let inner = root.dimension;
         if let Some(bounds) = &inner.components.dimension_bounds {
             let at = cx.at.with(&[
@@ -81,7 +79,6 @@ impl VersionStruct for Dimension {
             description: inner.description,
             components: inner.components,
             source_format_version: cx.original_version,
-            extra: inner.extra,
             root_extra: root.extra,
         })
     }
@@ -92,16 +89,12 @@ impl VersionStruct for Dimension {
         let mut payload = facet_value::VObject::new();
         payload.insert("description", write_payload(&self.description)?);
         payload.insert("components", write_payload(&self.components)?);
-        for (key, value) in self.extra.iter() {
-            payload.insert(key, value.clone());
-        }
         let mut root = facet_value::VObject::new();
         let version = self.source_format_version.max(Self::VERSION);
         root.insert("format_version", version.to_string());
         root.insert("minecraft:dimension", payload);
-        for (key, value) in self.root_extra.iter() {
-            root.insert(key, value.clone());
-        }
+        // The unknown members of the payload and the root are the document's, written from
+        // its table.
         Ok(root.into())
     }
 }
@@ -120,8 +113,18 @@ impl Upgrade for Dimension {
         // reads the bounds here and does not know the name): the height is the step's, and
         // the file's member is not carried under the newest format's name, where it would
         // be read as the height. The crate notes it where it is, as an information.
-        let mut extra = self.components.extra;
-        if extra.remove(HEIGHT).is_some() {
+        let extra = self.components.extra;
+        let components = JsonPath::of_keys(["minecraft:dimension", "components"]);
+        // `minecraft:dimension_bounds` is not carried: what it held besides its members goes.
+        cx.diagnostics
+            .unknown_mut()
+            .forget(&components.child("minecraft:dimension_bounds"));
+        if cx
+            .diagnostics
+            .unknown_mut()
+            .take(&components, HEIGHT)
+            .is_some()
+        {
             cx.diagnostics.push(dropped(HEIGHT));
         }
         // The one height the newest format cannot spell, `{0, 0}` (the bind constraint keeps
@@ -142,7 +145,6 @@ impl Upgrade for Dimension {
                 extra,
             },
             source_format_version: self.source_format_version,
-            extra: self.extra,
             root_extra: self.root_extra,
         }
     }

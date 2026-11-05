@@ -521,21 +521,27 @@ pub fn carry<T: Content + Debug + PartialEq>(file: &Carry<'_>, writer: &mut Pack
     if let Some(copied) = file.copied {
         return compare(&document, file, copied);
     }
-    if let Err(error) = writer.put(file.path.clone(), document.value()) {
-        return Outcome::NotWritten(format!("{error:?}"));
-    }
+    let told = match writer.put_reporting(file.path.clone(), &document) {
+        Ok(told) => told,
+        Err(error) => return Outcome::NotWritten(format!("{error:?}")),
+    };
+    // An unedited document holds every object its unknown members are at: none is left out.
+    assert!(
+        told.is_empty(),
+        "{}: unknown members left out of the write: {told:?}",
+        file.path
+    );
     // The text `put` wrote: the same call with the same style.
     let mut text = Vec::new();
     document
-        .value()
         .write_json(&mut text, WriteStyle::default())
         .expect("put wrote it");
     match T::parse(file.path, &text, file.cx) {
         Err(_) => Outcome::Unreadable,
         Ok(again) => {
             let mut second = Vec::new();
-            let rewritten = again.value().write_json(&mut second, WriteStyle::default());
-            let same = again.value() == document.value();
+            let rewritten = again.write_json(&mut second, WriteStyle::default());
+            let same = again.value() == document.value() && again.unknown() == document.unknown();
             Outcome::Written {
                 upgraded: document.version().upgraded,
                 same,
@@ -567,7 +573,7 @@ fn compare<T: Content + Debug + PartialEq>(
     let Ok(again) = T::parse(file.path, copied, file.cx) else {
         return Outcome::Unreadable;
     };
-    let same = again.value() == document.value();
+    let same = again.value() == document.value() && again.unknown() == document.unknown();
     Outcome::Compared {
         same,
         difference: if same {

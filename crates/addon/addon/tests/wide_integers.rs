@@ -51,7 +51,7 @@ fn parse<T: Content + std::fmt::Debug>(path: &'static str, text: &str) -> Outcom
         Ok(document) => Outcome {
             loaded: true,
             value: format!("{:?}", document.value()),
-            written: document.value().to_json().ok(),
+            written: document.to_json().ok(),
             findings: document.diagnostics().iter().cloned().collect(),
         },
         Err(rejected) => Outcome {

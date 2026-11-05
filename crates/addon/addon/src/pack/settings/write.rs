@@ -4,7 +4,6 @@
 use facet::Facet;
 use indexmap::IndexMap;
 
-use crate::document::Extra;
 use crate::json::{EncodeError, Value, WriteStyle, write_json};
 use crate::version::FormatVersion;
 use crate::versioning::{Family, Versioned, write_payload};
@@ -74,8 +73,6 @@ struct SettingsOut {
     pack_id: String,
     last_used: Option<u64>,
     values: IndexMap<String, ValueOut>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// A value as written: a number, a boolean, a string or an array of strings.
@@ -108,7 +105,6 @@ fn entry(settings: &Settings) -> SettingsOut {
             .iter()
             .map(|(name, value)| (name.clone(), value_out(value)))
             .collect(),
-        extra: settings.extra.clone(),
     }
 }
 

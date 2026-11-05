@@ -6,7 +6,7 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::unversioned::{lone, version_at};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
@@ -91,7 +91,7 @@ pub struct MusicDefinition {
     /// instead of merging into it. Only the merge reads it.
     pub replace: Option<Value>,
     /// The members the client does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl MusicDefinition {

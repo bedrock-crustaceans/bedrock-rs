@@ -188,7 +188,13 @@ fn combine(
         };
         let (origin, version) = (file.origin().clone(), file.version().clone());
         let mut file_findings = Some(file.diagnostics().clone());
+        let mut rows = file.unknown().clone();
         for (index, definition) in file.into_value().0.into_iter().enumerate() {
+            // The members the file kept under the definition are its document's, at its root.
+            let at = JsonPath::new()
+                .child(MetadataFamily::PAYLOAD_KEY)
+                .index(index);
+            let unknown = rows.take_below(&at);
             let name = definition.sound_event_name.0.clone();
             let id = SoundEventName::parse(name.as_str());
             let entry = Origin::new(
@@ -203,7 +209,8 @@ fn combine(
             match stored.get(&name) {
                 None => {
                     stored.insert(name, origin.pack.clone());
-                    let document = Document::new(definition, entry, version.clone(), diagnostics);
+                    let document = Document::new(definition, entry, version.clone(), diagnostics)
+                        .with_unknown_members(unknown);
                     builder.push(Contribution::Stable(id, document));
                 }
                 Some(first) if *first == origin.pack => {
@@ -214,7 +221,8 @@ fn combine(
                     ));
                 }
                 Some(_) => {
-                    let document = Document::new(definition, entry, version.clone(), diagnostics);
+                    let document = Document::new(definition, entry, version.clone(), diagnostics)
+                        .with_unknown_members(unknown);
                     builder.push(Contribution::Stable(id, document));
                     builder.push_diagnostic(duplicate(&origin, &name, index));
                 }
@@ -350,6 +358,53 @@ mod tests {
             assert!(!no_whitespace(bad), "{bad:?}");
         }
     }
+
+    /// A definition's document holds the unknown members the file kept under it, by paths
+    /// from the definition: what it writes as its own document.
+    #[test]
+    fn a_definition_holds_the_unknown_members_under_it() {
+        use bedrock_addon_core::document::Content;
+        use bedrock_addon_core::json::Value;
+        use bedrock_addon_core::load::LoadOptions;
+        let text = r#"{"format_version": "1.26.60", "minecraft:server_sound_definitions": [
+            {"sound_event_name": "demo:x", "duration_info": {"mode": "real_time", "seconds": 1}},
+            {"sound_event_name": "demo:y", "duration_info": {"mode": "game_time", "seconds": 2}}
+        ]}"#;
+        let path = PackPath::from_static("sounds/sound_definitions.json");
+        let mut file =
+            <SoundMetadataFile as Content>::parse(&path, text.as_bytes(), &LoadContext::detached())
+                .expect("loads");
+        // A file read strictly keeps none; the rows are an edit's.
+        let second = JsonPath::new().child(MetadataFamily::PAYLOAD_KEY).index(1);
+        file.unknown_mut()
+            .put(&second, "zz_definition", Value::from(1i64));
+        file.unknown_mut().put(
+            &second.child("duration_info"),
+            "zz_duration",
+            Value::from(2i64),
+        );
+        let options = LoadOptions::default();
+        let registry = combine(vec![(path, Ok(file))], &StackCx::new(&options, &[]));
+        let x = registry
+            .get(&SoundEventName::parse("demo:x"))
+            .expect("demo:x");
+        assert!(x.unknown().is_empty(), "{:?}", x.unknown());
+        let y = registry
+            .get(&SoundEventName::parse("demo:y"))
+            .expect("demo:y");
+        let rows: Vec<(String, &str)> = y
+            .unknown()
+            .iter()
+            .map(|(at, key, _)| (at.to_string(), key))
+            .collect();
+        assert_eq!(
+            rows,
+            [
+                (String::new(), "zz_definition"),
+                ("duration_info".to_owned(), "zz_duration")
+            ]
+        );
+    }
 }
 
 #[cfg(test)]
@@ -369,7 +424,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.26.60..=1.26.60 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.26.60..=1.26.60 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

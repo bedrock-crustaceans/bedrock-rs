@@ -10,7 +10,6 @@
 //! Feature documents the game's own unit tests and server tests feed its loader.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
-use bedrock_addon_core::document::Content;
 use bedrock_addon_core::load::LoadContext;
 
 use super::common::{base_game, cx, fixture, load, loads, rejects};
@@ -48,10 +47,10 @@ fn round_trips(name: &str, text: &str, cx: &LoadContext) {
         "{name}: {:#?}",
         first.diagnostics()
     );
-    let written = first.value().to_json().expect("written");
+    let written = first.to_json().expect("written");
     let second = loads(&written, cx);
     assert_eq!(first.value(), second.value(), "{name}: {written}");
-    assert_eq!(second.value().to_json().unwrap(), written, "{name}");
+    assert_eq!(second.to_json().unwrap(), written, "{name}");
 }
 
 /// The findings at warning level or above: `(code name, severity, path)`.

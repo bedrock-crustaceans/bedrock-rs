@@ -7,7 +7,7 @@
 mod read;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
 };
@@ -43,7 +43,7 @@ pub struct Splashes {
     /// JSON `conditional`: an array of [`ConditionalSplashes`] objects.
     pub conditional: Option<Value>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// The root as the author wrote it, kept when the fields cannot say it (a root that is no object).
     /// `to_json` writes it for as long as the fields are still the game's reading of it; a
     /// value that was changed, or built by hand, writes its fields. The entries the game
@@ -62,7 +62,7 @@ pub struct ConditionalSplashes {
     /// JSON `splashes`: an array of strings.
     pub splashes: Option<Value>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `requires` of a conditional splash entry: every member given must hold.
@@ -79,7 +79,7 @@ pub struct SplashRequires {
     /// holds.
     pub trial_mode: Option<Value>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// What a client is, as far as conditional splashes ask. The default is what a lint assumes:

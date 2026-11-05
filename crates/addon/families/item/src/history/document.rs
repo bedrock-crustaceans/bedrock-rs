@@ -2,7 +2,7 @@
 //! version parameter selects what the format binds; and the parse and write both they and the
 //! newest struct use.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::{Extra, Unknown as Table};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, NullRule, Value, parse_at};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
@@ -73,8 +73,6 @@ pub struct ItemDocument<const V: u32> {
     pub events: Option<Value>,
     /// What vanilla's legacy reader takes from the document; not written.
     pub legacy: LegacyItemData,
-    /// Unknown members of the item object.
-    pub extra: Extra,
 }
 
 /// The `description` of an older item format: `identifier`, the 1.16.100–1.20.0 `category`
@@ -479,7 +477,6 @@ pub(crate) struct Parts {
     pub(crate) deprecated: ItemDeprecatedData,
     pub(crate) events: Option<Value>,
     pub(crate) legacy: LegacyItemData,
-    pub(crate) extra: Extra,
 }
 
 /// Parses a component-format item object as the struct of `version` binds it: the item-level
@@ -499,10 +496,9 @@ pub(crate) fn parse_parts(
     let strict = strict(original);
     let mut found = Diagnostics::default();
     let Some(shell) = parse_payload::<Shell<'_>>(payload, cx, &mut found) else {
-        d.extend(found);
+        d.extend_with_unknown(found);
         return None;
     };
-    let mut extra = shell.extra;
     let mut description = shell.description;
     let at_components = cx.at.child("components");
     if version >= V1_26_30 {
@@ -561,7 +557,7 @@ pub(crate) fn parse_parts(
         &at_components,
         &mut found,
     ) else {
-        d.extend(found);
+        d.extend_with_unknown(found);
         return None;
     };
     let mut components = Components::new();
@@ -600,6 +596,7 @@ pub(crate) fn parse_parts(
                     text: None,
                 }));
             }
+            let kept = own.take_unknown();
             for mut diagnostic in own {
                 let mut full = path.clone();
                 full.append(&diagnostic.location.json_path);
@@ -607,6 +604,8 @@ pub(crate) fn parse_parts(
                 found.push(diagnostic);
             }
             if let Some(component) = component {
+                // The component's unknown members, below its key.
+                found.unknown_mut().absorb(&path, kept);
                 components.insert(key.clone(), component);
             }
         } else if is_legacy_read(key) {
@@ -704,7 +703,6 @@ pub(crate) fn parse_parts(
         shell.legacy_data,
         version,
         &cx.at,
-        &mut extra,
         &mut found,
     );
     description_era(
@@ -715,25 +713,22 @@ pub(crate) fn parse_parts(
         &mut found,
     );
     if !strict {
-        found = found
-            .into_iter()
-            .filter(|f| {
-                !matches!(
-                    f.code,
-                    DiagnosticCode::UnrecognizedField { .. }
-                        | DiagnosticCode::UnrecognizedComponent { .. }
-                )
-            })
-            .collect();
+        // Not told, and kept all the same.
+        found.retain(|f| {
+            !matches!(
+                f.code,
+                DiagnosticCode::UnrecognizedField { .. }
+                    | DiagnosticCode::UnrecognizedComponent { .. }
+            )
+        });
     }
-    d.extend(found);
+    d.extend_with_unknown(found);
     Some(Parts {
         description,
         components,
         deprecated,
         events: shell.events,
         legacy,
-        extra,
     })
 }
 
@@ -809,7 +804,6 @@ fn side_car(
     legacy_data: Option<Value>,
     version: FormatVersion,
     at: &JsonPath,
-    extra: &mut Extra,
     d: &mut Diagnostics,
 ) -> ItemDeprecatedData {
     let mut out = ItemDeprecatedData::default();
@@ -818,7 +812,7 @@ fn side_car(
         // `deprecated_component_data` / `legacy_data`; the warning is the marker
         // `unknown_members_are_errors` raises to the error.
         if let Some(value) = written {
-            extra.insert("__deprecated_components".to_owned(), value);
+            d.unknown_mut().put(at, "__deprecated_components", value);
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
                     .at(at.child("__deprecated_components")),
@@ -852,7 +846,7 @@ fn side_car(
         if let Some(value) = value {
             // Bound by the 1.26.30 documents alone: here a member the schema does not
             // know, a warning-level line in the content log while the item loads.
-            extra.insert(key.to_owned(), value);
+            d.unknown_mut().put(at, key, value);
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
                     .at(at.child(key)),
@@ -904,16 +898,15 @@ fn description_era(
     if version < V1_20_20 {
         if let Some(menu) = description.menu_category.take() {
             if let Ok(value) = bedrock_addon_core::versioning::write_payload(&menu) {
-                description.extra.insert("menu_category".to_owned(), value);
+                d.unknown_mut().put(at, "menu_category", value);
             }
             unknown(d, "menu_category");
         }
         return;
     }
     if let Some(category) = description.category.take() {
-        description
-            .extra
-            .insert("category".to_owned(), Value::from(category.as_str()));
+        d.unknown_mut()
+            .put(at, "category", Value::from(category.as_str()));
         unknown(d, "category");
     }
     if let Some(menu) = description.menu_category.as_mut() {
@@ -953,7 +946,7 @@ fn description_era(
 /// Members the struct of `version` does not bind yet (`replace_block_item` before 1.21.40,
 /// `aligned_placement` before 1.26.0, `hides_player_location` before 1.21.90, `start_using`
 /// before 1.26.30), and members whose engine version is above the load context's: reset and
-/// kept in the component's `extra` as unknown members.
+/// kept as unknown members of the component's object.
 fn unbind_members(
     key: &str,
     component: &mut Component,
@@ -1005,9 +998,10 @@ fn unbind_members(
     let _ = key;
     for (member, engine) in unbound {
         if let Some(value) = object.get(member)
-            && let Some(extra) = extra_of(component)
+            && keeps_unknown(component)
         {
-            extra.insert(member.to_owned(), value.clone());
+            // Below the component, which its parser's caller places.
+            d.unknown_mut().put(&JsonPath::new(), member, value.clone());
         }
         let code = if engine {
             DiagnosticCode::FieldSinceEngine {
@@ -1035,15 +1029,15 @@ fn unbind_members(
     }
 }
 
-/// The `extra` of a typed component, where it has one.
-fn extra_of(component: &mut Component) -> Option<&mut Extra> {
-    Some(match component {
-        Component::BlockPlacer(c) => &mut c.extra,
-        Component::Wearable(c) => &mut c.extra,
-        Component::UseModifiers(c) => &mut c.extra,
-        Component::Cooldown(c) => &mut c.extra,
-        _ => return None,
-    })
+/// Whether a typed component keeps unknown members (its struct has `extra`).
+fn keeps_unknown(component: &Component) -> bool {
+    matches!(
+        component,
+        Component::BlockPlacer(_)
+            | Component::Wearable(_)
+            | Component::UseModifiers(_)
+            | Component::Cooldown(_)
+    )
 }
 
 /// The binding constraints and value rules of one component (and the 1.18 shapes): `false`
@@ -1492,11 +1486,18 @@ pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeErro
 /// A component as the struct of the packed version `version` writes it: without a member
 /// that format does not have (`use_modifiers.start_using` below 1.26.30, which the typed
 /// component always holds), unless the file had it as an unknown member.
-fn as_read_component(version: u32, component: &Component) -> Result<Value, EncodeError> {
+///
+/// `at` is the component's path in the document, `unknown` the document's unknown members.
+fn as_read_component(
+    version: u32,
+    component: &Component,
+    at: &JsonPath,
+    unknown: &Table,
+) -> Result<Value, EncodeError> {
     let mut written = write_component(component)?;
-    if let Component::UseModifiers(modifiers) = component
+    if let Component::UseModifiers(_) = component
         && unpack(version) < V1_26_30
-        && modifiers.extra.get("start_using").is_none()
+        && !unknown.contains(at, "start_using")
         && let Some(object) = written.as_object_mut()
     {
         object.remove("start_using");
@@ -1521,7 +1522,7 @@ pub(crate) fn write_parts(
     components: impl Iterator<Item = (String, Result<Value, EncodeError>)>,
     deprecated: (&ItemDeprecatedData, SideCarPlace),
     events: Option<&Value>,
-    extra: &Extra,
+    unknown: &Table,
 ) -> Result<Value, EncodeError> {
     let (deprecated, place) = deprecated;
     let mut object = VObject::new();
@@ -1539,8 +1540,9 @@ pub(crate) fn write_parts(
     // An unknown member of the side-car's name among the kept ones cannot be written beside
     // it: one object has one member of a name. (Only a caller can build it: a file's member
     // is read as the side-car or as the unknown member, never both.)
-    if side_car.is_some() && extra.get("__deprecated_components").is_some() {
-        let at = JsonPath::new().with(&["minecraft:item", "__deprecated_components"]);
+    let item = JsonPath::new().with(&["minecraft:item"]);
+    if side_car.is_some() && unknown.contains(&item, "__deprecated_components") {
+        let at = item.with(&["__deprecated_components"]);
         return Err(EncodeError::NotRepresentable {
             at,
             what: bedrock_addon_core::json::Unrepresentable::Unsupported,
@@ -1558,11 +1560,7 @@ pub(crate) fn write_parts(
     if let Some((key, value)) = side_car {
         object.insert(key, value);
     }
-    for (key, value) in extra.iter() {
-        if !object.contains_key(key) {
-            object.insert(key, value.clone());
-        }
-    }
+    // The unknown members are the document's, put in by its writer.
     Ok(Value::from(object))
 }
 
@@ -1584,16 +1582,23 @@ impl<const V: u32> VersionStruct for ItemDocument<V> {
             deprecated: parts.deprecated,
             events: parts.events,
             legacy: parts.legacy,
-            extra: parts.extra,
         })
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
+        self.write_with_unknown(&Table::new())
+    }
+
+    fn write_with_unknown(&self, unknown: &Table) -> Result<Value, EncodeError> {
+        let components = JsonPath::new().with(&["minecraft:item", "components"]);
         write_parts(
             write_description(&self.description),
             self.components
                 .iter()
-                .map(|(key, component)| (key.clone(), as_read_component(V, component)))
+                .map(|(key, component)| {
+                    let at = components.child(key);
+                    (key.clone(), as_read_component(V, component, &at, unknown))
+                })
                 // What the legacy reader alone takes of a file of this format: the keys of
                 // every version, the `tag:` keys below 1.20.50, and each key of `shared`
                 // this struct binds no component for (`minecraft:use_duration` from
@@ -1628,7 +1633,7 @@ impl<const V: u32> VersionStruct for ItemDocument<V> {
                 ),
             (&self.deprecated, SideCarPlace::BeforeEvents),
             self.events.as_ref(),
-            &self.extra,
+            unknown,
         )
     }
 }

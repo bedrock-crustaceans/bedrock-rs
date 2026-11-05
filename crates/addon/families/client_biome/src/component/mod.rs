@@ -133,7 +133,7 @@ where
             return None;
         }
     }
-    let mut value = match parse_at::<T>(slice) {
+    let value = match parse_at::<T>(slice) {
         Ok(value) => value,
         Err(error) => {
             d.push(error.into_diagnostic(&JsonPath::new(), |code, _| code));
@@ -146,9 +146,12 @@ where
         }
     };
     if let Some(json) = &json {
-        for (path, _) in keep_unknown_members(&mut value, json) {
+        let mut kept = bedrock_addon_core::document::Unknown::new();
+        for (path, _) in keep_unknown_members(&value, json, &mut kept) {
             d.push(unrecognized(path));
         }
+        // Below the component; the component map puts them at its key.
+        d.unknown_mut().absorb(&JsonPath::new(), kept);
     }
     Some(value)
 }

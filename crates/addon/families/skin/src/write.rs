@@ -2,7 +2,7 @@
 
 use super::{Skin, SkinPack};
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 impl Skin {
@@ -72,7 +72,7 @@ impl Written {
         }
     }
 
-    fn finish(mut self, extra: &Extra) -> Value {
+    fn finish(mut self, extra: &UnknownMembers) -> Value {
         for (name, value) in extra.iter() {
             if !self.object.contains_key(name) {
                 self.object.insert(name, value.clone());

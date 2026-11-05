@@ -175,7 +175,7 @@ pub fn round_trip<T: Content + PartialEq + std::fmt::Debug>(
     let again = T::parse(&PackPath::new(path).expect("a path"), text.as_bytes(), cx)
         .unwrap_or_else(|r| panic!("re-read: {:#?}\n{text}", r.diagnostics));
     assert_eq!(again.value(), value, "{text}");
-    assert_eq!(again.value().to_json().expect("rewritten"), text);
+    assert_eq!(again.to_json().expect("rewritten"), text);
     text
 }
 

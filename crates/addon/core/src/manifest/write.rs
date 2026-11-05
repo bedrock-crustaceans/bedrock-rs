@@ -4,7 +4,7 @@
 //! arrays, `memory_tier`; format 3: version strings, `memory_performance_tier`), unknown members
 //! of a legacy manifest after the known members of their object, and written by core's writer.
 
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::{self, EncodeError, Unrepresentable, Value, WriteStyle};
 use crate::pack_identity::PackType;
 use crate::version::{MinEngineVersion, SemVersion};
@@ -439,7 +439,7 @@ fn array(version: &SemVersion) -> Value {
 }
 
 /// The unknown members after the known ones (a known key is never replaced).
-fn append_extra(object: &mut VObject, extra: &Extra) {
+fn append_extra(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         if !object.contains_key(key) {
             object.insert(key, value.clone());

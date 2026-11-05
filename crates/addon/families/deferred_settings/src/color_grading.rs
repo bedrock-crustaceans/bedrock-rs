@@ -1,7 +1,7 @@
 //! `minecraft:color_grading_settings`: colour grading and tone mapping.
 
 use super::value::Vec3;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::ColorGradingSettingsId;
 
 /// The colour grading of the deferred renderer (`minecraft:color_grading_settings`, in
@@ -25,7 +25,7 @@ pub struct ColorGradingSettings {
     /// The tone mapper (JSON `tone_mapping`).
     pub tone_mapping: Option<ToneMapping>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The `description` of colour-grading settings: unlike the other settings, its `identifier`
@@ -35,7 +35,7 @@ pub struct ColorGradingDescription {
     /// The settings' name (JSON `identifier`).
     pub identifier: Option<ColorGradingSettingsId>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The grading controls (JSON `color_grading`).
@@ -50,7 +50,7 @@ pub struct ColorGrading {
     /// The white balance (JSON `temperature`).
     pub temperature: Option<Temperature>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The five controls of one tonal range, each a value per colour channel.
@@ -74,7 +74,7 @@ macro_rules! tones {
             /// The saturation per channel, each 0–10 (JSON `saturation`).
             pub saturation: Option<Vec3>,
             /// Members the game does not know, kept for write-back.
-            pub extra: Extra,
+            pub extra: UnknownMembers,
         }
 
         super::defaults! {
@@ -138,7 +138,7 @@ pub struct Temperature {
     /// How the temperature is applied (JSON `type`).
     pub kind: Option<TemperatureType>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 super::defaults! {
@@ -174,7 +174,7 @@ pub struct ToneMapping {
     /// The curve that maps scene luminance to the display (JSON `operator`).
     pub operator: Option<ToneMappingOperator>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 super::defaults! {
@@ -228,7 +228,7 @@ mod codec {
     use crate::value::Vec3;
     use crate::write::{self, Object, Written};
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
 
@@ -605,7 +605,7 @@ mod codec {
                         enabled: Some(false),
                         temperature: Some(DEFAULT_TEMPERATURE),
                         kind: Some(TemperatureType::WhiteBalance),
-                        extra: Extra::default(),
+                        extra: UnknownMembers::default(),
                     }),
                     extra,
                 }),

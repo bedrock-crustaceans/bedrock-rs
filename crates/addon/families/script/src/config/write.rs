@@ -6,7 +6,7 @@ use facet_value::{VArray, VNumber, VObject};
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     self, EncodeError, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
 };
@@ -41,7 +41,7 @@ fn refused(path: &[&str]) -> EncodeError {
 
 /// Adds the unknown members after the known ones; one named like a member the reader knows
 /// would be read as that member, so it is refused.
-fn extras(root: &mut VObject, extra: &Extra, known: &[&str]) -> Result<(), EncodeError> {
+fn extras(root: &mut VObject, extra: &UnknownMembers, known: &[&str]) -> Result<(), EncodeError> {
     for (name, value) in extra.iter() {
         if known.contains(&name) {
             return Err(refused(&[name]));

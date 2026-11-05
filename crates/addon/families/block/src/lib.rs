@@ -142,6 +142,13 @@ impl JsonDocument for Block {
     fn write_root(&self) -> Result<Value, EncodeError> {
         self.document()
     }
+
+    fn write_root_with(
+        &self,
+        unknown: &bedrock_addon_core::document::Unknown,
+    ) -> Result<(Value, Vec<bedrock_addon_core::diagnostic::Diagnostic>), EncodeError> {
+        self.document_with(unknown)
+    }
 }
 
 impl JsonPlaced for Block {
@@ -188,8 +195,8 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: UseFormatVersion
                 empty document: Error
-                1.16.0..=1.26.0 (0..=13): json Own/NonStrict/Error/Warn/lenient/Refuse, mcb Own/NonStrict/Error/Warn/lenient/Refuse
-                1.26.20..=1.26.60 (14..=15): json Rejected/Strict/Error/Error/fatal/Refuse, mcb Own/Strict/Error/Error/fatal/Refuse
+                1.16.0..=1.26.0 (0..=13): json Own/NonStrict/Error/Warn/reports/lenient/Refuse, mcb Own/NonStrict/Error/Warn/reports/lenient/Refuse
+                1.26.20..=1.26.60 (14..=15): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             "#,
         );
     }

@@ -14,7 +14,6 @@ use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
     code_for_deserialize_error_kind,
 };
-use crate::document::Extra;
 use crate::json::{EncodeError, JsonSlice, Value, parse_at};
 use crate::version::FormatVersion;
 use crate::versioning::{ParseCx, VersionStruct, Versioned};
@@ -127,7 +126,6 @@ impl Reader<'_> {
             pack_id: pack_id?,
             last_used,
             values: values?,
-            extra: Extra::default(),
         })
     }
 

@@ -7,7 +7,7 @@
 //! - 1.26.20 (the newest): the same members; `description` is required.
 
 use crate::WaterSettings;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 
 /// The waves of formats 1.21.40 and 1.21.80: with `sampleWidth`, which 1.21.120 dropped.
 /// `direction_increment` is read from 1.21.80.
@@ -39,14 +39,14 @@ pub struct Waves {
     /// How sharp the wave crests are, 1–10 (JSON `shape`).
     pub shape: Option<f32>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Format 1.21.40.
 pub mod v1_21_40 {
     use super::Waves;
     use crate::{Description, ParticleConcentrations};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Water settings at format 1.21.40.
@@ -59,7 +59,7 @@ pub mod v1_21_40 {
         /// The waves of the surface (JSON `waves`).
         pub waves: Option<Waves>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 
@@ -67,7 +67,7 @@ pub mod v1_21_40 {
 pub mod v1_21_80 {
     use super::Waves;
     use crate::{Caustics, Description, ParticleConcentrations};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Water settings at format 1.21.80: with `caustics` and `waves.direction_increment`.
@@ -82,14 +82,14 @@ pub mod v1_21_80 {
         /// The waves of the surface (JSON `waves`).
         pub waves: Option<Waves>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 
 /// Format 1.21.120.
 pub mod v1_21_120 {
     use crate::{Caustics, Description, ParticleConcentrations, Waves};
-    use bedrock_addon_core::document::Extra;
+    use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
 
     /// Water settings at format 1.21.120: `waves` without `sampleWidth`.
@@ -104,7 +104,7 @@ pub mod v1_21_120 {
         /// The waves of the surface (JSON `waves`).
         pub waves: Option<Waves>,
         /// Members the game does not know, kept for write-back.
-        pub extra: Extra,
+        pub extra: UnknownMembers,
     }
 }
 

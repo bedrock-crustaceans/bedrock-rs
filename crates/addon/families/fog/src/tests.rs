@@ -101,7 +101,7 @@ fn an_older_file_that_breaks_a_rule_of_the_schema_is_refused() {
     // Within the rule: nothing to tell, and written at the newest format.
     let document = super::FogSettings::parse(&path, fog("1").as_bytes(), &cx).expect("loads");
     assert!(document.diagnostics().is_empty());
-    let written = document.value().to_json().expect("written");
+    let written = document.to_json().expect("written");
     assert!(
         written.contains(r#""format_version": "1.26.20""#),
         "{written}"

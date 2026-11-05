@@ -118,3 +118,27 @@ fn add_of_a_document_that_cannot_be_written_is_an_encode_error_and_changes_nothi
     ruby.components.insert(DestructibleByMining::seconds(1.5));
     writer.add(&ruby).unwrap();
 }
+
+/// A loaded document is added with its unknown members, as `put` writes it.
+#[test]
+fn add_writes_a_document_with_its_unknown_members() {
+    use bedrock_addon::load::LoadContext;
+    use bedrock_addon::storage::PackPath;
+    let text = r#"{"format_version": "1.16.0", "minecraft:block": {
+        "description": {"identifier": "demo:ruby_lamp", "zz_description": 1},
+        "components": {}
+    }}"#;
+    let document = Block::parse(
+        &PackPath::from_static("blocks/x.json"),
+        text.as_bytes(),
+        &LoadContext::detached(),
+    )
+    .expect("loads");
+    assert!(!document.unknown().is_empty(), "the parse keeps a member");
+    let mut writer = PackWriter::new(ruby_manifest());
+    let at = writer.add(&document).unwrap();
+    assert_eq!(at.as_str(), "blocks/demo/ruby_lamp.json");
+    let written = String::from_utf8(bytes_at(&writer, at.as_str()).unwrap()).unwrap();
+    assert!(written.contains("zz_description"), "{written}");
+    assert_eq!(written, document.to_json().unwrap());
+}

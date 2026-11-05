@@ -204,7 +204,7 @@ fn rewritten<T: Content + PartialEq + std::fmt::Debug>(path: &'static str, value
     let written = value.to_json().unwrap();
     let again = loads(load::<T>(path, &written));
     assert_eq!(again.value(), value);
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
     written
 }
 

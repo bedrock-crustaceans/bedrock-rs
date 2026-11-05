@@ -9,9 +9,22 @@
 #[path = "shared/common.rs"]
 mod common;
 
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::{self, StrictBool, Value};
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use common::{compact, read, round_trip};
+
+/// [`compact`] with a document's unknown members.
+fn compact_with(value: &MenuCategory, unknown: &Unknown) -> String {
+    let mut out = Vec::new();
+    let style = json::WriteStyle {
+        indent: json::Indent::Compact,
+        trailing_newline: false,
+    };
+    json::write_json_with(value, unknown, &mut out, style).unwrap();
+    String::from_utf8(out).unwrap()
+}
 
 #[test]
 fn every_member_round_trips() {
@@ -92,28 +105,33 @@ fn d7_the_family_constraints_are_not_the_types() {
 #[test]
 fn unknown_members_are_kept_by_the_family_walk() {
     let text = r#"{"category": "items", "note": 1}"#;
-    let mut m: MenuCategory = facet_json::from_str_jsonc(text).unwrap();
+    let m: MenuCategory = facet_json::from_str_jsonc(text).unwrap();
     let value: Value = facet_json::from_str_jsonc(text).unwrap();
-    let unknown = json::keep_unknown_members(&mut m, &value);
+    let mut kept = Unknown::new();
+    let unknown = json::keep_unknown_members(&m, &value, &mut kept);
     assert_eq!(unknown.len(), 1);
-    assert_eq!(m.extra.get("note"), Some(&Value::from(1i64)));
-    assert_eq!(compact(&m), r#"{"category":"items","note":1}"#);
+    assert_eq!(kept.get(&JsonPath::new(), "note"), Some(&Value::from(1i64)));
+    assert_eq!(compact_with(&m, &kept), r#"{"category":"items","note":1}"#);
 }
 
 /// A member named like the skipped `extra` field is an unknown member.
 #[test]
 fn a_member_named_extra_is_an_unknown_member() {
     let text = r#"{"category": "items", "extra": {"group": "x"}}"#;
-    let mut m: MenuCategory = facet_json::from_str_jsonc(text).unwrap();
+    let m: MenuCategory = facet_json::from_str_jsonc(text).unwrap();
     assert_eq!(
-        m.extra.get("group"),
-        None,
+        compact(&m),
+        r#"{"category":"items"}"#,
         "the member's object is not read into the side-car"
     );
     let value: Value = facet_json::from_str_jsonc(text).unwrap();
-    let unknown = json::keep_unknown_members(&mut m, &value);
+    let mut kept = Unknown::new();
+    let unknown = json::keep_unknown_members(&m, &value, &mut kept);
     assert_eq!(unknown.len(), 1);
-    assert_eq!(compact(&m), r#"{"category":"items","extra":{"group":"x"}}"#);
+    assert_eq!(
+        compact_with(&m, &kept),
+        r#"{"category":"items","extra":{"group":"x"}}"#
+    );
 }
 
 #[test]

@@ -15,6 +15,8 @@ mod close;
 mod components;
 #[path = "versioning/envelope.rs"]
 mod envelope;
+#[path = "versioning/keep.rs"]
+mod keep;
 #[path = "versioning/ranges.rs"]
 mod ranges;
 #[path = "versioning/reading.rs"]

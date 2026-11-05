@@ -142,6 +142,8 @@ pub(crate) fn refused_by_newest(block: &Block, at: &JsonPath) -> Vec<Diagnostic>
         copy.source_format_version = version;
         let mut found = Diagnostics::default();
         rules(&mut copy, &cx, at, &mut found);
+        // A trial run: what it keeps of the block's members is not the block's.
+        drop(found.take_unknown());
         found
     };
     let own = run(block.source_format_version);
@@ -202,6 +204,13 @@ impl Report<'_> {
                 .at(path)
                 .phase(Phase::Validate),
         );
+    }
+
+    /// Keeps `value` as the unknown member `key` of the object at `rel` below the payload: a
+    /// member the block reads and the game does not, written back as it was read.
+    fn keep(&mut self, rel: &[&str], key: &str, value: Value) {
+        let at = self.path(rel);
+        self.d.unknown_mut().put(&at, key, value);
     }
 
     /// An error: the block is not loaded.
@@ -383,10 +392,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             &["description", "internal_vanilla_data"],
         );
         if let Ok(json) = bedrock_addon_core::versioning::write_payload(&data) {
-            block
-                .description
-                .extra
-                .insert("internal_vanilla_data".to_owned(), json);
+            report.keep(&["description"], "internal_vanilla_data", json);
         }
     }
 }
@@ -492,7 +498,13 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
     let version = block.source_format_version;
     let ucf = cx.experiments.contains(Experiment::UpcomingCreatorFeatures);
     let traits = &mut block.description.traits;
-    for (name, _) in traits.extra.iter() {
+    let unknown: Vec<String> = report
+        .d
+        .unknown()
+        .members_at(&report.path(&["description", "traits"]))
+        .map(|(name, _)| name.to_owned())
+        .collect();
+    for name in &unknown {
         report.error(
             DiagnosticCode::InvalidEnumValue {
                 text: text("Failed to find BlockTrait with identifier: '{}'", &[name]),
@@ -1338,9 +1350,11 @@ fn base_game_members(
             if let MaterialInstanceEntry::Instance(instance) = entry
                 && let Some(dithering) = instance.dithering.take()
             {
-                instance
-                    .extra
-                    .insert("dithering".to_owned(), Value::from(dithering.0));
+                report.keep(
+                    &rel(prefix, &["minecraft:material_instances", key]),
+                    "dithering",
+                    Value::from(dithering.0),
+                );
                 report.push(
                     DiagnosticCode::UnrecognizedField { text: None },
                     severity,
@@ -1353,8 +1367,11 @@ fn base_game_members(
         && let Some(from) = rule.vanilla_connections_from.take()
     {
         if let Ok(json) = bedrock_addon_core::versioning::write_payload(&from) {
-            rule.extra
-                .insert("vanilla_connections_from".to_owned(), json);
+            report.keep(
+                &rel(prefix, &["minecraft:connection_rule"]),
+                "vanilla_connections_from",
+                json,
+            );
         }
         report.push(
             DiagnosticCode::UnrecognizedField { text: None },

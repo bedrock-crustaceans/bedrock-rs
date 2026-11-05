@@ -13,7 +13,7 @@ use crate::component::{
 };
 use crate::read::ComponentEra;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
+use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra, UnknownMembers};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
@@ -127,7 +127,7 @@ fn hex(text: &str) -> Color255Rgb {
 fn foliage(identifier: &str) -> Option<FoliageColor> {
     let map = |color_map| FoliageColor::Map {
         color_map,
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     };
     match identifier {
         id if MESAS.contains(&id) => Some(FoliageColor::Rgb(hex("#aea42a"))),
@@ -150,7 +150,7 @@ fn grass(identifier: &str) -> Option<GrassColor> {
         "minecraft:swampland" | "minecraft:swampland_mutated" | "minecraft:mangrove_swamp" => {
             Some(GrassColor::Map {
                 color_map: GrassColorMap::SwampGrass,
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             })
         }
         _ => None,
@@ -251,8 +251,6 @@ impl Upgrade for ClientBiome {
             format_version: self.format_version,
             description: self.description,
             components,
-            extra: self.extra,
-            root_extra: self.root_extra,
         }
     }
 }

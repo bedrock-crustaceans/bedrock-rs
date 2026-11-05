@@ -58,8 +58,6 @@ pub struct Entity {
     /// `__deprecated`: what an older document wrote that this version does not read (the
     /// `aliases` of a document below 1.21.10), kept for write-back.
     pub deprecated: Option<DeprecatedData>,
-    /// Members the format does not define, kept for write-back.
-    pub extra: Extra,
     /// Which optional members the document wrote, so an empty one is written back; not part of
     /// equality. Public only so that struct-update syntax (`..Entity::new(id)`) works outside
     /// the crate, where a `pub(crate)` field would refuse both a struct literal and the update
@@ -99,7 +97,8 @@ impl PartialEq for Written {
 }
 
 /// `description` of an [`Entity`]: its identifier and entity-wide settings. Vanilla reads a
-/// closed set of keys; any other key is kept in `extra`.
+/// closed set of keys; any other key is reported, and vanilla's own `is_experimental` is kept
+/// among the document's unknown members (`Document::unknown`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Description {
     /// `identifier`: `namespace:name`. A `minecraft:` identifier must override a vanilla
@@ -126,9 +125,6 @@ pub struct Description {
     /// `entity_version`: the upgrade handlers a saved entity runs, by version (format 1.26.20
     /// onward).
     pub entity_version: Option<EntityVersion>,
-    /// Members the format does not define (vanilla's own `is_experimental` among them), kept
-    /// for write-back.
-    pub extra: Extra,
 }
 
 /// `description.properties.<name>`: one entity property.
@@ -144,8 +140,6 @@ pub struct Property {
     pub values: Vec<String>,
     /// `client_sync`: whether the client sees the value; `false` when absent.
     pub client_sync: Option<bool>,
-    /// Members the format does not define, kept for write-back.
-    pub extra: Extra,
 }
 
 /// `type` of a [`Property`].
@@ -201,8 +195,6 @@ pub enum PropertyDefault {
 pub struct Scripts {
     /// `animate`: the animations and controllers the server plays.
     pub animate: Vec<AnimateEntry>,
-    /// Members the server does not read, kept for write-back.
-    pub extra: Extra,
     /// Whether the document wrote `animate`, so an empty list is written back; not part of
     /// equality. Public only so that struct-update syntax (`..Scripts::default()`) works outside
     /// the crate.
@@ -501,7 +493,6 @@ impl Entity {
             brain: None,
             upgrades: IndexMap::new(),
             deprecated: None,
-            extra: Extra::default(),
             written: Written {
                 components: true,
                 ..Written::default()
@@ -524,7 +515,6 @@ impl Description {
             spawn_category: None,
             property_memory_mapping: None,
             entity_version: None,
-            extra: Extra::default(),
         }
     }
 }

@@ -696,10 +696,7 @@ fn a_loaded_legacy_cube_whose_only_member_is_an_unread_mirror_is_written_with_th
             .as_ref()
             .unwrap()[1];
         assert_eq!(cube.mirror, None, "{version}");
-        let written = document
-            .value()
-            .to_json()
-            .expect("the file as loaded is written");
+        let written = document.to_json().expect("the file as loaded is written");
         assert!(!written.contains("minecraft:geometry"), "{version}");
         let again = loaded(load(&written));
         let cubes = again.value().geometries[0].bones()[0]
@@ -710,12 +707,12 @@ fn a_loaded_legacy_cube_whose_only_member_is_an_unread_mirror_is_written_with_th
         assert_eq!(cubes[1], *cube, "{version}: value for value");
         assert!(written.contains(r#""mirror": """#), "{version}: {written}");
         assert_eq!(cubes[1].pivot, cube.pivot, "{version}");
-        assert_eq!(again.value().to_json().unwrap(), written, "{version}");
+        assert_eq!(again.to_json().unwrap(), written, "{version}");
         // A mirror the reader keeps leaves the cube a member: the file is written in its
         // own shape and reads back equal.
         for kept in [r#""true""#, "true"] {
             let document = loaded(load(&file(version, without_rotation, kept)));
-            let written = document.value().to_json().unwrap();
+            let written = document.to_json().unwrap();
             assert!(!written.contains("minecraft:geometry"), "{version} {kept}");
             let again = loaded(load(&written));
             assert_eq!(again.value().geometries, document.value().geometries);
@@ -723,7 +720,7 @@ fn a_loaded_legacy_cube_whose_only_member_is_an_unread_mirror_is_written_with_th
         // Without the locator nothing holds the file to its shape: it is written in the
         // newest one, where the cube has its pivot.
         let free = loaded(load(&file(version, "[0, 1, 0]", r#""maybe""#)));
-        let written = free.value().to_json().unwrap();
+        let written = free.to_json().unwrap();
         assert!(written.contains("minecraft:geometry"), "{version}");
         loaded(load(&written));
     }

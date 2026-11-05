@@ -8,7 +8,7 @@ use facet_value::{VArray, VObject};
 use super::read::Range;
 use super::value::{Description, Keyframes, Rgb8, Rgba8, Vec3};
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::Kind;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
 
@@ -71,7 +71,7 @@ impl Object {
 
     /// Ends the object with its unknown members, after the known ones. An unknown member
     /// named like a member of `known` would be read back as that member: refused.
-    pub(crate) fn finish(mut self, extra: &Extra, known: &[&str]) -> Written {
+    pub(crate) fn finish(mut self, extra: &UnknownMembers, known: &[&str]) -> Written {
         for (key, value) in extra.iter() {
             if known.contains(&key) {
                 return Err(refuse(&self.path(key)));

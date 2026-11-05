@@ -105,10 +105,6 @@ impl Goal for AquaticChargeAttack {
         known::V1_26_0,
     )];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("attack_reach", &mut self.attack_reach, Bound::Min(0.0));
@@ -138,10 +134,10 @@ impl Goal for AquaticChargeAttack {
         }
     }
 
-    fn upgrade(&mut self, from: FormatVersion, _: &mut Diagnostics) {
+    fn upgrade(&mut self, from: FormatVersion, d: &mut Diagnostics) {
         // below 1.26.0 `charge_speed_multiplier` is the live name.
         if from < V1_26_0 {
-            convert::charge_speed_typed(&mut self.charge_speed, &mut self.extra);
+            convert::charge_speed_typed(&mut self.charge_speed, d.unknown_mut());
         }
     }
 
@@ -219,10 +215,6 @@ impl ChargeAttack {
 
 impl Goal for ChargeAttack {
     const TYPED: FormatVersion = known::V1_21_100;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -449,10 +441,6 @@ impl Goal for DelayedAttack {
         known::V1_26_0,
     )];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -613,10 +601,6 @@ impl EatMob {
 impl Goal for EatMob {
     const TYPED: FormatVersion = known::V1_21_100;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("eat_mob_sound", self.eat_mob_sound.as_ref());
@@ -757,10 +741,6 @@ impl FireAtTarget {
 impl Goal for FireAtTarget {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -873,10 +853,6 @@ impl GuardianAttack {
 
 impl Goal for GuardianAttack {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1053,10 +1029,6 @@ impl JumpAroundTarget {
 impl Goal for JumpAroundTarget {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("filters", self.filters.as_ref());
@@ -1179,10 +1151,6 @@ impl KnockbackRoar {
 impl Goal for KnockbackRoar {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.filter("damage_filters", self.damage_filters.as_ref());
@@ -1248,10 +1216,6 @@ impl LeapAtTarget {
 
 impl Goal for LeapAtTarget {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1450,10 +1414,6 @@ impl MeleeAttack {
 
 impl Goal for MeleeAttack {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1720,10 +1680,6 @@ impl MeleeBoxAttack {
 impl Goal for MeleeBoxAttack {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
@@ -1906,10 +1862,6 @@ impl Ocelotattack {
 impl Goal for Ocelotattack {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("cooldown_time", &mut self.cooldown_time, Bound::Above(0.0));
@@ -2079,10 +2031,6 @@ impl RamAttack {
 
 impl Goal for RamAttack {
     const TYPED: FormatVersion = known::V1_26_10;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2254,10 +2202,6 @@ impl Goal for RangedAttack {
         ("in_range_movement_mode", V1_26_50),
     ];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("attack_interval", &mut self.attack_interval);
@@ -2310,9 +2254,9 @@ impl Goal for RangedAttack {
         }
     }
 
-    fn upgrade(&mut self, from: FormatVersion, _d: &mut Diagnostics) {
+    fn upgrade(&mut self, from: FormatVersion, d: &mut Diagnostics) {
         if from < V1_26_50 {
-            convert::ranged_radius_typed(self);
+            convert::ranged_radius_typed(self, d.unknown_mut());
         }
     }
 
@@ -2391,10 +2335,6 @@ impl SlimeAttack {
 
 impl Goal for SlimeAttack {
     const TYPED: FormatVersion = known::V1_21_110;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2527,10 +2467,6 @@ impl SonicBoom {
 impl Goal for SonicBoom {
     const TYPED: FormatVersion = known::V1_21_110;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("attack_sound", self.attack_sound.as_ref());
@@ -2643,10 +2579,6 @@ impl StalkAndPounceOnTarget {
 
 impl Goal for StalkAndPounceOnTarget {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2860,10 +2792,6 @@ impl Goal for StompAttack {
     const DEPRECATED: &'static [Deprecated] =
         &[("melee_fov", deprecated_text!("melee_fov"), known::V1_26_0)];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
@@ -2978,10 +2906,6 @@ impl SummonEntity {
 impl Goal for SummonEntity {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.each(
@@ -3037,10 +2961,6 @@ impl Swell {
 
 impl Goal for Swell {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3101,10 +3021,6 @@ impl SwoopAttack {
 
 impl Goal for SwoopAttack {
     const TYPED: FormatVersion = known::V1_21_110;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3362,10 +3278,6 @@ impl UseKineticWeapon {
 
 impl Goal for UseKineticWeapon {
     const TYPED: FormatVersion = known::V1_21_120;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3718,10 +3630,6 @@ impl SendEvent {
 
 impl Goal for SendEvent {
     const TYPED: FormatVersion = super::movement::V1_26_60;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

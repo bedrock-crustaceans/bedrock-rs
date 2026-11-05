@@ -526,10 +526,7 @@ pub(crate) fn upgrade_document(
     document: Document<history::Any>,
     cx: &LoadContext,
 ) -> Result<Document<Feature>, Rejected> {
-    let origin = document.origin().clone();
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let any = document.into_value();
+    let (any, origin, version, diagnostics) = document.into_parsed_parts();
     let key = any.type_key();
     let upgrade = UpgradeType {
         any,

@@ -11,8 +11,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, Extra, JsonContent, NoBeta, Notice,
-    Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
+    Placed, Registry, RegistryBuilder, Rejected, UnknownMembers, default_path,
 };
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::id::{
@@ -477,7 +477,8 @@ impl Content for AtomicClientEntity {
     /// `{"format_version": "beta", "minecraft:atomic_client_entity": ..}`.
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         let payload = bedrock_addon_core::versioning::write_payload(self)?;
-        let root = write_envelope::<AtomicFamily>(BETA_VERSION, payload, &Extra::default());
+        let root =
+            write_envelope::<AtomicFamily>(BETA_VERSION, payload, &UnknownMembers::default());
         write_json(&root, out, style)
     }
 }
@@ -660,7 +661,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Info
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

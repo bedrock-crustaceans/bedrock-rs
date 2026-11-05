@@ -12,7 +12,7 @@ use super::texts;
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::molang::{
     Admission, EmptyRule, MolangFieldSpec, MolangFields, MolangVersionSource, MolangVisitor,
@@ -63,13 +63,13 @@ pub struct Read {
     /// The description's `population_control`, when present.
     pub population_control: Option<String>,
     /// The description's members that are not read by name.
-    pub description_extra: Extra,
+    pub description_extra: UnknownMembers,
     /// The `conditions` list, when present.
     pub conditions: Option<Vec<Condition>>,
     /// The members of the payload that are not read by name.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// The members of the root that are not read by name.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
     /// The root has a `format_version` member.
     pub has_version: bool,
 }
@@ -83,11 +83,11 @@ fn others(
     at: &JsonPath,
     flavor: Flavor,
     d: &mut Diagnostics,
-) -> Extra {
+) -> UnknownMembers {
     match flavor {
         Flavor::Rules => members(object, known, kept, at, d),
         Flavor::Groups => {
-            let mut extra = Extra::default();
+            let mut extra = UnknownMembers::default();
             for (key, value) in object {
                 if kept.contains(&key.as_str()) || !known.contains(&key.as_str()) {
                     extra.insert(key.as_str().to_owned(), value.clone());
@@ -252,8 +252,8 @@ pub fn write(
     key: &str,
     description: VObject,
     conditions: Option<&[Condition]>,
-    extra: &Extra,
-    root_extra: &Extra,
+    extra: &UnknownMembers,
+    root_extra: &UnknownMembers,
 ) -> Value {
     let mut payload = VObject::new();
     payload.insert("description", Value::from(description));
@@ -276,7 +276,7 @@ pub fn write(
 pub fn description_value(
     identifier: &str,
     population_control: Option<&str>,
-    extra: &Extra,
+    extra: &UnknownMembers,
 ) -> VObject {
     let mut description = VObject::new();
     description.insert("identifier", Value::from(identifier));

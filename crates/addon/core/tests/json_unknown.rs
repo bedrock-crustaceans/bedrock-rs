@@ -1,7 +1,8 @@
 //! Unknown members: version structs have no flatten field, so
 //! `unknown_members(T::SHAPE, &Value)` walks the struct shapes and a `Value` of the same text
-//! together and reports every key no field takes; `keep_unknown_members` also stores them in the
-//! `#[facet(skip)] extra: Extra` of the struct they belong to, for write-back.
+//! together and reports every key no field takes; `keep_unknown_members` also keeps those of a
+//! struct marked with `#[facet(skip)] extra: Extra` in a document's `Unknown` table, by the path
+//! of their object, for write-back.
 //!
 //! Each unknown member carries its JSON path (`description/color`, `events/1/target`).
 
@@ -10,16 +11,35 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::{Extra, Unknown};
 use bedrock_addon_core::json::{
-    MAX_JSON_DEPTH, StrictInt, Value, keep_unknown_members, to_json, too_deep_to_walk,
-    unknown_members,
+    MAX_JSON_DEPTH, StrictInt, Value, keep_unknown_members, too_deep_to_walk, unknown_members,
+    write_json_with,
 };
 use facet::Facet;
 use indexmap::IndexMap;
 
 fn value(text: &str) -> Value {
     facet_json::from_str_borrowed_jsonc(text).unwrap()
+}
+
+fn at(keys: &[&str]) -> JsonPath {
+    JsonPath::of_keys(keys)
+}
+
+/// `value` written with `unknown`'s members, as the door writes a document.
+fn written<'a, T: Facet<'a>>(value: &T, unknown: &Unknown) -> String {
+    let mut out = Vec::new();
+    let told = write_json_with(
+        value,
+        unknown,
+        &mut out,
+        bedrock_addon_core::json::WriteStyle::default(),
+    )
+    .unwrap();
+    assert!(told.is_empty(), "{told:?}");
+    String::from_utf8(out).unwrap()
 }
 
 /// The unknown members' values, in walk order.
@@ -150,42 +170,45 @@ fn a_member_of_the_wrong_json_type_is_not_walked() {
 }
 
 #[test]
-fn keep_unknown_members_fills_extra_at_each_level() {
-    let mut doc: Document = facet_json::from_str_borrowed_jsonc(DOCUMENT).unwrap();
-    let found = keep_unknown_members(&mut doc, &value(DOCUMENT));
+fn keep_unknown_members_keeps_them_at_each_level() {
+    let doc: Document = facet_json::from_str_borrowed_jsonc(DOCUMENT).unwrap();
+    let mut kept = Unknown::new();
+    let found = keep_unknown_members(&doc, &value(DOCUMENT), &mut kept);
     assert_eq!(found.len(), 5);
     assert_eq!(
-        doc.description.extra.get("color"),
+        kept.get(&at(&["description"]), "color"),
         Some(&Value::from("red"))
     );
-    assert_eq!(doc.events[0].extra.iter().count(), 0);
+    assert_eq!(kept.members_at(&at(&["events"]).index(0)).count(), 0);
     assert_eq!(
-        doc.events[1].extra.get("target"),
+        kept.get(&at(&["events"]).index(1), "target"),
         Some(&Value::from("self"))
     );
     assert_eq!(
-        doc.optional.as_ref().unwrap().extra.get("weight"),
+        kept.get(&at(&["optional"]), "weight"),
         Some(&Value::from(2i64))
     );
-    assert_eq!(doc.extra.get("root_extra"), Some(&Value::NULL));
+    assert_eq!(kept.get(&JsonPath::new(), "root_extra"), Some(&Value::NULL));
 }
 
 /// facet's reflection cannot reach a map value mutably (rc.7 `PokeMap` has no `get_mut`), so an
 /// unknown member inside a map entry is reported but not kept.
 #[test]
 fn an_unknown_member_inside_a_map_value_is_reported_but_not_kept_deviation() {
-    let mut doc: Document = facet_json::from_str_borrowed_jsonc(DOCUMENT).unwrap();
-    let found = keep_unknown_members(&mut doc, &value(DOCUMENT));
+    let doc: Document = facet_json::from_str_borrowed_jsonc(DOCUMENT).unwrap();
+    let mut kept = Unknown::new();
+    let found = keep_unknown_members(&doc, &value(DOCUMENT), &mut kept);
     assert!(found.iter().any(|(_, v)| *v == Value::from("m")));
-    assert!(doc.components["a"].extra.is_empty());
+    assert_eq!(kept.members_at(&at(&["components", "a"])).count(), 0);
 }
 
 #[test]
 fn keeping_twice_replaces_rather_than_duplicates() {
-    let mut doc: Document = facet_json::from_str_borrowed_jsonc(DOCUMENT).unwrap();
-    keep_unknown_members(&mut doc, &value(DOCUMENT));
-    keep_unknown_members(&mut doc, &value(DOCUMENT));
-    assert_eq!(doc.description.extra.iter().count(), 1);
+    let doc: Document = facet_json::from_str_borrowed_jsonc(DOCUMENT).unwrap();
+    let mut kept = Unknown::new();
+    keep_unknown_members(&doc, &value(DOCUMENT), &mut kept);
+    keep_unknown_members(&doc, &value(DOCUMENT), &mut kept);
+    assert_eq!(kept.members_at(&at(&["description"])).count(), 1);
 }
 
 // --- untagged enums with an object arm -------------------------------------
@@ -240,18 +263,22 @@ fn o6_unknown_members_descends_into_the_object_arm_of_an_untagged_enum() {
 }
 
 #[test]
-fn o6_keep_unknown_members_fills_the_extra_of_the_arm() {
+fn o6_keep_unknown_members_keeps_the_members_of_the_arm() {
     let text = r#"{ "any_of": [{ "test": "a", "u": 1 }], "w": 3 }"#;
-    let mut filter: Filter = facet_json::from_str_borrowed_jsonc(text).unwrap();
-    keep_unknown_members(&mut filter, &value(text));
+    let filter: Filter = facet_json::from_str_borrowed_jsonc(text).unwrap();
+    let mut kept = Unknown::new();
+    keep_unknown_members(&filter, &value(text), &mut kept);
     let Filter::Group(group) = &filter else {
         panic!("{filter:?}");
     };
-    assert_eq!(group.extra.get("w"), Some(&Value::from(3i64)));
-    let Filter::Test(leaf) = &group.any_of.as_ref().unwrap()[0] else {
+    assert_eq!(kept.get(&JsonPath::new(), "w"), Some(&Value::from(3i64)));
+    let Filter::Test(_) = &group.any_of.as_ref().unwrap()[0] else {
         panic!("{group:?}");
     };
-    assert_eq!(leaf.extra.get("u"), Some(&Value::from(1i64)));
+    assert_eq!(
+        kept.get(&at(&["any_of"]).index(0), "u"),
+        Some(&Value::from(1i64))
+    );
 }
 
 // facet picks an untagged object arm by the first key, in document order, that leaves exactly one
@@ -300,15 +327,16 @@ fn o6_unknown_members_follows_facets_arm() {
 
 #[test]
 fn o6_keep_unknown_members_fills_the_arm_the_value_took_and_round_trips() {
-    let mut split: Split = facet_json::from_str(SPLIT).unwrap();
-    let found = keep_unknown_members(&mut split, &value(SPLIT));
+    let split: Split = facet_json::from_str(SPLIT).unwrap();
+    let mut kept = Unknown::new();
+    let found = keep_unknown_members(&split, &value(SPLIT), &mut kept);
     assert_eq!(found.len(), 2);
-    let Split::A(a) = &split else {
+    let Split::A(_) = &split else {
         panic!("{split:?}");
     };
-    assert_eq!(a.extra.get("a"), None);
-    assert_eq!(a.extra.get("c"), Some(&Value::from(2i64)));
-    let written = to_json(&split).unwrap();
+    assert_eq!(kept.get(&JsonPath::new(), "a"), None);
+    assert_eq!(kept.get(&JsonPath::new(), "c"), Some(&Value::from(2i64)));
+    let written = written(&split, &kept);
     let again: Value = facet_json::from_str(&written).unwrap();
     assert_eq!(again, value(SPLIT));
     let reread: Split = facet_json::from_str(&written).unwrap();
@@ -446,10 +474,11 @@ fn members_inside_a_raw_json_are_not_reported() {
         .map(|(path, _)| path.to_string())
         .collect();
     assert_eq!(paths, ["other"]);
-    let mut shell: RawShell<'_> = facet_json::from_str_borrowed_jsonc(text).unwrap();
-    let kept = keep_unknown_members(&mut shell, &value(text));
+    let shell: RawShell<'_> = facet_json::from_str_borrowed_jsonc(text).unwrap();
+    let mut table = Unknown::new();
+    let kept = keep_unknown_members(&shell, &value(text), &mut table);
     assert_eq!(kept.len(), 1);
-    assert!(shell.extra.get("other").is_some());
+    assert!(table.get(&JsonPath::new(), "other").is_some());
 }
 
 /// A struct that holds itself: the walk goes a level down for each `a`.
@@ -487,9 +516,11 @@ fn a_value_at_the_depth_limit_is_walked_and_one_level_deeper_is_not() {
 
     let past_the_limit = nested_objects(MAX_JSON_DEPTH + 1);
     assert!(unknown_members(Nested::SHAPE, &past_the_limit).is_empty());
-    let mut target = Nested::default();
-    assert!(keep_unknown_members(&mut target, &past_the_limit).is_empty());
+    let target = Nested::default();
+    let mut kept = Unknown::new();
+    assert!(keep_unknown_members(&target, &past_the_limit, &mut kept).is_empty());
     assert!(target.a.is_none());
+    assert!(kept.is_empty());
 }
 
 /// "Nothing reported" of a value past the limit is told apart from "no unknown member": the

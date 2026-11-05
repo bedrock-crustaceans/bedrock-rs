@@ -1131,7 +1131,6 @@ fn a_scale_beyond_f32_is_not_clamped_where_the_member_does_not_exist() {
 
 #[test]
 fn a_clamped_scale_whose_text_occurs_earlier_is_found_at_its_member() {
-    use bedrock_addon::document::Content as _;
     // The same characters in a string value, in a string key's neighbour, in comments and in
     // an earlier member: only the member's own token is the number.
     for token in ["1e999", "1e39", "-1e39"] {
@@ -1255,7 +1254,6 @@ fn clamp_warnings(d: &bedrock_addon::diagnostic::Diagnostics, text: &str) -> Vec
 
 #[test]
 fn a_molang_member_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
-    use bedrock_addon::document::Content as _;
     use bedrock_addon::molang::Molang;
     // A named script, at every version that declares it.
     for version in ["1.8.0", "1.10.0", "1.26.0"] {
@@ -1271,7 +1269,7 @@ fn a_molang_member_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
             lines(document.diagnostics()).join("\n")
         );
         // What was read is written, and reads back equal without the finding.
-        let written = document.value().to_json().unwrap();
+        let written = document.to_json().unwrap();
         let again = loaded(entity(&written, &cx()));
         assert_eq!(again.value(), document.value(), "{written}");
         assert!(clamp_warnings(again.diagnostics(), &written).is_empty());
@@ -1292,7 +1290,7 @@ fn a_molang_member_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
             "{version}: {}",
             lines(document.diagnostics()).join("\n")
         );
-        let written = document.value().to_json().unwrap();
+        let written = document.to_json().unwrap();
         let again = loaded(entity(&written, &cx()));
         assert_eq!(again.value(), document.value(), "{written}");
     }

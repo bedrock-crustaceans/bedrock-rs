@@ -3,7 +3,7 @@
 //! reported.
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{Object, as_int, as_real, raw_member};
 
@@ -39,7 +39,7 @@ pub(super) struct Fields<'v> {
     /// The object's place in the file.
     pub(super) at: JsonPath,
     known: Vec<&'static str>,
-    extra: Extra,
+    extra: UnknownMembers,
 }
 
 impl<'v> Fields<'v> {
@@ -49,7 +49,7 @@ impl<'v> Fields<'v> {
             object,
             at,
             known: Vec::new(),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -116,7 +116,7 @@ impl<'v> Fields<'v> {
 
     /// The members kept as written, then every member not read, each of those with an
     /// `UnrecognizedField` info.
-    pub(super) fn finish(mut self, diagnostics: &mut Diagnostics) -> Extra {
+    pub(super) fn finish(mut self, diagnostics: &mut Diagnostics) -> UnknownMembers {
         if let Some(object) = self.object.as_object() {
             for (name, member) in object {
                 if !self.known.contains(&name.as_str()) {
@@ -150,7 +150,7 @@ impl Written {
     }
 
     /// The object, with the members of `extra` no typed member stands for.
-    pub(super) fn finish(mut self, extra: &Extra) -> Value {
+    pub(super) fn finish(mut self, extra: &UnknownMembers) -> Value {
         for (name, value) in extra.iter() {
             if !self.keys.iter().any(|written| written == name) {
                 self.object.put(name, Some(value.clone()));

@@ -1,7 +1,7 @@
 //! Writing a material file and a list back: what was read is
 //! written, nothing else, and what the loader would read differently is refused.
 
-use bedrock_addon::document::{Content, Extra};
+use bedrock_addon::document::{Content, UnknownMembers};
 use bedrock_addon::families::material::{
     KeyRules, ListEntry, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey,
     MaterialList, MaterialListKind, SamplerState, StencilFace, StencilRefOverride, Variant,
@@ -64,7 +64,7 @@ fn flat_file(materials: Vec<(&str, MaterialDef)>) -> MaterialFile {
             .into_iter()
             .map(|(key, def)| (MaterialKey::parse(key), def))
             .collect(),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -423,7 +423,7 @@ fn a_key_that_would_read_back_as_another_is_refused() {
     let odd = |key: MaterialKey| MaterialFile {
         form: MaterialFileForm::Flat,
         materials: IndexMap::from([(key, MaterialDef::default())]),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     };
     // A parent with a colon splits at another place on the way back.
     let parent = odd(MaterialKey {

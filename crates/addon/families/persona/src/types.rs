@@ -9,7 +9,7 @@ use super::{
     ArmSize, BUILTIN_PACK, BodySize, PersonaPiece, PieceSide, PieceType, TESTING_PACK, Written,
 };
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::document::{Extra, Rejected};
+use bedrock_addon_core::document::{Rejected, UnknownMembers};
 use bedrock_addon_core::json::Value;
 
 /// One `<name>.meta.json`: what a persona piece is, as the file says it.
@@ -60,7 +60,7 @@ pub struct PieceMetadata {
     pub allow_tint_override: Option<bool>,
     /// Members the game does not know, and members of a JSON type it does not expect, as
     /// written: never in a model read from a file that loads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `texture_sources`.
@@ -82,7 +82,7 @@ pub struct TextureSource {
     pub use_face_uv: Option<bool>,
     /// Members the game does not know, and members of an unexpected JSON type, as written:
     /// never in a model read from a file that loads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `geometry_sources`: a model of the piece's geometry file and when it is used.
@@ -111,7 +111,7 @@ pub struct GeometrySource {
     pub frames: Option<i32>,
     /// Members the game does not know (`use_face_uv` among them), and members of an unexpected
     /// JSON type, as written: never in a model read from a file that loads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One entry of `animation_sources`.
@@ -124,7 +124,7 @@ pub struct AnimationSource {
     pub animation_file: Option<String>,
     /// Members the game does not know, and members of an unexpected JSON type, as written:
     /// never in a model read from a file that loads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `zone` as written: one zone or a list of them.
@@ -219,7 +219,7 @@ pub struct TintColor {
     pub a_color: Option<HexColor>,
     /// Members the game does not know, and members of an unexpected JSON type, as written:
     /// never in a model read from a file that loads.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl TintColor {
@@ -281,7 +281,7 @@ pub struct PieceStoreInfo {
     /// `piece_thumbnail`: an image, from the pack root, with or without its extension.
     pub piece_thumbnail: Option<String>,
     /// Members the game does not read, and members of an unexpected JSON type, as written.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One texture the game builds for a piece: an entry of `texture_sources` or
@@ -416,7 +416,7 @@ impl PieceMetadata {
 
 /// The frame count the game reads from an entry's `frames`: the typed member, or what
 /// reading an integer with default 1 makes of a member held as written.
-fn frame_count(frames: Option<i32>, extra: &Extra) -> i32 {
+fn frame_count(frames: Option<i32>, extra: &UnknownMembers) -> i32 {
     frames.unwrap_or_else(|| super::read::as_int(extra.get("frames"), 1))
 }
 

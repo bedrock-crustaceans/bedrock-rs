@@ -7,7 +7,7 @@ use bedrock_addon_family_entity::component::{
     RotationAxisAligned, RotationLockedToVehicle, UsesLegacyAmbientSounds, UsesLegacyFriction,
 };
 
-use super::{fixture, has, json, read, read_as, round_trip, strict, write};
+use super::{fixture, has, json, read, read_as, round_trip, strict, write, write_with};
 
 /// The 49 marker keys of
 const MARKERS: [&str; 49] = [
@@ -86,8 +86,12 @@ fn e27_marker_with_a_stray_member_keeps_it_and_reports_unrecognized_field() {
         Severity::Warning,
         "stray"
     ));
-    assert_eq!(marker.extra.get("stray"), Some(&json("1")));
-    assert_eq!(write(&marker), json(r#"{"stray": 1}"#));
+    assert_eq!(
+        d.unknown()
+            .get(&bedrock_addon_core::diagnostic::JsonPath::new(), "stray"),
+        Some(&json("1"))
+    );
+    assert_eq!(write_with(&marker, d.unknown()), json(r#"{"stray": 1}"#));
 }
 
 #[test]

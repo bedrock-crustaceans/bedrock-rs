@@ -5,7 +5,7 @@
 
 mod read;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 use crate::read::{EMPTY_FILE, NOT_JSON};
@@ -65,7 +65,7 @@ pub struct CreditsSection {
     /// JSON `disciplines`.
     pub disciplines: Option<Vec<CreditsDiscipline>>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One discipline of a credits section.
@@ -76,7 +76,7 @@ pub struct CreditsDiscipline {
     /// JSON `titles`.
     pub titles: Option<Vec<CreditsTitle>>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One title of a credits discipline, with the people who hold it.
@@ -87,7 +87,7 @@ pub struct CreditsTitle {
     /// JSON `names`, each read as the game reads any value as a string.
     pub names: Option<Vec<String>>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl bedrock_addon_core::__private::Sealed for Credits {}

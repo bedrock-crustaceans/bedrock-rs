@@ -9,7 +9,7 @@ mod write;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::jsoncpp::{member, number};
 
@@ -59,7 +59,7 @@ pub struct Nineslice {
     /// it, when the typed field cannot say it (a value the game ignores, `4.0`, a third
     /// element, a `null`): it is written back while the typed field still is its reading, and
     /// the typed field is written once it was changed.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The border widths of a nine-slice image.
@@ -79,7 +79,7 @@ pub struct AsepriteSheet {
     /// The sheet's description (JSON `meta`).
     pub meta: AsepriteMeta,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `meta` of an Aseprite sheet.
@@ -90,7 +90,7 @@ pub struct AsepriteMeta {
     /// The size of the sheet image, `[w, h]` (JSON `size`: `{"w", "h"}`): the base UV size.
     pub size: [i32; 2],
     /// The other members of `meta`, and of `meta.size` under `size`.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One frame of an Aseprite sheet.
@@ -102,7 +102,7 @@ pub struct AsepriteFrame {
     pub duration: i32,
     /// The other members of the frame; the other members of `frame` (`w`, `h`, which the
     /// game does not read) under `frame`.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl UiTextureInfo {
@@ -171,8 +171,8 @@ fn as_int(value: Option<&Value>) -> Option<i32> {
 }
 
 /// Every member of `value` but the ones in `read`.
-fn others(value: &Value, read: &[&str]) -> Extra {
-    let mut extra = Extra::default();
+fn others(value: &Value, read: &[&str]) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     if let Some(object) = value.as_object() {
         for (key, member) in object {
             if !read.contains(&key.as_str()) {
@@ -388,7 +388,7 @@ fn read_sheet(root: &Value) -> Result<AsepriteSheet, Vec<String>> {
 }
 
 /// The members of `extra` as an object.
-pub(crate) fn extra_value(extra: &Extra) -> Value {
+pub(crate) fn extra_value(extra: &UnknownMembers) -> Value {
     let mut object = facet_value::VObject::new();
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());

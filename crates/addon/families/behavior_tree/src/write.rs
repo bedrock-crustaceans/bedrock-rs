@@ -25,7 +25,7 @@ use super::read::{
 };
 use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
 };
@@ -74,7 +74,7 @@ impl BehaviorTree {
     /// root node's object 3 and its body 4; a decorator's child sits two levels below its
     /// node, a composite's children three.
     fn nesting(&self) -> usize {
-        let extras = |extra: &Extra, level: usize| {
+        let extras = |extra: &UnknownMembers, level: usize| {
             extra
                 .iter()
                 .map(|(_, value)| level + value_nesting(value))
@@ -118,7 +118,7 @@ fn value_nesting(value: &Value) -> usize {
 
 /// The unknown members of a level, after its known ones; one named like a member already
 /// written is left out.
-fn extend(object: &mut VObject, extra: &Extra) {
+fn extend(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         if !object.contains_key(key) {
             object.insert(key, value.clone());

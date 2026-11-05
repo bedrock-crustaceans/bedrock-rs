@@ -536,7 +536,7 @@ fn the_merged_value_writes_the_pool_and_nothing_the_packs_did_not_say() {
         )],
     ]);
     assert_eq!(
-        json(&stack.splashes().value().to_json().unwrap()),
+        json(&stack.splashes().to_json().unwrap()),
         json(r#"{ "splashes": ["a", "b", "c"] }"#)
     );
     assert_eq!(Splashes::default().to_json().unwrap().trim(), "{}");

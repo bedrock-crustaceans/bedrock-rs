@@ -48,7 +48,6 @@ struct BetaShell<'a> {
 pub(crate) struct Payload {
     pub(crate) description: Description,
     pub(crate) components: ComponentMap<BiomeComponent>,
-    pub(crate) extra: Extra,
 }
 
 /// Reads a stable payload object as the struct of `version` binds it.
@@ -70,7 +69,6 @@ pub(crate) fn payload(
     Some(Payload {
         description: shell.description,
         components,
-        extra: shell.extra,
     })
 }
 
@@ -92,7 +90,6 @@ pub(crate) fn beta_payload(
     let payload = Payload {
         description: shell.description,
         components,
-        extra: shell.extra,
     };
     Some((payload, shell.environment_attributes))
 }
@@ -125,6 +122,7 @@ pub(crate) fn components(
             Some(meta) if bound => {
                 let mut found = Diagnostics::default();
                 let value = (meta.parse)(slice, ConvertMode::Strict, cx, &mut found);
+                let kept = found.take_unknown();
                 for mut diagnostic in found {
                     let mut full = path.clone();
                     full.append(&diagnostic.location.json_path);
@@ -132,6 +130,8 @@ pub(crate) fn components(
                     d.push(diagnostic);
                 }
                 if let Some(value) = value {
+                    // The component's unknown members, below its key.
+                    d.unknown_mut().absorb(&path, kept);
                     builder_bound(&value, version, &path, d);
                     map.insert_typed(value, false);
                 }

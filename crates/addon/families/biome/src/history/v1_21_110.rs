@@ -30,10 +30,6 @@ pub struct Biome {
     pub description: Description,
     /// The components (JSON `minecraft:biome/components`).
     pub components: ComponentMap<BiomeComponent>,
-    /// Unknown members of `minecraft:biome`.
-    pub extra: Extra,
-    /// Unknown members of the document's root.
-    pub root_extra: Extra,
 }
 
 /// The document's root.
@@ -65,7 +61,7 @@ impl VersionStruct for Biome {
                 .at(cx.at.clone()),
             );
         }
-        d.extend(found);
+        d.extend_with_unknown(found);
         parsed
     }
 
@@ -74,11 +70,9 @@ impl VersionStruct for Biome {
         root.insert("format_version", Value::from(self.format_version.as_str()));
         root.insert(
             "minecraft:biome",
-            object(&self.description, &self.components, &self.extra)?,
+            object(&self.description, &self.components)?,
         );
-        for (key, value) in self.root_extra.iter() {
-            root.insert(key, value.clone());
-        }
+        // The root's unknown members are the document's, written from its table.
         Ok(root.into())
     }
 }
@@ -96,8 +90,6 @@ fn read(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Optio
         format_version: root.format_version.0,
         description: payload.description,
         components: payload.components,
-        extra: payload.extra,
-        root_extra: root.extra,
     })
 }
 
@@ -118,7 +110,6 @@ impl Upgrade for Biome {
         v1_21_120::Biome {
             description: self.description,
             components: self.components,
-            extra: self.extra,
         }
     }
 }

@@ -169,11 +169,13 @@ impl VersionStruct for SimplifiedSpawnRules {
             );
         };
         match parse_at::<Self>(payload) {
-            Ok(mut value) => {
+            Ok(value) => {
                 if let Some(json) = &json {
-                    for (path, _) in keep_unknown_members(&mut value, json) {
+                    let mut kept = bedrock_addon_core::document::Unknown::new();
+                    for (path, _) in keep_unknown_members(&value, json, &mut kept) {
                         unknown(&path, d);
                     }
+                    d.unknown_mut().absorb(&cx.at, kept);
                 }
                 Some(value)
             }

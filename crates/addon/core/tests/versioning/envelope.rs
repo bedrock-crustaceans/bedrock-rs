@@ -768,7 +768,11 @@ fn the_raw_path_reads_the_root_struct_from_the_whole_text() {
     };
     assert_eq!(root.toy.description.identifier, "demo:x");
     assert!(
-        root.extra.get("third").is_some(),
+        outcome
+            .diagnostics
+            .unknown()
+            .get(&bedrock_addon_core::diagnostic::JsonPath::new(), "third")
+            .is_some(),
         "the third member is the root's own"
     );
     assert_eq!(
@@ -1349,11 +1353,13 @@ fn an_unknown_payload_member_is_kept_and_reported_below_the_payload_key() {
     let outcome = load_toy(
         r#"{"format_version": "1.2.0", "minecraft:toy": {"description": {"identifier": "demo:x", "note": 1}, "extra_member": true}}"#,
     );
-    let Some(Loaded::Stable(toy)) = outcome.value else {
+    let Some(Loaded::Stable(_)) = outcome.value else {
         panic!("{:?}", outcome.diagnostics);
     };
-    assert!(toy.extra.get("extra_member").is_some());
-    assert!(toy.description.extra.get("note").is_some());
+    let unknown = outcome.diagnostics.unknown();
+    let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:toy"]);
+    assert!(unknown.get(&payload, "extra_member").is_some());
+    assert!(unknown.get(&payload.child("description"), "note").is_some());
     let paths: Vec<String> = outcome
         .diagnostics
         .iter()

@@ -133,15 +133,12 @@ struct Root<'a> {
 pub(crate) struct Payload<C: ComponentSet> {
     pub(crate) description: Description,
     pub(crate) components: ComponentMap<C>,
-    pub(crate) extra: Extra,
 }
 
-/// A document below 1.21.130: its `format_version` as written, its payload and the unknown
-/// members of its root.
+/// A document below 1.21.130: its `format_version` as written and its payload.
 pub(crate) struct Whole<C: ComponentSet> {
     pub(crate) format_version: String,
     pub(crate) payload: Payload<C>,
-    pub(crate) root_extra: Extra,
 }
 
 /// Runs a struct's strict read; any error it raises is followed by vanilla's "Invalid Client
@@ -162,7 +159,7 @@ pub(crate) fn strict<T>(
             .at(cx.at.clone()),
         );
     }
-    d.extend(found);
+    d.extend_with_unknown(found);
     // The chain drops the value of a parse that raised an error.
     parsed
 }
@@ -181,7 +178,6 @@ pub(crate) fn payload<C: ComponentEra>(
     Some(Payload {
         description: shell.description,
         components,
-        extra: shell.extra,
     })
 }
 
@@ -198,7 +194,6 @@ pub(crate) fn beta_payload(
     let payload = Payload {
         description: shell.description,
         components,
-        extra: shell.extra,
     };
     Some((payload, shell.environment_attributes))
 }
@@ -220,7 +215,6 @@ pub(crate) fn whole<C: ComponentEra>(
     Some(Whole {
         format_version: root.format_version.0,
         payload,
-        root_extra: root.extra,
     })
 }
 
@@ -320,6 +314,7 @@ fn components<C: ComponentEra>(
             Some(own) => own,
             None => (meta.parse)(slice, ConvertMode::Strict, cx, &mut found).map(C::from),
         };
+        let kept = found.take_unknown();
         for mut diagnostic in found {
             let mut full = path.clone();
             full.append(&diagnostic.location.json_path);
@@ -327,6 +322,8 @@ fn components<C: ComponentEra>(
             d.push(diagnostic);
         }
         if let Some(value) = value {
+            // The component's unknown members, below its key.
+            d.unknown_mut().absorb(&path, kept);
             map.insert_typed(value, false);
         }
     }

@@ -8,7 +8,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told, VanillaText,
 };
 use bedrock_addon_core::document::{
-    ComponentMap, ComponentSet, Extra, Origin, Rejected, VersionInfo,
+    ComponentMap, ComponentSet, Extra, Origin, Rejected, Unknown as Table, VersionInfo,
 };
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::{
@@ -197,15 +197,16 @@ impl Reader<'_, '_> {
         value
     }
 
-    /// Parses `T` from `slice`, keeping its unknown members in its `extra` fields (each one an
-    /// `UnrecognizedField` warning); a failure is reported at `base` with `severity`.
+    /// Parses `T` from `slice`, keeping the unknown members of its structs that keep them in
+    /// the table of the read (`Diagnostics::unknown_mut`; each one an `UnrecognizedField`
+    /// warning); a failure is reported at `base` with `severity`.
     pub(crate) fn typed<'a, T: Facet<'a>>(
         &mut self,
         slice: JsonSlice<'a>,
         base: &JsonPath,
         severity: Severity,
     ) -> Option<T> {
-        let mut value = match parse_at::<T>(slice) {
+        let value = match parse_at::<T>(slice) {
             Ok(value) => value,
             Err(error) => {
                 self.slice_error(&error, base, severity);
@@ -213,7 +214,9 @@ impl Reader<'_, '_> {
             }
         };
         if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
-            let (unknown, misread) = keep_unknown(&mut value, &json);
+            let mut kept = Table::new();
+            let (unknown, misread) = keep_unknown(&value, &json, &mut kept);
+            self.d.unknown_mut().absorb(base, kept);
             for (path, _) in unknown {
                 // The game logs this at the warning level for a document below 1.21.89 and lifts it
                 // to an error from that version on.
@@ -240,17 +243,18 @@ impl Reader<'_, '_> {
 }
 
 /// The one place a typed part of an entity (a component, a goal, the description) is
-/// compared with the JSON it was read from: the unknown members, kept in the `extra`
-/// of the struct they belong to, among them the members a range given as an object does not
+/// compared with the JSON it was read from: the unknown members, kept in `kept` by the path
+/// of the struct they belong to (relative to `value`), among them the members a range given as an object does not
 /// read (`{"a": 1}` where a number or `{min, max}` stands; reported, not kept); and the
 /// places where the typed read took a value of another JSON type in silence (a `null` read
 /// as a struct of defaults, a scalar facet coerced), each an `InvalidType` warning of the
 /// caller.
 pub(crate) fn keep_unknown<'f, T: Facet<'f>>(
-    value: &mut T,
+    value: &T,
     json: &Value,
+    kept: &mut Table,
 ) -> (Vec<(JsonPath, Value)>, Vec<JsonPath>) {
-    let (unknown, misread) = keep_members_and_range_members(value, json);
+    let (unknown, misread) = keep_members_and_range_members(value, json, kept);
     let misread = misread
         .into_iter()
         .filter(|misread| matches!(misread.kind, Misreading::WrongType))
@@ -383,7 +387,7 @@ fn read_entity_members(
     let shell: Shell<'_> = r.typed(payload, at, Severity::Error)?;
     if !r.spans {
         // A payload the steps wrote: its own unknown members were told by the parse of the
-        // older struct, whose `extra` the steps write back; they are not told twice.
+        // older struct, whose unknown members the steps write back; they are not told twice.
         let mut index = 0;
         r.d.retain(|finding| {
             let told_before = index >= before
@@ -438,8 +442,7 @@ fn read_entity_members(
     // An unknown member is told and not kept. From 1.21.89 it refuses the
     // document (`unknown_members_are_errors`); below, the legacy slice ignores it and the
     // conversion to the strict newest struct does not carry it, so the write-back has none.
-    let _ = shell.extra;
-    let mut extra = Extra::default();
+    r.d.unknown_mut().take_all(at);
     let brain = shell.brain.and_then(|raw| {
         let slice = nested(payload, &raw);
         if r.original_version < BRAIN_SINCE {
@@ -464,14 +467,8 @@ fn read_entity_members(
     if let Some(aliases) = read.aliases {
         settle_aliases(r, aliases, &mut deprecated, &description_at);
     }
-    let upgrades = settle_entity_version(
-        r,
-        &mut description,
-        read.entity_version,
-        shell.upgrades,
-        &mut extra,
-        at,
-    );
+    let upgrades =
+        settle_entity_version(r, &mut description, read.entity_version, shell.upgrades, at);
     // `format_version` (the pre-1.8 in-payload version) was consumed by the version selection
     // (`payload_version_unread` tells of one that was not) and `do_not_upgrade` by the
     // chain; neither is kept. The skip key did what it asks for and has no
@@ -493,7 +490,6 @@ fn read_entity_members(
         brain,
         upgrades,
         deprecated,
-        extra,
         written,
     })
 }
@@ -637,13 +633,15 @@ pub(crate) fn read_components(
         let ranged = goal_ranges_read(key, typed_key, slice, r.original_version, &mut found);
         let respanned = respanned || ranged.is_some();
         let slice = ranged.as_deref().map_or(slice, JsonSlice::new);
-        if let Some(read) = schema {
+        if let Some(mut read) = schema {
+            let kept = read.found.take_unknown();
             for told in read.found.into_told() {
                 match told {
                     Told::Finding(finding) => found.push(*finding),
                     Told::Moved { from, to } => found.moved(from, to),
                 }
             }
+            found.unknown_mut().absorb(&JsonPath::new(), kept);
         }
         let value = if let Some(parse) = goal::versioned(key) {
             parse(slice, r.original_version, r.load, &mut found)
@@ -699,12 +697,17 @@ pub(crate) fn read_components(
                 } else {
                     None
                 };
+                if reread.is_some() {
+                    // Read without them: they are not kept.
+                    found.take_unknown();
+                }
                 reread.or(value)
             }
             value => value,
         };
         let reported = !found.is_empty();
         let inserted = step_inserted_member(key, slice, r.original_version);
+        let kept = found.take_unknown();
         for told in found.into_told() {
             let mut finding = match told {
                 Told::Finding(finding) => *finding,
@@ -743,6 +746,10 @@ pub(crate) fn read_components(
                 finding.location.span = None;
             }
             r.d.push(finding);
+        }
+        // The component's unknown members, below its key, where it is kept typed.
+        if value.as_ref().is_some_and(|value| value.name().is_some()) {
+            r.d.unknown_mut().absorb(&path, kept);
         }
         match value {
             Some(value) if value.name().is_some() && named => {
@@ -989,9 +996,10 @@ fn read_description(
     let shell: DescriptionShell<'_> = r.typed(slice, at, Severity::Error)?;
     // An unknown member of `description` is told and not kept.
     let _ = shell.extra;
-    let mut extra = Extra::default();
+    let unknown = r.d.unknown_mut();
+    unknown.take_all(at);
     if let Some(experimental) = shell.is_experimental {
-        extra.insert("is_experimental".to_owned(), experimental);
+        unknown.put(at, "is_experimental", experimental);
     }
     let mut properties = IndexMap::new();
     let mut failed = false;
@@ -1048,7 +1056,6 @@ fn read_description(
             spawn_category,
             property_memory_mapping: shell.property_memory_mapping,
             entity_version: None,
-            extra,
         },
         aliases: shell.aliases,
         entity_version: shell.entity_version,
@@ -1062,6 +1069,8 @@ fn read_description(
 /// or range) at the error level and then abandons the property group.
 fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<Property> {
     let shell: PropertyShell<'_> = r.typed_kept(slice, at)?;
+    // Its unknown members are told, not kept.
+    r.d.unknown_mut().take_all(at);
     let kind = match shell.kind.as_str() {
         "bool" => PropertyType::Bool,
         "int" => PropertyType::Int,
@@ -1142,7 +1151,6 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
         values,
         client_sync: shell.client_sync,
         // Told, not kept.
-        extra: Extra::default(),
     })
 }
 
@@ -1151,6 +1159,8 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
 /// more or fewer than one member, with an error it logs and goes past.
 fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<Scripts> {
     let shell: ScriptsShell<'_> = r.typed(slice, at, Severity::Error)?;
+    // Its unknown members are told, not kept.
+    r.d.unknown_mut().take_all(at);
     let animate_written = shell.animate.is_some();
     let mut animate = Vec::new();
     // The file's index of each entry held: a finding told later is at the file's element.
@@ -1223,7 +1233,6 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
     Some(Scripts {
         animate,
         // Told, not kept.
-        extra: Extra::default(),
         written: Written {
             animate: animate_written,
             animate_places: (!whole).then(|| places.into_boxed_slice()),
@@ -1232,8 +1241,8 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
     })
 }
 
-/// `entity_version` and `upgrades`. Below 1.26.20 both are unknown members (kept
-/// in `extra`); in [1.26.20, 1.26.30) both need Upcoming Creator Features; vanilla's structure
+/// `entity_version` and `upgrades`. Below 1.26.20 both are unknown members (told,
+/// not kept); in [1.26.20, 1.26.30) both need Upcoming Creator Features; vanilla's structure
 /// checks and the handler lookup drop both, and the entity loads versionless. Returns the
 /// `upgrades` the entity keeps.
 fn settle_entity_version(
@@ -1241,7 +1250,6 @@ fn settle_entity_version(
     description: &mut Description,
     entity_version: Option<Value>,
     upgrades: Option<IndexMap<String, Value>>,
-    extra: &mut Extra,
     at: &JsonPath,
 ) -> IndexMap<String, Value> {
     let description_at = at.child("description");
@@ -1269,7 +1277,7 @@ fn settle_entity_version(
                 None,
             );
             // Told, not kept.
-            let _ = (upgrades, &extra);
+            let _ = upgrades;
         }
         return IndexMap::new();
     }

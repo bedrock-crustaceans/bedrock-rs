@@ -205,16 +205,11 @@ fn check_files<T: Content + PartialEq + std::fmt::Debug>(
                             count(&mut warnings, finding.code.name());
                         }
                     }
-                    let written = document.value().to_json().unwrap();
+                    let written = document.to_json().unwrap();
                     let again = T::parse(&path, written.as_bytes(), &cx)
                         .unwrap_or_else(|r| panic!("{}: {:#?}", file.display(), r.diagnostics));
                     assert_eq!(again.value(), document.value(), "{}", file.display());
-                    assert_eq!(
-                        again.value().to_json().unwrap(),
-                        written,
-                        "{}",
-                        file.display()
-                    );
+                    assert_eq!(again.to_json().unwrap(), written, "{}", file.display());
                 }
                 Err(rejected) => {
                     for finding in &rejected.diagnostics {

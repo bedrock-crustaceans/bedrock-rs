@@ -6,7 +6,7 @@ use molang::json::MolangSource;
 use super::read::{compact, molang_source, molang_value};
 use super::{finding, unrecognized_except};
 use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::id::ItemId;
 use crate::json::Value;
 
@@ -32,7 +32,7 @@ pub enum ItemDescriptor {
         /// The JSON form read.
         form: ItemDescriptorForm,
         /// Unknown members of the object form.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `{"tags": "<molang>"}`: an expression over `query.any_tag` / `query.all_tags`, evaluated
     /// against the item. Its Molang version is the using member's.
@@ -40,14 +40,14 @@ pub enum ItemDescriptor {
         /// The expression (JSON `tags`).
         tags: MolangSource,
         /// Unknown members.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `{"item_tag": "ns:tag"}`: every item that carries the tag.
     ItemTag {
         /// The tag (JSON `item_tag`).
         item_tag: String,
         /// Unknown members.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// A shape vanilla rejects (it builds an empty descriptor that matches nothing), as written.
     Invalid(Value),
@@ -76,7 +76,7 @@ impl ItemDescriptor {
         Self::Item {
             id,
             form: ItemDescriptorForm::String,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -84,7 +84,7 @@ impl ItemDescriptor {
     pub fn tags(tags: MolangSource) -> Self {
         Self::Tags {
             tags,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -92,7 +92,7 @@ impl ItemDescriptor {
     pub fn item_tag(tag: impl Into<String>) -> Self {
         Self::ItemTag {
             item_tag: tag.into(),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -144,7 +144,7 @@ impl ItemDescriptor {
     fn read_object(object: &VObject) -> Option<Self> {
         let key = KEYS.iter().find(|key| object.get(key).is_some())?;
         let member = object.get(key)?;
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (name, value) in object {
             if name.as_str() != *key {
                 extra.insert(name.as_str().to_owned(), value.clone());
@@ -179,7 +179,7 @@ impl From<Value> for ItemDescriptor {
             Some(Self::Item {
                 id: ItemId::parse(id.as_str()),
                 form: ItemDescriptorForm::String,
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             })
         } else {
             value.as_object().and_then(Self::read_object)

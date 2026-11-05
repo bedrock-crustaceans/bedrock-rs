@@ -30,13 +30,13 @@ pub use read::{ShapeError, ShapeErrorKind};
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 
 /// An `UnrecognizedField` warning for each member of `extra`, at `at/<key>`: a shared type the
 /// game reads with cereal (a filter, an event trigger, a block descriptor's proxy), whose
 /// unknown member is logged at level 2 by the unstrict reader; a `Strict` slice makes it an
 /// error.
-fn unrecognized(extra: &Extra, at: &JsonPath, out: &mut Diagnostics) {
+fn unrecognized(extra: &UnknownMembers, at: &JsonPath, out: &mut Diagnostics) {
     unrecognized_except(extra, at, &[], Severity::Warning, out);
 }
 
@@ -44,7 +44,7 @@ fn unrecognized(extra: &Extra, at: &JsonPath, out: &mut Diagnostics) {
 /// already reports), at `severity` (an information for a type the game reads from a
 /// plain JSON value, which ignores the rest in silence).
 fn unrecognized_except(
-    extra: &Extra,
+    extra: &UnknownMembers,
     at: &JsonPath,
     skip: &[&str],
     severity: Severity,

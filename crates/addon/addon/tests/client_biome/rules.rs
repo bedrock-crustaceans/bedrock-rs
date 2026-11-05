@@ -3,7 +3,7 @@
 //! round trip.
 
 use bedrock_addon::diagnostic::{DiagnosticCode as Code, Severity};
-use bedrock_addon::document::{Content, Extra, Placed};
+use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::client_biome::component::{
     AmbientSounds, ClientBiomeComponent, FoliageAppearance, FoliageColor, FoliageColorMap,
     GrassColorMap, SkyColor, SoundAddition,
@@ -212,7 +212,7 @@ fn the_dry_foliage_map_is_an_enum_error_below_1_21_70() {
         loaded.components.get::<FoliageAppearance>().unwrap().color,
         Some(FoliageColor::Map {
             color_map: FoliageColorMap::DryFoliage,
-            extra: Extra::default(),
+            extra: bedrock_addon::document::UnknownMembers::default(),
         })
     );
     // The five older maps are read by the first struct.

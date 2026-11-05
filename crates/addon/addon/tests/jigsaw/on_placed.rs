@@ -2,7 +2,6 @@
 //! `Contents`, the
 //! name of a callback the game reserves a token for; absent is `""` and nothing is written; any name loads.
 
-use bedrock_addon::document::Content;
 use bedrock_addon::families::jigsaw::JigsawStructure;
 use bedrock_addon::json::StrictString;
 

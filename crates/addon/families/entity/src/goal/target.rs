@@ -119,10 +119,6 @@ impl AvoidBlock {
 impl Goal for AvoidBlock {
     const TYPED: FormatVersion = known::V1_21_120;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("avoid_block_sound", self.avoid_block_sound.as_ref());
@@ -285,10 +281,6 @@ impl AvoidMobType {
 impl Goal for AvoidMobType {
     const TYPED: FormatVersion = known::V1_21_120;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("avoid_mob_sound", self.avoid_mob_sound.as_ref());
@@ -450,10 +442,6 @@ impl Goal for DefendTrustedTarget {
         ),
     ];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.sound("aggro_sound", self.aggro_sound.as_ref());
@@ -566,10 +554,6 @@ impl DefendVillageTarget {
 impl Goal for DefendVillageTarget {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -659,10 +643,6 @@ impl Goal for HurtByTarget {
             known::V1_26_30,
         ),
     ];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -815,10 +795,6 @@ impl NearestAttackableTarget {
 
 impl Goal for NearestAttackableTarget {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -987,10 +963,6 @@ impl Goal for NearestPrioritizedAttackableTarget {
         ),
     ];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("attack_interval", &mut self.attack_interval);
@@ -1069,10 +1041,6 @@ impl Goal for OwnerHurtByTarget {
         ),
     ];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.entity_types("entity_types", self.entity_types.as_ref());
@@ -1143,10 +1111,6 @@ impl Goal for OwnerHurtTarget {
         ),
     ];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.entity_types("entity_types", self.entity_types.as_ref());
@@ -1193,10 +1157,6 @@ impl TargetWhenPushed {
 
 impl Goal for TargetWhenPushed {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1267,10 +1227,6 @@ impl Goal for WitherTargetHighestDamage {
             known::V1_26_30,
         ),
     ];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);

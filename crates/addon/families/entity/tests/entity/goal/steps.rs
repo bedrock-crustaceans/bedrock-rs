@@ -199,7 +199,13 @@ fn e34_ranged_attack_range_and_movement_mode() {
         g.in_range_movement_mode,
         Some(goal::InRangeMovementMode::HoldPosition)
     );
-    assert!(g.extra.is_empty(), "the old members are taken");
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none(),
+        "the old members are taken"
+    );
     let (g, d) =
         at_version::<goal::RangedAttack>(RANGED, &fixture_member(NAME, "new_shape"), (1, 26, 40));
     // The 1.26.40 struct has neither member: a strict slice refuses them.
@@ -257,7 +263,13 @@ fn e29b_look_at_goals_take_a_look_time_range() {
     let json = fixture_member("steps", "e29b_look_at_player");
     let (g, d) = convert::<goal::LookAtPlayer>("minecraft:behavior.look_at_player", &json);
     assert_eq!(g.look_time(), (3.0, 4.0));
-    assert!(g.extra.is_empty(), "target_distance is gone");
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none(),
+        "target_distance is gone"
+    );
     let dropped = super::finding(&d, "DroppedField", "target_distance").expect("reported");
     // The game drops it without a word: an information.
     assert_eq!(dropped.severity, Severity::Info);
@@ -304,7 +316,12 @@ fn e29c_charge_speed_multiplier_becomes_charge_speed() {
         Severity::Error,
     );
     assert_eq!(g.charge_speed(), 0.5, "copied when charge_speed is absent");
-    assert!(g.extra.is_empty());
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none()
+    );
 
     let (g, _) = goal::<goal::AquaticChargeAttack>(KEY, &both, ConvertMode::Strict);
     assert_eq!(
@@ -444,7 +461,9 @@ fn e00d_target_when_pushed_keeps_the_quirk_keys_as_unknown_members() {
     assert_eq!(d.len(), 1, "{d:?}");
     assert_eq!(g.percent_chance(), 5.0);
     let types = g.entity_types.expect("entity_types");
-    assert!(types.as_slice()[0].extra.get("minecraft:filters").is_some());
+    let _ = types;
+    let first = bedrock_addon_core::diagnostic::JsonPath::of_keys(["entity_types"]).index(0);
+    assert!(d.unknown().get(&first, "minecraft:filters").is_some());
 }
 
 /// `e01c_1_16_0_component_rewrites`, the goal part: `drop_item_for.target_range`

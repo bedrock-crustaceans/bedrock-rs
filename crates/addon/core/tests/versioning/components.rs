@@ -116,7 +116,13 @@ fn an_unknown_member_of_a_component_is_kept_and_reported_at_its_path() {
         r#"{"toy:speed": {"value": 1.0, "unit": "m/s"}}"#,
     ));
     let speed = latest(&outcome).components.get::<Speed>().expect("speed");
-    assert!(speed.extra.get("unit").is_some());
+    let _ = speed;
+    let at = bedrock_addon_core::diagnostic::JsonPath::of_keys([
+        "minecraft:toy",
+        "components",
+        "toy:speed",
+    ]);
+    assert!(outcome.diagnostics.unknown().get(&at, "unit").is_some());
     assert_eq!(paths(&outcome), ["minecraft:toy/components/toy:speed/unit"]);
     assert_eq!(
         codes(&outcome),

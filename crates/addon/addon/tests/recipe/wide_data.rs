@@ -3,7 +3,7 @@
 //! and every place an ingredient stands, as a scalar and as an element of a list.
 
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
-use bedrock_addon::document::{Content, Document};
+use bedrock_addon::document::Document;
 use bedrock_addon::families::recipe::{Ingredient, Recipe};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::molang::{Molang, MolangList};

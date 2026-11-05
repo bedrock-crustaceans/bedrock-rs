@@ -192,14 +192,27 @@ fn a_metadata_entrys_unknown_members_are_reported_and_written_back() {
         let Some(Loaded::Stable(registry)) = outcome.value else {
             panic!("{version}: {:#?}", outcome.diagnostics);
         };
-        let entry = &registry.metadata["42"];
-        assert!(entry.extra.get("demo_entry").is_some(), "{version}");
+        let _ = &registry.metadata["42"];
+        let entry = bedrock_addon::diagnostic::JsonPath::of_keys([
+            "minecraft:jigsaw_structure_metadata",
+            "metadata",
+            "42",
+        ]);
+        let unknown = outcome.diagnostics.unknown();
+        assert!(unknown.get(&entry, "demo_entry").is_some(), "{version}");
         assert!(
-            entry.markers[0].extra.get("demo_marker").is_some(),
+            unknown
+                .get(&entry.child("markers").index(0), "demo_marker")
+                .is_some(),
             "{version}"
         );
-        let written = bedrock_addon::versioning::VersionStruct::write(&registry).unwrap();
-        let written = bedrock_addon::json::to_json(&written).unwrap();
+        let payload = bedrock_addon::versioning::VersionStruct::write(&registry).unwrap();
+        // With the unknown members the load kept, at their objects below the payload key.
+        let mut root = facet_value::VObject::new();
+        root.insert("minecraft:jigsaw_structure_metadata", payload);
+        let mut root = bedrock_addon::json::Value::from(root);
+        assert!(bedrock_addon::json::merge_unknown(&mut root, unknown).is_empty());
+        let written = bedrock_addon::json::to_json(&root).unwrap();
         assert!(
             written.contains("\"demo_entry\": 1") && written.contains("\"demo_marker\": true"),
             "{version}: {written}"

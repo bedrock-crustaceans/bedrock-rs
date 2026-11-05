@@ -8,7 +8,7 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::Unknown as Table;
 use bedrock_addon_core::json::{StrictFloat, Value};
 use bedrock_addon_core::shared::{EventTrigger, FloatRange, RangeForm};
 use facet_value::VObject;
@@ -227,18 +227,21 @@ pub(crate) fn ranged_radius(json: &mut VObject, d: &mut Diagnostics) {
 /// [`ranged_radius`] on a `ranged_attack` read strictly from a 1.26.40 document: the 1.26.40
 /// struct's `attack_radius_min` / `attack_radius` (in `extra`) become `attack_range`, in the
 /// order written, as the game's upgrade makes it.
-pub(crate) fn ranged_radius_typed(goal: &mut RangedAttack) {
-    let take = |extra: &mut Extra, name: &str| {
-        let value = extra.remove(name)?;
+///
+/// `unknown` holds the goal's unknown members, by paths below the goal.
+pub(crate) fn ranged_radius_typed(goal: &mut RangedAttack, unknown: &mut Table) {
+    let root = JsonPath::new();
+    let mut take = |name: &str| {
+        let value = unknown.take(&root, name)?;
         let x = float_of(&value);
         if x.is_none() {
             // Not a number: left for the unknown-member report.
-            extra.insert(name.to_owned(), value);
+            unknown.put(&root, name, value);
         }
         x
     };
-    let min = take(&mut goal.extra, "attack_radius_min");
-    let max = take(&mut goal.extra, "attack_radius");
+    let min = take("attack_radius_min");
+    let max = take("attack_radius");
     if min.is_some() || max.is_some() {
         goal.attack_range = Some(FloatRange::new(
             min.unwrap_or(0.0),
@@ -261,8 +264,11 @@ pub(crate) fn charge_speed(json: &mut VObject) {
 
 /// [`charge_speed`] on an `aquatic_charge_attack` read strictly from a document in
 /// [1.21.120, 1.26.0), where `charge_speed_multiplier` is the live name (in `extra`).
-pub(crate) fn charge_speed_typed(charge_speed: &mut Option<StrictFloat<f32>>, extra: &mut Extra) {
-    let Some(value) = extra.remove("charge_speed_multiplier") else {
+///
+/// `unknown` holds the goal's unknown members, by paths below the goal.
+pub(crate) fn charge_speed_typed(charge_speed: &mut Option<StrictFloat<f32>>, unknown: &mut Table) {
+    let root = JsonPath::new();
+    let Some(value) = unknown.take(&root, "charge_speed_multiplier") else {
         return;
     };
     match float_of(&value) {
@@ -270,7 +276,7 @@ pub(crate) fn charge_speed_typed(charge_speed: &mut Option<StrictFloat<f32>>, ex
             charge_speed.get_or_insert(StrictFloat(x));
         }
         None => {
-            extra.insert("charge_speed_multiplier".to_owned(), value);
+            unknown.put(&root, "charge_speed_multiplier", value);
         }
     }
 }

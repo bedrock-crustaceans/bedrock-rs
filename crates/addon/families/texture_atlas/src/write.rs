@@ -10,7 +10,7 @@ use super::types::{
 };
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{
-    Content, Document, Extra, JsonContent, Placed, Rejected, unversioned,
+    Content, Document, JsonContent, Placed, Rejected, UnknownMembers, unversioned,
 };
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
@@ -67,7 +67,7 @@ impl Placed for TextureAtlas {
 }
 
 /// Appends the members of `extra`.
-fn put_extra(object: &mut VObject, extra: &Extra) {
+fn put_extra(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());
     }

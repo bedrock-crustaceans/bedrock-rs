@@ -159,14 +159,10 @@ fn the_drop_4_rules_round_trip_to_the_capture() {
         let name = name.to_string_lossy().into_owned();
         let capture = fixture(&format!("drop4/{name}"));
         let first = loads_with(&capture, &cx);
-        let written = first.value().to_json().expect("written");
+        let written = first.to_json().expect("written");
         let second = loads_with(&written, &cx);
         assert_eq!(first.value(), second.value(), "{name}: {written}");
-        assert_eq!(
-            second.value().to_json().expect("written again"),
-            written,
-            "{name}"
-        );
+        assert_eq!(second.to_json().expect("written again"), written, "{name}");
         let mut compact = Vec::new();
         second
             .value()

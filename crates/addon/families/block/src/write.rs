@@ -4,11 +4,14 @@ use super::component::write_components;
 use super::history::BlockFamily;
 use super::read::{CEREAL, NEWEST, parse_block};
 use super::{Block, Permutation};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
+use bedrock_addon_core::document::{Unknown, UnknownMembers};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, write_json,
+    EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, merge_unknown, write_json,
 };
+
+/// A written document and the findings of the unknown members it left out.
+type Written = (Value, Vec<Diagnostic>);
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang;
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -51,9 +54,7 @@ impl VersionStruct for Block {
                 write_payload(&self.ordered_v1_custom_components)?,
             );
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         Ok(object.into())
     }
 }
@@ -162,9 +163,7 @@ impl Permutation {
                 write_payload(&self.ordered_v1_custom_components)?,
             );
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         Ok(object.into())
     }
 }
@@ -184,6 +183,16 @@ impl Block {
     /// that text reads back as it was written ([`Block::at_own_version`]); otherwise it is
     /// `NotRepresentable` at the member the rule names, where the load gave its warning.
     pub(crate) fn document(&self) -> Result<Value, EncodeError> {
+        self.document_with(&Unknown::new())
+            .map(|(document, _)| document)
+    }
+
+    /// [`document`](Self::document) with the document's unknown members in it, and the
+    /// findings of those left out: the format is chosen by the members the document has.
+    pub(crate) fn document_with(
+        &self,
+        unknown: &Unknown,
+    ) -> Result<(Value, Vec<Diagnostic>), EncodeError> {
         let at = JsonPath::new().child("minecraft:block");
         // The crate's own members that no format of the game has (`deprecated`,
         // `deprecated_event_handlers`) and the 1.26.20 document deprecates by name
@@ -191,7 +200,7 @@ impl Block {
         // game refuses for them (as an unknown member and as a deprecated one). They are written
         // in the shapes the legacy reader takes, at the block's own version.
         if let Some(member) = self.first_crate_member() {
-            if let Some(document) = self.legacy_document()? {
+            if let Some(document) = self.legacy_document(unknown)? {
                 return Ok(document);
             }
             return Err(EncodeError::NotRepresentable {
@@ -200,7 +209,7 @@ impl Block {
             });
         }
         if let Some(broken) = super::validate::refused_by_newest(self, &at).first() {
-            if let Some(document) = self.at_own_version()? {
+            if let Some(document) = self.at_own_version(unknown)? {
                 return Ok(document);
             }
             // At the member the file has, where a step moved it.
@@ -215,11 +224,12 @@ impl Block {
                 what: Unrepresentable::Unsupported,
             });
         }
-        let document = write_envelope::<BlockFamily>(
+        let mut document = write_envelope::<BlockFamily>(
             self.written_version(),
             self.write_at(self.written_version())?,
-            &Extra::default(),
+            &UnknownMembers::default(),
         );
+        let told = merge_unknown(&mut document, unknown);
         // The cereal slices are strict: a member or component the document does not
         // bind, or one it deprecates, rejects the block. A block that holds one (an unknown
         // member kept from an older file, or set by hand) is not written into a cereal
@@ -228,7 +238,7 @@ impl Block {
         // the member the load told of.
         if let Some(unread) = unread_by_cereal(&document)? {
             if self.source_format_version < CEREAL
-                && let Some(legacy) = self.at_own_version()?
+                && let Some(legacy) = self.at_own_version(unknown)?
             {
                 return Ok(legacy);
             }
@@ -237,24 +247,24 @@ impl Block {
                 what: Unrepresentable::Unsupported,
             });
         }
-        Ok(document)
+        Ok((document, told))
     }
 
     /// The block of a file below 1.26.20 as a legacy document that reads back as it: at its
     /// own version, else, as the trade family writes its legacy blob, at 1.26.0, the newest legacy
     /// version, whose reader takes the shapes of 1.26.20 as they are. `None` for a block of
     /// the newest format, which no legacy file gave.
-    fn legacy_document(&self) -> Result<Option<Value>, EncodeError> {
+    fn legacy_document(&self, unknown: &Unknown) -> Result<Option<Written>, EncodeError> {
         if self.source_format_version >= CEREAL {
             return Ok(None);
         }
-        if let Some(document) = self.at_own_version()? {
+        if let Some(document) = self.at_own_version(unknown)? {
             return Ok(Some(document));
         }
         if self.source_format_version == NEWEST_LEGACY {
             return Ok(None);
         }
-        self.at_version(NEWEST_LEGACY)
+        self.at_version(NEWEST_LEGACY, unknown)
     }
 
     /// The first of the crate's own members the block holds that a cereal document does not take: the
@@ -312,13 +322,18 @@ impl Block {
     /// every member where the block has it (a member the older reader does not know would
     /// come back as an unknown one: `deprecated` and `deprecated_event_handlers`, which no
     /// file has, and `ordered_v1_custom_components` below 1.21.90).
-    fn at_own_version(&self) -> Result<Option<Value>, EncodeError> {
-        self.at_version(self.source_format_version)
+    fn at_own_version(&self, unknown: &Unknown) -> Result<Option<Written>, EncodeError> {
+        self.at_version(self.source_format_version, unknown)
     }
 
     /// [`at_own_version`](Self::at_own_version) at `version`, a legacy one: the text when
-    /// it reads back, at `version`, as the block.
-    fn at_version(&self, version: FormatVersion) -> Result<Option<Value>, EncodeError> {
+    /// it reads back, at `version`, as the block, its unknown members (in `unknown`) where
+    /// the document has them.
+    fn at_version(
+        &self,
+        version: FormatVersion,
+        unknown: &Unknown,
+    ) -> Result<Option<Written>, EncodeError> {
         let whole = self.write()?;
         let mut payload = self.write_at(version)?;
         // At its own version the steps that put a component there put it there again; at
@@ -354,7 +369,8 @@ impl Block {
         let mut object = facet_value::VObject::new();
         object.insert("format_version", version.to_string());
         object.insert("minecraft:block", payload);
-        let document = Value::from(object);
+        let mut document = Value::from(object);
+        let told = merge_unknown(&mut document, unknown);
         let mut text = Vec::new();
         write_json(&document, &mut text, WriteStyle::default())?;
         let Ok(text) = std::str::from_utf8(&text) else {
@@ -364,20 +380,16 @@ impl Block {
         if legacy_lcf {
             cx.pack_uuid = ALLOW_LISTED;
         }
-        let read = bedrock_addon_core::versioning::load::<BlockFamily>(JsonSlice::new(text), &cx);
-        let Some(Loaded::Stable(read)) = read.value else {
+        let outcome =
+            bedrock_addon_core::versioning::load::<BlockFamily>(JsonSlice::new(text), &cx);
+        let Some(Loaded::Stable(read)) = &outcome.value else {
             return Ok(None);
         };
         let kept = read.source_format_version == version
-            && read.extra == self.extra
             && read.permutations.len() == self.permutations.len()
-            && read
-                .permutations
-                .iter()
-                .zip(&self.permutations)
-                .all(|(read, own)| read.extra == own.extra)
+            && outcome.diagnostics.unknown() == unknown
             && read.write().ok().as_ref() == Some(&whole);
-        Ok(kept.then_some(document))
+        Ok(kept.then_some((document, told)))
     }
 }
 

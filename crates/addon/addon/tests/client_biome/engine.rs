@@ -7,7 +7,6 @@
 //! Client-biome documents the game's own unit tests feed its loader.
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
-use bedrock_addon::document::Content;
 
 use super::common::{base_game, context, fixture, json, load, load_beta, loads, rejected, written};
 

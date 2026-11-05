@@ -1004,7 +1004,6 @@ fn a_scale_beyond_f32_is_not_clamped_where_the_member_does_not_exist() {
 
 #[test]
 fn a_clamped_scale_whose_text_occurs_earlier_is_found_at_its_member() {
-    use bedrock_addon::document::Content as _;
     // The same characters in a string value, in a string key's neighbour, in comments and in
     // an earlier member: only the member's own token is the number.
     for token in ["1e999", "1e39", "-1e39"] {

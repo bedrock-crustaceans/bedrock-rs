@@ -6,7 +6,7 @@ use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::payload::{failure_finding, join, span_of};
+use super::payload::{failure_finding, join, span_of, tell_unknown};
 use super::{
     ComponentTable, ContextArea, ConvertMode, ErrorMask, ExperimentalField, Family, FieldGate,
     FieldMeta,
@@ -15,17 +15,16 @@ use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
 };
 use crate::document::{ComponentMap, ComponentRef, ComponentSet, CustomComponent};
-use crate::json::{
-    JsonSlice, NullRule, ScalarRead, Value, keep_unknown_members, parse_with_rules, reject_nulls,
-};
+use crate::json::{JsonSlice, NullRule, ScalarRead, Value, parse_with_rules, reject_nulls};
 use crate::load::{Experiment, LoadContext, LoadRequirement};
 use crate::version::FormatVersion;
 
 /// Parses one typed component from its slice: `T` from the text (its plain scalars read by the
 /// slice's scalar rules, `LoadContext::scalar_rules`; strict wrappers decide what coerces, so
-/// `mode` is the caller's to honour), its unknown members kept in its `extra` and
-/// reported as `UnrecognizedField` warnings (the strict mask turns them into errors after the
-/// parse). A failed parse (a member of the wrong type, `0x8`, or a required member missing,
+/// `mode` is the caller's to honour), its unknown members kept in `d`'s table (by paths
+/// relative to the component, which the component-map parser places; which structs keep them
+/// is `parse_payload`'s rule) and told as `parse_payload` tells them (an `UnrecognizedField`
+/// warning the strict mask turns into an error after the parse, or the word a struct states). A failed parse (a member of the wrong type, `0x8`, or a required member missing,
 /// `0x80`) is one finding: in a cereal slice of a document-input family
 /// ([`LoadContext::strict_components`]) an error, which rejects the whole document under both
 /// masks; elsewhere (`JsonCpp` slices, hand-written legacy slices) an error too. A legacy
@@ -46,7 +45,7 @@ where
     let _ = mode;
     let rule = cx.null_rule;
     let ScalarRead {
-        mut value,
+        value,
         told,
         json,
         absent,
@@ -68,16 +67,10 @@ where
         // Each member read as absent (rule N1; the pre-pass left it out of `json`) is marked:
         // the write-back writes its default.
         crate::json::tell_null_members(&absent, &JsonPath::new(), d);
-        for (path, _) in keep_unknown_members(&mut value, &json) {
-            // The game logs an unknown member at content-log level 2, a warning; a `Strict`
-            // slice makes it an error after the parse.
-            d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Warning,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            ));
-        }
+        let mut kept = crate::document::Unknown::new();
+        let unknown = crate::json::door_unknown_members(&value, &json, cx.keeps_unknown, &mut kept);
+        d.unknown_mut().absorb(&JsonPath::new(), kept);
+        tell_unknown(unknown, &JsonPath::new(), cx, d);
         // A scalar its member read as another value is told where it is.
         for told in told {
             d.push(told.finding(&JsonPath::new()));
@@ -116,6 +109,7 @@ pub fn parse_component_map<'a, F: Family>(
         if let Some(meta) = table.get(key) {
             let mut found = Diagnostics::default();
             let value = (meta.parse)(slice, mode, cx, &mut found);
+            let kept = found.take_unknown();
             // A component that goes for what is told of a member BELOW it is told at the
             // component too: the member's finding does not say that its siblings go with
             // it. An error refuses the file, and a finding at the component speaks for it.
@@ -129,6 +123,9 @@ pub fn parse_component_map<'a, F: Family>(
             }
             match value {
                 Some(value) if value.name().is_some() => {
+                    // The component's unknown members, below its key; a component kept as
+                    // JSON (or not at all) has none apart from what it holds.
+                    d.unknown_mut().absorb(&path, kept);
                     map.insert_typed(value, false);
                 }
                 Some(_) => map.insert_dynamic(key, json()),

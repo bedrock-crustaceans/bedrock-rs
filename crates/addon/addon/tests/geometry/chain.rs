@@ -2,7 +2,6 @@
 //! (the callbacks of the steps run one at a time), and the upgrade rows u01–u15.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::geometry::history::{
     self, Any, VERSIONS, v0_0_0, v1_8_0, v1_12_0, v1_14_0, v1_16_0, v1_19_30, v1_21_0,
 };
@@ -287,7 +286,7 @@ fn a_file_parsed_as_written_writes_its_own_shape_and_upgrades_to_the_loaded_file
     ));
     assert!(matches!(document.value(), Any::V1_8_0(_)));
     assert_eq!(
-        json(&document.value().to_json().unwrap()),
+        json(&document.to_json().unwrap()),
         json(text),
         "the 1.8 shape is written back"
     );

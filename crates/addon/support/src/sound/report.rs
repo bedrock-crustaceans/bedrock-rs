@@ -4,7 +4,7 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 /// Collects the findings of a read, each at the path the reader stands on.
@@ -78,8 +78,8 @@ pub fn check_unknown(
     known: &[&str],
     ignored: &[&str],
     report: &mut Reporter<'_>,
-) -> Extra {
-    let mut extra = Extra::default();
+) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     let Some(object) = value.as_object() else {
         return extra;
     };

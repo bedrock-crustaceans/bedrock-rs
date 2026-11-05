@@ -122,14 +122,27 @@ pub fn written_as_read(json: &str, cx: &LoadContext) -> String {
         cx,
     )
     .unwrap_or_else(|rejected| panic!("rejected: {:#?}", rejected.diagnostics));
-    document.value().to_json().expect("written as read")
+    document.to_json().expect("written as read")
 }
 
 /// The payload the newest struct holds of `item` (`VersionStruct::write`), as JSON text: what
 /// the newest writer writes, without its refusal of the members the strict 1.26.50 format does
 /// not bind; for the tests of what a step carries.
-pub fn newest_payload(item: &Item) -> String {
-    let payload = bedrock_addon_core::versioning::VersionStruct::write(item).expect("the payload");
+pub fn newest_payload(item: &bedrock_addon_core::document::Document<Item>) -> String {
+    let unknown = item.unknown();
+    let payload =
+        bedrock_addon_core::versioning::VersionStruct::write_with_unknown(item.value(), unknown)
+            .expect("the payload");
+    // With the document's unknown members, at their objects below the payload key.
+    let mut root = facet_value::VObject::new();
+    root.insert("minecraft:item", payload);
+    let mut root = bedrock_addon_core::json::Value::from(root);
+    let _ = bedrock_addon_core::json::merge_unknown(&mut root, unknown);
+    let payload = root
+        .as_object()
+        .and_then(|root| root.get("minecraft:item"))
+        .cloned()
+        .expect("the payload");
     let mut out = Vec::new();
     bedrock_addon_core::json::write_json(
         &payload,

@@ -1,7 +1,6 @@
 //! For the block family: a member the author did not write is not written back, and one
 //! the author wrote at its default is.
 
-use bedrock_addon::document::Content;
 use bedrock_addon::families::block::component::{
     BlockEntity, CollisionBox, CraftingTable, EntityFallOn, Flammable, Leashable, LiquidDetection,
     RandomOffset, RedstoneConductivity, RedstoneConsumer, RedstoneProducer, Tick,
@@ -60,7 +59,7 @@ fn block(description: &str, components: &str) -> String {
 /// the writer invents nothing and loses nothing.
 fn rewritten(input: &str) -> (String, String) {
     let document = loads(input, &everything());
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     let read = |text: &str| facet_json::from_str::<Value>(text).unwrap();
     (sorted(&read(&written)), sorted(&read(input)))
 }

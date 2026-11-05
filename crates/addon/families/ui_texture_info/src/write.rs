@@ -6,7 +6,7 @@ use super::{
     AsepriteSheet, NINESLICE_KEYS, Nineslice, UiTextureInfo, floats, read_base_size,
     read_slice_size, slice_size_value,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 /// A side file: the members the game reads, then the others.
@@ -18,7 +18,7 @@ pub(super) fn texture_info_value(info: &UiTextureInfo) -> Value {
     }
 }
 
-fn extend(object: &mut VObject, extra: &Extra) {
+fn extend(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         if !object.contains_key(key) {
             object.insert(key, value.clone());
@@ -65,7 +65,7 @@ fn nineslice_value(nineslice: &Nineslice) -> Value {
 
 fn sheet_value(sheet: &AsepriteSheet) -> Value {
     // A typed object with the unread members of the same object after its read ones.
-    let nested = |read: VObject, extra: &Extra, key: &str| {
+    let nested = |read: VObject, extra: &UnknownMembers, key: &str| {
         let mut object = read;
         if let Some(others) = extra.get(key).and_then(Value::as_object) {
             for (name, value) in others {

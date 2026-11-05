@@ -1,6 +1,6 @@
 //! A material list file (`materials/common.json`): which `.material` files a group loads.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 
 /// Which list file a [`MaterialList`] is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -66,7 +66,7 @@ pub struct ListEntry {
     /// `-defines`: removed after the other two are added.
     pub sub_defines: Option<Vec<String>>,
     /// Every other member, as written. The client rejects `tag` with an error.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl ListEntry {

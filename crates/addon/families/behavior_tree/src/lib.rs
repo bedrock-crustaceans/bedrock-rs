@@ -19,7 +19,7 @@ mod write;
 mod tests;
 
 use crate::read::parse_document;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BehaviorTreeId;
 use std::collections::{HashMap, HashSet};
 
@@ -66,10 +66,10 @@ pub struct BehaviorTree {
     pub raw: String,
     /// The members of `minecraft:behavior_tree` other than `minecraft:name` and
     /// `minecraft:root`. Vanilla reads none of them.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// The members of the document root other than `minecraft:behavior_tree` (a
     /// `format_version`, for one). Vanilla reads none of them.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// A node parameter as vanilla keeps it: a literal and the name of a blackboard entry.
@@ -117,7 +117,7 @@ pub enum Node {
         /// whose type is unknown, is left out.
         children: Option<Vec<Node>>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:selector`: a composite over its children, in order.
     Selector {
@@ -126,7 +126,7 @@ pub enum Node {
         /// whose type is unknown, is left out.
         children: Option<Vec<Node>>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:repeat_until_success`: a decorator that repeats its child.
     RepeatUntilSuccess {
@@ -137,7 +137,7 @@ pub enum Node {
         /// `max_number_of_attempts_id` (default key `max_number_of_attempts`).
         max_attempts: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:repeat_until_failure`: a decorator that repeats its child.
     RepeatUntilFailure {
@@ -145,7 +145,7 @@ pub enum Node {
         /// of an unknown type.
         child: Option<Box<Node>>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:inverter`: a decorator that inverts its child's result.
     Inverter {
@@ -153,7 +153,7 @@ pub enum Node {
         /// of an unknown type.
         child: Option<Box<Node>>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:subtree`: runs another tree.
     Subtree {
@@ -166,7 +166,7 @@ pub enum Node {
         /// member is one such item or an array of them. Any other item is left out.
         data_items: Vec<(String, String)>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:activate_tool`.
     ActivateTool {
@@ -174,7 +174,7 @@ pub enum Node {
         /// `target_block_pos`).
         block_pos: Param<BlockPos>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:attack`.
     Attack {
@@ -182,7 +182,7 @@ pub enum Node {
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:break_block`.
     BreakBlock {
@@ -193,12 +193,12 @@ pub enum Node {
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:consume_item`: no parameters.
     ConsumeItem {
         /// The body members: the node reads none.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:find_block`.
     FindBlock {
@@ -210,7 +210,7 @@ pub enum Node {
         /// wrong type.
         search_radius: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:find_entity`.
     FindEntity {
@@ -222,7 +222,7 @@ pub enum Node {
         /// wrong type.
         search_radius: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:fly`.
     ///
@@ -239,7 +239,7 @@ pub enum Node {
         /// `should_throw_event_if_no_state_change_necessary`).
         throw_if_no_change: Param<bool>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:get_interaction_position_for_block`.
     GetInteractionPositionForBlock {
@@ -256,7 +256,7 @@ pub enum Node {
         /// key `max_search_distance`).
         max_search_distance: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:interact`.
     Interact {
@@ -264,7 +264,7 @@ pub enum Node {
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:look_at`.
     LookAt {
@@ -272,7 +272,7 @@ pub enum Node {
         /// `target_block_pos`).
         block_pos: Param<BlockPos>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:look_at_entity`.
     LookAtEntity {
@@ -284,7 +284,7 @@ pub enum Node {
         /// wrong type. Loaded, but the node never uses it.
         search_radius: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:move`.
     Move {
@@ -298,7 +298,7 @@ pub enum Node {
         /// `number_of_ticks`).
         ticks: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:move_to`.
     MoveTo {
@@ -310,12 +310,12 @@ pub enum Node {
         /// `target_distance_epsilon`).
         distance_epsilon: Param<f32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:place_block`: no parameters.
     PlaceBlock {
         /// The body members: the node reads none.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:shoot_bow`.
     ShootBow {
@@ -323,12 +323,12 @@ pub enum Node {
         /// `target_num_of_shots`).
         shots: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:use_entity`: no parameters.
     UseEntity {
         /// The body members: the node reads none.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:wait`: waits whole seconds.
     Wait {
@@ -336,7 +336,7 @@ pub enum Node {
         /// string, which is then the key (default key `duration`).
         seconds: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `minecraft:wait_ticks`.
     WaitTicks {
@@ -344,7 +344,7 @@ pub enum Node {
         /// `target_num_of_ticks`).
         ticks: Param<i32>,
         /// The body members the node does not read.
-        extra: Extra,
+        extra: UnknownMembers,
     },
 }
 
@@ -396,7 +396,7 @@ impl Node {
     }
 
     /// The body members the node does not read.
-    pub fn extra(&self) -> &Extra {
+    pub fn extra(&self) -> &UnknownMembers {
         match self {
             Self::Sequence { extra, .. }
             | Self::Selector { extra, .. }
@@ -463,8 +463,8 @@ impl BehaviorTree {
             name,
             root,
             raw: String::new(),
-            extra: Extra::default(),
-            root_extra: Extra::default(),
+            extra: UnknownMembers::default(),
+            root_extra: UnknownMembers::default(),
         }
     }
 }

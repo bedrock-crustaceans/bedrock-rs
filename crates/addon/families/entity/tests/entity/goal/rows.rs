@@ -68,17 +68,35 @@ fn v13_deprecated_inherited_names_are_reported_and_dropped() {
         "cooldown_time",
         "member \"cooldown_time\" is deprecated",
     );
-    assert!(delayed.extra.is_empty(), "the deprecated member is dropped");
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none(),
+        "the deprecated member is dropped"
+    );
     assert_eq!(delayed.attack_duration(), 0.5);
 
     let (stomp, d) = strict_fixture::<goal::StompAttack>(NAME, "minecraft:behavior.stomp_attack");
     deprecated(&d, "melee_fov", "member \"melee_fov\" is deprecated");
-    assert!(stomp.extra.is_empty());
+    let _ = stomp;
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none()
+    );
     assert_eq!(stomp.stomp_range_multiplier(), 2.5);
 
     let (hurt, d) = strict_fixture::<goal::HurtByTarget>(NAME, "minecraft:behavior.hurt_by_target");
     deprecated(&d, "must_see", "member \"must_see\" is deprecated");
-    assert!(hurt.extra.is_empty());
+    let _ = hurt;
+    assert!(
+        d.unknown()
+            .members_at(&bedrock_addon_core::diagnostic::JsonPath::new())
+            .next()
+            .is_none()
+    );
     assert!(hurt.hurt_owner());
 
     let (outdoors, d) =

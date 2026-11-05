@@ -5,7 +5,7 @@ use super::{Credits, CreditsDiscipline, CreditsSection, CreditsTitle};
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
     Authored, Object, array, finding, index, key, raw_member, to_text,
@@ -36,8 +36,8 @@ fn shape(text: &'static str, at: &JsonPath, diagnostics: &mut Diagnostics) {
 }
 
 /// The members of an object that are none of `read`.
-fn rest(value: &Value, read: [&str; 2]) -> Extra {
-    let mut extra = Extra::default();
+fn rest(value: &Value, read: [&str; 2]) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     if let Some(object) = value.as_object() {
         for (name, member) in object {
             if !read.contains(&name.as_str()) {

@@ -12,7 +12,7 @@ use indexmap::IndexMap;
 use super::read::{Era, Fields, Members, Node, Opt, Reader, Writer, object, put, req, walk};
 use super::texts;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
 
@@ -192,7 +192,7 @@ pub struct BezierChainCurve {
     /// `nodes`, required).
     pub nodes: IndexMap<String, BezierChainNode>,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 const CHAIN_INPUT: Opt = Opt::required(0.0);

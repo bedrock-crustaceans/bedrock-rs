@@ -82,16 +82,25 @@ pub struct Bound {
 /// What an unknown member of the struct (or below a field) is where it differs from the
 /// slice's rule: `schema::unknown = "keep" | "report" | "reject" | "ignore"`, the four
 /// dispositions of today's codes.
+///
+/// The JSON door (`versioning::parse_payload`, `parse_component`) reads the word from the
+/// struct's `Shape` (or a variant's, for its fields) and from the field that holds the
+/// object, which comes first. A struct keeps its unknown members when it is marked with
+/// `extra: Extra`, says `keep`, or says nothing under a reading that keeps them
+/// (`Reading::keeps_unknown`). The door tells a kept member and one of a struct that says
+/// `report` (or nothing) as `UnrecognizedField`, the game's line for an unknown member; a hand
+/// reader's [`Disposition`](crate::json::kit::Disposition) tells `Report` as `MemberNotKept`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum UnknownRule {
     /// Kept in the document's unknown table and written back (`UnrecognizedField`).
     Keep,
-    /// Reported and not kept (`MemberNotKept`).
+    /// Reported and not kept (`UnrecognizedField` at the door, `MemberNotKept` in the kit).
     Report,
-    /// Refused (`DroppedField`).
+    /// Refused (`DroppedField`, at the slice's unknown severity).
     Reject,
-    /// Neither kept nor reported (`IgnoredMember`).
+    /// Not kept and told as the game ignoring it (`IgnoredMember`, at the slice's unknown
+    /// severity).
     Ignore,
 }
 

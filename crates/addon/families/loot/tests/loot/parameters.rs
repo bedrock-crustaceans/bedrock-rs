@@ -2,7 +2,7 @@
 //! with no finding when each has the JSON type vanilla reads.
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::shared::{IntRange, RangeForm};
 use bedrock_addon_family_loot::{
@@ -149,7 +149,7 @@ fn earlier_function_kinds() -> Vec<FunctionKind> {
                 name: "sharpness".to_owned(),
                 min: Some(1),
                 max: Some(5),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }]),
         },
         FunctionKind::EnchantRandomly {
@@ -176,7 +176,7 @@ fn earlier_function_kinds() -> Vec<FunctionKind> {
             patterns: Some(vec![BannerPattern {
                 pattern: "bo".to_owned(),
                 color: Some(ItemColor::Blue),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }]),
         },
     ]
@@ -198,7 +198,7 @@ fn later_function_kinds() -> Vec<FunctionKind> {
                 SpecificEnchant {
                     id: "unbreaking".to_owned(),
                     level: Some(range(1, 3, RangeForm::Array)),
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 },
             ]),
         },
@@ -216,7 +216,7 @@ fn later_function_kinds() -> Vec<FunctionKind> {
         FunctionKind::SetStewEffect {
             effects: Some(vec![StewEffect {
                 id: Some(3),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }]),
         },
         FunctionKind::SetOminousBottleAmplifier {
@@ -279,7 +279,7 @@ fn every_condition_reads_its_parameters() {
             enchantments: Some(vec![ToolEnchantment {
                 enchantment: Some("silk_touch".to_owned()),
                 levels: Some(levels),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }]),
             filter_any: Some(vec!["minecraft:is_pickaxe".to_owned()]),
             filter_all: Some(vec!["minecraft:is_tool".to_owned()]),
@@ -338,7 +338,7 @@ fn pool_tiers_and_entry_members_are_read() {
             initial_range: Some(2),
             bonus_rolls: Some(3),
             bonus_chance: Some(0.095),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         })
     );
     let entry = &pool.entries()[0];

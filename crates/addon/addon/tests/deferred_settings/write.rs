@@ -1,7 +1,7 @@
 //! Write-back and the placement of each root type: a value
 //! built in code is written as text this loader reads back, or refused with the member's path.
 
-use bedrock_addon::document::{Content, Extra, Placed};
+use bedrock_addon::document::{Content, Placed, UnknownMembers};
 use bedrock_addon::families::deferred_settings::{
     AmbientLight, AtmosphereSettings, Caustics, ColorGrading, ColorGradingSettings,
     CubemapLighting, CubemapSettings, DirectionalLights, Emissive, Flash, Keyframe, Keyframes,
@@ -64,27 +64,27 @@ fn a_full_lighting_value_round_trips() {
                 sun: Some(OrbitalLight {
                     illuminance: Some(frames(&[(0.0, 110_000.0), (0.5, 0.0), (1.0, 0.25)])),
                     color: Some(Keyframes::Constant(Rgb8::new(1, 2, 3))),
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 }),
                 moon: Some(OrbitalLight::default()),
                 orbital_offset_degrees: Some(Keyframes::Constant(359.99)),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }),
             flash: Some(Flash {
                 color: Some(Rgb8::WHITE),
                 illuminance: Some(-3.5),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             }),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }),
         emissive: Some(Emissive {
             desaturation: Some(1.0),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }),
         ambient: Some(AmbientLight::default()),
         sky: Some(Sky {
             intensity: Some(frames(&[(0.25, 0.1), (0.75, 1.0)])),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }),
         ..LightingSettings::new(LightingSettingsId::parse("t:l"))
     };
@@ -290,14 +290,14 @@ fn round_trip_unnamed<T: Content + std::fmt::Debug + PartialEq>(value: &T) {
 
 #[test]
 fn an_unknown_member_named_like_a_known_one_is_refused() {
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     extra.insert("texel_size".to_owned(), Value::from(4_i64));
     let shadows = ShadowSettings {
         extra,
         ..ShadowSettings::default()
     };
     assert_eq!(refused(&shadows), "minecraft:shadow_settings/texel_size");
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     extra.insert("light_color".to_owned(), Value::from("red"));
     let mut lights = LocalLightSettings::default();
     lights.lights.insert(
@@ -312,7 +312,7 @@ fn an_unknown_member_named_like_a_known_one_is_refused() {
         "minecraft:local_light_settings/minecraft:torch/light_color"
     );
     // Any other unknown member is written after the known ones and reads back.
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     extra.insert("note".to_owned(), Value::from("x"));
     let shadows = ShadowSettings {
         texel_size: Some(8),

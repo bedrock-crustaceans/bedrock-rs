@@ -7,7 +7,7 @@
 mod read;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
 };
@@ -55,7 +55,7 @@ pub struct LoadingMessages {
     /// ([`tooltips`](Self::tooltips) gives the game's reading).
     pub store_progress_tooltips: Option<Vec<Value>>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// The root as the author wrote it, kept when the fields cannot say it (a root that is no
     /// object, a list that is no array, a `message` or `condition` that is no string).
     /// `to_json` writes it for as long as the fields are still the game's reading of it; a
@@ -87,7 +87,7 @@ pub struct ConditionalMessage {
     /// message with any other is never shown.
     pub condition: Option<String>,
     /// The other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The one condition a loading message may name.

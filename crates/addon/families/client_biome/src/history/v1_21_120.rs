@@ -22,7 +22,6 @@ impl Upgrade for ClientBiome {
         Newest {
             description: self.description,
             components: self.components,
-            extra: self.extra,
         }
     }
 }

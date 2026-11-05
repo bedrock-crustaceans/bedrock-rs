@@ -2,7 +2,6 @@
 //! cam12–cam16, cam20 and cam21.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::camera::{
     AudioListener, CameraPreset, ControlScheme, PresetAimAssist, TargetMode, VANILLA_CAMERAS,
 };

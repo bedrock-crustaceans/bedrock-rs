@@ -4,7 +4,6 @@
 //! text, or the load says at the member that it is not, with the code and severity pinned.
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Content;
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_item::Item;
@@ -189,7 +188,7 @@ fn bands(
         let newest = match load(&text, cx) {
             Ok(document) => outcome(
                 document.diagnostics(),
-                document.value().to_json(),
+                document.to_json(),
                 &newest_again,
                 at,
                 token,
@@ -199,7 +198,7 @@ fn bands(
         let as_read = match Item::parse_as_written(&path, text.as_bytes(), cx) {
             Ok(document) => outcome(
                 document.diagnostics(),
-                document.value().to_json(),
+                document.to_json(),
                 &as_read_again,
                 at,
                 token,
@@ -424,7 +423,7 @@ fn an_item_written_as_it_was_read_has_only_the_members_of_its_format() {
             let Ok(as_read) = Item::parse_as_written(&path, text.as_bytes(), &cx) else {
                 continue;
             };
-            let written = as_read.value().to_json().expect("written as read");
+            let written = as_read.to_json().expect("written as read");
             if *version != "1.26.30" {
                 assert!(
                     !written.contains("start_using"),
@@ -450,8 +449,8 @@ fn an_item_written_as_it_was_read_has_only_the_members_of_its_format() {
                 "{version} {member}: {written}"
             );
             assert_eq!(
-                second.value().to_json().unwrap(),
-                first.value().to_json().unwrap(),
+                second.to_json().unwrap(),
+                first.to_json().unwrap(),
                 "{version} {member}"
             );
         }
@@ -499,7 +498,7 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
         let first = loads(&text, &cx);
         let silent = ["1.20.20", "1.20.30", "1.20.40", "1.20.50"].contains(version);
         if silent {
-            let written = first.value().to_json().expect("written");
+            let written = first.to_json().expect("written");
             let second = loads(&written, &cx);
             assert_eq!(
                 at_category(first.diagnostics()),
@@ -513,7 +512,7 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
                 "{version}"
             );
             assert_eq!(
-                second.value().to_json().expect("written again"),
+                second.to_json().expect("written again"),
                 written,
                 "{version}"
             );
@@ -529,7 +528,7 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
             // the 1.26.50 format refuses the member it does not know: the
             // newest writer writes the item at 1.26.0 where that reads back as the item, else
             // it refuses it at the member
-            let written = first.value().to_json();
+            let written = first.to_json();
             assert!(
                 refused_at(&written, "minecraft:item/description/category")
                     || written_at_1_26_0(&written).contains("Nature"),
@@ -582,7 +581,7 @@ fn rarity_written(version: &str, value: &str) -> String {
     let Ok(document) = load(&text, &cx) else {
         return "refused".to_owned();
     };
-    let written = document.value().to_json().expect("written");
+    let written = document.to_json().expect("written");
     let value: bedrock_addon_core::json::Value =
         bedrock_addon_core::json::from_str(&written).unwrap();
     let rarity = value.as_object().and_then(|root| {
@@ -758,7 +757,7 @@ fn a_legacy_format_item_is_written_whole_by_both_writers() {
         bedrock_addon_family_item::ItemFormat::Legacy
     );
     assert!(first.value().legacy.format_item.is_some());
-    let written = first.value().to_json().expect("written");
+    let written = first.to_json().expect("written");
     for token in [
         "Nature",
         "minecraft:foil",
@@ -771,13 +770,13 @@ fn a_legacy_format_item_is_written_whole_by_both_writers() {
     }
     let second = loads(&written, &cx);
     assert_eq!(second.value(), first.value(), "{written}");
-    assert_eq!(second.value().to_json().expect("written again"), written);
+    assert_eq!(second.to_json().expect("written again"), written);
     // As it was read.
     let as_read = Item::parse_as_written(&path, text.as_bytes(), &cx).expect("loads");
-    let written = as_read.value().to_json().expect("written as read");
+    let written = as_read.to_json().expect("written as read");
     let again = Item::parse_as_written(&path, written.as_bytes(), &cx).expect("reads");
     assert_eq!(again.value(), as_read.value(), "{written}");
-    assert_eq!(again.value().to_json().expect("written again"), written);
+    assert_eq!(again.to_json().expect("written again"), written);
 }
 
 /// What the newest format says of a member it does not know is its own judgement: a file
@@ -809,7 +808,7 @@ fn an_unknown_description_member_of_an_older_file_is_kept_and_told_only_by_the_n
         told,
         ["InvalidValue Validate at minecraft:item/description/zz_unknown"]
     );
-    let written = written_at_1_26_0(&first.value().to_json());
+    let written = written_at_1_26_0(&first.to_json());
     assert!(written.contains(r#""zz_unknown": 1"#), "{written}");
     let as_read = written_as_read(text, &cx);
     assert!(as_read.contains(r#""zz_unknown": 1"#), "{as_read}");

@@ -79,10 +79,9 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
     text: JsonSlice<'_>,
     cx: &ParseCx<'_>,
     rule: Option<NullRule>,
-    root_extra: impl Fn(&mut R) -> &mut Extra,
     d: &mut Diagnostics,
 ) -> Option<R> {
-    let mut value = match parse_at::<R>(text) {
+    let value = match parse_at::<R>(text) {
         Ok(value) => value,
         Err(error) => {
             d.push(error.into_diagnostic(&cx.at, |code, _| code));
@@ -93,7 +92,12 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
         return None;
     }
     if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(text.text) {
-        for (path, _) in keep_unknown_members(&mut value, &json) {
+        let mut kept = bedrock_addon_core::document::Unknown::new();
+        let found = keep_unknown_members(&value, &json, &mut kept);
+        // The root's `format_version` is the envelope's, written by the struct itself.
+        kept.take(&JsonPath::new(), FORMAT_VERSION);
+        d.unknown_mut().absorb(&cx.at, kept);
+        for (path, _) in found {
             if path.is_key(FORMAT_VERSION) {
                 continue;
             }
@@ -111,7 +115,6 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
             d.push(finding.at(at));
         }
     }
-    root_extra(&mut value).remove(FORMAT_VERSION);
     Some(value)
 }
 

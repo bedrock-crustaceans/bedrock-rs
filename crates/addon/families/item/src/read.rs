@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, Document, Extra, Origin, Rejected};
+use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{JsonSlice, PrepareError, Prepared, Value};
 use bedrock_addon_core::load::{DocumentSource, LoadContext};
@@ -283,7 +283,6 @@ pub(crate) struct Newest {
     pub(crate) deprecated: ItemDeprecatedData,
     pub(crate) events: Option<Value>,
     pub(crate) legacy: LegacyItemData,
-    pub(crate) extra: Extra,
 }
 
 /// Parses a modern format: the struct of `version` (1.26.30, 1.26.50, or the beta struct's
@@ -318,12 +317,10 @@ pub(crate) fn parse_newest(
             identifier: ItemId::parse(parts.description.identifier),
             menu_category,
             menu_category_presence,
-            extra: parts.description.extra,
         },
         components,
         deprecated: parts.deprecated,
         events: parts.events,
         legacy,
-        extra: parts.extra,
     })
 }

@@ -415,13 +415,10 @@ pub(crate) fn upgrade<F: Family>(
     document: Document<F::Any>,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let origin = document.origin().clone();
     if !enabled(cx) {
-        return Err(unread(origin, gate_closed()));
+        return Err(unread(document.origin().clone(), gate_closed()));
     }
-    let version = document.version().clone();
-    let diagnostics = document.diagnostics().clone();
-    let value = document.into_value();
+    let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let at = JsonPath::new().child(F::PAYLOAD_KEY);
     let written = FormatVersionInput {
         version: Some(version.effective),
@@ -662,7 +659,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.26.40..=1.26.40 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.26.40..=1.26.40 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }
@@ -678,7 +675,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.26.40..=1.26.40 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.26.40..=1.26.40 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

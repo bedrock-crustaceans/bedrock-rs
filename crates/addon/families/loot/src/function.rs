@@ -1,7 +1,7 @@
 //! Loot functions: what an item entry does to its stack.
 
 use super::{LootCondition, RandomValueBounds};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, LootTablePath};
 use bedrock_addon_core::shared::IntRange;
 
@@ -21,7 +21,7 @@ pub struct LootFunction {
     pub conditions: Option<Vec<LootCondition>>,
     /// Members the function does not read (vanilla's own `set_count.add`,
     /// `looting_enchant.limit`), kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The functions of vanilla's registry, with their parameters (in the game's order).
@@ -214,7 +214,7 @@ pub struct EnchantOption {
     /// JSON `max` (read only when an integer).
     pub max: Option<i32>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// A banner's type.
@@ -277,7 +277,7 @@ pub struct BannerPattern {
     /// JSON `color` (default `White`).
     pub color: Option<ItemColor>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One enchantment of `specific_enchants`.
@@ -291,7 +291,7 @@ pub struct SpecificEnchant {
     /// JSON `level` (default 1); `None` for the string form.
     pub level: Option<IntRange>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// One effect of `set_stew_effect`.
@@ -302,7 +302,7 @@ pub struct StewEffect {
     /// JSON `id`.
     pub id: Option<i32>,
     /// Members vanilla does not read, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 #[cfg(test)]

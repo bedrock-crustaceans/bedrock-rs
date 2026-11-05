@@ -9,7 +9,7 @@ use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BehaviorTreeId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::{PrepareError, Prepared};
@@ -58,8 +58,8 @@ fn one_member(value: &Value) -> Option<(&str, &Value)> {
 }
 
 /// The members of `object` other than `read`, in document order.
-fn rest(object: &VObject, read: &[&str]) -> Extra {
-    let mut extra = Extra::default();
+fn rest(object: &VObject, read: &[&str]) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     for (key, value) in object {
         if !read.contains(&key.as_str()) {
             extra.insert(key.as_str().to_owned(), value.clone());
@@ -196,10 +196,12 @@ impl Reader {
             name: name.clone(),
             root,
             raw: raw.to_owned(),
-            extra: payload.map_or_else(Extra::default, |payload| rest(payload, &[NAME, ROOT])),
+            extra: payload.map_or_else(UnknownMembers::default, |payload| {
+                rest(payload, &[NAME, ROOT])
+            }),
             root_extra: document
                 .as_object()
-                .map_or_else(Extra::default, |root| rest(root, &[PAYLOAD])),
+                .map_or_else(UnknownMembers::default, |root| rest(root, &[PAYLOAD])),
         };
         (Some(name), Some(tree))
     }
@@ -545,10 +547,10 @@ impl Reader {
         items
     }
 
-    /// The members of a node body nobody read, kept in an `Extra`, each with an
+    /// The members of a node body nobody read, kept in an `UnknownMembers`, each with an
     /// `UnrecognizedField` information (vanilla reads no other key and says nothing).
-    fn rest(&mut self, members: &Members<'_>, at: &JsonPath) -> Extra {
-        let mut extra = Extra::default();
+    fn rest(&mut self, members: &Members<'_>, at: &JsonPath) -> UnknownMembers {
+        let mut extra = UnknownMembers::default();
         for (key, value) in members.object {
             let key = key.as_str();
             if members.read.contains(&key) {

@@ -18,7 +18,6 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options, Strategy};
@@ -94,7 +93,7 @@ fn check(source: &str, dir: &Path) -> (usize, usize, usize) {
             document.origin().path
         );
         // Every vanilla file writes text that reads back.
-        document.value().to_json().expect("it writes");
+        document.to_json().expect("it writes");
     }
     assert_eq!(
         upgraded,

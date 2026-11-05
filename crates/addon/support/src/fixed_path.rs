@@ -9,7 +9,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     Coerce, Coercing, EncodeError, IsIntRule, Value, WideInt, WriteStyle, write_json,
 };
@@ -123,8 +123,13 @@ pub fn as_real(value: &Value) -> Option<f64> {
 
 /// Every member of an object that is none of `read`, in file order, and an `UnrecognizedField`
 /// info for each.
-pub fn others(value: &Value, read: &[&str], at: &JsonPath, diagnostics: &mut Diagnostics) -> Extra {
-    let mut extra = Extra::default();
+pub fn others(
+    value: &Value,
+    read: &[&str],
+    at: &JsonPath,
+    diagnostics: &mut Diagnostics,
+) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     if let Some(object) = value.as_object() {
         for (name, member) in object {
             if !read.contains(&name.as_str()) {
@@ -162,7 +167,7 @@ impl Object {
     }
 
     /// Adds the unknown members.
-    pub fn extra(&mut self, extra: &Extra) {
+    pub fn extra(&mut self, extra: &UnknownMembers) {
         for (key, value) in extra.iter() {
             self.0.insert(key, value.clone());
         }

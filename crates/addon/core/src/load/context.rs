@@ -78,6 +78,17 @@ pub struct LoadContext {
     /// `json::parse_with_rules`); [`ScalarRules::PLAIN`](crate::json::ScalarRules::PLAIN)
     /// outside a versioned load.
     pub scalar_rules: crate::json::ScalarRules,
+    /// Whether the unknown members of the document's structs are kept in its table where a
+    /// struct does not say otherwise: set by the versioning load from the slice's
+    /// `Family::reading` (`Reading::keeps_unknown`), read by `versioning::parse_payload` and
+    /// `parse_component`; `false` outside a versioned load.
+    pub keeps_unknown: bool,
+    /// The severity an unknown member a struct rejects or ignores (`schema::unknown =
+    /// "reject"`, `"ignore"`) is told at: an error where the slice's unknown members are
+    /// (`UnknownMask::Error`), else a warning. Set by the versioning load from
+    /// `Reading::unknown`; a warning outside it. (An unknown member told as unrecognized is a
+    /// warning the strict mask makes an error after the parse.)
+    pub unknown_severity: crate::diagnostic::Severity,
     /// Whether the document is read by a cereal slice of a Minecraft Document family (the
     /// slice's null rule is N2, whatever the source): `parse_component` then rejects the
     /// document for a component whose typed read fails (a type error) or whose required member
@@ -124,6 +135,8 @@ impl fmt::Debug for LoadContext {
         debug
             .field("null_rule", &self.null_rule)
             .field("scalar_rules", &self.scalar_rules)
+            .field("keeps_unknown", &self.keeps_unknown)
+            .field("unknown_severity", &self.unknown_severity)
             .field("strict_components", &self.strict_components)
             .field("source", &self.source)
             .field("max_json_document_bytes", &self.max_json_document_bytes)
@@ -214,6 +227,8 @@ impl LoadContext {
             molang: options.molang.clone(),
             null_rule: None,
             scalar_rules: crate::json::ScalarRules::PLAIN,
+            keeps_unknown: false,
+            unknown_severity: crate::diagnostic::Severity::Warning,
             strict_components: false,
             source: DocumentSource::Json,
             max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,

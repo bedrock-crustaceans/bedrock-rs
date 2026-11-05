@@ -1,8 +1,9 @@
 //! The writer: typed values to JSON text.
 //!
 //! facet-format walks the value (declaration order, renames, proxies, `skip_serializing`); this
-//! module is the text backend. It adds what facet-json's own writer lacks: each struct's
-//! `#[facet(skip)] extra: Extra` members after its known members, `f32` in the shortest form that
+//! module is the text backend. It adds what facet-json's own writer lacks: a document's unknown
+//! members (its `Unknown` table) after the known members of each object, by the object's path
+//! (`merge_unknown`), `f32` in the shortest form that
 //! reads back to the same `f32` with a `.0` on integral values (jsoncpp's real tag survives), a
 //! `Value`'s numbers with their int/real tag, no `null` for an absent `Option`, and
 //! `EncodeError::NotRepresentable` instead of `null` for a non-finite number.
@@ -17,11 +18,14 @@ use std::borrow::Cow;
 use facet::{Facet, Peek, ScalarType, Shape, Type, UserType};
 use facet_format::{FormatSerializer, ScalarValue, SerializeError};
 
-use super::extra::Extra;
 use super::path::MemberPath;
 use super::stack::{is_low, with_stack_for};
 use super::text::MAX_JSON_DEPTH;
 use super::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
+use crate::diagnostic::{
+    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Location, Phase, Severity, VanillaText,
+};
+use crate::document::Unknown;
 
 /// Writes `value` as JSON text to `out` in `style`. On failure nothing is appended to `out`.
 ///
@@ -45,6 +49,81 @@ pub fn write_json<'f, T: Facet<'f>>(
         at: at.to_json_path(),
         what,
     })
+}
+
+/// [`write_json`], with the unknown members of `unknown` (a document's table, its paths from
+/// the root of `value`) after the known members of the object at each path, as
+/// [`merge_unknown`] puts them: the value is written, read as a `Value`, given the members and
+/// written again (only when the table is not empty).
+///
+/// Returns the findings of the write: a member whose object `value` does not hold is not
+/// written and is told as a `DroppedField` warning at the member's path.
+///
+/// # Errors
+///
+/// As [`write_json`].
+pub fn write_json_with<'f, T: Facet<'f>>(
+    value: &T,
+    unknown: &Unknown,
+    out: &mut Vec<u8>,
+    style: WriteStyle,
+) -> Result<Vec<Diagnostic>, EncodeError> {
+    if unknown.is_empty() {
+        return write_json(value, out, style).map(|()| Vec::new());
+    }
+    let mut text = Vec::new();
+    write_json(value, &mut text, WriteStyle::default())?;
+    // The writer's output is JSON this reader accepts; were it not, the value has no JSON form.
+    let mut root = std::str::from_utf8(&text)
+        .ok()
+        .and_then(|text| super::from_str::<Value>(text).ok())
+        .ok_or(EncodeError::NotRepresentable {
+            at: JsonPath::new(),
+            what: Unrepresentable::Unsupported,
+        })?;
+    let told = merge_unknown(&mut root, unknown);
+    write_json(&root, out, style)?;
+    Ok(told)
+}
+
+/// Puts the unknown members of `unknown` into `root`, each object's after its members in
+/// document order, by the paths of their objects from `root`: what a written document has of
+/// them ([`write_json_with`]), and what a writer that looks at the whole document before it
+/// writes it uses (block decides its format by the members the document has).
+///
+/// A member of a key the object already holds replaces that member's value in place, without
+/// a word: the member as the file had it, which the read kept beside a typed default (item's
+/// `start_using` of a format that does not bind it); the text the writer wrote before the
+/// table had both, and its reader took the second. Returns the findings: a member whose object
+/// `root` does not hold (an edit removed or moved it) is left out and told as a
+/// `DroppedField` warning of the write at the member's path.
+#[must_use]
+pub fn merge_unknown(root: &mut Value, unknown: &Unknown) -> Vec<Diagnostic> {
+    let mut told = Vec::new();
+    for owner in 0..unknown.owner_count() {
+        let path = unknown.owner_path(owner);
+        let mut object = Some(&mut *root);
+        for segment in path.segments() {
+            object = object.and_then(|value| match segment {
+                JsonPathSegment::Key(key) => value.as_object_mut()?.get_mut(key),
+                JsonPathSegment::Index(index) => value.as_array_mut()?.get_mut(index),
+            });
+        }
+        let object = object.and_then(Value::as_object_mut);
+        match object {
+            Some(object) => {
+                for (key, value) in unknown.owner_members(owner) {
+                    object.insert(&**key, value.clone());
+                }
+            }
+            None => {
+                for (key, _) in unknown.owner_members(owner) {
+                    told.push(dropped(path.child(key)));
+                }
+            }
+        }
+    }
+    told
 }
 
 /// [`write_json`] with the failure's member path as this module builds it.
@@ -93,8 +172,6 @@ fn write_once<'f, T: Facet<'f>>(
         out,
         style,
         frames: Vec::new(),
-        pending_extra: None,
-        armed_extra: None,
         failure: None,
         wary,
         out_of_stack: false,
@@ -117,6 +194,23 @@ fn write_once<'f, T: Facet<'f>>(
     }
     Written::Whole
 }
+
+/// The finding of an unknown member the writer leaves out, at its path.
+fn dropped(at: JsonPath) -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticCode::DroppedField {
+            text: Some(VanillaText::Fixed(UNKNOWN_MEMBER_NOT_WRITTEN)),
+        },
+        Severity::Warning,
+        Phase::Write,
+        Location::new(None, None, at, None),
+    )
+}
+
+/// The text of the finding of an unknown member that is not written: its object is no longer
+/// in the value.
+pub const UNKNOWN_MEMBER_NOT_WRITTEN: &str =
+    "an unknown member of the document is not written: the value no longer holds its object";
 
 /// [`write_json`] into a string in the default style (two spaces, a trailing newline); the
 /// same refusal of a value nested past the limit, and the same stack.
@@ -293,18 +387,6 @@ struct Frame {
     count: usize,
     /// The key of the member being written.
     key: Option<String>,
-    /// The struct's unknown members, written before it closes.
-    extra: Option<Extra>,
-}
-
-/// The unknown members of a value the walk is about to write.
-struct PendingExtra {
-    /// The value's shape.
-    shape: facet::ConstTypeId,
-    /// For an enum, how many objects open before the variant's payload: one for the wrapper of
-    /// an externally (or adjacently) tagged variant, none otherwise; `None` for a struct.
-    variant_skip: Option<usize>,
-    extra: Extra,
 }
 
 /// The text backend for facet-format's walk.
@@ -312,11 +394,6 @@ struct Writer<'o> {
     out: &'o mut Vec<u8>,
     style: WriteStyle,
     frames: Vec<Frame>,
-    /// The `extra` of the struct (or struct variant) value the walk is about to open.
-    pending_extra: Option<PendingExtra>,
-    /// The `extra` a coming `begin_struct` takes, after skipping this many (the wrapper object
-    /// of an externally tagged variant).
-    armed_extra: Option<(usize, Extra)>,
     /// Why the walk stopped, when the writer stopped it.
     failure: Option<Unrepresentable>,
     /// Whether the walk gives up where the stack runs low.
@@ -371,7 +448,7 @@ impl Writer<'_> {
     /// Opens an object or an array. One nested deeper than `MAX_JSON_DEPTH` is refused: no
     /// reader of the crate reads such a text, and the walk that leads here is a call for
     /// each level.
-    fn open(&mut self, object: bool, extra: Option<Extra>) -> Result<(), ()> {
+    fn open(&mut self, object: bool) -> Result<(), ()> {
         if self.frames.len() >= MAX_JSON_DEPTH {
             return self.fail(Unrepresentable::TooDeep);
         }
@@ -385,18 +462,11 @@ impl Writer<'_> {
             object,
             count: 0,
             key: None,
-            extra,
         });
         Ok(())
     }
 
     fn close(&mut self) -> Result<(), ()> {
-        if let Some(extra) = self.frames.last_mut().and_then(|frame| frame.extra.take()) {
-            for (key, value) in extra.iter() {
-                self.key(key)?;
-                self.value(value)?;
-            }
-        }
         let frame = self.frames.pop().ok_or(())?;
         if frame.count > 0 {
             self.newline();
@@ -485,7 +555,7 @@ impl Writer<'_> {
     /// A `Value`, written by this backend so a number keeps its int/real tag.
     fn value(&mut self, value: &Value) -> Result<(), ()> {
         if let Some(object) = value.as_object() {
-            self.open(true, None)?;
+            self.open(true)?;
             for (key, item) in object {
                 self.key(key.as_str())?;
                 self.value(item)?;
@@ -493,7 +563,7 @@ impl Writer<'_> {
             return self.close();
         }
         if let Some(array) = value.as_array() {
-            self.open(false, None)?;
+            self.open(false)?;
             for item in array {
                 self.value(item)?;
             }
@@ -526,64 +596,11 @@ impl Writer<'_> {
     }
 }
 
-/// The `#[facet(skip)] extra: Extra` of a struct value, if it has one.
-fn extra_of(value: Peek<'_, '_>) -> Option<PendingExtra> {
-    let shape = value.shape();
-    let (extra, variant_skip) = match shape.ty {
-        Type::User(UserType::Struct(st)) => {
-            let index = st.fields.iter().position(is_extra)?;
-            let fields = value.into_struct().ok()?;
-            (fields.field(index).ok()?.get::<Extra>().ok()?.clone(), None)
-        }
-        Type::User(UserType::Enum(_)) => {
-            let variant_value = value.into_enum().ok()?;
-            let variant = variant_value.active_variant().ok()?;
-            let index = variant.data.fields.iter().position(is_extra)?;
-            let field = variant_value.field(index).ok()??;
-            // The payload object of an externally (or adjacently) tagged variant opens inside
-            // a wrapper object; an untagged or internally tagged one is the first object.
-            let wrapped = !shape.is_untagged()
-                && (shape.get_tag_attr().is_none() || shape.get_content_attr().is_some());
-            (
-                field.get::<Extra>().ok()?.clone(),
-                Some(usize::from(wrapped)),
-            )
-        }
-        _ => return None,
-    };
-    (!extra.is_empty()).then_some(PendingExtra {
-        shape: shape.id,
-        variant_skip,
-        extra,
-    })
-}
-
-/// `#[facet(skip)] extra: Extra`.
-fn is_extra(field: &facet::Field) -> bool {
-    field.should_skip_deserializing() && field.shape().id == Extra::SHAPE.id
-}
-
 impl FormatSerializer for Writer<'_> {
     type Error = ();
 
     fn begin_struct(&mut self) -> Result<(), ()> {
-        let extra = match self.armed_extra.take() {
-            Some((0, extra)) => Some(extra),
-            Some((skip, extra)) => {
-                self.armed_extra = Some((skip - 1, extra));
-                None
-            }
-            None => None,
-        };
-        self.open(true, extra)
-    }
-
-    fn variant_metadata(&mut self, _variant: &'static facet::Variant) -> Result<(), ()> {
-        self.armed_extra = self
-            .pending_extra
-            .take()
-            .and_then(|pending| Some((pending.variant_skip?, pending.extra)));
-        Ok(())
+        self.open(true)
     }
 
     fn field_key(&mut self, key: &str) -> Result<(), ()> {
@@ -595,11 +612,7 @@ impl FormatSerializer for Writer<'_> {
     }
 
     fn begin_seq(&mut self) -> Result<(), ()> {
-        // A tuple struct opens an array where the armed `extra` expected an object.
-        if matches!(self.armed_extra, Some((0, _))) {
-            self.armed_extra = None;
-        }
-        self.open(false, None)
+        self.open(false)
     }
 
     fn end_seq(&mut self) -> Result<(), ()> {
@@ -651,15 +664,6 @@ impl FormatSerializer for Writer<'_> {
         value.into_option().is_ok_and(facet::PeekOption::is_none)
     }
 
-    fn struct_metadata(&mut self, shape: &Shape) -> Result<(), ()> {
-        self.armed_extra = self
-            .pending_extra
-            .take()
-            .filter(|pending| pending.shape == shape.id && pending.variant_skip.is_none())
-            .map(|pending| (0, pending.extra));
-        Ok(())
-    }
-
     fn serialize_opaque_scalar_with_field(
         &mut self,
         _field: Option<&facet::Field>,
@@ -690,7 +694,6 @@ impl FormatSerializer for Writer<'_> {
             }
             return Ok(true);
         }
-        self.pending_extra = extra_of(value);
         Ok(false)
     }
 

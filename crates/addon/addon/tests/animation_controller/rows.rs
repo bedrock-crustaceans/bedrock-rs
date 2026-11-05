@@ -3,7 +3,6 @@
 //! `min_engine_version` 1.16.0 unless the row says otherwise.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::animation_controller::{
     AnimationControllerFile, BlendTransition, EventString, StateAnimation,
 };

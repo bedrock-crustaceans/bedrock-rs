@@ -410,10 +410,11 @@ where
         3 => from_str::<T>(text).map_err(refused),
         4 => from_slice_jsonc::<T>(text.as_bytes()).map_err(refused),
         5 => {
-            let mut value =
+            let value =
                 parse_at::<T>(JsonSlice::new(text)).map_err(|error| refusal_of(&error.error))?;
             let json = from_str_jsonc::<Value>(text).map_err(refused)?;
-            let unknown = keep_unknown_members(&mut value, &json);
+            let mut kept = bedrock_addon_core::document::Unknown::new();
+            let unknown = keep_unknown_members(&value, &json, &mut kept);
             if !unknown.is_empty() || !unknown_members(T::SHAPE, &json).is_empty() {
                 return Err(Read::Other(format!("unknown members: {unknown:?}")));
             }

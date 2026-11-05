@@ -150,6 +150,8 @@ impl Upgrade for TradeTable {
 
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> latest::TradeTable {
         let root = JsonPath::new();
+        // The newest table keeps no unknown member: those of the legacy one stay behind.
+        cx.diagnostics.unknown_mut().forget(&root);
         let tiers_at = root.child("tiers");
         let tiers = self
             .tiers

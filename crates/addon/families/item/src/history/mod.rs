@@ -195,10 +195,7 @@ impl Any {
     /// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an
     /// error finding.
     pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Item>, Rejected> {
-        let origin = document.origin().clone();
-        let version = document.version().clone();
-        let diagnostics = document.diagnostics().clone();
-        let any = document.into_value();
+        let (any, origin, version, diagnostics) = document.into_parsed_parts();
         let identity = versioning::Identity {
             identifier: Some(any.identifier().to_owned()),
             runtime_identifier: None,

@@ -9,7 +9,6 @@ use crate::read::{parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
 use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, Value};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
@@ -103,7 +102,7 @@ impl Upgrade for ScatterFeature {
                 x: self.x,
                 y: self.y,
                 z: self.z,
-                extra: Extra::default(),
+                extra: bedrock_addon_core::document::Extra::default(),
             },
         }
     }

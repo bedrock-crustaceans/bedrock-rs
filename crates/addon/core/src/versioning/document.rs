@@ -128,7 +128,7 @@ impl<F: Family> OpenBeta<F> {
     /// as failed.
     pub fn reject(mut self) -> Rejected {
         self.close(true);
-        let (_, origin, _, diagnostics) = self.document.into_parts();
+        let (_, origin, _, diagnostics, _) = self.document.into_parts();
         Rejected::located(origin, diagnostics)
     }
 

@@ -8,8 +8,8 @@ use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
-    Content, Document, Extra, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
-    unversioned,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+    UnknownMembers, unversioned,
 };
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
@@ -107,7 +107,7 @@ pub struct Flipbook {
     /// `blend_frames`: interpolate between frames; true when absent.
     pub blend_frames: Option<bool>,
     /// Members vanilla does not read.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl Flipbook {
@@ -223,7 +223,7 @@ fn read_entry(entry: &VObject) -> Flipbook {
                 .map(|frame| as_int(Some(frame), 0))
                 .collect()
         });
-    let mut extra = Extra::default();
+    let mut extra = UnknownMembers::default();
     for (key, value) in entry {
         if !KNOWN.contains(&key.as_str()) {
             extra.insert(key.as_str().to_owned(), value.clone());

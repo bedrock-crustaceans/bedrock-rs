@@ -2,7 +2,7 @@
 //! `tests/fixtures/loot/loot/`.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::document::{Content, Extra};
+use bedrock_addon_core::document::{Content, UnknownMembers};
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_family_loot::{
@@ -376,14 +376,14 @@ fn lt10_a_pool_without_entries_is_the_game_s_content_log_error() {
 fn without_extra(mut table: LootTable) -> LootTable {
     fn functions(functions: &mut [LootFunction]) {
         for function in functions {
-            function.extra = Extra::default();
+            function.extra = UnknownMembers::default();
         }
     }
     fn pools(pools: &mut [Pool]) {
         for pool in pools {
-            pool.extra = Extra::default();
+            pool.extra = UnknownMembers::default();
             for entry in pool.entries.iter_mut().flatten() {
-                entry.extra = Extra::default();
+                entry.extra = UnknownMembers::default();
                 if let EntryKind::Item {
                     functions: Some(list),
                     ..
@@ -394,7 +394,7 @@ fn without_extra(mut table: LootTable) -> LootTable {
             }
         }
     }
-    table.extra = Extra::default();
+    table.extra = UnknownMembers::default();
     pools(table.pools.as_deref_mut().unwrap_or_default());
     table
 }
@@ -691,7 +691,7 @@ fn lt19_enchant_book_options_drop_what_names_no_enchantment() {
             name: "sharpness".to_owned(),
             min: None,
             max: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }]
     );
     let names: Vec<_> = found

@@ -64,7 +64,7 @@ impl VersionStruct for SoundMetadataFile {
             }
             return None;
         }
-        let mut value: Self = match parse_at::<Self>(payload) {
+        let value: Self = match parse_at::<Self>(payload) {
             Ok(value) => value,
             Err(error) => {
                 d.push(error.into_diagnostic(&cx.at, |code, _| code));
@@ -78,9 +78,11 @@ impl VersionStruct for SoundMetadataFile {
             return None;
         }
         // The strict mask: an unknown member at any level rejects the file.
+        let mut kept = bedrock_addon_core::document::Unknown::new();
         let unknown = json
-            .map(|json| keep_unknown_members(&mut value, &json))
+            .map(|json| keep_unknown_members(&value, &json, &mut kept))
             .unwrap_or_default();
+        d.unknown_mut().absorb(&cx.at, kept);
         for (path, _) in &unknown {
             d.push(
                 Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })

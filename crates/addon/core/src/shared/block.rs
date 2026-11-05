@@ -10,7 +10,7 @@ use super::read::{
 };
 use super::{finding, unrecognized};
 use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::id::BlockId;
 use crate::json::Value;
 
@@ -37,7 +37,7 @@ pub enum BlockDescriptor {
         /// Read from the object form.
         object: bool,
         /// Unknown members of the object form.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// `{"tags": "<molang>"}`: evaluated against the tested block with `query.any_tag` /
     /// `query.all_tags`. Its Molang version is the using member's.
@@ -45,7 +45,7 @@ pub enum BlockDescriptor {
         /// The expression (JSON `tags`).
         tags: MolangSource,
         /// Unknown members.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// Both a name (or states) and `tags`: vanilla logs it and uses the tags.
     Mixed {
@@ -56,7 +56,7 @@ pub enum BlockDescriptor {
         /// The expression (JSON `tags`), the one vanilla uses.
         tags: MolangSource,
         /// Unknown members.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// A shape vanilla's JSON reader rejects and keeps as an empty descriptor (matches nothing),
     /// as written.
@@ -93,7 +93,7 @@ pub struct BlockSpecifier {
     /// Read from (and written as) the object form.
     pub object: bool,
     /// Unknown members of the object form.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Why a block object is not a descriptor: the three texts of vanilla's JSON reader.
@@ -111,7 +111,7 @@ struct Parts {
     name: Option<BlockId>,
     states: Option<IndexMap<String, StateValue>>,
     tags: Option<MolangSource>,
-    extra: Extra,
+    extra: UnknownMembers,
 }
 
 impl Parts {
@@ -143,7 +143,7 @@ impl Parts {
             None => None,
             Some(tags) => Some(molang_source(tags).ok_or(Rejected::Shape)?),
         };
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (key, value) in object {
             if !matches!(key.as_str(), "name" | "states" | "tags") {
                 extra.insert(key.as_str().to_owned(), value.clone());
@@ -165,7 +165,7 @@ impl BlockDescriptor {
             name,
             states: IndexMap::new(),
             object: false,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 
@@ -331,7 +331,7 @@ fn insert_states(object: &mut VObject, states: &IndexMap<String, StateValue>) {
 }
 
 /// Writes the unknown members after the known ones.
-fn insert_extra(object: &mut VObject, extra: &Extra) {
+fn insert_extra(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());
     }
@@ -381,7 +381,7 @@ impl BlockSpecifier {
             name,
             states: IndexMap::new(),
             object: false,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

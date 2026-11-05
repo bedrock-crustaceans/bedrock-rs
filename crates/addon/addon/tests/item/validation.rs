@@ -157,7 +157,13 @@ fn v04_a_lowered_engine_version_refuses_cooldown_type() {
     let lowered = loads(&json, &old);
     let cooldown = lowered.components.get::<Cooldown>().unwrap();
     assert_eq!(cooldown.kind, CooldownType::Use);
-    assert!(cooldown.extra.get("type").is_some());
+    let _ = cooldown;
+    let at = bedrock_addon::diagnostic::JsonPath::of_keys([
+        "minecraft:item",
+        "components",
+        "minecraft:cooldown",
+    ]);
+    assert!(lowered.unknown().get(&at, "type").is_some());
     assert!(has(lowered.diagnostics(), |c| matches!(
         c,
         DiagnosticCode::FieldSinceEngine { .. }
@@ -424,14 +430,13 @@ fn v10_unknown_members_are_reported_from_1_20_60() {
         "{:#?}",
         later.diagnostics()
     );
-    assert!(
-        loud.components
-            .get::<Fuel>()
-            .unwrap()
-            .extra
-            .get("smoke")
-            .is_some()
-    );
+    assert!(loud.components.get::<Fuel>().is_some());
+    let at = bedrock_addon::diagnostic::JsonPath::of_keys([
+        "minecraft:item",
+        "components",
+        "minecraft:fuel",
+    ]);
+    assert!(loud.unknown().get(&at, "smoke").is_some());
 }
 
 #[test]
@@ -1327,7 +1332,6 @@ fn a_legacy_category_that_is_no_creative_category_is_dropped_and_told() {
 /// value, or drops, is told at the member the file has; the value stays what the step made.
 #[test]
 fn a_legacy_member_a_step_drops_or_reads_as_another_value_is_told() {
-    use bedrock_addon::document::Content;
     // (version, components, the member told, whether the code is InvalidType)
     let rows: [(&str, &str, &str, &str); 8] = [
         (
@@ -1401,7 +1405,7 @@ fn a_legacy_member_a_step_drops_or_reads_as_another_value_is_told() {
         // and refused at `components`, or it holds a member the strict 1.26.50 format
         // does not bind and is refused there (the list entry `7`, which no
         // keyed custom component can name, stays in the side-car).
-        if let Err(error) = document.value().to_json() {
+        if let Err(error) = document.to_json() {
             let at_components = document.components.iter().count() == 0
                 && format!("{error:?}").contains(r#"Key("components")] }"#);
             assert!(

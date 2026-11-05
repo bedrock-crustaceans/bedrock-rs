@@ -120,7 +120,7 @@ where
     let unrecognized = |path: JsonPath| {
         Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
     };
-    let mut value = match parse_at::<T>(slice) {
+    let value = match parse_at::<T>(slice) {
         Ok(value) => value,
         Err(error) => {
             let code = error.code_with_path(error.has_path());
@@ -144,7 +144,9 @@ where
         return None;
     }
     if let Some(json) = &json {
-        let (unknown, misread) = keep_members(&mut value, json);
+        let mut kept = bedrock_addon_core::document::Unknown::new();
+        let (unknown, misread) = keep_members(&value, json, &mut kept);
+        d.unknown_mut().absorb(&JsonPath::new(), kept);
         for (path, _) in unknown {
             d.push(unrecognized(path));
         }

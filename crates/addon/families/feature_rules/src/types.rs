@@ -28,8 +28,6 @@ pub struct FeatureRule {
     /// The document's `format_version` (the floor when absent). Not a JSON member; the writer
     /// writes it as `format_version`.
     pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:feature_rules`.
-    pub extra: Extra,
 }
 
 /// `minecraft:feature_rules/description`.

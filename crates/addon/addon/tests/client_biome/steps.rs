@@ -304,7 +304,7 @@ fn the_1_21_110_step_adds_the_underwater_ambience_of_the_vanilla_biomes() {
 /// steps are run here on structs built by hand.
 mod absent_only {
     use bedrock_addon::diagnostic::Diagnostics;
-    use bedrock_addon::document::{ComponentMap, ComponentRef, Extra};
+    use bedrock_addon::document::{ComponentMap, ComponentRef};
     use bedrock_addon::families::client_biome::component::AmbientSounds;
     use bedrock_addon::families::client_biome::component::{
         AtmosphereIdentifier, ClientBiomeComponent, ColorGradingIdentifier, DryFoliageColor,
@@ -364,8 +364,6 @@ mod absent_only {
             format_version: "1.21.60".to_owned(),
             description: Description::new(Id::parse("minecraft:pale_garden")),
             components: map(vec![own.clone().into()]),
-            extra: Extra::default(),
-            root_extra: Extra::default(),
         };
         let (next, diagnostics) = run(step, (1, 21, 60));
         assert_eq!(
@@ -387,8 +385,6 @@ mod absent_only {
             format_version: "1.21.60".to_owned(),
             description: Description::new(Id::parse("myns:glade")),
             components: map(own.clone()),
-            extra: Extra::default(),
-            root_extra: Extra::default(),
         };
         let (next, _) = run(step, (1, 21, 60));
         assert_eq!(
@@ -425,8 +421,6 @@ mod absent_only {
             format_version: "1.21.100".to_owned(),
             description: Description::new(Id::parse("minecraft:basalt_deltas")),
             components: map(vec![own.clone().into()]),
-            extra: Extra::default(),
-            root_extra: Extra::default(),
         };
         let (next, diagnostics) = run(step, (1, 21, 100));
         assert_eq!(next.components, map(vec![own.into()]));
@@ -446,8 +440,6 @@ mod absent_only {
             format_version: "1.21.110".to_owned(),
             description: Description::new(Id::parse(identifier)),
             components: map(vec![sounds.clone().into()]),
-            extra: Extra::default(),
-            root_extra: Extra::default(),
         };
         let (vanilla, _) = run(step("minecraft:river"), (1, 21, 110));
         assert_eq!(vanilla.components.len(), 1);
@@ -482,8 +474,6 @@ mod absent_only {
             format_version: "1.21.70".to_owned(),
             description,
             components,
-            extra: Extra::default(),
-            root_extra: Extra::default(),
         };
         assert!(run(dry.clone(), (1, 21, 70)).0.components.is_empty());
         assert_eq!(
@@ -495,8 +485,6 @@ mod absent_only {
             format_version: "1.21.100".to_owned(),
             description,
             components,
-            extra: Extra::default(),
-            root_extra: Extra::default(),
         };
         assert!(run(shade.clone(), (1, 21, 100)).0.components.is_empty());
         assert_eq!(run(shade, (1, 21, 99)).0.components.len(), 1);
@@ -506,8 +494,6 @@ mod absent_only {
                 format_version: "1.21.110".to_owned(),
                 description,
                 components,
-                extra: Extra::default(),
-                root_extra: Extra::default(),
             };
             assert!(
                 run(step.clone(), (1, 21, 110)).0.components.is_empty(),
@@ -529,8 +515,6 @@ mod absent_only {
                 format_version: "1.21.120".to_owned(),
                 description: description.clone(),
                 components,
-                extra: Extra::default(),
-                root_extra: Extra::default(),
             };
             let (at, diagnostics) = run(step.clone(), (1, 21, 120));
             assert!(

@@ -16,8 +16,7 @@ impl VersionStruct for Dimension {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let rule = cx.load.null_rule;
-        let root: RootLatest =
-            parse_root(text, cx, rule, |root: &mut RootLatest| &mut root.extra, d)?;
+        let root: RootLatest = parse_root(text, cx, rule, d)?;
         let inner = root.dimension;
         let components = cx.at.with(&["minecraft:dimension", "components"]);
         let height = inner
@@ -37,7 +36,6 @@ impl VersionStruct for Dimension {
             description: inner.description,
             components: inner.components,
             source_format_version: cx.original_version,
-            extra: inner.extra,
             root_extra: root.extra,
         })
     }
@@ -60,18 +58,14 @@ impl VersionStruct for Dimension {
             object.remove("minecraft:dimension_height");
         }
         payload.insert("components", components);
-        for (key, value) in self.extra.iter() {
-            payload.insert(key, value.clone());
-        }
         let mut root = facet_value::VObject::new();
         root.insert(
             "format_version",
             self.source_format_version.max(V1_26_50).to_string(),
         );
         root.insert("minecraft:dimension", payload);
-        for (key, value) in self.root_extra.iter() {
-            root.insert(key, value.clone());
-        }
+        // The unknown members of the payload and the root are the document's, written from
+        // its table.
         Ok(root.into())
     }
 }

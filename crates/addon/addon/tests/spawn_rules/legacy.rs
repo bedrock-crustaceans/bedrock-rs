@@ -1,7 +1,6 @@
 //! The standard (1.8.0-shaped) spawn rules: the fixture rows `s01`, `s05`–`s09o`.
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon::document::Content;
 use bedrock_addon::families::spawn_rules::{Difficulty, OneOrMany, PopulationControl};
 use bedrock_addon::id::EntityId;
 use bedrock_addon::shared::BlockDescriptor;
@@ -113,7 +112,7 @@ fn s01_spawn_legacy_all_keys() {
     );
     assert_eq!(second.spawn_weight(), 100);
     // The capture is written back byte for byte.
-    assert_eq!(document.value().to_json().unwrap(), text);
+    assert_eq!(document.to_json().unwrap(), text);
     round_trip(document.value(), "spawn_rules/x.json", &context());
 }
 

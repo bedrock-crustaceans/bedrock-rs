@@ -1,7 +1,7 @@
 //! Writing the newest struct: the payload in schema order, every kept unknown member after the
 //! known ones at its level.
 
-use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra};
+use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::versioning::write_payload;
 use facet_value::{VArray, VObject};
@@ -44,7 +44,6 @@ pub(crate) fn payload(entity: &Entity) -> Result<Value, EncodeError> {
         }
         object.insert("__deprecated", side_car);
     }
-    extend(&mut object, &entity.extra);
     Ok(object.into())
 }
 
@@ -55,13 +54,6 @@ fn map(members: &IndexMap<String, Value>) -> Value {
         object.insert(key.as_str(), value.clone());
     }
     object.into()
-}
-
-/// Appends the kept unknown members.
-fn extend(object: &mut VObject, extra: &Extra) {
-    for (key, value) in extra.iter() {
-        object.insert(key, value.clone());
-    }
 }
 
 /// `description`.
@@ -112,7 +104,6 @@ fn description(description: &Description) -> Value {
         object_version.insert("upgrades", upgrades);
         object.insert("entity_version", object_version);
     }
-    extend(&mut object, &description.extra);
     object.into()
 }
 
@@ -146,7 +137,6 @@ fn property(property: &Property) -> Value {
     if let Some(sync) = property.client_sync {
         object.insert("client_sync", sync);
     }
-    extend(&mut object, &property.extra);
     object.into()
 }
 
@@ -169,7 +159,6 @@ fn scripts(scripts: &Scripts) -> Value {
     if scripts.written.animate || !animate.is_empty() {
         object.insert("animate", animate);
     }
-    extend(&mut object, &scripts.extra);
     object.into()
 }
 

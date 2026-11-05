@@ -12,7 +12,16 @@ use super::common::{codes, cx, fixture, fixtures, json, stable};
 fn snapshot(name: &str) -> bedrock_addon_core::diagnostic::Diagnostics {
     let text = fixture(&format!("chain/{name}.json"));
     let (entity, found) = stable(&text, &cx());
-    let written = entity.to_json().expect("the entity writes");
+    // With the unknown members the load kept, as the document writes them.
+    let mut written = Vec::new();
+    entity
+        .write_json_with(
+            found.unknown(),
+            &mut written,
+            bedrock_addon_core::json::WriteStyle::default(),
+        )
+        .expect("the entity writes");
+    let written = String::from_utf8(written).unwrap();
     let path = fixtures().join(format!("chain/{name}.latest.json"));
     if std::env::var_os("ENTITY_BLESS").is_some() {
         std::fs::write(&path, &written).unwrap();
@@ -111,7 +120,8 @@ fn v08_do_not_upgrade() {
         )
     );
     // The key is a flag of the chain, not written back.
-    assert!(entity.extra.get("do_not_upgrade").is_none());
+    let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
+    assert!(found.unknown().get(&payload, "do_not_upgrade").is_none());
     // Without the key the same document gets the section-A ops.
     let text = text.replace(r#""do_not_upgrade": true,"#, "");
     let (entity, _) = stable(&text, &cx());

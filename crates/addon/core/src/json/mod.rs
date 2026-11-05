@@ -23,9 +23,11 @@
 //!   member names; a modern document's root through `probe_envelope`;
 //! - where vanilla rejects a value of the wrong JSON type, the strict wrappers `StrictInt`,
 //!   `StrictFloat`, `StrictBool`, `StrictString`;
-//! - unknown members through `unknown_members` / `keep_unknown_members`, kept in
-//!   `document::Extra`; every `#[facet(skip)]` field is renamed `"\u{0}<name>"`, since facet
-//!   binds a member to a skipped field of its name (see `Extra`'s "Skipped fields");
+//! - unknown members through `unknown_members` / `keep_unknown_members`, kept in a
+//!   document's `Unknown` table for the structs marked with `document::Extra`, and written
+//!   back by `merge_unknown` / `write_json_with`; every `#[facet(skip)]` field is renamed
+//!   `"\u{0}<name>"`, since facet binds a member to a skipped field of its name (see
+//!   `Extra`'s "Skipped fields");
 //! - writing through `write_json` / `to_json`, and a `Value` as facet-json itself spells it
 //!   through `to_facet_json`: no other module calls a facet-json writer, as none calls a
 //!   parser (its writers call themselves for each level of a value).
@@ -86,13 +88,17 @@ pub use strict::{
 pub use text::MAX_JSON_DEPTH;
 #[doc(hidden)]
 pub use text::{TooDeep, blank_bom, check_depth, strip_bom};
+pub(crate) use unknown::door_unknown_members;
 #[doc(hidden)]
 pub use unknown::{
     BEYOND_FLOAT_MEMBER, Misread, Misreading, keep_members, keep_members_and_range_members,
     keep_unknown_members, too_deep_to_walk, unknown_members,
 };
 #[doc(hidden)]
-pub use write::{to_facet_json, to_facet_json_signed, to_json, write_json};
+pub use write::{
+    UNKNOWN_MEMBER_NOT_WRITTEN, merge_unknown, to_facet_json, to_facet_json_signed, to_json,
+    write_json, write_json_with,
+};
 
 /// An untyped JSON value: opaque members (`events`, `extra`, raw layers) are held as this.
 pub use facet_value::Value;

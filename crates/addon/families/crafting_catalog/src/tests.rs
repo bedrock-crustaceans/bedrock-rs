@@ -13,7 +13,7 @@ use super::{
     CatalogItem, CatalogKey, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier, PATH,
 };
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Phase, Severity};
-use bedrock_addon_core::document::{Document, Extra, Merged, Origin, VersionInfo};
+use bedrock_addon_core::document::{Document, Merged, Origin, UnknownMembers, VersionInfo};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 
@@ -64,7 +64,7 @@ impl Definitions for Defined {
 fn item(name: &str) -> CatalogItem {
     CatalogItem {
         name: ItemId::parse(name),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -73,10 +73,10 @@ fn group(name: Option<&str>, items: &[&str]) -> Group {
         group_identifier: name.map(|name| GroupIdentifier {
             name: name.to_owned(),
             icon: None,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }),
         items: items.iter().copied().map(item).collect(),
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     }
 }
 
@@ -120,7 +120,7 @@ fn merged(category: CategoryName, groups: Vec<Group>) -> Merged<CraftingCatalog>
     let placed = Category {
         category_name: category,
         groups,
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     };
     // pack1's file: an empty entry first, so that the paths are not all zeros.
     let file = CraftingCatalog {
@@ -128,11 +128,11 @@ fn merged(category: CategoryName, groups: Vec<Group>) -> Merged<CraftingCatalog>
             Category {
                 category_name: CategoryName::Equipment,
                 groups: Vec::new(),
-                extra: Extra::default(),
+                extra: UnknownMembers::default(),
             },
             placed.clone(),
         ],
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     };
     let version = VersionInfo::new(
         Some(super::V1_21_60),
@@ -462,9 +462,9 @@ fn link_findings_are_read_from_the_layer_that_placed_the_entry() {
         categories: vec![Category {
             category_name: CategoryName::Construction,
             groups,
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }],
-        extra: Extra::default(),
+        extra: UnknownMembers::default(),
     };
     let version = || {
         VersionInfo::new(

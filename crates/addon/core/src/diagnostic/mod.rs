@@ -23,7 +23,7 @@ pub use origin::Origins;
 
 use std::fmt;
 
-use crate::document::Origin;
+use crate::document::{Origin, Unknown};
 use crate::load::Place;
 use crate::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackRef, PackType};
 use crate::version::{BaseGameVersion, FormatVersion};
@@ -290,6 +290,8 @@ pub enum Phase {
     Validate,
     /// The cross-family link pass.
     Link,
+    /// Writing a document back.
+    Write,
 }
 
 /// Where a finding is.
@@ -330,13 +332,15 @@ impl Location {
 /// Member names and array indices, from the document root down, as vanilla's error path stack
 /// records them while it reads. `Display` joins them with `/`; an index prints as its number,
 /// and a `/` or `~` inside a key is written `~1` or `~0` (the JSON pointer escapes).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+///
+/// Ordered segment by segment, a key before an index, a path before the paths below it.
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct JsonPath {
     segments: Vec<Segment>,
 }
 
 /// One step of a [`JsonPath`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Segment {
     Key(Box<str>),
     Index(usize),
@@ -612,6 +616,10 @@ struct Held {
     /// `places` by the place a member was moved to, made when a place is first asked for:
     /// a rule asks once per member it names.
     places_index: std::sync::OnceLock<origin::ByPlace<'static>>,
+    /// The unknown members a read keeps, by the paths of their objects, until the document
+    /// is built and takes them (`Document::new`): they travel with the findings of the read,
+    /// the `UnrecognizedField` of each, through every parse and step that hands findings on.
+    unknown: Unknown,
 }
 
 impl Diagnostics {
@@ -705,10 +713,44 @@ impl Diagnostics {
     /// Records that an upgrade step moved the member at `from` to `to` (paths from the
     /// document root): a finding told from here on at or below `to` is about the member the
     /// file has at `from` ([`Diagnostics::name_as_the_file_has_it`]).
+    ///
+    /// The unknown members kept below `from` move with it ([`Unknown::rebase`]): the rows of
+    /// the object at `from` and of the objects below it. An unknown member whose own path is
+    /// `from` is in its parent's row and does not move; the step takes and puts it.
     #[doc(hidden)]
     pub fn moved(&mut self, from: JsonPath, to: JsonPath) {
+        self.held().unknown.rebase(&from, &to);
+        self.record_move(from, to);
+    }
+
+    /// Records a move for the findings alone.
+    fn record_move(&mut self, from: JsonPath, to: JsonPath) {
         let told = self.list().len();
         self.held().moves.moved(from, to, told);
+    }
+
+    /// The unknown members kept so far, by the paths of their objects from the document
+    /// root: a reader keeps a member here, a step takes one it reads ([`Unknown::take`]).
+    #[doc(hidden)]
+    pub fn unknown_mut(&mut self) -> &mut Unknown {
+        &mut self.held().unknown
+    }
+
+    /// The unknown members kept so far ([`unknown_mut`](Self::unknown_mut)).
+    #[doc(hidden)]
+    pub fn unknown(&self) -> &Unknown {
+        static NONE: Unknown = Unknown::new();
+        self.0.as_ref().map_or(&NONE, |held| &held.unknown)
+    }
+
+    /// Takes the unknown members kept so far out of the list: the document built from the
+    /// read holds them.
+    #[doc(hidden)]
+    pub fn take_unknown(&mut self) -> Unknown {
+        self.0
+            .as_mut()
+            .map(|held| std::mem::take(&mut held.unknown))
+            .unwrap_or_default()
     }
 
     /// Records that the list at `list` now holds, in order, the elements it had at the
@@ -733,14 +775,20 @@ impl Diagnostics {
     ///   undone first, and the inner one is then never reached. Such a path cannot be told
     ///   from a held one (the file's index of one element may be the held index of
     ///   another), so it is not checked.
+    ///
+    /// The unknown members kept below an element left out are dropped, those below one kept
+    /// go with it ([`Unknown::left_out`]).
     #[doc(hidden)]
     pub fn left_out(&mut self, list: &JsonPath, kept: &[usize]) {
+        if let Some(held) = self.0.as_mut() {
+            held.unknown.left_out(list, kept);
+        }
         for (now, was) in kept.iter().enumerate() {
             if *was != now {
                 let (mut from, mut to) = (list.clone(), list.clone());
                 from.push_index(*was);
                 to.push_index(now);
-                self.moved(from, to);
+                self.record_move(from, to);
             }
         }
     }
@@ -757,10 +805,18 @@ impl Diagnostics {
 
     /// The findings and the recorded moves, in the order they were made: for a reader that
     /// gathers the findings of one member with paths relative to it, and hands them on
-    /// below the member's own path (a move goes on through [`Diagnostics::moved`]).
+    /// below the member's own path (a move goes on through [`Diagnostics::moved`]). The
+    /// unknown members the list holds are not among them: [`take_unknown`](Self::take_unknown)
+    /// first.
     #[doc(hidden)]
     pub fn into_told(self) -> Vec<Told> {
         let held = self.0.map(|held| *held).unwrap_or_default();
+        // The unknown members are not told: a reader hands them on with `take_unknown`.
+        debug_assert!(
+            held.unknown.is_empty(),
+            "the unknown members of a list are taken before its findings are told: {:?}",
+            held.unknown
+        );
         let mut moves = held.moves.into_moves().into_iter().peekable();
         let mut out = Vec::with_capacity(held.findings.len());
         for (index, finding) in held.findings.into_iter().enumerate() {
@@ -827,6 +883,19 @@ impl Diagnostics {
         held.moves.append(other.moves, told);
         held.places.append(other.places, 0);
         held.places_index = std::sync::OnceLock::new();
+        held.unknown.absorb(&JsonPath::new(), other.unknown);
+    }
+
+    /// Appends the findings of `other` and keeps its unknown members, without its moves and
+    /// places: `extend` with the findings of a list that a parse filled, whose unknown
+    /// members (paths from the document root) the document keeps.
+    #[doc(hidden)]
+    pub fn extend_with_unknown(&mut self, mut other: Diagnostics) {
+        let unknown = other.take_unknown();
+        self.extend(other);
+        if !unknown.is_empty() {
+            self.unknown_mut().absorb(&JsonPath::new(), unknown);
+        }
     }
 
     /// Puts every finding in the pack and file of `origin`, in place: the moves and places
@@ -926,19 +995,30 @@ impl FromIterator<Diagnostic> for Diagnostics {
             moves: Origins::default(),
             places: Origins::default(),
             places_index: std::sync::OnceLock::new(),
+            unknown: Unknown::new(),
         })))
     }
 }
 
+/// The findings alone, as [`into_told`](Diagnostics::into_told) tells them: the unknown
+/// members a list holds are no finding, so a list that holds some is refused in a debug build
+/// (`take_unknown` first; [`extend_with_unknown`](Diagnostics::extend_with_unknown) and
+/// [`append`](Diagnostics::append) hand them on). `Extend` takes any iterator of findings and
+/// cannot see the list it came from, so `extend(list)` is refused the same way.
 impl IntoIterator for Diagnostics {
     type Item = Diagnostic;
     type IntoIter = std::vec::IntoIter<Diagnostic>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0
-            .map(|held| held.findings)
-            .unwrap_or_default()
-            .into_iter()
+        let Some(held) = self.0 else {
+            return Vec::new().into_iter();
+        };
+        debug_assert!(
+            held.unknown.is_empty(),
+            "the unknown members of a list are taken before its findings are iterated: {:?}",
+            held.unknown
+        );
+        held.findings.into_iter()
     }
 }
 
@@ -1114,5 +1194,28 @@ mod tests {
         assert_eq!(components().with::<&str>(&[]), components());
         let owned = vec![String::from("x")];
         assert_eq!(JsonPath::new().with(&owned), JsonPath::of_keys(["x"]));
+    }
+
+    /// A list of findings that holds unknown members is no plain iterator of findings: the
+    /// members would be lost without a word.
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic(
+        expected = "the unknown members of a list are taken before its findings are iterated"
+    )]
+    fn into_iter_of_a_list_with_unknown_members_is_refused() {
+        let mut d = Diagnostics::default();
+        d.unknown_mut()
+            .put(&JsonPath::new(), "zz", crate::json::Value::from(1i64));
+        for _ in d {}
+    }
+
+    #[test]
+    fn into_iter_of_a_list_without_unknown_members_gives_its_findings() {
+        let mut d = Diagnostics::default();
+        d.push(Diagnostic::error(DiagnosticCode::UnrecognizedField {
+            text: None,
+        }));
+        assert_eq!(d.into_iter().count(), 1);
     }
 }

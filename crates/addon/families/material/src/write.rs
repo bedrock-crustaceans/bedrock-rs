@@ -10,7 +10,7 @@ use super::file::{
 use super::list::{ListEntry, MaterialList};
 use super::read::{MATERIALS, path_in_file, read_list, read_root};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 
 /// A refusal at `at`.
@@ -22,7 +22,7 @@ fn refuse(at: &JsonPath, what: Unrepresentable) -> EncodeError {
 }
 
 /// Appends the members of `extra`.
-fn put_extra(object: &mut VObject, extra: &Extra) {
+fn put_extra(object: &mut VObject, extra: &UnknownMembers) {
     for (key, value) in extra.iter() {
         object.insert(key, value.clone());
     }

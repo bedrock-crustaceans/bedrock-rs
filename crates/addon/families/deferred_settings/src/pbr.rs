@@ -1,6 +1,6 @@
 //! `minecraft:pbr_fallback_settings`: the material values of textures without a texture set.
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 
 /// The fallback material values of the deferred renderer (`minecraft:pbr_fallback_settings`,
 /// the one file `pbr/global.json`), at its only format version (1.21.40).
@@ -22,7 +22,7 @@ pub struct PbrFallbackSettings {
     /// The values of items (JSON `items`; see [`PbrFallbackSettings::items`]).
     pub items: Option<PbrFallback>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The fallback values of one kind of object.
@@ -37,7 +37,7 @@ pub struct PbrFallback {
     /// [`PbrFallback::mers`]).
     pub value: Option<PbrValue>,
     /// Members the game does not know, kept for write-back.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The two forms of a kind's fallback values.

@@ -1,7 +1,7 @@
 //! Building a catalogue by hand  and the inherent helpers, `Placed` and the
 //! content constants.
 
-use bedrock_addon_core::document::{Content, Extra, Placed};
+use bedrock_addon_core::document::{Content, Placed, UnknownMembers};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::pack_identity::PackSide;
 use bedrock_addon_core::shared::CreativeCategory;
@@ -36,7 +36,7 @@ fn a_catalogue_built_with_the_constructors_equals_the_parsed_one() {
                         ..GroupIdentifier::new("custom:tools")
                     }),
                     items: vec![ItemId::from_static("custom:item3").into()],
-                    extra: Extra::default(),
+                    extra: UnknownMembers::default(),
                 }],
                 ..Category::new(CategoryName::Equipment)
             },

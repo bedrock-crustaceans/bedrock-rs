@@ -3,7 +3,7 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::Diagnostic;
-use bedrock_addon_core::document::{Document, Extra, Registry, Rejected, registry};
+use bedrock_addon_core::document::{Document, Registry, Rejected, UnknownMembers, registry};
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::molang::MolangList;
 use bedrock_addon_core::version::FormatVersion;
@@ -118,7 +118,7 @@ pub struct Description {
     /// The recipe's identifier, any non-empty string (JSON `identifier`).
     pub identifier: RecipeId,
     /// Unknown members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// `tags`: the crafting stations that offer the recipe (`crafting_table`, `furnace`,
@@ -163,7 +163,7 @@ pub struct IngredientObject {
     #[doc(hidden)]
     pub data_value: Option<i32>,
     /// Unknown members, and members vanilla ignores because of their JSON type.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// Equal when the members as written are equal: `data_value` is derived at load.
@@ -211,7 +211,7 @@ pub enum Unlock {
         /// The unlocking context (JSON `context`).
         context: UnlockContext,
         /// Unknown members.
-        extra: Extra,
+        extra: UnknownMembers,
     },
     /// A list with an invalid element, or an object whose `context` names no context: vanilla
     /// logs it and reads it as context `None` with no items. Kept as written.
@@ -285,9 +285,9 @@ pub struct Shaped {
     /// Required from `format_version` 1.20.10 (JSON `unlock`).
     pub unlock: Option<Unlock>,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members (beside `format_version` and the payload).
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_shapeless`: ingredients in any arrangement.
@@ -310,9 +310,9 @@ pub struct Shapeless {
     /// Required from `format_version` 1.20.10 (JSON `unlock`).
     pub unlock: Option<Unlock>,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_furnace`: one input smelted into one output, once per station tag
@@ -335,9 +335,9 @@ pub struct Furnace {
     /// Optional at every version; absent means always unlocked (JSON `unlock`).
     pub unlock: Option<Unlock>,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_brewing_mix`: a reagent turns one potion (or item) into another.
@@ -357,9 +357,9 @@ pub struct BrewingMix {
     /// The potion or item it becomes (JSON `output`).
     pub output: Ingredient,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_brewing_container`: a reagent turns one potion container into another.
@@ -379,9 +379,9 @@ pub struct BrewingContainer {
     /// The container it becomes (JSON `output`).
     pub output: Ingredient,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_material_reduction`: what the material reducer splits an item into.
@@ -399,9 +399,9 @@ pub struct MaterialReduction {
     /// At most nine items, as one object or a list (JSON `output`).
     pub output: Option<Output>,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_smithing_transform`: a smithing-table upgrade of `base` with `addition`.
@@ -423,9 +423,9 @@ pub struct SmithingTransform {
     /// What it becomes, always one item (JSON `result`).
     pub result: Ingredient,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 /// `minecraft:recipe_smithing_trim`: a smithing-table armour trim, only in worlds from 1.20.
@@ -445,9 +445,9 @@ pub struct SmithingTrim {
     /// The trim material (JSON `addition`).
     pub addition: Ingredient,
     /// Unknown members of the payload.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
     /// Unknown root members.
-    pub root_extra: Extra,
+    pub root_extra: UnknownMembers,
 }
 
 impl Recipes {
@@ -668,7 +668,7 @@ impl Default for Description {
     fn default() -> Self {
         Self {
             identifier: RecipeId::parse(""),
-            extra: Extra::default(),
+            extra: UnknownMembers::default(),
         }
     }
 }

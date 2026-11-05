@@ -7,6 +7,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::{
     BeyondWidth, Declared, Misreading, ReaderMode, Refusal, Respelt, ScalarRules, Scalars,
     StrictBool, StrictFloat, StrictInt, StrictString, Token, Value, Verdict, from_str, judge,
@@ -412,15 +413,16 @@ fn tells_as_the_misread_walk<T: for<'a> Facet<'a>>(declared: Declared) {
         let rules = rules(Scalars::ConvertAndTell, beyond_width);
         for text in TOKENS {
             let source = format!(r#"{{"v": {text}}}"#);
-            let Ok(mut read) = from_str::<Holder<T>>(&source) else {
+            let Ok(read) = from_str::<Holder<T>>(&source) else {
                 // facet's own refusal: what the judge says is never told.
                 continue;
             };
-            let misread: Vec<Misreading> = keep_members(&mut read, &value(&source))
-                .1
-                .into_iter()
-                .map(|misread| misread.kind)
-                .collect();
+            let misread: Vec<Misreading> =
+                keep_members(&read, &value(&source), &mut Unknown::new())
+                    .1
+                    .into_iter()
+                    .map(|misread| misread.kind)
+                    .collect();
             let expected = match (misread.as_slice(), beyond_width) {
                 ([], _) => Verdict::Keep,
                 ([Misreading::WrongType], _) => Verdict::Converted,

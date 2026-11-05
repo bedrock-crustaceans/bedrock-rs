@@ -473,14 +473,14 @@ fn a_multiselect_s_selection_text_loads() {
             document.settings
         );
         // Written and read back to the same manifest, written the same.
-        let written = document.value().to_json().unwrap();
+        let written = document.to_json().unwrap();
         assert!(
             written.contains("\"selection_text\": \"select something\""),
             "{written}"
         );
         let again = parse(written.as_bytes()).unwrap();
         assert_eq!(again.value(), document.value());
-        assert_eq!(again.value().to_json().unwrap(), written);
+        assert_eq!(again.to_json().unwrap(), written);
     }
     // Left out: `None`, and nothing is written.
     let text = script_pack_settings_manifest(&fill(
@@ -495,13 +495,7 @@ fn a_multiselect_s_selection_text_loads() {
             ..
         }
     ));
-    assert!(
-        !document
-            .value()
-            .to_json()
-            .unwrap()
-            .contains("selection_text")
-    );
+    assert!(!document.to_json().unwrap().contains("selection_text"));
     // Another JSON type, `null` included (rule N2), fails the alternative, and no kind fits.
     for value in ["1", "null", "[]"] {
         let text = script_pack_settings_manifest(&fill(

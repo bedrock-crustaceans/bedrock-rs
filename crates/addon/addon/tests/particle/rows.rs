@@ -2,7 +2,6 @@
 //! `molang.rs`).
 
 use bedrock_addon::diagnostic::DiagnosticCode as Code;
-use bedrock_addon::document::Content;
 use bedrock_addon::families::particle::component::{
     ColorExpr, DirectionMode, EmitterLocalSpace, EmitterRateInstant, EmitterShapeBox,
     EmitterShapeCustom, EmitterShapePoint, ParticleAppearanceBillboard, ParticleAppearanceTinting,

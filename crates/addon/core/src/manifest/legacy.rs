@@ -7,7 +7,7 @@
 //! format 1, and its UUID, version and module problems are warnings instead of errors.
 
 use crate::diagnostic::{DiagnosticCode as Code, VanillaText};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::Value;
 use crate::pack_identity::PackType;
 use crate::version::{BaseGameVersion, ENGINE_VERSION, MinEngineVersion, SemVersion};
@@ -1126,8 +1126,8 @@ pub(super) fn metadata(
 }
 
 /// The members of `object` outside `known`, in document order, for write-back.
-pub(super) fn extra(object: &Value, known: &[&str]) -> Extra {
-    let mut extra = Extra::default();
+pub(super) fn extra(object: &Value, known: &[&str]) -> UnknownMembers {
+    let mut extra = UnknownMembers::default();
     if let Some(object) = object.as_object() {
         for (key, value) in object {
             if !known.contains(&key.as_str()) {

@@ -11,7 +11,7 @@ use super::{
 };
 use crate::history::v1_16_100::{CoeffColorJu, FogColorJu};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
@@ -59,11 +59,11 @@ pub(crate) fn float(x: f32) -> Result<Value, EncodeError> {
 pub(crate) fn object_with<const N: usize>(
     members: [(&str, Option<Value>); N],
 ) -> Result<Value, EncodeError> {
-    Ok(object_of(members, &Extra::default()))
+    Ok(object_of(members, &UnknownMembers::default()))
 }
 
 /// [`object_with`], then the unknown members the value kept.
-fn object_of<const N: usize>(members: [(&str, Option<Value>); N], extra: &Extra) -> Value {
+fn object_of<const N: usize>(members: [(&str, Option<Value>); N], extra: &UnknownMembers) -> Value {
     let mut object = VObject::new();
     for (key, value) in members {
         if let Some(value) = value {

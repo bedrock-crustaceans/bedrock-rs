@@ -101,7 +101,13 @@ fn wither_target_highest_damage_drops_the_deprecated_target_goal_names() {
             "{member}: {d:?}"
         );
     }
-    assert!(value.extra.get("must_see").is_none(), "dropped, not kept");
+    let _ = &value;
+    assert!(
+        d.unknown()
+            .get(&bedrock_addon_core::diagnostic::JsonPath::new(), "must_see")
+            .is_none(),
+        "dropped, not kept"
+    );
     let text = d
         .iter()
         .next()

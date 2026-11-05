@@ -86,8 +86,13 @@ fn jig03_unknown_members_warn_and_load() {
         .structures
         .get(&structure("demo:ruin"))
         .expect("the structure");
-    assert!(ruin.extra.get("demo_note").is_some());
-    assert!(ruin.description.extra.get("demo_flag").is_some());
+    let payload = bedrock_addon::diagnostic::JsonPath::of_keys(["minecraft:jigsaw"]);
+    assert!(ruin.unknown().get(&payload, "demo_note").is_some());
+    assert!(
+        ruin.unknown()
+            .get(&payload.child("description"), "demo_flag")
+            .is_some()
+    );
 }
 
 #[test]

@@ -1561,7 +1561,6 @@ fn _uses(text: &str) -> usize {
 /// an error, and its newest shape reads back to the same block, written the same again.
 #[test]
 fn loader_perf_tests_4_the_perf_block_loads_and_round_trips() {
-    use bedrock_addon::document::Content;
     let document = loads(&fixture("loader_perf/LoaderPerfTests-4.json"), &context());
     assert!(
         errors(document.diagnostics()).is_empty(),
@@ -1577,11 +1576,11 @@ fn loader_perf_tests_4_the_perf_block_loads_and_round_trips() {
         document.diagnostics()
     );
     assert_eq!(document.value().permutations.len(), 4);
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     let again = loads(&written, &context());
     assert_eq!(
-        super::common::newest_shape(again.value()),
-        super::common::newest_shape(document.value())
+        super::common::newest_shape(&again),
+        super::common::newest_shape(&document)
     );
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
 }

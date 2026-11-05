@@ -160,7 +160,8 @@ where
 /// clamp beyond a double, the duplicates kept, the envelope check, what an absent
 /// `format_version` does, the line below the floor, the severity of an empty document) and
 /// the reading of each of its structs from each source, one line per run of structs that read
-/// alike. A family crate pins it with
+/// alike: `null/scalars/beyond_width/unknown/keeps|reports/fatal|lenient/on_member_failure`,
+/// where `keeps` is [`Reading::keeps_unknown`](super::Reading::keeps_unknown). A family crate pins it with
 /// [`assert_reading_table`], so a change to how a family declares its reading cannot change
 /// what the pipeline reads.
 #[must_use]
@@ -200,11 +201,12 @@ pub fn reading_table<F: super::Family>() -> String {
         let one = |source: DocumentSource| {
             let r = slice_reading::<F>(index, source);
             format!(
-                "{:?}/{:?}/{:?}/{:?}/{}/{:?}",
+                "{:?}/{:?}/{:?}/{:?}/{}/{}/{:?}",
                 r.null,
                 r.scalars,
                 r.beyond_width,
                 r.unknown,
+                if r.keeps_unknown { "keeps" } else { "reports" },
                 if r.components_fatal {
                     "fatal"
                 } else {

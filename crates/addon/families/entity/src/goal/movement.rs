@@ -45,10 +45,6 @@ impl BreakDoor {
 impl Goal for BreakDoor {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -159,10 +155,6 @@ impl CircleAroundAnchor {
 impl Goal for CircleAroundAnchor {
     const TYPED: FormatVersion = known::V1_21_100;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range(
@@ -228,10 +220,6 @@ impl ControlledByPlayer {
 impl Goal for ControlledByPlayer {
     const TYPED: FormatVersion = known::V1_21_100;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -271,10 +259,6 @@ impl DoorInteract {
 
 impl Goal for DoorInteract {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -401,10 +385,6 @@ impl ExploreOutskirts {
 impl Goal for ExploreOutskirts {
     const TYPED: FormatVersion = known::V1_21_130;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.vector(
@@ -459,10 +439,6 @@ impl FindCover {
 
 impl Goal for FindCover {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -547,10 +523,6 @@ impl FindMount {
 impl Goal for FindMount {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -610,10 +582,6 @@ impl FindUnderwaterTreasure {
 impl Goal for FindUnderwaterTreasure {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -664,10 +632,6 @@ impl Goal for FleeSun {
         deprecated_text!("cooldown_time"),
         known::V1_26_20,
     )];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -728,10 +692,6 @@ impl Float {
 
 impl Goal for Float {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -898,10 +858,6 @@ impl FloatWander {
 impl Goal for FloatWander {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.object_range("float_duration", &mut self.float_duration);
@@ -956,10 +912,6 @@ impl FollowCaravan {
 
 impl Goal for FollowCaravan {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1049,10 +1001,6 @@ impl FollowMob {
 
 impl Goal for FollowMob {
     const TYPED: FormatVersion = known::V1_26_50;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1162,10 +1110,6 @@ impl FollowOwner {
 impl Goal for FollowOwner {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -1208,10 +1152,6 @@ impl FollowParent {
 
 impl Goal for FollowParent {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1298,10 +1238,6 @@ impl Goal for FollowTargetLeader {
         "'minecraft:follow_target_leader' | 'leader_filters' must specify filters to identify leader to follow.",
         Severity::Warning,
     )];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn legacy_member_failed(&mut self, name: &str) -> Vec<&'static str> {
         // A failed `leader_filters` ends the game's legacy reader for this goal: of its members
@@ -1392,10 +1328,6 @@ impl GoHome {
 impl Goal for GoHome {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.triggers("on_failed", self.on_failed.as_deref());
@@ -1470,10 +1402,6 @@ impl Hide {
 impl Goal for Hide {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("duration", &mut self.duration, Bound::Min(0.0));
@@ -1519,10 +1447,6 @@ impl Hover {
 
 impl Goal for Hover {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1630,10 +1554,6 @@ impl JumpToBlock {
 impl Goal for JumpToBlock {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("cooldown_range", &mut self.cooldown_range);
@@ -1709,10 +1629,6 @@ impl MountPathing {
 
 impl Goal for MountPathing {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1801,10 +1717,6 @@ impl MoveAroundTarget {
 impl Goal for MoveAroundTarget {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range(
@@ -1875,10 +1787,6 @@ impl MoveIndoors {
 
 impl Goal for MoveIndoors {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -1964,10 +1872,6 @@ impl MoveOutdoors {
 impl Goal for MoveOutdoors {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         // `speed_multiplier` and `search_count` are deprecated on the base and re-bound by the
         // goal, with its own defaults (`DEFAULT_SPEED_MULTIPLIER` 0.5 and `DEFAULT_SEARCH_COUNT`
@@ -2022,10 +1926,6 @@ impl MoveThroughVillage {
 
 impl Goal for MoveThroughVillage {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2154,10 +2054,6 @@ impl MoveToBlock {
 impl Goal for MoveToBlock {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.triggers("on_reach", self.on_reach.as_deref());
@@ -2251,10 +2147,6 @@ impl MoveToLand {
 impl Goal for MoveToLand {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("goal_radius", &mut self.goal_radius, Bound::Above(0.0));
@@ -2346,10 +2238,6 @@ impl Goal for MoveToLava {
         deprecated_text!("material_type"),
         known::V1_26_10,
     )];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2445,10 +2333,6 @@ impl MoveToLiquid {
 impl Goal for MoveToLiquid {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("goal_radius", &mut self.goal_radius, Bound::Above(0.0));
@@ -2508,10 +2392,6 @@ impl MoveToPoi {
 
 impl Goal for MoveToPoi {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2576,10 +2456,6 @@ impl MoveToRandomBlock {
 
 impl Goal for MoveToRandomBlock {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2647,10 +2523,6 @@ impl MoveToVillage {
 
 impl Goal for MoveToVillage {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2742,10 +2614,6 @@ impl Goal for MoveToWater {
         known::V1_26_10,
     )];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("goal_radius", &mut self.goal_radius, Bound::Above(0.0));
@@ -2798,10 +2666,6 @@ impl MoveTowardsDwellingRestriction {
 impl Goal for MoveTowardsDwellingRestriction {
     const TYPED: FormatVersion = known::V1_26_0;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2844,10 +2708,6 @@ impl MoveTowardsHomeRestriction {
 
 impl Goal for MoveTowardsHomeRestriction {
     const TYPED: FormatVersion = known::V1_26_0;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -2900,10 +2760,6 @@ impl MoveTowardsTarget {
 impl Goal for MoveTowardsTarget {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -2955,10 +2811,6 @@ impl Goal for OcelotSitOnBlock {
         known::V1_26_10,
     )];
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -3007,10 +2859,6 @@ impl OpenDoor {
 impl Goal for OpenDoor {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3045,10 +2893,6 @@ impl PlayerRideTamed {
 
 impl Goal for PlayerRideTamed {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3125,10 +2969,6 @@ impl RandomBreach {
 impl Goal for RandomBreach {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3200,10 +3040,6 @@ impl Goal for RandomFly {
 
     const DEPRECATED: &'static [Deprecated] =
         &[("interval", deprecated_text!("interval"), known::V1_26_30)];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3289,10 +3125,6 @@ impl RandomHover {
 impl Goal for RandomHover {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.range("hover_height", &mut self.hover_height);
@@ -3360,10 +3192,6 @@ impl RandomStroll {
 
 impl Goal for RandomStroll {
     const TYPED: FormatVersion = known::V1_26_20;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3440,10 +3268,6 @@ impl RandomSwim {
 impl Goal for RandomSwim {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3479,10 +3303,6 @@ impl RestrictOpenDoor {
 impl Goal for RestrictOpenDoor {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3517,10 +3337,6 @@ impl RestrictSun {
 
 impl Goal for RestrictSun {
     const TYPED: FormatVersion = known::V1_26_30;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3581,10 +3397,6 @@ impl RiseToLiquidLevel {
 impl Goal for RiseToLiquidLevel {
     const TYPED: FormatVersion = known::V1_26_30;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3636,10 +3448,6 @@ impl SlimeFloat {
 impl Goal for SlimeFloat {
     const TYPED: FormatVersion = known::V1_21_110;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3682,10 +3490,6 @@ impl SlimeKeepOnJumping {
 
 impl Goal for SlimeKeepOnJumping {
     const TYPED: FormatVersion = known::V1_21_110;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3746,10 +3550,6 @@ impl SlimeRandomDirection {
 impl Goal for SlimeRandomDirection {
     const TYPED: FormatVersion = known::V1_21_110;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3784,10 +3584,6 @@ impl SquidDive {
 
 impl Goal for SquidDive {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3824,10 +3620,6 @@ impl SquidFlee {
 impl Goal for SquidFlee {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3862,10 +3654,6 @@ impl SquidIdle {
 
 impl Goal for SquidIdle {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -3902,10 +3690,6 @@ impl SquidMoveAwayFromGround {
 impl Goal for SquidMoveAwayFromGround {
     const TYPED: FormatVersion = known::V1_26_40;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -3940,10 +3724,6 @@ impl SquidOutOfWater {
 
 impl Goal for SquidOutOfWater {
     const TYPED: FormatVersion = known::V1_26_40;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -4020,10 +3800,6 @@ impl StrollTowardsVillage {
 impl Goal for StrollTowardsVillage {
     const TYPED: FormatVersion = known::V1_26_20;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
@@ -4082,10 +3858,6 @@ impl SwimIdle {
 
 impl Goal for SwimIdle {
     const TYPED: FormatVersion = known::V1_21_110;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -4157,10 +3929,6 @@ impl SwimUpForBreath {
 impl Goal for SwimUpForBreath {
     const TYPED: FormatVersion = known::V1_21_110;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
     }
@@ -4227,10 +3995,6 @@ impl SwimWander {
 
 impl Goal for SwimWander {
     const TYPED: FormatVersion = known::V1_21_110;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -4342,10 +4106,6 @@ impl SwimWithEntity {
 impl Goal for SwimWithEntity {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float(
@@ -4426,10 +4186,6 @@ impl TeleportToOwner {
 impl Goal for TeleportToOwner {
     const TYPED: FormatVersion = known::V1_26_10;
 
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
-
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
         c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
@@ -4479,10 +4235,6 @@ impl Goal for WitherRandomAttackPosGoal {
         ("y_dist", deprecated_text!("y_dist"), known::V1_26_30),
         ("interval", deprecated_text!("interval"), known::V1_26_30),
     ];
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -4594,10 +4346,6 @@ impl Panic {
 
 impl Goal for Panic {
     const TYPED: FormatVersion = V1_26_60;
-
-    fn extra_mut(&mut self) -> &mut Extra {
-        &mut self.extra
-    }
 
     fn check(&mut self, c: &mut Check<'_>) {
         c.base(&mut self.priority);
@@ -4761,9 +4509,6 @@ macro_rules! tempt_base {
         impl Goal for $name {
             const TYPED: FormatVersion = V1_26_60;
 
-            fn extra_mut(&mut self) -> &mut Extra {
-                &mut self.extra
-            }
 
             fn check(&mut self, c: &mut Check<'_>) {
                 c.base(&mut self.priority);

@@ -65,7 +65,7 @@ fn deviation_a_triggered_digger_is_copied_to_legacy_on_dig_trigger() {
     // The 1.26.50 format binds neither the side-car nor the digger's trigger, and the
     // 1.26.0 root binds the side-car as a deprecated name the game refuses: the
     // item has no text that reads back, and is refused at the side-car.
-    match document.value().to_json() {
+    match document.to_json() {
         Err(bedrock_addon_core::json::EncodeError::NotRepresentable { at, .. }) => {
             assert_eq!(at.to_string(), "minecraft:item/__deprecated_components");
         }
@@ -100,7 +100,7 @@ fn deviation_the_custom_component_list_moves_to_custom_components_v1() {
             |e| matches!(e, ComponentRef::Custom(c) if c.name == "demo:shake" && c.from_v1_list)
         )
     );
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     assert!(!written.contains("\"custom_components_v1\""), "{written}");
 }
 

@@ -296,7 +296,7 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float_with_an_information_d
         assert_eq!(warnings, expected_warnings, "{number}");
         assert!(names(loaded.diagnostics(), Severity::Error).is_empty());
         // The value read is one the writer can write, and it reads back without a finding.
-        let written = loaded.value().to_json().unwrap();
+        let written = loaded.to_json().unwrap();
         let again = loads_text(&written);
         assert_eq!(again.value(), loaded.value(), "{number}");
         assert!(

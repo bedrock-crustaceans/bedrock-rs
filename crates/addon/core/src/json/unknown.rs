@@ -4,13 +4,19 @@
 //! unknown key silently. This walk compares the struct shapes with a `Value` read from the same
 //! text: field names come from `effective_name()` (and `alias`), fields with
 //! `should_skip_deserializing()` take no key, and every other key is reported with its JSON path
-//! (`UnrecognizedField`). `keep_unknown_members` also stores each one in the
-//! `#[facet(skip)] extra: Extra` of the struct it belongs to.
+//! (`UnrecognizedField`). `keep_unknown_members` also keeps each one of a struct that keeps
+//! its unknown members in a document's `Unknown` table, by the path of its object.
+//!
+//! Which struct keeps them ([`keeps`]): one marked with `#[facet(skip)] extra: Extra`, or whose
+//! `schema::unknown` is `keep`; and, under a reading that keeps unknown members
+//! (`Reading::keeps_unknown`), every struct whose `schema::unknown` is not `report`, `reject` or
+//! `ignore`. The word is the struct's own (`#[facet(schema::unknown = ..)]` on the struct, or
+//! on a variant for its fields), or the field's that holds it, which comes first.
 
 use std::borrow::Cow;
 use std::ptr;
 
-use facet::{Def, Facet, Field, Peek, Poke, Shape, Type, UserType};
+use facet::{Def, Facet, Field, Peek, Shape, Type, UserType};
 
 use super::Value;
 use super::extra::Extra;
@@ -20,6 +26,8 @@ use super::slice::element_of;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
 };
+use crate::document::Unknown as Table;
+use crate::schema::UnknownRule;
 
 /// Every member of `json` that no field of `shape` takes, at any depth, with its path, in
 /// document order. Proxied types (strict wrappers, Molang fields) and untyped `Value`s take
@@ -49,62 +57,109 @@ pub fn too_deep_to_walk(json: &Value) -> bool {
 }
 
 /// [`unknown_members`] for `target`, which was deserialised from the same text as `json`, and
-/// stores each unknown member in the `extra` field of the struct it belongs to (replacing a member
-/// of the same key). Enums are walked through the variant `target` holds. Returns every unknown
-/// member, kept or not: one inside a map value or behind a pointer (`Box`) is reported but not
-/// kept, because facet's reflection cannot reach those mutably; neither is one in a
-/// struct without an `extra` field.
+/// keeps each unknown member of a struct marked with an `extra` field in `kept`, by the path
+/// of its object from the root of `json` (replacing a member of the same key). Enums are
+/// walked through the variant `target` holds. Returns every unknown member, kept or not: one
+/// inside a map value or behind a pointer (`Box`) is reported but not kept, as the walk once
+/// stored them in the struct and could not reach those mutably; neither is one in a struct
+/// without an `extra` field.
 pub fn keep_unknown_members<'f, T: Facet<'f>>(
-    target: &mut T,
+    target: &T,
     json: &Value,
+    kept: &mut Table,
 ) -> Vec<(JsonPath, Value)> {
     // The misread scalars are not asked for: the walk does not look for them.
-    keep_walked(target, json, false, false).0
+    let (unknowns, _) = keep_walked(target, json, false, false, false, kept);
+    unknowns.into_iter().map(|(path, _)| path).collect()
+}
+
+/// [`keep_unknown_members`] for the door (`parse_payload`, `parse_component`): under a reading
+/// that keeps unknown members when `keeps_unknown`, with each member's value left out and its
+/// disposition beside it: [`UnknownRule::Keep`] for one put in `kept`, else what its struct
+/// says (`Report` where it says nothing, or keeps it where the member cannot be kept).
+pub(crate) fn door_unknown_members<'f, T: Facet<'f>>(
+    target: &T,
+    json: &Value,
+    keeps_unknown: bool,
+    kept: &mut Table,
+) -> Vec<(JsonPath, UnknownRule)> {
+    let (unknowns, _) = keep_walked(target, json, false, false, keeps_unknown, kept);
+    unknowns
+        .into_iter()
+        .map(|((path, _), rule)| (path, rule))
+        .collect()
 }
 
 /// [`keep_unknown_members`], and with the unknown members every scalar of `json` that its
 /// member of `target` read as another value than the document writes ([`Misread`]).
 pub fn keep_members<'f, T: Facet<'f>>(
-    target: &mut T,
+    target: &T,
     json: &Value,
+    kept: &mut Table,
 ) -> (Vec<(JsonPath, Value)>, Vec<Misread>) {
-    keep_walked(target, json, false, true)
+    let (unknowns, misread) = keep_walked(target, json, false, true, false, kept);
+    (
+        unknowns.into_iter().map(|(path, _)| path).collect(),
+        misread,
+    )
 }
 
 /// [`keep_members`], and among the unknown members those of a [`Range`](crate::shared::Range)
 /// given as an object that the range does not read (`{"a": 1}`, a `min` beside a
 /// `range_min`): reported, not kept, since a range has no `extra`.
 pub fn keep_members_and_range_members<'f, T: Facet<'f>>(
-    target: &mut T,
+    target: &T,
     json: &Value,
+    kept: &mut Table,
 ) -> (Vec<(JsonPath, Value)>, Vec<Misread>) {
-    keep_walked(target, json, true, true)
+    let (unknowns, misread) = keep_walked(target, json, true, true, false, kept);
+    (
+        unknowns.into_iter().map(|(path, _)| path).collect(),
+        misread,
+    )
 }
 
-/// The unknown members kept in `target`, and the misread scalars when `tell_misread`.
+/// One unknown member as the walk returns it, its disposition beside it.
+type Told = ((JsonPath, Value), UnknownRule);
+
+/// The unknown members of `target`, those it keeps put in `kept` (each with
+/// [`UnknownRule::Keep`] beside it, every other one with what its struct says), and the misread
+/// scalars when `tell_misread`. `keeps_unknown` is the reading's [`keeps`] rule.
 fn keep_walked<'f, T: Facet<'f>>(
-    target: &mut T,
+    target: &T,
     json: &Value,
     ranges: bool,
     tell_misread: bool,
-) -> (Vec<(JsonPath, Value)>, Vec<Misread>) {
+    keeps_unknown: bool,
+    kept: &mut Table,
+) -> (Vec<Told>, Vec<Misread>) {
     let walked = walk_with(
         T::SHAPE,
         json,
-        Some(Peek::new(&*target)),
+        Some(Peek::new(target)),
         ranges,
         None,
         tell_misread,
+        keeps_unknown,
     );
     let (unknowns, misread) = (walked.unknowns, walked.misread);
-    for unknown in &unknowns {
-        if let (Some(route), Some(key)) = (&unknown.route, &unknown.key) {
-            keep(Poke::new(&mut *target), route, key, unknown.value.clone());
-        }
-    }
     let unknowns = unknowns
         .into_iter()
-        .map(|unknown| (unknown.path.to_json_path(), unknown.value))
+        .map(|unknown| {
+            let mut told = unknown.told;
+            if let (Some(route), Some(key)) = (&unknown.route, &unknown.key)
+                && reachable(Peek::new(target), route)
+            {
+                let mut owner = unknown.path.to_json_path();
+                owner.pop();
+                kept.put(&owner, key, unknown.value.clone());
+            } else if told == UnknownRule::Keep {
+                // A struct that keeps, behind a step the table cannot follow: told as one
+                // that says nothing.
+                told = UnknownRule::Report;
+            }
+            ((unknown.path.to_json_path(), unknown.value), told)
+        })
         .collect();
     (unknowns, misread)
 }
@@ -190,8 +245,11 @@ pub(crate) struct Unknown {
     /// Its value.
     pub(crate) value: Value,
     /// How to reach the struct that owns it from the root value, when every step is one facet's
-    /// reflection can take mutably and that struct has an `extra` field.
+    /// reflection can take mutably and that struct keeps its unknown members ([`keeps`]).
     route: Option<Vec<Step>>,
+    /// What its struct does with it: [`UnknownRule::Keep`] where the struct keeps it, else the
+    /// struct's word (`Report` for none).
+    told: UnknownRule,
 }
 
 /// One mutable step from a value to a value inside it.
@@ -229,6 +287,11 @@ struct Cursor {
     scalars: Vec<ScalarCall>,
     /// Whether the walk without rules looks for misread scalars ([`Cursor::misread`]).
     tell_misread: bool,
+    /// Whether the reading keeps the unknown members of a struct that says nothing ([`keeps`]).
+    keeps_unknown: bool,
+    /// The `schema::unknown` of the field being walked, for the object it holds (taken by the
+    /// first object below it, through `Option`, pointers, list elements and map values).
+    field_rule: Option<UnknownRule>,
 }
 
 /// What the scalar pre-pass decided for one scalar of the text: every verdict but
@@ -293,18 +356,19 @@ pub(crate) fn walk_whole(
     typed: Typed<'_, '_>,
     ranges: bool,
 ) -> Walked {
-    walk_with(shape, json, typed, ranges, None, false)
+    walk_with(shape, json, typed, ranges, None, false, false)
 }
 
 /// The scalar pre-pass's walk of `json`, a value of the text to be read as `shape`: every
 /// scalar judged under `rules` ([`Walked::scalars`]), an untagged enum's scalar arm chosen as
 /// the rules choose it. Untyped: it runs before the typed read.
 pub(crate) fn walk_scalars(shape: &'static Shape, json: &Value, rules: ScalarRules) -> Walked {
-    walk_with(shape, json, None, false, Some(rules), false)
+    walk_with(shape, json, None, false, Some(rules), false, false)
 }
 
 /// [`walk_whole`], judging the scalars under `rules` when there are some, and without them
-/// looking for the misread ones when `tell_misread`.
+/// looking for the misread ones when `tell_misread`; `keeps_unknown` is the reading's
+/// [`keeps`] rule.
 fn walk_with(
     shape: &'static Shape,
     json: &Value,
@@ -312,6 +376,7 @@ fn walk_with(
     ranges: bool,
     rules: Option<ScalarRules>,
     tell_misread: bool,
+    keeps_unknown: bool,
 ) -> Walked {
     // The walk calls itself for each level of `json`: it runs with the stack that depth
     // can take, as facet's read of the typed value did, and not on what its caller
@@ -321,7 +386,15 @@ fn walk_with(
         return Walked::default();
     };
     super::stack::with_stack_for(levels, || {
-        walk_on_this_stack(shape, json, typed, ranges, rules, tell_misread)
+        walk_on_this_stack(
+            shape,
+            json,
+            typed,
+            ranges,
+            rules,
+            tell_misread,
+            keeps_unknown,
+        )
     })
 }
 
@@ -333,6 +406,7 @@ fn walk_on_this_stack(
     ranges: bool,
     rules: Option<ScalarRules>,
     tell_misread: bool,
+    keeps_unknown: bool,
 ) -> Walked {
     let mut out = Vec::new();
     let mut cursor = Cursor {
@@ -345,6 +419,8 @@ fn walk_on_this_stack(
         rules,
         scalars: Vec::new(),
         tell_misread,
+        keeps_unknown,
+        field_rule: None,
     };
     walk_value(shape, json, typed, &mut cursor, &mut out);
     Walked {
@@ -616,19 +692,31 @@ fn walk_value(
                 });
             }
         }
-        Type::User(UserType::Struct(st)) => {
-            let fields = typed.and_then(|t| t.into_struct().ok());
-            let typed_field = |index: usize| fields.and_then(|f| f.field(index).ok());
-            if shape.is_transparent() && st.fields.len() == 1 {
-                with_step(cursor, Some(Step::Field(0)), |cursor| {
-                    walk_value(st.fields[0].shape(), json, typed_field(0), cursor, out);
-                });
-            } else {
-                walk_object(st.fields, &Step::Field, &typed_field, json, cursor, out);
-            }
-        }
+        Type::User(UserType::Struct(st)) => walk_struct(shape, st.fields, json, typed, cursor, out),
         Type::User(UserType::Enum(en)) => walk_enum(shape, en.variants, json, typed, cursor, out),
         _ => {}
+    }
+}
+
+/// A struct of the named `fields` (or a transparent newtype, walked as its one field), whose
+/// own `schema::unknown` is in `shape`'s attributes.
+fn walk_struct(
+    shape: &'static Shape,
+    fields: &'static [Field],
+    json: &Value,
+    typed: Typed<'_, '_>,
+    cursor: &mut Cursor,
+    out: &mut Vec<Unknown>,
+) {
+    let typed_fields = typed.and_then(|t| t.into_struct().ok());
+    let typed_field = |index: usize| typed_fields.and_then(|f| f.field(index).ok());
+    if shape.is_transparent() && fields.len() == 1 {
+        with_step(cursor, Some(Step::Field(0)), |cursor| {
+            walk_value(fields[0].shape(), json, typed_field(0), cursor, out);
+        });
+    } else {
+        let own = rule_of(shape.attributes.iter());
+        walk_object(fields, own, &Step::Field, &typed_field, json, cursor, out);
     }
 }
 
@@ -692,6 +780,7 @@ fn walk_range(shape: &'static Shape, json: &Value, cursor: &mut Cursor, out: &mu
                 key: None,
                 value: element.clone(),
                 route: None,
+                told: UnknownRule::Report,
             });
             cursor.path.pop();
         }
@@ -707,6 +796,7 @@ fn walk_range(shape: &'static Shape, json: &Value, cursor: &mut Cursor, out: &mu
             key: None,
             value: object.get(key).cloned().unwrap_or(Value::NULL),
             route: None,
+            told: UnknownRule::Report,
         });
         cursor.path.pop();
     }
@@ -729,10 +819,12 @@ fn element_or_set(shape: &'static Shape) -> Option<&'static Shape> {
 }
 
 /// The members of a JSON object read as the named `fields` (of a struct, or of a struct
-/// variant): known keys are walked, the others reported. `to_step` and `typed_field` give the
-/// route step and the typed value of the field at an index.
+/// variant, whose `schema::unknown` is `own`): known keys are walked, the others reported, and
+/// given a route when the struct [`keeps`] them. `to_step` and `typed_field` give the route
+/// step and the typed value of the field at an index.
 fn walk_object<'m, 'f>(
     fields: &'static [Field],
+    own: Option<UnknownRule>,
     to_step: &dyn Fn(usize) -> Step,
     typed_field: &dyn Fn(usize) -> Typed<'m, 'f>,
     json: &Value,
@@ -742,7 +834,14 @@ fn walk_object<'m, 'f>(
     let Some(object) = json.as_object() else {
         return;
     };
-    let has_extra = fields.iter().any(is_extra);
+    let held = cursor.field_rule.take();
+    let rule = held.or(own);
+    let keeps = keeps(fields.iter().any(is_extra), rule, cursor.keeps_unknown);
+    let told = if keeps {
+        UnknownRule::Keep
+    } else {
+        rule.unwrap_or(UnknownRule::Report)
+    };
     for (key, item) in object {
         let key = key.as_str();
         cursor.path.push_key(key);
@@ -753,7 +852,9 @@ fn walk_object<'m, 'f>(
                 }
                 if field.proxy().is_none() {
                     with_step(cursor, Some(to_step(index)), |cursor| {
+                        cursor.field_rule = rule_of(field.attributes.iter());
                         walk_value(field.shape(), item, typed_field(index), cursor, out);
+                        cursor.field_rule = None;
                     });
                 }
             }
@@ -762,11 +863,35 @@ fn walk_object<'m, 'f>(
                 path: cursor.path.clone(),
                 key: Some(key.to_owned()),
                 value: item.clone(),
-                route: cursor.route.clone().filter(|_| has_extra),
+                route: cursor.route.clone().filter(|_| keeps),
+                told,
             }),
         }
         cursor.path.pop();
     }
+    // A list or a map below the field holds more objects the field's word is for.
+    cursor.field_rule = held;
+}
+
+/// Whether a struct keeps its unknown members in the document's table: it is marked with an
+/// `extra` field (`has_extra`), or its word (`rule`, the field's that holds it before its own)
+/// is `keep`, or it says nothing and the reading keeps them (`reading_keeps`,
+/// `Reading::keeps_unknown`). `report`, `reject` and `ignore` keep nothing but under the mark.
+fn keeps(has_extra: bool, rule: Option<UnknownRule>, reading_keeps: bool) -> bool {
+    has_extra
+        || match rule {
+            Some(UnknownRule::Keep) => true,
+            Some(_) => false,
+            None => reading_keeps,
+        }
+}
+
+/// The `schema::unknown` word among `attributes` (a shape's, a variant's or a field's).
+fn rule_of<'a>(mut attributes: impl Iterator<Item = &'a facet::Attr>) -> Option<UnknownRule> {
+    attributes
+        .find(|attr| attr.ns() == Some("schema") && attr.key() == "unknown")
+        .and_then(|attr| attr.get_as::<&'static str>())
+        .and_then(|word| UnknownRule::from_word(word))
 }
 
 /// Where a JSON key goes among a struct's fields.
@@ -912,6 +1037,7 @@ fn walk_variant(
     match variant.data.kind {
         facet::StructKind::Struct => walk_object(
             fields,
+            rule_of(variant.attributes.iter()),
             &|field| Step::VariantField(index, field),
             &typed_field,
             json,
@@ -1221,73 +1347,24 @@ fn see_through(mut shape: &'static Shape) -> &'static Shape {
     }
 }
 
-/// Follows `route` from `poke` to the owning struct and stores the member in its `extra`.
-fn keep(poke: Poke<'_, '_>, route: &[Step], key: &str, value: Value) {
+/// Whether `route` leads from `peek` to a value: every struct field, active variant field,
+/// `Some` and list element on it is there. The member is kept only then, as when the walk
+/// stored it in the struct itself.
+fn reachable(peek: Peek<'_, '_>, route: &[Step]) -> bool {
     let Some((step, rest)) = route.split_first() else {
-        insert_extra(poke, key, value);
-        return;
+        return true;
     };
-    match *step {
-        Step::Field(index) => {
-            if let Ok(mut st) = poke.into_struct()
-                && let Ok(field) = st.field(index)
-            {
-                keep(field, rest, key, value);
-            }
-        }
-        Step::VariantField(variant, index) => {
-            if let Ok(mut en) = poke.into_enum()
-                && en.variant_index() == Ok(variant)
-                && let Ok(Some(field)) = en.field(index)
-            {
-                keep(field, rest, key, value);
-            }
-        }
-        Step::Some => {
-            if let Ok(mut option) = poke.into_option()
-                && let Some(inner) = option.value_mut()
-            {
-                keep(inner, rest, key, value);
-            }
-        }
-        Step::Index(index) => {
-            if let Ok(mut list) = poke.into_list()
-                && let Some(item) = list.get_mut(index)
-            {
-                keep(item, rest, key, value);
-            }
-        }
-    }
-}
-
-/// Inserts the member into the `extra` field of the struct (or struct variant) at `poke`.
-fn insert_extra(poke: Poke<'_, '_>, key: &str, value: Value) {
-    if poke.is_enum() {
-        let Ok(mut en) = poke.into_enum() else { return };
-        let Ok(variant) = en.active_variant() else {
-            return;
-        };
-        let Some(index) = variant.data.fields.iter().position(is_extra) else {
-            return;
-        };
-        if let Ok(Some(mut field)) = en.field(index)
-            && let Ok(extra) = field.get_mut::<Extra>()
-        {
-            extra.insert(key.to_owned(), value);
-        }
-        return;
-    }
-    let Ok(mut st) = poke.into_struct() else {
-        return;
+    let next = match *step {
+        Step::Field(index) => peek.into_struct().ok().and_then(|st| st.field(index).ok()),
+        Step::VariantField(variant, index) => peek
+            .into_enum()
+            .ok()
+            .filter(|en| en.variant_index() == Ok(variant))
+            .and_then(|en| en.field(index).ok().flatten()),
+        Step::Some => peek.into_option().ok().and_then(facet::PeekOption::value),
+        Step::Index(index) => peek.into_list().ok().and_then(|list| list.get(index)),
     };
-    let Some(index) = st.ty().fields.iter().position(is_extra) else {
-        return;
-    };
-    if let Ok(mut field) = st.field(index)
-        && let Ok(extra) = field.get_mut::<Extra>()
-    {
-        extra.insert(key.to_owned(), value);
-    }
+    next.is_some_and(|next| reachable(next, rest))
 }
 
 #[cfg(test)]
@@ -1391,6 +1468,29 @@ mod tests {
         assert_eq!(routes, [true, false, false, false]);
     }
 
+    /// The keep decision, row by row: (mark, word, reading keeps) -> kept.
+    #[test]
+    fn a_struct_keeps_by_its_mark_its_word_or_else_the_reading() {
+        use UnknownRule::{Ignore, Keep, Reject, Report};
+        let rows = [
+            ((true, None, false), true),
+            ((true, Some(Report), false), true),
+            ((false, Some(Keep), false), true),
+            ((false, None, true), true),
+            ((false, Some(Report), true), false),
+            ((false, Some(Reject), true), false),
+            ((false, Some(Ignore), true), false),
+            ((false, None, false), false),
+        ];
+        for ((mark, word, reading), kept) in rows {
+            assert_eq!(
+                keeps(mark, word, reading),
+                kept,
+                "{mark} {word:?} {reading}"
+            );
+        }
+    }
+
     #[derive(Debug, Facet)]
     struct Scalars {
         #[facet(default)]
@@ -1418,8 +1518,8 @@ mod tests {
     /// The scalars of `text` that `Scalars` reads as another value, as `path: kind`.
     fn misread(text: &str) -> Vec<String> {
         let json: Value = crate::json::from_str(text).unwrap();
-        let mut typed: Scalars = crate::json::from_str(text).unwrap();
-        let (_, misread) = keep_members(&mut typed, &json);
+        let typed: Scalars = crate::json::from_str(text).unwrap();
+        let (_, misread) = keep_members(&typed, &json, &mut Table::new());
         misread
             .iter()
             .map(|m| format!("{}: {:?}", m.path, m.kind))
@@ -1508,8 +1608,8 @@ mod tests {
         // is what it spells.
         let misread = |text: &str| -> Vec<String> {
             let json: Value = crate::json::from_str(text).unwrap();
-            let mut typed: Nulls = crate::json::from_str(text).unwrap();
-            let (_, misread) = keep_members(&mut typed, &json);
+            let typed: Nulls = crate::json::from_str(text).unwrap();
+            let (_, misread) = keep_members(&typed, &json, &mut Table::new());
             misread
                 .iter()
                 .map(|m| format!("{}: {:?}", m.path, m.kind))
@@ -1537,15 +1637,19 @@ mod tests {
     fn a_member_a_range_does_not_read_is_unknown_when_asked() {
         let text = r#"{"interval": {"a": 1, "min": 2}, "counts": [{"range_min": 1, "max": 3}, 4, [1, 2]]}"#;
         let json: Value = crate::json::from_str(text).unwrap();
-        let mut typed: Ranged = crate::json::from_str(text).unwrap();
-        assert!(keep_members(&mut typed, &json).0.is_empty(), "not asked");
-        let paths: Vec<String> = keep_members_and_range_members(&mut typed, &json)
+        let typed: Ranged = crate::json::from_str(text).unwrap();
+        assert!(
+            keep_members(&typed, &json, &mut Table::new()).0.is_empty(),
+            "not asked"
+        );
+        let mut kept = Table::new();
+        let paths: Vec<String> = keep_members_and_range_members(&typed, &json, &mut kept)
             .0
             .iter()
             .map(|(path, _)| path.to_string())
             .collect();
         assert_eq!(paths, ["interval/a", "counts/0/max"]);
-        assert!(typed.extra.is_empty(), "a range has no extra: not kept");
+        assert!(kept.is_empty(), "a range has no extra: not kept");
     }
 
     #[test]
@@ -1554,9 +1658,12 @@ mod tests {
         // third went without a word.
         let text = r#"{"interval": [1, 2], "counts": [[1, 2], [3, 4, 5, 6]]}"#;
         let json: Value = crate::json::from_str(text).unwrap();
-        let mut typed: Ranged = crate::json::from_str(text).unwrap();
-        assert!(keep_members(&mut typed, &json).0.is_empty(), "not asked");
-        let paths: Vec<String> = keep_members_and_range_members(&mut typed, &json)
+        let typed: Ranged = crate::json::from_str(text).unwrap();
+        assert!(
+            keep_members(&typed, &json, &mut Table::new()).0.is_empty(),
+            "not asked"
+        );
+        let paths: Vec<String> = keep_members_and_range_members(&typed, &json, &mut Table::new())
             .0
             .iter()
             .map(|(path, _)| path.to_string())
@@ -1584,7 +1691,7 @@ mod tests {
         use facet::Facet;
         use indexmap::IndexMap;
 
-        use super::super::{Peek, Value, keep_unknown_members, walk_on_this_stack};
+        use super::super::{Peek, Table, Value, keep_unknown_members, walk_on_this_stack};
         use crate::json::MAX_JSON_DEPTH;
         use crate::json::stack::to_stay;
 
@@ -1676,15 +1783,21 @@ mod tests {
         /// `T` and a `Value` read from `text` through the door, and walked; whether the
         /// walk found no unknown member, which the texts have none of.
         fn walks<T: for<'f> Facet<'f>>(text: &str, how: How) -> bool {
-            let mut typed: T = crate::json::from_str(text).expect("the typed value");
+            let typed: T = crate::json::from_str(text).expect("the typed value");
             let json: Value = crate::json::from_str(text).expect("the value");
             let found = match how {
-                How::Entry => keep_unknown_members(&mut typed, &json).len(),
-                How::OnThisStack => {
-                    walk_on_this_stack(T::SHAPE, &json, Some(Peek::new(&typed)), true, None, true)
-                        .unknowns
-                        .len()
-                }
+                How::Entry => keep_unknown_members(&typed, &json, &mut Table::new()).len(),
+                How::OnThisStack => walk_on_this_stack(
+                    T::SHAPE,
+                    &json,
+                    Some(Peek::new(&typed)),
+                    true,
+                    None,
+                    true,
+                    false,
+                )
+                .unknowns
+                .len(),
             };
             // What nests is dropped by the process ending, not by a call for each level.
             std::mem::forget((typed, json));

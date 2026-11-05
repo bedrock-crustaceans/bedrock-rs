@@ -337,7 +337,12 @@ fn dim17b_envelope_edges() {
     let found = with_code(document.diagnostics(), "UnrecognizedField");
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].location.json_path.to_string(), "extra");
-    assert!(document.root_extra.get("extra").is_some());
+    assert!(
+        document
+            .unknown()
+            .get(&bedrock_addon_core::diagnostic::JsonPath::new(), "extra")
+            .is_some()
+    );
 }
 
 #[test]

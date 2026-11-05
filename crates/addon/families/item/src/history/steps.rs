@@ -42,7 +42,6 @@ fn carry<const A: u32, const B: u32>(doc: ItemDocument<A>) -> ItemDocument<B> {
         deprecated: doc.deprecated,
         events: doc.events,
         legacy: doc.legacy,
-        extra: doc.extra,
     }
 }
 
@@ -209,13 +208,19 @@ fn moved(cx: &mut UpgradeCx<'_>, path: &[&str]) {
 /// holds it. The file's own slice did not bind them either: each is a member the schema does
 /// not know, a warning-level line in the content log under the legacy chain while the item
 /// loads.
-fn unread(cx: &mut UpgradeCx<'_>, component: &str, extra: &bedrock_addon_core::document::Extra) {
-    for (key, _) in extra.iter() {
+///
+/// The component is gone: its unknown members, and those of the objects inside it, go with it.
+fn unread(cx: &mut UpgradeCx<'_>, component: &str) {
+    let at = member(&["components", component]);
+    let unknown = cx.diagnostics.unknown_mut();
+    let keys = unknown.take_all(&at);
+    unknown.forget(&at);
+    for (key, _) in keys {
         report(
             cx,
             DiagnosticCode::UnrecognizedField { text: None },
             Severity::Warning,
-            &["components", component, key],
+            &["components", component, &key],
         );
     }
 }
@@ -309,6 +314,11 @@ fn copy_triggered_digger(
         &mut deprecated.legacy_on_dig,
         "legacy_on_dig_trigger",
         digger.clone(),
+    );
+    // The copy has the digger's unknown members too.
+    cx.diagnostics.unknown_mut().copy(
+        &member(&["components", "minecraft:digger"]),
+        &member(&["__deprecated_components", "legacy_on_dig_trigger"]),
     );
 }
 
@@ -483,7 +493,7 @@ impl Upgrade for v1_20_0::Item {
         }
         let (mut replaced_protection, mut moved_protection) = (false, false);
         if let Some(Component::Armor(armor)) = doc.components.shift_remove("minecraft:armor") {
-            unread(cx, "minecraft:armor", &armor.extra);
+            unread(cx, "minecraft:armor");
             // The 1.20.20 armour fixer moves the armour's points to the wearable.
             match doc.components.get_mut("minecraft:wearable") {
                 Some(Component::Wearable(wearable)) => {
@@ -613,14 +623,14 @@ impl Upgrade for v1_20_30::Item {
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
         let mut doc: v1_20_40::Item = carry(self);
         if let Some(Component::OnUse(c)) = doc.components.shift_remove("minecraft:on_use") {
-            unread(cx, "minecraft:on_use", &c.extra);
+            unread(cx, "minecraft:on_use");
             if let Some(trigger) = c.on_use {
                 moved(cx, &["components", "minecraft:on_use", "on_use"]);
                 fill(cx, &mut doc.deprecated.on_use, "on_use", trigger);
             }
         }
         if let Some(Component::OnUseOn(c)) = doc.components.shift_remove("minecraft:on_use_on") {
-            unread(cx, "minecraft:on_use_on", &c.extra);
+            unread(cx, "minecraft:on_use_on");
             if let Some(trigger) = c.on_use_on {
                 moved(cx, &["components", "minecraft:on_use_on"]);
                 fill(
@@ -632,7 +642,7 @@ impl Upgrade for v1_20_30::Item {
             }
         }
         if let Some(Component::Weapon(c)) = doc.components.shift_remove("minecraft:weapon") {
-            unread(cx, "minecraft:weapon", &c.extra);
+            unread(cx, "minecraft:weapon");
             let slots: [(Option<EventTrigger>, &str, &str, SideCarSlot); 3] = [
                 (
                     c.on_hurt_entity,
@@ -681,9 +691,11 @@ fn digger_to_1_20_50(components: &mut Components, cx: &mut UpgradeCx<'_>) {
     // struct reads the name. One the file has is not held beside the step's own (the
     // digger has one member of that name): told where it is.
     let mut own: Vec<Option<usize>> = Vec::new();
+    let digger = member(&["components", "minecraft:digger"]);
+    let unknown = cx.diagnostics.unknown_mut();
     replace(components, "minecraft:digger", |c| match c {
-        Component::LegacyDigger(mut old) => {
-            if old.extra.remove("__deprecated_on_dig").is_some() {
+        Component::LegacyDigger(old) => {
+            if unknown.take(&digger, "__deprecated_on_dig").is_some() {
                 own.push(None);
             }
             Some(Component::Digger(Digger {
@@ -692,8 +704,9 @@ fn digger_to_1_20_50(components: &mut Components, cx: &mut UpgradeCx<'_>) {
                     .destroy_speeds
                     .into_iter()
                     .enumerate()
-                    .map(|(index, mut speed)| {
-                        if speed.extra.remove("__deprecated_on_dig").is_some() {
+                    .map(|(index, speed)| {
+                        let at = digger.child("destroy_speeds").index(index);
+                        if unknown.take(&at, "__deprecated_on_dig").is_some() {
                             own.push(Some(index));
                         }
                         DestroySpeed {
@@ -741,8 +754,8 @@ impl Upgrade for v1_20_40::Item {
             Some(Component::Chargeable(c)) => Some(c),
             _ => None,
         };
-        if let Some(chargeable) = &chargeable {
-            unread(cx, "minecraft:chargeable", &chargeable.extra);
+        if chargeable.is_some() {
+            unread(cx, "minecraft:chargeable");
         }
         let mut movement = chargeable.as_ref().and_then(|c| c.movement_modifier);
         // A modifier outside 0 to 1 is not carried. The newest format's
@@ -836,7 +849,12 @@ impl Upgrade for v1_20_50::Item {
         // it (its own 1.20.50 items, re-serialised, have none). The formats from 1.20.60 on
         // tell of such a member, so it is not carried into them: noted where the file has
         // it (an information of the crate's own; the game discards it too).
-        if doc.description.extra.remove("category").is_some() {
+        if cx
+            .diagnostics
+            .unknown_mut()
+            .take(&member(&["description"]), "category")
+            .is_some()
+        {
             report(
                 cx,
                 DiagnosticCode::DroppedField { text: None },
@@ -846,11 +864,14 @@ impl Upgrade for v1_20_50::Item {
         }
         let mut moved_icon = false;
         let mut replaced_textures = false;
+        let unknown = cx.diagnostics.unknown_mut();
         replace(&mut doc.components, "minecraft:icon", |c| match c {
-            Component::LegacyIcon(mut old) => {
+            Component::LegacyIcon(old) => {
                 // A `textures` the file has beside `texture` is no member of the 1.20.50
                 // icon: the move writes over it.
-                replaced_textures = old.extra.remove("textures").is_some();
+                replaced_textures = unknown
+                    .take(&member(&["components", "minecraft:icon"]), "textures")
+                    .is_some();
                 moved_icon = true;
                 let mut icon = Icon::new(old.texture);
                 icon.extra = old.extra;
@@ -924,6 +945,13 @@ impl Upgrade for v1_21_10::Item {
                     Severity::Info,
                     &["components", RARITY],
                 );
+            }
+            let kept = own.take_unknown();
+            if read.is_some() {
+                // The component's unknown members, below its key.
+                cx.diagnostics
+                    .unknown_mut()
+                    .absorb(&member(&["components", RARITY]), kept);
             }
             for mut told in own {
                 let mut at = member(&["components", RARITY]);
@@ -1251,16 +1279,18 @@ impl Upgrade for v1_26_0::Item {
         } else {
             MenuCategory::default()
         };
-        let mut extra = self.description.extra;
         if let Some(category) = self.description.category {
-            extra.insert("category".to_owned(), Value::from(category.as_str()));
+            cx.diagnostics.unknown_mut().put(
+                &member(&["description"]),
+                "category",
+                Value::from(category.as_str()),
+            );
         }
         v1_26_30::Item {
             description: ItemDescription {
                 identifier,
                 menu_category,
                 menu_category_presence,
-                extra,
             },
             components: map,
             deprecated,
@@ -1274,7 +1304,6 @@ impl Upgrade for v1_26_0::Item {
                     .retain(|key| key != "minecraft:use_duration");
                 legacy
             },
-            extra: self.extra,
         }
     }
 }
@@ -1329,7 +1358,6 @@ impl Upgrade for v1_26_30::Item {
             deprecated: self.deprecated,
             events: self.events,
             legacy: self.legacy,
-            extra: self.extra,
         }
     }
 }
@@ -1361,7 +1389,6 @@ impl Upgrade for Item {
             deprecated: self.deprecated,
             events: self.events,
             legacy: self.legacy,
-            extra: self.extra,
         }
     }
 }

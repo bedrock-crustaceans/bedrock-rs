@@ -45,9 +45,9 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, Extra, JsonContent, JsonDefinition,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, JsonDefinition,
     JsonDocument, JsonPlaced, NoBeta, Notice, Origin, Placed, RegistryBuilder, Rejected,
-    VersionInfo, default_path_flat_for_vanilla,
+    UnknownMembers, VersionInfo, default_path_flat_for_vanilla,
 };
 use bedrock_addon_core::id::{Id, UiCompositionId, UiRootId, kind};
 use bedrock_addon_core::json::{
@@ -664,7 +664,7 @@ impl Content for UiStyle {
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         let payload = style::payload(self)?;
         write_json(
-            &write_envelope::<StyleFamily>(BETA_VERSION, payload, &Extra::default()),
+            &write_envelope::<StyleFamily>(BETA_VERSION, payload, &UnknownMembers::default()),
             out,
             style,
         )
@@ -942,7 +942,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.21.130..=1.21.130 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.21.130..=1.21.130 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }
@@ -958,7 +958,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.21.130..=1.21.130 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                1.21.130..=1.21.130 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }
@@ -974,7 +974,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: UseFormatVersion
                 empty document: Error
-                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/fatal/Refuse
+                beta: json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

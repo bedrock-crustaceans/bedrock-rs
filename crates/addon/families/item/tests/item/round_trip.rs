@@ -67,13 +67,13 @@ fn an_older_documents_unknown_members_are_written_at_their_level() {
         "components": {"minecraft:tags": {"tags": ["demo:shiny"], "note": "kept"}, "minecraft:icon": "x"},
         "events": {"demo:e": {"run_command": {"command": ["say hi"]}}}}}"#;
     let first = loads(older, &third_party());
-    let held = newest_payload(first.value());
+    let held = newest_payload(&first);
     for member in ["\"mystery\"", "\"note\"", "\"events\""] {
         assert!(held.contains(member), "{member}: {held}");
     }
     // the newest writer refuses the first of them; the as-written writer keeps them all
     assert!(refused_at(
-        &first.value().to_json(),
+        &first.to_json(),
         "minecraft:item/description/mystery"
     ));
     let as_read = written_as_read(older, &third_party());
@@ -203,7 +203,7 @@ fn a_document_is_written_as_written_through_history() {
     )
     .unwrap();
     assert_eq!(document.value().parsed_version().to_string(), "1.20.40");
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     assert!(written.contains("\"1.20.40\""), "{written}");
     assert!(written.contains("minecraft:use_duration"), "{written}");
     let upgraded =
@@ -353,7 +353,7 @@ fn described(version: &str, description_members: &str) -> String {
 
 /// The `description` object the writer gives for `json`, as compact JSON text.
 fn written_description(json: &str) -> String {
-    let written = loads(json, &third_party()).value().to_json().unwrap();
+    let written = loads(json, &third_party()).to_json().unwrap();
     let value: bedrock_addon_core::json::Value =
         bedrock_addon_core::json::from_str(&written).unwrap();
     let description = &value.as_object().unwrap()["minecraft:item"]
@@ -456,7 +456,7 @@ fn the_presence_record_tells_a_written_none_from_an_absent_category() {
             assert_eq!(description.menu_category.category, Some(category), "{json}");
             assert_eq!(description.category_is_written(), written, "{json}");
             // The written text reads back to the same description, presence included.
-            let written_text = loads(&json, &third_party()).value().to_json().unwrap();
+            let written_text = loads(&json, &third_party()).to_json().unwrap();
             assert_eq!(description_of(&written_text), description, "{written_text}");
         }
     }
@@ -488,7 +488,7 @@ fn an_upgraded_documents_category_is_stated_and_written() {
             "{version}"
         );
         assert!(description.category_is_written(), "{version}");
-        let written_text = loads(&json, &third_party()).value().to_json().unwrap();
+        let written_text = loads(&json, &third_party()).to_json().unwrap();
         let again = description_of(&written_text);
         assert_eq!(
             again.menu_category.category,
@@ -570,7 +570,7 @@ fn an_unknown_side_car_member_beside_the_held_one_is_refused_not_dropped() {
         ),
         &allowlisted(),
     );
-    let mut held = document.into_value();
+    let mut held = document;
     assert!(!held.deprecated.is_empty(), "the legacy trigger is held");
     // the 1.26.50 format binds no side-car and the 1.26.0 root binds it as a
     // deprecated name the game refuses: no text reads back as the item, and the
@@ -581,8 +581,10 @@ fn an_unknown_side_car_member_beside_the_held_one_is_refused_not_dropped() {
         }
         other => panic!("{other:?}"),
     }
-    held.extra.insert(
-        "__deprecated_components".to_owned(),
+    let item_at = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:item"]);
+    held.unknown_mut().put(
+        &item_at,
+        "__deprecated_components",
         bedrock_addon_core::json::from_str(r#"{"zz": 1}"#).unwrap(),
     );
     match held.to_json() {
@@ -592,10 +594,15 @@ fn an_unknown_side_car_member_beside_the_held_one_is_refused_not_dropped() {
         other => panic!("{other:?}"),
     }
     // Alone, the unknown member is also refused: the strict 1.26.50 format does not bind it.
-    let mut alone = Item::new(ItemId::parse("demo:x"));
-    alone.components.insert(MaxStackSize::new(16));
-    alone.extra.insert(
-        "__deprecated_components".to_owned(),
+    let mut alone = held.map(|_| {
+        let mut alone = Item::new(ItemId::parse("demo:x"));
+        alone.components.insert(MaxStackSize::new(16));
+        alone
+    });
+    *alone.unknown_mut() = bedrock_addon_core::document::Unknown::new();
+    alone.unknown_mut().put(
+        &item_at,
+        "__deprecated_components",
         bedrock_addon_core::json::from_str(r#"{"zz": 1}"#).unwrap(),
     );
     assert!(refused_at(
@@ -1226,9 +1233,8 @@ fn every_member_of_the_legacy_reading_is_written_or_told() {
                 // it.
                 let document = loads(&legacy_probe(version, &description, &components), &cx);
                 let written = document
-                    .value()
                     .to_json()
-                    .unwrap_or_else(|_| newest_payload(document.value()));
+                    .unwrap_or_else(|_| newest_payload(&document));
                 let line = written.split_whitespace().collect::<Vec<_>>().join(" ");
                 assert!(line.contains(text), "{field} at {version}: {line}");
             }
@@ -1274,7 +1280,7 @@ fn legacy_probe(version: &str, description: &str, components: &str) -> String {
 fn an_upgraded_item_with_events_is_written_at_1_26_0() {
     let older = r#"{"format_version": "1.20.50", "minecraft:item": {"description": {"identifier": "demo:old", "mystery": 1}, "components": {"minecraft:max_stack_size": 16, "minecraft:food": {"nutrition": 1, "on_consume": {"event": "demo:e"}}}, "events": {"demo:e": {"run_command": {"command": ["say hi"]}}}}}"#;
     let first = loads(older, &allowlisted());
-    let written = first.value().to_json().expect("written at 1.26.0");
+    let written = first.to_json().expect("written at 1.26.0");
     assert!(
         written.contains("\"format_version\": \"1.26.0\""),
         "{written}"
@@ -1346,12 +1352,63 @@ fn loader_perf_tests_1_the_perf_item_is_refused_for_its_group_as_in_the_game() {
         "{:#?}",
         document.diagnostics()
     );
-    let written = document.value().to_json().unwrap();
+    let written = document.to_json().unwrap();
     let again = loads(&written, &third_party());
     assert!(
         above_info(again.diagnostics()).is_empty(),
         "{:#?}",
         again.diagnostics()
     );
-    assert_eq!(again.value().to_json().unwrap(), written);
+    assert_eq!(again.to_json().unwrap(), written);
+}
+
+#[test]
+fn upgrade_keeps_the_unknown_members_a_parse_keeps() {
+    for version in ["1.10.0", "1.20.40"] {
+        let old = format!(
+            r#"{{"format_version": "{version}", "minecraft:item": {{
+                "description": {{"identifier": "demo:old", "zz_description": 1}},
+                "components": {{"minecraft:max_stack_size": 1}},
+                "zz_payload": 2
+            }}}}"#
+        );
+        let path = PackPath::from_static("items/x.json");
+        let parsed = loads(&old, &third_party());
+        assert!(
+            !parsed.unknown().is_empty(),
+            "{version}: the parse keeps a member"
+        );
+        let document = Item::parse_as_written(&path, old.as_bytes(), &third_party()).unwrap();
+        let upgraded =
+            bedrock_addon_family_item::history::Any::upgrade(document, &third_party()).unwrap();
+        assert_eq!(*upgraded.value(), *parsed.value(), "{version}");
+        assert_eq!(upgraded.unknown(), parsed.unknown(), "{version}");
+    }
+}
+
+/// A document the gates refuse (below the item formats' release, no legacy creator features)
+/// after its description kept an unknown member is rejected with the findings of the read:
+/// the members go with the rejection, and handing the findings on does not drop them.
+#[test]
+fn a_document_refused_by_the_gates_after_a_kept_member_is_rejected() {
+    let text = r#"{"format_version": "1.16.100", "minecraft:item": {
+        "description": {"identifier": "demo:old", "zz_description": 1},
+        "components": {"minecraft:max_stack_size": 1}
+    }}"#;
+    let outcome = Item::parse(
+        &PackPath::from_static("items/x.json"),
+        text.as_bytes(),
+        &bedrock_addon_core::load::LoadContext::detached(),
+    );
+    let Err(rejected) = outcome else {
+        panic!("the gates refuse the item in a detached context");
+    };
+    assert!(
+        rejected
+            .diagnostics
+            .iter()
+            .any(|d| matches!(d.code, DiagnosticCode::MissingToggles { .. })),
+        "{:?}",
+        rejected.diagnostics
+    );
 }

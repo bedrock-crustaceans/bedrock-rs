@@ -32,9 +32,12 @@ pub fn actor_identifiers(registry: &Registry<Entity>) -> Value {
             next_custom += 1;
             next_custom - 1
         };
-        let experimental = description
-            .extra
-            .get("is_experimental")
+        // Held as an unknown member of the description, which the document keeps.
+        let description_at =
+            bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity", "description"]);
+        let experimental = document
+            .unknown()
+            .get(&description_at, "is_experimental")
             .and_then(bedrock_addon_core::json::Value::as_bool)
             .unwrap_or(false);
         let byte = |b: bool| Value::Byte(i8::from(b));

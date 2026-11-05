@@ -4,7 +4,7 @@ use bedrock_addon_core::shared::EventTrigger;
 use facet_value::VObject;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 use super::component::Digger;
@@ -42,7 +42,7 @@ pub struct ItemDeprecatedData {
     /// `custom_components_v1`, a key of the crate's own), as written.
     pub custom_components_v1: Option<Value>,
     /// Other members.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// The trigger slots: JSON key, inner key, field.
@@ -123,12 +123,15 @@ impl ItemDeprecatedData {
                     let text = bedrock_addon_support::signed_zero::text_for::<Digger>(member)
                         .unwrap_or_default();
                     match bedrock_addon_core::json::from_str_jsonc::<Digger>(&text) {
-                        Ok(mut digger) => {
-                            // An unknown member is kept with the struct it is in and told
-                            // where it is, as in a component.
-                            for (path, _) in
-                                bedrock_addon_core::json::keep_unknown_members(&mut digger, member)
-                            {
+                        Ok(digger) => {
+                            // An unknown member is kept where it is (the document's table)
+                            // and told there, as in a component.
+                            let mut kept = bedrock_addon_core::document::Unknown::new();
+                            let found = bedrock_addon_core::json::keep_unknown_members(
+                                &digger, member, &mut kept,
+                            );
+                            d.unknown_mut().absorb(&at.child(key), kept);
+                            for (path, _) in found {
                                 let mut full = at.clone();
                                 full.push(key);
                                 full.append(&path);

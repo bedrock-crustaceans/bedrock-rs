@@ -18,10 +18,7 @@ fn load<T: Content>(path: &'static str, text: &str) -> (String, Vec<(String, Str
     let cx = LoadContext::detached();
     let document = T::parse(&PackPath::from_static(path), text.as_bytes(), &cx)
         .unwrap_or_else(|rejected| panic!("the file loads: {:#?}", rejected.diagnostics));
-    let written = document
-        .value()
-        .to_json()
-        .expect("a loaded file is written");
+    let written = document.to_json().expect("a loaded file is written");
     let found = document
         .diagnostics()
         .iter()

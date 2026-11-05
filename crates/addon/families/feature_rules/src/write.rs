@@ -24,9 +24,7 @@ impl VersionStruct for FeatureRule {
         if let Some(params) = &self.distribution {
             object.insert("distribution", params.write()?);
         }
-        for (key, value) in self.extra.iter() {
-            object.insert(key, value.clone());
-        }
+        // The unknown members are the document's, written from its table.
         Ok(object.into())
     }
 }

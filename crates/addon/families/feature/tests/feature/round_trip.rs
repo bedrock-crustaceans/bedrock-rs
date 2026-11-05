@@ -12,10 +12,10 @@ use super::common::{base_game, cx, doc, engine, fixture, loads};
 #[track_caller]
 fn round_trip(json: &str, cx: &bedrock_addon_core::load::LoadContext) -> String {
     let first = loads(json, cx);
-    let written = first.value().to_json().unwrap();
+    let written = first.to_json().unwrap();
     let second = loads(&written, cx);
     assert_eq!(first.value(), second.value(), "{written}");
-    assert_eq!(second.value().to_json().unwrap(), written);
+    assert_eq!(second.to_json().unwrap(), written);
     written
 }
 
@@ -190,7 +190,6 @@ fn absent_members_are_not_written() {
 #[test]
 fn an_older_document_is_written_at_its_types_newest_format() {
     let written = loads(&fixture("f01_scatter_1_13_0_to_distribution.json"), &cx())
-        .value()
         .to_json()
         .unwrap();
     assert!(
@@ -209,7 +208,7 @@ fn the_history_path_writes_as_read_and_upgrades_to_the_same_feature() {
         as_written.value(),
         history::Any::ScatterV1_13_0(_)
     ));
-    let text = as_written.value().to_json().unwrap();
+    let text = as_written.to_json().unwrap();
     assert!(text.contains(r#""format_version": "1.13.0""#));
     let again = Feature::parse_as_written(&path, text.as_bytes(), &cx()).unwrap();
     assert_eq!(as_written.value(), again.value());

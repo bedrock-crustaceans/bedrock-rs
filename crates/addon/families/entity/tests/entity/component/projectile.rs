@@ -9,7 +9,7 @@ use bedrock_addon_family_entity::component::{
     ShouldBounce,
 };
 
-use super::{fixture, has, json, lenient, read_as, round_trip, strict, write};
+use super::{fixture, has, json, lenient, read_as, round_trip, strict, write, write_with};
 
 #[test]
 fn the_vanilla_1_26_50_arrow_round_trips() {
@@ -185,7 +185,14 @@ fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
     let (old, d) = lenient::<Projectile>(&text);
     assert!(d.is_empty(), "{d:?}");
     assert!(old.reflect_on_hurt.0);
-    assert!(old.extra.get("reflectOnHurt").is_none());
+    assert!(
+        d.unknown()
+            .get(
+                &bedrock_addon_core::diagnostic::JsonPath::new(),
+                "reflectOnHurt"
+            )
+            .is_none()
+    );
     let (new, d) = strict::<Projectile>(&text);
     assert!(!new.reflect_on_hurt.0);
     assert!(has(
@@ -486,7 +493,7 @@ fn owner_launch_immunity_ticks_is_no_member() {
             ),
             "{mode:?}: {d:?}"
         );
-        let written = write(&value.expect("kept"));
+        let written = write_with(&value.expect("kept"), d.unknown());
         assert_eq!(
             written
                 .as_object()

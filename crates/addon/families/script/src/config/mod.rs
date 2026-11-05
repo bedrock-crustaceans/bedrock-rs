@@ -33,7 +33,7 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 
@@ -269,7 +269,7 @@ pub struct PackPermissions {
     /// What `@minecraft/server-net` may reach, from its `module_permissions` entry.
     pub server_net: ServerNet,
     /// Unknown members, kept for writing. The server ignores them.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 impl PackPermissions {
@@ -389,5 +389,5 @@ pub struct CommandsConfig {
     /// Command name → level (JSON `permission_levels`), in the file's order.
     pub permission_levels: IndexMap<String, CommandPermissionLevel>,
     /// Unknown members, kept for writing. The server accepts them silently.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }

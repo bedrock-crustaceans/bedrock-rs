@@ -920,22 +920,23 @@ mod tests {
     }
 
     fn told_as_the_typed_walk<T: for<'f> Facet<'f> + std::fmt::Debug>(text: &str) {
-        let Ok(mut read) = from_str::<T>(text) else {
+        let Ok(read) = from_str::<T>(text) else {
             panic!("facet refuses {text}");
         };
         let json: Value = from_str(text).unwrap();
-        let typed: Vec<(String, Verdict)> = keep_members(&mut read, &json)
-            .1
-            .into_iter()
-            .map(|misread| {
-                let verdict = match misread.kind {
-                    Misreading::WrongType => Verdict::Converted,
-                    Misreading::BeyondFloat => Verdict::BeyondFloat,
-                    other => panic!("the misread walk tells no {other:?}"),
-                };
-                (misread.path.to_string(), verdict)
-            })
-            .collect();
+        let typed: Vec<(String, Verdict)> =
+            keep_members(&read, &json, &mut crate::document::Unknown::new())
+                .1
+                .into_iter()
+                .map(|misread| {
+                    let verdict = match misread.kind {
+                        Misreading::WrongType => Verdict::Converted,
+                        Misreading::BeyondFloat => Verdict::BeyondFloat,
+                        other => panic!("the misread walk tells no {other:?}"),
+                    };
+                    (misread.path.to_string(), verdict)
+                })
+                .collect();
         let prepass: Vec<(String, Verdict)> = calls::<T>(text, ScalarRules::PLAIN)
             .into_iter()
             .map(|(path, verdict, _)| (path, verdict))

@@ -4,7 +4,7 @@
 use facet_value::VObject;
 
 use super::{BETA_VERSION, EnvelopeCheck, Family};
-use crate::document::Extra;
+use crate::document::UnknownMembers;
 use crate::json::Value;
 use crate::version::FormatVersion;
 
@@ -33,7 +33,11 @@ use crate::version::FormatVersion;
 /// (`format_version` is a passthrough member), `blocks_json` (the version among the block keys),
 /// persona (an optional envelope) and `sound_definitions` (its upgrade steps edit the document in
 /// place).
-pub fn write_envelope<F: Family>(version: FormatVersion, payload: Value, extras: &Extra) -> Value {
+pub fn write_envelope<F: Family>(
+    version: FormatVersion,
+    payload: Value,
+    extras: &UnknownMembers,
+) -> Value {
     if raw_text::<F>(version) {
         return payload;
     }

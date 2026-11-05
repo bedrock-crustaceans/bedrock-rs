@@ -11,7 +11,7 @@ use super::value::{Description, Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::{JsonSlice, ScalarShape, Value, parse_at};
 use bedrock_addon_core::version::FormatVersion;
@@ -234,7 +234,7 @@ impl<'a> Members<'a> {
         self,
         later: &[(&'static str, FormatVersion)],
         d: &mut Diagnostics,
-    ) -> Extra {
+    ) -> UnknownMembers {
         self.finish_with(later, &[], d)
     }
 
@@ -246,7 +246,7 @@ impl<'a> Members<'a> {
         later: &[(&'static str, FormatVersion)],
         gone: &[(&'static str, FormatVersion)],
         d: &mut Diagnostics,
-    ) -> Extra {
+    ) -> UnknownMembers {
         let hint = |template: &'static str, known: &[(&'static str, FormatVersion)], key: &str| {
             known
                 .iter()
@@ -256,7 +256,7 @@ impl<'a> Members<'a> {
                     args: vec![(*name).to_owned(), version.to_string()],
                 })
         };
-        let mut extra = Extra::default();
+        let mut extra = UnknownMembers::default();
         for (key, node) in self.rest() {
             let text = hint("{} needs format_version {}", later, &key)
                 .or_else(|| hint("{} is no longer used (format_version {})", gone, &key));

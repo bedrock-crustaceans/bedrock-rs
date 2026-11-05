@@ -32,7 +32,7 @@ use bedrock_addon_core::pack_identity::PackRef;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
 #[doc(hidden)]
@@ -144,7 +144,7 @@ pub struct UiDefsList {
     /// The other members of the file; the game reads none. Also `ui_defs` as the file wrote
     /// it, when the typed list cannot say it (no array, an element that is no string, an
     /// empty array): it is written back while the typed list still is its reading.
-    pub extra: Extra,
+    pub extra: UnknownMembers,
 }
 
 /// What the merge reported against one pack.
