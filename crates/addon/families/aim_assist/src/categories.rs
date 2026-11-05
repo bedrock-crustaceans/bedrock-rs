@@ -68,3 +68,11 @@ impl Priorities {
         self.block_default.map_or(DEFAULT_PRIORITY, |value| value.0)
     }
 }
+
+impl AimAssistCategory {
+    /// A category named `name` with `priorities`.
+    #[must_use]
+    pub fn new(name: AimAssistCategoryId, priorities: Priorities) -> Self {
+        Self { name, priorities }
+    }
+}

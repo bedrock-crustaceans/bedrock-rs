@@ -2,8 +2,8 @@
 //! shape check, then the bind constraints vanilla's cereal parse checks.
 
 use super::history::v1_19_50;
-use super::load::{V1_19_50, V1_26_50};
 use super::{CameraPreset, texts};
+use super::{V1_19_50, V1_26_50};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictFloat, Value};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -238,6 +238,8 @@ impl VersionStruct for v1_19_50::CameraPreset {
     /// The whole document, at the version it was read at: the struct covers a range of
     /// versions, so writing a fixed one would change the `format_version` of a document that
     /// is read and written without an upgrade.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
             &self
@@ -274,6 +276,8 @@ impl VersionStruct for CameraPreset {
     /// legacy slice reads it back and the step sets the flag again. With a `starting_rot` the
     /// flag decides nothing at the client, which tests the two together, and the 1.26.50 form
     /// is written.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         let version = if self.apply_inherited_starting_rotation && self.starting_rot.is_none() {
             V1_19_50

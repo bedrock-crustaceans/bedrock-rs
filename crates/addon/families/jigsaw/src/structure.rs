@@ -1,8 +1,11 @@
 //! `minecraft:jigsaw`: a jigsaw structure.
 
+use super::validate::validate_detached;
+use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{JigsawStructureId, TemplatePoolId};
 use bedrock_addon_core::json::{StrictInt, StrictString};
+use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::shared::Filter;
 
 /// A jigsaw structure: a group of structure templates placed together during world generation,
@@ -317,4 +320,119 @@ pub struct Weighted<T> {
     /// Unknown members.
     #[facet(skip, rename = "\u{0}extra")]
     pub extra: Extra,
+}
+
+/// The default horizontal distance from the start (`max_distance_from_center`).
+const DEFAULT_HORIZONTAL: i32 = 80;
+
+impl JigsawStructure {
+    /// A structure with the required members and every other member left out (its default).
+    pub fn new(
+        identifier: JigsawStructureId,
+        step: GenerationStep,
+        start_pool: TemplatePoolId,
+        max_depth: u8,
+        start_height: HeightProvider,
+    ) -> JigsawStructure {
+        JigsawStructure {
+            description: StructureDescription {
+                identifier,
+                extra: Extra::default(),
+            },
+            biome_filters: None,
+            step,
+            terrain_adaptation: None,
+            start_pool,
+            start_jigsaw_name: None,
+            on_placed: None,
+            max_depth: StrictInt(max_depth),
+            start_height,
+            heightmap_projection: None,
+            dimension_padding: None,
+            max_distance_from_center: None,
+            pool_aliases: None,
+            liquid_settings: None,
+            extra: Extra::default(),
+        }
+    }
+
+    /// The biome filter; absent is the empty group, which admits every biome.
+    pub fn biome_filters(&self) -> Filter {
+        self.biome_filters.clone().unwrap_or_default()
+    }
+
+    /// The terrain adaptation; `none` when absent.
+    pub fn terrain_adaptation(&self) -> TerrainAdaptation {
+        self.terrain_adaptation.unwrap_or_default()
+    }
+
+    /// The start jigsaw name; `""` when absent.
+    pub fn start_jigsaw_name(&self) -> &str {
+        self.start_jigsaw_name
+            .as_ref()
+            .map_or("", |name| name.0.as_str())
+    }
+
+    /// The `on_placed` callback name; `""` when absent (an empty name, never
+    /// `minecraft:no_op`, which is a callback the game registers, not a default).
+    pub fn on_placed(&self) -> &str {
+        self.on_placed.as_ref().map_or("", |name| name.0.as_str())
+    }
+
+    /// The heightmap projection; `none` when absent.
+    pub fn heightmap_projection(&self) -> HeightmapProjection {
+        self.heightmap_projection.unwrap_or_default()
+    }
+
+    /// The padding at the top and the bottom of the world, `(top, bottom)`; `(0, 0)` when
+    /// absent.
+    pub fn dimension_padding(&self) -> (u32, u32) {
+        match &self.dimension_padding {
+            None => (0, 0),
+            Some(DimensionPadding::Both(n)) => (*n, *n),
+            Some(DimensionPadding::Range { top, bottom, .. }) => {
+                (top.map_or(0, |n| n.0), bottom.map_or(0, |n| n.0))
+            }
+        }
+    }
+
+    /// The maximum distance from the start, `(horizontal, vertical)`; `(80, i32::MAX)` when
+    /// absent, `vertical` `i32::MAX` (no limit) when not written.
+    pub fn max_distance_from_center(&self) -> (i32, i32) {
+        match &self.max_distance_from_center {
+            None => (DEFAULT_HORIZONTAL, i32::MAX),
+            Some(MaxDistanceFromCenter::Horizontal(h)) => (*h, i32::MAX),
+            Some(MaxDistanceFromCenter::Object {
+                horizontal,
+                vertical,
+                ..
+            }) => (horizontal.0, vertical.map_or(i32::MAX, |v| v.0)),
+        }
+    }
+
+    /// The pool aliases; none when absent.
+    pub fn pool_aliases(&self) -> &[PoolAlias] {
+        self.pool_aliases.as_deref().unwrap_or_default()
+    }
+
+    /// The liquid settings; `apply_waterlogging` when absent.
+    pub fn liquid_settings(&self) -> LiquidSettings {
+        self.liquid_settings.unwrap_or_default()
+    }
+
+    /// Runs the family's parse constraints and registration checks as if the structure were
+    /// loaded from a behaviour pack with `cx`. The structure is not changed.
+    pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
+        validate_detached(self, cx)
+    }
+}
+
+impl StructureDescription {
+    /// A description with this identifier.
+    pub fn new(identifier: JigsawStructureId) -> StructureDescription {
+        StructureDescription {
+            identifier,
+            extra: Extra::default(),
+        }
+    }
 }

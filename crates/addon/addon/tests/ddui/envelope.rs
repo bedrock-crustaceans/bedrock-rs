@@ -291,11 +291,12 @@ fn a_root_member_written_twice_counts_once_and_the_last_stands() {
 
 #[test]
 fn parse_as_written_gives_the_one_struct() {
-    use bedrock_addon::families::ddui::history::RootAny;
+    use bedrock_addon::document::JsonDocument;
+    use bedrock_addon::versioning::Single;
     let path = PackPath::from_static("ddui/root/test.json");
     let cx = cx(E20, false);
     let written = UiRoot::parse_as_written(&path, r().as_bytes(), &cx).expect("parses");
-    let RootAny::V1_21_130(value) = written.value();
+    let Single(value) = written.value();
     assert_eq!(value, loads(root(&r())).value());
     let rejected = UiRoot::parse_as_written(&path, versioned(r#""1.26.20""#).as_bytes(), &cx)
         .expect_err("no parser");

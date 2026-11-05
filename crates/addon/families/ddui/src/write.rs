@@ -4,7 +4,7 @@
 
 use facet_value::{VArray, VObject};
 
-use super::{Binding, Catalogue, ChildSet, Control, FORMAT_VERSION, Layout, UiComposition, UiRoot};
+use super::{Binding, Catalogue, ChildSet, Control, Layout, UiComposition, UiRoot};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::id::syntax::has_namespace;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
@@ -204,14 +204,6 @@ fn payload(identifier: &str, attribs: Value, layout: &Layout) -> Value {
     Value::from(object)
 }
 
-/// The envelope around `payload`.
-fn document(key: &str, payload: Value) -> Value {
-    let mut root = VObject::new();
-    root.insert("format_version", Value::from(FORMAT_VERSION.to_string()));
-    root.insert(key, payload);
-    Value::from(root)
-}
-
 /// The payload of a root.
 pub(crate) fn root_payload(root: &UiRoot) -> Result<Value, EncodeError> {
     let identifier = root.description.identifier.as_str();
@@ -225,11 +217,6 @@ pub(crate) fn root_payload(root: &UiRoot) -> Result<Value, EncodeError> {
     check_tree(ROOT_KEY, &root.layout, ChildSet::RootControl)?;
     let attribs = single("root_point", Value::from(root.attribs.root_point.as_str()));
     Ok(payload(identifier, attribs, &root.layout))
-}
-
-/// The whole document of a root.
-pub(crate) fn root_document(root: &UiRoot) -> Result<Value, EncodeError> {
-    Ok(document(ROOT_KEY, root_payload(root)?))
 }
 
 /// The payload of a composition.
@@ -251,9 +238,4 @@ pub(crate) fn composition_payload(composition: &UiComposition) -> Result<Value, 
         Value::from(attribs),
         &composition.layout,
     ))
-}
-
-/// The whole document of a composition.
-pub(crate) fn composition_document(composition: &UiComposition) -> Result<Value, EncodeError> {
-    Ok(document(COMPOSITION_KEY, composition_payload(composition)?))
 }

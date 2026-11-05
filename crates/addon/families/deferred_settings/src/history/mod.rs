@@ -13,7 +13,8 @@
 //! Cubemaps (1.21.130), shadows (1.21.80), PBR fallback (1.21.40) and local lights (1.21.120)
 //! have one struct each.
 
-/// Declares a payload's hidden chain family, its `Any` enum and its `upgrade`.
+/// Declares a payload's hidden chain family, its `Any` (the `version_chain!` enum, or `Single`
+/// for a payload of one struct) and its `upgrade`.
 macro_rules! chain {
     (
         latest = $latest:ty;
@@ -51,6 +52,36 @@ macro_rules! chain {
             $crate::file::upgrade::<Family>(document, cx)
         }
     };
+    (
+        latest = $latest:ty;
+        $(#[$meta:meta])*
+        single;
+    ) => {
+        /// The payload's family of the version-chain machinery (hidden: only the loaders name
+        /// it).
+        #[doc(hidden)]
+        #[derive(Clone, Copy, Debug)]
+        pub struct Family;
+
+        $(#[$meta])*
+        pub type Any = ::bedrock_addon_core::versioning::Single<Family>;
+
+        ::bedrock_addon_core::impl_no_molang!($latest);
+
+        /// Runs the checks of a document `parse_as_written` gave: the same result `parse` gives
+        /// for its file (one struct, so no upgrade step).
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the checks find an
+        /// error that stops the document from loading.
+        pub fn upgrade(
+            document: ::bedrock_addon_core::document::Document<Any>,
+            cx: &::bedrock_addon_core::load::LoadContext,
+        ) -> Result<::bedrock_addon_core::document::Document<$latest>, ::bedrock_addon_core::document::Rejected> {
+            $crate::file::upgrade::<Family>(document, cx)
+        }
+    };
 }
 
 pub mod atmosphere;
@@ -62,11 +93,8 @@ pub mod water;
 pub mod cubemap {
     chain! {
         latest = crate::CubemapSettings;
-        /// A cubemap-settings file parsed by the struct its `format_version` selects.
-        enum Any {
-            /// Format 1.21.130: the only struct.
-            V1_21_130(crate::CubemapSettings),
-        }
+        /// A cubemap-settings file as parsed: the one struct, at 1.21.130.
+        single;
     }
 }
 
@@ -74,11 +102,8 @@ pub mod cubemap {
 pub mod shadows {
     chain! {
         latest = crate::ShadowSettings;
-        /// A shadow-settings file parsed by the struct its `format_version` selects.
-        enum Any {
-            /// Format 1.21.80: the only struct.
-            V1_21_80(crate::ShadowSettings),
-        }
+        /// A shadow-settings file as parsed: the one struct, at 1.21.80.
+        single;
     }
 }
 
@@ -86,11 +111,8 @@ pub mod shadows {
 pub mod pbr_fallback {
     chain! {
         latest = crate::PbrFallbackSettings;
-        /// A PBR-fallback file parsed by the struct its `format_version` selects.
-        enum Any {
-            /// Format 1.21.40: the only struct.
-            V1_21_40(crate::PbrFallbackSettings),
-        }
+        /// A PBR-fallback file as parsed: the one struct, at 1.21.40.
+        single;
     }
 }
 
@@ -98,10 +120,7 @@ pub mod pbr_fallback {
 pub mod local_lighting {
     chain! {
         latest = crate::LocalLightSettings;
-        /// A local-light file parsed by the struct its `format_version` selects.
-        enum Any {
-            /// Format 1.21.120: the only struct.
-            V1_21_120(crate::LocalLightSettings),
-        }
+        /// A local-light file as parsed: the one struct, at 1.21.120.
+        single;
     }
 }

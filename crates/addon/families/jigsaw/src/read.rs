@@ -8,22 +8,28 @@ use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::history::v1_21_50;
+use super::history::{MetadataAny, MetadataFamily, v1_21_50};
 use super::{
     BlockEntityModifier, BlockPredicate, CappedDelegate, IntProvider, IntProviderType,
-    JigsawStructure, MaxDistanceFromCenter, MetadataRegistry, PoolElement, PositionPredicate,
-    Processor, ProcessorList, ProcessorRule, StructureSet, TemplatePool,
+    JigsawMetadata, JigsawStructure, MaxDistanceFromCenter, MetadataRegistry, PoolElement,
+    PositionPredicate, Processor, ProcessorList, ProcessorRule, StructureSet, TemplatePool,
+    V1_21_50,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+};
+use bedrock_addon_core::document::{Document, Extra, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, NullRule, StrictFloat, Value, keep_unknown_members, parse_at,
     reject_nulls,
 };
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
     ParseCx, VersionStruct, Versioned, parse_payload, write_payload,
 };
+use bedrock_addon_core::versioning::{Selection, select};
 
 /// The version of the four JSON documents' only struct.
 pub(crate) const V1_21_20: FormatVersion = FormatVersion::new(1, 21, 20);
@@ -441,4 +447,96 @@ impl VersionStruct for v1_21_50::MetadataRegistry {
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
     }
+}
+
+// ---- one metadata file ---------------------------------------------------------------------
+
+/// The leading string of a metadata file and the bytes after it: an unsigned LEB128 length,
+/// then that many bytes of UTF-8. `None` when the stream
+/// ends early or the bytes are not UTF-8.
+fn leading_string(bytes: &[u8]) -> Option<(&str, &[u8])> {
+    let mut length: u64 = 0;
+    let mut shift = 0;
+    let mut at = 0;
+    loop {
+        let byte = *bytes.get(at)?;
+        at += 1;
+        length |= u64::from(byte & 0x7f).checked_shl(shift)?;
+        if byte & 0x80 == 0 {
+            break;
+        }
+        shift += 7;
+        if shift >= 35 {
+            return None;
+        }
+    }
+    let end = at.checked_add(usize::try_from(length).ok()?)?;
+    let text = std::str::from_utf8(bytes.get(at..end)?).ok()?;
+    Some((text, bytes.get(end..)?))
+}
+
+/// Loads one `worldgen/metadata/*.dat` file: the leading version string checked as vanilla
+/// checks it, the body kept undecoded with a `SkippedCacheDocument` information (the crate's
+/// own).
+pub(crate) fn parse_metadata(
+    pack: PackRef,
+    side: PackSide,
+    path: &PackPath,
+    bytes: &[u8],
+) -> Result<Document<JigsawMetadata>, Rejected> {
+    let origin = Origin::file(pack, side, path.clone());
+    let mut diagnostics = Diagnostics::default();
+    let reject = |mut diagnostics: Diagnostics, finding: Diagnostic| {
+        diagnostics.push(finding);
+        Err(Rejected::located(origin.clone(), diagnostics))
+    };
+    let Some((written, body)) = leading_string(bytes) else {
+        return reject(diagnostics, bad_leading_string(path));
+    };
+    // An empty string is not parsed as a version, so the game ends up with no version at all.
+    if written.is_empty() {
+        return reject(
+            diagnostics,
+            Diagnostic::error(DiagnosticCode::MissingFormatVersion {
+                text: Some(VanillaText::NoValidVersion),
+            }),
+        );
+    }
+    let Some(input) = FormatVersionInput::parse(written) else {
+        return reject(diagnostics, bad_leading_string(path));
+    };
+    let Selection::Struct(index) = select::<MetadataFamily>(&input) else {
+        return reject(
+            diagnostics,
+            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion {
+                    version: written.to_owned(),
+                }),
+            }),
+        );
+    };
+    let effective = input.version.unwrap_or(V1_21_50);
+    let parsed_as =
+        <MetadataAny as bedrock_addon_core::versioning::VersionChain<MetadataFamily>>::VERSIONS
+            .get(index)
+            .copied()
+            .unwrap_or(effective);
+    diagnostics.push(Diagnostic::info(DiagnosticCode::SkippedCacheDocument));
+    diagnostics.locate(&origin);
+    let value = JigsawMetadata {
+        format_version: written.to_owned(),
+        body: body.to_vec(),
+    };
+    let version = VersionInfo::new(input.version, false, effective, parsed_as, false);
+    Ok(Document::new(value, origin, version, diagnostics))
+}
+
+/// "Failed to parse format version string of file %s; it will be skipped."
+fn bad_leading_string(path: &PackPath) -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::MalformedFormatVersion {
+        text: Some(VanillaText::Formatted {
+            template: "Failed to parse format version string of file {}; it will be skipped.",
+            args: vec![path.as_str().to_owned()],
+        }),
+    })
 }

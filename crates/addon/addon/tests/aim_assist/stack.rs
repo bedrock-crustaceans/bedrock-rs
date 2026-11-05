@@ -298,3 +298,36 @@ fn a_camera_presets_aim_assist_preset_resolves_against_the_aim_assist_presets() 
     assert_eq!(told, [": aim assist preset 'test:no_such_preset'"], "{d:?}");
     assert!(unresolved(&d).is_empty(), "{d:?}");
 }
+
+/// What the link pass reads of an upgraded preset's places (`Diagnostics::place_of`): the step
+/// that copies a 1.21.50 `exclusion_list` into both lists of `exclusion_settings` records no
+/// move, so an entry is placed where the document holds it, and the link pass names the old
+/// list itself (`told_as_the_file_has_it`). The findings of the file stay in it.
+#[test]
+fn an_upgraded_preset_places_each_member_where_the_document_holds_it() {
+    use bedrock_addon::diagnostic::JsonPath;
+    let stack = stack(&[&[(
+        "aim_assist/presets/p.json",
+        preset_json(
+            "1.21.50",
+            r#""identifier": "test:p", "exclusion_list": ["minecraft:stone", "test:nothing"]"#,
+        ),
+    )]]);
+    let group = stack.aim_assist();
+    let document = group
+        .presets
+        .get(&preset_id("test:p"))
+        .expect("the preset loads");
+    for list in ["blocks", "entities"] {
+        let mut at = JsonPath::of_keys(["minecraft:aim_assist_preset", "exclusion_settings", list]);
+        at.push_index(1);
+        assert_eq!(document.diagnostics().place_of(&at), at, "{list}");
+    }
+    for finding in document.diagnostics() {
+        assert_eq!(
+            finding.location.path.as_ref(),
+            Some(&document.origin().path),
+            "{finding:?}"
+        );
+    }
+}

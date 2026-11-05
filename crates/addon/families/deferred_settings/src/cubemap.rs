@@ -2,7 +2,7 @@
 
 use super::value::{Description, Keyframe, Keyframes};
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::id::kind;
+use bedrock_addon_core::id::{CubemapSettingsId, kind};
 
 /// The lighting of a cubemap (`minecraft:cubemap_settings`, in `cubemaps/`), at its only
 /// format version (1.21.130).
@@ -155,6 +155,17 @@ mod codec {
             object.opt("description", self.description.as_ref(), write::description)?;
             object.opt("lighting", self.lighting.as_ref(), write_lighting)?;
             object.finish(&self.extra, &["description", "lighting"])
+        }
+    }
+}
+
+impl CubemapSettings {
+    /// Cubemap settings named `identifier` that set nothing.
+    #[must_use]
+    pub fn new(identifier: CubemapSettingsId) -> Self {
+        Self {
+            description: Some(Description::new(identifier)),
+            ..Self::default()
         }
     }
 }

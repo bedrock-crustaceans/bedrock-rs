@@ -1,7 +1,7 @@
 //! The camera chains, the history path, write-back (the Value level) and the vanilla name
 //! lists against core's generated identifiers.
 
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::camera::history::{
     self, Any, EntityAny, EntityFamily, ListAny, ListFamily, PresetFamily, SplineAny, SplineFamily,
 };

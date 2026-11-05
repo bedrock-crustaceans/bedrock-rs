@@ -1,6 +1,6 @@
 //! Reading and writing camera spline files.
 
-use super::parse::VEC3;
+use super::read::VEC3;
 use super::{CameraSpline, Spline, texts};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};

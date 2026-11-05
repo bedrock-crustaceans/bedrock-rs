@@ -25,10 +25,8 @@ pub use spline::{
 
 mod entity;
 mod list;
-mod load;
-mod new;
-pub(crate) mod parse;
 mod preset;
+pub(crate) mod read;
 mod read_entity;
 mod read_list;
 mod read_spline;
@@ -40,11 +38,31 @@ mod validate;
 #[cfg(test)]
 mod tests;
 
-#[doc(hidden)]
-pub use load::LOADER;
+use std::convert::Infallible;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::document::{Document, Registry, Rejected};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::document::unversioned::origin_of;
+use bedrock_addon_core::document::{
+    Contribution, Document, Extra, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry,
+    Rejected, default_path,
+};
+use bedrock_addon_core::id::{CameraListId, CameraPresetId, kind};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::Reported;
+use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk, WalkFile};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
+use bedrock_addon_core::versioning::{
+    BelowFloor, Envelope, EnvelopeCheck, Family, FileFamily, Identity, InputKind, Loaded,
+    MissingVersion, NoComponents, Reading, StructIndex, UnknownMask, ValidateCx, VersionStruct,
+    Versioned, parse_document, write_envelope,
+};
+use bedrock_addon_support::chain_file::{self as file, closing_line};
+use history::{
+    Any, EntityAny, EntityFamily, ListAny, ListFamily, PresetFamily, SplineAny, SplineFamily,
+};
 
 /// The camera documents of the behaviour packs (`bp.cameras()`): three collections loaded and
 /// used together.
@@ -156,5 +174,431 @@ impl Splines {
     /// Every finding of the spline files: per file, rejected files and the duplicate names.
     pub fn diagnostics(&self) -> impl Iterator<Item = &Diagnostic> + '_ {
         self.diagnostics.iter()
+    }
+}
+
+/// `cameras/presets`: `minecraft:camera_preset` documents.
+const PRESETS: &str = "cameras/presets";
+/// `cameras/lists`: `minecraft:camera_list` documents.
+const LISTS: &str = "cameras/lists";
+/// `cameras/splines`: `minecraft:camera_custom_splines` documents (the game reads this
+/// directory; the singular `camera/splines/` of the 1.26.0 release notes is not read).
+const SPLINES: &str = "cameras/splines";
+
+/// The first preset and list version.
+pub(crate) const V1_19_50: FormatVersion = FormatVersion::new(1, 19, 50);
+/// The newest preset struct's version.
+pub(crate) const V1_26_50: FormatVersion = known::V1_26_50;
+/// The spline struct's version.
+pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
+/// The version vanilla's own camera entity documents carry, and the one written.
+pub(crate) const ENTITY_WRITTEN: FormatVersion = known::V1_26_10;
+
+// ---- the families --------------------------------------------------------------------------
+
+impl Family for PresetFamily {
+    const NAME: &'static str = "camera preset";
+    const PAYLOAD_KEY: &'static str = "minecraft:camera_preset";
+    const FLOOR: FormatVersion = V1_19_50;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a preset through a document input: the version is read as that input
+        // reads it, and a `null` document passes no shape, which the shape check applies.
+        input: InputKind::Document,
+        // The game hands the document reader an invalid minimum version, so the text stays raw and
+        // both slices parse the whole document, envelope included.
+        check: EnvelopeCheck::Never,
+        // A missing version is rejected with the game's default text, "no valid version passed by
+        // the caller or found in the input".
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+
+    /// The legacy slice `[1.19.50, 1.26.50)` tolerates some errors the 1.26.50 slice does not.
+    /// An unknown member drops the preset under both: the game scans the log of the parse for
+    /// the unknown-member error, which the shape check reports as an error.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        match index {
+            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            _ => Reading::DOCUMENT,
+        }
+    }
+    type Latest = CameraPreset;
+    type Beta = NoBeta<kind::CameraPreset>;
+    type Component = NoComponents;
+    type Any = Any;
+
+    fn identity(payload: JsonSlice<'_>) -> Identity {
+        file::identity(payload, "identifier")
+    }
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(preset) = v {
+            validate::preset(preset, cx);
+        }
+    }
+
+    fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
+        // With an unknown member vanilla logs its own line and nothing else: the only line
+        // is 'Unrecognized field on camera preset!'.
+        let unknown = diagnostics
+            .iter()
+            .any(|d| matches!(d.code, DiagnosticCode::UnrecognizedField { .. }));
+        if failed && !unknown {
+            closing_line(diagnostics, texts::FAILED_PRESETS);
+        }
+    }
+}
+
+impl FileFamily for PresetFamily {
+    fn document(value: &CameraPreset) -> Result<Value, EncodeError> {
+        value.write()
+    }
+}
+
+impl Family for ListFamily {
+    const NAME: &'static str = "camera list";
+    const PAYLOAD_KEY: &'static str = "minecraft:camera_list";
+    const FLOOR: FormatVersion = V1_19_50;
+    type Latest = CameraList;
+    type Beta = NoBeta<kind::CameraList>;
+    type Component = NoComponents;
+    type Any = ListAny;
+    const ENVELOPE: Envelope = Envelope {
+        // A plain strict load of the whole file, which binds `format_version` and the payload
+        // itself: no envelope, and a third root member is an unknown member.
+        check: EnvelopeCheck::Never,
+        // The required bind of `format_version`.
+        missing: MissingVersion::Reject {
+            text: Some(VanillaText::Fixed(
+                bedrock_addon_support::shape::MISSING_REQUIRED,
+            )),
+        },
+        ..Envelope::DEFAULT
+    };
+    // The game reads a list without a document input: the input kind stays the first run's,
+    // and the shape check rejects a `null` and an unknown member itself.
+
+    fn identity(payload: JsonSlice<'_>) -> Identity {
+        file::identity(payload, "identifier")
+    }
+
+    fn close(
+        diagnostics: &mut Diagnostics,
+        _: Option<JsonSlice<'_>>,
+        path: &PackPath,
+        failed: bool,
+    ) {
+        let found = std::mem::take(diagnostics);
+        for mut finding in found {
+            match &mut finding.code {
+                // The version range is a constraint on the version string, not a slice of the
+                // chain: the game's text for it is not known, so neither generic text stands in.
+                DiagnosticCode::UnsupportedVersion { text } => *text = None,
+                // "Camera List file %s is not valid JSON: %s"
+                DiagnosticCode::MalformedInput { message, text } => {
+                    *text = texts::formatted(texts::LIST_NOT_JSON, &[path.as_str(), message]);
+                }
+                _ => {}
+            }
+            diagnostics.push(finding);
+        }
+        let not_json = diagnostics
+            .iter()
+            .any(|d| matches!(d.code, DiagnosticCode::MalformedInput { .. }));
+        if failed && !not_json {
+            closing_line(diagnostics, texts::LIST_INVALID);
+        }
+    }
+}
+
+impl FileFamily for ListFamily {
+    fn document(value: &CameraList) -> Result<Value, EncodeError> {
+        value.write()
+    }
+}
+
+impl Family for SplineFamily {
+    const NAME: &'static str = "camera spline";
+    const PAYLOAD_KEY: &'static str = "minecraft:camera_custom_splines";
+    const FLOOR: FormatVersion = V1_26_0;
+    const ENVELOPE: Envelope = Envelope {
+        // The input is a document, as for presets.
+        input: InputKind::Document,
+        // The game reads the file as a document of `minecraft:camera_custom_splines` from 1.26.0:
+        // the envelope is checked from the slice's version.
+        check: EnvelopeCheck::From(V1_26_0),
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+    type Latest = CameraSpline;
+    type Beta = Infallible;
+    type Component = NoComponents;
+    type Any = SplineAny;
+
+    fn identity(_: JsonSlice<'_>) -> Identity {
+        Identity::default()
+    }
+
+    fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
+        if failed {
+            closing_line(diagnostics, texts::SPLINES_FAILED);
+        }
+    }
+}
+
+impl FileFamily for SplineFamily {
+    fn document(value: &CameraSpline) -> Result<Value, EncodeError> {
+        Ok(write_envelope::<Self>(
+            value.write_version(),
+            value.write()?,
+            &Extra::default(),
+        ))
+    }
+}
+
+impl Family for EntityFamily {
+    const NAME: &'static str = "camera entity";
+    const PAYLOAD_KEY: &'static str = "minecraft:camera_entity";
+    // The document's version is 0.0.0, and that is a valid version: the envelope is always
+    // checked.
+    const FLOOR: FormatVersion = known::V0_0_0;
+    type Latest = CameraEntity;
+    type Beta = Infallible;
+    type Component = NoComponents;
+    type Any = EntityAny;
+    const ENVELOPE: Envelope = Envelope {
+        // The input is a document, as for presets.
+        input: InputKind::Document,
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
+}
+
+impl FileFamily for EntityFamily {
+    fn document(value: &CameraEntity) -> Result<Value, EncodeError> {
+        Ok(write_envelope::<Self>(
+            value.write_version(),
+            value.write()?,
+            &Extra::default(),
+        ))
+    }
+}
+
+// ---- the documents ---------------------------------------------------------------------------
+
+impl JsonDocument for CameraPreset {
+    type Family = PresetFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+}
+
+impl JsonPlaced for CameraPreset {
+    /// `cameras/presets/<namespace>/<name>.json`.
+    fn place(&self) -> PackPath {
+        default_path(PRESETS, &self.identifier)
+    }
+}
+
+impl JsonDefinition for CameraPreset {
+    type Kind = kind::CameraPreset;
+    fn identifier(&self) -> &CameraPresetId {
+        &self.identifier
+    }
+}
+
+impl JsonDocument for CameraList {
+    type Family = ListFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+}
+
+impl JsonPlaced for CameraList {
+    /// `cameras/lists/<namespace>/<name>.json`.
+    fn place(&self) -> PackPath {
+        default_path(LISTS, &self.identifier)
+    }
+}
+
+impl JsonDefinition for CameraList {
+    type Kind = kind::CameraList;
+    fn identifier(&self) -> &CameraListId {
+        &self.identifier
+    }
+}
+
+impl JsonDocument for CameraSpline {
+    type Family = SplineFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+}
+
+impl JsonDocument for CameraEntity {
+    type Family = EntityFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// The version vanilla's own camera entity documents carry.
+    fn write_version(&self) -> FormatVersion {
+        ENTITY_WRITTEN
+    }
+}
+
+// ---- the group -----------------------------------------------------------------------------
+
+/// What one walked file parses to.
+#[doc(hidden)]
+#[derive(Debug)]
+pub enum CameraFile {
+    /// A `minecraft:camera_preset` file.
+    Preset(Box<Contribution<CameraPreset>>),
+    /// A `minecraft:camera_list` file.
+    List(Box<Contribution<CameraList>>),
+    /// A `minecraft:camera_custom_splines` file.
+    Spline(Box<Result<Document<CameraSpline>, Rejected>>),
+}
+
+/// `cameras/{presets, lists, splines}/**/*.json`: every pack's presets, then every pack's
+/// lists, then the splines, packs from the lowest priority up, so a later definition (the
+/// higher pack's) replaces an earlier one, as most of the game's loaders visit a stack.
+const WALK: Walk = Walk::json_tree_in(&[PRESETS, LISTS, SPLINES]).directory_major();
+
+/// Parses one walked file by its directory.
+fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> CameraFile {
+    match WALK.matches(&walked.key) {
+        // Presets and lists: the parse of the registry constructor.
+        Some(0) => CameraFile::Preset(Box::new((load::registry(WALK).parse)(walked, cx))),
+        Some(1) => CameraFile::List(Box::new((load::registry(WALK).parse)(walked, cx))),
+        _ => CameraFile::Spline(Box::new(
+            parse_document::<SplineFamily>(origin_of(walked), &walked.bytes, cx).stable(),
+        )),
+    }
+}
+
+#[doc(hidden)]
+/// The loader of `bp.cameras()`: the three directories of every behaviour pack, combined into
+/// the group.
+pub const LOADER: CollectionLoader<Cameras, CameraFile> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine: stack::combine,
+    needs: &[],
+    then: None,
+};
+
+impl Reported for Cameras {
+    fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
+        Box::new(self.diagnostics())
+    }
+}
+
+impl Versioned for CameraPreset {
+    const VERSION: FormatVersion = V1_26_50;
+}
+
+impl Versioned for CameraList {
+    const VERSION: FormatVersion = V1_19_50;
+}
+
+impl Versioned for CameraSpline {
+    const VERSION: FormatVersion = V1_26_0;
+}
+
+impl Versioned for CameraEntity {
+    const VERSION: FormatVersion = known::V0_0_0;
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn preset_reads_as_pinned() {
+        assert_reading_table(
+            "camera::PresetFamily",
+            &reading_table::<super::PresetFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.19.50..=1.19.50 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+                1.26.50..=1.26.50 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn list_reads_as_pinned() {
+        assert_reading_table(
+            "ListFamily",
+            &reading_table::<super::ListFamily>(),
+            r#"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: Fixed("missing required field")
+                below floor: UseFormatVersion
+                empty document: Error
+                1.19.50..=1.19.50 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            "#,
+        );
+    }
+
+    #[test]
+    fn spline_reads_as_pinned() {
+        assert_reading_table(
+            "SplineFamily",
+            &reading_table::<super::SplineFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 26, patch: 0 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.26.0..=1.26.0 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+
+    #[test]
+    fn entity_reads_as_pinned() {
+        assert_reading_table(
+            "EntityFamily",
+            &reading_table::<super::EntityFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Error
+                0.0.0..=0.0.0 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
+}
+
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
+
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
+
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn spline_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::SplineFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed = parse_as_written::<super::SplineFamily>(
+            JsonSlice::new(&text),
+            &LoadContext::detached(),
+        );
+        assert_eq!(parsed.identity, Identity::default());
     }
 }

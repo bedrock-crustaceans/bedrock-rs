@@ -222,8 +222,8 @@ mod codec {
         ColorGrading, ColorGradingDescription, ColorGradingSettings, Highlights, Midtones, Shadows,
         Temperature, TemperatureType, ToneMapping, ToneMappingOperator,
     };
+    use crate::V1_21_90;
     use crate::history::color_grading::v1_21_40;
-    use crate::load::V1_21_90;
     use crate::read::{self, Members, Node, Range, Read, members};
     use crate::value::Vec3;
     use crate::write::{self, Object, Written};
@@ -612,6 +612,20 @@ mod codec {
                 tone_mapping: self.tone_mapping,
                 extra: self.extra,
             }
+        }
+    }
+}
+
+impl ColorGradingSettings {
+    /// Colour-grading settings named `identifier` that set nothing.
+    #[must_use]
+    pub fn new(identifier: ColorGradingSettingsId) -> Self {
+        Self {
+            description: Some(ColorGradingDescription {
+                identifier: Some(identifier),
+                ..ColorGradingDescription::default()
+            }),
+            ..Self::default()
         }
     }
 }

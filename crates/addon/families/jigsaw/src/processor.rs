@@ -1,8 +1,11 @@
 //! `minecraft:processor_list`: a processor list.
 
+use super::validate::validate_detached;
+use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{BlockId, LootTablePath, ProcessorListId};
 use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString};
+use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::shared::BlockSpecifier;
 
 /// A processor list: rules that modify or replace blocks of a structure template while it is
@@ -325,4 +328,107 @@ pub enum BlockEntityModifier {
         #[facet(skip, rename = "\u{0}extra")]
         extra: Extra,
     },
+}
+
+impl ProcessorList {
+    /// A list without processors.
+    pub fn new(identifier: ProcessorListId) -> ProcessorList {
+        ProcessorList {
+            description: ProcessorListDescription {
+                identifier,
+                extra: Extra::default(),
+            },
+            processors: Vec::new(),
+            extra: Extra::default(),
+        }
+    }
+
+    /// Runs the family's parse constraints and registration checks as if the list were loaded
+    /// from a behaviour pack with `cx`. The list is not changed.
+    pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
+        validate_detached(self, cx)
+    }
+}
+
+impl ProcessorRule {
+    /// A rule placing `output_state` for every block, with every predicate left out.
+    pub fn new(output_state: BlockSpecifier) -> ProcessorRule {
+        ProcessorRule {
+            input_predicate: None,
+            location_predicate: None,
+            position_predicate: None,
+            block_entity_modifier: None,
+            output_state,
+            extra: Extra::default(),
+        }
+    }
+
+    /// The input predicate; `always_true` when absent.
+    pub fn input_predicate(&self) -> BlockPredicate {
+        self.input_predicate
+            .clone()
+            .unwrap_or(BlockPredicate::AlwaysTrue {
+                extra: Extra::default(),
+            })
+    }
+
+    /// The location predicate; `always_true` when absent.
+    pub fn location_predicate(&self) -> BlockPredicate {
+        self.location_predicate
+            .clone()
+            .unwrap_or(BlockPredicate::AlwaysTrue {
+                extra: Extra::default(),
+            })
+    }
+}
+
+impl PositionPredicate {
+    /// The axis of an `axis_aligned_linear_pos` predicate (`y` when absent); `None` for
+    /// `always_true`.
+    pub fn axis(&self) -> Option<Axis> {
+        match self {
+            PositionPredicate::AxisAlignedLinearPos { axis, .. } => Some(axis.unwrap_or_default()),
+            PositionPredicate::AlwaysTrue { .. } => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod validate_tests {
+    use super::*;
+    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::id::BlockId;
+    use bedrock_addon_core::json::StrictFloat;
+
+    use crate::Processor;
+
+    /// A list whose rule carries a probability no JSON text can spell.
+    fn list_with_a_nan_probability() -> ProcessorList {
+        let mut list = ProcessorList::new(ProcessorListId::from_static("ex:unwritable"));
+        let mut rule =
+            ProcessorRule::new(BlockSpecifier::new(BlockId::from_static("minecraft:stone")));
+        rule.input_predicate = Some(BlockPredicate::RandomBlockMatch {
+            block: BlockId::from_static("minecraft:dirt"),
+            probability: StrictFloat(f32::NAN),
+            extra: Extra::default(),
+        });
+        list.processors.push(Processor::Rule {
+            rules: vec![rule],
+            extra: Extra::default(),
+        });
+        list
+    }
+
+    #[test]
+    fn validating_a_value_that_cannot_be_written_reports_a_finding() {
+        let findings = list_with_a_nan_probability().validate(&LoadContext::detached());
+        assert!(
+            findings.iter().any(|finding| {
+                finding.severity == Severity::Error
+                    && matches!(finding.code, DiagnosticCode::MalformedInput { .. })
+            }),
+            "an unwritable value validated clean: {findings:?}"
+        );
+    }
 }

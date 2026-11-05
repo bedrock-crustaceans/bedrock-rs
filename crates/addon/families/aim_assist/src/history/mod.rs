@@ -10,6 +10,7 @@ pub mod v1_21_50;
 use super::{AimAssistCategories, AimAssistPreset};
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::versioning::Single;
 
 /// The `minecraft:aim_assist_preset` family of the version-chain machinery (hidden: only the
 /// loaders name it).
@@ -35,16 +36,11 @@ bedrock_addon_core::version_chain! {
     molang = none;
 }
 
-bedrock_addon_core::version_chain! {
-    family = CategoriesFamily;
-    /// An aim-assist categories file parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum CategoriesAny {
-        /// Format 1.21.50 and later: the only categories struct.
-        V1_21_50(AimAssistCategories),
-    }
-    molang = none;
-}
+/// An aim-assist categories file parsed by the struct its `format_version` selects: the one
+/// categories struct (format 1.21.50 and later).
+pub type CategoriesAny = Single<CategoriesFamily>;
+
+bedrock_addon_core::impl_no_molang!(AimAssistCategories);
 
 /// Runs the remaining upgrade step of a preset [`AimAssistPreset::parse_as_written`] gave: the same
 /// result [`AimAssistPreset::parse`](bedrock_addon_core::document::Content::parse) gives for its

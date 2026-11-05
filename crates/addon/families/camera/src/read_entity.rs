@@ -1,6 +1,6 @@
 //! Reading and writing camera entity documents.
 
-use super::parse::{VEC2, VEC3, each_ranged, ranged};
+use super::read::{VEC2, VEC3, each_ranged, ranged};
 use super::{CameraComponents, CameraEntity, texts};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictFloat, Value};

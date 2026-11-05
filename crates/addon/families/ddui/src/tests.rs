@@ -8,10 +8,10 @@ use std::time::Duration;
 use bedrock_addon_core::load::{LoadContext, LoadOptions, StackCx};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
-use super::load::{FileOutcome, UiFile, combine};
 use super::{Component, Control, UiComposition, UiRoot, read, write};
+use super::{UiFile, combine};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::{Content, Document, Origin};
+use bedrock_addon_core::document::{Content, Contribution, Document, Origin};
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::test_cost::{assert_linear_timed_at, timed};
@@ -83,7 +83,10 @@ fn reading_a_long_children_array_below_six_levels_is_linear() {
         let (root, diagnostics, took) = read_root(&text);
         assert!(diagnostics.is_empty());
         let root = root.unwrap();
-        assert_eq!(super::controls(&root.layout.markup).count(), count + 7);
+        assert_eq!(
+            super::types::controls(&root.layout.markup).count(),
+            count + 7
+        );
         took
     });
 }
@@ -139,7 +142,7 @@ fn collecting_the_extension_points_of_a_root_is_linear() {
 fn writing_a_long_children_array_is_linear() {
     assert_linear_timed_at("write, flat", SINGLE, |count| {
         let root = declaring("demo:r", 0, count);
-        let (written, took) = timed(|| write::root_document(&root).expect("writes"));
+        let (written, took) = timed(|| write::root_payload(&root).expect("writes"));
         assert!(written.as_object().is_some());
         took
     });
@@ -172,16 +175,16 @@ fn files(count: usize, point: impl Fn(usize) -> usize, same_identifier: bool) ->
     for i in 0..count {
         let name = if same_identifier { 0 } else { i };
         let root = declaring(&format!("minecraft:r{name}"), i, 1);
-        parsed.push(UiFile::Root(Box::new(FileOutcome {
-            identifier: Some(root.description.identifier.as_str().to_owned()),
-            result: Ok(Document::new(
+        let id = root.description.identifier.clone();
+        parsed.push(UiFile::Root(Box::new(Contribution::Stable(
+            id,
+            Document::new(
                 root,
                 origin("root", i),
                 version.clone(),
                 Diagnostics::default(),
-            )),
-            extension_point: None,
-        })));
+            ),
+        ))));
     }
     for i in 0..count {
         let name = if same_identifier { 0 } else { i };
@@ -189,16 +192,19 @@ fn files(count: usize, point: impl Fn(usize) -> usize, same_identifier: bool) ->
         composition.description.identifier = Id::parse(format!("minecraft:c{name}"));
         let asked = format!("demo:p{}", point(i));
         composition.attribs.extension_point = Some(asked.clone());
-        parsed.push(UiFile::Composition(Box::new(FileOutcome {
-            identifier: Some(composition.description.identifier.as_str().to_owned()),
-            result: Ok(Document::new(
-                composition,
-                origin("composition", i),
-                version.clone(),
-                Diagnostics::default(),
+        let id = composition.description.identifier.clone();
+        parsed.push(UiFile::Composition(
+            Box::new(Contribution::Stable(
+                id,
+                Document::new(
+                    composition,
+                    origin("composition", i),
+                    version.clone(),
+                    Diagnostics::default(),
+                ),
             )),
-            extension_point: Some((asked, None)),
-        })));
+            Some((asked, None)),
+        ));
     }
     parsed
 }
@@ -277,7 +283,6 @@ fn reading_attribs_whose_every_number_is_too_big_is_linear() {
 fn loaded_file_types_implement_debug() {
     fn assert_debug<T: std::fmt::Debug>() {}
     assert_debug::<UiFile>();
-    assert_debug::<FileOutcome<UiRoot>>();
 }
 
 #[test]

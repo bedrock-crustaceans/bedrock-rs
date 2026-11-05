@@ -96,3 +96,24 @@ pub enum JointType {
     /// JSON `aligned`.
     Aligned,
 }
+
+impl JigsawMetadata {
+    /// The file's bytes: the version string, length-prefixed, then the body as read.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(5 + self.format_version.len() + self.body.len());
+        let mut length = self.format_version.len();
+        loop {
+            // The low seven bits of `length`, with the continuation bit when more follow.
+            let low = u8::try_from(length & 0x7f).unwrap_or(0);
+            length >>= 7;
+            if length == 0 {
+                out.push(low);
+                break;
+            }
+            out.push(low | 0x80);
+        }
+        out.extend_from_slice(self.format_version.as_bytes());
+        out.extend_from_slice(&self.body);
+        out
+    }
+}

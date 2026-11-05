@@ -4,13 +4,14 @@
 
 use std::fmt::Debug;
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::poi::history::{PoiTagAny, PoiTypeAny};
+use bedrock_addon::document::{Content, JsonDocument};
+use bedrock_addon::families::poi::history::{upgrade_tag, upgrade_type};
 use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::json::{StrictInt, Value, WriteStyle};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
+use bedrock_addon::versioning::Single;
 
 use super::common::{block_document, context, fixture, loads, tag_of};
 
@@ -228,21 +229,21 @@ fn parse_as_written_then_upgrade_is_the_load() {
     let text = fixture("poi02_block_full/poi/blocks/guild_hall.json");
     let cx = context();
     let as_written = PoiType::parse_as_written(&path, text.as_bytes(), &cx).expect("parses");
-    let PoiTypeAny::V1_26_40(inner) = as_written.value();
+    let Single(inner) = as_written.value();
     let loaded = PoiType::parse(&path, text.as_bytes(), &cx).expect("loads");
     assert_eq!(inner, loaded.value());
-    let upgraded = PoiTypeAny::upgrade(as_written, &cx).expect("upgrades");
+    let upgraded = upgrade_type(as_written, &cx).expect("upgrades");
     assert_eq!(upgraded, loaded);
 
     let text = fixture("poi21_tag_self_parent/poi/tags/a.json");
     let as_written = PoiTag::parse_as_written(&path, text.as_bytes(), &cx).expect("parses");
-    let PoiTagAny::V1_26_40(inner) = as_written.value();
+    let Single(inner) = as_written.value();
     assert_eq!(
         inner.parents(),
         [PoiTagId::from_static("test:a")],
         "as written: the validation has not run"
     );
-    let upgraded = PoiTagAny::upgrade(as_written, &cx).expect("upgrades");
+    let upgraded = upgrade_tag(as_written, &cx).expect("upgrades");
     assert_eq!(
         upgraded,
         PoiTag::parse(&path, text.as_bytes(), &cx).expect("loads")

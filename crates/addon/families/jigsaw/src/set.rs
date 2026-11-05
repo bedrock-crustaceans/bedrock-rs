@@ -1,8 +1,11 @@
 //! `minecraft:structure_set`: a structure set.
 
+use super::validate::validate_detached;
+use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{JigsawStructureId, StructureSetId};
 use bedrock_addon_core::json::StrictInt;
+use bedrock_addon_core::load::LoadContext;
 
 /// A structure set: jigsaw structures placed by one placement rule (`minecraft:structure_set`,
 /// in `worldgen/structure_sets/`).
@@ -89,4 +92,44 @@ pub struct StructureSetEntry {
     /// Unknown members.
     #[facet(skip, rename = "\u{0}extra")]
     pub extra: Extra,
+}
+
+impl StructureSet {
+    /// A set without structures.
+    pub fn new(identifier: StructureSetId, placement: RandomSpreadPlacement) -> StructureSet {
+        StructureSet {
+            description: StructureSetDescription {
+                identifier,
+                extra: Extra::default(),
+            },
+            placement,
+            structures: Vec::new(),
+            extra: Extra::default(),
+        }
+    }
+
+    /// Runs the family's parse constraints and registration checks as if the set were loaded
+    /// from a behaviour pack with `cx`. The set is not changed.
+    pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
+        validate_detached(self, cx)
+    }
+}
+
+impl RandomSpreadPlacement {
+    /// A random-spread placement with the default spread type.
+    pub fn new(salt: i32, separation: u16, spacing: u16) -> RandomSpreadPlacement {
+        RandomSpreadPlacement {
+            placement_type: super::PlacementType::RandomSpread,
+            salt: StrictInt(salt),
+            separation: StrictInt(separation),
+            spacing: StrictInt(spacing),
+            spread_type: None,
+            extra: Extra::default(),
+        }
+    }
+
+    /// The spread type; `linear` when absent.
+    pub fn spread_type(&self) -> SpreadType {
+        self.spread_type.unwrap_or_default()
+    }
 }

@@ -100,10 +100,13 @@ fn types_are_read_from_poi_blocks_and_tags_from_poi_tags() {
 #[test]
 fn the_chain_enums_hold_the_newest_struct() {
     use bedrock_addon_core::id::{PoiTagId, PoiTypeId};
+    use bedrock_addon_core::versioning::Single;
     let forge = PoiType::new(PoiTypeId::from_static("test:forge"), Vec::new());
-    let PoiTypeAny::V1_26_40(inner) = PoiTypeAny::V1_26_40(forge.clone());
+    let chain: PoiTypeAny = Single(forge.clone());
+    let Single(inner) = chain;
     assert_eq!(inner, forge);
     let civic = PoiTag::new(PoiTagId::from_static("test:civic"));
-    let PoiTagAny::V1_26_40(inner) = PoiTagAny::V1_26_40(civic.clone());
+    let chain: PoiTagAny = Single(civic.clone());
+    let Single(inner) = chain;
     assert_eq!(inner, civic);
 }

@@ -2,6 +2,7 @@
 //! unreadable `format_version` and with a third root member.
 
 use super::common::*;
+use bedrock_addon::document::JsonDocument;
 
 const NO_VERSION: &str = "no valid version passed by the caller or found in the input";
 const MALFORMED: &str = "Malformed format version";

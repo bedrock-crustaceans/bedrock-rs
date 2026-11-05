@@ -7,6 +7,7 @@
 //! later) have the beta struct alone.
 
 use super::{UiComposition, UiRoot, UiStyle};
+use bedrock_addon_core::versioning::Single;
 
 /// The `minecraft:ui-root` family of the version-chain machinery (hidden: only the loader
 /// names it).
@@ -19,27 +20,15 @@ pub struct RootFamily;
 #[derive(Clone, Copy, Debug)]
 pub struct CompositionFamily;
 
-bedrock_addon_core::version_chain! {
-    family = RootFamily;
-    /// A root parsed by the struct its `format_version` selects: there is one.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum RootAny {
-        /// Format 1.21.130 exactly: the only root struct.
-        V1_21_130(UiRoot),
-    }
-    molang = none;
-}
+/// A root parsed by the struct its `format_version` selects: there is one (format 1.21.130
+/// exactly).
+pub type RootAny = Single<RootFamily>;
 
-bedrock_addon_core::version_chain! {
-    family = CompositionFamily;
-    /// A composition parsed by the struct its `format_version` selects: there is one.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum CompositionAny {
-        /// Format 1.21.130 exactly: the only composition struct.
-        V1_21_130(UiComposition),
-    }
-    molang = none;
-}
+/// A composition parsed by the struct its `format_version` selects: there is one (format
+/// 1.21.130 exactly).
+pub type CompositionAny = Single<CompositionFamily>;
+
+bedrock_addon_core::impl_no_molang!(UiRoot, UiComposition);
 
 /// The `minecraft:ui-style` family.
 #[doc(hidden)]

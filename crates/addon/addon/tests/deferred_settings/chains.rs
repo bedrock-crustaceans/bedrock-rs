@@ -1,7 +1,7 @@
 //! The payloads with older structs: lighting (l01–l08, l11–l13, L1–L5), water (w01–w05, W1–W4),
 //! atmosphere (a01–a04, a07, A1–A3) and colour grading (g01–g07, G1–G4, G6).
 
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::deferred_settings::history;
 use bedrock_addon::families::deferred_settings::{
     AtmosphereSettings, ColorGradingSettings, DEFAULT_CAUSTICS_TEXTURE, Keyframe, Keyframes,

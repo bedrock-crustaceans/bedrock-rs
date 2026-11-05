@@ -1,5 +1,5 @@
 //! The registration checks that judge one document. The checks over several documents
-//! (element redefinition, pool names) run when the group combines (`load.rs`); the references
+//! (element redefinition, pool names) run when the group combines (`lib.rs`); the references
 //! are the link pass's (`link.rs`).
 
 use super::{
@@ -9,6 +9,8 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
+use bedrock_addon_core::document::{Content, JsonPlaced};
+use bedrock_addon_core::load::LoadContext;
 
 /// What a family's identifier failure says after the identifier check's own reason.
 pub(crate) const STRUCTURE_REGISTER: &str =
@@ -207,6 +209,31 @@ fn empty_loot(rules: &mut [ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
                 .phase(Phase::Validate),
             );
             rule.block_entity_modifier = None;
+        }
+    }
+}
+
+/// Runs the family's checks on `value` as if it were loaded from a behaviour pack with `cx`:
+/// the document is written and read back, so the parse constraints and the registration checks
+/// both run. The value is not changed. A value that cannot be written has no document to
+/// check: that is one error finding.
+pub(crate) fn validate_detached<T: JsonPlaced>(value: &T, cx: &LoadContext) -> Diagnostics {
+    let path = value.place();
+    match <T as Content>::to_json(value) {
+        Ok(text) => match <T as Content>::parse(&path, text.as_bytes(), cx) {
+            Ok(document) => document.diagnostics().clone(),
+            Err(rejected) => rejected.diagnostics,
+        },
+        Err(error) => {
+            let mut findings = Diagnostics::default();
+            findings.push(
+                Diagnostic::error(DiagnosticCode::MalformedInput {
+                    message: error.to_string(),
+                    text: None,
+                })
+                .phase(Phase::Validate),
+            );
+            findings
         }
     }
 }

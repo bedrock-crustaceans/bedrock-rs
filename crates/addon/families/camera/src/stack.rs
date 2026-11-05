@@ -1,15 +1,21 @@
 //! The checks that need every camera document of the stack: the pass that discards invalid
-//! presets, the list checks and the duplicate spline names.
+//! presets, the list checks and the duplicate spline names; and the group's combine, which runs
+//! them over the parsed files.
 
 use std::collections::{HashMap, HashSet};
 
 use indexmap::IndexMap;
 
-use super::{ALLOWED_MC_INHERIT, CameraList, CameraPreset, CameraSpline, VANILLA_CAMERAS, texts};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase,
+use super::{
+    ALLOWED_MC_INHERIT, CameraFile, CameraList, CameraPreset, CameraSpline, Cameras, Splines,
+    VANILLA_CAMERAS, texts,
 };
-use bedrock_addon_core::document::Document;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+};
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, Definition, Document, Notice, Registry, RegistryBuilder, Rejected,
+};
 use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::id::{CameraPresetId, Kind, kind};
 use bedrock_addon_core::load::StackCx;
@@ -317,4 +323,190 @@ pub(crate) fn unknown_camera_lines(
             validator_line(list, &path, id.as_str())
         })
         .collect()
+}
+
+// ---- the group's combine ---------------------------------------------------------------------
+
+/// A registry in which the later definition of an identifier replaces the earlier one whole,
+/// as vanilla assigns it in place; the replaced one is a `ShadowedDefinition` info.
+fn last_loaded_wins<T: Definition>(stack: &StackCx<'_>) -> RegistryBuilder<T> {
+    RegistryBuilder::new(
+        CombineRule::LastLoadedWins {
+            replaced: Some(Notice::shadowed()),
+        },
+        CombineRule::last_loaded_wins(),
+        stack.options,
+    )
+}
+
+/// The rejection of a document the stack stage refuses: its own findings, then `finding`.
+fn refuse<T>(document: &Document<T>, finding: Diagnostic) -> Rejected {
+    refuse_all(document, std::iter::once(finding))
+}
+
+/// [`refuse`] with every finding of `findings`.
+fn refuse_all<T>(
+    document: &Document<T>,
+    findings: impl IntoIterator<Item = Diagnostic>,
+) -> Rejected {
+    let origin = document.origin().clone();
+    let mut diagnostics = document.diagnostics().clone();
+    for finding in findings {
+        diagnostics.push(finding);
+    }
+    Rejected::new(origin, diagnostics)
+}
+
+/// The presets: last loaded wins per identifier, then one pass over the merged set discards
+/// the invalid ones. Returns the registry and the identifiers the
+/// stack defined, with whether each survived.
+fn presets(
+    parsed: Vec<Contribution<CameraPreset>>,
+    stack: &StackCx<'_>,
+) -> (Registry<CameraPreset>, IndexMap<CameraPresetId, bool>) {
+    // The effective definition of each identifier: the last one that loaded.
+    let mut effective: IndexMap<CameraPresetId, usize> = IndexMap::new();
+    for (index, contribution) in parsed.iter().enumerate() {
+        if let Contribution::Stable(id, _) = contribution {
+            effective.insert(id.clone(), index);
+        }
+    }
+    let merged: IndexMap<&CameraPresetId, &Document<CameraPreset>> = effective
+        .iter()
+        .filter_map(|(id, &index)| match parsed.get(index)? {
+            Contribution::Stable(_, document) => Some((id, document)),
+            _ => None,
+        })
+        .collect();
+    let mut discarded = discard_invalid_presets(&merged);
+    let defined: IndexMap<CameraPresetId, bool> = effective
+        .keys()
+        .map(|id| (id.clone(), !discarded.contains_key(id)))
+        .collect();
+
+    let mut builder = last_loaded_wins::<CameraPreset>(stack);
+    for (index, contribution) in parsed.into_iter().enumerate() {
+        match contribution {
+            Contribution::Stable(id, document) => {
+                if defined.get(&id) != Some(&false) {
+                    builder.push(Contribution::Stable(id, document));
+                } else if effective.get(&id) == Some(&index) {
+                    let finding = discarded.swap_remove(&id);
+                    let rejected = match finding {
+                        // An unknown parent also gets the game's own line, besides the
+                        // reference finding.
+                        Some(finding)
+                            if matches!(
+                                finding.code,
+                                DiagnosticCode::UnresolvedReference { .. }
+                            ) =>
+                        {
+                            // Only where the direct parent is no preset of the stack: a
+                            // parent the pass discarded is the chain's, not the validator's.
+                            let line = unknown_parent_line(&document).filter(|_| {
+                                document
+                                    .inherit_from
+                                    .as_ref()
+                                    .is_some_and(|parent| !effective.contains_key(parent))
+                            });
+                            refuse_all(&document, std::iter::once(finding).chain(line))
+                        }
+                        Some(finding) => refuse(&document, finding),
+                        None => Rejected::new(document.origin().clone(), Diagnostics::default()),
+                    };
+                    builder.push(Contribution::Rejected(Some(id), rejected));
+                } else {
+                    // An earlier definition of a discarded identifier: vanilla replaced it
+                    // before the pass ran, so it does not come back.
+                    for finding in document.diagnostics().iter().cloned() {
+                        builder.push_diagnostic(finding);
+                    }
+                    builder.push_diagnostic(
+                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                            .phase(Phase::Validate)
+                            .in_file(document.origin()),
+                    );
+                }
+            }
+            failed => builder.push(failed),
+        }
+    }
+    (builder.finish(), defined)
+}
+
+/// The lists: each checked against the presets that survived when it loads, then last loaded
+/// wins per identifier.
+fn lists(
+    parsed: Vec<Contribution<CameraList>>,
+    defined: &IndexMap<CameraPresetId, bool>,
+    stack: &StackCx<'_>,
+) -> Registry<CameraList> {
+    let mut builder = last_loaded_wins::<CameraList>(stack);
+    for contribution in parsed {
+        let contribution = match contribution {
+            Contribution::Stable(id, document) => {
+                match check_list(&document, defined, stack) {
+                    // Each unknown entry also gets the game's own line, besides the
+                    // reference finding.
+                    Some(finding)
+                        if matches!(finding.code, DiagnosticCode::UnresolvedReference { .. }) =>
+                    {
+                        let lines = unknown_camera_lines(&document, defined, stack);
+                        let all = std::iter::once(finding).chain(lines);
+                        Contribution::Rejected(Some(id), refuse_all(&document, all))
+                    }
+                    Some(finding) => Contribution::Rejected(Some(id), refuse(&document, finding)),
+                    None => Contribution::Stable(id, document),
+                }
+            }
+            failed => failed,
+        };
+        builder.push(contribution);
+    }
+    builder.finish()
+}
+
+/// The spline files: every one kept, in walk order, with the duplicate names reported.
+fn splines(parsed: Vec<Result<Document<CameraSpline>, Rejected>>) -> Splines {
+    let mut splines = Splines::default();
+    for outcome in parsed {
+        match outcome {
+            Ok(document) => {
+                splines
+                    .diagnostics
+                    .extend(document.diagnostics().iter().cloned());
+                splines.files.push(document);
+            }
+            Err(rejected) => {
+                splines
+                    .diagnostics
+                    .extend(rejected.diagnostics.iter().cloned());
+                splines.rejected.push(rejected);
+            }
+        }
+    }
+    for finding in duplicate_splines(&splines.files) {
+        splines.diagnostics.push(finding);
+    }
+    splines
+}
+
+/// The group, from every parsed file in walk order.
+pub(crate) fn combine(parsed: Vec<CameraFile>, stack: &StackCx<'_>) -> Cameras {
+    let mut preset_files = Vec::new();
+    let mut list_files = Vec::new();
+    let mut spline_files = Vec::new();
+    for parsed_file in parsed {
+        match parsed_file {
+            CameraFile::Preset(outcome) => preset_files.push(*outcome),
+            CameraFile::List(outcome) => list_files.push(*outcome),
+            CameraFile::Spline(outcome) => spline_files.push(*outcome),
+        }
+    }
+    let (presets, defined) = presets(preset_files, stack);
+    Cameras {
+        presets,
+        lists: lists(list_files, &defined, stack),
+        splines: splines(spline_files),
+    }
 }

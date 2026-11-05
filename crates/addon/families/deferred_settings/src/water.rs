@@ -2,7 +2,7 @@
 
 use super::value::Description;
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::id::kind;
+use bedrock_addon_core::id::{WaterSettingsId, kind};
 
 /// The water of the deferred renderer (`minecraft:water_settings`, in `water/`), at the newest
 /// format version (1.26.20).
@@ -151,10 +151,10 @@ mod codec {
 
     use super::{Caustics, ParticleConcentrations, WaterSettings, Waves};
     use crate::history::water::{self as history, v1_21_40, v1_21_80, v1_21_120, v1_26_0};
-    use crate::load::{V1_21_80, V1_21_120, V1_26_0};
     use crate::read::{self, Members, Node, Range, Read, members};
     use crate::value::Description;
     use crate::write::{self, Object, Written};
+    use crate::{V1_21_80, V1_21_120, V1_26_0};
     use bedrock_addon_core::diagnostic::{
         Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
     };
@@ -762,6 +762,17 @@ mod codec {
 
         fn upgrade(self, _: &mut UpgradeCx<'_>) -> WaterSettings {
             self.0
+        }
+    }
+}
+
+impl WaterSettings {
+    /// Water settings named `identifier` that set nothing.
+    #[must_use]
+    pub fn new(identifier: WaterSettingsId) -> Self {
+        Self {
+            description: Some(Description::new(identifier)),
+            ..Self::default()
         }
     }
 }

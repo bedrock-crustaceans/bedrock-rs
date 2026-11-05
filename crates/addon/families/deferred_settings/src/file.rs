@@ -1,34 +1,21 @@
 //! One settings file through its payload's version chain: the text checks, the public parse
 //! stage and the document or its rejection.
 
-use std::convert::Infallible;
-
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::{EncodeError, EnvelopeVersion, JsonSlice, Prepared, Value};
+use bedrock_addon_core::json::{EnvelopeVersion, JsonSlice, Prepared};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    Family, Loaded, Parsed, Selection, VersionChain, VersionStruct, Versioned, finish,
-    parse_as_written, select,
+    DocumentRead, Family, Loaded, Parsed, Selection, VersionChain, finish, parse_as_written, select,
 };
 
-/// A payload of this module: no struct for the game's experimental builds, read by the struct
-/// whose version the file names exactly.
-pub(crate) trait Payload: Family<Beta = Infallible, Latest: VersionStruct + Clone> {
-    /// The format version from which the payload member itself is required (water and
-    /// atmosphere, 1.26.20); `None` when it is optional in every struct.
-    const PAYLOAD_REQUIRED: Option<FormatVersion> = None;
-
-    /// The identifier `value` is indexed by; `None` when it names none.
-    fn identifier(value: &Self::Latest) -> Option<&str>;
-
-    /// Whether the payload has an identifier at all (the five identifier maps).
-    const NAMED: bool = true;
-}
+/// The format version from which a payload's member itself is required (water and
+/// atmosphere, 1.26.20); `None` when it is optional in every struct.
+pub(crate) type PayloadRequired = Option<FormatVersion>;
 
 /// The rejection of a file that is no text.
 fn unreadable(origin: Origin) -> Rejected {
@@ -179,7 +166,7 @@ struct Envelope {
 /// `format_version`, and a second member that is not the payload. `Err` is the file's one
 /// finding. A text that is no JSON object passes: the parse stage
 /// reports it.
-fn envelope<F: Payload>(text: &str) -> Result<Envelope, Box<Diagnostic>> {
+fn envelope<F: Family>(text: &str, required: PayloadRequired) -> Result<Envelope, Box<Diagnostic>> {
     let passed = Envelope {
         array_version: false,
         shown: None,
@@ -263,6 +250,7 @@ fn envelope<F: Payload>(text: &str) -> Result<Envelope, Box<Diagnostic>> {
             &written,
             shown.as_deref(),
             actual,
+            required,
         )));
     }
     Ok(Envelope {
@@ -278,10 +266,11 @@ fn envelope<F: Payload>(text: &str) -> Result<Envelope, Box<Diagnostic>> {
 /// missing member (water and atmosphere, 1.26.20); one whose payload is optional loads the
 /// game's defaults under no identifier, where the crate reports a `MissingPayload` error with
 /// the assert's text.
-fn foreign_payload<F: Payload>(
+fn foreign_payload<F: Family>(
     written: &FormatVersionInput,
     shown: Option<&str>,
     actual: &str,
+    required: PayloadRequired,
 ) -> Diagnostic {
     let mismatch = || {
         Diagnostic::error(DiagnosticCode::MissingPayload {
@@ -300,7 +289,7 @@ fn foreign_payload<F: Payload>(
         Selection::Struct(index) => {
             let required = versions
                 .get(index)
-                .zip(F::PAYLOAD_REQUIRED)
+                .zip(required)
                 .is_some_and(|(version, from)| *version >= from);
             if required {
                 Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
@@ -351,8 +340,12 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
 
 /// The parse stage of one file of payload `F`: the envelope rules, then the version chain's
 /// struct selection and parse.
-fn parse_stage<F: Payload>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<F> {
-    let envelope = match envelope::<F>(document.text) {
+fn parse_stage<F: Family>(
+    document: JsonSlice<'_>,
+    cx: &LoadContext,
+    required: PayloadRequired,
+) -> Parsed<F> {
+    let envelope = match envelope::<F>(document.text, required) {
         Ok(envelope) => envelope,
         Err(finding) => {
             let mut diagnostics = Diagnostics::default();
@@ -384,22 +377,26 @@ fn parse_stage<F: Payload>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<
     parsed
 }
 
-/// Loads one file of payload `F`.
-pub(crate) fn parse_file<F: Payload>(
-    pack: PackRef,
-    path: &PackPath,
+/// Loads the file at `origin` of payload `F` (its `JsonDocument::read`): the envelope rules of
+/// the game's document reader, then the version chain. No identifier is told for a failed
+/// file: the stack's maps reserve nothing for one.
+pub(crate) fn read<F: Family>(
+    origin: Origin,
     bytes: &[u8],
     cx: &LoadContext,
-) -> Result<Document<F::Latest>, Rejected> {
-    let origin = Origin::file(pack, PackSide::Resource, path.clone());
+    required: PayloadRequired,
+) -> DocumentRead<F> {
     let Ok(prepared) = Prepared::new(bytes) else {
-        return Err(unreadable(origin));
+        return DocumentRead::Rejected(None, unreadable(origin));
     };
-    finish_file::<F>(parse_stage::<F>(prepared.slice(), cx), origin, cx)
+    match finish_file::<F>(parse_stage::<F>(prepared.slice(), cx, required), origin, cx) {
+        Ok(document) => DocumentRead::Stable(document),
+        Err(rejected) => DocumentRead::Rejected(None, rejected),
+    }
 }
 
 /// The rest of the load of a parsed file.
-fn finish_file<F: Payload>(
+fn finish_file<F: Family>(
     parsed: Parsed<F>,
     origin: Origin,
     cx: &LoadContext,
@@ -415,18 +412,19 @@ fn finish_file<F: Payload>(
     }
 }
 
-/// The file's document for payload `F` as written: the struct the file's `format_version`
-/// selects, not upgraded.
-pub(crate) fn as_written<F: Payload>(
+/// The file's document for payload `F` as written (its `JsonDocument::parse_as_written`): the
+/// struct the file's `format_version` selects, not upgraded.
+pub(crate) fn as_written<F: Family>(
     path: &PackPath,
     bytes: &[u8],
     cx: &LoadContext,
+    required: PayloadRequired,
 ) -> Result<Document<F::Any>, Rejected> {
     let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
     let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unreadable(origin));
     };
-    let parsed = parse_stage::<F>(prepared.slice(), cx);
+    let parsed = parse_stage::<F>(prepared.slice(), cx, required);
     let mut diagnostics = parsed.diagnostics;
     diagnostics.locate(&origin);
     match parsed.value {
@@ -437,7 +435,7 @@ pub(crate) fn as_written<F: Payload>(
 
 /// The body of `history::upgrade` for payload `F`: rebuilds the parse stage from the document
 /// and finishes it.
-pub(crate) fn upgrade<F: Payload>(
+pub(crate) fn upgrade<F: Family>(
     document: Document<F::Any>,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
@@ -455,33 +453,22 @@ pub(crate) fn upgrade<F: Payload>(
     finish_file::<F>(parsed, origin, cx)
 }
 
-/// The whole document of `value` at the newest format version of payload `F`.
-pub(crate) fn document<F: Payload>(value: &F::Latest) -> Result<Value, EncodeError> {
-    let mut root = facet_value::VObject::new();
-    root.insert(
-        "format_version",
-        <F::Latest as Versioned>::VERSION.to_string(),
-    );
-    root.insert(F::PAYLOAD_KEY, value.write()?);
-    Ok(root.into())
+/// The identifier a value is indexed by: the one it names (`identifier`), unless that is the
+/// empty string, which the game treats as no identifier (it takes no default from it and no
+/// biome can name it).
+pub(crate) fn named(identifier: Option<&str>) -> Option<&str> {
+    identifier.filter(|id| !id.is_empty())
 }
 
-/// The identifier `value` is indexed by: the one it names, unless that is the empty string,
-/// which the game treats as no identifier (it takes no default from it and no biome can name
-/// it).
-pub(crate) fn named<F: Payload>(value: &F::Latest) -> Option<&str> {
-    F::identifier(value).filter(|id| !id.is_empty())
-}
-
-/// A loaded value of one of the five identifier payloads that names no identifier: a
-/// `MissingIdentifier` information at the payload. The document loads, and the stack does not
-/// index it. The game keys it by the empty string, which no biome can name, and writes no
-/// line, so the finding is the crate's own information.
-pub(crate) fn unnamed<F: Payload>(
-    value: &F::Latest,
+/// A loaded value of one of the five identifier payloads that names no identifier
+/// (`identifier`): a `MissingIdentifier` information at the payload. The document loads, and
+/// the stack does not index it. The game keys it by the empty string, which no biome can name,
+/// and writes no line, so the finding is the crate's own information.
+pub(crate) fn unnamed(
+    identifier: Option<&str>,
     cx: &mut bedrock_addon_core::versioning::ValidateCx<'_>,
 ) {
-    if F::NAMED && named::<F>(value).is_none() {
+    if named(identifier).is_none() {
         cx.diagnostics.push(
             Diagnostic::info(DiagnosticCode::MissingIdentifier { text: None })
                 .at(cx.at.clone())

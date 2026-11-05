@@ -18,3 +18,14 @@ pub struct CameraList {
     /// The presets of the list, in order (JSON `cameras`).
     pub cameras: Vec<CameraPresetId>,
 }
+
+impl CameraList {
+    /// A list named `identifier` of `cameras`.
+    #[must_use]
+    pub fn new(identifier: CameraListId, cameras: Vec<CameraPresetId>) -> Self {
+        Self {
+            identifier,
+            cameras,
+        }
+    }
+}

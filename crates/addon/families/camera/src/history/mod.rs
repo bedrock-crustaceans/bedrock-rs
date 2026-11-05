@@ -12,6 +12,7 @@ pub mod v1_19_50;
 use super::{CameraEntity, CameraList, CameraPreset, CameraSpline};
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::versioning::Single;
 
 /// The `minecraft:camera_preset` family of the version-chain machinery (hidden: only the
 /// loaders name it).
@@ -47,38 +48,19 @@ bedrock_addon_core::version_chain! {
     molang = none;
 }
 
-bedrock_addon_core::version_chain! {
-    family = ListFamily;
-    /// A camera list parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum ListAny {
-        /// Format 1.19.50 and later: the only list struct.
-        V1_19_50(CameraList),
-    }
-    molang = none;
-}
+/// A camera list parsed by the struct its `format_version` selects: the one list struct
+/// (format 1.19.50 and later).
+pub type ListAny = Single<ListFamily>;
 
-bedrock_addon_core::version_chain! {
-    family = SplineFamily;
-    /// A camera spline file parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum SplineAny {
-        /// Format 1.26.0 and later: the only spline struct.
-        V1_26_0(CameraSpline),
-    }
-    molang = none;
-}
+/// A camera spline file parsed by the struct its `format_version` selects: the one spline
+/// struct (format 1.26.0 and later).
+pub type SplineAny = Single<SplineFamily>;
 
-bedrock_addon_core::version_chain! {
-    family = EntityFamily;
-    /// A camera entity document parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum EntityAny {
-        /// Every format version up to the engine's: the only camera entity struct.
-        V0_0_0(CameraEntity),
-    }
-    molang = none;
-}
+/// A camera entity document parsed by the struct its `format_version` selects: the one camera
+/// entity struct (every format version up to the engine's).
+pub type EntityAny = Single<EntityFamily>;
+
+bedrock_addon_core::impl_no_molang!(CameraList, CameraSpline, CameraEntity);
 
 /// Runs the remaining upgrade step of a preset [`CameraPreset::parse_as_written`] gave: the
 /// same result [`CameraPreset::parse`](bedrock_addon_core::document::Content::parse) gives for

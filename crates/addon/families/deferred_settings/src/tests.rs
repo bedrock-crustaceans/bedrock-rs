@@ -1,8 +1,8 @@
 //! Unit tests of the deferred-settings module: the link checker over a hand-built group, the
 //! default-identifier rule and the walk's file filter.
 
+use super::is_read;
 use super::link::{self, Targets, Texture};
-use super::load::{self, is_read};
 use super::{DeferredSettings, LightingSettings, LocalLightSettings, WaterSettings};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Phase, Severity};
 use bedrock_addon_core::document::{CombineRule, Content, Contribution, Registry, RegistryBuilder};
@@ -14,7 +14,7 @@ use bedrock_addon_core::pack_identity::{PackRef, PackSide};
 
 /// A group from `(path, text)` files of one pack, through the loader's own parse and combine.
 fn group(files: &[(&str, &str)]) -> DeferredSettings {
-    let loader = load::LOADER;
+    let loader = super::LOADER;
     let cx = LoadContext::detached();
     let parsed = files
         .iter()
@@ -282,7 +282,7 @@ fn r50_each_payload_has_the_noun_of_its_own_message() {
         empty::<ColorGradingSettings>(&options),
         ColorGradingSettingsId::parse("demo:g"),
     );
-    let told: Vec<(&str, Severity, String, &str)> = load::unresolved_defaults(
+    let told: Vec<(&str, Severity, String, &str)> = super::unresolved_defaults(
         (&lighting.0, Some(&lighting.1)),
         (&atmosphere.0, Some(&atmosphere.1)),
         (&water.0, Some(&water.1)),
@@ -337,7 +337,7 @@ fn r50_each_payload_has_the_noun_of_its_own_message() {
     assert_eq!(distinct.len(), 4, "{kinds:?}");
     // A payload whose default file gave no identifier has nothing to say.
     assert_eq!(
-        load::unresolved_defaults(
+        super::unresolved_defaults(
             (&lighting.0, None),
             (&atmosphere.0, None),
             (&water.0, None),
@@ -354,7 +354,7 @@ fn r50_a_default_identifier_the_map_lacks_is_the_games_could_not_find() {
     let empty: Registry<LightingSettings> =
         RegistryBuilder::new(CombineRule::top_wins(), CombineRule::top_wins(), &options).finish();
     let id = LightingSettingsId::parse("demo:gone");
-    let finding = load::unresolved_default(&empty, &id, "lighting").expect("a finding");
+    let finding = super::unresolved_default(&empty, &id, "lighting").expect("a finding");
     assert_eq!(finding.code.name(), "UnresolvedReference");
     // The game logs it at the error level and goes on with its built-ins: a kept error.
     assert_eq!(finding.severity, Severity::Error);
@@ -377,7 +377,7 @@ fn r50_a_default_identifier_the_map_lacks_is_the_games_could_not_find() {
     let mut builder =
         RegistryBuilder::new(CombineRule::top_wins(), CombineRule::top_wins(), &options);
     builder.push(Contribution::Stable(id.clone(), document));
-    assert!(load::unresolved_default(&builder.finish(), &id, "lighting").is_none());
+    assert!(super::unresolved_default(&builder.finish(), &id, "lighting").is_none());
     // The loader's own default identifiers are always defined: no such finding.
     let settings = group(&[(
         "lighting/global.json",
@@ -654,12 +654,12 @@ fn stack_files(
     n: usize,
 ) -> (
     Vec<bedrock_addon_core::load::StackPack>,
-    Vec<load::SettingsFile>,
+    Vec<super::SettingsFile>,
 ) {
     use bedrock_addon_core::load::{ListedFile, StackPack};
     use bedrock_addon_core::pack_identity::{PackIdVersion, PackOrigin, PackType};
     use bedrock_addon_core::version::SemVersion;
-    let loader = load::LOADER;
+    let loader = super::LOADER;
     let cx = LoadContext::detached();
     let lights = local_light_text(n, "test");
     let mut packs = Vec::new();
@@ -716,7 +716,7 @@ fn stack_files(
 
 #[test]
 fn the_files_of_a_stack_are_combined_in_near_linear_time() {
-    let loader = load::LOADER;
+    let loader = super::LOADER;
     near_linear("combine", 1_600, stack_files, |(packs, parsed), n| {
         let options = LoadOptions::default();
         let settings = (loader.combine)(parsed, &StackCx::new(&options, &packs));

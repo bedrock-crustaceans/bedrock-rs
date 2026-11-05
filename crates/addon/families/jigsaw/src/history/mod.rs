@@ -36,49 +36,8 @@ pub struct ProcessorListFamily;
 #[derive(Clone, Copy, Debug)]
 pub struct MetadataFamily;
 
-bedrock_addon_core::version_chain! {
-    family = StructureFamily;
-    /// A `minecraft:jigsaw` document parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum StructureAny {
-        /// Format 1.21.20 and later: the newest document.
-        V1_21_20(JigsawStructure),
-    }
-    molang = none;
-}
-
-bedrock_addon_core::version_chain! {
-    family = PoolFamily;
-    /// A `minecraft:template_pool` document parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum PoolAny {
-        /// Format 1.21.20 and later: the newest document.
-        V1_21_20(TemplatePool),
-    }
-    molang = none;
-}
-
-bedrock_addon_core::version_chain! {
-    family = StructureSetFamily;
-    /// A `minecraft:structure_set` document parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum StructureSetAny {
-        /// Format 1.21.20 and later: the newest document.
-        V1_21_20(StructureSet),
-    }
-    molang = none;
-}
-
-bedrock_addon_core::version_chain! {
-    family = ProcessorListFamily;
-    /// A `minecraft:processor_list` document parsed by the struct its `format_version` selects.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum ProcessorListAny {
-        /// Format 1.21.20 and later: the newest document.
-        V1_21_20(ProcessorList),
-    }
-    molang = none;
-}
+// The four JSON families have one struct each: their chain is `Single` (`Family::Any`).
+bedrock_addon_core::impl_no_molang!(JigsawStructure, TemplatePool, StructureSet, ProcessorList);
 
 bedrock_addon_core::version_chain! {
     family = MetadataFamily;

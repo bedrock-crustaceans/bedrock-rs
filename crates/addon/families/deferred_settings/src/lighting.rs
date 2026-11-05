@@ -2,7 +2,7 @@
 
 use super::value::{Description, Keyframe, Keyframes, Rgb8};
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::id::kind;
+use bedrock_addon_core::id::{LightingSettingsId, kind};
 
 /// The lighting of the deferred renderer (`minecraft:lighting_settings`, in `lighting/`), at
 /// the newest format version (1.26.0).
@@ -256,10 +256,10 @@ mod codec {
         OrbitalLight, OrbitalLights, Sky,
     };
     use crate::history::lighting::{self as history, v1_21_40, v1_21_60, v1_21_70, v1_21_80};
-    use crate::load::{V1_21_70, V1_21_80};
     use crate::read::{self, Node, Range, Read, members};
     use crate::value::{Keyframes, Rgb8, Rgba8};
     use crate::write::{self, Object, Written};
+    use crate::{V1_21_70, V1_21_80};
     use bedrock_addon_core::diagnostic::{
         Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
     };
@@ -830,6 +830,17 @@ mod codec {
                 }),
                 extra: self.extra,
             }
+        }
+    }
+}
+
+impl LightingSettings {
+    /// Lighting settings named `identifier` that set nothing.
+    #[must_use]
+    pub fn new(identifier: LightingSettingsId) -> Self {
+        Self {
+            description: Some(Description::new(identifier)),
+            ..Self::default()
         }
     }
 }

@@ -916,3 +916,30 @@ fn w3a_a_name_no_file_defines_has_the_validators_line() {
         ]
     );
 }
+
+/// What the link pass reads of a loaded preset's places (`Diagnostics::place_of`): no step of
+/// the camera chains moves a member, so a member is where the document holds it, for a legacy
+/// preset the step upgraded as for a current one. The findings of the file stay in it.
+#[test]
+fn a_loaded_preset_places_each_member_where_the_document_holds_it() {
+    use bedrock_addon::diagnostic::JsonPath;
+    let legacy = preset_file("ex:legacy", r#""pos_x": 1.0"#);
+    let current = (
+        "cameras/presets/ex_current.json",
+        preset_json("1.26.50", r#""identifier": "ex:current", "pos_x": 1.0"#),
+    );
+    let stack = stack(&[&[legacy, current]]);
+    let cameras = stack.cameras();
+    let at = JsonPath::of_keys(["minecraft:camera_preset", "pos_x"]);
+    for name in ["ex:legacy", "ex:current"] {
+        let document = cameras.presets.get(&id(name)).expect("the preset loads");
+        assert_eq!(document.diagnostics().place_of(&at), at, "{name}");
+        for finding in document.diagnostics() {
+            assert_eq!(
+                finding.location.path.as_ref(),
+                Some(&document.origin().path),
+                "{name}: {finding:?}"
+            );
+        }
+    }
+}

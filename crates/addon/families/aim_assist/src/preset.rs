@@ -71,3 +71,18 @@ pub struct ExclusionSettings {
     /// Entity type families (JSON `entity_type_families`).
     pub entity_type_families: Option<Vec<StrictString>>,
 }
+
+impl AimAssistPreset {
+    /// A preset named `identifier` that sets nothing.
+    #[must_use]
+    pub fn new(identifier: AimAssistPresetId) -> Self {
+        Self {
+            identifier,
+            exclusion_settings: None,
+            liquid_targeting_list: None,
+            item_settings: None,
+            default_item_settings: None,
+            hand_settings: None,
+        }
+    }
+}

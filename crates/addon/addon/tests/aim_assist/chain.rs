@@ -1,7 +1,7 @@
 //! The aim-assist chains, the step from 1.21.50, the history path and write-back (the Value
 //! level).
 
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::aim_assist::AimAssistPreset;
 use bedrock_addon::families::aim_assist::history::{
     self, Any, CategoriesAny, CategoriesFamily, PresetFamily,

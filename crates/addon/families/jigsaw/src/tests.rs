@@ -1,8 +1,8 @@
 //! Unit tests of the crate-private parts: the identifier check's order, the metadata file's
 //! leading string, the walk's file filter and the link checker.
 
+use super::LOADER;
 use super::link::{Targets, link};
-use super::load::LOADER;
 use super::validate::identifier_failure;
 use super::{Jigsaw, JigsawMetadata};
 use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
@@ -65,7 +65,7 @@ fn a_long_version_string_round_trips_through_a_two_byte_length() {
     };
     let bytes = file.to_bytes();
     assert_eq!(&bytes[..2], &[0xc8, 0x01], "200 as LEB128");
-    let parsed = super::load::parse_metadata(
+    let parsed = super::read::parse_metadata(
         PackRef::app_data(),
         PackSide::Behavior,
         &PackPath::new("worldgen/metadata/a.dat").unwrap(),

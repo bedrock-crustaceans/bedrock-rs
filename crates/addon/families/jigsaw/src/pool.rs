@@ -1,8 +1,11 @@
 //! `minecraft:template_pool`: a template pool.
 
+use super::validate::validate_detached;
+use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{FeatureId, ProcessorListId, StructureId, TemplatePoolId};
 use bedrock_addon_core::json::StrictInt;
+use bedrock_addon_core::load::LoadContext;
 
 /// A template pool: a weighted list of structure templates (or features) a jigsaw block draws
 /// from (`minecraft:template_pool`, in `worldgen/template_pools/`).
@@ -99,4 +102,72 @@ pub enum Projection {
     Rigid,
     /// Follows the terrain (JSON `terrain_matching`).
     TerrainMatching,
+}
+
+/// The template pool `fallback` defaults to.
+const EMPTY_POOL: TemplatePoolId = TemplatePoolId::from_static("minecraft:empty");
+
+impl TemplatePool {
+    /// A pool without elements, falling back to `minecraft:empty`.
+    pub fn new(identifier: TemplatePoolId) -> TemplatePool {
+        TemplatePool {
+            description: PoolDescription {
+                identifier,
+                extra: Extra::default(),
+            },
+            elements: Vec::new(),
+            fallback: None,
+            extra: Extra::default(),
+        }
+    }
+
+    /// The fallback pool; `minecraft:empty` when absent.
+    pub fn fallback(&self) -> TemplatePoolId {
+        self.fallback.clone().unwrap_or(EMPTY_POOL)
+    }
+
+    /// Runs the family's parse constraints and registration checks as if the pool were loaded
+    /// from a behaviour pack with `cx`. The pool is not changed.
+    pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
+        validate_detached(self, cx)
+    }
+}
+
+impl TemplatePoolElement {
+    /// An entry placing `element` with the default weight.
+    pub fn new(element: PoolElement) -> TemplatePoolElement {
+        TemplatePoolElement {
+            element,
+            weight: None,
+            extra: Extra::default(),
+        }
+    }
+
+    /// The entry's weight; 1 when absent.
+    pub fn weight(&self) -> u8 {
+        self.weight.map_or(1, |w| w.0)
+    }
+}
+
+impl PoolElement {
+    /// The processor list of a single element; `None` for no processors (absent or `""`) and
+    /// for the other element types.
+    pub fn processors(&self) -> Option<&ProcessorListId> {
+        match self {
+            PoolElement::Single {
+                processors: Some(list),
+                ..
+            } if !list.as_str().is_empty() => Some(list),
+            _ => None,
+        }
+    }
+
+    /// The projection of a single element (`rigid` when absent); `None` for the other element
+    /// types.
+    pub fn projection(&self) -> Option<Projection> {
+        match self {
+            PoolElement::Single { projection, .. } => Some(projection.unwrap_or_default()),
+            _ => None,
+        }
+    }
 }

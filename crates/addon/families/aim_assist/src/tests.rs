@@ -242,5 +242,5 @@ fn an_upgraded_exclusion_list_is_checked_as_block_or_entity_deviation() {
 #[test]
 fn a_walked_file_implements_debug() {
     fn assert_debug<T: std::fmt::Debug>() {}
-    assert_debug::<super::load::AimAssistFile>();
+    assert_debug::<super::AimAssistFile>();
 }

@@ -2,7 +2,7 @@
 
 use super::value::{Description, Keyframe, Keyframes, Rgb8};
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::id::kind;
+use bedrock_addon_core::id::{AtmosphereSettingsId, kind};
 
 /// The atmospheric scattering of the deferred renderer (`minecraft:atmosphere_settings`, in
 /// `atmospherics/`), at the newest format version (1.26.20).
@@ -342,6 +342,17 @@ mod codec {
 
         fn upgrade(self, _: &mut UpgradeCx<'_>) -> AtmosphereSettings {
             self.0
+        }
+    }
+}
+
+impl AtmosphereSettings {
+    /// Atmosphere settings named `identifier` that set nothing.
+    #[must_use]
+    pub fn new(identifier: AtmosphereSettingsId) -> Self {
+        Self {
+            description: Some(Description::new(identifier)),
+            ..Self::default()
         }
     }
 }

@@ -42,6 +42,8 @@ impl VersionStruct for CameraList {
     }
 
     /// The whole document, at format 1.19.50.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
             "1.19.50",

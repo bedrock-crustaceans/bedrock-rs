@@ -279,7 +279,8 @@ fn a_claimed_block_is_reported_at_its_own_entry() {
 /// are gated like the whole.
 #[test]
 fn the_as_written_parse_and_the_upgrade_are_gated_too() {
-    use bedrock_addon::families::poi::history::{PoiTagAny, PoiTypeAny};
+    use bedrock_addon::document::JsonDocument;
+    use bedrock_addon::families::poi::history;
     use bedrock_addon::load::LoadOptions;
     use bedrock_addon::storage::PackPath;
 
@@ -302,14 +303,14 @@ fn the_as_written_parse_and_the_upgrade_are_gated_too() {
     );
 
     let written = PoiType::parse_as_written(&path, forge.as_bytes(), &on).expect("parses");
-    let closed = PoiTypeAny::upgrade(written, &off).expect_err("gated");
+    let closed = history::upgrade_type(written, &off).expect_err("gated");
     assert_eq!(
         names(closed.diagnostics.iter(), Severity::Info),
         ["MissingToggles"]
     );
     assert_eq!(closed.diagnostics.len(), 1);
     let written = PoiTag::parse_as_written(&path, civic.as_bytes(), &on).expect("parses");
-    let closed = PoiTagAny::upgrade(written, &off).expect_err("gated");
+    let closed = history::upgrade_tag(written, &off).expect_err("gated");
     assert_eq!(
         names(closed.diagnostics.iter(), Severity::Info),
         ["MissingToggles"]

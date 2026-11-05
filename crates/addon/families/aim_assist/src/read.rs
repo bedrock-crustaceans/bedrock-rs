@@ -101,6 +101,8 @@ impl VersionStruct for v1_21_50::AimAssistPreset {
     }
 
     /// The whole document, at the version it was read at.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
             &self
@@ -128,6 +130,8 @@ impl VersionStruct for AimAssistPreset {
     }
 
     /// The whole document, at format 1.21.120.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
             "1.21.120",
@@ -152,6 +156,8 @@ impl VersionStruct for AimAssistCategories {
     }
 
     /// The whole document, at format 1.21.50.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
             "1.21.50",

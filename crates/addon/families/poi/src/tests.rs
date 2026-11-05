@@ -1,9 +1,9 @@
 //! Unit tests of the crate-private parts: the name pattern, the walk's file filter, the cycle
 //! text's arity, the graph helpers and the link checker.
 
+use super::LOADER;
 use super::link::{Targets, link};
-use super::load::LOADER;
-use super::parse::is_poi_name;
+use super::read::is_poi_name;
 use super::resolve::{TagNode, collect_members, components};
 use super::validate::{PART_OF_A_CYCLE, part_of_a_cycle};
 use super::{Poi, PoiTag, PoiType};
@@ -355,7 +355,7 @@ fn a_value_the_writer_refuses_is_an_error_of_validate_not_silence() {
         at: member,
         what: Unrepresentable::NaN,
     };
-    let finding = super::load::unwritable(&error, "minecraft:poi_block");
+    let finding = super::unwritable(&error, "minecraft:poi_block");
     assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(finding.phase, Phase::Validate);
@@ -441,5 +441,5 @@ fn m7_the_unknown_block_carries_the_registry_s_text() {
 #[test]
 fn a_walked_file_implements_debug() {
     fn assert_debug<T: std::fmt::Debug>() {}
-    assert_debug::<super::load::PoiFile>();
+    assert_debug::<super::PoiFile>();
 }
