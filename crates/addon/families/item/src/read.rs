@@ -10,11 +10,11 @@ use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{JsonSlice, PrepareError, Prepared, Value};
 use bedrock_addon_core::load::{DocumentSource, LoadContext};
 use bedrock_addon_core::pack_identity::PackType;
-use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     self, DocumentRead, Family, LoadOutcome, Loaded, OpenBeta, ParseCx,
 };
+use bedrock_addon_shared_shapes::CreativeCategory;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 

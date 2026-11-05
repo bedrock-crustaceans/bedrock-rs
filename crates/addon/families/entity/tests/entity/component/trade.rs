@@ -1,11 +1,11 @@
 //! `admire_item`, `barter`, `trade_table`, `tamemount`, `wither_target_highest_damage`.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::shared::ItemDescriptor;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     AdmireItem, Barter, EntityTypes, Tamemount, TradeTable, WitherTargetHighestDamage,
 };
+use bedrock_addon_shared_shapes::ItemDescriptor;
 
 use super::{has, json, read_as, round_trip, strict, write};
 

@@ -3,8 +3,8 @@
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use indexmap::IndexMap;
 
 use super::component::ItemComponent;
@@ -126,7 +126,7 @@ impl ItemDescription {
     pub fn category_is_written(&self) -> bool {
         self.menu_category_presence == MenuCategoryPresence::Category
             || self.menu_category.category
-                != Some(bedrock_addon_core::shared::CreativeCategory::ItemCommandOnly)
+                != Some(bedrock_addon_shared_shapes::CreativeCategory::ItemCommandOnly)
     }
 }
 

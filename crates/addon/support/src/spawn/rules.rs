@@ -5,7 +5,7 @@ use super::condition::{
     Condition, KEYS, MAX_DEFAULT_SPAWN_DISTANCE, MIN_DEFAULT_SPAWN_DISTANCE, Profile, sorted,
 };
 use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::shared::BlockDescriptor;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// A world difficulty, as `minecraft:difficulty_filter` names it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

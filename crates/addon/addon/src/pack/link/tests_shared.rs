@@ -42,7 +42,7 @@ fn told(lints: bool, resolve: for<'a, 'b, 'c> fn(&'a LinkCx<'b>, &'c mut Finding
 
 #[cfg(feature = "item")]
 mod items {
-    use bedrock_addon_core::shared::ItemDescriptor;
+    use bedrock_addon_shared_shapes::ItemDescriptor;
 
     use super::super::super::item_descriptor;
     use super::*;
@@ -164,7 +164,7 @@ mod items {
 
 #[cfg(feature = "block")]
 mod blocks {
-    use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier};
+    use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
     use super::super::super::{block_descriptor, block_specifier};
     use super::*;

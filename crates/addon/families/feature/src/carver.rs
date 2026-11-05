@@ -10,8 +10,8 @@ use super::values::{CarverRange, JsonInt};
 use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
-use bedrock_addon_core::shared::BlockSpecifier;
 use bedrock_addon_core::versioning::ValidateCx;
+use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// The client's text for a float range array of another length than two.
 const FLOAT_RANGE_ARRAY: &str =

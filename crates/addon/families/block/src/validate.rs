@@ -28,11 +28,11 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::{Molang, SourceForm};
 use bedrock_addon_core::schema::{Schema, SchemaCx};
-use bedrock_addon_core::shared::StateValue;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     Family, FieldMeta, Reading, ValidateCx, check_fields_since_engine,
 };
+use bedrock_addon_shared_shapes::StateValue;
 
 /// `Family::validate`.
 pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {

@@ -7,9 +7,10 @@ use super::read::{
 };
 use super::values::{BlockList, Chance, ChanceList, JsonInt};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
-use bedrock_addon_core::shared::{BlockDescriptor, IntRange};
+use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{FieldMeta, ValidateCx, check_fields_since_engine};
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// The walk of one payload's rules over the validation context: where it is (`at`), the
 /// pack's load context (the engine version the gates compare against), the file's

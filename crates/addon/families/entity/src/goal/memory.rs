@@ -12,9 +12,10 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
-use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter, FloatRange};
+use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 use facet::Facet;
 
 use super::check::{Bound, Goal, GoalCheck};

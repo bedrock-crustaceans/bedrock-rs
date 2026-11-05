@@ -20,8 +20,8 @@ mod write;
 mod tests;
 
 use bedrock_addon_core::id::ItemId;
-use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_shared_shapes::CreativeCategory;
 
 // The checkers the link pass calls (`pack::link::content`).
 #[allow(unused_imports, reason = "the link pass reads them")]

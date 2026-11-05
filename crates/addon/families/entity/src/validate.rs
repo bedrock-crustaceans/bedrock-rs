@@ -13,10 +13,11 @@ use bedrock_addon_core::molang::{
     Molang, MolangContext, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step,
     not_checked, pass_one,
 };
-use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter};
+use bedrock_addon_core::shared::{EventTrigger, Filter};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::ValidateCx;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 use indexmap::IndexMap;
 
 use super::component::EntityComponent;

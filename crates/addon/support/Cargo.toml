@@ -19,6 +19,7 @@ molang = ["bedrock_addon_core/molang"]
 
 [dependencies]
 bedrock_addon_core = { path = "../core" }
+bedrock_addon_shared_shapes = { path = "../shared/shapes" }
 facet = { workspace = true }
 facet-json = { workspace = true }
 facet-value = { workspace = true }

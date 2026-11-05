@@ -139,7 +139,7 @@ impl GlyphRemapping {
 }
 
 // The PNG header reader is core's, shared with the other glyph-sheet checks.
-pub use bedrock_addon_core::shared::png_size;
+pub use bedrock_addon_shared_shapes::png_size;
 
 /// Checks a glyph sheet (`font/glyph_XX.png`, `font/default8.png`) given its bytes: the game
 /// cuts a sheet into 16 by 16 cells of a sixteenth of its width, so a sheet that is not square

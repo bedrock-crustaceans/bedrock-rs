@@ -3,7 +3,7 @@ use bedrock_addon_core::diagnostic::{
     DiagnosticCode, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
 use bedrock_addon_core::id::BlockId;
-use bedrock_addon_core::shared::{BlockDescriptor, ItemDescriptor};
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
 use super::super::{
     At, Findings, LinkCx, Member, States, Target, block_descriptor, kinds, unresolved,
@@ -165,7 +165,7 @@ fn block_as_item(
 ) {
     #[cfg(feature = "item")]
     {
-        use bedrock_addon_core::shared::ItemDescriptorForm;
+        use bedrock_addon_shared_shapes::ItemDescriptorForm;
         let mut at = at;
         let ItemDescriptor::Item { id, form, .. } = ItemDescriptor::from(value.clone()) else {
             return;

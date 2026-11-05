@@ -13,8 +13,8 @@ use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString}
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion};
 use bedrock_addon_core::schema;
-use bedrock_addon_core::shared::MenuCategory;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_shared_shapes::MenuCategory;
 
 /// A custom block (`minecraft:block`), at the newest format version.
 ///

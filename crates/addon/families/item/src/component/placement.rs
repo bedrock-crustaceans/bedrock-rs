@@ -1,7 +1,8 @@
 //! Placing and digging: `block_placer`, `digger`, `entity_placer`.
 
 use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, EventTrigger};
+use bedrock_addon_core::shared::EventTrigger;
+use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 use facet::Facet;
 
 use super::{visit_block_descriptor, visit_block_descriptors};

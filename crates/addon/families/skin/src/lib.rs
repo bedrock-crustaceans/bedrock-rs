@@ -236,7 +236,7 @@ impl SkinPack {
 
 fn creator_rule(bytes: &[u8], sizes: &[(u32, u32)]) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
-    if bedrock_addon_core::shared::png_size(bytes).is_some_and(|size| !sizes.contains(&size)) {
+    if bedrock_addon_shared_shapes::png_size(bytes).is_some_and(|size| !sizes.contains(&size)) {
         diagnostics.push(Diagnostic::info(DiagnosticCode::SkinPackCreatorRule));
     }
     diagnostics

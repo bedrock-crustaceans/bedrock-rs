@@ -17,6 +17,7 @@ members = [
     "crates/addon/support",
     "crates/addon/vanilla",
     "crates/addon/families/*",
+    "crates/addon/shared/*",
     "xtask",
 ]
 resolver = "3"

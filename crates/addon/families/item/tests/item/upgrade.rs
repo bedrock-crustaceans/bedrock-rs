@@ -9,7 +9,6 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Seve
 use bedrock_addon_core::document::{ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
 use bedrock_addon_family_item::component::{
@@ -18,6 +17,7 @@ use bedrock_addon_family_item::component::{
 };
 use bedrock_addon_family_item::history::{self, Component, ItemDocument};
 use bedrock_addon_family_item::{Item, ItemFormat};
+use bedrock_addon_shared_shapes::CreativeCategory;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 

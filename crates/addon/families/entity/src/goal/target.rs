@@ -2,9 +2,10 @@
 
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
-use bedrock_addon_core::shared::{EventTrigger, FloatRange, ItemDescriptor};
+use bedrock_addon_core::shared::{EventTrigger, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 
 use super::check::{Bound, Deprecated, Goal, GoalCheck, deprecated_text};

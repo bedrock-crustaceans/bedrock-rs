@@ -5,7 +5,8 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use bedrock_addon_core::json::{JsonType, ScalarShape, StrictError, Value};
-use bedrock_addon_core::shared::{BlockDescriptor, FloatRange};
+use bedrock_addon_core::shared::FloatRange;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// An integer member as vanilla's feature schema reads it (jsoncpp `isInt`): an integer token,
 /// or a real token with an integral value (`2.0`, which vanilla's own geode feature writes).

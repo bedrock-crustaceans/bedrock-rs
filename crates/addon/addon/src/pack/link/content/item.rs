@@ -74,7 +74,7 @@ impl crate::families::crafting_catalog::Definitions for ItemDefinitions<'_> {
     fn menu_category(
         &self,
         id: &bedrock_addon_core::id::ItemId,
-    ) -> Option<(&bedrock_addon_core::shared::MenuCategory, bool)> {
+    ) -> Option<(&bedrock_addon_shared_shapes::MenuCategory, bool)> {
         self.0.get(id).map(|document| {
             let description = &document.description;
             (

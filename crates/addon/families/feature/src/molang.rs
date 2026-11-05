@@ -8,7 +8,7 @@ use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::molang::{
     MolangFieldSpec, MolangVersionSource, MolangVisitor, ReaderKind, Step,
 };
-use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier};
+use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
 /// A descriptor's `tags`: the pack's Molang version, the `tags` query set; vanilla logs the
 /// parser's lines at level 3 and keeps the descriptor, so a rejection is a kept error.

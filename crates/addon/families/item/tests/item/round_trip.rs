@@ -414,8 +414,8 @@ fn description_of(json: &str) -> bedrock_addon_family_item::ItemDescription {
 /// presence record and `category_is_written` tell them apart.
 #[test]
 fn the_presence_record_tells_a_written_none_from_an_absent_category() {
-    use bedrock_addon_core::shared::CreativeCategory;
     use bedrock_addon_family_item::MenuCategoryPresence as Presence;
+    use bedrock_addon_shared_shapes::CreativeCategory;
 
     for (members, presence, category, written) in [
         (
@@ -469,8 +469,8 @@ fn the_presence_record_tells_a_written_none_from_an_absent_category() {
 /// as a written `none`.
 #[test]
 fn an_upgraded_documents_category_is_stated_and_written() {
-    use bedrock_addon_core::shared::CreativeCategory;
     use bedrock_addon_family_item::MenuCategoryPresence as Presence;
+    use bedrock_addon_shared_shapes::CreativeCategory;
 
     for (version, category, reads_back) in [
         (
@@ -504,8 +504,8 @@ fn an_upgraded_documents_category_is_stated_and_written() {
 /// item, which is shown to commands only, writes no `menu_category` until one is set.
 #[test]
 fn a_category_set_by_the_caller_is_written() {
-    use bedrock_addon_core::shared::CreativeCategory;
     use bedrock_addon_family_item::MenuCategoryPresence as Presence;
+    use bedrock_addon_shared_shapes::CreativeCategory;
 
     let description = |item: &Item| {
         let value: bedrock_addon_core::json::Value =
@@ -927,7 +927,7 @@ fn the_block_and_the_frame_count_of_a_component_based_item_are_written_back() {
 /// versions with a category that has a spelling, and an item from 1.21.110 on, say nothing.
 #[test]
 fn an_undefined_category_the_newest_format_cannot_spell_is_told_at_the_load() {
-    use bedrock_addon_core::shared::CreativeCategory;
+    use bedrock_addon_shared_shapes::CreativeCategory;
     let told = |version: &str, description: &str| -> (Vec<String>, Item) {
         let text = format!(
             r#"{{"format_version": "{version}", "minecraft:item": {{"description": {{"identifier": "demo:copper_spear"{description}}}, "components": {{"minecraft:icon": {{"textures": {{"default": "copper_spear"}}}}, "minecraft:max_stack_size": 1}}}}}}"#

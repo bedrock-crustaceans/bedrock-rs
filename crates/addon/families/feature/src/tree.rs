@@ -13,9 +13,10 @@ use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{JsonType, StrictError, Value};
-use bedrock_addon_core::shared::{BlockDescriptor, IntRange};
+use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// The engine that adds `decoration_blocks_sequence`.
 const ENGINE_1_26_10: FormatVersion = known::V1_26_10;

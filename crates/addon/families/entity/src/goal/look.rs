@@ -3,9 +3,10 @@
 use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
-use bedrock_addon_core::shared::{Filter, FloatRange, IntRange, ItemDescriptor};
+use bedrock_addon_core::shared::{Filter, FloatRange, IntRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 use facet_value::VObject;
 

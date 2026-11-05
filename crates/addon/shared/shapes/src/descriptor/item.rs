@@ -1,14 +1,16 @@
 //! `ItemDescriptor`: one item, or a set of items by tag.
 
+use bedrock_addon_core::molang::MolangSource;
 use facet_value::VObject;
-use molang::json::MolangSource;
 
-use super::read::{compact, molang_source, molang_value};
-use super::{finding, unrecognized_except};
-use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
-use crate::document::UnknownMembers;
-use crate::id::ItemId;
-use crate::json::Value;
+use bedrock_addon_core::diagnostic::{
+    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::id::ItemId;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::shared::read::{compact, molang_source, molang_value};
+use bedrock_addon_core::shared::{finding, unrecognized_except};
 
 /// An item, or a set of items by tag, as the game's item descriptor.
 ///

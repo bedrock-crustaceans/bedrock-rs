@@ -80,7 +80,8 @@ pub enum ShapeErrorKind {
 /// A [`ShapeError`] while it travels out of nested readers: the steps are innermost first, so
 /// each reader adds its own step on the way out.
 #[derive(Debug)]
-pub(crate) struct Failure {
+#[doc(hidden)]
+pub struct Failure {
     kind: ShapeErrorKind,
     steps: Vec<Step>,
 }
@@ -94,7 +95,8 @@ enum Step {
 
 impl Failure {
     /// A failure of the value itself.
-    pub(crate) fn new(kind: ShapeErrorKind) -> Self {
+    #[doc(hidden)]
+    pub fn new(kind: ShapeErrorKind) -> Self {
         Self {
             kind,
             steps: Vec::new(),
@@ -104,7 +106,8 @@ impl Failure {
     /// The failure seen from one object further out: it happened inside member `key`. [`ROOT`]
     /// adds no step.
     #[must_use]
-    pub(crate) fn key(mut self, key: &str) -> Self {
+    #[doc(hidden)]
+    pub fn key(mut self, key: &str) -> Self {
         if key != ROOT {
             self.steps.push(Step::Key(key.into()));
         }
@@ -113,7 +116,8 @@ impl Failure {
 
     /// The failure seen from one array further out: it happened inside element `index`.
     #[must_use]
-    pub(crate) fn index(mut self, index: usize) -> Self {
+    #[doc(hidden)]
+    pub fn index(mut self, index: usize) -> Self {
         self.steps.push(Step::Index(index));
         self
     }
@@ -136,15 +140,18 @@ impl From<Failure> for ShapeError {
 }
 
 /// The member name used when the failing value is the value itself.
-pub(crate) const ROOT: &str = "<value>";
+#[doc(hidden)]
+pub const ROOT: &str = "<value>";
 
 /// A failure of `kind` in member `member` ([`ROOT`]: the value itself).
-pub(crate) fn fail(member: &'static str, kind: ShapeErrorKind) -> Failure {
+#[doc(hidden)]
+pub fn fail(member: &'static str, kind: ShapeErrorKind) -> Failure {
     Failure::new(kind).key(member)
 }
 
 /// [`ShapeErrorKind::WrongType`] in member `member` for `found`.
-pub(crate) fn wrong_type(member: &'static str, expected: &'static str, found: &Value) -> Failure {
+#[doc(hidden)]
+pub fn wrong_type(member: &'static str, expected: &'static str, found: &Value) -> Failure {
     fail(
         member,
         ShapeErrorKind::WrongType {
@@ -155,7 +162,8 @@ pub(crate) fn wrong_type(member: &'static str, expected: &'static str, found: &V
 }
 
 /// A string member.
-pub(crate) fn string(member: &'static str, value: &Value) -> Result<String, Failure> {
+#[doc(hidden)]
+pub fn string(member: &'static str, value: &Value) -> Result<String, Failure> {
     value
         .as_string()
         .map(|s| s.as_str().to_owned())
@@ -164,7 +172,8 @@ pub(crate) fn string(member: &'static str, value: &Value) -> Result<String, Fail
 
 /// An integer token that fits `i32` (jsoncpp `isInt`; a real token is a real even when it is
 /// integral).
-pub(crate) fn int(member: &'static str, value: &Value) -> Result<i32, Failure> {
+#[doc(hidden)]
+pub fn int(member: &'static str, value: &Value) -> Result<i32, Failure> {
     match value.as_number() {
         Some(number) if !number.is_float() => number
             .to_i64()
@@ -175,7 +184,8 @@ pub(crate) fn int(member: &'static str, value: &Value) -> Result<i32, Failure> {
 }
 
 /// A number token (integer or real) that is finite as an `f32` (jsoncpp `isDouble`).
-pub(crate) fn float(member: &'static str, value: &Value) -> Result<f32, Failure> {
+#[doc(hidden)]
+pub fn float(member: &'static str, value: &Value) -> Result<f32, Failure> {
     let number = value
         .as_number()
         .ok_or_else(|| wrong_type(member, "a number", value))?;
@@ -190,7 +200,8 @@ pub(crate) fn float(member: &'static str, value: &Value) -> Result<f32, Failure>
 
 /// An `f32` as a real-tagged JSON number in its shortest form: the `f64` nearest to the `f32`'s
 /// shortest decimal, so `0.1_f32` is written `0.1`, not `0.10000000149011612`.
-pub(crate) fn f32_value(x: f32) -> Result<Value, Failure> {
+#[doc(hidden)]
+pub fn f32_value(x: f32) -> Result<Value, Failure> {
     let not_representable = || Failure::new(ShapeErrorKind::NotRepresentable);
     if !x.is_finite() {
         return Err(not_representable());
@@ -201,7 +212,8 @@ pub(crate) fn f32_value(x: f32) -> Result<Value, Failure> {
 
 /// A Molang member: a string, or the object form `{"expression": string, "version": integer}`
 /// (molang's `MolangSource` reader). `None` for any other value.
-pub(crate) fn molang_source(value: &Value) -> Option<MolangSource> {
+#[doc(hidden)]
+pub fn molang_source(value: &Value) -> Option<MolangSource> {
     if let Some(text) = value.as_string() {
         return Some(MolangSource::string_without_context(text.as_str()));
     }
@@ -216,7 +228,8 @@ pub(crate) fn molang_source(value: &Value) -> Option<MolangSource> {
 }
 
 /// A Molang member as JSON, in the form it was read.
-pub(crate) fn molang_value(source: &MolangSource) -> Value {
+#[doc(hidden)]
+pub fn molang_value(source: &MolangSource) -> Value {
     match source.form() {
         SourceForm::Object { version } => {
             let mut object = facet_value::VObject::new();
@@ -229,7 +242,8 @@ pub(crate) fn molang_value(source: &MolangSource) -> Value {
 }
 
 /// `value` as one line of JSON, the way a vanilla message prints a rejected value.
-pub(crate) fn compact(value: &Value) -> String {
+#[doc(hidden)]
+pub fn compact(value: &Value) -> String {
     let mut out = Vec::new();
     let style = WriteStyle {
         indent: Indent::Compact,
@@ -241,7 +255,8 @@ pub(crate) fn compact(value: &Value) -> String {
 }
 
 /// jsoncpp's `ValueType` number of `value`, as vanilla prints a state type.
-pub(crate) fn jsoncpp_type(value: &Value) -> i32 {
+#[doc(hidden)]
+pub fn jsoncpp_type(value: &Value) -> i32 {
     match value.as_number() {
         // jsoncpp's reader keeps every integer that fits `Int64` as `intValue`.
         Some(n) if n.is_float() => 3,

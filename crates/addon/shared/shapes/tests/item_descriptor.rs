@@ -2,14 +2,13 @@
 //! `Invalid` with vanilla's `InvalidType` text; several keys follow the interim rule of taking one
 //! and keeping the rest.
 
-#[path = "shared/common.rs"]
 mod common;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangSource, SourceForm};
-use bedrock_addon_core::shared::{ItemDescriptor, ItemDescriptorForm};
+use bedrock_addon_shared_shapes::{ItemDescriptor, ItemDescriptorForm};
 use common::{compact, read, round_trip};
 
 /// The id and form of an `Item` descriptor.

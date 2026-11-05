@@ -6,7 +6,7 @@ use bedrock_addon_core::molang::{
     MolangFieldSpec, MolangVersion, MolangVersionSource, MolangVisitor,
 };
 use bedrock_addon_core::schema::Schema;
-use bedrock_addon_core::shared::{BlockDescriptor, ItemDescriptor};
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
 use facet_value::{VArray, VObject};
 

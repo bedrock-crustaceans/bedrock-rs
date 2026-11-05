@@ -59,7 +59,6 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::BlockSpecifier;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
@@ -68,6 +67,7 @@ use bedrock_addon_core::versioning::{
     Reading, Scalars, StructIndex, ValidateCx, VersionStruct, finish, member_version,
     parse_as_written, write_envelope,
 };
+use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// A server biome (`minecraft:biome`), at the newest format version.
 ///

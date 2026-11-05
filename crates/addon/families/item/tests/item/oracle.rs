@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 
 use bedrock_addon_core::document::ComponentRef;
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_family_item::Item;
 use bedrock_addon_family_item::component::{ItemComponent, MaxStackSize, StartUsing, UseModifiers};
+use bedrock_addon_shared_shapes::CreativeCategory;
 
 use super::common::*;
 

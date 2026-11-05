@@ -332,11 +332,11 @@ impl Pack {
     /// height is `PackIconShape` (info). This is where the two lints run for a pack whose icon
     /// is indexed and not read: the caller reads `pack_icon.png` and passes the bytes; no load
     /// of this crate requests them.
-    // The reader is core's `shared::png_size`, the one the glyph sheet lint uses.
+    // The reader is `bedrock_addon_shared_shapes::png_size`, the one the glyph sheet lint uses.
     #[must_use]
     pub fn check_icon(bytes: &[u8]) -> Diagnostics {
         let mut diagnostics = Diagnostics::default();
-        match bedrock_addon_core::shared::png_size(bytes) {
+        match bedrock_addon_shared_shapes::png_size(bytes) {
             None => diagnostics.push(icon_finding(
                 // The game reads no icon bytes at load, so bytes that are not a PNG are not a
                 // finding of the game's: the crate reports them as an information.

@@ -281,21 +281,7 @@ impl<K: crate::id::Kind> MolangFields for crate::id::Id<K> {
 }
 
 // A filter and a range hold no Molang a document's walk visits.
-crate::impl_no_molang!(
-    crate::shared::Filter,
-    crate::shared::FilterSubject,
-    crate::shared::MenuCategory,
-);
-
-/// An item descriptor's `tags` (the tags form) is a Molang field, under the walk's default
-/// spec, as a block descriptor's is.
-impl MolangFields for crate::shared::ItemDescriptor {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Self::Tags { tags, .. } = self {
-            visitor.field_default("tags", tags);
-        }
-    }
-}
+crate::impl_no_molang!(crate::shared::Filter, crate::shared::FilterSubject);
 
 /// The object form of a `render_controllers` entry: every member's condition is a Molang
 /// field at its key, under the walk's default spec (a family whose conditions read otherwise
@@ -317,17 +303,6 @@ impl MolangFields for crate::visual::AnimateEntry {
         if let Self::Conditional(members) = self {
             let spec = *visitor.default_spec();
             members.visit_slot(&spec, visitor);
-        }
-    }
-}
-
-/// A block descriptor's `tags` (the tags and mixed forms) is a Molang field, under the walk's
-/// default spec: a family whose descriptor tags read otherwise (`DESCRIPTOR_TAGS` in feature,
-/// block and entity) walks them with its own function, named by `schema::molang_with`.
-impl MolangFields for crate::shared::BlockDescriptor {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Self::Tags { tags, .. } | Self::Mixed { tags, .. } = self {
-            visitor.field_default("tags", tags);
         }
     }
 }
@@ -525,46 +500,4 @@ macro_rules! impl_no_molang {
             }
         )+
     };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::shared::BlockDescriptor;
-
-    /// The path and spec of every field the walk of `descriptor` visits, under `default_spec`.
-    fn fields_of(
-        descriptor: &mut BlockDescriptor,
-        default_spec: &MolangFieldSpec,
-    ) -> Vec<(String, MolangFieldSpec)> {
-        let mut found = Vec::new();
-        visit_fields_under(
-            descriptor,
-            &JsonPath::new().child("block"),
-            default_spec,
-            |field| found.push((field.path.to_string(), *field.spec)),
-        );
-        found
-    }
-
-    #[test]
-    fn a_block_descriptor_visits_its_tags_under_the_walks_default_spec() {
-        let spec = MolangFieldSpec::KEPT.tags();
-        let json =
-            |text: &str| crate::json::from_str_jsonc::<crate::json::Value>(text).expect("JSON");
-        let mut tags = BlockDescriptor::from(json(r#"{"tags": "query.any_tag('stone')"}"#));
-        assert_eq!(
-            fields_of(&mut tags, &spec),
-            [("block/tags".to_owned(), spec)]
-        );
-        let mut mixed = BlockDescriptor::from(json(
-            r#"{"name": "minecraft:stone", "tags": "query.any_tag('stone')"}"#,
-        ));
-        assert_eq!(
-            fields_of(&mut mixed, &spec),
-            [("block/tags".to_owned(), spec)]
-        );
-        let mut block = BlockDescriptor::from(json(r#"{"name": "minecraft:stone"}"#));
-        assert_eq!(fields_of(&mut block, &spec), []);
-    }
 }

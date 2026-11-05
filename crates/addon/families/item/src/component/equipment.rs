@@ -3,7 +3,8 @@
 
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::molang::Molang;
-use bedrock_addon_core::shared::{IntRange, ItemDescriptor};
+use bedrock_addon_core::shared::IntRange;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 
 use super::{FORMAT_VERSION_MOLANG, visit_item_descriptors};

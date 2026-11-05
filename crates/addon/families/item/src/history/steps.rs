@@ -6,8 +6,9 @@ use bedrock_addon_core::document::{ComponentMap, CustomComponent};
 use bedrock_addon_core::molang::{
     Molang, MolangContext, MolangFieldMut, MolangFields, visit_fields,
 };
-use bedrock_addon_core::shared::{CreativeCategory, EventTrigger, MenuCategory};
+use bedrock_addon_core::shared::EventTrigger;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use facet_value::VObject;
 
 use super::component::{Component, Components, CustomComponentEntry, CustomComponents};

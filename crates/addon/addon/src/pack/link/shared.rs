@@ -14,9 +14,9 @@ use bedrock_addon_core::document::Origin;
 #[cfg(feature = "block")]
 use bedrock_addon_core::id::BlockId;
 #[cfg(feature = "block")]
-use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, StateValue};
+use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier, StateValue};
 #[cfg(feature = "item")]
-use bedrock_addon_core::shared::{ItemDescriptor, ItemDescriptorForm};
+use bedrock_addon_shared_shapes::{ItemDescriptor, ItemDescriptorForm};
 #[cfg(feature = "block")]
 use indexmap::IndexMap;
 

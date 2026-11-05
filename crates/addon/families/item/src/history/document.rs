@@ -7,12 +7,12 @@ use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, NullRule, Value, parse_at};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, Schema, SchemaCx};
-use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ConvertMode, ParseCx, Reading, VersionStruct, Versioned, parse_component,
     parse_payload, write_payload,
 };
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use facet::Facet;
 use facet_json::RawJson;
 use facet_value::VObject;
@@ -1300,7 +1300,8 @@ fn at(parts: &[&str]) -> JsonPath {
     reason = "one arm per component holding shared values"
 )]
 fn shared_checks(component: &Component, d: &mut Diagnostics) {
-    use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, ItemDescriptor};
+    use bedrock_addon_core::shared::EventTrigger;
+    use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
     let items = |list: &[ItemDescriptor], key: &str, d: &mut Diagnostics| {
         for (i, item) in list.iter().enumerate() {
             d.extend(item.check(&at(&[key, &i.to_string()])));

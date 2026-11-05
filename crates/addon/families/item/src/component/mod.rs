@@ -286,17 +286,17 @@ pub(crate) const BLOCK_TAGS_MOLANG: MolangFieldSpec = MolangFieldSpec::KEPT
 
 /// Visits the `tags` expression of an item descriptor.
 pub(crate) fn visit_item_descriptor(
-    descriptor: &mut bedrock_addon_core::shared::ItemDescriptor,
+    descriptor: &mut bedrock_addon_shared_shapes::ItemDescriptor,
     visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
 ) {
-    if let bedrock_addon_core::shared::ItemDescriptor::Tags { tags, .. } = descriptor {
+    if let bedrock_addon_shared_shapes::ItemDescriptor::Tags { tags, .. } = descriptor {
         visitor.field("tags", &ITEM_TAGS_MOLANG, tags);
     }
 }
 
 /// Visits the `tags` expression of every item descriptor of a list.
 pub(crate) fn visit_item_descriptors(
-    list: &mut [bedrock_addon_core::shared::ItemDescriptor],
+    list: &mut [bedrock_addon_shared_shapes::ItemDescriptor],
     visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
 ) {
     for (index, descriptor) in list.iter_mut().enumerate() {
@@ -308,7 +308,7 @@ pub(crate) fn visit_item_descriptors(
 
 /// Visits the `tags` expression of an item descriptor, when one is written.
 pub(crate) fn visit_optional_item_descriptor(
-    descriptor: &mut Option<bedrock_addon_core::shared::ItemDescriptor>,
+    descriptor: &mut Option<bedrock_addon_shared_shapes::ItemDescriptor>,
     visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
 ) {
     if let Some(descriptor) = descriptor {
@@ -318,7 +318,7 @@ pub(crate) fn visit_optional_item_descriptor(
 
 /// Visits the `tags` expression of every block descriptor of a list.
 pub(crate) fn visit_block_descriptors(
-    list: &mut [bedrock_addon_core::shared::BlockDescriptor],
+    list: &mut [bedrock_addon_shared_shapes::BlockDescriptor],
     visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
 ) {
     for (index, descriptor) in list.iter_mut().enumerate() {
@@ -330,10 +330,10 @@ pub(crate) fn visit_block_descriptors(
 
 /// Visits the `tags` expression of a block descriptor.
 pub(crate) fn visit_block_descriptor(
-    descriptor: &mut bedrock_addon_core::shared::BlockDescriptor,
+    descriptor: &mut bedrock_addon_shared_shapes::BlockDescriptor,
     visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
 ) {
-    use bedrock_addon_core::shared::BlockDescriptor;
+    use bedrock_addon_shared_shapes::BlockDescriptor;
     if let BlockDescriptor::Tags { tags, .. } | BlockDescriptor::Mixed { tags, .. } = descriptor {
         visitor.field("tags", &BLOCK_TAGS_MOLANG, tags);
     }

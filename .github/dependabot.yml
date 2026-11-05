@@ -12,6 +12,7 @@ updates:
       - "/crates/*"
       - "/crates/addon/*"
       - "/crates/addon/families/*"
+      - "/crates/addon/shared/*"
       - "/xtask"
     schedule:
       interval: weekly

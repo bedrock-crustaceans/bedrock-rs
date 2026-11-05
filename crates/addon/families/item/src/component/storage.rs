@@ -1,7 +1,7 @@
 //! Bundles: `bundle_interaction`, `storage_item`, `storage_weight_limit`,
 //! `storage_weight_modifier`.
 
-use bedrock_addon_core::shared::ItemDescriptor;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 
 use super::visit_item_descriptors;

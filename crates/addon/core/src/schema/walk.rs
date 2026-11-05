@@ -119,26 +119,9 @@ impl<K: crate::id::Kind> SchemaFields for crate::id::Id<K> {
 crate::impl_schema_leaf!(
     crate::shared::Filter,
     crate::shared::FilterSubject,
-    crate::shared::ItemDescriptor,
-    crate::shared::MenuCategory,
     crate::visual::ControllerUse,
     crate::visual::AnimateEntry,
 );
-
-/// A block descriptor reads its own syntax and holds no bound and no trigger; its `tags` (the
-/// tags and mixed forms) is walked at its member, a Molang value as any other (the Molang walk
-/// is `MolangFields`'s).
-impl SchemaFields for crate::shared::BlockDescriptor {
-    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
-        if let Self::Tags { tags, .. } | Self::Mixed { tags, .. } = self {
-            cx.enter("tags");
-            tags.check_fields(cx);
-            cx.leave();
-        }
-    }
-
-    fn trigger_members(_: &str, _: &mut Vec<String>) {}
-}
 
 impl<T: crate::shared::RangeEnd> SchemaFields for crate::shared::Range<T> {
     fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
@@ -264,7 +247,6 @@ crate::impl_schema_leaf!(
     crate::molang::Molang,
     crate::molang::MolangSource,
     crate::molang::MolangList,
-    crate::shared::BlockSpecifier,
 );
 
 /// A number a bound compares: the derive converts the value and the limit with `to_f64` for

@@ -12,7 +12,8 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::shared::{BlockDescriptor, Filter};
+use bedrock_addon_core::shared::Filter;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// One descriptor or a list of them, as written. A member that takes either keeps the form, so
 /// writing reproduces it.

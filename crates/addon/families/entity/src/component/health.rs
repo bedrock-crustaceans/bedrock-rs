@@ -8,8 +8,9 @@ use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::{Filter, FloatRange, ItemDescriptor};
+use bedrock_addon_core::shared::{Filter, FloatRange};
 use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 use facet_value::VObject;
 

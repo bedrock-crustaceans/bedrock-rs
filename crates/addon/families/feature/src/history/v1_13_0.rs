@@ -12,11 +12,11 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
-use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, write_payload,
 };
+use bedrock_addon_shared_shapes::BlockDescriptor;
 use bedrock_addon_support::scatter::{
     CoordinateEvalOrder, CoordinateRange, ScatterChance, ScatterParams,
 };

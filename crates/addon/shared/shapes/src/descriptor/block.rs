@@ -1,18 +1,20 @@
 //! `BlockDescriptor`, `BlockSpecifier`, `StateValue`: blocks named by a document.
 
+use bedrock_addon_core::molang::MolangSource;
 use facet_value::VObject;
 use indexmap::IndexMap;
-use molang::json::MolangSource;
 
-use super::read::{
+use bedrock_addon_core::diagnostic::{
+    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::id::BlockId;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::shared::read::{
     Failure, ROOT, ShapeError, ShapeErrorKind, compact, fail, jsoncpp_type, molang_source,
     molang_value, wrong_type,
 };
-use super::{finding, unrecognized};
-use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
-use crate::document::UnknownMembers;
-use crate::id::BlockId;
-use crate::json::Value;
+use bedrock_addon_core::shared::{finding, unrecognized};
 
 /// A block, a block with states, or a tag expression, as the game's block descriptor.
 ///
@@ -345,7 +347,9 @@ impl StateValue {
         } else if let Some(s) = value.as_string() {
             Some(Self::String(s.as_str().to_owned()))
         } else {
-            super::read::int(ROOT, value).ok().map(Self::Int)
+            bedrock_addon_core::shared::read::int(ROOT, value)
+                .ok()
+                .map(Self::Int)
         }
     }
 }

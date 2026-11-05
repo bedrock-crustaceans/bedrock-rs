@@ -23,8 +23,9 @@ use super::texts::{
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;
-use bedrock_addon_core::shared::{BlockSpecifier, RangeForm};
+use bedrock_addon_core::shared::RangeForm;
 use bedrock_addon_core::versioning::ValidateCx;
+use bedrock_addon_shared_shapes::BlockSpecifier;
 
 #[cfg(feature = "molang")]
 use super::texts::EXPRESSION;

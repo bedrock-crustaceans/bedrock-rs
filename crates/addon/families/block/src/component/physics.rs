@@ -8,7 +8,7 @@ use super::types::{BoundingBox, Bounds, Direction, Facing, Vec3};
 use super::{DESCRIPTOR_TAGS, ITEM_TAGS};
 use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::{BlockDescriptor, ItemDescriptor};
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
 /// `minecraft:selection_box`: what the player's cursor hits.
 ///

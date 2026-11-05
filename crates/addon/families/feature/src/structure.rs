@@ -12,10 +12,10 @@ use super::values::JsonInt;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// The engine that adds `rotate_around_center` and `embed_in_surface`.
 pub(crate) const ENGINE_1_26_20: FormatVersion = known::V1_26_20;

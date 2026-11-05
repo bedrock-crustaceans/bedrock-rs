@@ -8,8 +8,9 @@ use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::{EventTrigger, IntRange, ItemDescriptor, RangeForm};
+use bedrock_addon_core::shared::{EventTrigger, IntRange, RangeForm};
 use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 use facet_value::VObject;
 

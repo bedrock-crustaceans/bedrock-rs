@@ -664,7 +664,7 @@ pub struct Placed {
     pub corners: [Inner; 2],
     pub offset: Option<[f32; 3]>,
     pub filter: Option<bedrock_addon_core::shared::Filter>,
-    pub replaces: Option<Vec<bedrock_addon_core::shared::BlockDescriptor>>,
+    pub replaces: Option<Vec<bedrock_addon_shared_shapes::BlockDescriptor>>,
     pub height: Option<bedrock_addon_core::shared::IntRange>,
 }
 
@@ -695,7 +695,7 @@ fn check_and_triggers_walk_into_fixed_arrays_past_identifiers_and_shared_values(
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Shared {
     pub filter: Option<bedrock_addon_core::shared::Filter>,
-    pub block: bedrock_addon_core::shared::BlockSpecifier,
+    pub block: bedrock_addon_shared_shapes::BlockSpecifier,
     pub range: Option<bedrock_addon_core::shared::FloatRange>,
     pub inner: Inner,
 }
@@ -705,7 +705,7 @@ fn filters_block_specifiers_and_ranges_are_leaves_of_the_walk() {
     assert_eq!(Shared::triggers(), ["inner.on_y"]);
     let mut shared = Shared {
         filter: None,
-        block: bedrock_addon_core::shared::BlockSpecifier::new(
+        block: bedrock_addon_shared_shapes::BlockSpecifier::new(
             bedrock_addon_core::id::BlockId::parse("minecraft:stone"),
         ),
         range: None,
@@ -727,16 +727,16 @@ fn filters_block_specifiers_and_ranges_are_leaves_of_the_walk() {
 /// without a family's own impl.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct CoreValues {
-    pub item: bedrock_addon_core::shared::ItemDescriptor,
-    pub items: Option<Vec<bedrock_addon_core::shared::ItemDescriptor>>,
+    pub item: bedrock_addon_shared_shapes::ItemDescriptor,
+    pub items: Option<Vec<bedrock_addon_shared_shapes::ItemDescriptor>>,
     pub sound: Option<bedrock_addon_core::id::SoundEventName>,
     pub entity: Option<bedrock_addon_core::id::EntityId>,
     pub block: Option<bedrock_addon_core::id::BlockId>,
-    pub menu: Option<bedrock_addon_core::shared::MenuCategory>,
+    pub menu: Option<bedrock_addon_shared_shapes::MenuCategory>,
     pub subject: Option<bedrock_addon_core::shared::FilterSubject>,
     pub ints: Option<bedrock_addon_core::shared::IntRange>,
     pub floats: Option<bedrock_addon_core::shared::FloatRange>,
-    pub specifier: Option<bedrock_addon_core::shared::BlockSpecifier>,
+    pub specifier: Option<bedrock_addon_shared_shapes::BlockSpecifier>,
     pub render_controllers: Option<Vec<bedrock_addon_core::visual::ControllerUse>>,
     pub animate: Option<Vec<bedrock_addon_core::visual::AnimateEntry>>,
     pub size: Option<[u32; 2]>,
@@ -1114,7 +1114,7 @@ fn a_string_enum_in_the_games_order_keeps_its_own_all() {
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct NestedSpecs {
     #[facet(schema::molang = TAGS)]
-    pub item: Option<bedrock_addon_core::shared::ItemDescriptor>,
+    pub item: Option<bedrock_addon_shared_shapes::ItemDescriptor>,
     #[facet(schema::molang = TAGS)]
     pub tagged_boss: Option<Boss>,
     pub boss: Option<Boss>,

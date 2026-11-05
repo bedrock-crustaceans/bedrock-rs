@@ -10,8 +10,9 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::{BlockDescriptor, Filter, FloatRange};
+use bedrock_addon_core::shared::{Filter, FloatRange};
 use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 use facet::Facet;
 use facet_value::VObject;
 

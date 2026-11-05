@@ -5,7 +5,7 @@ use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::{BlockId, LootTablePath, ProcessorListId};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::BlockSpecifier;
+use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// A processor list: rules that modify or replace blocks of a structure template while it is
 /// placed (`minecraft:processor_list`, in `worldgen/processors/`).

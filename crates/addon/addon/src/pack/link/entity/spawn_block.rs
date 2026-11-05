@@ -1,6 +1,6 @@
 //! The blocks the block filters of spawn rules and of spawn groups name.
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::shared::BlockDescriptor;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::super::{Findings, LinkCx, Member, States, block_descriptor};
 use super::spawn::{self, Conditions};

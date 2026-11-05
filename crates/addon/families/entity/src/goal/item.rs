@@ -4,11 +4,10 @@ use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{Diagnostics, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
-use bedrock_addon_core::shared::{
-    BlockDescriptor, EventTrigger, Filter, FloatRange, IntRange, ItemDescriptor,
-};
+use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
 use facet_value::VObject;
 

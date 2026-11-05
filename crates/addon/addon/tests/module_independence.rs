@@ -291,6 +291,115 @@ fn the_lifted_scan_reads_manifests_and_paths() {
     );
 }
 
+/// The directory of the shared crates: `crates/addon/shared/`.
+fn shared_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../shared")
+}
+
+/// Whether a shared crate may name the `bedrock_addon*` crate `name`: core, the derive (its
+/// tests derive) and another shared crate, never a family, `bedrock_addon`, the support crate
+/// or the std driver.
+fn shared_may_name(name: &str) -> bool {
+    name == "bedrock_addon_core"
+        || name == "bedrock_addon_derive"
+        || name.starts_with("bedrock_addon_shared_")
+}
+
+/// What a shared crate (`crates/addon/shared/<name>/`) depends on or names that it may not:
+/// a `bedrock_addon*` crate other than core, the derive and the shared crates, in its manifest
+/// (`manifest`) or its sources (`sources`, each with its path below the crate's `src/`).
+fn shared_violations(name: &str, manifest: &str, sources: &[(String, String)]) -> Vec<String> {
+    let mut violations = Vec::new();
+    for (line, dependency) in manifest_dependencies(manifest) {
+        if dependency.starts_with("bedrock_addon") && !shared_may_name(&dependency) {
+            violations.push(format!("{name}/Cargo.toml:{line} depends on {dependency}"));
+        }
+    }
+    for (relative, source) in sources {
+        let code = code_of(source).replace("r#", "");
+        for (index, _) in code.match_indices("bedrock_addon") {
+            if code[..index].chars().next_back().is_some_and(is_ident) {
+                continue;
+            }
+            let rest = &code[index + "bedrock_addon".len()..];
+            let end = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
+            let named = format!("bedrock_addon{}", &rest[..end]);
+            if rest[end..].trim_start().starts_with("::") && !shared_may_name(&named) {
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!("{name}/src/{relative}:{line} names {named}::"));
+            }
+        }
+    }
+    violations
+}
+
+/// A shared crate holds the shapes the families compose, so it sits below every family: it
+/// depends on core (and the other shared crates) only.
+#[test]
+fn shared_crates_depend_on_core_and_no_family() {
+    let crates: Vec<String> = directories(&shared_dir())
+        .into_iter()
+        .filter(|name| shared_dir().join(name).join("Cargo.toml").is_file())
+        .collect();
+    assert!(
+        !crates.is_empty(),
+        "no crate below crates/addon/shared/ (the families' shared shapes live there)"
+    );
+    let mut violations = Vec::new();
+    for name in &crates {
+        let dir = shared_dir().join(name);
+        let manifest = fs::read_to_string(dir.join("Cargo.toml")).unwrap();
+        let package = format!("name = \"bedrock_addon_shared_{name}\"");
+        assert!(
+            manifest.lines().any(|line| line.trim() == package),
+            "shared/{name}/Cargo.toml is not the package bedrock_addon_shared_{name}"
+        );
+        let mut files = Vec::new();
+        rust_files(&dir.join("src"), &mut files);
+        let sources: Vec<(String, String)> = files
+            .iter()
+            .map(|file| {
+                let relative = file.strip_prefix(dir.join("src")).unwrap();
+                (
+                    relative.display().to_string(),
+                    fs::read_to_string(file).unwrap(),
+                )
+            })
+            .collect();
+        violations.extend(shared_violations(name, &manifest, &sources));
+    }
+    assert!(
+        violations.is_empty(),
+        "a shared crate depends on bedrock_addon_core and the other shared crates only:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn the_shared_scan_reads_manifests_and_paths() {
+    let manifest = "[package]\nname = \"bedrock_addon_shared_shapes\"\n\n[dependencies]\n\
+        bedrock_addon_core = { path = \"../../core\" }\nbedrock_addon_family_block = { path = \"x\" }\n\
+        bedrock_addon_shared_visual = { path = \"../visual\" }\nbedrock_addon_support.workspace = true\n\
+        [dev-dependencies]\nbedrock_addon_derive = { path = \"../../derive\" }\nbedrock_addon = { path = \"y\" }\n";
+    let sources = [(
+        "lib.rs".to_owned(),
+        "use bedrock_addon_core::id::Id; use bedrock_addon_shared_visual::A;\n\
+         // bedrock_addon_family_item::Item in a comment\nuse bedrock_addon_family_fog::A;\n\
+         fn f() { bedrock_addon_support::x(); }"
+            .to_owned(),
+    )];
+    assert_eq!(
+        shared_violations("shapes", manifest, &sources),
+        [
+            "shapes/Cargo.toml:6 depends on bedrock_addon_family_block",
+            "shapes/Cargo.toml:8 depends on bedrock_addon_support",
+            "shapes/Cargo.toml:11 depends on bedrock_addon",
+            "shapes/src/lib.rs:3 names bedrock_addon_family_fog::",
+            "shapes/src/lib.rs:4 names bedrock_addon_support::",
+        ]
+    );
+}
+
 #[test]
 fn comments_and_literals_are_not_code() {
     let source = "// use crate::block::A;\n/* crate::item /* nested */ crate::pack */\nlet s = \"crate::entity\"; let r = r#\"crate::loot \"quoted\"\"#; let c = '\"'; let q = '\\''; fn f<'a>(x: &'a str) { crate::id::X }";

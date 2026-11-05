@@ -10,12 +10,11 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{Schema, SchemaCx};
-use bedrock_addon_core::shared::{
-    BlockDescriptor, EventTrigger, Filter, ItemDescriptor, Range, RangeEnd, RangeForm,
-};
+use bedrock_addon_core::shared::{EventTrigger, Filter, Range, RangeEnd, RangeForm};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ConvertMode, MemberFailure};
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
 use facet_value::{VArray, VObject};
 

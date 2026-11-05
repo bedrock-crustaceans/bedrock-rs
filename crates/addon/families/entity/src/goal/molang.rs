@@ -5,7 +5,8 @@ use bedrock_addon_core::molang::{
     self, Molang, MolangFailure, MolangFieldSpec, MolangVersion, MolangVersionSource,
     MolangVisitor, RawVersion, ReadField, ReaderKind, Step,
 };
-use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, ItemDescriptor};
+use bedrock_addon_core::shared::EventTrigger;
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
 use super::common::LegacyConditions;
 

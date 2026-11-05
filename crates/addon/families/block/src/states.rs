@@ -4,7 +4,7 @@ use facet::Facet;
 
 use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString, Value};
 use bedrock_addon_core::schema;
-use bedrock_addon_core::shared::{BlockDescriptor, StateValue};
+use bedrock_addon_shared_shapes::{BlockDescriptor, StateValue};
 
 /// The values one block state can take (JSON `description.states.<name>`).
 ///

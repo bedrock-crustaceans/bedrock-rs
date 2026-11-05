@@ -1,12 +1,12 @@
 //! `jump.static`, `jump.dynamic`, `preferred_path`, `flocking`, `game_event_movement_tracking`,
 //! `grows_crop`, `physics`, `collision_box`, `block_movement_slowdown_immunity`.
 
-use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     BlockMovementSlowdownImmunity, CollisionBox, Flocking, GameEventMovementTracking, GrowsCrop,
     JumpDynamic, JumpStatic, Physics, PreferredPath, SkipData,
 };
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::{json, lenient, read_as, round_trip, strict, write};
 

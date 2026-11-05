@@ -4,10 +4,10 @@
 use bedrock_addon_core::document::{Content, Placed};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::pack_identity::PackSide;
-use bedrock_addon_core::shared::CreativeCategory;
 use bedrock_addon_family_crafting_catalog::{
     CatalogItem, CatalogKey, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier,
 };
+use bedrock_addon_shared_shapes::CreativeCategory;
 
 use super::common::*;
 

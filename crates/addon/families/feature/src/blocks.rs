@@ -14,10 +14,11 @@ use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, JsonType, StrictError, Value};
 use bedrock_addon_core::molang::MolangVisitor;
-use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, IntRange};
+use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
+use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
 // ---- ore --------------------------------------------------------------------------------------
 

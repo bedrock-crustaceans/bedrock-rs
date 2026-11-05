@@ -5,7 +5,8 @@ use facet::Facet;
 
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::{BlockSpecifier, FloatRange};
+use bedrock_addon_core::shared::FloatRange;
+use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// `minecraft:surface_builder`: how the biome's surface is built.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]

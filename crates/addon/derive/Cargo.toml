@@ -26,6 +26,7 @@ facet-macro-types = { workspace = true }
 [dev-dependencies]
 # The expansion tests implement core's traits on a toy family.
 bedrock_addon_core = { path = "../core" }
+bedrock_addon_shared_shapes = { path = "../shared/shapes" }
 # The `Schema` expansion tests derive `Facet` beside it.
 facet = { workspace = true }
 indexmap = { workspace = true }

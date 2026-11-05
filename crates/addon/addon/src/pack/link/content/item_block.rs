@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
 use bedrock_addon_core::id::BlockId;
-use bedrock_addon_core::shared::BlockDescriptor;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::super::{
     At, Findings, LinkCx, Target, block_descriptor, block_specifier, kinds, unresolved,

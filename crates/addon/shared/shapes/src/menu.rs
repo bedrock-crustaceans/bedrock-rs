@@ -2,9 +2,9 @@
 
 use facet::Facet;
 
-use super::read::{Failure, ROOT, ShapeError, ShapeErrorKind, wrong_type};
-use crate::document::Extra;
-use crate::json::{StrictBool, Value};
+use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::{StrictBool, Value};
+use bedrock_addon_core::shared::read::{Failure, ROOT, ShapeError, ShapeErrorKind, wrong_type};
 
 /// An item's or block's creative-menu placement: as the game's item and block
 /// loaders read it.
@@ -117,3 +117,7 @@ impl TryFrom<&CreativeCategory> for Value {
             .ok_or_else(|| Failure::new(ShapeErrorKind::NotRepresentable).into())
     }
 }
+
+// A menu category reads its own syntax and holds no Molang, no bound and no trigger.
+bedrock_addon_core::impl_no_molang!(MenuCategory);
+bedrock_addon_core::impl_schema_leaf!(MenuCategory);

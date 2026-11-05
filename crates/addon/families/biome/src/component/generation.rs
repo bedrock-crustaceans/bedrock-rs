@@ -8,7 +8,8 @@ use facet_value::VArray;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::{BlockSpecifier, ShapeErrorKind};
+use bedrock_addon_core::shared::ShapeErrorKind;
+use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// `minecraft:mountain_parameters`: steep-slope materials and the top slide of mountain
 /// terrain. Every member is optional.

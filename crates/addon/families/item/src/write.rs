@@ -8,11 +8,11 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Value, WriteStyle, merge_unknown, write_json,
 };
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ParseCx, VersionStruct, Versioned, write_envelope, write_payload,
 };
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use facet_value::VObject;
 
 use super::component::ItemComponent;

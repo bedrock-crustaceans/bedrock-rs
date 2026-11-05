@@ -4,8 +4,8 @@
 #[cfg(feature = "molang")]
 use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::molang::{Molang, MolangVersion, RawVersion};
-use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_family_item::component::{Digger, Repairable};
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::common::*;
 
@@ -47,7 +47,7 @@ mod compiled {
     use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Severity};
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::molang::{DiagCode, MolangCheck, MolangVersion, RawVersion};
-    use bedrock_addon_core::shared::ItemDescriptor;
+    use bedrock_addon_shared_shapes::ItemDescriptor;
 
     use super::*;
 

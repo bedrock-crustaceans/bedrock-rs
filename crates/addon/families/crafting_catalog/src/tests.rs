@@ -15,7 +15,7 @@ use super::{
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{Document, Merged, Origin, VersionInfo};
 use bedrock_addon_core::id::ItemId;
-use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 
 /// Item definitions by identifier.
 #[derive(Default)]

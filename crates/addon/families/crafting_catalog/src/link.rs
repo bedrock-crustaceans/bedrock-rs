@@ -11,7 +11,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::Merged;
 use bedrock_addon_core::id::ItemId;
-use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 
 /// The item definitions the placement rules compare against.
 pub trait Definitions {

@@ -1,7 +1,7 @@
 //! Using the item: `compostable`, `food`, `fuel`, `use_animation`, `use_modifiers`.
 
 use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::shared::ItemDescriptor;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 
 use super::value::value_component;

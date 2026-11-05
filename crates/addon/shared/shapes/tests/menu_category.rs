@@ -6,13 +6,12 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-#[path = "shared/common.rs"]
 mod common;
 
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::{self, StrictBool, Value};
-use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
+use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use common::{compact, read, round_trip};
 
 /// [`compact`] with a document's unknown members.

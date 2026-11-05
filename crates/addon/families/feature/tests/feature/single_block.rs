@@ -1,8 +1,8 @@
 //! `single_block_feature`: the 1.21.40 schema, its step and the constructor defaults (fixtures
 //! f04–f06, f25).
 
-use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_family_feature::{Feature, PlacesBlock, SingleBlockFeature};
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::common::{cx, doc, error_at, loads, rejects};
 

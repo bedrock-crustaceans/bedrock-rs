@@ -1,6 +1,6 @@
 //! The empty Molang walks of the leaf types a `#[derive(Schema)]` struct holds: the derive
 //! hands every field that is not a Molang slot to `MolangVisitor::nested`, so numbers,
-//! `bool`, `String`, `json::Value`, `EventTrigger` and block specifiers walk nothing (and `Option`, `Vec` and
+//! `bool`, `String`, `json::Value`, and `EventTrigger` walk nothing (and `Option`, `Vec` and
 //! `IndexMap` of them forward to these).
 
 crate::impl_no_molang!(
@@ -21,5 +21,4 @@ crate::impl_no_molang!(
     String,
     crate::json::Value,
     crate::shared::EventTrigger,
-    crate::shared::BlockSpecifier,
 );

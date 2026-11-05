@@ -3,7 +3,7 @@
 //! resolution: %s" at the lowest log level only: an information.
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::ItemId;
-use bedrock_addon_core::shared::{ItemDescriptor, ItemDescriptorForm};
+use bedrock_addon_shared_shapes::{ItemDescriptor, ItemDescriptorForm};
 
 use super::super::{
     At, Findings, LinkCx, Member, States, Target, item_descriptor, kinds, unresolved,

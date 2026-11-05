@@ -1,13 +1,12 @@
 //! `BlockDescriptor`, `BlockSpecifier`, `StateValue`: the JSON forms round trip;
 //! `Mixed` and `Invalid` are kept and reported with vanilla's texts as `InvalidValue` warnings.
 
-#[path = "shared/common.rs"]
 mod common;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, StateValue};
+use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier, StateValue};
 use common::{compact, read, round_trip};
 
 /// The one finding of `descriptor`'s check, as its vanilla text.

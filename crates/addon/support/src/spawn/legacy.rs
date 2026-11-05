@@ -17,8 +17,8 @@ use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::molang::{
     Admission, EmptyRule, MolangFieldSpec, MolangFields, MolangVersionSource, MolangVisitor,
 };
-use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// The payload key of spawn rules.
 pub const RULES_KEY: &str = "minecraft:spawn_rules";

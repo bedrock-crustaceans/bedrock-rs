@@ -8,7 +8,7 @@ use super::component::BlockComponent;
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion, RawVersion};
-use bedrock_addon_core::shared::StateValue;
+use bedrock_addon_shared_shapes::StateValue;
 
 impl Block {
     /// The block as the client network NBT (11): `{components, menu_category {category, group,
@@ -29,7 +29,7 @@ impl Block {
             .menu_category
             .as_ref()
             .and_then(|m| m.category)
-            .and_then(bedrock_addon_core::shared::CreativeCategory::name)
+            .and_then(bedrock_addon_shared_shapes::CreativeCategory::name)
             .unwrap_or("none");
         let group = self
             .description

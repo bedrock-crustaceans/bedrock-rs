@@ -2,7 +2,8 @@
 //! `projectile`, `shooter`, `swing_duration`, `swing_sounds`, `throwable`.
 
 use bedrock_addon_core::id::{EntityId, SoundEventName};
-use bedrock_addon_core::shared::{FloatRange, ItemDescriptor};
+use bedrock_addon_core::shared::FloatRange;
+use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 
 use super::value::value_component;

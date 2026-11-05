@@ -143,8 +143,14 @@ pub use bedrock_addon_core::json;
 pub use bedrock_addon_core::manifest;
 #[doc(inline)]
 pub use bedrock_addon_core::molang;
-#[doc(inline)]
-pub use bedrock_addon_core::shared;
+/// Value types several content modules use: core's ranges, filters and event triggers, and the
+/// shapes of `bedrock_addon_shared_shapes` (descriptors, menu categories, colours, ...).
+pub mod shared {
+    #[doc(inline)]
+    pub use bedrock_addon_core::shared::*;
+    #[doc(inline)]
+    pub use bedrock_addon_shared_shapes::*;
+}
 #[doc(inline)]
 pub use bedrock_addon_core::vanilla;
 #[doc(inline)]

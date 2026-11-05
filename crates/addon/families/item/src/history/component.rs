@@ -3,8 +3,9 @@
 
 use bedrock_addon_core::document::CustomComponent;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, IntRange, ItemDescriptor};
+use bedrock_addon_core::shared::{EventTrigger, IntRange};
 use bedrock_addon_derive::Components;
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
 use indexmap::IndexMap;
 

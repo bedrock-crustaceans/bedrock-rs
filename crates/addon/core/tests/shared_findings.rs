@@ -10,10 +10,7 @@
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::JsonType;
-use bedrock_addon_core::shared::{
-    BlockDescriptor, BlockSpecifier, EventTrigger, Filter, ItemDescriptor, ShapeError,
-    ShapeErrorKind,
-};
+use bedrock_addon_core::shared::{EventTrigger, Filter, ShapeError, ShapeErrorKind};
 
 /// A JSON path from its segments: a number is an index, anything else a key.
 fn path(segments: &[&str]) -> JsonPath {
@@ -86,12 +83,6 @@ fn a_read_error_in_a_triggers_filter_names_its_member() {
 }
 
 #[test]
-fn a_read_error_in_a_block_specifier_state_names_the_state() {
-    let e = error::<BlockSpecifier>(r#"{"name": "a:b", "states": {"age": 1.5}}"#);
-    assert_eq!(e.path, path(&["states", "age"]));
-}
-
-#[test]
 fn a_filter_reports_unknown_members_at_every_level() {
     let f = Filter::try_from(value(
         r#"{"any_of": [{"test": "is_family", "value": "pig", "note": 1}, {"all_of": [], "x": 2}], "y": true}"#,
@@ -121,29 +112,4 @@ fn a_trigger_reports_its_unknown_members_and_its_filters() {
             path(&["on_hurt", "condition"]),
         ]
     );
-}
-
-#[test]
-fn descriptors_report_their_unknown_members() {
-    // The item descriptor is read from a `Json::Value`, which ignores the rest in silence: an
-    // information, because the game says nothing about the unknown members.
-    let d = ItemDescriptor::from(value(r#"{"item": "a:b", "count": 2}"#));
-    assert_eq!(
-        unrecognized_at(&d.check(&path(&["i"])), Severity::Info),
-        [path(&["i", "count"])]
-    );
-    // The keys O4 passed over are reported by its own information, not as unknown.
-    let d = ItemDescriptor::from(value(r#"{"item": "a:b", "tags": "x"}"#));
-    assert!(unrecognized_at(&d.check(&JsonPath::new()), Severity::Info).is_empty());
-    let d = BlockDescriptor::from(value(r#"{"name": "a:b", "weight": 2}"#));
-    assert_eq!(
-        unrecognized(&d.check(&JsonPath::new())),
-        [path(&["weight"])]
-    );
-    let d = BlockDescriptor::from(value(r#"{"tags": "1", "name": "a:b", "w": 2}"#));
-    let found = d.check(&JsonPath::new());
-    assert_eq!(found.len(), 2);
-    assert_eq!(unrecognized(&found), [path(&["w"])]);
-    let s = BlockSpecifier::try_from(value(r#"{"name": "a:b", "x": 1}"#)).unwrap();
-    assert_eq!(unrecognized(&s.check(&JsonPath::new())), [path(&["x"])]);
 }
