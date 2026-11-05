@@ -288,7 +288,7 @@ fn u04_int_array_colour() {
         "{:?}",
         lines(old.diagnostics())
     );
-    assert_eq!(air_color(&old), FogColor::Rgb255([128, 64, 255]));
+    assert_eq!(air_color(&old), FogColor::Array([128, 64, 255]));
     assert_eq!(air_color(&old).rgb(), [128.0 / 255.0, 64.0 / 255.0, 1.0]);
     let new = loaded(parse(&doc("1.26.20", &members), &pack()));
     assert_eq!(old.value(), new.value());
@@ -300,7 +300,7 @@ fn u05_colour_array_old_era_deviation() {
     let with = |color: &str| doc("1.16.100", &air(&AIR.replace("\"#ABD2FF\"", color)));
     // Clamped when read; vanilla says nothing, we note each clamped component.
     let document = loaded(parse(&with("[300, -5, 128]"), &pack()));
-    assert_eq!(air_color(&document), FogColor::Rgb255([255, 0, 128]));
+    assert_eq!(air_color(&document), FogColor::Array([255, 0, 128]));
     assert_eq!(air_color(&document).rgb(), [1.0, 0.0, 128.0 / 255.0]);
     assert_eq!(
         count(document.diagnostics(), "ClampedValue", Severity::Info),
@@ -315,7 +315,7 @@ fn u05_colour_array_old_era_deviation() {
     // is level 3 (as are the other elements'): a kept
     // error.
     let document = loaded(parse(&with("[0.5, 1.0, 0]"), &pack()));
-    assert_eq!(air_color(&document), FogColor::Rgb255([255, 255, 0]));
+    assert_eq!(air_color(&document), FogColor::Array([255, 255, 0]));
     assert_eq!(air_color(&document).rgb(), [1.0, 1.0, 0.0]);
     assert_eq!(
         count(document.diagnostics(), "InvalidValue", Severity::Error),
@@ -330,7 +330,7 @@ fn u05_colour_array_old_era_deviation() {
     );
     // A bool is integral, a fourth element is ignored (and noted).
     let document = loaded(parse(&with("[true, 7, false, 9]"), &pack()));
-    assert_eq!(air_color(&document), FogColor::Rgb255([1, 7, 0]));
+    assert_eq!(air_color(&document), FogColor::Array([1, 7, 0]));
     // A bool is read as vanilla reads it, and said at the element (ours): the colour
     // is written with the numbers. The game reads it in silence, so each is an information.
     let told: Vec<_> = document

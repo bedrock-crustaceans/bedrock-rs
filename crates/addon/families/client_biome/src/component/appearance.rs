@@ -64,17 +64,19 @@ macro_rules! color_or_map {
             }
         }
 
-        impl From<&$name> for Value {
-            fn from(color: &$name) -> Self {
+        impl TryFrom<&$name> for Value {
+            type Error = ShapeErrorKind;
+
+            fn try_from(color: &$name) -> Result<Self, ShapeErrorKind> {
                 match color {
-                    $name::Rgb(rgb) => Value::from(rgb),
+                    $name::Rgb(rgb) => Value::try_from(rgb),
                     $name::Map { color_map, extra } => {
                         let mut object = VObject::new();
                         object.insert(COLOR_MAP, Value::from(color_map.name()));
                         for (key, member) in extra.iter() {
                             object.insert(key, member.clone());
                         }
-                        object.into()
+                        Ok(object.into())
                     }
                 }
             }

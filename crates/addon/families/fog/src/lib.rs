@@ -21,6 +21,7 @@ mod tests;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::HexOr;
 
 pub(crate) use jsonutil::{Era, read_document};
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
@@ -272,24 +273,14 @@ pub enum DistanceType {
     Render,
 }
 
-/// A fog colour (`fog_color`): `"#RRGGBB"` or `[r, g, b]` with integers 0 to 255.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum FogColor {
-    /// `"#RRGGBB"`, as written (hex digits of either case).
-    Hex(String),
-    /// `[r, g, b]`; an integer outside 0 to 255 is clamped when read, as the game clamps it.
-    Rgb255([u8; 3]),
-}
+/// A fog colour (`fog_color`): `"#RRGGBB"` (as written, hex digits of either case) or
+/// `[r, g, b]` with integers 0 to 255 (an integer outside is clamped when read, as the game
+/// clamps it). [`HexOr::rgb`] gives the colour as the game uses it.
+pub type FogColor = HexOr<[u8; 3]>;
 
 /// A coefficient colour (`absorption`, `scattering`): `"#RRGGBB"` or `[r, g, b]` with numbers
-/// the game clamps to 0 to 1.
-#[derive(Clone, Debug, PartialEq)]
-pub enum ColorNorm {
-    /// `"#RRGGBB"`, as written.
-    Hex(String),
-    /// `[r, g, b]` as written; [`ColorNorm::rgb`] gives the clamped components.
-    Array([f32; 3]),
-}
+/// as written, which the game clamps to 0 to 1 ([`HexOr::rgb`] gives the clamped components).
+pub type ColorNorm = HexOr<[f32; 3]>;
 
 /// A value that may change over the day: one value, or values by time key
 /// (`{"0.0": 0.02, "0.5": 0.1}`). The keyed form is read by engines from 1.26.30.
@@ -682,17 +673,6 @@ pub const LOADER: CollectionLoader<Registry<FogSettings>, Contribution<FogSettin
 //
 // A present distance entry starts from `FogSetting::ZERO_SETTING` and takes each written member.
 
-/// The three bytes of `#RRGGBB`; 0 for a digit pair that is no hex.
-fn hex_bytes(text: &str) -> [u8; 3] {
-    let digits = text.strip_prefix('#').unwrap_or(text);
-    [0, 2, 4].map(|start| {
-        digits
-            .get(start..start + 2)
-            .and_then(|pair| u8::from_str_radix(pair, 16).ok())
-            .unwrap_or(0)
-    })
-}
-
 impl FogSettings {
     /// Settings named `identifier` that set nothing.
     pub fn new(identifier: FogId) -> Self {
@@ -732,27 +712,6 @@ impl DistanceType {
         match self {
             Self::Fixed => "fixed",
             Self::Render => "render",
-        }
-    }
-}
-
-impl FogColor {
-    /// The colour as the game uses it: red, green and blue from 0 to 1 (each byte over 255).
-    pub fn rgb(&self) -> [f32; 3] {
-        let bytes = match self {
-            Self::Hex(text) => hex_bytes(text),
-            Self::Rgb255(rgb) => *rgb,
-        };
-        bytes.map(|c| f32::from(c) / 255.0)
-    }
-}
-
-impl ColorNorm {
-    /// The colour as the game uses it: each component clamped to 0 to 1.
-    pub fn rgb(&self) -> [f32; 3] {
-        match self {
-            Self::Hex(text) => hex_bytes(text).map(|c| f32::from(c) / 255.0),
-            Self::Array(rgb) => rgb.map(|c| c.clamp(0.0, 1.0)),
         }
     }
 }

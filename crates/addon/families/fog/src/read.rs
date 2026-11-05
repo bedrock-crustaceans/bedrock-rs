@@ -16,6 +16,7 @@ use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::kit::{Disposition, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value, parse_at};
 use bedrock_addon_core::versioning::Reading;
+use bedrock_addon_shared_shapes::color::is_hex;
 
 /// Reads one `minecraft:fog_settings` payload, findings below `at`; `None` (with an error in
 /// `d`) when the cereal pass would fail the file.
@@ -133,16 +134,11 @@ fn text(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
     read.string(node).map(str::to_owned)
 }
 
-/// `SharedTypes::REGEX_RGB_COLOR`: `^#[a-fA-F0-9]{6}$`.
-pub(crate) fn is_hex(text: &str) -> bool {
-    text.strip_prefix('#')
-        .is_some_and(|digits| digits.len() == 6 && digits.bytes().all(|b| b.is_ascii_hexdigit()))
-}
-
 /// The string form of a colour, or its constraint violation.
 fn hex(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
     let written = text(read, node)?;
-    if is_hex(&written) {
+    // `SharedTypes::REGEX_RGB_COLOR`: `^#[a-fA-F0-9]{6}$`.
+    if is_hex(&written, 6) {
         Some(written)
     } else {
         violation(read, node);
@@ -198,7 +194,7 @@ fn fog_color(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogColor> {
             ok = false;
         }
     }
-    ok.then_some(FogColor::Rgb255(rgb))
+    ok.then_some(FogColor::Array(rgb))
 }
 
 /// `ColorNormRGB`: `#RRGGBB`, or three numbers (clamped to 0–1 when used).

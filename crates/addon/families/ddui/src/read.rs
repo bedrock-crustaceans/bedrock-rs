@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 
 use super::style::{
     BorderImageRepeat, BoxSize, FormLabelStyle, FormPanelStyle, FormTextFieldStyle, StyleColor,
-    StyleComponents, StyleDescription, UiStyle, hex_bytes,
+    StyleComponents, StyleDescription, UiStyle,
 };
 use super::{
     Binding, Catalogue, ChildSet, Component, CompositionAttribs, CompositionDescription, Control,
@@ -23,6 +23,7 @@ use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::Reading;
+use bedrock_addon_shared_shapes::color::hex_bytes;
 
 /// The client's text for an identifier that is not `namespace:name`.
 const NAMESPACE_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";

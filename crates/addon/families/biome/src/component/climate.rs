@@ -3,12 +3,9 @@
 //! `minecraft:partially_frozen`, `minecraft:tags` and `minecraft:village_type`.
 
 use facet::Facet;
-use facet_value::VArray;
 
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::schema::{self, Schema};
-use bedrock_addon_core::shared::ShapeErrorKind;
+use bedrock_addon_shared_shapes::HexOr;
 
 /// `minecraft:climate`: temperature, downfall and snow cover. Every member is optional; an
 /// absent one leaves the game's built-in value.
@@ -72,101 +69,10 @@ pub enum GrassTint {
 
 /// An opaque RGB colour: `"#RRGGBB"` or `[r, g, b]` with integer
 /// channels, kept in the form it was written.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
-#[facet(opaque, proxy = Value)]
-#[repr(u8)]
-pub enum Color {
-    /// `"#RRGGBB"`, as written.
-    Hex(String),
-    /// `[r, g, b]`.
-    Rgb([i32; 3]),
-}
+pub type Color = HexOr<[i32; 3]>;
 
 /// A colour with alpha: `"#RRGGBBAA"` or `[r, g, b, a]`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
-#[facet(opaque, proxy = Value)]
-#[repr(u8)]
-pub enum ColorRgba {
-    /// `"#RRGGBBAA"`, as written.
-    Hex(String),
-    /// `[r, g, b, a]`.
-    Rgba([i32; 4]),
-}
-
-/// `N` integer channels.
-fn channels<const N: usize>(value: &Value) -> Result<[i32; N], ShapeErrorKind> {
-    let wrong = |found: &Value| ShapeErrorKind::WrongType {
-        expected: "a colour string or an array of integers",
-        found: found.json_type(),
-    };
-    let array = value.as_array().ok_or_else(|| wrong(value))?;
-    if array.len() != N {
-        return Err(ShapeErrorKind::ArrayLength {
-            expected: if N == 3 { "exactly 3" } else { "exactly 4" },
-            len: array.len(),
-        });
-    }
-    let mut out = [0; N];
-    for (slot, element) in out.iter_mut().zip(array.iter()) {
-        *slot = match element.as_number() {
-            Some(number) if !number.is_float() => number
-                .to_i64()
-                .and_then(|i| i32::try_from(i).ok())
-                .ok_or(ShapeErrorKind::OutOfRange)?,
-            _ => return Err(wrong(element)),
-        };
-    }
-    Ok(out)
-}
-
-/// `channels` as a JSON array.
-fn channel_array(channels: &[i32]) -> Value {
-    let mut array = VArray::new();
-    for channel in channels {
-        array.push(Value::from(i64::from(*channel)));
-    }
-    Value::from(array)
-}
-
-impl TryFrom<Value> for Color {
-    type Error = ShapeErrorKind;
-
-    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
-        match value.as_string() {
-            Some(text) => Ok(Self::Hex(text.as_str().to_owned())),
-            None => channels::<3>(&value).map(Self::Rgb),
-        }
-    }
-}
-
-impl From<&Color> for Value {
-    fn from(color: &Color) -> Self {
-        match color {
-            Color::Hex(text) => Value::from(text.as_str()),
-            Color::Rgb(rgb) => channel_array(rgb),
-        }
-    }
-}
-
-impl TryFrom<Value> for ColorRgba {
-    type Error = ShapeErrorKind;
-
-    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
-        match value.as_string() {
-            Some(text) => Ok(Self::Hex(text.as_str().to_owned())),
-            None => channels::<4>(&value).map(Self::Rgba),
-        }
-    }
-}
-
-impl From<&ColorRgba> for Value {
-    fn from(color: &ColorRgba) -> Self {
-        match color {
-            ColorRgba::Hex(text) => Value::from(text.as_str()),
-            ColorRgba::Rgba(rgba) => channel_array(rgba),
-        }
-    }
-}
+pub type ColorRgba = HexOr<[i32; 4]>;
 
 /// `minecraft:partially_frozen`: the biome is partly frozen by noise (no members).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -219,7 +125,7 @@ pub enum VillageKind {
     Default,
 }
 
-// The colours are read through their proxies, which judge their own form; the tint is a data
-// enum, its members checked by hand (`validate.rs`).
-bedrock_addon_core::impl_schema_leaf!(Color, ColorRgba, GrassTint);
-bedrock_addon_core::impl_no_molang!(Color, ColorRgba, GrassTint);
+// The colours are read through their proxies, which judge their own form (shapes' impls); the
+// tint is a data enum, its members checked by hand (`validate.rs`).
+bedrock_addon_core::impl_schema_leaf!(GrassTint);
+bedrock_addon_core::impl_no_molang!(GrassTint);

@@ -25,7 +25,8 @@ use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, W
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::SemVersion;
 
-use bedrock_addon_support::biome_json::{child, is_hex};
+use bedrock_addon_shared_shapes::color::is_hex;
+use bedrock_addon_support::biome_json::child;
 
 /// The file, at the pack root.
 const FILE: &str = "biomes_client.json";

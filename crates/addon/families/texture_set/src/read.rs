@@ -10,6 +10,7 @@ use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{Value, strip_bom};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
+use bedrock_addon_shared_shapes::color::parse_hex;
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 use bedrock_addon_support::texture::texts::{fixed, formatted};
 
@@ -323,16 +324,6 @@ fn name_only(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Textur
     name
 }
 
-/// The digits of a hex colour string of `digits` hex digits, as a number; `None` when the
-/// string, lower-cased, is not `#` and exactly that many hex digits.
-fn hex(text: &str, digits: usize) -> Option<u32> {
-    let rest = text.strip_prefix('#')?;
-    if rest.len() != digits || !rest.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return None;
-    }
-    u32::from_str_radix(rest, 16).ok()
-}
-
 /// One byte of `value`, `shift` bits up.
 fn byte(value: u32, shift: u32) -> f32 {
     f32::from(u8::try_from((value >> shift) & 0xFF).unwrap_or(u8::MAX))
@@ -392,7 +383,7 @@ fn rgba(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<
     match colour(value) {
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
-            let Some(v) = hex(text, 8) else {
+            let Some(v) = parse_hex(text, 8) else {
                 let code = DiagnosticCode::InvalidValue {
                     text: fixed(texts::SET_HEX_8),
                 };
@@ -433,7 +424,7 @@ fn rgb(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<R
     match colour(value) {
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
-            let Some(v) = hex(text, 6) else {
+            let Some(v) = parse_hex(text, 6) else {
                 let code = DiagnosticCode::InvalidValue {
                     text: fixed(texts::SET_HEX_6),
                 };
@@ -568,9 +559,9 @@ mod tests {
 
     #[test]
     fn a_hex_colour_is_the_hash_and_exactly_its_digits() {
-        assert_eq!(hex("#AABBCCDD", 8), Some(0xAABB_CCDD));
-        assert_eq!(hex("#aabbccdd", 8), Some(0xAABB_CCDD));
-        assert_eq!(hex("#AABBCC", 6), Some(0x00AA_BBCC));
+        assert_eq!(parse_hex("#AABBCCDD", 8), Some(0xAABB_CCDD));
+        assert_eq!(parse_hex("#aabbccdd", 8), Some(0xAABB_CCDD));
+        assert_eq!(parse_hex("#AABBCC", 6), Some(0x00AA_BBCC));
         for bad in [
             "#AABBCCD",
             "#AABBCCDDE",
@@ -579,10 +570,10 @@ mod tests {
             "AABBCCDD#",
             "#",
         ] {
-            assert_eq!(hex(bad, 8), None, "{bad}");
+            assert_eq!(parse_hex(bad, 8), None, "{bad}");
         }
-        assert_eq!(hex("#AABBCCDD", 6), None);
-        assert_eq!(hex("#AABBC", 6), None);
+        assert_eq!(parse_hex("#AABBCCDD", 6), None);
+        assert_eq!(parse_hex("#AABBC", 6), None);
     }
 
     #[test]

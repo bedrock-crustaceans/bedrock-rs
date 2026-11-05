@@ -5,6 +5,7 @@ use facet_value::{VArray, VObject};
 
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
+use bedrock_addon_shared_shapes::color::hex_bytes;
 
 /// A form style's identifier (`description.identifier`): core's `id::kind::UiStyle`.
 pub use bedrock_addon_core::id::UiStyleId;
@@ -248,19 +249,6 @@ impl StyleColor {
             }
         }
     }
-}
-
-/// The `N` bytes of `#` followed by `2 × N` hex digits (`^#[a-fA-F0-9]{2N}$`).
-pub(crate) fn hex_bytes<const N: usize>(text: &str) -> Option<[u8; N]> {
-    let digits = text.strip_prefix('#')?;
-    if digits.len() != 2 * N || !digits.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return None;
-    }
-    let mut bytes = [0; N];
-    for (index, byte) in bytes.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(digits.get(2 * index..2 * index + 2)?, 16).ok()?;
-    }
-    Some(bytes)
 }
 
 impl UiStyle {

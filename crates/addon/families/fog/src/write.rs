@@ -99,7 +99,7 @@ pub(crate) fn norm_ju(color: &CoeffColorJu) -> Result<Value, EncodeError> {
 fn fog_color(color: &FogColor) -> Value {
     match color {
         FogColor::Hex(text) => text.as_str().into(),
-        FogColor::Rgb255(rgb) => triple(rgb.map(|c| Value::from(i64::from(c)))),
+        FogColor::Array(rgb) => triple(rgb.map(|c| Value::from(i64::from(c)))),
     }
 }
 

@@ -12,6 +12,7 @@ use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_shared_shapes::color::is_hex;
 use bedrock_addon_support::schema_walk::{
     Group, Kind, NOT_ALLOWED_REGEX, Node, OUTSIDE_RANGE, Walk, percent_f,
 };
@@ -228,16 +229,11 @@ fn distance_type(walk: &mut Walk, node: Node<'_>) -> Option<DistanceType> {
     Some(read)
 }
 
-/// `#rrggbb` after lower-casing, in full.
-fn is_hex(text: &str) -> bool {
-    text.strip_prefix('#')
-        .is_some_and(|digits| digits.len() == 6 && digits.bytes().all(|b| b.is_ascii_hexdigit()))
-}
-
 /// The string form of a colour node, or its error.
 fn hex(walk: &mut Walk, node: Node<'_>) -> Option<String> {
     let text = walk.string(node)?;
-    if is_hex(&text) {
+    // `#rrggbb` in either case, in full.
+    if is_hex(&text, 6) {
         Some(text)
     } else {
         walk.invalid(COLOR_FORMAT, &[], node);

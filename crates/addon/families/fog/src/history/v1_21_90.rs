@@ -115,7 +115,7 @@ fn color(color: FogColorJu) -> FogColor {
     match color {
         FogColorJu::Hex(text) => FogColor::Hex(text),
         FogColorJu::Array(rgb) => {
-            FogColor::Rgb255(rgb.map(|c| u8::try_from(c.clamp(0, 255)).unwrap_or(u8::MAX)))
+            FogColor::Array(rgb.map(|c| u8::try_from(c.clamp(0, 255)).unwrap_or(u8::MAX)))
         }
     }
 }

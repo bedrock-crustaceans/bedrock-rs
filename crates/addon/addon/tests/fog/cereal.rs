@@ -453,14 +453,14 @@ fn c10_colour_255_deviation() {
     let document = color_of(r#""fog_color": [255, 128, 0]"#);
     assert!(document.diagnostics().is_empty());
     let color = air_of(&document).fog_color.clone().unwrap();
-    assert_eq!(color, FogColor::Rgb255([255, 128, 0]));
+    assert_eq!(color, FogColor::Array([255, 128, 0]));
     assert_eq!(color.rgb(), [1.0, 128.0 / 255.0, 0.0]);
     round_trip(&document, |t| parse(t, &pack()));
 
     let document = color_of(r#""fog_color": [300, -5, 0]"#);
     assert_eq!(
         air_of(&document).fog_color,
-        Some(FogColor::Rgb255([255, 0, 0]))
+        Some(FogColor::Array([255, 0, 0]))
     );
     assert_eq!(
         count(document.diagnostics(), "ClampedValue", Severity::Info),

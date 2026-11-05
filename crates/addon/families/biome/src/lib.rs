@@ -1009,7 +1009,7 @@ mod tests {
         let attributes = crate::EnvironmentAttributes {
             experimental_bool_attr: Some(BoolAttribute::new(true, BoolOperation::Xor)),
             experimental_color_attr: Some(ColorAttribute::new(
-                ColorRgba::Rgba([1, 2, 3, 4]),
+                ColorRgba::Array([1, 2, 3, 4]),
                 ColorOperation::Multiply,
             )),
             experimental_float_attr_1: Some(FloatAttribute::new(0.5, FloatOperation::Maximum)),

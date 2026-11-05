@@ -168,7 +168,7 @@ fn settings_that_break_a_rule_of_the_schema_are_not_written() {
     );
     let mut whole = backwards();
     whole.render_distance_type = Some(DistanceType::Fixed);
-    whole.fog_color = Some(FogColor::Rgb255([1, 1, 1]));
+    whole.fog_color = Some(FogColor::Array([1, 1, 1]));
     assert_eq!(
         refused_at(&with_air(whole)),
         "minecraft:fog_settings/distance/air"

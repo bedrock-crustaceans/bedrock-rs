@@ -5,16 +5,20 @@
 //! `bedrock_addon::shared` re-exports every item here beside core's shared types (ranges,
 //! filters, event triggers), so the public path is that one module.
 //!
+//! - [`color`]: the strict hex colour reader ([`color::is_hex`], [`color::parse_hex`]) and
+//!   [`HexOr`], a colour written as that text or as an array of channels.
 //! - [`descriptor`]: [`ItemDescriptor`], [`BlockDescriptor`] and [`BlockSpecifier`], how a
 //!   document names an item or a block.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
 //!   placement.
 //! - [`png`]: the PNG header ([`png::header`], [`png_size`]).
 
+pub mod color;
 pub mod descriptor;
 pub mod menu;
 pub mod png;
 
+pub use color::{Channels, HexOr};
 pub use descriptor::{
     BlockDescriptor, BlockSpecifier, ItemDescriptor, ItemDescriptorForm, StateValue,
 };

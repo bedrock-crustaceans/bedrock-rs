@@ -23,13 +23,6 @@ fn array_index(step: &str) -> Option<usize> {
         .flatten()
 }
 
-/// `^#[a-fA-F0-9]{digits}$`.
-// The game's colour pattern for biome colour members.
-pub fn is_hex(text: &str, digits: usize) -> bool {
-    text.strip_prefix('#')
-        .is_some_and(|rest| rest.len() == digits && rest.bytes().all(|b| b.is_ascii_hexdigit()))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

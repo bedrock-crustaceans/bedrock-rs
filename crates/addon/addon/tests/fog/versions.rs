@@ -275,7 +275,7 @@ fn v11_partial_version() {
         .unwrap()
         .fog_color
         .clone();
-    assert_eq!(color, Some(FogColor::Rgb255([255, 0, 0])));
+    assert_eq!(color, Some(FogColor::Array([255, 0, 0])));
     assert_eq!(color.unwrap().rgb(), [1.0, 0.0, 0.0]);
 }
 
